@@ -13,6 +13,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -20,9 +21,15 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
+import {reconcileRegistryCompositions} from '../../packages/cli/api/upgrade/registry/registry.mjs';
+import {
+  parseRegistryReceipt,
+  registryContentHash,
+} from '../../packages/cli/authoring/shadcn/receipt.mjs';
 import {
   buildShadcnRegistry,
   generateShadcnRegistry,
+  generateShadcnRegistryForTarget,
 } from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
 import {
   blockRegistryIdentity,
@@ -33,7 +40,10 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-const packages = [{name: '@astryxdesign/core', version: '0.5.2'}];
+const packages = [
+  {name: '@astryxdesign/cli', version: '0.6.0'},
+  {name: '@astryxdesign/core', version: '0.5.2'},
+];
 
 function fixture(overrides = {}) {
   return {
@@ -288,6 +298,22 @@ describe('buildShadcnRegistry', () => {
     }
   });
 
+  it('removes stale compatibility output for non-canary targets', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-production-'));
+    const outDir = path.join(root, 'shadcn');
+    try {
+      mkdirSync(outDir, {recursive: true});
+      writeFileSync(path.join(outDir, 'stale.json'), '{}\n');
+
+      expect(
+        generateShadcnRegistryForTarget({target: 'latest', outDir}),
+      ).toBeNull();
+      expect(existsSync(outDir)).toBe(false);
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('creates a first-class standalone block item', () => {
     const standalone = {
       ...fixture().blocks[0],
@@ -310,6 +336,221 @@ describe('buildShadcnRegistry', () => {
     );
   });
 
+  it('adds an adjacent provenance receipt only to copied compositions', () => {
+    const {items} = buildShadcnRegistry(fixture());
+    const component = items.find(item => item.name === 'component-button');
+    const block = items.find(item => item.name === 'showcase-button-variants');
+    const page = items.find(item => item.name === 'template-dashboard');
+
+    expect(component.files).toHaveLength(1);
+    for (const item of [block, page]) {
+      expect(item.files).toHaveLength(2);
+      const sourceFile = item.files[0];
+      const receiptFile = item.files[1];
+      expect(receiptFile).toMatchObject({
+        type: 'registry:file',
+        target: expect.stringContaining('/.astryx/'),
+      });
+      const receipt = parseRegistryReceipt(JSON.parse(receiptFile.content));
+      expect(receipt).toMatchObject({
+        schemaVersion: 1,
+        item: {
+          name: item.name,
+          path: item.astryx.path,
+          aliases: item.astryx.aliases,
+          kind: item.astryx.kind,
+        },
+        source: {package: '@astryxdesign/cli', version: '0.6.0'},
+      });
+      expect(receipt.files[0]).toMatchObject({
+        id: 'primary',
+        registryTarget: sourceFile.target,
+        registryPath: sourceFile.path,
+        sha256: registryContentHash(sourceFile.content),
+        content: sourceFile.content,
+      });
+    }
+  });
+
+  it('writes a provenance receipt beside copied source through ShadCN', async () => {
+    const project = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-receipt-'));
+    try {
+      writeConsumerProject(project);
+      const base = fixture();
+      const {items} = buildShadcnRegistry(
+        fixture({
+          blocks: [
+            {
+              ...base.blocks[0],
+              source:
+                '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n' +
+                "'use client';\n\n" +
+                '// Keep this consumer guidance.\n' +
+                "import {Button} from '@astryxdesign/core/Button';\n" +
+                'export default function ButtonShowcase() { return <Button label="Save" />; }\n',
+            },
+          ],
+        }),
+      );
+      const block = items.find(
+        item => item.name === 'showcase-button-variants',
+      );
+      const itemPath = path.join(project, 'block.json');
+      writeFileSync(itemPath, JSON.stringify(block));
+
+      await execFileAsync(
+        path.resolve('node_modules/.bin/shadcn'),
+        ['add', itemPath, '--yes'],
+        {cwd: project, timeout: 30_000},
+      );
+
+      expect(
+        existsSync(
+          path.join(
+            project,
+            'src',
+            'components',
+            'astryx',
+            'showcases',
+            'ButtonShowcase.tsx',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(
+          path.join(
+            project,
+            'src',
+            'components',
+            'astryx',
+            'showcases',
+            '.astryx',
+            'showcase-button-variants.json',
+          ),
+        ),
+      ).toBe(true);
+      const installedSource = readFileSync(
+        path.join(
+          project,
+          'src',
+          'components',
+          'astryx',
+          'showcases',
+          'ButtonShowcase.tsx',
+        ),
+        'utf8',
+      );
+      const installedReceipt = parseRegistryReceipt(
+        JSON.parse(
+          readFileSync(
+            path.join(
+              project,
+              'src',
+              'components',
+              'astryx',
+              'showcases',
+              '.astryx',
+              'showcase-button-variants.json',
+            ),
+            'utf8',
+          ),
+        ),
+      );
+      expect(block.files[0].content).not.toContain('Copyright (c) Meta');
+      expect(installedSource).toBe(block.files[0].content);
+      expect(installedReceipt.files[0].content).toBe(installedSource);
+      expect(installedSource).toContain('// Keep this consumer guidance.');
+    } finally {
+      rmSync(project, {recursive: true, force: true});
+    }
+  });
+
+  it('upgrades a stock-ShadCN install from its adjacent receipt', async () => {
+    const project = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-upgrade-'));
+    const oldInput = fixture();
+    const oldItem = buildShadcnRegistry(oldInput).items.find(
+      item => item.name === 'showcase-button-variants',
+    );
+    const latestSource =
+      "import {Button} from '@astryxdesign/core/Button';\n" +
+      'export default function ButtonShowcase() { return <Button label="Updated" />; }\n';
+    const latestInput = fixture({
+      packages: [
+        {name: '@astryxdesign/cli', version: '0.7.0'},
+        {name: '@astryxdesign/core', version: '0.5.2'},
+      ],
+      blocks: [{...oldInput.blocks[0], source: latestSource}],
+    });
+    const latestItem = buildShadcnRegistry(latestInput).items.find(
+      item => item.name === 'showcase-button-variants',
+    );
+    const server = createServer((request, response) => {
+      if (request.url !== '/showcases/button/variants.json') {
+        response.writeHead(404);
+        response.end('not found');
+        return;
+      }
+      response.writeHead(200, {'content-type': 'application/json'});
+      response.end(JSON.stringify(latestItem));
+    });
+
+    try {
+      writeConsumerProject(project);
+      const itemPath = path.join(project, 'block.json');
+      writeFileSync(itemPath, JSON.stringify(oldItem));
+      await execFileAsync(
+        path.resolve('node_modules/.bin/shadcn'),
+        ['add', itemPath, '--yes'],
+        {cwd: project, timeout: 30_000},
+      );
+      await new Promise((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolve);
+      });
+      const address = server.address();
+      expect(address).not.toBeNull();
+      expect(typeof address).not.toBe('string');
+      const result = await reconcileRegistryCompositions(
+        {apply: true, path: 'src'},
+        {
+          cwd: project,
+          registryOrigin: `http://127.0.0.1:${address.port}`,
+          expectedVersion: '0.7.0',
+        },
+      );
+      const sourcePath = path.join(
+        project,
+        'src',
+        'components',
+        'astryx',
+        'showcases',
+        'ButtonShowcase.tsx',
+      );
+      const receiptPath = path.join(
+        project,
+        'src',
+        'components',
+        'astryx',
+        'showcases',
+        '.astryx',
+        'showcase-button-variants.json',
+      );
+
+      expect(result.summary).toMatchObject({updated: 1, conflicts: 0});
+      expect(readFileSync(sourcePath, 'utf8')).toBe(latestSource);
+      expect(JSON.parse(readFileSync(receiptPath, 'utf8')).source.version).toBe(
+        '0.7.0',
+      );
+    } finally {
+      if (server.listening) {
+        await new Promise((resolve, reject) => {
+          server.close(error => (error ? reject(error) : resolve()));
+        });
+      }
+      rmSync(project, {recursive: true, force: true});
+    }
+  });
+
   it('keeps component implementation inside the package', () => {
     const {items} = buildShadcnRegistry(fixture());
     const component = items.find(item => item.name === 'component-button');
@@ -327,6 +568,53 @@ describe('buildShadcnRegistry', () => {
         target: 'components/astryx/Button.ts',
         content: "export * from '@astryxdesign/core/Button';\n",
       }),
+    ]);
+  });
+
+  it('installs non-React peer dependencies for package-backed entries', () => {
+    const base = fixture();
+    const {items} = buildShadcnRegistry(
+      fixture({
+        packages: [
+          ...base.packages,
+          {
+            name: '@astryxdesign/richtext',
+            version: '0.1.9',
+            peerDependencies: {
+              '@astryxdesign/core': '0.5.2',
+              '@lexical/react': '^0.46.0',
+              '@stylexjs/stylex': '>=0.10.0',
+              lexical: '^0.46.0',
+              react: '>=19.0.0',
+              'react-dom': '>=19.0.0',
+            },
+          },
+        ],
+        allComponents: {
+          ...base.allComponents,
+          '@astryxdesign/richtext': [
+            {
+              name: 'RichTextEditor',
+              displayName: 'Rich Text Editor',
+              importPath: '@astryxdesign/richtext',
+              hidden: false,
+              params: null,
+            },
+          ],
+        },
+        dependencyTag: 'canary',
+      }),
+    );
+    const component = items.find(
+      item => item.name === 'component-richtext-rich-text-editor',
+    );
+
+    expect(component.dependencies).toEqual([
+      '@astryxdesign/core@canary',
+      '@astryxdesign/richtext@canary',
+      '@lexical/react@^0.46.0',
+      '@stylexjs/stylex@0.19.0',
+      'lexical@^0.46.0',
     ]);
   });
 
@@ -492,10 +780,17 @@ describe('buildShadcnRegistry', () => {
       dependencyTag: 'canary',
     });
     const component = items.find(item => item.name === 'component-button');
+    const showcase = items.find(
+      item => item.name === 'showcase-button-variants',
+    );
     expect(component.dependencies).toEqual([
       '@astryxdesign/core@canary',
       '@stylexjs/stylex@0.19.0',
     ]);
+    expect(
+      parseRegistryReceipt(JSON.parse(showcase.files[1].content)).source
+        .version,
+    ).toBe('canary');
   });
 
   it('precompiles local StyleX with runtime CSS injection', () => {

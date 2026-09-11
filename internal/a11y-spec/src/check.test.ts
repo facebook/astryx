@@ -120,6 +120,7 @@ async function run(
     observes?: readonly EvidenceLayer[];
     state?: string;
     initialFocusEntry?: () => Promise<{readonly subjectWasModal: boolean}>;
+    transition?: (name: string) => Promise<void> | void;
   } = {},
 ) {
   return checkAccessibilitySpec({
@@ -130,6 +131,7 @@ async function run(
     mount: async () => harness(options.observes ?? ['unit', 'dom']),
     knownFailures: options.knownFailures,
     initialFocusEntry: options.initialFocusEntry,
+    transition: options.transition,
   });
 }
 
@@ -232,6 +234,24 @@ describe('checkAccessibilitySpec', () => {
       initialFocusEntry: observed,
     });
     expect(observed).toHaveBeenCalledOnce();
+    expect(result.results[0]?.status).toBe('pass');
+  });
+
+  it('treats a missing public transition driver as a binding fault', async () => {
+    const spec = contractThat(async ({transition}) => transition('show'));
+
+    await expect(run(spec)).rejects.toThrow(
+      'requests the "show" transition, but this binding supplies no transition driver',
+    );
+  });
+
+  it('passes named public transitions to the binding driver', async () => {
+    const transition = vi.fn(async () => {});
+    const spec = contractThat(async context => context.transition('replace'));
+
+    const result = await run(spec, {transition});
+    expect(transition).toHaveBeenCalledOnce();
+    expect(transition).toHaveBeenCalledWith('replace');
     expect(result.results[0]?.status).toBe('pass');
   });
 

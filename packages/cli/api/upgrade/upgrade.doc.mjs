@@ -12,8 +12,7 @@ export const doc = {
   kind: 'api',
   name: 'upgrade',
   displayName: 'upgrade()',
-  summary:
-    'Run version-migration codemods and refresh the managed agent-docs block.',
+  summary: 'Run version migrations and reconcile ShadCN-copied compositions.',
   description:
     'Migrates project source from a previous Astryx version to the currently ' +
     'installed one by running the registered codemods, and compares the fully ' +
@@ -22,17 +21,27 @@ export const doc = {
     'writes the prepared block only after selected codemods and hooks succeed. ' +
     'Core codemods run before ' +
     'the config is loaded so a config codemod can repair an otherwise-invalid ' +
-    'astryx.config.',
+    'astryx.config. ShadCN-copied compositions carry adjacent receipts; upgrade ' +
+    'compares those installed bases with the matching registry release, updates pristine ' +
+    'files, merges non-overlapping edits, and leaves conflicting originals untouched.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeStatusResponse | UpgradeRunResponse>',
-  keywords: ['upgrade', 'migrate', 'codemod', 'migration', 'version'],
+    'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeRegistryResponse | UpgradeStatusResponse | UpgradeRunResponse>',
+  keywords: [
+    'upgrade',
+    'migrate',
+    'codemod',
+    'migration',
+    'version',
+    'shadcn',
+    'registry',
+  ],
   params: [
     {
       name: 'options.from',
       type: 'string',
       description:
-        'Version before the dependency bump. Required unless `list` is set.',
+        'Version before the dependency bump. Required unless `list` or `registry` is set.',
     },
     {
       name: 'options.apply',
@@ -74,6 +83,13 @@ export const doc = {
       description: 'Auto-install jscodeshift without prompting.',
     },
     {
+      name: 'options.registry',
+      type: 'boolean',
+      description:
+        'Reconcile ShadCN-copied compositions from their install receipts without requiring `from`.',
+      default: 'false',
+    },
+    {
       name: 'options.list',
       type: 'boolean',
       description: 'Return the available codemods instead of running any.',
@@ -91,20 +107,25 @@ export const doc = {
         'Every available codemod, oldest→newest, as {name, title, version, optional}, returned when `list` is set; nothing is run.',
     },
     {
+      type: 'upgrade.registry',
+      description:
+        'A dry-run or apply receipt for ShadCN-copied compositions, including safe updates, clean merges, conflicts, missing files, and invalid receipts.',
+    },
+    {
       type: 'upgrade.status',
       description:
-        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). Each carries the agent-docs summary.',
+        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). Each carries the agent-docs summary and, when found, the copied-composition registry summary.',
     },
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
+        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, an optional copied-composition registry summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
     },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`from` is missing (and `list` is not set), or the project config fails strict validation and no pending config codemod can repair it',
+      when: '`from` is missing (and neither `list` nor `registry` is set), or the project config fails strict validation and no pending config codemod can repair it',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
     {code: 'ERR_PATH_TRAVERSAL', when: '`path` resolves outside cwd'},
@@ -131,6 +152,10 @@ export const doc = {
       code: 'const r = await upgrade({list: true});',
     },
     {label: 'Preview (dry-run)', code: "await upgrade({from: '0.0.5'});"},
+    {
+      label: 'Update ShadCN-copied compositions',
+      code: 'await upgrade({registry: true, apply: true});',
+    },
     {
       label: 'Apply changes',
       code: "await upgrade({from: '0.0.5', apply: true});",

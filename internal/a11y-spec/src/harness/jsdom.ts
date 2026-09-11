@@ -105,6 +105,10 @@ function createSubject(element: Element): Subject {
       }
       return null;
     },
+    textContent: async () =>
+      (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    currentExists: async () => element.isConnected,
+    isConnected: async () => element.isConnected,
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>

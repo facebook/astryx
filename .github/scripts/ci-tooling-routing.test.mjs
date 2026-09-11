@@ -123,11 +123,16 @@ describe('Node-tooling CI routing', () => {
   });
 
   it('preserves the historical joins and fails them on owned-lane failure', () => {
-    expect(ci.jobs.test.needs).toEqual(['test-ui', 'test-node']);
+    expect(ci.jobs.test.needs).toEqual([
+      'test-ui',
+      'test-node',
+      'registry-contract',
+    ]);
     expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
-    const testJoin = step(ci.jobs.test, 'Assert both test lanes succeeded').run;
+    const testJoin = step(ci.jobs.test, 'Assert every test gate succeeded').run;
     expect(testJoin).toContain('needs.test-node.result');
     expect(testJoin).toContain('needs.test-ui.result');
+    expect(testJoin).toContain('needs.registry-contract.result');
     const buildJoin = step(
       ci.jobs.build,
       'Assert parallel builds succeeded',

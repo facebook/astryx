@@ -31,7 +31,7 @@ import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
-import {generateShadcnRegistry} from './generate-shadcn-registry.mjs';
+import {generateShadcnRegistryForTarget} from './generate-shadcn-registry.mjs';
 import {
   blockRegistryIdentity,
   resolveShadcnRegistryOrigin,
@@ -410,6 +410,7 @@ function generatePackageRegistry() {
         description: raw.description || '',
         packagePath: dir,
         canaryOnly,
+        peerDependencies: raw.peerDependencies ?? {},
         hasReadme,
         hasChangelog,
         readme,
@@ -428,6 +429,7 @@ export interface PackageMeta {
   description: string;
   packagePath: string;
   canaryOnly: boolean;
+  peerDependencies: Record<string, string>;
   hasReadme: boolean;
   hasChangelog: boolean;
   readme: string | null;
@@ -2217,26 +2219,19 @@ async function main() {
   const {templates, templateCount} = await generateTemplateRegistry();
   const {docsCount} = await generateDocsRegistry();
   const {blogPostCount} = await generateBlogRegistry();
-  const shadcnCounts =
-    DOCSITE_TARGET === 'canary'
-      ? generateShadcnRegistry({
-          outDir: path.join(DOCSITE_ROOT, 'public', 'shadcn'),
-          packages,
-          allComponents,
-          blocks,
-          templates,
-          cliRoot: CLI_ROOT,
-          dependencyTag: 'canary',
-          externalDependencySpecs: registryExternalDependencySpecs(),
-        })
-      : null;
+  const shadcnCounts = generateShadcnRegistryForTarget({
+    target: DOCSITE_TARGET,
+    outDir: path.join(DOCSITE_ROOT, 'public', 'shadcn'),
+    packages,
+    allComponents,
+    blocks,
+    templates,
+    cliRoot: CLI_ROOT,
+    dependencyTag: 'canary',
+    externalDependencySpecs: registryExternalDependencySpecs(),
+  });
   if (shadcnCounts) {
     checkShadcnRouteLock(shadcnCounts.contracts);
-  } else {
-    fs.rmSync(path.join(DOCSITE_ROOT, 'public', 'shadcn'), {
-      recursive: true,
-      force: true,
-    });
   }
   // `/r` stays unclaimed for a future Astryx-native registry.
   fs.rmSync(path.join(DOCSITE_ROOT, 'public', 'r'), {

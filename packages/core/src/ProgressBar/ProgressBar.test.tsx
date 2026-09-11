@@ -14,23 +14,6 @@ beforeAll(async () => {
 });
 
 describe('ProgressBar', () => {
-  it('renders with default props', () => {
-    render(<ProgressBar value={50} label="Progress" />);
-    const progressbar = screen.getByRole('progressbar');
-    expect(progressbar).toBeInTheDocument();
-    expect(progressbar).toHaveAttribute('aria-valuenow', '50');
-    expect(progressbar).toHaveAttribute('aria-valuemin', '0');
-    expect(progressbar).toHaveAttribute('aria-valuemax', '100');
-  });
-
-  it('uses role="progressbar" (not "meter") for determinate progress', () => {
-    // A determinate ProgressBar conveys task completion, so it must be a
-    // progressbar (announced on update), not a meter (a static gauge).
-    render(<ProgressBar value={50} label="Progress" />);
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
-  });
-
   it('renders visible label by default', () => {
     render(<ProgressBar value={50} label="Storage used" />);
     expect(screen.getByText('Storage used')).toBeInTheDocument();
@@ -68,13 +51,6 @@ describe('ProgressBar', () => {
     render(<ProgressBar value={50} label="Progress" />);
     const progressbar = screen.getByRole('progressbar');
     expect(progressbar).toHaveAttribute('aria-valuetext', '50%');
-  });
-
-  it('respects custom max', () => {
-    render(<ProgressBar value={3} max={10} label="Steps" />);
-    const progressbar = screen.getByRole('progressbar');
-    expect(progressbar).toHaveAttribute('aria-valuenow', '3');
-    expect(progressbar).toHaveAttribute('aria-valuemax', '10');
   });
 
   it('clamps value to [0, max]', () => {
@@ -197,13 +173,7 @@ describe('ProgressBar', () => {
 
   // Indeterminate mode tests
   describe('indeterminate mode', () => {
-    it('renders with role="progressbar" when isIndeterminate', () => {
-      render(<ProgressBar isIndeterminate label="Loading" />);
-      const progressbar = screen.getByRole('progressbar');
-      expect(progressbar).toBeInTheDocument();
-    });
-
-    it('does not set aria-valuenow/min/max when indeterminate', () => {
+    it('omits authored value attributes while the value is indeterminate', () => {
       render(<ProgressBar isIndeterminate label="Loading" />);
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).not.toHaveAttribute('aria-valuenow');

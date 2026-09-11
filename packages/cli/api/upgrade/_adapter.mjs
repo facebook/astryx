@@ -63,6 +63,7 @@ const execFileAsync = promisify(execFile);
  * @property {string[]} [integration]
  * @property {string} [path]
  * @property {boolean} [installDeps]
+ * @property {boolean} [registry]
  */
 
 /**

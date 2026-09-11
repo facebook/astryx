@@ -48,8 +48,19 @@ export interface ComputedNode {
   readonly name: string;
   /** Computed accessible description. */
   readonly description: string;
+  /** Text descendants the engine keeps in this node's accessibility subtree. */
+  readonly accessibleText: string;
+  /** Computed live-region channel, or null when this node is not live. */
+  readonly live: 'off' | 'polite' | 'assertive' | null;
+  /** Whether the accessibility tree exposes the live region as atomic. */
+  readonly atomic: boolean | null;
   /** Computed text value, or null when the node exposes no value. */
   readonly value: string | null;
+  /** Numeric range value when the accessibility node exposes one. */
+  readonly rangeValue: number | null;
+  readonly rangeMin: number | null;
+  readonly rangeMax: number | null;
+  readonly valueText: string | null;
   /** Whether the engine exposes the subject as modal. */
   readonly modal: boolean | null;
   /** Whether the engine exposes the textbox as multi-line. */
@@ -80,6 +91,12 @@ export interface Subject {
   labelText(): Promise<string | null>;
   /** DOM/runtime layer: the live value of a native text control, if this is one. */
   textValue(): Promise<string | null>;
+  /** DOM layer: the subject's authored text content, whitespace-normalized. */
+  textContent(): Promise<string>;
+  /** DOM layer: whether a current semantic subject resolves after an update. */
+  currentExists(): Promise<boolean>;
+  /** DOM layer: whether the originally designated subject is still connected. */
+  isConnected(): Promise<boolean>;
   /** Accessibility-tree layer: what the engine computes for this node. */
   computed(): Promise<ComputedNode>;
   /**
@@ -112,7 +129,14 @@ export interface Subject {
 }
 
 /** A key an expectation can send. Spelled by intent, not by engine syntax. */
-export type Key = 'Space' | 'Enter' | 'Tab';
+export type Key =
+  | 'Space'
+  | 'Enter'
+  | 'Tab'
+  | 'ArrowLeft'
+  | 'ArrowRight'
+  | 'ArrowUp'
+  | 'ArrowDown';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.

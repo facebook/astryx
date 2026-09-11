@@ -38,6 +38,7 @@ import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {
+  borderVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -45,7 +46,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, groupItems, mergeProps} from '../utils';
+import {
+  characterCount,
+  composeEventHandlers,
+  getKey,
+  groupItems,
+  mergeProps,
+} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -98,7 +105,7 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    */
   maxMenuItems?: number;
 
-  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  /** Requested dropdown width in pixels before viewport clamping. */
   menuWidth?: number;
 
   /**
@@ -107,8 +114,8 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * for a result set that cannot be meaningful yet — and the user does not
    * see "no results" for a query that was never searched.
    *
-   * Measured with `String.length` (UTF-16 code units), like every other
-   * length check in the library.
+   * Measured by grapheme cluster, so one visible character counts once even
+   * when JavaScript represents it with multiple UTF-16 code units.
    *
    * @default 1 — every non-empty query is searched.
    */
@@ -130,8 +137,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * When disabled with a reason, keeps the input focusable via `aria-disabled`
    * (instead of the native `disabled` attribute) and `readOnly` so an
    * associated disabled-reason tooltip stays discoverable by keyboard and
-   * assistive technology. Value mutation is still blocked by the `isDisabled`
-   * guards. Consumers (Typeahead) own the tooltip and wrapper.
+   * assistive technology. Query and text mutation are blocked, but an
+   * already-open highlighted option can still be selected with Enter after a
+   * transition into this state. Consumers (Typeahead) own the tooltip and
+   * wrapper.
    * @default false
    */
   isFocusableDisabled?: boolean;
@@ -182,17 +191,20 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   debounceMs?: number;
 
   /**
-   * ID for the input element (for label association).
+   * Legacy input-specific alias for the native `id` prop. When provided, this
+   * alias takes precedence; otherwise the native prop is preserved.
    */
   inputId?: string;
 
   /**
-   * Additional aria-describedby IDs.
+   * Legacy input-specific alias for native `aria-describedby`. When provided,
+   * this alias takes precedence; otherwise the native prop is preserved.
    */
   ariaDescribedBy?: string;
 
   /**
-   * Additional aria-labelledby IDs.
+   * Legacy input-specific alias for native `aria-labelledby`. When provided,
+   * this alias takes precedence; otherwise the native prop is preserved.
    */
   ariaLabelledBy?: string;
 
@@ -202,12 +214,13 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   inputXStyle?: StyleXStyles;
 
   /**
-   * Tab-order override for the input element. Typeahead passes `-1` while
-   * its selected-value token is shown: the input is visually collapsed
-   * (width 0 / opacity 0) but must stay programmatically focusable for
-   * token edit/clear interactions, so removing it from the Tab order is
-   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
-   * remains focusable via `.focus()` regardless of this value.
+   * Legacy input-specific alias for native `tabIndex`. When provided, this
+   * alias takes precedence; otherwise the native prop is preserved. Typeahead
+   * passes `-1` while its selected-value token is shown: the input is visually
+   * collapsed (width 0 / opacity 0) but must stay programmatically focusable
+   * for token edit/clear interactions, so removing it from the Tab order is
+   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input remains
+   * focusable via `.focus()` regardless of this value.
    */
   inputTabIndex?: number;
 
@@ -235,6 +248,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // =============================================================================
 // Styles
 // =============================================================================
+
+const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
+const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
 
 const styles = stylex.create({
   input: {
@@ -267,7 +284,12 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
   },
   popover: {
+    boxSizing: 'border-box',
     minWidth: 'anchor-size(width)',
+    maxInlineSize: stylex.firstThatWorks(
+      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
+      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
   },
   popoverCustomWidth: (width: number) => ({
     width: `${width}px`,
@@ -299,6 +321,18 @@ const styles = stylex.create({
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    outlineStyle: {
+      default: null,
+      '@media (forced-colors: active)': 'solid',
+    },
+    outlineWidth: {
+      default: null,
+      '@media (forced-colors: active)': borderVars['--border-width'],
+    },
   },
   itemSelected: {
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -307,6 +341,11 @@ const styles = stylex.create({
     display: 'flex',
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
+  },
+  defaultItem: {
+    minWidth: 0,
+    width: '100%',
   },
   emptyState: {
     padding: spacingVars['--spacing-3'],
@@ -355,7 +394,8 @@ const itemSizeStyles = stylex.create({
  * untouched state, and `hasEntriesOnFocus` owns what happens there.
  */
 function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
-  return query.length > 0 && query.length < minQueryLength;
+  const length = characterCount(query);
+  return length > 0 && length < minQueryLength;
 }
 
 // =============================================================================
@@ -376,6 +416,7 @@ function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
  *   searchSource={source}
  *   value={selected}
  *   onChange={setSelected}
+ *   aria-label="Search frameworks"
  *   anchorRef={wrapperRef}
  *   placeholder="Search..."
  * />
@@ -407,7 +448,18 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
   size = 'md',
+  xstyle,
+  className,
+  style,
+  onPointerDown: onPointerDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  id: nativeInputId,
+  'aria-describedby': nativeAriaDescribedBy,
+  'aria-labelledby': nativeAriaLabelledBy,
+  tabIndex: nativeInputTabIndex,
   ref,
+  ...rest
 }: BaseTypeaheadProps<T>) {
   const t = useTranslator();
   const placeholder =
@@ -416,7 +468,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     emptySearchResultsTextFromProps ??
     t('@astryx.typeahead.emptySearchResults');
   const generatedId = useId();
-  const inputId = externalInputId ?? generatedId;
+  // Keep the released input-specific aliases authoritative when a caller uses
+  // them, but do not let an omitted alias erase the equivalent native BaseProp.
+  const inputId = externalInputId ?? nativeInputId ?? generatedId;
+  const inputAriaDescribedBy = ariaDescribedBy ?? nativeAriaDescribedBy;
+  const inputAriaLabelledBy = ariaLabelledBy ?? nativeAriaLabelledBy;
+  const resolvedInputTabIndex = inputTabIndex ?? nativeInputTabIndex;
   const listboxId = useId();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -943,6 +1000,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
+        {...rest}
         ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
@@ -958,13 +1016,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         aria-autocomplete="list"
         aria-busy={isLoading || undefined}
-        aria-describedby={ariaDescribedBy}
-        aria-labelledby={ariaLabelledBy}
+        aria-describedby={inputAriaDescribedBy}
+        aria-labelledby={inputAriaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
-        tabIndex={inputTabIndex}
+        tabIndex={resolvedInputTabIndex}
         value={query}
         onChange={handleInputChange}
-        onPointerDown={() => {
+        onPointerDown={composeEventHandlers(() => {
           pointerActiveRef.current = true;
           document.addEventListener(
             'click',
@@ -973,23 +1031,29 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             },
             {once: true},
           );
-        }}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        }, onPointerDownProp)}
+        onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        onBlur={composeEventHandlers(handleBlur, onBlurProp)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
-        // attribute; value mutation stays blocked by the isDisabled guards.
+        // attribute. Query and text mutation are blocked, but an already-open
+        // highlighted option can still be selected with Enter after transition.
         disabled={isDisabled && !isFocusableDisabled}
         readOnly={isFocusableDisabled || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"
-        {...stylex.props(
-          styles.input,
-          isDisabled && styles.inputDisabled,
-          inputXStyle,
+        {...mergeProps(
+          stylex.props(
+            styles.input,
+            isDisabled && styles.inputDisabled,
+            inputXStyle,
+            xstyle,
+          ),
+          className,
+          style,
         )}
       />
       {isLoading && busyLane == null && (
@@ -1008,6 +1072,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           )}>
           {results.length === 0 && hasSearched ? (
             <div
+              role="option"
+              aria-disabled="true"
               {...mergeProps(
                 themeProps('typeahead-empty-state'),
                 stylex.props(styles.emptyState),
@@ -1040,7 +1106,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                       {renderItem ? (
                         renderItem(item)
                       ) : (
-                        <TypeaheadItem item={item} />
+                        <TypeaheadItem
+                          item={item}
+                          xstyle={styles.defaultItem}
+                        />
                       )}
                     </span>
                     {isSelected && (

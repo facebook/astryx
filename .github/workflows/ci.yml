@@ -284,21 +284,68 @@ jobs:
       - run: pnpm vitest run --project node
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
-  # Historical required check name. Both lanes always run (they skip their own
-  # steps for lightweight docs, exactly as the single job did), so this asserts
-  # success rather than tolerating a skip.
+  # Public registry contract. Generation proves schema, dependency, route-lock,
+  # alias, and release-gating invariants; the final step drives every canonical
+  # item through the exact pinned ShadCN client and compiles every written source.
+  registry-contract:
+    needs: [check-scope]
+    if: ${{ always() && !cancelled() }}
+    runs-on: 4-core-ubuntu
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - name: Skip registry work for spec-only changes
+        if: needs.check-scope.outputs.spec_only == 'true'
+        run: echo "Spec-only PR — public registry output cannot change"
+
+      - uses: actions/checkout@v7
+        if: needs.check-scope.outputs.spec_only != 'true'
+
+      - uses: ./.github/actions/setup
+        if: needs.check-scope.outputs.spec_only != 'true'
+
+      - name: Build registry package exports
+        if: needs.check-scope.outputs.spec_only != 'true'
+        run: pnpm build
+
+      - name: Verify production excludes compatibility output
+        if: needs.check-scope.outputs.spec_only != 'true'
+        run: node internal/shadcn-registry/verify-production-gate.mjs
+
+      - name: Generate and validate the complete preview registry
+        if: needs.check-scope.outputs.spec_only != 'true'
+        env:
+          DOCSITE_TARGET: canary
+        run: node apps/docsite/scripts/generate-data.mjs
+
+      - name: Install and build every registry item
+        if: needs.check-scope.outputs.spec_only != 'true'
+        run: node internal/shadcn-registry/verify-full-catalog.mjs
+
+  # Historical required check name. The two Vitest lanes and the public
+  # registry contract always report, so this asserts success rather than
+  # tolerating a skip.
   test:
-    needs: [test-ui, test-node]
+    needs: [test-ui, test-node, registry-contract]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
-      - name: Assert both test lanes succeeded
+      - name: Assert every test gate succeeded
         run: |
-          echo "test-ui:   ${{ needs.test-ui.result }}"
-          echo "test-node: ${{ needs.test-node.result }}"
+          echo "test-ui:          ${{ needs.test-ui.result }}"
+          echo "test-node:        ${{ needs.test-node.result }}"
+          echo "registry-contract: ${{ needs.registry-contract.result }}"
           [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
           [ "${{ needs.test-node.result }}" = "success" ] || exit 1
+          [ "${{ needs.registry-contract.result }}" = "success" ] || exit 1
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for

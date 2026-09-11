@@ -117,8 +117,12 @@ function renderInputClearButton({
           }
         />
       }
+      onPointerDown={e => {
+        e.preventDefault();
+        onPointerDown?.(e);
+      }}
+      onMouseDown={e => e.preventDefault()}
       onClick={onClick}
-      onPointerDown={onPointerDown}
       onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}

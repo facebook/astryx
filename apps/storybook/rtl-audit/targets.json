@@ -102,6 +102,17 @@
     }
   },
   {
+    "component": "SegmentedControl",
+    "storyId": "core-segmentedcontrol--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "button[role=\"radio\"][data-value=\"grid\"]",
+      "next": "button[role=\"radio\"][data-value=\"table\"]"
+    }
+  },
+  {
     "component": "Switch",
     "storyId": "core-switch--default",
     "dims": [
@@ -234,6 +245,17 @@
     "selectors": {
       "scroller": ".astryx-tab-strip",
       "nextButton": ".astryx-tab-scroll-button"
+    }
+  },
+  {
+    "component": "BaseTypeahead",
+    "storyId": "core-basetypeahead--logical-dropdown-placement",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "[role=\"listbox\"]",
+      "overlayRoot": "[data-base-typeahead-anchor=\"true\"]"
     }
   },
   {

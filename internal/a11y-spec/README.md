@@ -40,22 +40,41 @@ src/
 ├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
+    ├── radio-group.*        the radio-group pattern, same four files
     ├── checkbox.*           the checkbox pattern, same four files
     ├── switch.*             the switch pattern, same four files
     ├── button.*             the button pattern, same four files
     ├── text-input.*         the native text-input pattern, same four files
-    └── modal-dialog.*       the native modal-dialog pattern, same four files
+    ├── modal-dialog.*       the native modal-dialog pattern, same four files
+    └── status-message.*     live-region and progress status mechanics
 ```
 
 ## The patterns
 
-| Pattern        | Adopted from                                                                             | Bound by                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `checkbox`     | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                       | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
-| `switch`       | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                    |
-| `button`       | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
-| `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                       |
-| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                    |
+| Pattern          | Adopted from                                                                                 | Bound by                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `radio-group`    | [APG radio group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)                           | RadioList, SegmentedControl; role/state portions of DropdownMenu radio items     |
+| `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                           | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
+| `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                               | Switch                                                                           |
+| `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                               | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
+| `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)     | TextInput, TextArea                                                              |
+| `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
+| `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
+
+The `radio-group` contract owns direct-group Tab entry/exit, Space, and adopted
+directional selection, including zero-selection entry. DropdownMenu radio roles
+and selection state are bound here, while its composite keyboard movement stays
+with Menu. Home and End remain component-local because the current APG radio
+pattern does not require them and no current Astryx record adopts them as shared
+behavior.
+
+The `status-message` contract is WCAG-derived rather than an APG widget
+pattern. Required expectations cover browser-exposed status/alert roles and
+channels, complete exposed text or names across every public update, preserved
+focus, and progressbar role/name/range/value transitions. ARIA22's
+container-before-update technique and the roles' overridable implicit atomic
+defaults remain advisory reliability evidence. Repetition, timing, order, and
+omission remain real assistive-technology outcomes.
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
@@ -190,6 +209,11 @@ Lower-level contract fixtures, Chromium bindings, report generation, and mutatio
 proof use `checkAccessibilitySpec`, which returns the complete factual result without
 asserting it.
 
+Some stateful patterns ask the binding to perform named public transitions. The
+binding drives each transition through its public API; the contract then
+re-observes the current semantic subject. Transition names describe user-visible
+state changes rather than component-private implementation steps.
+
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
@@ -213,6 +237,8 @@ refers to it (AST-021 FR8–FR10).
 # jsdom lane — part of `pnpm test`
 pnpm vitest run --project node internal/a11y-spec
 pnpm vitest run --project ui packages/core/src/Switch
+pnpm vitest run --project ui packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.test.tsx
+pnpm vitest run --project ui packages/lab/src/Chat/__tests__/ChatTypingIndicator.a11y.test.tsx
 
 # Chromium lane — needs a browser and a built Storybook
 pnpm storybook:build
