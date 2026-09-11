@@ -385,6 +385,12 @@ open document would have read as no document at all. `Item` also spaces a
 list row for reading down a column; across a tab those channels cost the name
 six characters, so the measure is tightened back to what the strip had.
 
+**Two wrapper divs went back to the layout components.** The canvas stage is
+an `HStack` — its flex box, its max-content sizing and its 100% floor on the
+block axis are props, leaving only the `min-width` HStack has no prop for.
+The zoom control's wrapper is gone entirely: a div whose only job was one
+margin is a margin the control carries itself.
+
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
 explicit mode needs a surface — here a `Section` wrapping the editor — or the

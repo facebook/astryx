@@ -762,13 +762,10 @@ const styles = stylex.create({
   //
   // The stage sizes to whichever is larger, the port or the artboard, so the
   // scrollbars describe the artboard rather than the port.
-  canvasStage: {
-    display: 'flex',
-    width: 'max-content',
-    height: 'max-content',
-    minWidth: '100%',
-    minHeight: '100%',
-  },
+  // The one part HStack has no prop for; the rest of the stage — the flex
+  // box, the max-content sizing and the 100% floor on the block axis — says
+  // itself in props.
+  canvasStage: {minWidth: '100%'},
   artboardCentered: {margin: 'auto'},
   // Concentric corners. The card rounds to --radius-container and holds one
   // spacing step of padding, so the controls inside it round to the
@@ -782,7 +779,8 @@ const styles = stylex.create({
   // card's edge to optically align its label. That is the right call when the
   // control is the only thing in a container, but here it leaves the bar with
   // a gutter on the left and none on the right. Putting the step back matches
-  // the two ends.
+  // the two ends. It rides on the control itself rather than a wrapper — a
+  // div whose only job is one margin is a div the control can absorb.
   toolBarTrailing: {
     marginInlineEnd: 'var(--spacing-2)',
   },
@@ -2204,7 +2202,11 @@ export default function CanvasEditor() {
                         padding={4}
                         content={
                           <LayoutContent padding={6}>
-                            <div {...stylex.props(styles.canvasStage)}>
+                            <HStack
+                              width="max-content"
+                              height="max-content"
+                              minHeight="100%"
+                              xstyle={styles.canvasStage}>
                               <Card
                                 padding={0}
                                 elevation="med"
@@ -2299,7 +2301,7 @@ export default function CanvasEditor() {
                                   </AspectRatio>
                                 </Theme>
                               </Card>
-                            </div>
+                            </HStack>
                           </LayoutContent>
                         }
                         footer={
@@ -2371,26 +2373,24 @@ export default function CanvasEditor() {
                                           orientation="vertical"
                                           xstyle={styles.toolBarRule}
                                         />
-                                        <div
-                                          {...stylex.props(
+                                        <Selector
+                                          label="Zoom"
+                                          isLabelHidden
+                                          variant="ghost"
+                                          value={zoom}
+                                          onChange={setZoom}
+                                          options={ZOOM_OPTIONS}
+                                          placement="above"
+                                          // Fixed so the bar does not reflow
+                                          // as the value changes, and wide
+                                          // enough for the longest option
+                                          // ("100%") to avoid truncation.
+                                          width={92}
+                                          xstyle={[
+                                            styles.toolBarControl,
                                             styles.toolBarTrailing,
-                                          )}>
-                                          <Selector
-                                            label="Zoom"
-                                            isLabelHidden
-                                            variant="ghost"
-                                            value={zoom}
-                                            onChange={setZoom}
-                                            options={ZOOM_OPTIONS}
-                                            placement="above"
-                                            // Fixed so the bar does not reflow
-                                            // as the value changes, and wide
-                                            // enough for the longest option
-                                            // ("100%") to avoid truncation.
-                                            width={92}
-                                            xstyle={styles.toolBarControl}
-                                          />
-                                        </div>
+                                          ]}
+                                        />
                                       </>
                                     }
                                   />
