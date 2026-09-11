@@ -46,6 +46,7 @@ const BaseDocFields = {
   displayName: z.string().optional(),
   description: z.string().optional(),
   usage: z.unknown().optional(),
+  import: z.string().min(1).optional(),
   group: z.string().optional(),
   category: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -139,7 +140,11 @@ export const SchemaDocKindSchema = z
     appliesTo: z.string().optional(),
     fields: z.array(SchemaFieldSchema),
     examples: z
-      .array(z.object({label: z.string().optional(), code: z.string()}).passthrough())
+      .array(
+        z
+          .object({label: z.string().optional(), code: z.string()})
+          .passthrough(),
+      )
       .optional(),
     notes: z.array(z.unknown()).optional(),
   })

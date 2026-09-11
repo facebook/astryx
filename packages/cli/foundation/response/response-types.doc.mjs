@@ -253,6 +253,16 @@ export const doc = {
 
     // integration authoring
     {
+      value: 'integration.add',
+      description:
+        'A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.',
+    },
+    {
+      value: 'integration.pack-check',
+      description:
+        'The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.',
+    },
+    {
       value: 'integration.validate',
       description:
         'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',

@@ -25,7 +25,16 @@ export {docs} from './docs/docs.mjs';
 export {blog} from './blog/blog.mjs';
 export {discover} from './discover/discover.mjs';
 export {template} from './template/template.mjs';
-export {themeBuild, themeAdd, themeList, themeListAvailable, themeTargets, themePaletteGenerate, generateTonalPalette, listThemes} from './theme/theme.mjs';
+export {
+  themeBuild,
+  themeAdd,
+  themeList,
+  themeListAvailable,
+  themeTargets,
+  themePaletteGenerate,
+  generateTonalPalette,
+  listThemes,
+} from './theme/theme.mjs';
 export {hook} from './hook/hook.mjs';
 export {search} from './search/search.mjs';
 export {build} from './build/build.mjs';
@@ -34,6 +43,16 @@ export {upgrade} from './upgrade/upgrade.mjs';
 export {init} from './init/init.mjs';
 export {doctor} from './doctor/doctor.mjs';
 export {layoutExpand, layoutCheck, layoutGrammar} from './layout/layout.mjs';
+export {
+  integrationAdd,
+  integrationAddAgentDoc,
+  integrationAddCodemod,
+  integrationAddComponent,
+  integrationAddDoc,
+  integrationAddTemplate,
+} from './integration/add-contribution.mjs';
+export {integrationAddTheme} from './integration/add-theme.mjs';
+export {integrationPackCheck} from './integration/pack-check.mjs';
 export {
   validateIntegration,
   summarizeIssues,
@@ -70,5 +89,7 @@ export * from './upgrade/upgrade.type.mjs';
 export * from './init/init.type.mjs';
 export * from './doctor/doctor.type.mjs';
 export * from './layout/layout.type.mjs';
+export * from './integration/integration-authoring.type.mjs';
+export * from './integration/pack-check.type.mjs';
 export * from './integration/validate-integration.type.mjs';
 export * from './integration/authoring-checks.type.mjs';

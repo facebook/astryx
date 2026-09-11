@@ -14,8 +14,8 @@
  *   - `Project.load(cwd, {cache})` is the async factory (constructors can't be
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
- *     plus autolink the installed ones no config names, and nothing more.
- *     Discovery is LAZY.
+ *     plus autolink the installed ones no config names, and self-resolve the
+ *     package being authored when it carries a manifest. Discovery is LAZY.
  *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
@@ -35,7 +35,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
-import {loadIntegrations} from '../integrations/integrations.mjs';
+import {
+  loadIntegrations,
+  loadLocalIntegration,
+} from '../integrations/integrations.mjs';
 import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
   setProject as setDebugProject,
@@ -293,6 +296,20 @@ export class Project {
       })),
     ];
 
+    // The package being authored is the one package that cannot install itself.
+    // When it carries a manifest, resolve its working bytes directly so every
+    // existing consumer command doubles as the author's preview. A local copy
+    // replaces the same installed package in place, preserving configured
+    // precedence while making the source being edited authoritative.
+    const localIntegration = await loadLocalIntegration(projectDir, {fresh});
+    if (localIntegration) {
+      const existing = loadedIntegrations.findIndex(
+        integration => integration.name === localIntegration.name,
+      );
+      if (existing === -1) loadedIntegrations.push(localIntegration);
+      else loadedIntegrations[existing] = localIntegration;
+    }
+
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
     // turn. The event is not written until process exit, so settings applied
@@ -353,8 +370,9 @@ export class Project {
   }
 
   /**
-   * Every resolved integration (lib/integrations.mjs shape), configured ones
-   * first, then the autolinked ones (`__autolinked`).
+   * Every resolved integration (lib/integrations.mjs shape): configured first,
+   * then autolinked (`__autolinked`), with the local authoring package
+   * (`__local`) replacing the same installed package or appended last.
    * @returns {import('../integrations/integrations.mjs').LoadedIntegration[]}
    */
   get loadedIntegrations() {

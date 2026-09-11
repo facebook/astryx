@@ -53,6 +53,8 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {boolean} [__autolinked] loaded because the project declares the
  *   package as a dependency and it ships a manifest, with no astryx.config
  *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {boolean} [__local] loaded from the package containing the current
+ *   working directory, so an author sees the exact bytes they are editing
  * @property {string} [__dependencyField] for an autolinked integration, the
  *   package.json field that declared it (`dependencies`, `devDependencies`,
  *   `optionalDependencies`)
@@ -211,6 +213,94 @@ function resolveManifestPath(packageDir, spec) {
     );
   }
   return present[0];
+}
+
+/**
+ * Load the integration package rooted at `packageDir` directly, without first
+ * installing or publishing it. This is the self-resolution seam: an author in
+ * a package with a manifest sees the same contributions a consumer installs.
+ *
+ * A missing manifest returns null. A broken manifest returns the same load-error
+ * marker as an installed integration, so Project issues stay truthful.
+ *
+ * @param {string} packageDir
+ * @param {{fresh?: boolean}} [options]
+ * @returns {Promise<LoadedIntegration|null>}
+ */
+export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
+  const manifests = findManifestPaths(packageDir);
+  if (manifests.length === 0) return null;
+
+  const pkgPath = path.join(packageDir, 'package.json');
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  } catch {
+    throw new Error(
+      `Could not read the local integration package at ${pkgPath}.`,
+    );
+  }
+  const spec =
+    typeof pkg.name === 'string' && pkg.name.length > 0
+      ? pkg.name
+      : '(local integration)';
+  const manifestFile = resolveManifestPath(packageDir, spec);
+
+  let manifest;
+  /** @type {string[]} */
+  let unknownKeys;
+  /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
+  let debugHandler;
+  /** @type {string | undefined} */
+  let agentDocsError;
+  try {
+    ({
+      manifest,
+      unknownKeys,
+      debug: debugHandler,
+      agentDocsError,
+    } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
+  } catch (err) {
+    return {
+      name: spec,
+      version: pkg.version,
+      __spec: spec,
+      __packageDir: packageDir,
+      __manifestFile: manifestFile,
+      __loadError: err instanceof Error ? err.message : String(err),
+      __local: true,
+    };
+  }
+
+  /** @param {string | null | undefined} value */
+  const resolveRoot = value => {
+    if (value == null) return undefined;
+    try {
+      return assertWithin(value, packageDir, {label: 'contribution root'});
+    } catch {
+      return undefined;
+    }
+  };
+
+  return {
+    name: spec,
+    version: pkg.version,
+    components: resolveRoot(manifest.components),
+    templates: resolveRoot(manifest.templates),
+    codemods: resolveRoot(manifest.codemods),
+    docs: resolveRoot(manifest.docs),
+    themes: resolveRoot(manifest.themes),
+    issuesUrl: manifest.issuesUrl,
+    agentDocs: manifest.agentDocs,
+    __agentDocsError: agentDocsError,
+    __unknownKeys: unknownKeys,
+    __debug: debugHandler,
+    __spec: spec,
+    __packageDir: packageDir,
+    __packageExports: pkg.exports ?? null,
+    __manifestFile: manifestFile,
+    __local: true,
+  };
 }
 
 /**

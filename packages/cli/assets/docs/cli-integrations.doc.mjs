@@ -16,15 +16,15 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "An integration is an npm package that contributes components, templates, source themes, doc topics, and/or upgrade codemods to a consumer's design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration's contributions show up alongside core's in the same CLI commands.",
+          text: "An integration is an npm package that contributes components, templates, source themes, doc topics, agent guidance, and/or upgrade codemods to a consumer's design-system workflow. Consumers install the package as a direct dependency and Astryx autolinks it; an explicit `astryx.config` entry remains available when the app needs to control ordering.",
         },
         {
           type: 'prose',
-          text: "The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author's guide. For the consumer side, run `npx astryx docs getting-started`.",
+          text: 'The authoring CLI owns the integration file. The first `astryx integration add` creates `astryx.integration.mjs`; each later add declares its root only after writing a valid contribution behind it. Identity (name and version) still comes from package.json. For the consumer side, run `npx astryx docs getting-started`.',
         },
         {
           type: 'prose',
-          text: 'On the consumer side, adding your package is one line:',
+          text: 'A consumer can still name the package explicitly when order or precedence matters:',
         },
         {
           type: 'code',
@@ -43,12 +43,44 @@ export const docs = {
       ],
     },
     {
+      title: 'Authoring with the CLI',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Do not start by hand-editing a manifest. Add the contribution you mean to ship; Astryx creates the manifest, writes every required file, preserves an existing custom root, and updates an existing package.json files allowlist without creating one.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: "astryx integration add component AcmeCarousel\nastryx integration add doc deploying\nastryx integration add template dashboard --type page\nastryx integration add codemod rename-prop --to 1.2.0\nastryx integration add agent-doc 'Use AcmeCarousel for rotating content.'\nastryx integration add theme ocean",
+        },
+        {
+          type: 'prose',
+          text: 'The package self-resolves while you author it. Run `astryx component --list`, `astryx docs`, `astryx template --list`, or `astryx theme list` from the package and its local contributions appear with the package name. You do not publish or build a throwaway app to see your own work.',
+        },
+        {
+          type: 'prose',
+          text: 'Every add is non-interactive, refuses to overwrite authored files, supports --dry-run, and verifies the generated contribution through the same discovery rules a consumer uses. Before publishing, run the package gate:',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'astryx integration pack --check',
+        },
+        {
+          type: 'prose',
+          text: 'The gate runs the package lifecycle, creates the real npm tarball, checks every required contribution file against the pack list, extracts it into a scratch consumer, and compares the local and packed contribution inventories. `astryx doctor integration` remains the read-only diagnostic surface when something is not found.',
+        },
+      ],
+    },
+    {
       title: 'The Integration File',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'To register your package as an integration, add an `astryx.integration.{ts,mjs,js}` file as a sibling of your `package.json`. It tells the CLI where to find your components, templates, source themes, doc topics, and codemods. Identity (name, version) comes from your `package.json`, not this file.',
+          text: 'The CLI creates one `astryx.integration.mjs` beside package.json and adds a root only when that same operation writes a real contribution. The file tells consumers where each contribution kind lives; this example is the resulting shape, not a setup step:',
         },
         {
           type: 'code',
@@ -99,21 +131,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The CLI needs the template source at consume time, so make sure it is included in your published package. This is typically done via the `exports` key in `package.json`. It also lets the docsite render template previews in the future.',
-        },
-        {
-          type: 'code',
-          lang: 'jsonc',
-          code: '{\n  "exports": {\n    // ...\n    "./templates/*.tsx": "./templates/*.tsx"\n  }\n}',
-        },
-        {
-          type: 'prose',
-          text: 'To verify it resolves, try importing the template component with its `.tsx` extension. An extensionless specifier will not resolve under `moduleResolution: bundler`, and the extensionful export above is what lets this type-check without consumers enabling `allowImportingTsExtensions`.',
-        },
-        {
-          type: 'code',
-          lang: 'typescript',
-          code: "import('@acme/astryx-widgets/templates/AcmeLandingPage.tsx');",
+          text: 'The CLI needs both files at consume time. `integration add` includes the templates root when package.json already has a files allowlist. It never creates an exports map, because doing that can make previously-open deep imports private; when a map already exists, it adds the generated source subpath without replacing author-owned entries. `integration pack --check` proves the source and metadata survive the tarball and verifies every component through the public import its metadata advertises.',
         },
       ],
     },

@@ -99,11 +99,19 @@ import {
   component, docs, blog, discover, template, hook, search, build, swizzle,
   upgrade, init, doctor, layoutExpand, layoutCheck, layoutGrammar,
   themeBuild, themeAdd, themeList, listThemes,
+  integrationAdd, integrationAddComponent, integrationAddDoc,
+  integrationAddTemplate, integrationAddCodemod, integrationAddAgentDoc,
+  integrationAddTheme, integrationPackCheck,
   validateIntegration, summarizeIssues, logger, AstryxError,
 } from '@astryxdesign/cli/api';
 import type {
   ComponentOptions, SearchOptions, UpgradeOptions,
   ComponentDetailResponse, SearchResponse, UpgradeRunResponse, Logger,
+  IntegrationAddComponentOptions, IntegrationAddDocOptions,
+  IntegrationAddTemplateOptions, IntegrationAddCodemodOptions,
+  IntegrationAddAgentDocOptions, IntegrationAddThemeOptions,
+  IntegrationAddResponse, IntegrationPackCheckOptions,
+  IntegrationPackCheckResponse,
 } from '@astryxdesign/cli/api';
 
 async function main() {
@@ -118,6 +126,28 @@ async function main() {
     listThemes, validateIntegration, summarizeIssues, AstryxError, s];
 }
 void main;
+
+async function integrationSurface() {
+  const componentOptions: IntegrationAddComponentOptions = {dryRun: true};
+  const docOptions: IntegrationAddDocOptions = {dryRun: true, replaces: 'old'};
+  const templateOptions: IntegrationAddTemplateOptions = {dryRun: true, type: 'block'};
+  const codemodOptions: IntegrationAddCodemodOptions = {dryRun: true, to: '1.2.0'};
+  const agentDocOptions: IntegrationAddAgentDocOptions = {dryRun: true};
+  const themeOptions: IntegrationAddThemeOptions = {dryRun: true};
+  const packOptions: IntegrationPackCheckOptions = {cwd: '.'};
+  const responses: IntegrationAddResponse[] = [
+    await integrationAddComponent('Card', componentOptions),
+    await integrationAddDoc('guide', docOptions),
+    await integrationAddTemplate('account-page', templateOptions),
+    await integrationAddCodemod('rename-card', codemodOptions),
+    await integrationAddAgentDoc('Use Card.', agentDocOptions),
+    await integrationAddTheme('ocean', themeOptions),
+    await integrationAdd('component', 'Card', {dryRun: true}),
+  ];
+  const packed: IntegrationPackCheckResponse = await integrationPackCheck(packOptions);
+  void [responses, packed];
+}
+void integrationSurface;
 
 // ── ./authoring ─────────────────────────────────────────────────────────
 // These declarations are generated from JSDoc too. The narrowing below is the

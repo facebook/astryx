@@ -11,6 +11,7 @@ function installThemeIntegration(
   packageName,
   slug,
   source = 'export const oceanTheme = {};\n',
+  extraFiles = {},
 ) {
   const packageDir = path.join(
     tmpDir,
@@ -39,12 +40,17 @@ function installThemeIntegration(
           maintained: true,
           entry: 'oceanTheme.ts',
           exportName: 'oceanTheme',
-          files: ['oceanTheme.ts'],
+          files: ['oceanTheme.ts', ...Object.keys(extraFiles)],
         },
       ],
     }),
   );
   fs.writeFileSync(path.join(themeDir, 'oceanTheme.ts'), source);
+  for (const [relativePath, contents] of Object.entries(extraFiles)) {
+    const file = path.join(themeDir, relativePath);
+    fs.mkdirSync(path.dirname(file), {recursive: true});
+    fs.writeFileSync(file, contents);
+  }
 }
 
 beforeEach(() => {
@@ -77,6 +83,25 @@ describe('themeAdd with integration themes', () => {
         'utf-8',
       ),
     ).toContain('oceanTheme');
+  });
+
+  it('copies nested files listed by an integration theme catalog', async () => {
+    installThemeIntegration(
+      '@acme/themes',
+      'ocean',
+      "import {oceanBlue} from './tokens/colors';\nexport const oceanTheme = {oceanBlue};\n",
+      {'tokens/colors.ts': "export const oceanBlue = '#0064e0';\n"},
+    );
+
+    const result = await themeAdd('ocean', {cwd: tmpDir});
+
+    expect(result.data.files).toEqual(['oceanTheme.ts', 'tokens/colors.ts']);
+    expect(
+      fs.readFileSync(
+        path.join(tmpDir, 'src', 'themes', 'ocean', 'tokens', 'colors.ts'),
+        'utf-8',
+      ),
+    ).toContain('oceanBlue');
   });
 
   it('fails closed on a duplicate slug and resolves it with package scope', async () => {

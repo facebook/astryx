@@ -123,6 +123,16 @@ export const doc = {
       description: 'No theme matched the requested slug (theme add).',
     },
     {
+      value: 'ERR_INTEGRATION_ROOT_CONFLICT',
+      description:
+        'An integration manifest already declares a different path for the requested contribution root.',
+    },
+    {
+      value: 'ERR_INTEGRATION_EXPORT_CONFLICT',
+      description:
+        'A package export already maps a generated contribution subpath to a different target.',
+    },
+    {
       value: 'ERR_UNKNOWN_PACKAGE',
       description: 'No package matched the requested name (discover).',
     },

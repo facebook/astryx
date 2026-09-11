@@ -116,6 +116,7 @@ export async function themeAdd(slug, options = {}) {
   try {
     fs.mkdirSync(resolvedDir, {recursive: true});
     for (const w of writes) {
+      fs.mkdirSync(path.dirname(w.dest), {recursive: true});
       const tmp = `${w.dest}.${process.pid}.tmp`;
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
       fs.writeFileSync(tmp, contents);

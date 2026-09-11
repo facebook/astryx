@@ -22,6 +22,9 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {isValidSemver} from '../env/semver.mjs';
+import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
@@ -113,6 +116,36 @@ function checkRoots(resolved, issues) {
  */
 async function checkCodemods(integration, issues) {
   if (!integration.codemods || !fs.existsSync(integration.codemods)) return;
+  for (const entry of fs.readdirSync(integration.codemods, {
+    withFileTypes: true,
+  })) {
+    if (
+      entry.isFile() &&
+      /\.(?:ts|mjs|js)$/u.test(entry.name) &&
+      !/\.(?:test|spec|fixture)\.(?:ts|mjs|js)$/u.test(entry.name)
+    ) {
+      issues.push(
+        issueWarning(
+          'codemod_outside_version',
+          `Codemod file "${path.join(integration.codemods, entry.name)}" is outside a version folder, so upgrade will never load it.`,
+        ),
+      );
+    }
+    if (
+      entry.isDirectory() &&
+      !['node_modules', '.git', '__tests__', '__fixtures__'].includes(
+        entry.name,
+      ) &&
+      !isValidSemver(entry.name)
+    ) {
+      issues.push(
+        issueError(
+          'invalid_codemod_version',
+          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0.`,
+        ),
+      );
+    }
+  }
   try {
     await discoverIntegrationCodemods([integration]);
   } catch (err) {
@@ -169,6 +202,17 @@ async function checkComponents(integration, issues) {
           ),
         );
       }
+    }
+    for (const name of findSourceOnlyCandidates(
+      integration.components,
+      records.map(record => record.name),
+    )) {
+      issues.push(
+        issueWarning(
+          'source_without_component_doc',
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it.`,
+        ),
+      );
     }
   } catch (err) {
     issues.push(

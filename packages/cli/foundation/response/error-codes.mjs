@@ -57,6 +57,8 @@
  *   | 'ERR_AMBIGUOUS_COMPONENT'
  *   | 'ERR_AMBIGUOUS_THEME'
  *   | 'ERR_UNKNOWN_THEME'
+ *   | 'ERR_INTEGRATION_ROOT_CONFLICT'
+ *   | 'ERR_INTEGRATION_EXPORT_CONFLICT'
  *   | 'ERR_UNKNOWN_PACKAGE'
  *   | 'ERR_UNKNOWN_AGENT'
  *   | 'ERR_UNKNOWN_FEATURE'
@@ -145,6 +147,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_AMBIGUOUS_THEME: 'ERR_AMBIGUOUS_THEME',
   /** No theme matched the requested slug (theme add). */
   ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
+  /** An integration root already points somewhere other than the requested path. */
+  ERR_INTEGRATION_ROOT_CONFLICT: 'ERR_INTEGRATION_ROOT_CONFLICT',
+  /** A package export already maps a generated contribution subpath elsewhere. */
+  ERR_INTEGRATION_EXPORT_CONFLICT: 'ERR_INTEGRATION_EXPORT_CONFLICT',
   /** No package matched the requested name (discover). */
   ERR_UNKNOWN_PACKAGE: 'ERR_UNKNOWN_PACKAGE',
   /** An unrecognized `--agent` value was passed to agent-docs/init. */
