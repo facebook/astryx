@@ -26,6 +26,7 @@ import {
   Layout,
   LayoutContent,
   LayoutFooter,
+  LayoutHeader,
   LayoutPanel,
   StackItem,
   VStack,
@@ -810,12 +811,17 @@ const styles = stylex.create({
   // triggers back out by their own padding so the menu button's *icon* lines
   // up on the gutter while its hover box still bleeds into it.
   headerBar: {
-    '--astryx-section-padding-inline': 'var(--spacing-2)',
     // Named so the tab strip can size against the bar rather than the window:
     // cqw tracks this element, so it stays right if the bar ever stops being
     // full-bleed, and it excludes a scrollbar the way vw does not.
     containerType: 'inline-size',
     containerName: 'editor-header',
+  },
+  // The menu, the tabs and the add button. It has to be allowed to shrink or
+  // the strip's own ceiling never binds — a flex item defaults to min-width
+  // auto, which floors it at the tabs' combined width.
+  headerLead: {
+    minWidth: 0,
   },
   // The open-document strip above the menubar. It scrolls rather than wraps:
   // a second row of tabs would move the menubar down, and the whole point of
@@ -1807,26 +1813,22 @@ export default function CanvasEditor() {
           height="fill"
           padding={0}
           header={
-            <Toolbar
-              label="Document actions"
-              size="sm"
-              dividers={['bottom']}
-              // Tighter than a toolbar's default, because this one is app
-              // chrome rather than a band of content: the tab strip inside
-              // carries its own 4px, and two 8px gutters on top of that put
-              // 12px above a 28px tab.
-              paddingBlock={1}
-              // The app menu sits tight to the tabs; the status text and
-              // Export button on the other end need the room.
-              gap={0.5}
-              // Cast because StyleXStyles is a union of known CSS properties,
-              // and a style holding nothing but a custom property matches
-              // none of them. The alternative is pairing it with a real
-              // property, but the only one worth pairing here is the padding
-              // this style exists precisely to avoid setting directly.
-              xstyle={styles.headerBar as stylex.StyleXStyles}
-              startContent={
-                <>
+            // Not a Toolbar. A toolbar is a set of peer commands that arrow
+            // keys walk across, and the document tabs make that wrong twice
+            // over: arrowing off a tab lands on its own close button, and a
+            // strip of documents is not a band of tools. This is the header
+            // slot of the layout it heads, which is what LayoutHeader is.
+            <LayoutHeader
+              hasDivider
+              // 4px on every edge. A toolbar's padding is sized for a band
+              // heading content, and app chrome wants to sit tighter: the
+              // strip inside carries its own 4px around a 28px tab. It also
+              // lands the menu button on the inset a ghost trigger wants, so
+              // nothing has to be pulled back out again.
+              padding={1}
+              xstyle={styles.headerBar}>
+              <HStack gap={0.5} vAlign="center" hAlign="between">
+                <HStack gap={0.5} vAlign="center" xstyle={styles.headerLead}>
                   {/*
                     One button for every command in the editor, the way a
                     single-window design tool does it. A menubar spends the
@@ -2088,9 +2090,7 @@ export default function CanvasEditor() {
                     onClick={addTab}
                     icon={<Icon icon={Plus} size={ICON} color="secondary" />}
                   />
-                </>
-              }
-              endContent={
+                </HStack>
                 <HStack gap={3} vAlign="center">
                   <Text type="supporting" color="secondary">
                     Saved · 2 min ago
@@ -2106,8 +2106,8 @@ export default function CanvasEditor() {
                     items={EXPORT_MENU}
                   />
                 </HStack>
-              }
-            />
+              </HStack>
+            </LayoutHeader>
           }
           content={
             <LayoutContent padding={0}>

@@ -45,20 +45,15 @@ native size and the frame scales the painted result, which keeps the theme's
 numbers in artboard pixels — the same numbers the inspector shows — and keeps
 the poster from reflowing between zoom steps.
 
-**A menubar is one control, not five dropdowns.** File/Edit/View/Object/Help
-are five `DropdownMenu`s in a Toolbar's start slot, and what makes them read
-as a menubar is that opening any one of them arms the rest: crossing to a
-neighbouring title switches menus without a second click. A DropdownMenu
-holding its own open state cannot do that — it has no way to know a sibling
-is showing — so the bar keeps the open menu in one `useState` and each
-trigger only reports what the pointer crossed. Two details make it behave.
-The hover only takes the menu when one is already open, or sweeping the bar
-would trip menus the reader never asked for. And `onOpenChange` has to check
-which menu is open before clearing it: handing the bar to a sibling closes
-the outgoing menu on the way out, and a plain `isOpen ? id : null` lets that
-farewell land after the sibling has claimed the bar, so every switch blanks
-instead. Sitting in a Toolbar also gets the keyboard for free — its roving
-tabindex is already left/right across the titles.
+**The menubar is one button, not five.** File/Edit/View/Object/Help became
+submenus of a single `DropdownMenu`. A menubar spends the top-left on five
+words that are only read by someone already hunting for a command, and this
+editor has something better to do with that space: the tabs, which are read
+constantly. The commands keep their grouping — the bar became the first
+level of the menu rather than disappearing. The menu takes a `menuWidth`
+because left to itself it matches its trigger, and the trigger is a 28px
+icon button: five one-word rows in a column barely wider than the words,
+with nowhere for the submenu chevrons to sit.
 
 Five smaller things the template works out, in case you hit the same walls:
 
@@ -109,19 +104,22 @@ its items gives a percentage height nothing to resolve against, so the rule
 collapses to zero and the bar silently loses its groups. `alignSelf: stretch`
 is what gives it a height.
 
-**A Toolbar's inline padding comes from its container, so reach the token.**
-This one sits in a Layout set to zero padding — the panels have to reach the
-edges — and inherits that zero, which puts the Export button hard against the
-window. `paddingInline` through `xstyle` does not fix it: Section renders an
-outer wrapper that escapes its parent's gutter and an inner one that holds
-the padding, `xstyle` lands on the outer, and padding set there makes the bar
-bleed 12px _past_ the window instead of insetting its contents. Set
-`--astryx-section-padding-inline` instead. It is read on the inner element,
-and the second thing it does is the one that matters: it republishes
-`--container-padding-inline-*`, which is what the toolbar's edge compensation
-reads to pull ghost triggers back out by their own padding — so the File
-_label_ lines up on the gutter while its hover box still bleeds into it, and
-the two ends of the bar finally balance.
+**The top bar is a `LayoutHeader`, not a `Toolbar`.** It reads like a
+toolbar and it is not one. A toolbar is a set of peer commands that arrow
+keys walk across, and the document tabs break that twice: arrowing off a tab
+landed on that tab's own close button, and a strip of open documents is not
+a band of tools in the first place. It also fought the padding — a toolbar
+sizes its gutters for a band heading content, and app chrome wants to sit
+tighter, which took a `--astryx-section-padding-inline` override and the
+edge compensation that override republished.
+
+`LayoutHeader` is the component for the slot, and `padding={1}` settles all
+of it: 4px on every edge puts the menu button's box exactly where the ghost
+inset used to pull it, so the glyph lands on the same pixel with nothing
+pulled back out. Same 45px bar, same 18px glyph centre, same divider —
+measured before and after — minus a role that was describing the wrong
+thing. The floating canvas tool bar stays a `Toolbar`, because that one
+really is a row of peer commands, and it still roves left to right.
 
 **One icon on three rows is a list nobody reads.** Border, shadow and fill
 all shipped with the same `Palette` swatch, and the three effect presets in
