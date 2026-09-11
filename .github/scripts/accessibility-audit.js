@@ -31,6 +31,7 @@ const {
   buildBaseline,
   diffAgainstBaseline,
   formatDiffSummary,
+  storyKey,
 } = require('./lib/a11y-baseline');
 
 const args = process.argv.slice(2);
@@ -237,14 +238,27 @@ async function runAccessibilityAudit() {
 
   // Group stories by component
   const storyGroups = {};
+  const storyKeyById = new Map();
+  const auditedStoryKeys = [];
   for (const storyId of relevantStories) {
     const story = stories[storyId];
     const component = (story.title || '').split('/').pop() || storyId;
+    const auditedStoryKey = storyKey(component, story.name || storyId);
+    storyKeyById.set(storyId, auditedStoryKey);
+    auditedStoryKeys.push(auditedStoryKey);
     if (!storyGroups[component]) {
       storyGroups[component] = [];
     }
     storyGroups[component].push({ id: storyId, ...story });
   }
+  const ownerStoryKeys = routed == null
+    ? null
+    : Object.fromEntries(
+        Object.entries(routed.ownerStoryRoutes).map(([owner, storyIds]) => [
+          owner,
+          storyIds.map(id => storyKeyById.get(id)).filter(Boolean),
+        ]),
+      );
 
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
@@ -351,6 +365,8 @@ async function runAccessibilityAudit() {
 
   const report = {
     ownerStoryRoutes: routed?.ownerStoryRoutes ?? null,
+    ownerStoryKeys,
+    auditedStoryKeys,
     components: componentResults,
     summary: {
       componentsAudited: Object.keys(componentResults).length,

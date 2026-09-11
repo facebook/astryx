@@ -28,9 +28,14 @@
 
 const BASELINE_VERSION = 1;
 
+/** Build the stable prefix for one audited component story. */
+function storyKey(component, story) {
+  return `${component}::${story}`;
+}
+
 /** Build the stable baseline key for one violation occurrence. */
 function violationKey(component, story, ruleId) {
-  return `${component}::${story}::${ruleId}`;
+  return `${storyKey(component, story)}::${ruleId}`;
 }
 
 /**
@@ -117,23 +122,43 @@ function baselineKeySet(baseline) {
   );
 }
 
+function auditedScope(report) {
+  if (Array.isArray(report?.auditedStoryKeys)) {
+    return {
+      storyKeys: new Set(report.auditedStoryKeys),
+      components: null,
+    };
+  }
+  return {
+    storyKeys: null,
+    components: new Set(Object.keys(report?.components || {})),
+  };
+}
+
+function baselineKeyWasAudited(key, scope) {
+  if (scope.storyKeys != null) {
+    return scope.storyKeys.has(key.split('::').slice(0, 2).join('::'));
+  }
+  return scope.components.has(key.split('::')[0]);
+}
+
 /**
  * Build a baseline object from a report (for --update-baseline).
  *
  * The audit is often scoped with --components, so the report only covers a
- * subset of the library. Entries in `existing` that belong to components NOT
- * audited in this report are preserved; entries for audited components are
- * replaced wholesale by the report's current violations.
+ * subset of the library. Entries in `existing` whose exact component/story was
+ * not audited in this report are preserved; entries for audited stories are
+ * replaced by the report's current violations.
  *
  * @param {object} report
  * @param {{existing?: object|null, now?: Date}} [options]
  */
 function buildBaseline(report, {existing = null, now = new Date()} = {}) {
-  const audited = new Set(Object.keys((report && report.components) || {}));
+  const scope = auditedScope(report);
   const preserved = ((existing && existing.entries) || [])
     .map(entry => (typeof entry === 'string' ? {key: entry} : entry))
     .filter(
-      entry => entry && entry.key && !audited.has(entry.key.split('::')[0]),
+      entry => entry && entry.key && !baselineKeyWasAudited(entry.key, scope),
     );
   const fresh = collectViolations(report).map(v => ({
     key: v.key,
@@ -160,10 +185,9 @@ function buildBaseline(report, {existing = null, now = new Date()} = {}) {
  *
  * Anything in the report but missing from the baseline is NEW (a missing or
  * empty baseline means every violation is new). Baseline entries with no
- * matching violation are RESOLVED and can be deleted from the baseline —
- * but only for components that were actually audited in this run. The CI
- * audit is scoped to changed components, so baseline entries for components
- * outside this run are reported as `unchecked`, not resolved.
+ * matching violation are RESOLVED and can be deleted from the baseline — but
+ * only for exact component/story keys actually audited in this run. Entries
+ * outside the audited story set are `unchecked`, not resolved.
  *
  * @param {object} report
  * @param {object|null|undefined} baseline
@@ -174,18 +198,14 @@ function diffAgainstBaseline(report, baseline) {
   const current = collectViolations(report);
   const known = baselineKeySet(baseline);
   const currentKeys = new Set(current.map(v => v.key));
-  // Every audited component gets a report entry, even with zero violations.
-  const auditedComponents = new Set(
-    Object.keys((report && report.components) || {}),
-  );
+  const scope = auditedScope(report);
 
   const newViolations = current.filter(v => !known.has(v.key));
   const resolved = [];
   const unchecked = [];
   for (const key of Array.from(known).sort()) {
     if (currentKeys.has(key)) continue;
-    const component = key.split('::')[0];
-    if (auditedComponents.has(component)) {
+    if (baselineKeyWasAudited(key, scope)) {
       resolved.push(key);
     } else {
       unchecked.push(key);
@@ -220,7 +240,7 @@ function formatDiffSummary(
     `${diff.newViolations.length} new, ${diff.matched} baselined, ` +
       `${diff.resolved.length} resolved` +
       (unchecked.length > 0
-        ? `, ${unchecked.length} baselined for components outside this run`
+        ? `, ${unchecked.length} baselined for stories outside this run`
         : ''),
   );
 
@@ -269,6 +289,7 @@ function formatDiffSummary(
 
 module.exports = {
   BASELINE_VERSION,
+  storyKey,
   violationKey,
   collectViolations,
   baselineKeySet,

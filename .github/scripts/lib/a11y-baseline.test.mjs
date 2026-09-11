@@ -31,7 +31,11 @@ function makeReport(componentStories) {
       storyDetails,
     };
   }
-  return {components, summary: {}};
+  const auditedStoryKeys = Object.entries(componentStories).flatMap(
+    ([component, stories]) =>
+      Object.keys(stories).map(story => `${component}::${story}`),
+  );
+  return {auditedStoryKeys, components, summary: {}};
 }
 
 function axeViolation(id, overrides = {}) {
@@ -46,6 +50,26 @@ function axeViolation(id, overrides = {}) {
     ...overrides,
   };
 }
+
+const RICH_TEXT_BASELINE_KEYS = [
+  'Controlled Persistence',
+  'Custom Transformers',
+  'Default',
+  'Error Status',
+  'Imperative Ref',
+  'Markdown Serializers',
+  'Read Only',
+  'Required',
+  'With Character Limit',
+  'With Description',
+  'With Initial Value',
+  'With Toolbar',
+].flatMap(story => [
+  `RichTextEditor::${story}::aria-input-field-name`,
+  ...(story === 'Markdown Serializers'
+    ? [`RichTextEditor::${story}::label`]
+    : []),
+]);
 
 describe('violationKey', () => {
   it('is component + story + rule id, independent of DOM specifics', () => {
@@ -175,6 +199,24 @@ describe('diffAgainstBaseline', () => {
     expect(diff.resolved).toEqual([]);
     expect(diff.unchecked).toEqual(['Dialog::Basic::aria-dialog-name']);
   });
+
+  it('keeps baseline entries for unscanned stories of a routed owner unchecked', () => {
+    const scopedReport = makeReport({
+      RichTextEditor: {'With Toolbar': []},
+    });
+    const diff = diffAgainstBaseline(scopedReport, {
+      version: 1,
+      entries: RICH_TEXT_BASELINE_KEYS.map(key => ({key})),
+    });
+
+    expect(diff.resolved).toEqual([
+      'RichTextEditor::With Toolbar::aria-input-field-name',
+    ]);
+    expect(diff.unchecked).toHaveLength(12);
+    expect(diff.unchecked).toContain(
+      'RichTextEditor::Default::aria-input-field-name',
+    );
+  });
 });
 
 describe('buildBaseline', () => {
@@ -220,6 +262,25 @@ describe('buildBaseline', () => {
       'Dialog::Basic::aria-dialog-name',
       'Toast::Stacked::aria-live-region',
     ]);
+  });
+
+  it('preserves unscanned stories when regenerating one routed owner story', () => {
+    const existing = {
+      version: 1,
+      entries: RICH_TEXT_BASELINE_KEYS.map(key => ({key})),
+    };
+    const scopedReport = makeReport({
+      RichTextEditor: {'With Toolbar': []},
+    });
+    const baseline = buildBaseline(scopedReport, {existing});
+
+    expect(baseline.entries).toHaveLength(12);
+    expect(baseline.entries.map(entry => entry.key)).not.toContain(
+      'RichTextEditor::With Toolbar::aria-input-field-name',
+    );
+    expect(baseline.entries.map(entry => entry.key)).toContain(
+      'RichTextEditor::Default::aria-input-field-name',
+    );
   });
 });
 
