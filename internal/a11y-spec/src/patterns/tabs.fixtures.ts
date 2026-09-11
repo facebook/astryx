@@ -3,7 +3,7 @@
 /**
  * @file tabs.fixtures.ts
  * @input Uses TabsStateFacts
- * @output Plain-HTML conforming and deliberately violating Tabs fixtures
+ * @output Plain-HTML conforming and deliberately violating Tabs fixtures, including two-tab boundary mutations
  * @position Mutation proof for the reusable contract; no Astryx component code.
  */
 
@@ -774,7 +774,7 @@ const EXPECTED_MUTATION_FAILURES: Readonly<Record<string, string>> = {
   'tabs.focus.arrow-round-trip:violating-arrow-one-way':
     'pressing ArrowRight moved to "second", but pressing ArrowLeft did not restore focus to "first"',
   'tabs.focus.wraps-ends:violating-two-tab-arrow-no-wrap':
-    'pressing ArrowRight reached "second", but pressing ArrowRight again did not wrap focus to "first"',
+    'pressing ArrowLeft outward from "first" did not wrap focus to "second"',
   'tabs.focus.wraps-ends:violating-arrow-no-wrap':
     'neither ArrowLeft nor ArrowRight wrapped focus from the first tab "first" to the last tab "third"',
   'tabs.focus.wraps-ends:violating-rtl-arrow-no-wrap':

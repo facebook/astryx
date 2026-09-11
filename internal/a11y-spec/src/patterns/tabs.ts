@@ -3,7 +3,7 @@
 /**
  * @file tabs.ts
  * @input Uses the accessibility contract vocabulary
- * @output TABS_PATTERN and TabsStateFacts
+ * @output TABS_PATTERN and TabsStateFacts, including direction-neutral outward-boundary wrap proof
  * @position Reusable accessibility contract for explicit horizontal ARIA Tabs compositions.
  *
  * This contract covers only a caller-selected `role="tablist"` composition.
@@ -256,6 +256,24 @@ async function assertEndWrap(
   }
   const first = await harness.related(firstName);
   const last = await harness.related(lastName);
+  if (facts.tabRelations.length === 2) {
+    for (const key of ['ArrowLeft', 'ArrowRight'] as const) {
+      await first.focus();
+      await harness.press(key);
+      if (!(await last.isFocused())) {
+        throw new Error(
+          `pressing ${key} outward from "${firstName}" did not wrap focus to "${lastName}"`,
+        );
+      }
+      await harness.press(key);
+      if (!(await first.isFocused())) {
+        throw new Error(
+          `pressing ${key} outward from "${lastName}" did not wrap focus to "${firstName}"`,
+        );
+      }
+    }
+    return;
+  }
   const attempts: ReadonlyArray<readonly [Key, Key]> = [
     ['ArrowLeft', 'ArrowRight'],
     ['ArrowRight', 'ArrowLeft'],
