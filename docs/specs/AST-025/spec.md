@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-025
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-11
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:public-component-api]
 affects_families: [family:layout-regions, family:layout-primitives]
