@@ -649,6 +649,38 @@ describe('field menu sizing', () => {
       '480px',
     );
   });
+
+  it('applies popoverMaxWidth as a clamped max-width on the editor popover', async () => {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={manyFields}
+        filters={[]}
+        onChange={() => {}}
+        popoverMaxWidth={720}
+      />,
+    );
+    // Open the field menu and select a field to open the editor popover
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+    const options = screen.getAllByRole('option', {hidden: true});
+    await user.click(options[0]);
+    // The editor popover should have the clamped max-width style
+    await waitFor(() => {
+      const popovers = document.querySelectorAll('[popover]');
+      const editorPopover = Array.from(popovers).find(
+        el =>
+          el.querySelector('[data-testid]') ||
+          el.querySelectorAll('select, button').length > 1,
+      );
+      expect(editorPopover).toBeTruthy();
+      expect((editorPopover as HTMLElement).style.maxWidth).toBe(
+        'min(720px, anchor-size(width))',
+      );
+    });
+  });
 });
 
 describe('field menu grouping', () => {
