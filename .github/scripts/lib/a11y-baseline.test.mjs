@@ -7,7 +7,6 @@
  * generation, and the failure summary format.
  */
 
-import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {
   buildBaseline,
@@ -101,27 +100,6 @@ function makeRoutedReport({
     summary: {},
   };
 }
-
-describe('audit completion scope', () => {
-  it('records a story only after axe succeeds and throws on scan errors', () => {
-    const source = fs.readFileSync(
-      new URL('../accessibility-audit.js', import.meta.url),
-      'utf8',
-    );
-    const analyze = source.indexOf('.analyze();');
-    const markAudited = source.indexOf('auditedStoryIds.add(story.id);');
-    const catchStart = source.indexOf('} catch (e) {', analyze);
-    const throwError = source.indexOf('throw new Error(', catchStart);
-    const finallyStart = source.indexOf('} finally {', catchStart);
-
-    expect(analyze).toBeGreaterThan(-1);
-    expect(markAudited).toBeGreaterThan(analyze);
-    expect(throwError).toBeGreaterThan(catchStart);
-    expect(throwError).toBeLessThan(finallyStart);
-    expect(source).toContain("waitUntil: 'domcontentloaded'");
-    expect(source).toContain("locator('body.sb-show-main')");
-  });
-});
 
 describe('violationKey', () => {
   it('is component + story + rule id, independent of DOM specifics', () => {

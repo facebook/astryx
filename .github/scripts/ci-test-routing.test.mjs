@@ -199,9 +199,9 @@ describe('ci.yml RTL package sharding', () => {
       expect.arrayContaining(['check-components', 'pr-rtl-shard']),
     );
     const commands = runLines(join);
+    expect(commands).toContain('needs.check-components.result');
     expect(commands).toContain('needs.pr-rtl-shard.result');
-    expect(commands).toContain('All five canonical RTL package shards succeeded');
-    expect(commands).toContain('exit 1');
+    expect(commands).toContain('.github/scripts/rtl-join.mjs');
   });
 
   it('publishes a distinct report artifact for each package shard', () => {

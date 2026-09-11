@@ -1187,19 +1187,11 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v7
+
       - name: Require every applicable RTL shard
         run: |
-          SHOULD_RUN=${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}
-          SHARD_RESULT=${{ needs.pr-rtl-shard.result }}
-          if [ "$SHOULD_RUN" = "true" ]; then
-            if [ "$SHARD_RESULT" != "success" ]; then
-              echo "RTL package shards did not all succeed: $SHARD_RESULT"
-              exit 1
-            fi
-            echo "All five canonical RTL package shards succeeded."
-          elif [ "$SHARD_RESULT" != "skipped" ]; then
-            echo "RTL shards unexpectedly ran for an out-of-scope change: $SHARD_RESULT"
-            exit 1
-          else
-            echo "No RTL-owned scope; package shards correctly skipped."
-          fi
+          node .github/scripts/rtl-join.mjs \
+            --check-components "${{ needs.check-components.result }}" \
+            --shards "${{ needs.pr-rtl-shard.result }}" \
+            --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}"

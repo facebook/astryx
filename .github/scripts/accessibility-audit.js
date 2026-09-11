@@ -33,6 +33,7 @@ const {
   formatDiffSummary,
   storyKey,
 } = require('./lib/a11y-baseline');
+const {waitForStoryReadiness} = require('./lib/a11y-story-readiness');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -289,29 +290,33 @@ async function runAccessibilityAudit() {
             timeout: 15000,
           });
           await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
-          // Brief wait for any post-load rendering before axe-core scans the DOM
-          await page.waitForTimeout(500);
-          const finalUrl = new URL(page.url());
-          if (
-            finalUrl.origin !== `http://localhost:${port}` ||
-            finalUrl.pathname !== '/iframe.html' ||
-            finalUrl.searchParams.get('id') !== story.id
-          ) {
-            throw new Error(`story navigation ended at ${page.url()}`);
-          }
-          await page
-            .locator('body.sb-show-main')
-            .waitFor({state: 'visible', timeout: 5000});
-          const storyRoot = page.locator('#storybook-root');
-          await storyRoot.waitFor({state: 'attached', timeout: 5000});
-          const rendered = await storyRoot.evaluate(
-            root =>
-              root.childElementCount > 0 ||
-              (root.textContent ?? '').trim().length > 0,
+          await waitForStoryReadiness(
+            () =>
+              page.evaluate(
+                ({expectedOrigin, storyId}) => {
+                  const currentUrl = new URL(window.location.href);
+                  const root = document.querySelector('#storybook-root');
+                  return {
+                    url: currentUrl.href,
+                    urlMatches:
+                      currentUrl.origin === expectedOrigin &&
+                      currentUrl.pathname === '/iframe.html' &&
+                      currentUrl.searchParams.get('id') === storyId,
+                    errorVisible:
+                      document.body.classList.contains('sb-show-errordisplay') ||
+                      document.body.classList.contains('sb-show-nopreview'),
+                    mainVisible:
+                      document.body.classList.contains('sb-show-main'),
+                    hasContent:
+                      root != null &&
+                      (root.childElementCount > 0 ||
+                        (root.textContent ?? '').trim().length > 0),
+                  };
+                },
+                {expectedOrigin: `http://localhost:${port}`, storyId: story.id},
+              ),
+            {timeoutMs: 5000, pollMs: 50},
           );
-          if (!rendered) {
-            throw new Error('Storybook root rendered no story content');
-          }
 
           // Run axe-core accessibility analysis
           const results = await new AxeBuilder({ page })
