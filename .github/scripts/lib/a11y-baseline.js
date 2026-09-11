@@ -12,7 +12,8 @@
  *   --update-baseline). Kept free of Playwright/axe so it can be unit-tested
  *   without a browser (see a11y-baseline.test.mjs).
  *
- * Key design: `Component::Story::rule-id`.
+ * Key design: `package/Component::story-id::rule-id` for current reports,
+ * with safe matching and migration of legacy `Component::Story::rule-id` keys.
  *   - Component + story + axe rule id is stable across unrelated DOM churn:
  *     axe rule ids are versioned and stable, and story names only change when
  *     someone renames a story (an intentional act).
@@ -36,6 +37,32 @@ function storyKey(component, story) {
 /** Build the stable baseline key for one violation occurrence. */
 function violationKey(component, story, ruleId) {
   return `${storyKey(component, story)}::${ruleId}`;
+}
+
+function violationIdentities(report, component, story, storyId) {
+  const legacyStoryKey = storyKey(component, story);
+  const auditedStories = Array.isArray(report?.auditedStories)
+    ? report.auditedStories
+    : [];
+  const owners = storyId
+    ? auditedStories.filter(entry => entry.storyId === storyId)
+    : [];
+  if (owners.length === 0) {
+    return [
+      {
+        keyPrefix: legacyStoryKey,
+        legacyKeyPrefix: legacyStoryKey,
+        component,
+        story,
+      },
+    ];
+  }
+  return owners.map(entry => ({
+    keyPrefix: storyKey(entry.owner, entry.storyId),
+    legacyKeyPrefix: entry.legacyStoryKey || legacyStoryKey,
+    component: entry.owner,
+    story: entry.storyId,
+  }));
 }
 
 /**
@@ -63,16 +90,24 @@ function collectViolations(report) {
     if (storyDetails.length > 0) {
       for (const storyResult of storyDetails) {
         for (const violation of storyResult.violations || []) {
-          occurrences.push({
-            key: violationKey(component, storyResult.story, violation.id),
+          for (const identity of violationIdentities(
+            report,
             component,
-            story: storyResult.story,
-            ruleId: violation.id,
-            impact: violation.impact || 'unknown',
-            help: violation.help || violation.description || '',
-            helpUrl: violation.helpUrl || '',
-            nodes: (violation.nodes || []).length,
-          });
+            storyResult.story,
+            storyResult.storyId,
+          )) {
+            occurrences.push({
+              key: `${identity.keyPrefix}::${violation.id}`,
+              legacyKey: `${identity.legacyKeyPrefix}::${violation.id}`,
+              component: identity.component,
+              story: identity.story,
+              ruleId: violation.id,
+              impact: violation.impact || 'unknown',
+              help: violation.help || violation.description || '',
+              helpUrl: violation.helpUrl || '',
+              nodes: (violation.nodes || []).length,
+            });
+          }
         }
       }
     } else {
@@ -83,8 +118,10 @@ function collectViolations(report) {
             ? violation.stories
             : ['*'];
         for (const story of stories) {
+          const key = violationKey(component, story, violation.id);
           occurrences.push({
-            key: violationKey(component, story, violation.id),
+            key,
+            legacyKey: key,
             component,
             story,
             ruleId: violation.id,
@@ -123,23 +160,59 @@ function baselineKeySet(baseline) {
 }
 
 function auditedScope(report) {
+  if (Array.isArray(report?.auditedStories)) {
+    const canonicalStoryKeys = new Set(
+      report.auditedStories.map(entry => storyKey(entry.owner, entry.storyId)),
+    );
+    const legacyStoryKeys = new Set(
+      Object.entries(report.legacyStoryOwners || {})
+        .filter(
+          ([, owners]) =>
+            Array.isArray(owners) &&
+            owners.length > 0 &&
+            owners.every(ownerStory => canonicalStoryKeys.has(ownerStory)),
+        )
+        .map(([legacyStory]) => legacyStory),
+    );
+    return {canonicalStoryKeys, legacyStoryKeys, components: null};
+  }
   if (Array.isArray(report?.auditedStoryKeys)) {
     return {
-      storyKeys: new Set(report.auditedStoryKeys),
+      canonicalStoryKeys: new Set(),
+      legacyStoryKeys: new Set(report.auditedStoryKeys),
       components: null,
     };
   }
   return {
-    storyKeys: null,
+    canonicalStoryKeys: null,
+    legacyStoryKeys: null,
     components: new Set(Object.keys(report?.components || {})),
   };
 }
 
 function baselineKeyWasAudited(key, scope) {
-  if (scope.storyKeys != null) {
-    return scope.storyKeys.has(key.split('::').slice(0, 2).join('::'));
+  if (scope.canonicalStoryKeys != null) {
+    const keyParts = key.split('::');
+    const auditedStories = keyParts[0].includes('/')
+      ? scope.canonicalStoryKeys
+      : scope.legacyStoryKeys;
+    return auditedStories.has(keyParts.slice(0, 2).join('::'));
   }
   return scope.components.has(key.split('::')[0]);
+}
+
+function safeLegacyAlias(occurrence, report) {
+  if (!occurrence.legacyKey || occurrence.legacyKey === occurrence.key) {
+    return occurrence.legacyKey;
+  }
+  const legacyStory = occurrence.legacyKey.split('::').slice(0, 2).join('::');
+  const canonicalStory = occurrence.key.split('::').slice(0, 2).join('::');
+  const owners = report?.legacyStoryOwners?.[legacyStory];
+  return Array.isArray(owners) &&
+    owners.length === 1 &&
+    owners[0] === canonicalStory
+    ? occurrence.legacyKey
+    : null;
 }
 
 /**
@@ -169,7 +242,9 @@ function buildBaseline(report, {existing = null, now = new Date()} = {}) {
   return {
     $comment:
       'Known axe violations tolerated by the pr-a11y CI gate. Entries are ' +
-      'keyed Component::Story::rule-id. Regenerate with `pnpm a11y:baseline` ' +
+      'keyed package/component::story-id::rule-id; legacy ' +
+      'Component::Story::rule-id entries are preserved until their exact ' +
+      'story can be migrated. Regenerate with `pnpm a11y:baseline` ' +
       '(requires a built Storybook + Playwright chromium). Remove entries ' +
       'as violations are fixed.',
     version: BASELINE_VERSION,
@@ -197,10 +272,18 @@ function buildBaseline(report, {existing = null, now = new Date()} = {}) {
 function diffAgainstBaseline(report, baseline) {
   const current = collectViolations(report);
   const known = baselineKeySet(baseline);
-  const currentKeys = new Set(current.map(v => v.key));
+  const currentKeys = new Set();
+  const newViolations = [];
+  for (const occurrence of current) {
+    currentKeys.add(occurrence.key);
+    const legacyAlias = safeLegacyAlias(occurrence, report);
+    if (legacyAlias) currentKeys.add(legacyAlias);
+    if (!known.has(occurrence.key) && !known.has(legacyAlias)) {
+      newViolations.push(occurrence);
+    }
+  }
   const scope = auditedScope(report);
 
-  const newViolations = current.filter(v => !known.has(v.key));
   const resolved = [];
   const unchecked = [];
   for (const key of Array.from(known).sort()) {

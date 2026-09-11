@@ -7,6 +7,7 @@
  * generation, and the failure summary format.
  */
 
+import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {
   buildBaseline,
@@ -70,6 +71,55 @@ const RICH_TEXT_BASELINE_KEYS = [
     ? [`RichTextEditor::${story}::label`]
     : []),
 ]);
+
+function makeRoutedReport({
+  owner,
+  storyId,
+  component,
+  story,
+  violations = [],
+  legacyStoryOwners,
+}) {
+  const canonicalStoryKey = `${owner}::${storyId}`;
+  const legacyStoryKey = `${component}::${story}`;
+  return {
+    ownerStoryRoutes: {[owner]: [storyId]},
+    ownerStoryKeys: {[owner]: [canonicalStoryKey]},
+    auditedStories: [{owner, storyId, legacyStoryKey}],
+    auditedStoryKeys: [canonicalStoryKey],
+    legacyStoryOwners: legacyStoryOwners ?? {
+      [legacyStoryKey]: [canonicalStoryKey],
+    },
+    components: {
+      [component]: {
+        storiesAudited: 1,
+        violations: [],
+        storyDetails:
+          violations.length > 0 ? [{story, storyId, violations}] : [],
+      },
+    },
+    summary: {},
+  };
+}
+
+describe('audit completion scope', () => {
+  it('records a story only after axe succeeds and throws on scan errors', () => {
+    const source = fs.readFileSync(
+      new URL('../accessibility-audit.js', import.meta.url),
+      'utf8',
+    );
+    const analyze = source.indexOf('.analyze();');
+    const markAudited = source.indexOf('auditedStoryIds.add(story.id);');
+    const catchStart = source.indexOf('} catch (e) {', analyze);
+    const throwError = source.indexOf('throw new Error(', catchStart);
+    const finallyStart = source.indexOf('} finally {', catchStart);
+
+    expect(analyze).toBeGreaterThan(-1);
+    expect(markAudited).toBeGreaterThan(analyze);
+    expect(throwError).toBeGreaterThan(catchStart);
+    expect(throwError).toBeLessThan(finallyStart);
+  });
+});
 
 describe('violationKey', () => {
   it('is component + story + rule id, independent of DOM specifics', () => {
@@ -201,8 +251,11 @@ describe('diffAgainstBaseline', () => {
   });
 
   it('keeps baseline entries for unscanned stories of a routed owner unchecked', () => {
-    const scopedReport = makeReport({
-      RichTextEditor: {'With Toolbar': []},
+    const scopedReport = makeRoutedReport({
+      owner: 'richtext/RichTextEditorToolbar',
+      storyId: 'lab-richtexteditor--with-toolbar',
+      component: 'RichTextEditor',
+      story: 'With Toolbar',
     });
     const diff = diffAgainstBaseline(scopedReport, {
       version: 1,
@@ -216,6 +269,51 @@ describe('diffAgainstBaseline', () => {
     expect(diff.unchecked).toContain(
       'RichTextEditor::Default::aria-input-field-name',
     );
+  });
+
+  it('keeps colliding Core Tooltip baseline evidence outside a Charts-only audit', () => {
+    const legacyStoryOwners = {
+      'Tooltip::Default': [
+        'core/Tooltip::core-tooltip--default',
+        'charts/ChartTooltip::charts-chrome-tooltip--default',
+      ],
+    };
+    const scopedReport = makeRoutedReport({
+      owner: 'charts/ChartTooltip',
+      storyId: 'charts-chrome-tooltip--default',
+      component: 'Tooltip',
+      story: 'Default',
+      legacyStoryOwners,
+    });
+    const legacyKey = 'Tooltip::Default::color-contrast';
+    const coreKey =
+      'core/Tooltip::core-tooltip--default::color-contrast';
+    const chartsKey =
+      'charts/ChartTooltip::charts-chrome-tooltip--default::color-contrast';
+    const diff = diffAgainstBaseline(scopedReport, {
+      version: 1,
+      entries: [{key: legacyKey}, {key: coreKey}, {key: chartsKey}],
+    });
+
+    expect(diff.resolved).toEqual([chartsKey]);
+    expect(diff.unchecked).toEqual([legacyKey, coreKey]);
+
+    const violatingReport = makeRoutedReport({
+      owner: 'charts/ChartTooltip',
+      storyId: 'charts-chrome-tooltip--default',
+      component: 'Tooltip',
+      story: 'Default',
+      violations: [axeViolation('color-contrast')],
+      legacyStoryOwners,
+    });
+    const collisionDiff = diffAgainstBaseline(violatingReport, {
+      version: 1,
+      entries: [{key: legacyKey}],
+    });
+    expect(collisionDiff.newViolations.map(violation => violation.key)).toEqual([
+      chartsKey,
+    ]);
+    expect(collisionDiff.unchecked).toEqual([legacyKey]);
   });
 });
 
@@ -269,8 +367,11 @@ describe('buildBaseline', () => {
       version: 1,
       entries: RICH_TEXT_BASELINE_KEYS.map(key => ({key})),
     };
-    const scopedReport = makeReport({
-      RichTextEditor: {'With Toolbar': []},
+    const scopedReport = makeRoutedReport({
+      owner: 'richtext/RichTextEditorToolbar',
+      storyId: 'lab-richtexteditor--with-toolbar',
+      component: 'RichTextEditor',
+      story: 'With Toolbar',
     });
     const baseline = buildBaseline(scopedReport, {existing});
 
@@ -281,6 +382,31 @@ describe('buildBaseline', () => {
     expect(baseline.entries.map(entry => entry.key)).toContain(
       'RichTextEditor::Default::aria-input-field-name',
     );
+  });
+
+  it('migrates a unique audited legacy key to package and story identity', () => {
+    const legacyKey =
+      'RichTextEditor::With Toolbar::aria-input-field-name';
+    const scopedReport = makeRoutedReport({
+      owner: 'richtext/RichTextEditorToolbar',
+      storyId: 'lab-richtexteditor--with-toolbar',
+      component: 'RichTextEditor',
+      story: 'With Toolbar',
+      violations: [axeViolation('aria-input-field-name')],
+    });
+    const baseline = buildBaseline(scopedReport, {
+      existing: {version: 1, entries: [{key: legacyKey}]},
+    });
+
+    expect(baseline.entries.map(entry => entry.key)).toEqual([
+      'richtext/RichTextEditorToolbar::lab-richtexteditor--with-toolbar::aria-input-field-name',
+    ]);
+    expect(
+      diffAgainstBaseline(scopedReport, {
+        version: 1,
+        entries: [{key: legacyKey}],
+      }).newViolations,
+    ).toEqual([]);
   });
 });
 

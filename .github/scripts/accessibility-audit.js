@@ -138,6 +138,7 @@ async function getStories(storybookPath) {
 async function routedStoryIds(stories, componentFilters) {
   const {
     buildStoryComponentRoutes,
+    componentRoutesForFilters,
     storyIdsForComponentFilters,
     unresolvedComponentFilters,
   } = await import(
@@ -167,13 +168,17 @@ async function routedStoryIds(stories, componentFilters) {
     targets,
     publicComponentsByPackage,
   });
-  const ownerStoryRoutes = Object.fromEntries(
-    componentFilters.map(filter => [
-      filter,
-      storyIdsForComponentFilters(routes, [filter]),
-    ]),
-  );
+  const selectedRoutes = componentRoutesForFilters(routes, componentFilters);
+  const ownerStoryRoutes = {};
+  for (const route of selectedRoutes) {
+    ownerStoryRoutes[route.component] ??= [];
+    if (!ownerStoryRoutes[route.component].includes(route.id)) {
+      ownerStoryRoutes[route.component].push(route.id);
+    }
+  }
   return {
+    routes: selectedRoutes,
+    allRoutes: routes,
     storyIds: storyIdsForComponentFilters(routes, componentFilters),
     unresolvedFilters: unresolvedComponentFilters(routes, componentFilters),
     ownerStoryRoutes,
@@ -217,48 +222,43 @@ async function runAccessibilityAudit() {
   // Reuse the same canonical package-qualified owner map as the RTL audit.
   // Grouped Storybook titles such as Charts/Chrome/Legend and the historical
   // Lab/RichTextEditor namespace otherwise resolve to zero stories here.
-  const routed = components.length > 0
-    ? await routedStoryIds(stories, components)
-    : null;
-  if (routed?.unresolvedFilters.length > 0) {
+  const routed = await routedStoryIds(stories, components);
+  if (routed.unresolvedFilters.length > 0) {
     throw new Error(
       `No owned Storybook stories resolved for: ${routed.unresolvedFilters.join(', ')}`,
     );
   }
   for (const [owner, ownedStoryIds] of Object.entries(
-    routed?.ownerStoryRoutes ?? {},
+    routed.ownerStoryRoutes,
   )) {
     console.log(`Owner route: ${owner} -> ${ownedStoryIds.join(', ')}`);
   }
-  const routedIds = routed == null ? null : new Set(routed.storyIds);
+  const routedIds = new Set(routed.storyIds);
   const relevantStories = storyIds.filter(id => {
     if (id.endsWith('--docs')) return false;
-    return routedIds == null || routedIds.has(id);
+    return routedIds.has(id);
   });
 
-  // Group stories by component
+  // Group stories for scanning while retaining the legacy display identity for
+  // safe baseline migration.
   const storyGroups = {};
-  const storyKeyById = new Map();
-  const auditedStoryKeys = [];
+  const storyKeyById = new Map(
+    storyIds
+      .filter(id => !id.endsWith('--docs'))
+      .map(id => {
+        const story = stories[id];
+        const component = (story.title || '').split('/').pop() || id;
+        return [id, storyKey(component, story.name || id)];
+      }),
+  );
   for (const storyId of relevantStories) {
     const story = stories[storyId];
     const component = (story.title || '').split('/').pop() || storyId;
-    const auditedStoryKey = storyKey(component, story.name || storyId);
-    storyKeyById.set(storyId, auditedStoryKey);
-    auditedStoryKeys.push(auditedStoryKey);
     if (!storyGroups[component]) {
       storyGroups[component] = [];
     }
-    storyGroups[component].push({ id: storyId, ...story });
+    storyGroups[component].push({id: storyId, ...story});
   }
-  const ownerStoryKeys = routed == null
-    ? null
-    : Object.fromEntries(
-        Object.entries(routed.ownerStoryRoutes).map(([owner, storyIds]) => [
-          owner,
-          storyIds.map(id => storyKeyById.get(id)).filter(Boolean),
-        ]),
-      );
 
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
@@ -266,6 +266,7 @@ async function runAccessibilityAudit() {
   const server = await createServer(storybookPath, port);
   const browser = await chromium.launch();
   const componentResults = {};
+  const auditedStoryIds = new Set();
   let totalViolations = 0;
 
   try {
@@ -292,10 +293,12 @@ async function runAccessibilityAudit() {
           const results = await new AxeBuilder({ page })
             .disableRules(DISABLED_RULES)
             .analyze();
+          auditedStoryIds.add(story.id);
 
           if (results.violations.length > 0) {
             componentViolations.push({
               story: story.name || story.id,
+              storyId: story.id,
               violations: results.violations,
             });
             totalViolations += results.violations.length;
@@ -305,13 +308,10 @@ async function runAccessibilityAudit() {
             `✓ Audited: ${component} / ${story.name} - ${results.violations.length} issues`
           );
         } catch (e) {
-          console.error(`✗ Failed: ${story.id} - ${e.message}`);
-          // Record the failure but continue
-          componentViolations.push({
-            story: story.name || story.id,
-            error: e.message,
-            violations: [],
-          });
+          throw new Error(
+            `Accessibility scan failed for selected story ${story.id}: ${e.message}`,
+            {cause: e},
+          );
         } finally {
           await page.close();
         }
@@ -363,10 +363,40 @@ async function runAccessibilityAudit() {
     server.close();
   }
 
+  const auditedStories = routed.routes
+    .filter(route => auditedStoryIds.has(route.id))
+    .map(route => ({
+      owner: route.component,
+      storyId: route.id,
+      legacyStoryKey: storyKeyById.get(route.id),
+    }));
+  const auditedStoryKeys = auditedStories.map(({owner, storyId}) =>
+    storyKey(owner, storyId),
+  );
+  const ownerStoryKeys = {};
+  for (const auditedStory of auditedStories) {
+    ownerStoryKeys[auditedStory.owner] ??= [];
+    ownerStoryKeys[auditedStory.owner].push(
+      storyKey(auditedStory.owner, auditedStory.storyId),
+    );
+  }
+  const legacyStoryOwners = {};
+  for (const route of routed.allRoutes) {
+    const legacyStory = storyKeyById.get(route.id);
+    if (legacyStory == null) continue;
+    legacyStoryOwners[legacyStory] ??= [];
+    const canonicalStory = storyKey(route.component, route.id);
+    if (!legacyStoryOwners[legacyStory].includes(canonicalStory)) {
+      legacyStoryOwners[legacyStory].push(canonicalStory);
+    }
+  }
+
   const report = {
-    ownerStoryRoutes: routed?.ownerStoryRoutes ?? null,
+    ownerStoryRoutes: routed.ownerStoryRoutes,
     ownerStoryKeys,
+    auditedStories,
     auditedStoryKeys,
+    legacyStoryOwners,
     components: componentResults,
     summary: {
       componentsAudited: Object.keys(componentResults).length,
