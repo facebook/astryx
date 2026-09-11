@@ -118,7 +118,7 @@ const pgClassForProp = (prop: string, value: PGStyleValue): string => {
   if (value != null && typeof value === 'object') {
     for (const [cond, condVal] of Object.entries(value)) {
       if (condVal == null) continue;
-      const decl = '.' + cls + pgPseudoSuffix(cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
+      const decl = pgSelector(cls, cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
       pgInject(pgWrapAtRule(cond, decl));
     }
   } else {
@@ -129,6 +129,27 @@ const pgClassForProp = (prop: string, value: PGStyleValue): string => {
 
 const pgPseudoSuffix = (cond: string): string =>
   cond === 'default' || cond.startsWith('@') ? '' : cond;
+
+// A marker rides along as a class so an ancestor can be named in a selector.
+// Tagged with a prop key rather than a bare string because \`props\` only keeps
+// string values, and this way one shows up in className like any other class.
+const PG_MARKER_PROP = '--pg-marker';
+const PG_DEFAULT_MARKER = 'pgmarkdefault';
+let pgMarkerSeq = 0;
+const pgMarker = (cls: string): Record<string, unknown> => ({
+  $$css: true,
+  [PG_MARKER_PROP]: cls,
+});
+
+// Every other condition narrows the element's own selector, so it appends.
+// \`when.ancestor\` instead qualifies a *parent*, which has to prepend — hence a
+// tag the rule builder can spot rather than another pseudo suffix.
+const PG_ANCESTOR_TAG = '%pg-ancestor%';
+
+const pgSelector = (cls: string, cond: string): string =>
+  cond.startsWith(PG_ANCESTOR_TAG)
+    ? cond.slice(PG_ANCESTOR_TAG.length) + ' .' + cls
+    : '.' + cls + pgPseudoSuffix(cond);
 
 const pgWrapAtRule = (cond: string, decl: string): string =>
   cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
@@ -173,6 +194,15 @@ const stylexMock = {
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
+  defaultMarker: () => pgMarker(PG_DEFAULT_MARKER),
+  defineMarker: () => pgMarker('pgmark' + pgMarkerSeq++),
+  when: {
+    ancestor: (cond: string, marker?: Record<string, unknown>) =>
+      PG_ANCESTOR_TAG +
+      '.' +
+      ((marker?.[PG_MARKER_PROP] as string) ?? PG_DEFAULT_MARKER) +
+      cond,
+  },
   types: {
     angle: (v: string) => v,
     color: (v: string) => v,
@@ -204,9 +234,11 @@ for (const t of SCOPE_THEMES) {
 lines.push('');
 
 // ── Theme + tokens ──────────────────────────────────────────────────
-lines.push("import {Theme} from '@astryxdesign/core/theme';");
+lines.push("import {Theme, defineTheme} from '@astryxdesign/core/theme';");
 lines.push("import type {DefinedTheme} from '@astryxdesign/core/theme';");
-lines.push("import {createElement, type ComponentProps} from 'react';");
+lines.push(
+  "import {createContext, createElement, useContext, type ComponentProps} from 'react';",
+);
 lines.push("import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';");
 lines.push('');
 
@@ -236,7 +268,17 @@ lines.push(`const SCOPE_THEMES: Record<string, DefinedTheme> = {
 ${themeEntries}
 };
 
+const IsNestedTheme = createContext(false);
+
 const ControlledTheme = (props: ComponentProps<typeof Theme>) => {
+  const isNested = useContext(IsNestedTheme);
+  // A nested Theme is part of what the code being previewed is showing — a
+  // poster's display face, a slider track painted as a spectrum — so it keeps
+  // the theme and mode it asked for. Only the outermost one answers to the
+  // playground's theme and mode pickers.
+  if (isNested) {
+    return createElement(Theme, props);
+  }
   const win =
     typeof window !== 'undefined'
       ? (window as unknown as Record<string, unknown>)
@@ -245,7 +287,11 @@ const ControlledTheme = (props: ComponentProps<typeof Theme>) => {
     (win?.__xds_preview_mode__ as 'light' | 'dark' | 'system') || 'system';
   const themeName = (win?.__xds_preview_theme__ as string) || 'default';
   const theme = SCOPE_THEMES[themeName] ?? ${SCOPE_THEMES[0].name};
-  return createElement(Theme, {...props, theme, mode});
+  return createElement(
+    IsNestedTheme.Provider,
+    {value: true},
+    createElement(Theme, {...props, theme, mode}),
+  );
 };`);
 lines.push('');
 
@@ -274,7 +320,9 @@ for (const t of SCOPE_THEMES) {
 }
 
 // Theme (controlled wrapper)
-lines.push("  '@astryxdesign/core/theme': {Theme: ControlledTheme},");
+lines.push(
+  "  '@astryxdesign/core/theme': {Theme: ControlledTheme, defineTheme},",
+);
 
 // tokens.stylex
 lines.push("  '@astryxdesign/core/theme/tokens.stylex': astryxTokens,");
