@@ -757,7 +757,7 @@ export class Project {
    * When called directly, also validates any configured integration not yet
    * visited by a discovery call, so the returned set is complete on demand.
    *
-   * @returns {Promise<import('../integrations/issue').AstryxIntegrationIssue[]>}
+   * @returns {Promise<ProjectIntegrationIssue[]>}
    */
   async issues() {
     for (const integration of this.#loadedIntegrations) {

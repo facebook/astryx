@@ -117,6 +117,34 @@ describe('themeAdd with integration themes', () => {
     expect(result.data.package).toBe('@acme/themes');
   });
 
+  it('reports a selected installed package with a corrupted theme catalog', async () => {
+    installThemeIntegration(
+      '@acme/themes',
+      'ocean',
+      "export {oceanBlue} from './tokens/colors';\n",
+      {'tokens/colors.ts': "export const oceanBlue = '#0064e0';\n"},
+    );
+    fs.rmSync(
+      path.join(
+        tmpDir,
+        'node_modules',
+        '@acme',
+        'themes',
+        'themes',
+        'ocean',
+        'tokens',
+        'colors.ts',
+      ),
+    );
+
+    await expect(
+      themeAdd('ocean', {cwd: tmpDir, package: '@acme/themes'}),
+    ).rejects.toMatchObject({
+      code: 'ERR_THEME_INVALID',
+      message: expect.stringContaining('tokens/colors.ts'),
+    });
+  });
+
   it('reports an unknown package selection without falling back to another owner', async () => {
     installThemeIntegration('@acme/themes', 'ocean');
     await expect(

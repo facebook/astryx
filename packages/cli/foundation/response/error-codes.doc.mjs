@@ -204,7 +204,7 @@ export const doc = {
     {
       value: 'ERR_THEME_INVALID',
       description:
-        'A theme definition was missing a required property (e.g. `name`).',
+        'A theme definition or contributed theme catalog is invalid.',
     },
     {
       value: 'ERR_THEME_LOAD',

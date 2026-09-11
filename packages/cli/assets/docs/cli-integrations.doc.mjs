@@ -75,6 +75,36 @@ export const docs = {
       ],
     },
     {
+      title: 'Theme Package Walkthrough',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'A useful theme package usually ships more than colors. Start with the source theme, then add the guides its consumers need. Each command writes a complete contribution and keeps the package manifest in sync.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'In the provider package',
+          code: 'astryx integration add theme ocean\nastryx theme palette generate palette.config.json --out themes/ocean/tokens/ocean.palette.ts\nastryx integration add doc brand-theme\nastryx integration add doc theme-migration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx integration pack --check\nnpm pack',
+        },
+        {
+          type: 'prose',
+          text: 'Edit the generated theme and guide files before publishing. Palette generation writes an importable TypeScript candidate and a reproducibility receipt; import the candidate from the theme and list both nested files in that theme catalog entry. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source file or files allowlist entry fails before a consumer sees it.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'In a separate consumer app',
+          code: 'npm install @astryxdesign/core ../brand-integration/acme-brand-integration-1.0.0.tgz\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx docs theme-migration\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies every file listed by the selected catalog entry, including nested token modules, and refuses to overwrite existing project files.',
+        },
+      ],
+    },
+    {
       title: 'The Integration File',
       category: 'guide',
       content: [
@@ -189,7 +219,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "The root catalog uses the same entry contract as Astryx's bundled themes: `slug`, `displayName`, `description`, `maintained`, `entry`, `exportName`, and `files`. `entry` and every file are relative to `themes/<slug>/`; `exportName` identifies the named theme export in the entry source.",
+          text: "The root catalog uses the same entry contract as Astryx's bundled themes: `slug`, `displayName`, `description`, `maintained`, `entry`, `exportName`, and `files`. `entry` and every file are relative to `themes/<slug>/`; `exportName` identifies a named runtime export in the entry source. Astryx parses that source without executing it, requires every local static import and re-export to name a file in `files`, and rejects missing or type-only exports.",
         },
         {
           type: 'code',

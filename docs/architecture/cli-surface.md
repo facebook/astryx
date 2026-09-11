@@ -20,6 +20,14 @@ verified_by:
     foundation/response/error-codes.test.mjs,
     foundation/agent-docs/agent-docs.test.mjs,
     foundation/integrations/autolink.test.mjs,
+    foundation/integrations/manifest-writer.test.mjs,
+    foundation/integrations/contribution-inventory.test.mjs,
+    clients/cli/commands/integration-authoring.test.mjs,
+    clients/cli/commands/integration-real-world.test.mjs,
+    api/integration/add-contribution.test.mjs,
+    api/integration/pack-check.test.mjs,
+    api/integration/validate-integration.test.mjs,
+    api/theme/integration-themes.test.mjs,
     clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
@@ -63,7 +71,7 @@ rather than left to the command author.
    single envelope. Otherwise the formatters render the same values as text.
    Nothing else may write to stdout.
 
-Discovery of components, templates, codemods and docs is not per-command. It
+Discovery of components, templates, themes, codemods and docs is not per-command. It
 goes through the `Project` seam in `foundation/config`, which resolves the
 integrations named in `astryx.config` and then autolinks any DECLARED dependency
 that ships a root `astryx.integration.*` manifest — a config entry is how a
@@ -127,6 +135,36 @@ test, applicable text, and consumer-documentation projections.
   alias or a non-semver protocol resolves like any other. A config entry keeps
   precedence over the same package autolinked, and a dependency whose manifest
   fails to load is dropped rather than raised as the consuming project's issue.
+- **INV15 — Integration authoring writes one complete, discoverable contribution.**
+  `integration add <kind> <name>` and its typed per-kind APIs share one receipt
+  contract. A dry run reports the same planned paths without writing. A real run
+  refuses to clobber authored files, stages related writes atomically, declares
+  a contribution root only with valid bytes behind it, and verifies visibility
+  through the same discovery seam consumers use.
+- **INV16 — Authoring preserves package policy and local source wins while it is
+  being edited.** Writers never create `files` or `exports`; when either field
+  already exists, they add only the required manifest, root, or public subpath
+  and preserve every author-owned entry. The integration beside the current
+  package.json replaces the same installed package in place, preserving its
+  configured order while making working bytes authoritative.
+- **INV17 — Pack verification examines the artifact consumers receive.**
+  `integration pack --check` runs the package lifecycle through `npm pack`,
+  compares the required file inventory with the actual tarball, extracts that
+  tarball into a scratch consumer, reruns contribution discovery, and verifies
+  advertised component and template imports through Node's package resolver.
+- **INV18 — Integration diagnostics are read-only and package-specific.** Doctor
+  validation reports malformed or unreachable roots and contribution conflicts
+  without rewriting the package. Everyday discovery skips a broken integration
+  and records its issue; a package-scoped theme lookup surfaces that package's
+  blocking catalog error instead of misreporting the theme as unknown.
+- **INV19 — Integration themes are packaged editable source.** The manifest's
+  `themes` root contains a versioned catalog. Each entry names its slug, source
+  entry, named runtime export, and complete file list. Discovery parses the entry
+  without executing it, requires every local static import and re-export to name
+  a file in that list, and rejects missing or type-only named exports. Pack
+  verification preserves that identity; `theme list` retains package ownership;
+  `theme add --package` copies every listed file, including nested palette/token
+  modules, before `theme build` compiles the consumer-owned copy.
 
 ## Change coupling
 
@@ -139,7 +177,12 @@ updated in the same pull request when it moves an invariant:
   follows `spec:AST-017/DEC-4`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
-- changing the file layout under `clients/cli/commands`.
+- changing the file layout under `clients/cli/commands`;
+- changing an integration writer's receipt, no-clobber/rollback behavior, or
+  package.json mutation policy;
+- changing what `integration pack --check` executes or proves about the tarball;
+- changing local, configured, or autolinked integration precedence;
+- changing the integration theme catalog or consumer copy contract.
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -158,8 +201,15 @@ non-interactive guarantee.
 - `foundation/response/json.mjs` — `API_VERSION`, `jsonOut`, `jsonError`,
   `toErrorEnvelope`, `humanLog`, `humanWarn`, the JSON-mode flag.
 - `foundation/response/error-codes.mjs` — the frozen, append-only code set.
-- `foundation/config` — the `Project` discovery seam and the integration
-  manifest loader.
+- `foundation/config` — the `Project` discovery seam and integration precedence.
+- `foundation/integrations/manifest-writer.mjs` — safe manifest-root patching,
+  verification, and rollback.
+- `foundation/integrations/contribution-inventory.mjs` — the shared local and
+  packed contribution identity/file contract.
+- `api/integration` — contribution writers, diagnostics, and packed-artifact
+  verification.
+- `foundation/discovery/theme-discovery.mjs` and `api/theme` — integration theme
+  catalog discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
   writer used by init and upgrade.
 - `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
@@ -172,14 +222,20 @@ non-interactive guarantee.
 
 ## Verification
 
-| Invariant | Evidence                                            | Failure signal                                                         |
-| --------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
-| INV1      | `clients/cli/commands/interactive-guard.test.mjs`   | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.    |
-| INV2      | `clients/cli/commands/json-contract.test.mjs`       | `--json` stdout does not parse, or parses to a shape outside the two.  |
-| INV3      | `foundation/response/error-codes.test.mjs`          | A shipped code disappears, or an envelope carries an unregistered one. |
-| INV4      | `clients/cli/formatters/index.test.mjs`, type tests | `emit` accepts a bare string, or output varies between pipe and TTY.   |
-| INV6      | `pnpm check:cli-structure`                          | A command's file or its doc is missing, or sits at the wrong path.     |
-| INV8      | `clients/cli/cli-exit-codes.test.mjs`               | The same condition exits differently with and without `--json`.        |
+| Invariant | Evidence                                                                                           | Failure signal                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                                  | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                               |
+| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                      | `--json` stdout does not parse, or parses to a shape outside the two.                             |
+| INV3      | `foundation/response/error-codes.test.mjs`                                                         | A shipped code disappears, or an envelope carries an unregistered one.                            |
+| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                | `emit` accepts a bare string, or output varies between pipe and TTY.                              |
+| INV6      | `pnpm check:cli-structure`                                                                         | A command's file or its doc is missing, or sits at the wrong path.                                |
+| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                              | The same condition exits differently with and without `--json`.                                   |
+| INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                  | An undeclared package contributes, or configured/local precedence changes.                        |
+| INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs` | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable. |
+| INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`    | A writer invents package policy, replaces an author entry, or local bytes lose precedence.        |
+| INV17     | `api/integration/pack-check.test.mjs`                                                              | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.   |
+| INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`           | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.       |
+| INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                             | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.  |
 
 ## Open questions
 

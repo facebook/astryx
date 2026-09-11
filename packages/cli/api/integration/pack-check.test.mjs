@@ -109,6 +109,53 @@ describe('integrationPackCheck', () => {
     );
   });
 
+  it('fails when a theme entry omits its catalog export', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+      'export const anotherTheme = {};\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid_theme',
+        message: expect.stringContaining(
+          'entry "oceanTheme.ts" does not export "oceanTheme"',
+        ),
+      }),
+    );
+  });
+
+  it('fails when a theme imports a file omitted from its catalog', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean', 'tokens'), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+      "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'tokens', 'ocean.palette.ts'),
+      'export const oceanPalette = {};\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid_theme',
+        message: expect.stringContaining(
+          'must resolve to a listed file inside the theme directory',
+        ),
+      }),
+    );
+  });
+
   it('fails when a discovered component is not exported to consumers', async () => {
     writePackage({
       manifest: "export default {components: './components'};\n",

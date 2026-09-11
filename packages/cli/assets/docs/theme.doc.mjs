@@ -137,6 +137,26 @@ function App() {
       ],
     },
     {
+      title: 'Using a Theme from an Integration',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Install the integration as a direct dependency and Astryx discovers its source themes and guide topics without an `astryx.config` file. Install Core too because the copied source imports `defineTheme` from `@astryxdesign/core/theme`.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Install, inspect, copy, and build',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'The copy is editable project source, not a reference back into node_modules. Every file named by the theme catalog comes with it, including nested token or palette modules. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+        },
+      ],
+    },
+    {
       title: 'Creating a Custom Theme',
       category: 'guide',
       content: [

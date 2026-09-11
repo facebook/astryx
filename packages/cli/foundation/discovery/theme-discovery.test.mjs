@@ -7,6 +7,7 @@ import * as path from 'node:path';
 import {
   BUNDLED_THEME_PACKAGE,
   discoverBundledThemes,
+  discoverIntegrationThemes,
   discoverThemeCatalog,
 } from './theme-discovery.mjs';
 
@@ -67,6 +68,258 @@ describe('theme catalog discovery', () => {
         bundled: false,
       }),
     ]);
+  });
+
+  it('parses a named runtime export without executing the entry', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "throw new Error('theme source executed');\nexport const oceanTheme = {};\n",
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('rejects an entry that does not export the catalog name', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      'export const anotherTheme = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      'Theme catalog for @acme/themes entry "oceanTheme.ts" does not export "oceanTheme".',
+    );
+  });
+
+  it('rejects a type-only export of the catalog name', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      'export type oceanTheme = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(/does not export "oceanTheme"/u);
+  });
+
+  it('rejects an unbound source-less export specifier', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      'export {oceanTheme};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /could not be parsed: Export 'oceanTheme' is not defined/u,
+    );
+  });
+
+  it('accepts a source-less export backed by a local runtime declaration', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      'const oceanTheme = {};\nexport {oceanTheme};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('accepts a source-less export backed by a listed imported alias', async () => {
+    writeCatalog([{...ocean, files: ['oceanTheme.ts', 'theme.ts']}]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "import {theme as oceanTheme} from './theme';\nexport {oceanTheme};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'theme.ts'),
+      'export const theme = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('accepts a source-less export backed by a bare package import', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "import {defineTheme as oceanTheme} from '@astryxdesign/core/theme';\nexport {oceanTheme};\n",
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('follows a listed default re-export', async () => {
+    writeCatalog([{...ocean, files: ['oceanTheme.ts', 'theme.ts']}]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "export {default as oceanTheme} from './theme';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'theme.ts'),
+      'export default {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('follows local export-all barrels without executing them', async () => {
+    writeCatalog([{...ocean, files: ['oceanTheme.ts', 'theme.ts']}]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "export * from './theme';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'theme.ts'),
+      "throw new Error('theme source executed');\nexport const oceanTheme = {};\n",
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('accepts a listed nested palette import without executing it', async () => {
+    writeCatalog([
+      {...ocean, files: ['oceanTheme.ts', 'tokens/ocean.palette.ts']},
+    ]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'tokens', 'ocean.palette.ts'),
+      "throw new Error('palette source executed');\nexport const oceanPalette = {};\n",
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).resolves.toEqual([
+      expect.objectContaining({slug: 'ocean', exportName: 'oceanTheme'}),
+    ]);
+  });
+
+  it('rejects a direct import from an unlisted theme file', async () => {
+    writeCatalog([ocean]);
+    fs.mkdirSync(path.join(tmpDir, 'ocean', 'tokens'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'tokens', 'ocean.palette.ts'),
+      'export const oceanPalette = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /must resolve to a listed file inside the theme directory/u,
+    );
+  });
+
+  it('rejects a direct import outside the theme directory', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "import {oceanPalette} from '../outside';\nexport const oceanTheme = {oceanPalette};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'outside.ts'),
+      'export const oceanPalette = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /must resolve to a listed file inside the theme directory/u,
+    );
+  });
+
+  it('rejects a literal dynamic import from an unlisted file', async () => {
+    const mjsTheme = {
+      ...ocean,
+      entry: 'oceanTheme.mjs',
+      files: ['oceanTheme.mjs'],
+    };
+    writeCatalog([mjsTheme]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.mjs'),
+      "void import('./extra.mjs');\nexport const oceanTheme = {};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'extra.mjs'),
+      'export const extra = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /must resolve to a listed file inside the theme directory/u,
+    );
+  });
+
+  it('rejects a re-export outside the theme directory', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "export * from '../outside';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'outside.ts'),
+      'export const oceanTheme = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /must resolve to a listed file inside the theme directory/u,
+    );
+  });
+
+  it('rejects a re-export from an unlisted theme file', async () => {
+    writeCatalog([ocean]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'oceanTheme.ts'),
+      "export * from './theme';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'ocean', 'theme.ts'),
+      'export const oceanTheme = {};\n',
+    );
+
+    await expect(
+      discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
+    ).rejects.toThrow(
+      /must resolve to a listed file inside the theme directory/u,
+    );
   });
 
   it('rejects duplicate slugs case-insensitively', () => {

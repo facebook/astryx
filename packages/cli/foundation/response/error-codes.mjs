@@ -185,7 +185,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_WRITE_FAILED: 'ERR_WRITE_FAILED',
 
   // ── Theme build ──────────────────────────────────────────────────
-  /** A theme definition was missing a required property (e.g. `name`). */
+  /** A theme definition or contributed theme catalog is invalid. */
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',

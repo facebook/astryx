@@ -53,6 +53,23 @@ function availableBundledThemes() {
 }
 
 /**
+ * Load available themes with any package-owned integration issues found while
+ * discovering them. The issue set lets a package-scoped lookup distinguish an
+ * absent theme from an installed package whose catalog is broken.
+ * @param {string} cwd
+ * @returns {Promise<{themes: import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme[], issues: Array<import('../../foundation/integrations/issue').AstryxIntegrationIssue & {package: string}>}>}
+ */
+async function availableThemeState(cwd) {
+  try {
+    const project = await Project.load(cwd);
+    const themes = await project.themes();
+    return {themes, issues: await project.issues()};
+  } catch {
+    return {themes: availableBundledThemes(), issues: []};
+  }
+}
+
+/**
  * Bundled themes plus source themes from integrations installed in `cwd`.
  * A project/config load failure degrades to the bundled catalog, preserving the
  * command's historical usefulness outside a configured project.
@@ -60,12 +77,7 @@ function availableBundledThemes() {
  * @returns {Promise<import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme[]>}
  */
 export async function listAvailableThemes(cwd = process.cwd()) {
-  try {
-    const project = await Project.load(cwd);
-    return await project.themes();
-  } catch {
-    return availableBundledThemes();
-  }
+  return (await availableThemeState(cwd)).themes;
 }
 
 /**
@@ -77,13 +89,27 @@ export async function listAvailableThemes(cwd = process.cwd()) {
  */
 export async function findTheme(slug, options = {}) {
   if (!slug) return undefined;
-  const themes = await listAvailableThemes(options.cwd);
+  const {themes, issues} = await availableThemeState(
+    options.cwd ?? process.cwd(),
+  );
   const normalized = String(slug).toLowerCase();
   const matches = themes.filter(
     theme =>
       theme.slug.toLowerCase() === normalized &&
       (options.package == null || theme.package === options.package),
   );
+  if (matches.length === 0 && options.package != null) {
+    const packageIssue = issues.find(
+      issue => issue.package === options.package && issue.severity === 'error',
+    );
+    if (packageIssue) {
+      throw new AstryxError(
+        `Theme package "${options.package}" is installed but unavailable: ${packageIssue.message}`,
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+  }
   if (matches.length > 1) {
     throw new AstryxError(
       `Theme "${slug}" is provided by more than one package. Select one with --package.`,

@@ -68,6 +68,10 @@ export const doc = {
       when: 'no available theme matches the slug and package',
     },
     {code: 'ERR_AMBIGUOUS_THEME', when: 'more than one package owns the slug'},
+    {
+      code: 'ERR_THEME_INVALID',
+      when: 'the selected installed package has a blocking integration or theme-catalog error',
+    },
     {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
     {code: 'ERR_NO_SOURCE', when: 'a catalog-listed source file is missing'},
     {
