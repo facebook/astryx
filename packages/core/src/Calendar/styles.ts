@@ -49,6 +49,27 @@ export const calendarStyles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
   },
+  /**
+   * Replaces monthYearLabel when `hasMonthYearPickers` is set: keeps the
+   * caption slot centered between the nav buttons while holding the two
+   * picker triggers side by side.
+   */
+  pickerGroup: {
+    display: 'flex',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
+  },
+  /**
+   * Theme-target wrapper for one picker trigger (see Calendar.tsx for why
+   * the target cannot live on Selector itself).
+   */
+  pickerItem: {
+    display: 'inline-flex',
+    minWidth: 0,
+  },
   monthsContainer: {
     display: 'flex',
     // Wraps rather than overflowing: two months side by side need ~488px, so
