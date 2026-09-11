@@ -50,6 +50,7 @@ import {fileURLToPath} from 'node:url';
 import componentPackages from '../../../scripts/component-packages.cjs';
 import {
   AUDITED_PACKAGE_NAMES,
+  AUDITED_STORY_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
   buildStoryComponentRoutes,
@@ -82,11 +83,8 @@ const VERIFIED_NA_PATH =
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
-// Story-id prefixes the auto-discovery layer sweeps. These derive from the
-// same publishable package roster used for source discovery below: a component
-// the PR analyzer can name in --filter must also be routable to its package's
-// stories here.
-const AUDITED_STORY_PREFIXES = AUDITED_PACKAGE_NAMES.map(name => `${name}-`);
+// Story-id prefixes the auto-discovery layer sweeps come from the same
+// canonical package registry used for source discovery below.
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.

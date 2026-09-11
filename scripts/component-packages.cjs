@@ -5,7 +5,8 @@
 
 /**
  * @file Shared registry of component-bearing Astryx packages and their layouts.
- * @input Repository package names, source roots, public barrels, and component docs.
+ * @input Repository package names, source roots, public barrels, component docs,
+ *   and Storybook routing namespaces.
  * @output Package metadata and public component discovery helpers.
  * @position Single registry used by audit rosters and component knowledge paths.
  */
@@ -23,11 +24,41 @@ const path = require('node:path');
  * the package barrel.
  */
 const COMPONENT_PACKAGES = Object.freeze([
-  {name: 'core', src: 'packages/core/src', layout: 'nested'},
-  {name: 'lab', src: 'packages/lab/src', layout: 'nested'},
-  {name: 'charts', src: 'packages/charts/src', layout: 'flat'},
-  {name: 'richtext', src: 'packages/richtext/src', layout: 'flat'},
-  {name: 'vega', src: 'packages/vega/src', layout: 'flat'},
+  {
+    name: 'core',
+    src: 'packages/core/src',
+    layout: 'nested',
+    storyPrefixes: ['core-'],
+    storyNamespaces: ['Core'],
+  },
+  {
+    name: 'lab',
+    src: 'packages/lab/src',
+    layout: 'nested',
+    storyPrefixes: ['lab-'],
+    storyNamespaces: ['Lab'],
+  },
+  {
+    name: 'charts',
+    src: 'packages/charts/src',
+    layout: 'flat',
+    storyPrefixes: ['charts-'],
+    storyNamespaces: ['Charts'],
+  },
+  {
+    name: 'richtext',
+    src: 'packages/richtext/src',
+    layout: 'flat',
+    storyPrefixes: ['lab-'],
+    storyNamespaces: ['Lab'],
+  },
+  {
+    name: 'vega',
+    src: 'packages/vega/src',
+    layout: 'flat',
+    storyPrefixes: ['vega-'],
+    storyNamespaces: ['Vega'],
+  },
 ]);
 
 const COMPONENT_PACKAGE_NAMES = Object.freeze(

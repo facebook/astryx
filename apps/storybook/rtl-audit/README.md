@@ -11,7 +11,7 @@ is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
 ## Three layers
 
-### A. Auto-discovery — over every `core-*`, `lab-*`, and `charts-*` story in scope
+### A. Auto-discovery — over every story prefix in the component-package registry
 
 The point of the audit is to auto-catch **new or changed** components, so the
 auto-discovery layer runs with **zero curated selectors**. There are three
@@ -217,11 +217,13 @@ them universally.
 
 ### C. Applicability: no unexplained all-N/A components
 
-The report rolls every component in the live Core, Lab, and Charts source roster into one
-of three states. Package roots, layouts, and public component names come from
-`scripts/component-packages.cjs`; Storybook titles project onto that canonical
-roster, including one-to-many grouped titles such as `Charts/Chrome/Axes & Grids`.
-Curated targets remain the exact alias when a title cannot name its owner:
+The report rolls every public component in the canonical component-package
+registry into one of three states. Package roots, layouts, story prefixes, and
+public component names come from `scripts/component-packages.cjs`; Storybook
+titles project onto that canonical roster across Core, Lab, Charts, Rich Text,
+and Vega, including one-to-many grouped titles such as
+`Charts/Chrome/Axes & Grids`. Curated targets remain the exact alias when a title
+cannot name its owner:
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason

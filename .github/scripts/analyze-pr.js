@@ -11,6 +11,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
+const {
+  COMPONENT_PACKAGES,
+} = require('../../scripts/component-packages.cjs');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -24,24 +27,16 @@ const outputFile = getArg('output') || 'analysis.json';
 
 const STORYBOOK_STORIES = 'apps/storybook/stories';
 
-// The publishable component packages the report covers. Each PR is attributed
-// to the package(s) it actually touches — the report is no longer hardcoded to
-// `core` (which silently mislabelled every lab/charts PR).
-//
-// layout:
-//   'nested' — components live in per-component dirs: src/<Name>/... (core, lab)
-//   'flat'   — components live as single files:       src/<Name>.tsx (charts,
-//              richtext). The score-ledger's canonical predicate narrows a flat
-//              package to its documented component(s) downstream, so listing
-//              the internal helpers here is harmless — they get filtered out.
-const PACKAGES = [
-  { name: '@astryxdesign/core', dir: 'packages/core', layout: 'nested' },
-  { name: '@astryxdesign/lab', dir: 'packages/lab', layout: 'nested' },
-  { name: '@astryxdesign/charts', dir: 'packages/charts', layout: 'flat' },
-  { name: '@astryxdesign/richtext', dir: 'packages/richtext', layout: 'flat' },
-];
+// Project the canonical component-package registry into the analyzer's existing
+// shape. Package participation and layouts have one checked-in owner; this file
+// only adds the published package name and derives its package directory.
+const PACKAGES = COMPONENT_PACKAGES.map(pkg => ({
+  ...pkg,
+  name: `@astryxdesign/${pkg.name}`,
+  dir: path.dirname(pkg.src),
+}));
 
-const pkgSrc = (pkg) => `${pkg.dir}/src`;
+const pkgSrc = (pkg) => pkg.src;
 const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
 // Directories under a package's src that are not components.

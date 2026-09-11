@@ -14,7 +14,8 @@
  * feature branch off the branch point that touches exactly one component.
  * A shallow single-branch clone of the feature (depth 5) has no merge base
  * with origin/main, reproducing the CI failure; running analyze-pr.js against
- * it must exit 0 and report exactly the component the branch touched.
+ * it must exit 0 and report the Core, Rich Text, and Vega components the branch
+ * touched.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -56,6 +57,8 @@ function buildFixture() {
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/richtext/src'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/vega/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {recursive: true});
 
@@ -66,6 +69,14 @@ function buildFixture() {
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
+    'export function RichTextEditor() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
+    'export function VegaChart() {}\n',
+  );
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/neutral/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
@@ -88,10 +99,18 @@ function buildFixture() {
     git(upstream, ['commit', '-qm', `churn ${i}`]);
   }
 
-  // Feature branch off the branch point, touching only Card.
+  // Feature branch off the branch point, touching Core, Rich Text, and Vega.
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
+    'export const richTextChanged = true\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
+    'export const vegaChanged = true\n',
+  );
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
@@ -107,7 +126,7 @@ function buildFixture() {
 }
 
 describe('analyze-pr shallow-clone recovery', () => {
-  it('recovers the three-dot diff by deepening and reports the exact component', () => {
+  it('recovers the three-dot diff and reports Core, Rich Text, and Vega owners', () => {
     const {base, clone} = buildFixture();
     try {
       // Precondition: the clone really has no merge base (the CI failure).
@@ -126,8 +145,16 @@ describe('analyze-pr shallow-clone recovery', () => {
       // Reaching the assertions proves exit 0 (execFileSync throws otherwise).
       expect(stdout).toContain('diff mode: three-dot');
       expect(analysis.diffMode).toBe('three-dot');
-      expect(analysis.modifiedComponents).toEqual(['Card']);
-      expect(analysis.changedPackages).toEqual(['@astryxdesign/core']);
+      expect(analysis.modifiedComponents).toEqual([
+        'Card',
+        'RichTextEditor',
+        'VegaChart',
+      ]);
+      expect(analysis.changedPackages).toEqual([
+        '@astryxdesign/core',
+        '@astryxdesign/richtext',
+        '@astryxdesign/vega',
+      ]);
       expect(analysis.changedStableThemes).toEqual(['neutral']);
     } finally {
       fs.rmSync(base, {recursive: true, force: true});

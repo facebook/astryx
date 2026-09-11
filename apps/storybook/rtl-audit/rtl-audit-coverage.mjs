@@ -10,17 +10,24 @@
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
-export const AUDITED_PACKAGE_NAMES = Object.freeze([
-  'core',
-  'lab',
-  'charts',
+import componentPackages from '../../../scripts/component-packages.cjs';
+
+const {COMPONENT_PACKAGES, COMPONENT_PACKAGE_NAMES} = componentPackages;
+
+export const AUDITED_PACKAGE_NAMES = COMPONENT_PACKAGE_NAMES;
+export const AUDITED_STORY_PREFIXES = Object.freeze([
+  ...new Set(COMPONENT_PACKAGES.flatMap(pkg => pkg.storyPrefixes)),
 ]);
 
 function packageForStoryId(
   storyId,
   packageNames = AUDITED_PACKAGE_NAMES,
 ) {
-  return packageNames.find(name => storyId.startsWith(`${name}-`)) ?? null;
+  return COMPONENT_PACKAGES.find(
+    pkg =>
+      packageNames.includes(pkg.name) &&
+      pkg.storyPrefixes.some(prefix => storyId.startsWith(prefix)),
+  )?.name ?? null;
 }
 
 function pascalCase(value) {
@@ -34,8 +41,14 @@ function singularize(value) {
   return value.endsWith('s') ? value.slice(0, -1) : value;
 }
 
-function componentsFromStoryTitle(title, packageName, publicComponents) {
-  const finalSegment = title?.split('/').at(-1) ?? '';
+function componentsFromStoryTitle(
+  title,
+  preferredPackage,
+  publicComponentsByPackage,
+) {
+  const titleSegments = title?.split('/') ?? [];
+  const namespace = titleSegments[0] ?? '';
+  const finalSegment = titleSegments.at(-1) ?? '';
   const candidates = new Set();
   for (const part of finalSegment.split(/\s*(?:&|\band\b)\s*/i)) {
     const name = pascalCase(part);
@@ -46,9 +59,24 @@ function componentsFromStoryTitle(title, packageName, publicComponents) {
     candidates.add(`Chart${name}`);
     candidates.add(`Chart${singular}`);
   }
-  return publicComponents
-    .filter(component => candidates.has(component))
-    .map(component => `${packageName}/${component}`);
+  const matchesIn = packageName =>
+    (publicComponentsByPackage[packageName] ?? [])
+      .filter(component => candidates.has(component))
+      .map(component => `${packageName}/${component}`);
+  const namespacePackages = COMPONENT_PACKAGES
+    .filter(pkg => pkg.storyNamespaces.includes(namespace))
+    .map(pkg => pkg.name)
+    .filter(packageName => packageName in publicComponentsByPackage);
+  const eligiblePackages = namespacePackages.length > 0
+    ? namespacePackages
+    : Object.keys(publicComponentsByPackage);
+  const preferred = preferredPackage && eligiblePackages.includes(preferredPackage)
+    ? matchesIn(preferredPackage)
+    : [];
+  if (preferred.length > 0) return preferred;
+  return eligiblePackages
+    .filter(packageName => packageName !== preferredPackage)
+    .flatMap(matchesIn);
 }
 
 /** Resolve the best default package/component route encoded in a story id. */
@@ -122,20 +150,15 @@ export function buildStoryComponentRoutes({
 
   return normalizedStories.flatMap(story => {
     const packageName = packageForStoryId(story.id, packageNames);
-    const publicComponents = packageName
-      ? publicComponentsByPackage[packageName] ?? []
-      : [];
-    const titleComponents = packageName
+    const explicitComponents = aliases.get(story.id) ?? [];
+    const titleComponents = explicitComponents.length === 0
       ? componentsFromStoryTitle(
           story.title,
           packageName,
-          publicComponents,
+          publicComponentsByPackage,
         )
       : [];
-    const components = [
-      ...titleComponents,
-      ...(aliases.get(story.id) ?? []),
-    ];
+    const components = [...explicitComponents, ...titleComponents];
     if (components.length === 0) {
       components.push(
         componentFromStoryId(

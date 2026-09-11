@@ -488,7 +488,7 @@
     }
   },
   {
-    "component": "RichTextEditor",
+    "component": "richtext/RichTextEditor",
     "storyId": "lab-richtexteditor--error-status",
     "dims": [
       "D4"
@@ -496,6 +496,17 @@
     "selectors": {
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
       "overlayRoot": ".astryx-rich-text-editor"
+    }
+  },
+  {
+    "component": "richtext/RichTextEditorToolbar",
+    "storyId": "lab-richtexteditor--with-toolbar",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "[role=\"group\"][aria-label=\"Formatting actions\"] button:first-of-type",
+      "next": "[role=\"group\"][aria-label=\"Formatting actions\"] button:last-of-type"
     }
   },
   {
