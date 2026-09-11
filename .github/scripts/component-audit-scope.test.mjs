@@ -78,6 +78,14 @@ describe('component audit scope', () => {
     ],
     ['trusted classifier dependency', ['.github/scripts/change-scope.cjs']],
     ['accessibility harness', ['.github/scripts/accessibility-audit.js']],
+    ['target-only route policy', ['apps/storybook/rtl-audit/targets.json']],
+    [
+      'route policy with component source',
+      [
+        'apps/storybook/rtl-audit/rtl-audit-coverage.mjs',
+        'packages/vega/src/VegaChart.tsx',
+      ],
+    ],
     ['unknown path', ['new/unclassified/path.xyz']],
     ['empty input', []],
   ])('fails closed for %s', (_name, paths) => {

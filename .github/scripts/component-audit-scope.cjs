@@ -37,19 +37,25 @@ function classifyComponentAuditScope(paths, componentPackages) {
     file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
     file === '.github/scripts/weekly-rtl-summary.test.mjs' ||
     file === '.github/workflows/rtl-weekly.yml';
+  const isSharedRoutingPolicy = file =>
+    file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
+    file === 'apps/storybook/rtl-audit/targets.json' ||
+    file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
+    file === 'scripts/component-packages.cjs';
 
   const componentSourceChanged = paths.some(isComponentSource);
   const storyChanged = paths.some(isStory);
   const accessibilityChanged = paths.some(isAccessibilitySurface);
   const rtlHarnessChanged = paths.some(isRtlHarness);
-  const hasUnmatchedInput =
+  const forceFullComponentAudits =
     paths.length === 0 ||
     paths.some(
       file =>
-        !isComponentSource(file) &&
-        !isStory(file) &&
-        !isAccessibilitySurface(file) &&
-        !isRtlHarness(file),
+        isSharedRoutingPolicy(file) ||
+        (!isComponentSource(file) &&
+          !isStory(file) &&
+          !isAccessibilitySurface(file) &&
+          !isRtlHarness(file)),
     );
 
   return {
@@ -57,11 +63,11 @@ function classifyComponentAuditScope(paths, componentPackages) {
       componentSourceChanged ||
       storyChanged ||
       accessibilityChanged ||
-      hasUnmatchedInput,
+      forceFullComponentAudits,
     has_rtl_components:
-      componentSourceChanged || storyChanged || hasUnmatchedInput,
-    has_rtl_harness: rtlHarnessChanged || hasUnmatchedInput,
-    force_full_component_audits: hasUnmatchedInput,
+      componentSourceChanged || storyChanged || forceFullComponentAudits,
+    has_rtl_harness: rtlHarnessChanged || forceFullComponentAudits,
+    force_full_component_audits: forceFullComponentAudits,
   };
 }
 
