@@ -16,6 +16,8 @@ import {
   classifyDirectionalDecorationPair,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  storyIdsForComponentFilters,
+  unresolvedComponentFilters,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const {
@@ -492,6 +494,26 @@ describe('audited package and story routing', () => {
       },
     ]);
 
+    const groupedOwners = [
+      'charts/ChartAxis',
+      'charts/ChartGrid',
+      'charts/ChartLegend',
+      'charts/ChartSwatch',
+      'charts/ChartTooltip',
+      'richtext/RichTextEditorToolbar',
+    ];
+    expect(storyIdsForComponentFilters(routes, groupedOwners)).toEqual([
+      'charts-chrome-legend--default',
+      'charts-chrome-axes-grids--playground',
+      'charts-chrome-swatch--gallery',
+      'charts-chrome-tooltip--default',
+      'lab-richtexteditor--with-toolbar',
+    ]);
+    expect(unresolvedComponentFilters(routes, groupedOwners)).toEqual([]);
+    expect(
+      unresolvedComponentFilters(routes, ['charts/MissingOwner']),
+    ).toEqual(['charts/MissingOwner']);
+
     expect(
       buildAuditedComponentRoster({
         sourceComponents: [
@@ -517,6 +539,16 @@ describe('audited package and story routing', () => {
       ...richTextComponents.map(component => `richtext/${component}`),
       ...vegaComponents.map(component => `vega/${component}`),
     ]);
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: [
+          ...chartsComponents.map(component => `charts/${component}`),
+          ...richTextComponents.map(component => `richtext/${component}`),
+        ],
+        storyComponents: routes.map(route => route.component),
+        filters: groupedOwners,
+      }),
+    ).toEqual(groupedOwners);
   });
 
   it('classifies measured Chart owners and verified direction-neutral owners without gaps', () => {

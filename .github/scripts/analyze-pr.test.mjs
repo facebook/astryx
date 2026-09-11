@@ -150,6 +150,11 @@ describe('analyze-pr shallow-clone recovery', () => {
         'RichTextEditor',
         'VegaChart',
       ]);
+      expect(analysis.modifiedComponentOwners).toEqual([
+        'core/Card',
+        'richtext/RichTextEditor',
+        'vega/VegaChart',
+      ]);
       expect(analysis.changedPackages).toEqual([
         '@astryxdesign/core',
         '@astryxdesign/richtext',

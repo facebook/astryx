@@ -688,7 +688,7 @@ jobs:
       # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
-          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
           SCOPE_ARGS=()
           if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ -n "$COMPONENTS" ]; then
             SCOPE_ARGS=(--components "$COMPONENTS")
@@ -1005,7 +1005,7 @@ jobs:
       - name: Run RTL audit
         id: rtl
         run: |
-          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
           FILTER_ARGS=()
           if [ "${{ needs.check-components.outputs.force_full_component_audits }}" = "true" ] \
             || { [ -z "$COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_components }}" = "true" ]; }; then

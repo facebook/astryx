@@ -4,7 +4,7 @@
 
 /**
  * @description Runs accessibility audits on component stories using axe-core
- * @input --storybook-dir <path> --output <file> --components <comma-separated>
+ * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
@@ -13,6 +13,8 @@
  *   when --fail-on-new finds regressions. Diff logic lives in
  *   lib/a11y-baseline.js. Pages are scanned with animations held at their end
  *   state.
+ * @position Blocking PR accessibility audit; scoped stories share canonical
+ *   package-qualified ownership with the RTL audit.
  */
 
 const { chromium } = require('playwright');
@@ -20,6 +22,11 @@ const { AxeBuilder } = require('@axe-core/playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const {
+  COMPONENT_PACKAGES,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = require('../../scripts/component-packages.cjs');
 const {
   buildBaseline,
   diffAgainstBaseline,
@@ -127,6 +134,51 @@ async function getStories(storybookPath) {
   }
 }
 
+async function routedStoryIds(stories, componentFilters) {
+  const {
+    buildStoryComponentRoutes,
+    storyIdsForComponentFilters,
+    unresolvedComponentFilters,
+  } = await import(
+    '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs'
+  );
+  const publicComponentsByPackage = Object.fromEntries(
+    COMPONENT_PACKAGES.map(pkg => [
+      pkg.name,
+      pkg.layout === 'flat'
+        ? flatPackageComponentNames(process.cwd(), pkg)
+        : nestedPackageComponentNames(process.cwd(), pkg),
+    ]),
+  );
+  const targets = JSON.parse(
+    fs.readFileSync(
+      path.resolve('apps/storybook/rtl-audit/targets.json'),
+      'utf8',
+    ),
+  );
+  const routes = buildStoryComponentRoutes({
+    stories: Object.entries(stories)
+      .filter(([id, story]) => story.type === 'story' && !id.endsWith('--docs'))
+      .map(([id, story]) => ({
+        id,
+        title: story.title || '',
+      })),
+    targets,
+    publicComponentsByPackage,
+  });
+  const ownerStoryRoutes = Object.fromEntries(
+    componentFilters.map(filter => [
+      filter,
+      storyIdsForComponentFilters(routes, [filter]),
+    ]),
+  );
+  return {
+    storyIds: storyIdsForComponentFilters(routes, componentFilters),
+    unresolvedFilters: unresolvedComponentFilters(routes, componentFilters),
+    ownerStoryRoutes,
+  };
+}
+
 async function runAccessibilityAudit() {
   console.log('Starting accessibility audit...');
 
@@ -155,33 +207,32 @@ async function runAccessibilityAudit() {
     return report;
   }
 
-  // Start server
-  const port = 6007;
-  const server = await createServer(storybookPath, port);
-
   // Get stories
   const stories = await getStories(storybookPath);
   const storyIds = Object.keys(stories);
 
   console.log(`Found ${storyIds.length} stories`);
 
-  // Filter stories for relevant components
-  const relevantStories = storyIds.filter((id) => {
-    // Skip docs pages
-    if (id.endsWith('--docs')) return false;
-
-    if (components.length === 0) return true;
-    const story = stories[id];
-    const title = story.title || '';
-
-    // Titles are like "Core/XDSButton" or "Layout/XDSCard"
-    const titleParts = title.split('/');
-    const componentPart = titleParts.length > 1 ? titleParts[1] : titleParts[0];
-    const normalizedComponent = componentPart.replace(/^XDS/i, '').toLowerCase();
-
-    return components.some(
-      (comp) => normalizedComponent === comp.toLowerCase()
+  // Reuse the same canonical package-qualified owner map as the RTL audit.
+  // Grouped Storybook titles such as Charts/Chrome/Legend and the historical
+  // Lab/RichTextEditor namespace otherwise resolve to zero stories here.
+  const routed = components.length > 0
+    ? await routedStoryIds(stories, components)
+    : null;
+  if (routed?.unresolvedFilters.length > 0) {
+    throw new Error(
+      `No owned Storybook stories resolved for: ${routed.unresolvedFilters.join(', ')}`,
     );
+  }
+  for (const [owner, ownedStoryIds] of Object.entries(
+    routed?.ownerStoryRoutes ?? {},
+  )) {
+    console.log(`Owner route: ${owner} -> ${ownedStoryIds.join(', ')}`);
+  }
+  const routedIds = routed == null ? null : new Set(routed.storyIds);
+  const relevantStories = storyIds.filter(id => {
+    if (id.endsWith('--docs')) return false;
+    return routedIds == null || routedIds.has(id);
   });
 
   // Group stories by component
@@ -197,6 +248,8 @@ async function runAccessibilityAudit() {
 
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
+  const port = 6007;
+  const server = await createServer(storybookPath, port);
   const browser = await chromium.launch();
   const componentResults = {};
   let totalViolations = 0;
@@ -297,6 +350,7 @@ async function runAccessibilityAudit() {
   }
 
   const report = {
+    ownerStoryRoutes: routed?.ownerStoryRoutes ?? null,
     components: componentResults,
     summary: {
       componentsAudited: Object.keys(componentResults).length,

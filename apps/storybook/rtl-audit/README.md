@@ -26,7 +26,9 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke scope so
 > package discovery and curated aliases cannot skip their own check. The full
 > unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`. Omit
-> `--filter` to run it locally.
+> `--filter` to run it locally. The blocking accessibility audit consumes the
+> same package-qualified owner-to-story routes and fails if any selected owner
+> resolves to zero stories.
 
 ### A.1 D1 icon-mirror
 

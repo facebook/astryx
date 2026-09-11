@@ -907,8 +907,9 @@ async function scoreCurated(page, coarsePage, port, t) {
 
 // ---------------------------------------------------------------------------
 function matchesFilter(component) {
-  const name = component.split('/').at(-1)?.toLowerCase() ?? component;
-  return !FILTER.length || FILTER.includes(name);
+  const normalized = component.toLowerCase();
+  const name = normalized.split('/').at(-1) ?? normalized;
+  return !FILTER.length || FILTER.includes(normalized) || FILTER.includes(name);
 }
 
 // Run `fn` over `items` with `pages.length` workers, each pinned to its own

@@ -32,6 +32,7 @@ const STORYBOOK_STORIES = 'apps/storybook/stories';
 // only adds the published package name and derives its package directory.
 const PACKAGES = COMPONENT_PACKAGES.map(pkg => ({
   ...pkg,
+  packageName: pkg.name,
   name: `@astryxdesign/${pkg.name}`,
   dir: path.dirname(pkg.src),
 }));
@@ -524,6 +525,8 @@ function analyze() {
 
   const newComponents = [];
   const modifiedComponents = [];
+  const newComponentOwners = [];
+  const modifiedComponentOwners = [];
   const componentStats = {};
   const changedPackages = new Set();
 
@@ -556,12 +559,20 @@ function analyze() {
           : relativePath.split('/')[0];
 
       if (!allComponents.includes(componentName)) continue;
+      const existsInBase = componentExistsInBase(pkg, componentName);
+      const owner = `${pkg.packageName}/${componentName}`;
+      const owners = existsInBase ? modifiedComponentOwners : newComponentOwners;
+      if (!owners.includes(owner)) owners.push(owner);
+
+      // Keep the legacy bare-name shape for existing report consumers. The
+      // package-qualified owner arrays below are the routing identity used by
+      // browser audits and cannot collide across packages.
       const key = componentName;
       if (componentStats[key]) continue;
 
       const stats = getComponentStats(pkg, componentName);
       componentStats[key] = stats;
-      if (componentExistsInBase(pkg, componentName)) {
+      if (existsInBase) {
         modifiedComponents.push(key);
       } else {
         newComponents.push(key);
@@ -572,6 +583,9 @@ function analyze() {
   console.log(`Changed packages: ${[...changedPackages].join(', ') || 'none'}`);
   console.log(`New components: ${newComponents.join(', ') || 'none'}`);
   console.log(`Modified components: ${modifiedComponents.join(', ') || 'none'}`);
+  console.log(
+    `Component owners: ${[...newComponentOwners, ...modifiedComponentOwners].join(', ') || 'none'}`,
+  );
 
   // Detect new exports in modified components (a dir may be "modified" yet add
   // brand-new exports alongside existing ones).
@@ -597,6 +611,8 @@ function analyze() {
   const result = {
     newComponents,
     modifiedComponents,
+    newComponentOwners,
+    modifiedComponentOwners,
     newExports,
     componentStats,
     changedPackages: [...changedPackages],

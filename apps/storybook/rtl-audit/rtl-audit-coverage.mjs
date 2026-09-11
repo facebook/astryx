@@ -176,6 +176,34 @@ export function buildStoryComponentRoutes({
   });
 }
 
+/** Whether a package-qualified route owns a bare or qualified filter. */
+function routeMatchesComponentFilter(route, filter) {
+  const component = route.component.toLowerCase();
+  const bareComponent = component.split('/').at(-1);
+  const requested = filter.toLowerCase();
+  return component === requested || bareComponent === requested;
+}
+
+/** Story ids owned by any bare or package-qualified component filter. */
+export function storyIdsForComponentFilters(routes, filters) {
+  return [
+    ...new Set(
+      routes
+        .filter(route =>
+          filters.some(filter => routeMatchesComponentFilter(route, filter)),
+        )
+        .map(route => route.id),
+    ),
+  ];
+}
+
+/** Selected owners for which the canonical Storybook route has no story. */
+export function unresolvedComponentFilters(routes, filters) {
+  return filters.filter(
+    filter => !routes.some(route => routeMatchesComponentFilter(route, filter)),
+  );
+}
+
 const EXPLICIT_GLYPH_PAIRS = new Map([
   ['/', '\\'],
   ['\\', '/'],
@@ -556,10 +584,12 @@ export function buildAuditedComponentRoster({
 }) {
   const normalizedFilters = filters.map(filter => filter.toLowerCase());
   const knownComponents = [...sourceComponents, ...storyComponents];
+  const matchesFilter = (component, filter) =>
+    component.toLowerCase() === filter || componentName(component) === filter;
   const unmatchedFilters = normalizedFilters
     .filter(
       filter =>
-        !knownComponents.some(component => componentName(component) === filter),
+        !knownComponents.some(component => matchesFilter(component, filter)),
     )
     .map(filter => `unknown/${filter}`);
 
@@ -573,7 +603,7 @@ export function buildAuditedComponentRoster({
   ).filter(
     component =>
       normalizedFilters.length === 0 ||
-      normalizedFilters.includes(componentName(component)),
+      normalizedFilters.some(filter => matchesFilter(component, filter)),
   );
 }
 
