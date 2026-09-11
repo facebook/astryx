@@ -36,6 +36,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '../../../../..');
 const CLI_PKG = path.join(REPO_ROOT, 'packages/cli');
@@ -425,9 +427,12 @@ beforeAll(() => {
   );
 
   // Its runtime dependencies, resolved from the install root like a real one.
+  // Found from the CLI package rather than the repo root: only a hoisted
+  // node_modules puts a package's own dependencies at the workspace root.
   for (const dep of RUNTIME_DEPS) {
-    const resolved = fs.realpathSync(path.join(REPO_ROOT, 'node_modules', dep));
-    fs.symlinkSync(resolved, path.join(modules, dep));
+    const installed = findInstalledPackage(CLI_PKG, dep);
+    if (!installed) throw new Error(`${dep} is not installed under ${CLI_PKG}`);
+    fs.symlinkSync(fs.realpathSync(installed), path.join(modules, dep));
   }
 
   // The installed core. Real built implementations behind a swappable

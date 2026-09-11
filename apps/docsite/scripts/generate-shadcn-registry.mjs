@@ -16,6 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import babel from '@babel/core';
+import presetTypeScript from '@babel/preset-typescript';
 import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
@@ -110,7 +111,10 @@ function precompileStylexSource(source, fileName) {
     filename: fileName,
     babelrc: false,
     configFile: false,
-    presets: [['@babel/preset-typescript', {allExtensions: true, isTSX: true}]],
+    // Imported, not named: Babel resolves a string preset from `cwd`, and CI
+    // runs this script from the repo root, where only a hoisted node_modules
+    // would carry docsite's own Babel presets.
+    presets: [[presetTypeScript, {allExtensions: true, isTSX: true}]],
     plugins: [
       [
         stylexPlugin,
