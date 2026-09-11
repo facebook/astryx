@@ -376,10 +376,10 @@ structure.
 
 ## Open questions
 
-- **OQ1 — How do LayoutContent and LayoutPanel supply the observed content box?**
-  (`human-api`) Their current root simultaneously owns landmark semantics, theme,
-  padding, full-bleed geometry, and overflow. Direct hook adoption needs a stable
-  inner layout box, but adding one can change flex/grid participation, direct-child
-  styling, percentage sizing, and container-padding behavior. Decide whether the
-  regions own and verify that internal box, or preserve their current DOM and make
-  explicit nested `ScrollableArea` composition the supported structural path.
+- **OQ1 — How is the Layout `isScrollable` migration sequenced?** (`checkable`)
+  LayoutContent and LayoutPanel will migrate their existing `isScrollable` path to
+  the shared managed behavior and add an internal observed content box. Because
+  `isScrollable` defaults to true, implementation MUST land as a separate change
+  above the shared hooks and `ScrollableArea`, with compatibility evidence for
+  direct-child selectors, flex/grid children, percentage sizing, full bleed,
+  container padding, and refs before the managed path replaces current behavior.
