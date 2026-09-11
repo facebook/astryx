@@ -4826,6 +4826,11 @@
       "aliases": []
     },
     {
+      "name": "template-table-comparison",
+      "path": "templates/table-comparison",
+      "aliases": []
+    },
+    {
       "name": "template-table-filter",
       "path": "templates/table-filter",
       "aliases": []

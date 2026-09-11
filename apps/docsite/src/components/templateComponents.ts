@@ -174,6 +174,10 @@ export const TEMPLATE_COMPONENTS: Record<
   table: lazy(
     () => import('../../../../packages/cli/assets/templates/pages/table/page'),
   ),
+  'table-comparison': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-comparison/page'),
+  ),
   'table-filter': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
