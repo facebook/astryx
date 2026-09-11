@@ -1348,8 +1348,14 @@ export default function ModelComparisonTemplate() {
         style={{position: 'sticky', insetInlineStart: 0, width: 'fit-content'}}>
         {/* Sized as a heading rather than bold body text: these are the only
             landmarks in a long matrix, and the criteria count they used to
-            carry was a number nobody acts on. */}
-        <Heading level={3}>{groupKey}</Heading>
+            carry was a number nobody acts on.
+
+            Level 3 for the type scale, exposed as level 2 for the outline: the
+            page heading is the only thing above these, so an unadjusted h3
+            would skip a level for anyone navigating by headings. */}
+        <Heading level={3} accessibilityLevel={2}>
+          {groupKey}
+        </Heading>
       </HStack>
     ),
   });
