@@ -182,6 +182,46 @@ describe('search leaf — limit validation (API matches the CLI contract)', () =
   }, SLOW);
 });
 
+/**
+ * A page template's derived keywords — the component names read back out of
+ * its source — once scored at the same weight as an authored keyword, so every
+ * page that rendered a `<List>` anywhere claimed the same "list" match as the
+ * page that IS a list, the ranking flattened into a tie, and fell through to
+ * the alphabetical tiebreak. These pin the symptom end-to-end, independent of
+ * how `weakKeywords` are weighted internally.
+ */
+describe('search leaf — page ranking is not dominated by incidental renders', () => {
+  /**
+   * @param {Awaited<ReturnType<typeof search>>} r
+   * @returns {Array<{name: string, score: number, reason: string}>} pages, in rank order
+   */
+  const pagesOf = r => /** @type {any[]} */ (r.data.results).filter(x => x.kind === 'page');
+
+  it('ranks a table page top-3 for "customer list", not the pages that merely render a List', async () => {
+    const pages = pagesOf(await search('customer list', {cwd, type: 'template', limit: 400}));
+    const top = pages.slice(0, 3).map(p => p.name);
+    expect(top).toEqual(expect.arrayContaining([expect.stringMatching(/^table/)]));
+  }, SLOW);
+
+  it('keeps the widest-surface page off the top spot for a query it only brushes', async () => {
+    // theme-showcase renders ~51 components — 4x the median page — so it used
+    // to match more tokens of almost any query than the page actually about them.
+    const pages = pagesOf(await search('list of users', {cwd, type: 'template', limit: 400}));
+    expect(pages.length).toBeGreaterThan(0);
+    expect(pages[0].name).not.toBe('theme-showcase');
+  }, SLOW);
+
+  it('separates pages by score instead of collapsing into one alphabetical tie', async () => {
+    // Compare WITHIN the runner-up band: under the regression every page
+    // rendering a List tied at the same score from index 1 down, while index 0
+    // could still escape the tie by matching both terms. pages[0] > pages[5]
+    // held even with the bug present; pages[1] > pages[5] did not.
+    const pages = pagesOf(await search('customer list', {cwd, type: 'template', limit: 400}));
+    expect(pages.length).toBeGreaterThan(5);
+    expect(pages[1].score).toBeGreaterThan(pages[5].score);
+  }, SLOW);
+});
+
 describe('search leaf — integration components', () => {
   /**
    * A minimal consumer project: a stub `@astryxdesign/core` (so `findCoreDir`
