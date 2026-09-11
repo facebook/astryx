@@ -3,7 +3,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @file Validates derivedVarRegistry stays in sync with component doc files,
- * AND detects undocumented component CSS custom properties in source files.
+ * including nested surface fills, AND detects undocumented component CSS
+ * custom properties in source files.
  *
  * Three layers of checking:
  * 1. Source scan: finds all component-level CSS vars in .tsx files
@@ -218,6 +219,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Button: 'button',
   Card: 'card',
   Chat: 'chat',
+  CodeBlock: 'code-block',
   ContextMenu: 'context-menu',
   Dialog: 'dialog',
   DropdownMenu: 'dropdown-menu',
@@ -451,6 +453,9 @@ describe('getDerivedVars', () => {
     // otherwise the rule lands and the var half of it silently does nothing.
     expect(getDerivedVars('hovercard', 'borderRadius')).toEqual(
       getDerivedVars('hover-card', 'borderRadius'),
+    );
+    expect(getDerivedVars('codeblock', 'backgroundColor')).toEqual(
+      getDerivedVars('code-block', 'backgroundColor'),
     );
     expect(getDerivedVars('textarea', 'paddingInline')).toEqual(
       getDerivedVars('text-area', 'paddingInline'),
