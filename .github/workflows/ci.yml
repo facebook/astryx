@@ -121,19 +121,21 @@ jobs:
   # Lightweight check — does the PR touch any published components?
   # Gates pr-a11y and pr-rtl to avoid unnecessary work.
   #
-  # Keep the roots and the exclude list in sync with analyze-pr.js: this job
-  # only decides *whether* the downstream audits run, while analyze-pr.js
-  # decides *which* components they audit. When the two disagree the audits
-  # silently no-op — lab components were invisible to both audits until this
-  # job learned about packages/lab/src.
+  # `scripts/component-packages.cjs` owns the component source roots used here
+  # and by the RTL roster. `analyze-pr.js` still decides which changed components
+  # each downstream audit receives. When those projections disagree the audits
+  # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
+      has_rtl_components: ${{ steps.check.outputs.has_rtl_components }}
+      has_rtl_harness: ${{ steps.check.outputs.has_rtl_harness }}
+      force_full_component_audits: ${{ steps.check.outputs.force_full_component_audits }}
       # Stable visual scope is separate from component scope: Core and the
       # non-private shipped themes participate; canaryOnly packages do not.
       has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
@@ -153,25 +155,34 @@ jobs:
       - name: Check for component changes
         id: check
         run: |
-          if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
-            echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
-            echo "has_components=true" >> "$GITHUB_OUTPUT"
-            # Fail closed for the stable lane too: without a merge base we do
-            # not know whether a stable package changed.
+          if [ "${{ needs.check-scope.outputs.docsite_only }}" = "true" ] \
+            || [ "${{ needs.check-scope.outputs.spec_only }}" = "true" ] \
+            || [ "${{ needs.check-scope.outputs.tooling_only }}" = "true" ]; then
+            printf 'has_components=false\nhas_rtl_components=false\nhas_rtl_harness=false\nforce_full_component_audits=false\nhas_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            echo "Trusted specialized lane — component audits explicitly not applicable."
+            exit 0
+          fi
+          if ! MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null); then
+            echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} — running full component audits"
+            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
             echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
-          # The shared accessibility spec-test contracts gate inside pr-a11y,
-          # and their component bindings live under `__tests__/` — which the
-          # filter above deliberately excludes. Without this the contract could
-          # be changed, or a binding broken, with the only job that runs it
-          # skipped. Stories are in scope too: the Chromium bindings drive
-          # checked-in stories by id, so renaming or deleting one breaks the
-          # contract run and nothing else would notice.
-          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^apps/storybook/stories/|^playwright\.config\.ts$' | head -1 || true)
-          echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+          POLICY_ROOT="$RUNNER_TEMP/component-audit-scope"
+          mkdir -p "$POLICY_ROOT/.github/scripts" "$POLICY_ROOT/scripts"
+          SCOPE="$POLICY_ROOT/.github/scripts/component-audit-scope.cjs"
+          REGISTRY="$POLICY_ROOT/scripts/component-packages.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/component-audit-scope.cjs" > "$SCOPE" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
+            git diff --name-status "$MERGE_BASE"...HEAD \
+              | node "$SCOPE" --registry "$REGISTRY" --github-output
+          else
+            echo "::warning::Trusted component audit policy is unavailable — running full component audits"
+            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
+          fi
+
+          FILES=$(git diff --name-only "$MERGE_BASE"...HEAD)
 
           # One classifier owns the release-channel rule. It reads each
           # package's `astryx.canaryOnly` metadata rather than hard-coding
@@ -694,11 +705,18 @@ jobs:
       # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
+          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
+          ANALYSIS_FORCE_FULL=$(jq -r '.forceFullComponentAudits // false' analysis.json)
+          SCOPE_ARGS=()
+          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ "$ANALYSIS_FORCE_FULL" != "true" ] && [ -n "$COMPONENTS" ]; then
+            SCOPE_ARGS=(--components "$COMPONENTS")
+          else
+            echo "Component scope is policy-sensitive or unresolved — running the full accessibility audit."
+          fi
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
-            --components "$COMPONENTS" \
+            "${SCOPE_ARGS[@]}" \
             --baseline .github/a11y-baseline.json \
             --fail-on-new
 
@@ -949,24 +967,39 @@ jobs:
           if-no-files-found: ignore
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
-  # analysis.json scoping, so a PR only pays for the components it touched.
-  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
-  # covers untouched components runs in rtl-weekly.yml.
+  # analysis.json scoping, so ordinary PRs only pay for the components they
+  # touched. A harness-only PR runs the fixed Chart/ChartLegend smoke scope so
+  # routing and target changes prove themselves instead of skipping their own
+  # check. A policy-sensitive full run spans ~2,000 stories and exceeded the
+  # single-job budget, so CI partitions it by canonical package; each shard runs
+  # four browser workers, and the stable pr-rtl join requires all five scope
+  # manifests plus a report from every applicable package.
+  # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4 adds behavior that
   # needs selectors. The applicability rollup treats unexplained all-N/A as a
   # coverage gap for both new and existing components.
   #
-  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
-  # job summary but don't block the merge, while the suite is observed for
-  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
-  # checks. See apps/storybook/rtl-audit/README.md.
-  pr-rtl:
+  # Audit findings remain SOFT while the stability window is observed: the audit
+  # step may fail after writing a report. Missing/canceled/incomplete shards are
+  # HARD failures, and the pr-rtl join cannot pass without every package scope
+  # manifest and every applicable report.
+  # To promote findings too, remove the audit step's continue-on-error.
+  pr-rtl-shard:
+    name: pr-rtl (${{ matrix.package }})
     needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
-    runs-on: 2-core-ubuntu-arm
-    continue-on-error: true
+    if: >-
+      github.event_name == 'pull_request' &&
+      (needs.check-components.outputs.has_rtl_components == 'true' ||
+       needs.check-components.outputs.has_rtl_harness == 'true' ||
+       needs.check-components.outputs.force_full_component_audits == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [core, lab, charts, richtext, vega]
+    runs-on: 4-core-ubuntu
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -992,33 +1025,79 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
-      # An empty --filter means "audit everything", so guard the empty case:
-      # has_components can be true while analysis.json resolves to no
-      # components (the two compute component-ness differently).
+      # A registry/classifier mutation runs the full audit from the PR checkout,
+      # while eligibility itself came from trusted base policy. Scope resolution
+      # is strict: malformed or missing analysis fails before the soft findings
+      # step can run. An ordinary harness-only change uses the bounded routing
+      # smoke scope.
+      - name: Resolve RTL shard scope
+        id: rtl-scope
+        run: |
+          node .github/scripts/rtl-shard-scope.mjs \
+            --analysis analysis.json \
+            --package "${{ matrix.package }}" \
+            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
+            --has-components "${{ needs.check-components.outputs.has_rtl_components }}" \
+            --has-harness "${{ needs.check-components.outputs.has_rtl_harness }}" \
+            --manifest rtl-shard-scope.json \
+            --github-output "$GITHUB_OUTPUT"
+
       - name: Run RTL audit
         id: rtl
+        if: steps.rtl-scope.outputs.should_run == 'true'
+        continue-on-error: true
         run: |
-          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
-          if [ -z "$COMPONENTS" ]; then
-            echo "No component changes resolved from analysis.json — skipping RTL audit."
-            echo "ran=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          PACKAGE=${{ matrix.package }}
+          COMPONENTS="${{ steps.rtl-scope.outputs.components }}"
+          FILTER="${{ steps.rtl-scope.outputs.filter }}"
+          FILTER_ARGS=()
+          if [ -n "$FILTER" ]; then
+            FILTER_ARGS=(--filter "$FILTER")
           fi
-          echo "Auditing components: $COMPONENTS"
-          echo "ran=true" >> "$GITHUB_OUTPUT"
-          echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
+          echo "Auditing $PACKAGE components: $COMPONENTS"
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
             --output rtl-audit-report.json \
-            --filter "$COMPONENTS"
+            --packages "$PACKAGE" \
+            --concurrency 4 \
+            "${FILTER_ARGS[@]}"
+
+      - name: Require completed RTL shard report
+        if: always()
+        run: |
+          SCOPE_OUTCOME="${{ steps.rtl-scope.outcome }}"
+          SHOULD_RUN="${{ steps.rtl-scope.outputs.should_run }}"
+          AUDIT_OUTCOME="${{ steps.rtl.outcome }}"
+          if [ "$SCOPE_OUTCOME" != "success" ]; then
+            echo "RTL shard scope did not resolve successfully: $SCOPE_OUTCOME"
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" = "true" ]; then
+            if [ "$AUDIT_OUTCOME" != "success" ] && [ "$AUDIT_OUTCOME" != "failure" ]; then
+              echo "Applicable RTL audit did not run: $AUDIT_OUTCOME"
+              exit 1
+            fi
+            node .github/scripts/rtl-report-completion.mjs \
+              --report rtl-audit-report.json \
+              --package "${{ matrix.package }}" \
+              --filter "${{ steps.rtl-scope.outputs.filter }}"
+          elif [ "$SHOULD_RUN" = "false" ]; then
+            if [ "$AUDIT_OUTCOME" != "skipped" ]; then
+              echo "Out-of-scope RTL audit unexpectedly ran: $AUDIT_OUTCOME"
+              exit 1
+            fi
+          else
+            echo "RTL shard scope produced no explicit should_run decision."
+            exit 1
+          fi
 
       - name: Write scorecard summary
-        if: always() && steps.rtl.outputs.ran == 'true'
+        if: always() && steps.rtl-scope.outputs.should_run == 'true'
         run: |
           {
             echo "## RTL semantic audit"
             echo ""
-            echo "Scoped to the components this PR touches: **${{ steps.rtl.outputs.components }}**. The full unfiltered sweep runs weekly — see \`rtl-weekly.yml\`."
+            echo "Audit scope: **${{ steps.rtl-scope.outputs.components }}**. The scheduled unfiltered sweep also runs weekly — see \`rtl-weekly.yml\`."
             echo ""
             echo "Relationship-based (LTR vs RTL in the same run) — no golden screenshots. **Soft-gated** pending a stability window."
             echo ""
@@ -1116,10 +1195,40 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload RTL audit report
-        if: always() && steps.rtl.outputs.ran == 'true'
+      - name: Upload RTL shard evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: rtl-audit-report
-          path: rtl-audit-report.json
+          name: rtl-audit-report-${{ matrix.package }}
+          path: |
+            rtl-shard-scope.json
+            rtl-audit-report.json
+          if-no-files-found: error
           retention-days: 1
+
+  # Stable required context joining the five package shards above.
+  pr-rtl:
+    needs: [check-components, pr-rtl-shard]
+    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download applicable RTL shard reports
+        if: ${{ needs.check-components.result == 'success' && (needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true') }}
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: rtl-audit-report-*
+          path: rtl-shard-reports
+
+      - name: Require every applicable RTL shard
+        if: always()
+        run: |
+          node .github/scripts/rtl-join.mjs \
+            --check-components "${{ needs.check-components.result }}" \
+            --shards "${{ needs.pr-rtl-shard.result }}" \
+            --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
+            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
+            --reports-dir rtl-shard-reports
