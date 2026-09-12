@@ -5,7 +5,7 @@
 /**
  * @file useScrollableArea.ts
  * @input Logical scroll intent, keyboard ownership, caller-owned viewport/content props
- * @output Safe prop getters and stable per-axis effective scroll state
+ * @output Safe prop getters, logical-to-physical axis mapping, and stable per-axis effective scroll state
  * @position Canonical behavior core for ScrollableArea and structure-owning adopters
  *
  * SYNC: When modified, update:
@@ -73,6 +73,8 @@ export interface UseScrollableAreaResult {
     props?: ScrollableElementProps<E>,
   ): ScrollableElementProps<E>;
   state: ScrollableAreaState;
+  /** Current logical-to-physical mapping derived from writing mode and direction. */
+  axisMapping: LogicalAxisMapping;
 }
 
 const INACTIVE_AXIS_STATE: ScrollAxisState = {
@@ -369,5 +371,5 @@ export function useScrollableArea({
     [getComposedContentRef],
   );
 
-  return {getViewportProps, getContentProps, state};
+  return {getViewportProps, getContentProps, state, axisMapping: mapping};
 }

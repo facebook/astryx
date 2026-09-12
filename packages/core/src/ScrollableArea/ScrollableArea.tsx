@@ -85,17 +85,11 @@ const styles = stylex.create({
   },
 });
 
-const overflowByAxis = {
-  inline: {inline: 'auto', block: 'hidden'},
-  block: {inline: 'hidden', block: 'auto'},
-  both: {inline: 'auto', block: 'auto'},
-} as const;
-
 const dynamicStyles = stylex.create({
-  overflow: (
-    overflowInline: 'auto' | 'hidden',
-    overflowBlock: 'auto' | 'hidden',
-  ) => ({overflowInline, overflowBlock}),
+  overflow: (overflowX: 'auto' | 'hidden', overflowY: 'auto' | 'hidden') => ({
+    overflowX,
+    overflowY,
+  }),
   sizing: (
     width: SizeValue | null,
     height: SizeValue | null,
@@ -188,13 +182,22 @@ export function ScrollableArea({
   style,
   ...props
 }: ScrollableAreaProps) {
-  const {getViewportProps, getContentProps} = useScrollableArea({
+  const {getViewportProps, getContentProps, axisMapping} = useScrollableArea({
     axis,
     keyboardAccess: {owner: 'viewport', label, role},
     overscroll,
   });
 
-  const overflow = overflowByAxis[axis];
+  const scrollsOnX =
+    axis === 'both' ||
+    (axis === 'inline'
+      ? axisMapping.inline === 'x'
+      : axisMapping.block === 'x');
+  const scrollsOnY =
+    axis === 'both' ||
+    (axis === 'inline'
+      ? axisMapping.inline === 'y'
+      : axisMapping.block === 'y');
   const mergedViewportProps = mergeProps(
     themeProps('scrollable-area', {axis}),
     stylex.props(
@@ -208,7 +211,10 @@ export function ScrollableArea({
         minHeight ?? null,
       ),
       xstyle,
-      dynamicStyles.overflow(overflow.inline, overflow.block),
+      dynamicStyles.overflow(
+        scrollsOnX ? 'auto' : 'hidden',
+        scrollsOnY ? 'auto' : 'hidden',
+      ),
     ),
     className,
     style,

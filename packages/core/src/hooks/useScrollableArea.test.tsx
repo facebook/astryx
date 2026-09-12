@@ -27,15 +27,16 @@ function Fixture({
   externalRef,
   onScroll,
 }: FixtureProps) {
-  const {getViewportProps, getContentProps, state} = useScrollableArea({
-    axis,
-    keyboardAccess: {
-      owner: 'viewport',
-      label: 'Scrollable results',
-      role: 'region',
-    },
-    overscroll: chaining,
-  });
+  const {getViewportProps, getContentProps, state, axisMapping} =
+    useScrollableArea({
+      axis,
+      keyboardAccess: {
+        owner: 'viewport',
+        label: 'Scrollable results',
+        role: 'region',
+      },
+      overscroll: chaining,
+    });
 
   return (
     <>
@@ -51,6 +52,7 @@ function Fixture({
         </div>
       </div>
       <output data-testid="state">{JSON.stringify(state)}</output>
+      <output data-testid="axis-mapping">{JSON.stringify(axisMapping)}</output>
     </>
   );
 }
@@ -251,6 +253,14 @@ describe('useScrollableArea', () => {
 
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
+    expect(
+      JSON.parse(screen.getByTestId('axis-mapping').textContent ?? '{}'),
+    ).toEqual({
+      inline: 'y',
+      block: 'x',
+      inlineReversed: false,
+      blockReversed: true,
+    });
     expect(state()).toEqual({
       inline: {isScrollable: false, atStart: true, atEnd: true},
       block: {isScrollable: true, atStart: false, atEnd: true},

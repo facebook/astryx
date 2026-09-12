@@ -67,6 +67,7 @@ export type {
   UseScrollableAreaOptions,
   UseScrollableAreaResult,
 } from './useScrollableArea';
+export type {LogicalAxisMapping, PhysicalScrollAxis} from './scrollGeometry';
 
 export {useScrollLock} from './useScrollLock';
 

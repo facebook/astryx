@@ -20,3 +20,7 @@ export type {
   UseScrollableAreaOptions,
   UseScrollableAreaResult,
 } from '../hooks/useScrollableArea';
+export type {
+  LogicalAxisMapping,
+  PhysicalScrollAxis,
+} from '../hooks/scrollGeometry';
