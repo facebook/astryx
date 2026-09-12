@@ -18,7 +18,11 @@ export const doc = {
     'Without --out it prints a preview. With --out it writes a candidate file and detached ' +
     'receipt. --preview writes a standardized, self-contained HTML review artifact. ' +
     'TypeScript output is directly importable and contains no generator dependency. ' +
-    'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit.',
+    'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit. ' +
+    'When used in a theme integration, keep the palette request under the theme slug, ' +
+    'write the candidate and receipt under that same slug, import the candidate from the theme source, ' +
+    "and list all three paths in the theme catalog entry's `files` array " +
+    'so `astryx theme add` copies them into the consumer project.',
   fn: 'themePaletteGenerate',
   args: [{name: 'config', param: 'configPath', required: true}],
   options: [
@@ -42,15 +46,15 @@ export const doc = {
   examples: [
     {
       label: 'Preview candidate JSON',
-      cli: 'astryx theme palette generate palette.config.json',
+      cli: 'astryx theme palette generate themes/ocean/palette.config.json',
     },
     {
       label: 'Write candidate and receipt',
-      cli: 'astryx theme palette generate palette.config.json --out ocean.palette.ts',
+      cli: 'astryx theme palette generate themes/ocean/palette.config.json --out themes/ocean/tokens/ocean.palette.ts',
     },
     {
       label: 'Write candidate, receipt, and review preview',
-      cli: 'astryx theme palette generate palette.config.json --out ocean.palette.ts --preview ocean.palette.html',
+      cli: 'astryx theme palette generate themes/ocean/palette.config.json --out themes/ocean/tokens/ocean.palette.ts --preview themes/ocean/tokens/ocean.palette.html',
     },
   ],
   exitCodes: [
