@@ -14,7 +14,10 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {warnOnIntegrationIssues} from './integration-warnings.mjs';
+import {
+  warnOnIntegrationIssues,
+  warnOnProjectIssues,
+} from './integration-warnings.mjs';
 
 let tmpDir;
 let errSpy;
@@ -48,6 +51,45 @@ function loaded({name = '@acme/widgets', components, templates, codemods} = {}) 
     __packageDir: tmpDir,
   };
 }
+
+describe('warnOnProjectIssues', () => {
+  it('includes project-wide catalog warnings that isolated validation cannot see', async () => {
+    await warnOnProjectIssues(
+      {
+        issues: async () => [
+          {
+            package: '@acme/losing-replacement',
+            code: 'ambiguous_component_replacement',
+            severity: 'warning',
+            message: 'Another configured package wins.',
+          },
+        ],
+      },
+      {json: false},
+    );
+
+    expect(errLines).toEqual([
+      'Warning: @acme/losing-replacement has 1 integration issue(s). Run: astryx doctor',
+    ]);
+  });
+
+  it('keeps JSON mode silent', async () => {
+    await warnOnProjectIssues(
+      {
+        issues: async () => [
+          {
+            package: '@acme/widgets',
+            code: 'warning',
+            severity: 'warning',
+            message: 'warning',
+          },
+        ],
+      },
+      {json: true},
+    );
+    expect(errLines).toEqual([]);
+  });
+});
 
 describe('warnOnIntegrationIssues', () => {
   it('emits exactly one stderr line for an integration with issues', async () => {

@@ -65,7 +65,7 @@ export const doc = {
     {
       type: 'swizzle.list',
       description:
-        "The names of swizzlable components discoverable from cwd's @astryxdesign/core.",
+        'Safe swizzle copy-unit names discoverable from cwd: Core component directories plus source-backed integration components. An active replacement occupies its Core target slot; nested symbols that would copy an entire parent directory are not advertised separately, and a docs-only active replacement omits both its own name and the now-unreachable Core target.',
     },
     {
       type: 'swizzle.copy',

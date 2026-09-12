@@ -214,6 +214,42 @@ describe('integration component discovery (ownership-aware)', () => {
     expect(recs.find(r => r.name === 'MetaDiff').sourcePath).toBeNull();
   });
 
+  it('honors doc suffix precedence independently of directory order', () => {
+    const integration = buildIntegration();
+    fs.writeFileSync(
+      path.join(integration.components, 'MetaAppShell.doc.ts'),
+      "export default {\n  group: 'Preferred TypeScript',\n};\n",
+    );
+
+    const shell = discoverIntegrationComponents(integration).find(
+      record => record.name === 'MetaAppShell',
+    );
+
+    expect(shell.docPath).toMatch(/MetaAppShell\.doc\.ts$/);
+    expect(shell.group).toBe('Preferred TypeScript');
+  });
+
+  it('retains equal file stems from separate component directories', () => {
+    const integration = buildIntegration();
+    for (const group of ['One', 'Two']) {
+      const dir = path.join(integration.components, group);
+      fs.mkdirSync(dir, {recursive: true});
+      fs.writeFileSync(
+        path.join(dir, 'Shared.doc.mjs'),
+        `export const docs = {name: '${group}Shared', usage: {description: '${group}'}, props: []};\n`,
+      );
+      fs.writeFileSync(path.join(dir, 'Shared.tsx'), 'x');
+    }
+
+    const records = discoverIntegrationComponents(integration);
+    expect(
+      records
+        .filter(record => record.name === 'Shared')
+        .map(record => path.relative(integration.components, record.docPath))
+        .sort(),
+    ).toEqual(['One/Shared.doc.mjs', 'Two/Shared.doc.mjs']);
+  });
+
   it('finds an integration doc + source by name', () => {
     const integ = buildIntegration();
     expect(findIntegrationComponentDoc(integ, 'MetaAppShell')).toMatch(/MetaAppShell\.doc\.mjs$/);

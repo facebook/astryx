@@ -29,6 +29,18 @@
  * @typedef {object} IntegrationComponentConflict
  * @property {string} name
  * @property {'warning'} severity
+ * @property {'accidental'} [relationship]
+ * @property {string} [target]
+ * @property {string} integrationPackage
+ * @property {string} message
+ * @property {string} command
+ */
+
+/**
+ * @typedef {object} IntegrationComponentReplacement
+ * @property {string} name
+ * @property {'replaces'} relationship
+ * @property {string} target
  * @property {string} integrationPackage
  * @property {string} message
  * @property {string} command
@@ -52,7 +64,7 @@
 /**
  * @typedef {object} IntegrationComponentConflictResponse
  * @property {'integration.component-conflicts'} type
- * @property {{name: string | null, version: string | null, conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{name: string | null, version: string | null, replacements?: IntegrationComponentReplacement[], conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 /**

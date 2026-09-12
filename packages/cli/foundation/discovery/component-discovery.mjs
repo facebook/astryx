@@ -639,6 +639,7 @@ function integrationSourceForDoc(docPath) {
 export function discoverIntegrationComponents(integration) {
   const componentsDir = integration?.components;
   if (!componentsDir || !fs.existsSync(componentsDir)) return [];
+  const root = componentsDir;
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
@@ -655,12 +656,28 @@ export function discoverIntegrationComponents(integration) {
       }
       const suffix = INTEGRATION_DOC_SUFFIXES.find(s => entry.name.endsWith(s));
       if (!suffix) continue;
+      const relativeStem = path
+        .relative(root, fullPath)
+        .slice(0, -suffix.length);
       const name = entry.name.slice(0, -suffix.length);
       const {group, hidden} = readDocMeta(fullPath);
       if (hidden) continue;
-      // First doc wins per name (precedence matches INTEGRATION_DOC_SUFFIXES).
-      if (byName.has(name)) continue;
-      byName.set(name, {
+      // Prefer `.doc.ts` → `.doc.mjs` → `.doc.js` for one relative-path stem,
+      // while retaining equal file names that live in separate component dirs.
+      const previous = byName.get(relativeStem);
+      if (previous) {
+        const previousSuffix = INTEGRATION_DOC_SUFFIXES.find(item =>
+          previous.docPath.endsWith(item),
+        );
+        if (
+          previousSuffix &&
+          INTEGRATION_DOC_SUFFIXES.indexOf(previousSuffix) <=
+            INTEGRATION_DOC_SUFFIXES.indexOf(suffix)
+        ) {
+          continue;
+        }
+      }
+      byName.set(relativeStem, {
         name,
         package: integration.name,
         docPath: fullPath,

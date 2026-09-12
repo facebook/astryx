@@ -56,17 +56,74 @@ const BaseDocFields = {
   isHiddenFromOverview: z.boolean().optional(),
 };
 
-/** New-format stamped component doc (`type: 'component'`). */
-export const ComponentDocKindSchema = z
+const ComponentUsageSchema = z
   .object({
-    ...BaseDocFields,
-    type: z.literal('component'),
-    props: z.array(PropSchema),
-    theming: z.unknown().optional(),
-    playground: z.unknown().optional(),
-    examples: z.array(z.unknown()).optional(),
+    description: z.string().min(1, 'usage.description is required'),
   })
   .passthrough();
+
+const ComponentEntrySchema = z
+  .object({
+    name: z.string().min(1, 'component entry name is required'),
+    displayName: z.string().min(1, 'component entry displayName is required'),
+    description: z.string(),
+    props: z.array(PropSchema).optional(),
+    params: z.array(ParamSchema).optional(),
+    returns: z.array(ReturnSchema).optional(),
+    usage: z.unknown().optional(),
+    relatedComponents: z.array(z.string()).optional(),
+    relatedHooks: z.array(z.string()).optional(),
+    examples: z.array(z.unknown()).optional(),
+    isHiddenFromOverview: z.boolean().optional(),
+    playground: z.unknown().optional(),
+  })
+  .passthrough();
+
+const ComponentRefSchema = z
+  .object({name: z.string().min(1, 'component reference name is required')})
+  .strict();
+
+/** Shared fields for every new-format stamped component doc. */
+const StampedComponentBaseSchema = z.object({
+  ...BaseDocFields,
+  displayName: z.string().min(1, 'displayName is required'),
+  type: z.literal('component'),
+  replaces: z
+    .string()
+    .trim()
+    .min(1, 'replaces must name a Core component')
+    .optional(),
+  import: z.string().min(1, 'import must be a non-empty specifier').optional(),
+  theming: z.unknown().optional(),
+  playground: z.unknown().optional(),
+  examples: z.array(z.unknown()).optional(),
+});
+
+export const StampedSubComponentDocSchema = StampedComponentBaseSchema.extend({
+  subComponentOf: z.string().min(1, 'subComponentOf is required'),
+  description: z.string(),
+  props: z.array(PropSchema),
+}).passthrough();
+
+export const StampedMultiComponentDocSchema = StampedComponentBaseSchema.extend(
+  {
+    usage: ComponentUsageSchema,
+    components: z.array(z.union([ComponentEntrySchema, ComponentRefSchema])),
+  },
+).passthrough();
+
+export const StampedSingleComponentDocSchema =
+  StampedComponentBaseSchema.extend({
+    usage: ComponentUsageSchema,
+    props: z.array(PropSchema),
+  }).passthrough();
+
+/** New-format stamped component docs mirror the public Single/Multi/Sub union. */
+export const ComponentDocKindSchema = z.union([
+  StampedSubComponentDocSchema,
+  StampedMultiComponentDocSchema,
+  StampedSingleComponentDocSchema,
+]);
 
 /** Return entry for the generalized function doc: `name` is optional so CLI/API
  *  functions can document their `{type, data}` envelope entries (which have no
@@ -237,6 +294,12 @@ export const EnumDocKindSchema = z
 const LegacyBaseDocSchema = z.object({
   name: z.string().min(1, 'name is required'),
   displayName: z.string().optional(),
+  replaces: z
+    .string()
+    .trim()
+    .min(1, 'replaces must name a Core component')
+    .optional(),
+  import: z.string().min(1, 'import must be a non-empty specifier').optional(),
   description: z.string().optional(),
   group: z.string().optional(),
   category: z.string().optional(),

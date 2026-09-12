@@ -13,12 +13,20 @@ import {describe, it, expect} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {component} from './component.mjs';
+import {doc as componentDoc} from './component.doc.mjs';
 import {AstryxError} from '../error.mjs';
 
 // api/component/ -> up 4 = repo root (has packages/core, which findCoreDir walks to).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
 const SLOW = 30_000;
+
+describe('component public schema documentation', () => {
+  it('documents every names-entry field', () => {
+    const listReturn = componentDoc.returns?.find(item => item.type === 'component.list');
+    expect(listReturn?.description).toContain('{name, package, import?, replaces?}');
+  });
+});
 
 describe('component dispatcher — routing', () => {
   it('routes a bare name to component.detail', async () => {

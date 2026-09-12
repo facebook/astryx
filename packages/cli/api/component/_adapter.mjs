@@ -26,13 +26,15 @@ import {
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
-  findIntegrationComponentDoc,
-  findIntegrationComponentSource,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {ComponentCatalog} from '../../foundation/discovery/component-catalog.mjs';
+import {
+  loadDocs,
+  loadComponentDoc as loadParsedComponentDoc,
+} from '../../foundation/discovery/component-loader.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
@@ -63,11 +65,12 @@ export {CORE_PACKAGE};
  * An OWNER package that provides a component with a given name: the doc/source
  * paths and the issues URL a later integration-component swizzle needs.
  * @typedef {object} ComponentOwner
+ * @property {string} name
  * @property {string} package
  * @property {string} docPath
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
- * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} [integration]
  */
 
 /**
@@ -133,6 +136,25 @@ export async function loadIntegrationsSafely(cwd) {
 }
 
 /**
+ * Load the effective component catalog and configured integrations together.
+ * A malformed or absent config degrades to the Core-only catalog.
+ * @param {string} cwd
+ * @param {string} coreDir
+ * @returns {Promise<{catalog: ComponentCatalog, loadedIntegrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
+ */
+export async function loadComponentCatalogSafely(cwd, coreDir) {
+  try {
+    const project = await Project.load(cwd);
+    return {
+      catalog: await project.componentCatalog(),
+      loadedIntegrations: project.loadedIntegrations,
+    };
+  } catch {
+    return {catalog: ComponentCatalog.fromCore(coreDir), loadedIntegrations: []};
+  }
+}
+
+/**
  * Resolve a loaded integration by package name.
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @param {string} packageName
@@ -157,34 +179,27 @@ function resolveExternalPackage(packageName, cwd) {
  * Build the set of OWNER packages that provide a component with this name
  * across core + every loaded integration. This is what lets the CLI
  * disambiguate by package and expose the owner's source + issuesUrl.
- * @param {string} coreDir
+ * @param {ComponentCatalog} catalog
  * @param {string} dirName - bare component name (no `XDS` prefix)
- * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} [coreDir]
  * @returns {ComponentOwner[]}
  */
-export function resolveOwners(coreDir, dirName, loadedIntegrations) {
-  const coreDocPath = findComponentReadme(coreDir, dirName);
-  /** @type {ComponentOwner[]} */
-  const owners = [];
-  if (coreDocPath) {
-    owners.push({
-      package: CORE_PACKAGE,
-      docPath: coreDocPath,
-      sourcePath: findComponentSource(coreDir, dirName),
-      issuesUrl: undefined,
-      integration: null,
-    });
-  }
-  for (const integration of loadedIntegrations) {
-    const docPath = findIntegrationComponentDoc(integration, dirName);
-    if (!docPath) continue;
-    owners.push({
-      package: integration.name,
-      docPath,
-      sourcePath: findIntegrationComponentSource(integration, dirName),
-      issuesUrl: integration.issuesUrl,
-      integration,
-    });
+export function resolveOwners(catalog, dirName, coreDir) {
+  const owners = /** @type {ComponentOwner[]} */ (catalog.owners(dirName));
+  if (
+    coreDir &&
+    !owners.some(owner => owner.package === CORE_PACKAGE)
+  ) {
+    const docPath = findComponentReadme(coreDir, dirName);
+    if (docPath) {
+      owners.push({
+        name: dirName,
+        package: CORE_PACKAGE,
+        docPath,
+        sourcePath: findComponentSource(coreDir, dirName),
+        issuesUrl: undefined,
+      });
+    }
   }
   return owners;
 }
@@ -210,7 +225,11 @@ export function classifyScope(packageScope, {owners, loadedIntegrations, cwd, na
   // Integration scope (authoritative): resolve from the loaded integration.
   const integration = findLoadedIntegration(loadedIntegrations, packageScope);
   if (integration) {
-    const owner = owners.find(o => o.package === packageScope);
+    const requested = name.replace(/^XDS/, '').toLowerCase();
+    const packageOwners = owners.filter(o => o.package === packageScope);
+    const owner =
+      packageOwners.find(o => o.name.toLowerCase() === requested) ??
+      packageOwners[0];
     if (!owner) {
       throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
     }
@@ -345,9 +364,17 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
  */
 export async function loadComponentDoc(docPath, opts = {}) {
   const {zh = false, dense = false, lang = null} = opts;
-  return /** @type {LoadedComponentDoc} */ (
-    await loadDocs(docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang}))
-  );
+  try {
+    return /** @type {LoadedComponentDoc} */ (
+      await loadParsedComponentDoc(docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang}))
+    );
+  } catch (error) {
+    const legacy = /** @type {LoadedComponentDoc|undefined} */ (
+      await loadDocs(docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang}))
+    );
+    if (legacy != null && /** @type {any} */ (legacy).replaces == null) return legacy;
+    throw error;
+  }
 }
 
 /**

@@ -41,16 +41,24 @@ export const doc = {
       required: true,
     },
     {
-      name: 'registry',
-      type: 'RegistryDocIdentity',
+      name: 'replaces',
+      type: 'string',
       description:
-        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
+        'Name of the Core component this integration component replaces. When the integration is active, unqualified discovery and selection use this component for the Core name. The component keeps its own name, and an explicit `--package @astryxdesign/core` selection still reaches the original.',
+      example: "'SideNav'",
     },
     {
       name: 'import',
       type: 'string',
       description:
-        'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
+        'Exact consumer import specifier for an integration-owned component. Usually omitted because the CLI derives it from the package exports map and doc path; set it when one entry point exports several components or inference cannot name the public specifier.',
+      example: "'@acme/astryx-widgets/Navigation'",
+    },
+    {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
     },
     {
       name: 'keywords',

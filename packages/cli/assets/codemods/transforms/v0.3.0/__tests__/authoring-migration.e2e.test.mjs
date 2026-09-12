@@ -245,7 +245,7 @@ describe('v0.3.0 authoring migration — import shapes & edge cases', () => {
 
   it('overwrites an existing (wrong) type discriminant', async () => {
     const out = await migrate(
-      `import {createComponentDoc} from '@astryxdesign/core/authoring';\nexport default createComponentDoc({type: 'wrong', name: 'X', props: []});\n`,
+      `import {createComponentDoc} from '@astryxdesign/core/authoring';\nexport default createComponentDoc({type: 'wrong', name: 'X', displayName: 'X', usage: {description: 'X.'}, props: []});\n`,
     );
     expect(out).toContain("type: 'component'");
     expect(out).not.toContain("'wrong'");

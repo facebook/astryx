@@ -4,7 +4,6 @@
  * @file Component doc loader — load and merge translations
  */
 
-import {pathToFileURL} from 'node:url';
 import {importUserModule} from '../fs/module-loader.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
@@ -21,7 +20,9 @@ import {parseDoc} from '../../authoring/doctypes/parse.mjs';
  *     a stamped `type` and validate against the matching per-kind parser.
  *   - OLD: the legacy loose `export const docs = {...}` (no `type`), validated
  *     against the permissive legacy union.
- * The default export wins when both are present. Throws a readable
+ * When jiti supplies a synthetic default namespace for a named-only TypeScript
+ * module, the named `docs` export wins. A real authored default still wins when
+ * both real exports are present. Throws a readable
  * `formatZodError`-style message on failure. Translations (`docsZh`/
  * `docsDense`) are merged exactly as {@link loadDocs} does so callers see
  * identical output.
@@ -36,7 +37,13 @@ export async function loadComponentDoc(
 ) {
   const mod = await importUserModule(docPath);
   /** @type {any} */
-  const authored = mod?.default ?? mod?.docs;
+  const loaded = mod;
+  const defaultDoc = loaded?.default;
+  /** @type {any} */
+  const authored =
+    loaded?.docs !== undefined && defaultDoc?.docs === loaded.docs
+      ? loaded.docs
+      : (defaultDoc ?? loaded?.docs);
 
   parseDoc(authored, docPath);
   const docs = authored;
@@ -139,17 +146,19 @@ export function mergeTranslation(docs, translation) {
  * @returns {Promise<any>}
  */
 export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
-  const mod = await import(pathToFileURL(readmePath).href);
-  const docs = mod.docs;
+  const mod = await importUserModule(readmePath);
+  /** @type {any} */
+  const loaded = mod;
+  const docs = loaded.docs ?? loaded.default?.docs ?? loaded.default;
 
   // Resolve which translation to use (--lang takes priority over legacy flags)
   const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
   if (!locale) return docs;
 
   const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
-  if (!translationKey || !mod[translationKey]) return docs;
+  if (!translationKey || !loaded[translationKey]) return docs;
 
-  const translation = mod[translationKey];
+  const translation = loaded[translationKey];
 
   // A full ComponentDoc-shaped translation (legacy docsZh shape) used to be
   // returned wholesale. That made it a REPLACEMENT, not an overlay: any prop

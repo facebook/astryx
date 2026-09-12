@@ -53,7 +53,7 @@ function writeIntegration({
   );
 }
 
-function writeComponentIntegration(componentName) {
+function writeComponentIntegration(componentName, {replaces} = {}) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
@@ -63,9 +63,12 @@ function writeComponentIntegration(componentName) {
     `export default {components: './components'};\n`,
   );
   fs.mkdirSync(path.join(tmpDir, 'components'), {recursive: true});
+  const replacement = replaces === undefined
+    ? ''
+    : `, replaces: ${JSON.stringify(replaces)}`;
   fs.writeFileSync(
     path.join(tmpDir, 'components', `${componentName}.doc.mjs`),
-    `export default {type: 'component', name: ${JSON.stringify(componentName)}, displayName: ${JSON.stringify(componentName)}, description: 'Fixture component.', props: []};\n`,
+    `export default {type: 'component', name: ${JSON.stringify(componentName)}, displayName: ${JSON.stringify(componentName)}, description: 'Fixture component.', usage: {description: 'Fixture component.'}, props: []${replacement}};\n`,
   );
   fs.writeFileSync(
     path.join(tmpDir, 'components', `${componentName}.tsx`),
@@ -311,6 +314,74 @@ describe('doctor integration — command', () => {
       `--package @acme/widgets`,
     );
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components reports a declared replacement as info', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {replaces: core.name});
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain('[info]');
+    expect(output).toContain('Intentional replacement');
+    expect(output).toContain(`component ${core.name} --package @astryxdesign/core`);
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components exposes declared replacements separately from stable conflicts', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {replaces: core.name});
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.conflicts).toEqual([]);
+    expect(parsed.data.replacements).toEqual([
+      expect.objectContaining({
+        name: 'AcmeReplacement',
+        relationship: 'replaces',
+        target: core.name,
+      }),
+    ]);
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components exits 1 for a missing replacement target', async () => {
+    writeComponentIntegration('AcmeReplacement', {replaces: 'NotAComponent'});
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({code: 'missing_component_replacement', severity: 'error'}),
+    ]));
+    expect(process.exitCode).toBe(1);
   });
 
   it('docs reports an intentional replacement as info', async () => {

@@ -108,7 +108,7 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names+package, brief entries, or full ComponentDoc per entry.",
+        "The catalog grouped by category. `data.detail: 'names'` returns `ComponentListEntry[]` values shaped as `{name, package, import?, replaces?}`: `import` is the exact consumer specifier when known, and `replaces` is the canonical Core component name the selected integration component replaces. `data.detail: 'compact'` returns `{name, description, import}` entries. `data.detail: 'full'` returns each full ComponentDoc with additive optional ownership metadata.",
     },
     {
       type: 'component.detail',

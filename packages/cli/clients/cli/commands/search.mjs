@@ -31,7 +31,10 @@ import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {search as searchApi} from '../../../api/search/search.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
-import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
+import {
+  warnOnIntegrationIssues,
+  warnOnProjectIssues,
+} from '../../../foundation/integrations/integration-warnings.mjs';
 import {doc as searchCommand} from './search.doc.mjs';
 import {doc as searchFn} from '../../../api/search/search.doc.mjs';
 
@@ -50,6 +53,7 @@ export function registerSearch(program) {
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnProjectIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }

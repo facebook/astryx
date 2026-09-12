@@ -53,14 +53,15 @@
 import {pathToFileURL} from 'node:url';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
+  CORE_PACKAGE,
   discoverComponents,
-  discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentDoc as loadParsedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
-import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
@@ -75,6 +76,7 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {'component'|'hook'|'doc'|'template'} domain
  * @property {string} name
  * @property {string[]} [keywords]
+ * @property {string[]} [aliases] - Alternate identities that score like an exact name.
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
  * @property {string[]} [prose]
@@ -332,6 +334,7 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
+ * @param {string[]} [candidate.aliases] - Alternate identities that score as names.
  * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
  * @param {string[]} [candidate.weakKeywords] - Derived signal (components a page renders).
  * @param {string} [candidate.description]
@@ -341,7 +344,7 @@ export function scoreQuery(term, tokens, candidate) {
  */
 export function scoreCandidate(
   term,
-  {name, keywords = [], weakKeywords = [], description = '', prose = [], guidance = []},
+  {name, aliases = [], keywords = [], weakKeywords = [], description = '', prose = [], guidance = []},
 ) {
   let best = 0;
   let reason = '';
@@ -357,6 +360,9 @@ export function scoreCandidate(
   };
 
   const nameLower = name.toLowerCase();
+  for (const alias of aliases) {
+    if (String(alias).toLowerCase() === term) consider(100, `exact alias "${alias}"`);
+  }
 
   // ── Name signals ────────────────────────────────────────────────
   if (nameLower === term) {
@@ -531,53 +537,6 @@ async function gatherCoreComponents(coreDir) {
 }
 
 /**
- * Build component candidates contributed by the project's configured
- * integrations (astryx.config's `integrations`): name + keywords +
- * usage/description from each component's .doc.mjs, same as core. Without
- * this, an integration component is invisible to `search`/`build` even
- * though `component --list`/`component <Name>` already resolve it — the two
- * discovery paths silently disagreed.
- * @param {string} cwd
- * @returns {Promise<Candidate[]>}
- */
-async function gatherIntegrationComponents(cwd) {
-  const loadedIntegrations = await loadIntegrationsSafely(cwd);
-  /** @type {Candidate[]} */
-  const candidates = [];
-  for (const integration of loadedIntegrations) {
-    for (const rec of discoverIntegrationComponents(integration)) {
-      const doc = await loadModuleDoc(rec.docPath);
-      candidates.push({
-        domain: 'component',
-        name: rec.name,
-        keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
-        description: doc ? doc.usage?.description || doc.description || '' : '',
-        guidance: guidanceFrom(doc),
-        // Exactly what `component` reports: a doc may state its own specifier
-        // (one entry point exporting several components), and only when it
-        // does not do we resolve the subpath against the owning package's
-        // exports — read off the integration, which the loader already parsed.
-        // Reporting the bare package name here handed out a path that does not
-        // resolve, and disagreed with what `component <Name>` said about the
-        // very same component.
-        _import:
-          doc?.import ??
-          resolveIntegrationImportPath(
-            {
-              exportsMap: integration.__packageExports,
-              packageDir: integration.__packageDir,
-              docPath: rec.docPath,
-              packageName: rec.package,
-            },
-            rec.name,
-          ),
-      });
-    }
-  }
-  return candidates;
-}
-
-/**
  * Build component candidates: core's own tree plus every configured
  * integration's components.
  * @param {string} coreDir
@@ -585,11 +544,60 @@ async function gatherIntegrationComponents(cwd) {
  * @returns {Promise<Candidate[]>}
  */
 async function gatherComponents(coreDir, cwd) {
-  const [core, integrations] = await Promise.all([
-    gatherCoreComponents(coreDir),
-    gatherIntegrationComponents(cwd),
-  ]);
-  return [...core, ...integrations];
+  let project;
+  try {
+    project = await Project.load(cwd);
+  } catch {
+    return gatherCoreComponents(coreDir);
+  }
+
+  let records;
+  try {
+    records = await project.components();
+  } catch {
+    return gatherCoreComponents(coreDir);
+  }
+
+  /** @type {Candidate[]} */
+  const candidates = [];
+  for (const record of records) {
+    if (!record.docPath) continue;
+    let doc;
+    try {
+      doc = /** @type {any} */ (await loadParsedComponentDoc(record.docPath));
+    } catch {
+      // Legacy component docs were historically permissive. Keep their authored
+      // search metadata even when they predate the strict ComponentDoc schema.
+      doc = await loadModuleDoc(record.docPath);
+    }
+    const keywords = doc && Array.isArray(doc.keywords) ? [...doc.keywords] : [];
+    const integration =
+      record.package === CORE_PACKAGE
+        ? null
+        : project.loadedIntegrations.find(item => item.name === record.package);
+    candidates.push({
+      domain: 'component',
+      name: record.name,
+      aliases: record.replaces == null ? [] : [record.replaces],
+      keywords,
+      description: doc ? doc.usage?.description || doc.description || '' : '',
+      guidance: guidanceFrom(doc),
+      _import:
+        record.package === CORE_PACKAGE
+          ? resolveImportPath(coreDir, record.name)
+          : doc?.import ??
+            resolveIntegrationImportPath(
+              {
+                exportsMap: integration?.__packageExports,
+                packageDir: integration?.__packageDir,
+                docPath: record.docPath,
+                packageName: record.package,
+              },
+              record.name,
+            ),
+    });
+  }
+  return candidates;
 }
 
 /**
