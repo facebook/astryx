@@ -157,6 +157,13 @@ A public API proposal is admitted only when it passes both gates:
   gap requires owner judgment. Implementation convenience, removal of an internal
   wrapper, or exposure of existing internal fields is not evidence that an API should
   exist.
+- **FR20 — Callsite impact and decision burden are explicit.** A public API change
+  shows representative before and after callsites, including defaults and
+  compatibility, and names every new choice the caller must understand or make. That
+  burden is admitted only when FR1 proves the distinction is caller-owned, the
+  component cannot derive it under FR2, and the choice has predictable meaning under
+  FR7–FR10. Review-generated impact prose is context only; it cannot supply missing
+  caller ownership or authorize the API.
 
 ### Platform support
 
@@ -243,6 +250,7 @@ still determine whether the implementation satisfies it.
 | FR15       | Type-level constraints plus runtime validation and behavior tests                                      | invalid values, unsupported combinations, and legitimate composition                               | The API silently renders a broken state or prevents a valid composition                                                                                |
 | FR16       | Full value-domain, input-shape, and parallel-combination contract review                               | semantic variants, raw or palette values, explicit overrides, and defaults                         | One value or shape switches the controlled axis, or a parallel input silently changes precedence                                                       |
 | FR17       | Public module/utility export inventory plus implementation, test, consumer, and release-history review | construction, inspection, lookup, conversion, registration, hooks, and released compatibility      | A verb hides the returned value or side effect, two public roles are fused, a non-hook utility uses `use*`, or a released mismatch is silently renamed |
+| FR20       | Public callsite and caller-burden review                                                               | representative before/after callsites, defaults, compatibility, and every caller-owned choice      | A new caller decision is hidden, derivable, unpredictable, or justified only by review prose                                                           |
 | FR18       | Multi-caller composition scenarios plus owning-contract review                                         | shared semantic operation, internal-only mechanism, and two representative consumers               | Product builders cannot compose stable behavior, or implementation fields are exposed without caller-owned semantics                                   |
 | FR19       | Bug-fix before/after authority diff plus public-surface and behavior inventory                         | pure restoration, restoration plus separable novel API/visual change, and internal-wrapper removal | A bug-fix label bypasses authority, a removable tagalong forces a broader spec, or internal mechanics become public because exposure is convenient     |
 | Burden     | Benchmark classification: allow, correct pause, false block, not applicable                            | recent accepted and rejected API changes                                                           | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                                              |
@@ -404,6 +412,19 @@ Rejected: promoting internal focus targets, gesture memory, DOM slots, timers, o
 other existing fields merely because removing an internal wrapper or fixing one
 path becomes easier. Existing implementation is evidence of mechanics, not intent
 for permanent public API.
+
+### DEC-9 — Caller decision burden must be visible and justified
+
+**Reference:** `spec:AST-002/DEC-9`
+**Decider:** `cixzhang`, `2026-09-12`
+
+A public API proposal shows the callsite before and after the change and names each
+new decision a caller must make. The decision is admitted only when it represents
+caller-owned intent the component cannot derive and its outcome remains predictable
+across defaults, combinations, and supported states.
+
+Rejected: treating a shorter implementation, a persuasive user-impact summary, or
+a completed review checklist as proof that callers should own another choice.
 
 ## Open questions
 

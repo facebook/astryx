@@ -14,6 +14,25 @@ GitHub uses the default template automatically. To choose another, add `?templat
 | Change tooling, tests, CI, or repository maintenance | `maintenance.md`   | operational problem, failure proof, success proof, unchanged product behavior                            |
 | Anything else                                        | `other.md`         | primary intent, user or maintainer impact, authority, evidence                                           |
 
+## Explain only what authority does not already say
+
+The pull request and current records are the first source for context. Do not copy
+them into another summary. Fill only what is missing:
+
+- Trace the problem through three why questions: why it occurs, why it harms the
+  affected task, and why that harm matters.
+- Map the proposed solution and every primary or supporting delta back to that
+  problem. Remove or split a tagalong that does not clearly contribute.
+- State who is affected, in what supported state, and what behavior the change
+  enables or prevents.
+- When public API changes, show representative before and after callsites,
+  defaults and compatibility, and every additional decision the caller must make.
+
+These explanations help reviewers apply current authority; they do not create it.
+Product behavior remains owned by the applicable current component, module,
+family, design, theme, architecture, or system record. API caller burden follows
+`spec:AST-002`.
+
 ## Keep the intent atomic
 
 Before requesting review, partition every observable delta:
