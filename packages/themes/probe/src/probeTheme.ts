@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  277 targets, 898 selectors (generated from the docs)
+//   components  280 targets, 905 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2052,6 +2052,30 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(240.3 74% 25%)',
       },
     },
+    'dialog-header': {
+      base: {
+        backgroundColor: 'hsl(312.1 73% 56%)',
+        color: 'hsl(253.8 72% 12%)',
+        borderColor: 'hsl(79.0 70% 25%)',
+        outlineColor: 'hsl(252.5 77% 25%)',
+      },
+    },
+    'dialog-header-close-icon': {
+      base: {
+        backgroundColor: 'hsl(90.9 85% 52%)',
+        color: 'hsl(55.2 71% 12%)',
+        borderColor: 'hsl(180.8 84% 25%)',
+        outlineColor: 'hsl(215.4 89% 25%)',
+      },
+    },
+    'dialog-header-title-block': {
+      base: {
+        backgroundColor: 'hsl(279.3 88% 58%)',
+        color: 'hsl(210.9 80% 12%)',
+        borderColor: 'hsl(219.8 84% 25%)',
+        outlineColor: 'hsl(358.8 73% 25%)',
+      },
+    },
     divider: {
       base: {
         backgroundColor: 'hsl(26.4 77% 53%)',
@@ -2502,6 +2526,30 @@ export const probeTheme = defineTheme({
         color: 'hsl(45.7 82% 12%)',
         borderColor: 'hsl(7.6 84% 25%)',
         outlineColor: 'hsl(104.9 82% 25%)',
+      },
+      'weight:normal': {
+        backgroundColor: 'hsl(152.0 86% 62%)',
+        color: 'hsl(175.8 91% 12%)',
+        borderColor: 'hsl(343.2 81% 25%)',
+        outlineColor: 'hsl(43.4 72% 25%)',
+      },
+      'weight:medium': {
+        backgroundColor: 'hsl(79.7 86% 58%)',
+        color: 'hsl(290.3 72% 12%)',
+        borderColor: 'hsl(214.5 73% 25%)',
+        outlineColor: 'hsl(358.0 74% 25%)',
+      },
+      'weight:semibold': {
+        backgroundColor: 'hsl(359.7 75% 51%)',
+        color: 'hsl(105.3 74% 12%)',
+        borderColor: 'hsl(60.8 74% 25%)',
+        outlineColor: 'hsl(274.4 70% 25%)',
+      },
+      'weight:bold': {
+        backgroundColor: 'hsl(129.8 91% 64%)',
+        color: 'hsl(277.1 87% 12%)',
+        borderColor: 'hsl(266.7 92% 25%)',
+        outlineColor: 'hsl(341.8 86% 25%)',
       },
     },
     'hover-card': {
