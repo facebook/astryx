@@ -30,8 +30,10 @@ import {mergeRefs} from '../utils/mergeRefs';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {
   getLogicalAxisMapping,
+  measureLogicalOverflowGeometry,
   measureLogicalScrollAxis,
   type LogicalAxisMapping,
+  type LogicalOverflowGeometry,
 } from './scrollGeometry';
 import {
   registerScrollOwner,
@@ -73,6 +75,8 @@ export interface UseScrollableAreaResult {
     props?: ScrollableElementProps<E>,
   ): ScrollableElementProps<E>;
   state: ScrollableAreaState;
+  /** Requested axes whose content currently exceeds the viewport by more than 1px. */
+  overflow: LogicalOverflowGeometry;
   /** Current logical-to-physical mapping derived from writing mode and direction. */
   axisMapping: LogicalAxisMapping;
 }
@@ -85,6 +89,10 @@ const INACTIVE_AXIS_STATE: ScrollAxisState = {
 const INITIAL_STATE: ScrollableAreaState = {
   inline: INACTIVE_AXIS_STATE,
   block: INACTIVE_AXIS_STATE,
+};
+const INITIAL_OVERFLOW: LogicalOverflowGeometry = {
+  inline: false,
+  block: false,
 };
 const INITIAL_MAPPING: LogicalAxisMapping = {
   inline: 'x',
@@ -106,6 +114,13 @@ function statesEqual(a: ScrollableAreaState, b: ScrollableAreaState): boolean {
     a.block.atStart === b.block.atStart &&
     a.block.atEnd === b.block.atEnd
   );
+}
+
+function overflowEqual(
+  a: LogicalOverflowGeometry,
+  b: LogicalOverflowGeometry,
+): boolean {
+  return a.inline === b.inline && a.block === b.block;
 }
 
 function mappingsEqual(a: LogicalAxisMapping, b: LogicalAxisMapping): boolean {
@@ -152,6 +167,8 @@ export function useScrollableArea({
   const [viewport, setViewport] = useState<HTMLElement | null>(null);
   const [content, setContent] = useState<HTMLElement | null>(null);
   const [measured, setMeasured] = useState<ScrollableAreaState>(INITIAL_STATE);
+  const [overflow, setOverflow] =
+    useState<LogicalOverflowGeometry>(INITIAL_OVERFLOW);
   const [mapping, setMapping] = useState<LogicalAxisMapping>(INITIAL_MAPPING);
   const stateRef = useRef<ScrollableAreaState>(INITIAL_STATE);
 
@@ -179,6 +196,12 @@ export function useScrollableArea({
         computedStyle.writingMode,
         computedStyle.direction,
       );
+      const inlineOverflow = axisIsRequested(axis, 'inline')
+        ? measureLogicalOverflowGeometry(viewport, 'inline', nextMapping)
+        : false;
+      const blockOverflow = axisIsRequested(axis, 'block')
+        ? measureLogicalOverflowGeometry(viewport, 'block', nextMapping)
+        : false;
       const inline = axisIsRequested(axis, 'inline')
         ? measureLogicalScrollAxis(viewport, 'inline', nextMapping)
         : INACTIVE_AXIS_STATE;
@@ -188,13 +211,26 @@ export function useScrollableArea({
 
       // Hidden, disconnected, and zero-size viewports are unknown rather than
       // fitting. Keep the last valid state until a bounded signal remeasures.
-      if (inline == null || block == null) {
+      if (
+        inlineOverflow == null ||
+        blockOverflow == null ||
+        inline == null ||
+        block == null
+      ) {
         return;
       }
 
+      const nextOverflow = {
+        inline: inlineOverflow,
+        block: blockOverflow,
+      };
       const nextState = {inline, block};
       stateRef.current = nextState;
       registerScrollOwner(viewport, nextState);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- measured DOM geometry controls whether the viewport becomes a CSS scroll container
+      setOverflow(current =>
+        overflowEqual(current, nextOverflow) ? current : nextOverflow,
+      );
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- measured DOM state is the hook's output
       setMeasured(current =>
         statesEqual(current, nextState) ? current : nextState,
@@ -371,5 +407,11 @@ export function useScrollableArea({
     [getComposedContentRef],
   );
 
-  return {getViewportProps, getContentProps, state, axisMapping: mapping};
+  return {
+    getViewportProps,
+    getContentProps,
+    state,
+    overflow,
+    axisMapping: mapping,
+  };
 }

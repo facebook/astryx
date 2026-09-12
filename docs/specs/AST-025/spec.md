@@ -170,6 +170,14 @@ the behavior.
   MUST publish the actual logical padding of its content box, using zero when no
   padding is requested. Its viewport MAY consume inherited padding only through an
   explicit full-bleed option; scrollability alone MUST NOT escape a parent container.
+- **FR21 — Fitting scroll intent does not imply Sticky containment.** A reference
+  viewport whose requested axes have no excess geometry MUST use `clip` on both
+  physical axes. This prevents pre-measure paint overflow without creating a CSS
+  scroll container, so native Sticky descendants can resolve to an outer effective
+  owner. The viewport MUST switch to its requested `auto`/`hidden` pair when content
+  exceeds the viewport, before the axis becomes an effective owner. A public
+  `stickyContainment="always"` option MAY preserve that boundary while fitting, but
+  containment MUST be explicit rather than an incidental result of scroll intent.
 
 ### Delivery requirements
 
@@ -358,6 +366,7 @@ Representative public evidence:
 | FR17             | Type/API tests and browser fixtures                        | requested inline, block, both; attempted visible opposite axis                                                                                                           | Public API admits a CSS combination the platform computes to different semantics                                                     |
 | FR19             | Table browser integration                                  | inline-only, bounded both-axis, sticky columns, sticky headers, intersection cell                                                                                        | Table plugins observe different owners or an external wrapper silently breaks sticky/accessibility behavior                          |
 | FR20             | ScrollableArea component and container-padding tests       | zero/default padding, uniform/edge overrides, nested bleed consumer, contained and full-bleed viewport                                                                   | Content publishes stale inset, a nested bleed child compensates incorrectly, or scrolling escapes its parent without explicit intent |
+| FR21             | Real-browser fitting/overflowing Sticky transition         | fitting default, fitting `always`, content growth, content shrink, outer block Sticky owner                                                                              | A fitting default viewport silently captures Sticky, explicit containment is lost, or overflow growth fails to activate scrolling    |
 
 ## Decision log
 
@@ -393,6 +402,26 @@ behavior hook own padding or layout.
 
 Rejected: automatic parent-padding escape, because adding scrolling must not
 silently widen a container's visual boundary.
+
+### DEC-3 — Fitting scroll intent does not silently contain Sticky
+
+**Reference:** `spec:AST-025/DEC-3`
+**Decider:** `cixzhang`, `2026-09-12`
+
+The reference viewport uses `clip` on both physical axes until requested content
+exceeds its geometry. This avoids pre-measure paint overflow without creating a CSS
+scroll container, so a fitting area does not silently intercept native Sticky from
+an outer owner. Geometry-only overflow state activates the writing-mode-resolved
+`auto`/`hidden` pair before effective ownership is measured.
+
+`stickyContainment="always"` is the explicit opt-in for consumers that deliberately
+want the fitting viewport to remain a Sticky boundary. Its camelCase enum follows
+the public API conventions.
+
+Rejected: retaining `auto`/`hidden` for every requested viewport, because scroll
+intent alone would change Sticky behavior even when no scrolling can occur.
+Rejected: no overflow declaration while fitting, because content could flash before
+the first geometry measurement.
 
 ## Open questions
 

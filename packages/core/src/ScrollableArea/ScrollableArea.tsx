@@ -86,7 +86,10 @@ const styles = stylex.create({
 });
 
 const dynamicStyles = stylex.create({
-  overflow: (overflowX: 'auto' | 'hidden', overflowY: 'auto' | 'hidden') => ({
+  overflow: (
+    overflowX: 'auto' | 'hidden' | 'clip',
+    overflowY: 'auto' | 'hidden' | 'clip',
+  ) => ({
     overflowX,
     overflowY,
   }),
@@ -97,6 +100,8 @@ const dynamicStyles = stylex.create({
     minHeight: SizeValue | null,
   ) => ({width, height, maxWidth, minHeight}),
 });
+
+export type ScrollableAreaStickyContainment = 'whenScrollable' | 'always';
 
 export interface ScrollableAreaProps extends Omit<
   BaseProps<HTMLDivElement>,
@@ -120,6 +125,8 @@ export interface ScrollableAreaProps extends Omit<
   maxWidth?: SizeValue;
   /** Minimum height of the viewport. */
   minHeight?: SizeValue;
+  /** Whether a fitting viewport deliberately remains a Sticky containing boundary. @default 'whenScrollable' */
+  stickyContainment?: ScrollableAreaStickyContainment;
   /** Content padding using the shared spacing scale. @default 0 */
   padding?: SpacingStep;
   /** Logical inline-axis content padding; overrides `padding` on that axis. */
@@ -168,6 +175,7 @@ export function ScrollableArea({
   height,
   maxWidth,
   minHeight,
+  stickyContainment = 'whenScrollable',
   padding = 0,
   paddingInline,
   paddingInlineStart,
@@ -182,12 +190,15 @@ export function ScrollableArea({
   style,
   ...props
 }: ScrollableAreaProps) {
-  const {getViewportProps, getContentProps, axisMapping} = useScrollableArea({
-    axis,
-    keyboardAccess: {owner: 'viewport', label, role},
-    overscroll,
-  });
+  const {getViewportProps, getContentProps, overflow, axisMapping} =
+    useScrollableArea({
+      axis,
+      keyboardAccess: {owner: 'viewport', label, role},
+      overscroll,
+    });
 
+  const containsSticky =
+    overflow.inline || overflow.block || stickyContainment === 'always';
   const scrollsOnX =
     axis === 'both' ||
     (axis === 'inline'
@@ -212,8 +223,8 @@ export function ScrollableArea({
       ),
       xstyle,
       dynamicStyles.overflow(
-        scrollsOnX ? 'auto' : 'hidden',
-        scrollsOnY ? 'auto' : 'hidden',
+        containsSticky ? (scrollsOnX ? 'auto' : 'hidden') : 'clip',
+        containsSticky ? (scrollsOnY ? 'auto' : 'hidden') : 'clip',
       ),
     ),
     className,

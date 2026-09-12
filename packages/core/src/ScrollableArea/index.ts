@@ -8,7 +8,10 @@
  */
 
 export {ScrollableArea} from './ScrollableArea';
-export type {ScrollableAreaProps} from './ScrollableArea';
+export type {
+  ScrollableAreaProps,
+  ScrollableAreaStickyContainment,
+} from './ScrollableArea';
 export {useScrollableArea} from '../hooks/useScrollableArea';
 export type {
   ScrollAxis,
@@ -22,5 +25,6 @@ export type {
 } from '../hooks/useScrollableArea';
 export type {
   LogicalAxisMapping,
+  LogicalOverflowGeometry,
   PhysicalScrollAxis,
 } from '../hooks/scrollGeometry';

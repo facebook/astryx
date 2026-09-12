@@ -59,14 +59,15 @@ shared behavior hook, not the exclusive owner of that behavior.
 
 ## Public concepts
 
-| Concept            | Closed values or states                    | Meaning                                     | Availability by variant/orientation/state | Default | Owner                            | Stability | Invalid-value behavior |
-| ------------------ | ------------------------------------------ | ------------------------------------------- | ----------------------------------------- | ------- | -------------------------------- | --------- | ---------------------- |
-| logical axis       | `inline`, `block`, `both`                  | axes where native scrolling is allowed      | all                                       | `block` | `spec:AST-025`                   | stable    | type error             |
-| overscroll         | `allow`, `contain`                         | whether effective axes propagate at an edge | all                                       | `allow` | `spec:AST-025`                   | stable    | type error             |
-| viewport sizing    | `width`, `height`, `maxWidth`, `minHeight` | standard container geometry on the viewport | all                                       | auto    | `component:ScrollableArea`       | stable    | type error             |
-| content padding    | shared logical spacing-step ladder         | content-box inset and published geometry    | all                                       | `0`     | `architecture:container-padding` | stable    | type error             |
-| full bleed         | `false`, `true`                            | whether viewport escapes inherited inset    | all                                       | `false` | `architecture:container-padding` | stable    | type error             |
-| viewport semantics | `group`, `region` plus required label      | names a conditional keyboard scroll target  | all                                       | `group` | `component:ScrollableArea`       | stable    | type error             |
+| Concept            | Closed values or states                    | Meaning                                     | Availability by variant/orientation/state | Default          | Owner                            | Stability | Invalid-value behavior |
+| ------------------ | ------------------------------------------ | ------------------------------------------- | ----------------------------------------- | ---------------- | -------------------------------- | --------- | ---------------------- |
+| logical axis       | `inline`, `block`, `both`                  | axes where native scrolling is allowed      | all                                       | `block`          | `spec:AST-025`                   | stable    | type error             |
+| overscroll         | `allow`, `contain`                         | whether effective axes propagate at an edge | all                                       | `allow`          | `spec:AST-025`                   | stable    | type error             |
+| viewport sizing    | `width`, `height`, `maxWidth`, `minHeight` | standard container geometry on the viewport | all                                       | auto             | `component:ScrollableArea`       | stable    | type error             |
+| content padding    | shared logical spacing-step ladder         | content-box inset and published geometry    | all                                       | `0`              | `architecture:container-padding` | stable    | type error             |
+| full bleed         | `false`, `true`                            | whether viewport escapes inherited inset    | all                                       | `false`          | `architecture:container-padding` | stable    | type error             |
+| Sticky containment | `whenScrollable`, `always`                 | whether fitting content captures Sticky     | all                                       | `whenScrollable` | `spec:AST-025`                   | stable    | type error             |
+| viewport semantics | `group`, `region` plus required label      | names a conditional keyboard scroll target  | all                                       | `group`          | `component:ScrollableArea`       | stable    | type error             |
 
 ## Behavioral and layout contract
 
@@ -77,6 +78,7 @@ shared behavior hook, not the exclusive owner of that behavior.
 | FR3 | Native scrollbar behavior MUST remain authoritative; the default thumb uses `--color-neutral`, the track is transparent, and forced colors restore platform presentation.                                                                                                                                                                                                                                                                      | `spec:AST-025` FR15              | implemented                         |
 | FR4 | Scroll-state container queries MAY enhance descendant stuck/edge presentation, but hook state MUST remain the cross-browser source of truth.                                                                                                                                                                                                                                                                                                   | `spec:AST-025` platform support  | implemented progressively           |
 | FR5 | The content box MUST apply and publish logical padding with edge-over-axis-over-uniform precedence, defaulting every published edge to zero. `isFullBleed` MUST let only the viewport consume inherited inset; nested content continues to read the content box's published values.                                                                                                                                                            | `architecture:container-padding` | implemented                         |
+| FR6 | A fitting viewport MUST use `clip` on both physical axes so it prevents paint overflow without capturing native Sticky. Excess requested-axis geometry MUST activate the writing-mode-resolved `auto`/`hidden` pair. `stickyContainment="always"` MUST explicitly retain that pair while fitting.                                                                                                                                              | `spec:AST-025` FR21              | implemented                         |
 
 ### Allowed variation
 
@@ -87,12 +89,12 @@ shared behavior hook, not the exclusive owner of that behavior.
 
 ### Representative states
 
-| State                          | Required invariant                          | Allowed variation          |
-| ------------------------------ | ------------------------------------------- | -------------------------- |
-| fitting                        | no tab stop or containment; both edges true | viewport size and content  |
-| overflowing                    | named tab stop; per-axis logical edge state | one or both requested axes |
-| overflow removed while focused | remove future tab stop without moving focus | current focus remains      |
-| forced colors                  | native platform scrollbar presentation      | platform rendering         |
+| State                          | Required invariant                                                                                      | Allowed variation          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------- |
+| fitting                        | `clip` on both axes; no tab stop; Sticky passes outward unless containment is `always`; both edges true | viewport size and content  |
+| overflowing                    | named tab stop; per-axis logical edge state                                                             | one or both requested axes |
+| overflow removed while focused | remove future tab stop without moving focus                                                             | current focus remains      |
+| forced colors                  | native platform scrollbar presentation                                                                  | platform rendering         |
 
 ### Transformation and precedence order
 
@@ -142,9 +144,9 @@ shared behavior hook, not the exclusive owner of that behavior.
 
 ## Verification map
 
-| Contract         | Verification                                     | Representative states                                                                                      | Mutation or failure expectation                                                                        | Audit section                   |
-| ---------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------- |
-| FR1–FR5, AR1–AR2 | component/hook tests and Storybook browser probe | fit, overflow, focused loss, LTR/RTL/vertical, nested allow/contain, native scrollbar, padding, full bleed | duplicate viewport, stale state, dead nested scroll zone, unconditional tab stop, or stale inset fails | `audit:ScrollableArea/behavior` |
+| Contract         | Verification                                     | Representative states                                                                                                                              | Mutation or failure expectation                                                                                                     | Audit section                   |
+| ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1–FR6, AR1–AR2 | component/hook tests and Storybook browser probe | fit, overflow, focused loss, LTR/RTL/vertical, nested allow/contain, fitting Sticky passthrough/containment, native scrollbar, padding, full bleed | duplicate viewport, stale state, dead nested scroll zone, implicit Sticky containment, unconditional tab stop, or stale inset fails | `audit:ScrollableArea/behavior` |
 
 ## Decision log
 
@@ -165,6 +167,16 @@ The content box publishes its actual logical padding, zero by default, so nested
 bleed consumers never inherit stale inset. The viewport consumes ancestor inset
 only when `isFullBleed` is explicit; scrolling alone does not silently escape its
 parent container.
+
+### DEC-3 — Fitting content passes Sticky ownership outward by default
+
+**Reference:** `component:ScrollableArea/DEC-3`
+**Decider:** cixzhang, 2026-09-12
+
+A fitting viewport uses `clip` on both axes to prevent a pre-measure paint flash
+without becoming a CSS scroll container. Excess requested-axis geometry activates
+the writing-mode-resolved scroll boundary. `stickyContainment="always"` is the
+explicit opt-in for retaining that boundary while fitting.
 
 ## Open questions
 

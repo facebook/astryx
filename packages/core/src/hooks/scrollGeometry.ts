@@ -20,6 +20,11 @@ export interface MeasuredScrollAxisState {
   atEnd: boolean;
 }
 
+export interface LogicalOverflowGeometry {
+  inline: boolean;
+  block: boolean;
+}
+
 const INACTIVE_AXIS_STATE: MeasuredScrollAxisState = {
   isScrollable: false,
   atStart: true,
@@ -86,18 +91,43 @@ function physicalMetrics(
   };
 }
 
+function isMeasurable(
+  element: HTMLElement,
+  computedStyle: CSSStyleDeclaration,
+) {
+  return (
+    element.isConnected &&
+    computedStyle.display !== 'none' &&
+    element.clientWidth > 0 &&
+    element.clientHeight > 0
+  );
+}
+
+export function measureLogicalOverflowGeometry(
+  element: HTMLElement,
+  logicalAxis: LogicalScrollAxis,
+  mapping: LogicalAxisMapping,
+): boolean | null {
+  const computedStyle = getComputedStyle(element);
+  if (!isMeasurable(element, computedStyle)) {
+    return null;
+  }
+
+  const physicalAxis = mapping[logicalAxis];
+  const clientExtent =
+    physicalAxis === 'x' ? element.clientWidth : element.clientHeight;
+  const contentExtent =
+    physicalAxis === 'x' ? element.scrollWidth : element.scrollHeight;
+  return contentExtent - clientExtent > SCROLL_OVERFLOW_TOLERANCE;
+}
+
 export function measureLogicalScrollAxis(
   element: HTMLElement,
   logicalAxis: LogicalScrollAxis,
   mapping: LogicalAxisMapping,
 ): MeasuredScrollAxisState | null {
   const computedStyle = getComputedStyle(element);
-  if (
-    !element.isConnected ||
-    computedStyle.display === 'none' ||
-    element.clientWidth <= 0 ||
-    element.clientHeight <= 0
-  ) {
+  if (!isMeasurable(element, computedStyle)) {
     return null;
   }
 

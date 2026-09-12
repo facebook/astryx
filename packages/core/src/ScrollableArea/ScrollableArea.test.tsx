@@ -179,6 +179,29 @@ describe('ScrollableArea', () => {
     expect(source).toContain("inlineSize: 'max-content'");
   });
 
+  it('uses clip while fitting and makes fitting Sticky containment explicit', () => {
+    const {rerender} = render(
+      <ScrollableArea label="Messages" data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+    const viewport = screen.getByTestId('viewport');
+    expect(viewport.getAttribute('style')).toContain('clip');
+    expect(viewport).not.toHaveAttribute('tabindex');
+
+    rerender(
+      <ScrollableArea
+        label="Messages"
+        stickyContainment="always"
+        data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+    expect(viewport.getAttribute('style')).toContain('auto');
+    expect(viewport.getAttribute('style')).toContain('hidden');
+    expect(viewport).not.toHaveAttribute('tabindex');
+  });
+
   it('accepts standard container sizing props on the viewport', () => {
     render(
       <ScrollableArea

@@ -27,7 +27,7 @@ function Fixture({
   externalRef,
   onScroll,
 }: FixtureProps) {
-  const {getViewportProps, getContentProps, state, axisMapping} =
+  const {getViewportProps, getContentProps, state, overflow, axisMapping} =
     useScrollableArea({
       axis,
       keyboardAccess: {
@@ -52,6 +52,7 @@ function Fixture({
         </div>
       </div>
       <output data-testid="state">{JSON.stringify(state)}</output>
+      <output data-testid="overflow">{JSON.stringify(overflow)}</output>
       <output data-testid="axis-mapping">{JSON.stringify(axisMapping)}</output>
     </>
   );
@@ -85,6 +86,10 @@ function state(): {
   block: {isScrollable: boolean; atStart: boolean; atEnd: boolean};
 } {
   return JSON.parse(screen.getByTestId('state').textContent ?? '{}');
+}
+
+function overflow(): {inline: boolean; block: boolean} {
+  return JSON.parse(screen.getByTestId('overflow').textContent ?? '{}');
 }
 
 function makeMeasurable(viewport: HTMLElement) {
@@ -151,12 +156,14 @@ describe('useScrollableArea', () => {
     setGeometry(viewport, {scrollWidth: 101});
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
+    expect(overflow()).toEqual({inline: false, block: false});
     expect(state().inline.isScrollable).toBe(false);
 
     viewport.style.overflowX = 'hidden';
     setGeometry(viewport, {scrollWidth: 140});
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
+    expect(overflow()).toEqual({inline: true, block: false});
     expect(state().inline.isScrollable).toBe(false);
 
     viewport.style.overflowX = 'auto';

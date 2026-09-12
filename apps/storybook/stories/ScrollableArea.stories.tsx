@@ -2,6 +2,7 @@
 
 import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor} from 'storybook/test';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -160,6 +161,33 @@ const styles = stylex.create({
     inlineSize: 320,
     blockSize: 300,
   },
+  stickyPassThroughOuter: {
+    inlineSize: 360,
+    blockSize: 220,
+  },
+  stickyPassThroughContent: {
+    minBlockSize: 720,
+    padding: spacingVars['--spacing-3'],
+  },
+  stickyPassThroughSpacer: {
+    blockSize: 180,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  stickyPassThroughInner: {
+    blockSize: 140,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colorVars['--color-border-emphasized'],
+    borderRadius: radiusVars['--radius-element'],
+  },
+  stickyPassThroughInnerContent: {
+    blockSize: 120,
+    padding: spacingVars['--spacing-2'],
+  },
+  stickyPassThroughTail: {
+    blockSize: 360,
+  },
   verticalWriting: {
     writingMode: 'vertical-rl',
     inlineSize: 220,
@@ -199,11 +227,16 @@ const meta = {
     label: 'Scrollable example',
     role: 'group',
     overscroll: 'allow',
+    stickyContainment: 'whenScrollable',
   },
   argTypes: {
     axis: {control: 'select', options: ['inline', 'block', 'both']},
     role: {control: 'select', options: ['group', 'region']},
     overscroll: {control: 'select', options: ['allow', 'contain']},
+    stickyContainment: {
+      control: 'select',
+      options: ['whenScrollable', 'always'],
+    },
   },
 } satisfies Meta<typeof ScrollableArea>;
 
@@ -276,6 +309,32 @@ function ConditionalKeyboardDemo() {
 
 export const ConditionalKeyboardAccess: Story = {
   render: () => <ConditionalKeyboardDemo />,
+  play: async ({canvasElement}) => {
+    const button = canvasElement.querySelector('button');
+    const viewport = canvasElement.querySelector<HTMLElement>(
+      '[data-evidence="conditional-tabindex"]',
+    );
+    expect(button).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    if (button == null || viewport == null) {
+      return;
+    }
+
+    await waitFor(() => {
+      expect(getComputedStyle(viewport).overflowY).toBe('clip');
+      expect(viewport).not.toHaveAttribute('tabindex');
+    });
+    await userEvent.click(button);
+    await waitFor(() => {
+      expect(getComputedStyle(viewport).overflowY).toBe('auto');
+      expect(viewport).toHaveAttribute('tabindex', '0');
+    });
+    await userEvent.click(button);
+    await waitFor(() => {
+      expect(getComputedStyle(viewport).overflowY).toBe('clip');
+      expect(viewport).not.toHaveAttribute('tabindex');
+    });
+  },
   parameters: {controls: {disable: true}},
 };
 
@@ -409,6 +468,111 @@ export const StickyLogicalEdges: Story = {
       </ScrollableArea>
     </VStack>
   ),
+  parameters: {controls: {disable: true}},
+};
+
+export const FittingStickyPassthrough: Story = {
+  render: () => (
+    <div {...stylex.props(styles.canvas)}>
+      <ScrollableArea
+        axis="block"
+        label="Outer Sticky owner"
+        data-sticky-outer="true"
+        xstyle={[styles.viewport, styles.stickyPassThroughOuter]}>
+        <div {...stylex.props(styles.stickyPassThroughContent)}>
+          <div {...stylex.props(styles.stickyPassThroughSpacer)}>
+            <Text>
+              Scroll until the fitting inner area reaches the outer viewport.
+            </Text>
+          </div>
+          <ScrollableArea
+            axis="block"
+            label="Fitting inner area"
+            data-sticky-fitting-area="true"
+            xstyle={styles.stickyPassThroughInner}>
+            <div {...stylex.props(styles.stickyPassThroughInnerContent)}>
+              <div
+                data-sticky-passthrough="true"
+                {...stylex.props(styles.sticky, styles.stickyBlockStart)}>
+                Sticky passes through the fitting area
+              </div>
+              <Text type="supporting">
+                This content fits, so the inner viewport uses clip and does not
+                capture Sticky.
+              </Text>
+            </div>
+          </ScrollableArea>
+          <Text type="supporting">
+            Explicit containment keeps the fitting viewport as a Sticky
+            boundary.
+          </Text>
+          <ScrollableArea
+            axis="block"
+            label="Explicit fitting Sticky boundary"
+            stickyContainment="always"
+            data-sticky-contained-area="true"
+            xstyle={styles.stickyPassThroughInner}>
+            <div {...stylex.props(styles.stickyPassThroughInnerContent)}>
+              <div {...stylex.props(styles.sticky, styles.stickyBlockStart)}>
+                Sticky stays with this fitting area
+              </div>
+            </div>
+          </ScrollableArea>
+          <div {...stylex.props(styles.stickyPassThroughTail)} />
+        </div>
+      </ScrollableArea>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const outer = canvasElement.querySelector<HTMLElement>(
+      '[data-sticky-outer="true"]',
+    );
+    const fittingArea = canvasElement.querySelector<HTMLElement>(
+      '[data-sticky-fitting-area="true"]',
+    );
+    const containedArea = canvasElement.querySelector<HTMLElement>(
+      '[data-sticky-contained-area="true"]',
+    );
+    const sticky = canvasElement.querySelector<HTMLElement>(
+      '[data-sticky-passthrough="true"]',
+    );
+    expect(outer).not.toBeNull();
+    expect(fittingArea).not.toBeNull();
+    expect(containedArea).not.toBeNull();
+    expect(sticky).not.toBeNull();
+    if (
+      outer == null ||
+      fittingArea == null ||
+      containedArea == null ||
+      sticky == null
+    ) {
+      return;
+    }
+
+    expect(getComputedStyle(fittingArea).overflowX).toBe('clip');
+    expect(getComputedStyle(fittingArea).overflowY).toBe('clip');
+    expect(fittingArea).not.toHaveAttribute('tabindex');
+    expect(getComputedStyle(containedArea).overflowX).toBe('hidden');
+    expect(getComputedStyle(containedArea).overflowY).toBe('auto');
+    expect(containedArea).not.toHaveAttribute('tabindex');
+
+    outer.scrollTop = 200;
+    outer.dispatchEvent(new Event('scroll'));
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    expect(
+      Math.abs(
+        sticky.getBoundingClientRect().top - outer.getBoundingClientRect().top,
+      ),
+    ).toBeLessThanOrEqual(2);
+    outer.dataset.stickyPassthroughVerified = 'true';
+  },
   parameters: {controls: {disable: true}},
 };
 

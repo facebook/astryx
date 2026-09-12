@@ -12,6 +12,7 @@ export const docs = {
     {name: 'getViewportProps', type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>', description: 'Composes caller viewport props and refs with measurement, accessibility, chaining, and owner registration.'},
     {name: 'getContentProps', type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>', description: 'Composes caller content-box props and refs with content observation.'},
     {name: 'state', type: 'ScrollableAreaState', description: 'Stable inline and block effective-scroll and logical-edge state.'},
+    {name: 'overflow', type: 'LogicalOverflowGeometry', description: 'Requested axes whose content geometry currently exceeds the viewport by more than 1px, independent of CSS overflow capability.'},
     {name: 'axisMapping', type: 'LogicalAxisMapping', description: 'Current logical-to-physical axis mapping derived from writing mode and direction.'},
   ],
   usage: {
@@ -37,6 +38,7 @@ export const docsDense = {
     getViewportProps: 'safe viewport prop/ref composition with behavior-owned accessibility and chaining.',
     getContentProps: 'safe observed content-box prop/ref composition.',
     state: 'inline/block isScrollable, atStart, and atEnd state.',
+    overflow: 'requested axes with more than 1px of excess content geometry',
     axisMapping: 'current logical inline/block mapping to physical x/y axes.',
   },
   usage: {
