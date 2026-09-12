@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 3
+template_version: 4
 kind: component
 id: component:Slider
 authority: draft
@@ -29,14 +29,14 @@ system_specs: []
 ## Intent
 
 Slider presents a labeled control for selecting one numeric value or a bounded
-range. This draft records its current consumer anatomy and theming ownership
-without changing runtime behavior, styling, targets, or public API.
+range. This draft records its consumer anatomy and theming ownership, including
+an additive target for the interactive control surface.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive target and state reflection only; runtime,
+  default styling, DOM semantics, and public props remain unchanged
 - Controlled/uncontrolled behavior: unchanged; Slider remains controlled
 - Migration decision: none
 
@@ -48,7 +48,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - The current slider row, background track, filled range, tick marks and labels,
   thumbs, and adjacent text value presentation.
-- The existing `slider`, `slider-track`, and `slider-thumb` public targets.
+- The `slider`, `slider-control`, `slider-track`, and `slider-thumb` public
+  targets.
 
 **Does not own / non-goals**
 
@@ -61,24 +62,26 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, modes, states, and usage
-remain documented in `Slider.doc.mjs`.
+This adds one public theming target without adding or changing a component prop,
+value domain, or behavior. Consumer props, modes, states, and usage remain
+documented in `Slider.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                       | Basis                                   | Draft review state                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
-| FR1 | The current render places a filled range, one or two thumbs, and optional tick marks over the background track.                           | Current source, docs, and focused tests | Verified current behavior; no new behavior decided |
-| FR2 | `Slider`, `Track`, and `Thumb` carry the existing `slider`, `slider-track`, and `slider-thumb` targets respectively.                      | Current source and public docs          | Verified current behavior; no target change        |
-| FR3 | Filled range, tick marks, mark labels, and adjacent text value display are stable rendered parts without their own current Slider target. | Current source and public docs          | Verified current asymmetry; not ratified as policy |
-| FR4 | Label and status presentation continue to use Field and FieldStatus; value tooltips continue to use Tooltip.                              | Current source and focused tests        | Verified composition boundary                      |
+| ID  | Candidate invariant                                                                                                                                  | Basis                                   | Draft review state                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
+| FR1 | The current render places a filled range, one or two thumbs, and optional tick marks over the background track.                                      | Current source, docs, and focused tests | Verified current behavior; no new behavior decided |
+| FR2 | `Slider`, `Interactive control`, `Track`, and `Thumb` carry the `slider`, `slider-control`, `slider-track`, and `slider-thumb` targets respectively. | Current source, public docs, and #6224  | Proposed additive target contract                  |
+| FR3 | Filled range, tick marks, mark labels, and adjacent text value display are stable rendered parts without their own current Slider target.            | Current source and public docs          | Verified current asymmetry; not ratified as policy |
+| FR4 | Label and status presentation continue to use Field and FieldStatus; value tooltips continue to use Tooltip.                                         | Current source and focused tests        | Verified composition boundary                      |
 
 ### Observed current target asymmetry
 
 ProgressBar currently exposes targets for its fill and marks, while Slider
-exposes targets for its root row, background track, and thumbs but not its
-filled range, tick marks, mark labels, or adjacent text value display. This is
-implementation evidence for a joint audit, not approval of either target shape.
+exposes targets for its root row, interactive control, background track, and
+thumbs but not its filled range, tick marks, mark labels, or adjacent text value
+display. This is implementation evidence for a joint audit, not approval of
+either component's remaining target shape.
 
 ### Allowed variation
 
@@ -114,14 +117,15 @@ behavior, or value-tooltip behavior.
 
 ## Design relationships
 
-| Anatomy or state        | Design requirement                                            | Representation authority        | Hierarchy role | Component contract |
-| ----------------------- | ------------------------------------------------------------- | ------------------------------- | -------------- | ------------------ |
-| Label and description   | Identify and explain the numeric setting.                     | Current shared-component source | Supporting     | FR4                |
-| Slider and track        | Arrange the current interactive range control and rail.       | Current source and public docs  | Prominent      | FR1, FR2           |
-| Filled range and thumbs | Show the selected value or interval over the available range. | Current source and public docs  | Prominent      | FR1, FR2, FR3      |
-| Tick marks and labels   | Show optional supplied positions and their text.              | Current source and public docs  | Supporting     | FR1, FR3           |
-| Value presentation      | Shows the formatted value as text or a shared Tooltip.        | Current source and public docs  | Supporting     | FR3, FR4           |
-| Status message          | Presents shared validation feedback below the slider.         | Current shared-component source | Supporting     | FR4                |
+| Anatomy or state               | Design requirement                                                                             | Representation authority        | Hierarchy role | Component contract |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------- | -------------- | ------------------ |
+| Label and description          | Identify and explain the numeric setting.                                                      | Current shared-component source | Supporting     | FR4                |
+| Slider and interactive control | Separate the outer row from the pointer/keyboard surface and its composite disabled treatment. | Current source and public docs  | Prominent      | FR1, FR2           |
+| Track                          | Shows the available range behind the fill.                                                     | Current source and public docs  | Prominent      | FR1, FR2           |
+| Filled range and thumbs        | Show the selected value or interval over the available range.                                  | Current source and public docs  | Prominent      | FR1, FR2, FR3      |
+| Tick marks and labels          | Show optional supplied positions and their text.                                               | Current source and public docs  | Supporting     | FR1, FR3           |
+| Value presentation             | Shows the formatted value as text or a shared Tooltip.                                         | Current source and public docs  | Supporting     | FR3, FR4           |
+| Status message                 | Presents shared validation feedback below the slider.                                          | Current shared-component source | Supporting     | FR4                |
 
 ### Theming anatomy
 
@@ -138,6 +142,7 @@ behavior, or value-tooltip behavior.
     }
   },
   "Slider": {"target": "slider"},
+  "Interactive control": {"target": "slider-control"},
   "Track": {"target": "slider-track"},
   "Filled range": {
     "none": {
@@ -172,10 +177,12 @@ behavior, or value-tooltip behavior.
 }
 ```
 
-`Filled range`, `Tick mark`, `Mark label`, and `Value display` remain stable
-consumer anatomy, but no current Slider target reaches them. The map records
-those gaps without making their absence intentional. `Value display` names the
-adjacent text mode; the separately listed value tooltip retains Tooltip's target.
+`Interactive control` names the pointer/keyboard hit surface and the composite
+opacity boundary around the rail, fill, marks, and thumbs. `Filled range`, `Tick
+mark`, `Mark label`, and `Value display` remain stable consumer anatomy, but no
+current Slider target reaches them. The map records those gaps without making
+their absence intentional. `Value display` names the adjacent text mode; the
+separately listed value tooltip retains Tooltip's target.
 
 ## Family and system relationships
 
@@ -191,24 +198,24 @@ adjacent text mode; the separately listed value tooltip retains Tooltip's target
 
 ## Verification map
 
-| Contract            | Verification                                                                           | Representative states                             | Mutation or failure expectation                                                                                      | Audit section          |
-| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| FR1                 | `Slider.test.tsx` structure, range, and marks suites                                   | Single, range, horizontal, vertical, marks        | Removing or misaligning stable parts breaks existing role, position, or mark assertions.                             | `audit:Slider/anatomy` |
-| FR2                 | `themingTargets.test.ts`                                                               | Root, track, and thumb target call sites          | Source and public target metadata drift fails the target guard.                                                      | `audit:Slider/theming` |
-| FR3                 | Source and consumer-doc review                                                         | Filled range, marks, labels, adjacent text value  | A missing target is inaccurately documented as present or intentionally permanent.                                   | `audit:Slider/theming` |
-| FR4                 | Source inspection; focused tests cover label, status, and disabled-reason Tooltip only | Label, status, value tooltip, disabled reason     | Shared composition or its accessible association disappears; value-tooltip composition still lacks focused coverage. | `audit:Slider/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                          | Canonical anatomy and three current local targets | Missing, extra, prefixed, stale, or unclaimed mappings fail repository validation.                                   | `audit:Slider/theming` |
+| Contract            | Verification                                                                           | Representative states                                                 | Mutation or failure expectation                                                                                      | Audit section          |
+| ------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| FR1                 | `Slider.test.tsx` structure, range, and marks suites                                   | Single, range, horizontal, vertical, marks                            | Removing or misaligning stable parts breaks existing role, position, or mark assertions.                             | `audit:Slider/anatomy` |
+| FR2                 | `Slider.test.tsx`, `themingTargets.test.ts`, generated probe theme, and Chromium       | Root, horizontal/vertical control, disabled control, track, and thumb | A target class/state is missing, undocumented, or placed outside its owning anatomy.                                 | `audit:Slider/theming` |
+| FR3                 | Source and consumer-doc review                                                         | Filled range, marks, labels, adjacent text value                      | A missing target is inaccurately documented as present or intentionally permanent.                                   | `audit:Slider/theming` |
+| FR4                 | Source inspection; focused tests cover label, status, and disabled-reason Tooltip only | Label, status, value tooltip, disabled reason                         | Shared composition or its accessible association disappears; value-tooltip composition still lacks focused coverage. | `audit:Slider/anatomy` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                          | Canonical anatomy and four current local targets                      | Missing, extra, prefixed, stale, or unclaimed mappings fail repository validation.                                   | `audit:Slider/theming` |
 
-The focused Slider suite does not separately assert the exact `slider`,
-`slider-track`, or `slider-thumb` class placement. The source/metadata target
-guard covers those declarations. It also covers only the disabled-reason
-Tooltip path, not the `valueDisplay="tooltip"` composition; that anatomy is
-source-inspected and remains missing focused test coverage.
+The focused Slider suite asserts the `slider-control` target's orientation and
+disabled state. Source/metadata guards cover all four target declarations. The
+suite covers only the disabled-reason Tooltip path, not the
+`valueDisplay="tooltip"` composition; that anatomy is source-inspected and
+remains missing focused test coverage.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-family, theming, or API decision.
+None. This draft proposes one additive target for owner review and changes no
+default behavior or styling.
 
 ## Open questions
 

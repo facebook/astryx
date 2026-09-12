@@ -137,6 +137,24 @@ describe('Slider', () => {
     },
   );
 
+  it('reflects orientation and disabled state on the interactive control target', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        orientation="vertical"
+        valueDisplay="text"
+        isDisabled
+      />,
+    );
+    const control = screen.getByRole('slider').parentElement;
+    expect(control).not.toBeNull();
+    expect(control).toHaveClass('astryx-slider-control');
+    expect(control).toHaveAttribute('data-orientation', 'vertical');
+    expect(control).toHaveAttribute('data-disabled', 'disabled');
+    expect(control).not.toContainElement(screen.getByText('50'));
+  });
+
   it('range mode sets correct aria values on both thumbs', () => {
     render(
       <Slider
