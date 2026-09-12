@@ -69,6 +69,33 @@ describe('accessibility-audit --components contract', () => {
     expect(result.report).toBeNull();
   });
 
+  it.each([
+    ['empty', {entries: {}}],
+    [
+      'docs-only',
+      {
+        entries: {
+          'core-button--docs': {
+            id: 'core-button--docs',
+            title: 'Core/Button',
+            type: 'docs',
+          },
+        },
+      },
+    ],
+  ])('fails closed when the Storybook index is %s', (_name, index) => {
+    const result = runAudit([], dir => {
+      const storybook = path.join(dir, 'apps/storybook/dist');
+      fs.mkdirSync(storybook, {recursive: true});
+      fs.writeFileSync(path.join(storybook, 'index.json'), JSON.stringify(index));
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Storybook index contains no runnable story entries',
+    );
+    expect(result.report).toBeNull();
+  });
+
   it('fails closed before routing when the Storybook index is invalid', () => {
     const result = runAudit(['--components', 'core/Button'], dir => {
       const storybook = path.join(dir, 'apps/storybook/dist');

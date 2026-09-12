@@ -143,10 +143,15 @@ async function getStories(storybookPath) {
   if (
     stories == null ||
     typeof stories !== 'object' ||
-    Array.isArray(stories) ||
-    Object.keys(stories).length === 0
+    Array.isArray(stories)
   ) {
-    throw new Error('Storybook index contains no story entries');
+    throw new Error('Storybook index does not contain a story entries object');
+  }
+  const hasRunnableStory = Object.entries(stories).some(
+    ([id, story]) => story?.type === 'story' && !id.endsWith('--docs'),
+  );
+  if (!hasRunnableStory) {
+    throw new Error('Storybook index contains no runnable story entries');
   }
   return stories;
 }
