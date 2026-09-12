@@ -135,7 +135,7 @@
  * @property {boolean} [force] Run codemods even if `from` >= installed.
  * @property {string} [codemod] Run a single named transform.
  * @property {string[]} [skipCodemod] Exclude named codemods (re-run past a failure).
- * @property {string[]} [integration] Explicit integration package names / file paths.
+ * @property {string[]} [integration] Explicit integration specifiers resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.
  * @property {string} [path] Source directory to scan (default `./src`).
  * @property {boolean} [installDeps] Auto-install jscodeshift without prompting.
  * @property {boolean} [registry] Reconcile only ShadCN-copied compositions; `from` is not required.
