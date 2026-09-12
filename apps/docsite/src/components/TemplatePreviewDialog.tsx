@@ -15,7 +15,10 @@
  * The header surfaces template metadata (name, description) on
  * the left. All controls cluster on the right of the header: a
  * copy-to-clipboard CLI scaffold command, an Open in Playground action,
- * and the close button.
+ * and the close button. The row wraps when the controls no longer fit
+ * beside the title, and the fullscreen (phone) variant stacks the commands
+ * and the primary action full width, with the close button pinned to the
+ * top-inline-end corner — the header must never widen the dialog.
  *
  * The preview sits in a padded, framed (border + radius) surface below the
  * header. The prev/next arrows are position:fixed inside the top-layer
@@ -93,6 +96,11 @@ const styles = stylex.create({
   },
   headerRow: {
     width: '100%',
+    // The header never widens the dialog: a long command or a wide action row
+    // shrinks or truncates instead. Without this the fullscreen dialog's
+    // clipped body can be scrolled sideways by focus and never scrolled back.
+    maxWidth: '100%',
+    minWidth: 0,
     position: 'relative' as const,
   },
   dialogHeader: {
@@ -105,7 +113,12 @@ const styles = stylex.create({
     insetInlineEnd: 0,
   },
   desktopHeaderMeta: {
-    flex: 1,
+    // Grow into the free space, but keep a readable floor: when the actions
+    // no longer fit beside a 240px title block the header wraps instead of
+    // squeezing the title to nothing.
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: '240px',
     minWidth: 0,
   },
   mobileHeaderMeta: {
@@ -116,10 +129,26 @@ const styles = stylex.create({
     width: '100%',
     minWidth: 0,
   },
+  // Standard (desktop) header: the action cluster shares one line with the
+  // title, so it has to be allowed to shrink — otherwise a narrow window
+  // pushes "Open in Playground" past the dialog edge.
+  actionsGroup: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  // Command rows and the primary action stack on the fullscreen (mobile)
+  // header, so each one gets the full width instead of competing for it.
+  commandStack: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   // The CLI command shrinks before the buttons do, and stays on one line.
   commandGroup: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  commandLabel: {
+    flexShrink: 0,
   },
   commandCode: {
     flexShrink: 1,
@@ -194,9 +223,9 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <VStack gap={1}>
+    <VStack gap={1} xstyle={styles.commandStack}>
       <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
-        <Text type="supporting" color="secondary">
+        <Text type="supporting" color="secondary" xstyle={styles.commandLabel}>
           Astryx CLI
         </Text>
         <Code
@@ -220,7 +249,10 @@ function TemplatePreviewHeader({
       </HStack>
       {CURRENT_TARGET === 'canary' && (
         <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
-          <Text type="supporting" color="secondary">
+          <Text
+            type="supporting"
+            color="secondary"
+            xstyle={styles.commandLabel}>
             {shadcnRegistryIsPreview ? 'shadcn preview (expires)' : 'shadcn'}
           </Text>
           <Code xstyle={styles.commandCode}>
@@ -258,6 +290,7 @@ function TemplatePreviewHeader({
       variant="primary"
       size="lg"
       href={playgroundHref}
+      width={isFullscreen ? '100%' : undefined}
       onClick={() => {
         trackOpenPlayground({
           page: 'templates',
@@ -281,14 +314,19 @@ function TemplatePreviewHeader({
     />
   );
 
-  const actions = (
-    <HStack
-      gap={2}
-      vAlign="center"
-      xstyle={isFullscreen ? styles.actionsRow : undefined}>
+  // Fullscreen (mobile) stacks the actions: a phone cannot fit the command
+  // rows and the primary action on one line, and squeezing them there is what
+  // pushed the header past the viewport.
+  const actions = isFullscreen ? (
+    <VStack gap={2} xstyle={styles.actionsRow}>
       {copyButton}
       {playgroundButton}
-      {!isFullscreen && closeButton}
+    </VStack>
+  ) : (
+    <HStack gap={2} vAlign="center" xstyle={styles.actionsGroup}>
+      {copyButton}
+      {playgroundButton}
+      {closeButton}
     </HStack>
   );
 
@@ -299,7 +337,7 @@ function TemplatePreviewHeader({
       {closeButton}
     </VStack>
   ) : (
-    <HStack gap={4} vAlign="start" xstyle={styles.headerRow}>
+    <HStack gap={4} vAlign="start" wrap="wrap" xstyle={styles.headerRow}>
       {metadata}
       {actions}
     </HStack>

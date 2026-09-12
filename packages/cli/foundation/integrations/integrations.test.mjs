@@ -4,13 +4,20 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Project} from '../config/project.mjs';
-import {loadIntegrations, resolvePackageDir} from './integrations.mjs';
+import {
+  loadIntegrations,
+  loadLocalIntegration,
+  resolvePackageDir,
+} from './integrations.mjs';
 import {discover} from '../../api/discover/discover.mjs';
 
 let tmpDir;
 let originalCwd;
 
-function writeManifestPackage(dir, {basename = 'astryx.integration.mjs', body}) {
+function writeManifestPackage(
+  dir,
+  {basename = 'astryx.integration.mjs', body},
+) {
   const pkgDir = path.join(dir, 'node_modules', '@acme', 'widgets');
   fs.mkdirSync(pkgDir, {recursive: true});
   fs.writeFileSync(
@@ -141,26 +148,32 @@ describe('configured integrations', () => {
     ['wrong outer shape', []],
     ['wrong append shape', {append: 'not-an-array'}],
     ['non-string entry', {append: ['ok', 42]}],
-    ['too many lines', {append: Array.from({length: 9}, (_, i) => `line ${i}`)}],
+    [
+      'too many lines',
+      {append: Array.from({length: 9}, (_, i) => `line ${i}`)},
+    ],
     ['too many code points', {append: ['😀'.repeat(241)]}],
     ['control character', {append: ['bad\u0001line']}],
     ['managed marker', {append: ['ASTRYX:START']}],
-  ])('isolates invalid agentDocs (%s) from valid roots', async (_label, agentDocs) => {
-    const pkgDir = writeManifestPackage(tmpDir, {
-      body: `export default ${JSON.stringify({
-        components: './components',
-        agentDocs,
-      })};\n`,
-    });
-    fs.mkdirSync(path.join(pkgDir, 'components'));
+  ])(
+    'isolates invalid agentDocs (%s) from valid roots',
+    async (_label, agentDocs) => {
+      const pkgDir = writeManifestPackage(tmpDir, {
+        body: `export default ${JSON.stringify({
+          components: './components',
+          agentDocs,
+        })};\n`,
+      });
+      fs.mkdirSync(path.join(pkgDir, 'components'));
 
-    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+      const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
 
-    expect(loaded.__loadError).toBeUndefined();
-    expect(loaded.components).toBe(path.join(pkgDir, 'components'));
-    expect(loaded.agentDocs).toBeUndefined();
-    expect(loaded.__agentDocsError).toMatch(/agentDocs/i);
-  });
+      expect(loaded.__loadError).toBeUndefined();
+      expect(loaded.components).toBe(path.join(pkgDir, 'components'));
+      expect(loaded.agentDocs).toBeUndefined();
+      expect(loaded.__agentDocsError).toMatch(/agentDocs/i);
+    },
+  );
 
   it('errors when the package has no conventional root manifest', async () => {
     const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
@@ -169,9 +182,9 @@ describe('configured integrations', () => {
       path.join(pkgDir, 'package.json'),
       JSON.stringify({name: '@acme/widgets'}),
     );
-    await expect(loadIntegrations(['@acme/widgets'], {cwd: tmpDir})).rejects.toThrow(
-      /no conventional root manifest/,
-    );
+    await expect(
+      loadIntegrations(['@acme/widgets'], {cwd: tmpDir}),
+    ).rejects.toThrow(/no conventional root manifest/);
   });
 
   it('errors when the package has multiple root manifests', async () => {
@@ -182,15 +195,69 @@ describe('configured integrations', () => {
       path.join(pkgDir, 'astryx.integration.js'),
       `module.exports = {};\n`,
     );
-    await expect(loadIntegrations(['@acme/widgets'], {cwd: tmpDir})).rejects.toThrow(
-      /multiple root manifests/,
-    );
+    await expect(
+      loadIntegrations(['@acme/widgets'], {cwd: tmpDir}),
+    ).rejects.toThrow(/multiple root manifests/);
   });
 
   it('errors when the package is not installed', async () => {
-    await expect(loadIntegrations(['@acme/missing'], {cwd: tmpDir})).rejects.toThrow(
-      /Could not find installed integration package/,
+    await expect(
+      loadIntegrations(['@acme/missing'], {cwd: tmpDir}),
+    ).rejects.toThrow(/Could not find installed integration package/);
+  });
+});
+
+describe('local integration self-resolution', () => {
+  it('preserves a valid gapReport named export', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/local', version: '1.0.0'}),
     );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export const gapReport = {
+  audience: 'internal',
+  handle(report) { return {status: 'filed', message: report.component}; },
+};
+export default {};
+`,
+    );
+
+    const loaded = await loadLocalIntegration(tmpDir, {fresh: true});
+
+    expect(loaded).toMatchObject({name: '@acme/local', __local: true});
+    expect(loaded?.__gapReport?.audience).toBe('internal');
+    expect(
+      loaded?.__gapReport?.handle(
+        /** @type {any} */ ({component: 'LocalWidget'}),
+        /** @type {any} */ ({signal: new AbortController().signal}),
+      ),
+    ).toEqual({status: 'filed', message: 'LocalWidget'});
+    expect(loaded?.__gapReportError).toBeUndefined();
+  });
+
+  it('preserves a malformed gapReport error without dropping the manifest', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/local', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export const gapReport = {audience: 'internal', command: './report.mjs'};
+export default {issuesUrl: 'https://example.com/issues'};
+`,
+    );
+
+    const loaded = await loadLocalIntegration(tmpDir, {fresh: true});
+
+    expect(loaded).toMatchObject({
+      name: '@acme/local',
+      issuesUrl: 'https://example.com/issues',
+      __local: true,
+    });
+    expect(loaded?.__loadError).toBeUndefined();
+    expect(loaded?.__gapReport).toBeUndefined();
+    expect(loaded?.__gapReportError).toMatch(/gapReport.*handle/i);
   });
 });
 
@@ -198,7 +265,9 @@ describe('resolvePackageDir — spec must be a bare package name', () => {
   it.each(['../../../etc', 'a/../../b', '/abs/evil', 'foo/..', '..'])(
     'rejects a traversal/absolute spec %s',
     spec => {
-      expect(() => resolvePackageDir(spec, '/proj')).toThrow(/Invalid|outside node_modules/i);
+      expect(() => resolvePackageDir(spec, '/proj')).toThrow(
+        /Invalid|outside node_modules/i,
+      );
     },
   );
 
@@ -223,7 +292,10 @@ describe('a broken integration manifest degrades gracefully (skip + warn)', () =
     ]) {
       const dir = path.join(tmpDir, 'node_modules', ...name.split('/'));
       fs.mkdirSync(dir, {recursive: true});
-      fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({name, version: '1.0.0'}));
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({name, version: '1.0.0'}),
+      );
       fs.writeFileSync(path.join(dir, 'astryx.integration.mjs'), body);
     }
 
@@ -277,5 +349,56 @@ describe('the `debug` named export', () => {
     const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
 
     expect(loaded.__unknownKeys).toEqual([]);
+  });
+});
+
+describe('the `gapReport` named export', () => {
+  it('loads a function handler without turning it into a manifest key', async () => {
+    writeManifestPackage(tmpDir, {
+      body:
+        `const handle = async report => ({status: 'filed', message: report.component});\n` +
+        `export const gapReport = {audience: 'public', handle};\n` +
+        `export default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__gapReport?.audience).toBe('public');
+    expect(typeof loaded.__gapReport?.handle).toBe('function');
+    await expect(
+      loaded.__gapReport?.handle(/** @type {any} */ ({component: 'Button'})),
+    ).resolves.toEqual({
+      status: 'filed',
+      message: 'Button',
+    });
+    expect(loaded.__gapReportError).toBeUndefined();
+    expect(loaded.__unknownKeys).toEqual([]);
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
+  });
+
+  it('isolates an invalid named handler from the default manifest', async () => {
+    writeManifestPackage(tmpDir, {
+      body:
+        `export const gapReport = {audience: 'internal', command: './report.mjs'};\n` +
+        `export default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__loadError).toBeUndefined();
+    expect(loaded.__gapReport).toBeUndefined();
+    expect(loaded.__gapReportError).toMatch(/gapReport/);
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
+  });
+
+  it('keeps a same-named default-manifest field unknown instead of treating it as a handler', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export default {gapReport: {audience: 'public', handle: () => {}}};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__gapReport).toBeUndefined();
+    expect(loaded.__unknownKeys).toEqual(['gapReport']);
   });
 });

@@ -302,12 +302,56 @@ export const docs = {
       ],
     },
     {
+      title: 'Gap report handler',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'An integration can handle `astryx gap-report` events by exporting a `gapReport` handler from its integration module. The handler is a plain object with an `audience` and a `handle` function — not an executable command. Export it as a named export; do not put it in the default manifest. Older CLI versions ignore the named export and continue loading every manifest contribution they understand.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx.integration.ts\nimport type {GapReportHandler} from '@astryxdesign/cli/authoring';\n\nexport const gapReport: GapReportHandler = {\n  audience: 'public',\n  async handle(event, {signal}) {\n    // event is a normalized GapReport with camelCase fields\n    // and event.target.{package, version, issuesUrl}\n    const url = await createIssue(event, {signal});\n    return { status: 'filed', url };\n  },\n};\n\nexport default {\n  components: './components',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
+        },
+        {
+          type: 'prose',
+          text: 'The same handler type is available as a `gapReport` field in `astryx.config` for project-level handling. When both exist, the project handler runs first, then each integration handler in config order. Every handler runs — none overrides another.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx.config.ts\nimport type {AstryxConfig, GapReportHandler} from '@astryxdesign/cli/authoring';\n\nconst projectHandler: GapReportHandler = {\n  audience: 'internal',\n  async handle(event) {\n    await postToTracker(event);\n    return { status: 'filed', message: 'Posted to internal tracker' };\n  },\n};\n\nexport default {\n  integrations: ['@acme/astryx-widgets'],\n  gapReport: projectHandler,\n} satisfies AstryxConfig;",
+        },
+        {
+          type: 'prose',
+          text: "Each handler receives its own deep copy of the `GapReport` event (via `structuredClone`) plus an `AbortSignal` that fires at the 30-second timeout. Each handler runs in its own worker. A throw, timeout, `stdout` write, `process.exit`, or `process.exitCode` change is contained there and produces a failed delivery for that handler only. On timeout the CLI aborts the signal, terminates the worker before starting the next handler, and preserves its own output and exit code. Handler `stdout` is forwarded to the CLI's `stderr` so it cannot corrupt a JSON envelope.",
+        },
+        {
+          type: 'prose',
+          text: "A handler MUST return a `GapReportHandlerReceipt` with a `status` of `'filed'`, `'routed_only'`, or `'skipped'`, plus optional `url` and `message` strings. The aggregate response includes an ordered `deliveries` array. Each entry names its project, integration package, or fallback and includes the declared audience, final status, URL, and message.",
+        },
+        {
+          type: 'prose',
+          text: "Use `audience: 'public'` for any public or third-party destination. The CLI will not invoke a public handler unless the caller explicitly confirms the public write. `audience: 'internal'` requires no additional confirmation. In a fan-out with mixed audiences, internal handlers run unconditionally while public handlers are consent-gated independently.",
+        },
+        {
+          type: 'prose',
+          text: 'When the effective handler set is empty (no project handler, no integration handlers), and the target has a GitHub `issuesUrl`, the CLI falls back to `gh issue create` after explicit confirmation. Any other `issuesUrl` scheme produces a `routed_only` receipt. The fallback is suppressed entirely when at least one handler is configured.',
+        },
+      ],
+    },
+    {
       title: 'How It Works',
       category: 'guide',
       content: [
         {
           type: 'prose',
           text: "Every CLI command loads the consumer's `astryx.config`, resolves each listed integration's manifest from `node_modules`, and discovers its contributions. Each file is parsed at the load boundary through `@astryxdesign/cli/authoring` — when the CLI loads it, not when you author it. A field of the wrong type fails there. A field this CLI does not know is ignored with a warning naming it, so a manifest written against a newer CLI still contributes everything this one understands. There are no factories; you write a plain object and stamp its `type`.",
+        },
+        {
+          type: 'prose',
+          text: 'Runtime integration features — `debug` and `gapReport` — use named exports from the integration module rather than fields in the default manifest. The CLI discovers them alongside the manifest but loads them through the composition rules in `spec:AST-031`: every configured handler runs additively, each in isolation with its own copy of the event.',
         },
         {
           type: 'prose',

@@ -4,15 +4,29 @@
  * @file Unit tests for RTL contextual decorations and applicability coverage.
  */
 
+import fs from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {describe, expect, it} from 'vitest';
+import componentPackages from '../../scripts/component-packages.cjs';
 import {
+  AUDITED_PACKAGE_NAMES,
+  AUDITED_STORY_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildStoryComponentRoutes,
   classifyDirectionalDecorationPair,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  filterStoryRoutesByPackages,
+  storyIdsForComponentFilters,
+  unresolvedComponentFilters,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
+
+const {
+  componentPackage,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = componentPackages;
 
 const IDENTITY = [1, 0, 0, 1];
 const MIRROR = [-1, 0, 0, 1];
@@ -338,5 +352,368 @@ describe('buildAuditedComponentRoster', () => {
         filters: ['missing'],
       }),
     ).toEqual(['unknown/missing']);
+  });
+});
+
+describe('audited package and story routing', () => {
+  const publicComponentsByPackage = Object.fromEntries(
+    AUDITED_PACKAGE_NAMES.map(packageName => {
+      const pkg = componentPackage(packageName);
+      const components =
+        pkg.layout === 'flat'
+          ? flatPackageComponentNames(process.cwd(), pkg)
+          : nestedPackageComponentNames(process.cwd(), pkg);
+      return [packageName, components];
+    }),
+  );
+  const chartsComponents = publicComponentsByPackage.charts;
+  const richTextComponents = publicComponentsByPackage.richtext;
+  const vegaComponents = publicComponentsByPackage.vega;
+
+  it('uses the canonical registry for all five component packages', () => {
+    expect(chartsComponents).toEqual([
+      'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
+      'ChartSwatch',
+      'ChartTooltip',
+    ]);
+    expect(richTextComponents).toEqual([
+      'RichTextEditor',
+      'RichTextEditorAutoLinkPlugin',
+      'RichTextEditorToolbar',
+      'RichTextView',
+    ]);
+    expect(vegaComponents).toEqual(['VegaChart']);
+    expect(AUDITED_PACKAGE_NAMES).toEqual([
+      'core',
+      'lab',
+      'charts',
+      'richtext',
+      'vega',
+    ]);
+    expect(AUDITED_STORY_PREFIXES).toEqual([
+      'core-',
+      'lab-',
+      'charts-',
+      'vega-',
+    ]);
+  });
+
+  it('routes public owners across all five packages without losing aliases', () => {
+    const routes = buildStoryComponentRoutes({
+      stories: [
+        {id: 'core-button--default', title: 'Core/Button'},
+        {id: 'lab-chart--bar-chart', title: 'Lab/Chart'},
+        {id: 'charts-chart--playground', title: 'Charts/Chart'},
+        {id: 'charts-bar--simple', title: 'Charts/Bar'},
+        {
+          id: 'charts-chrome-legend--default',
+          title: 'Charts/Chrome/Legend',
+        },
+        {
+          id: 'charts-chrome-axes-grids--playground',
+          title: 'Charts/Chrome/Axes & Grids',
+        },
+        {
+          id: 'charts-chrome-swatch--gallery',
+          title: 'Charts/Chrome/Swatch',
+        },
+        {
+          id: 'charts-chrome-tooltip--default',
+          title: 'Charts/Chrome/Tooltip',
+        },
+        {
+          id: 'lab-richtexteditor--default',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-toolbar',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-auto-link',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--markdown-serializers',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'vega-vegachart--radial-plot',
+          title: 'Vega/VegaChart',
+        },
+      ],
+      targets: [
+        {
+          component: 'lab/Chart',
+          storyId: 'lab-chart--bar-chart',
+        },
+        {
+          component: 'ChartLegend',
+          storyId: 'charts-chrome-legend--default',
+        },
+        {
+          component: 'richtext/RichTextEditor',
+          storyId: 'lab-richtexteditor--default',
+        },
+        {
+          component: 'richtext/RichTextEditorToolbar',
+          storyId: 'lab-richtexteditor--with-toolbar',
+        },
+        {
+          component: 'richtext/RichTextEditorAutoLinkPlugin',
+          storyId: 'lab-richtexteditor--with-auto-link',
+        },
+        {
+          component: 'richtext/RichTextView',
+          storyId: 'lab-richtexteditor--markdown-serializers',
+        },
+      ],
+      publicComponentsByPackage,
+    });
+
+    expect(routes).toEqual([
+      {id: 'core-button--default', component: 'core/Button'},
+      {id: 'lab-chart--bar-chart', component: 'lab/Chart'},
+      {id: 'charts-chart--playground', component: 'charts/Chart'},
+      {id: 'charts-bar--simple', component: 'charts/Chart'},
+      {
+        id: 'charts-chrome-legend--default',
+        component: 'charts/ChartLegend',
+      },
+      {
+        id: 'charts-chrome-axes-grids--playground',
+        component: 'charts/ChartAxis',
+      },
+      {
+        id: 'charts-chrome-axes-grids--playground',
+        component: 'charts/ChartGrid',
+      },
+      {
+        id: 'charts-chrome-swatch--gallery',
+        component: 'charts/ChartSwatch',
+      },
+      {
+        id: 'charts-chrome-tooltip--default',
+        component: 'charts/ChartTooltip',
+      },
+      {
+        id: 'lab-richtexteditor--default',
+        component: 'richtext/RichTextEditor',
+      },
+      {
+        id: 'lab-richtexteditor--with-toolbar',
+        component: 'richtext/RichTextEditorToolbar',
+      },
+      {
+        id: 'lab-richtexteditor--with-auto-link',
+        component: 'richtext/RichTextEditorAutoLinkPlugin',
+      },
+      {
+        id: 'lab-richtexteditor--markdown-serializers',
+        component: 'richtext/RichTextView',
+      },
+      {
+        id: 'vega-vegachart--radial-plot',
+        component: 'vega/VegaChart',
+      },
+    ]);
+
+    const routesWithUnknown = [
+      ...routes,
+      {id: 'core-mystery--default', component: 'unknown/mystery'},
+    ];
+    const shardRoutes = Object.fromEntries(
+      AUDITED_PACKAGE_NAMES.map(packageName => [
+        packageName,
+        filterStoryRoutesByPackages(routesWithUnknown, [packageName]),
+      ]),
+    );
+    const routeKey = route => `${route.id}::${route.component}`;
+    const assigned = Object.values(shardRoutes).flat().map(routeKey).sort();
+    expect(assigned).toEqual(routesWithUnknown.map(routeKey).sort());
+    expect(shardRoutes.richtext.map(routeKey)).toContain(
+      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+    );
+    expect(shardRoutes.lab.map(routeKey)).not.toContain(
+      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+    );
+    expect(shardRoutes.core.map(routeKey)).toContain(
+      'core-mystery--default::unknown/mystery',
+    );
+
+    const groupedOwners = [
+      'charts/ChartAxis',
+      'charts/ChartGrid',
+      'charts/ChartLegend',
+      'charts/ChartSwatch',
+      'charts/ChartTooltip',
+      'richtext/RichTextEditorAutoLinkPlugin',
+      'richtext/RichTextEditorToolbar',
+      'richtext/RichTextView',
+    ];
+    expect(storyIdsForComponentFilters(routes, groupedOwners)).toEqual([
+      'charts-chrome-legend--default',
+      'charts-chrome-axes-grids--playground',
+      'charts-chrome-swatch--gallery',
+      'charts-chrome-tooltip--default',
+      'lab-richtexteditor--with-toolbar',
+      'lab-richtexteditor--with-auto-link',
+      'lab-richtexteditor--markdown-serializers',
+    ]);
+    expect(unresolvedComponentFilters(routes, groupedOwners)).toEqual([]);
+    expect(unresolvedComponentFilters(routes, ['charts/MissingOwner'])).toEqual(
+      ['charts/MissingOwner'],
+    );
+
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: [
+          'core/Button',
+          'lab/Chart',
+          ...chartsComponents.map(component => `charts/${component}`),
+          ...richTextComponents.map(component => `richtext/${component}`),
+          ...vegaComponents.map(component => `vega/${component}`),
+        ],
+        storyComponents: routes.map(route => route.component),
+        filters: [
+          'Button',
+          'Chart',
+          ...chartsComponents.slice(1),
+          ...richTextComponents,
+          ...vegaComponents,
+        ],
+      }),
+    ).toEqual([
+      'core/Button',
+      'lab/Chart',
+      ...chartsComponents.map(component => `charts/${component}`),
+      ...richTextComponents.map(component => `richtext/${component}`),
+      ...vegaComponents.map(component => `vega/${component}`),
+    ]);
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: [
+          ...chartsComponents.map(component => `charts/${component}`),
+          ...richTextComponents.map(component => `richtext/${component}`),
+        ],
+        storyComponents: routes.map(route => route.component),
+        filters: groupedOwners,
+      }),
+    ).toEqual(groupedOwners);
+  });
+
+  it('routes every public Rich Text owner to a story that renders it', () => {
+    const targets = JSON.parse(
+      fs.readFileSync(
+        new URL('../../apps/storybook/rtl-audit/targets.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const routes = buildStoryComponentRoutes({
+      stories: [
+        {
+          id: 'lab-richtexteditor--default',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-toolbar',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-auto-link',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--markdown-serializers',
+          title: 'Lab/RichTextEditor',
+        },
+      ],
+      targets,
+      publicComponentsByPackage,
+    });
+    const owners = richTextComponents.map(component => `richtext/${component}`);
+    expect(unresolvedComponentFilters(routes, owners)).toEqual([]);
+    expect(storyIdsForComponentFilters(routes, owners)).toEqual([
+      'lab-richtexteditor--default',
+      'lab-richtexteditor--with-toolbar',
+      'lab-richtexteditor--with-auto-link',
+      'lab-richtexteditor--markdown-serializers',
+    ]);
+  });
+
+  it('classifies measured Chart owners and verified direction-neutral owners without gaps', () => {
+    const coverage = buildComponentCoverage({
+      components: chartsComponents.map(component => `charts/${component}`),
+      curatedResults: [
+        {
+          component: 'charts/Chart',
+          storyId: 'charts-chart--playground',
+          rollup: 'RTL-ready',
+        },
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-chrome-legend--default',
+          rollup: 'RTL-ready',
+        },
+      ],
+      verifiedNa: ['ChartAxis', 'ChartGrid', 'ChartSwatch', 'ChartTooltip'].map(
+        component => ({
+          component: `charts/${component}`,
+          reason: 'Direction-neutral chart-space rendering.',
+        }),
+      ),
+    });
+
+    expect(coverage).toMatchObject({
+      total: 6,
+      measured: 2,
+      verifiedNa: 4,
+      gaps: 0,
+      staleVerifiedNa: 0,
+    });
+  });
+
+  it('classifies Rich Text and Vega owners without gaps or package aliases', () => {
+    const components = [
+      ...richTextComponents.map(component => `richtext/${component}`),
+      ...vegaComponents.map(component => `vega/${component}`),
+    ];
+    const coverage = buildComponentCoverage({
+      components,
+      curatedResults: [
+        {
+          component: 'richtext/RichTextEditor',
+          storyId: 'lab-richtexteditor--error-status',
+          rollup: 'RTL-ready',
+        },
+        {
+          component: 'richtext/RichTextEditorToolbar',
+          storyId: 'lab-richtexteditor--with-toolbar',
+          rollup: 'RTL-ready',
+        },
+      ],
+      verifiedNa: [
+        'richtext/RichTextEditorAutoLinkPlugin',
+        'richtext/RichTextView',
+        'vega/VegaChart',
+      ].map(component => ({
+        component,
+        reason: 'Direction-neutral rendering.',
+      })),
+    });
+
+    expect(coverage).toMatchObject({
+      total: 5,
+      measured: 2,
+      verifiedNa: 3,
+      gaps: 0,
+      staleVerifiedNa: 0,
+    });
+    expect(coverage.results.map(result => result.component)).toEqual(
+      components,
+    );
   });
 });

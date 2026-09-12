@@ -29,7 +29,7 @@
  * @property {boolean} data.hasResults False when search returned nothing (renderer shows "No matches").
  * @property {number} data.matchCount Total ranked search matches for the query — counted before the search `limit`, the kit's score floors, and its per-group caps, so it is never a cap read back.
  * @property {boolean} data.directMatch True when the top page template is a confident direct match.
- * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3).
+ * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3). Each entry's `command` carries `--skeleton` when `directMatch` is false, so it recommends reading the layout rather than scaffolding it.
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.blocks Drop-in block patterns covering parts of the idea (≤5).
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
  * @property {string[]} data.frame Always-on page-shell component names.

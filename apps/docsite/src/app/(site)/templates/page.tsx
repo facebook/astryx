@@ -255,7 +255,7 @@ function TemplatesGallery() {
         </VStack>
 
         {/* Body */}
-        <Grid columns={{minWidth: isMobile ? 280 : 420}} gap={4} width="100%">
+        <Grid columns={{minWidth: isMobile ? 280 : 360}} gap={4} width="100%">
           {filteredItems.map(item => {
             const templateContent = <TemplateThumbnail slug={item.slug} />;
 

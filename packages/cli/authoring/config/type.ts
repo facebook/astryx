@@ -10,6 +10,7 @@
  */
 
 import type {DebugEventHandler} from '../debug/type';
+import type {GapReportHandler} from '../gap-report/type';
 
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
@@ -81,6 +82,8 @@ export interface AstryxConfig {
   };
   /** Record every astryx command run in this project. See {@link DebugConfig}. */
   debug?: DebugConfig;
+  /** Route gap reports through a project-owned handler. See {@link GapReportHandler}. */
+  gapReport?: GapReportHandler;
   /**
    * EXPERIMENTAL — shape may change and is not part of the stable config
    * contract. Provisional home for features still being proven out.

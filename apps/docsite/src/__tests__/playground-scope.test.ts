@@ -5,7 +5,7 @@
  *
  * Validates that the generated playground scope includes every public
  * component exported from @astryxdesign/core/package.json, plus the expected
- * non-component scope entries (themes, icons, stylex, react, next/image).
+ * non-component scope entries and editor declarations used by page templates.
  *
  * This test reads the generated file as text (rather than importing it)
  * because the scope imports @astryxdesign/core/* which requires a prior build step.
@@ -21,6 +21,15 @@ import {describe, it, expect, beforeAll} from 'vitest';
 const GENERATED_SCOPE_PATH = path.resolve(
   __dirname,
   '../generated/playground-scope.ts',
+);
+
+const PLAYGROUND_TYPES_PATH = path.resolve(
+  __dirname,
+  '../../public/playground-types.json',
+);
+const MONACO_SETUP_PATH = path.resolve(
+  __dirname,
+  '../app/playground/monacoSetup.ts',
 );
 
 const CORE_PKG_PATH = path.resolve(
@@ -140,6 +149,24 @@ describe('playground-scope', () => {
     expect(scopeContent).toContain("'lucide-react': LucideIcons,");
     expect(scopeContent).toContain(
       "import * as LucideIcons from 'lucide-react';",
+    );
+  });
+
+  it('includes Recharts for template previews', () => {
+    expect(scopeContent).toContain("import * as Recharts from 'recharts';");
+    expect(scopeContent).toContain('recharts: Recharts,');
+
+    const playgroundTypes = JSON.parse(
+      fs.readFileSync(PLAYGROUND_TYPES_PATH, 'utf-8'),
+    );
+    expect(playgroundTypes.recharts['index.d.ts']).toContain(
+      "declare module 'recharts'",
+    );
+    expect(playgroundTypes.recharts['index.d.ts']).toContain(
+      'export const LineChart: any;',
+    );
+    expect(fs.readFileSync(MONACO_SETUP_PATH, 'utf-8')).toContain(
+      'packages.recharts',
     );
   });
 

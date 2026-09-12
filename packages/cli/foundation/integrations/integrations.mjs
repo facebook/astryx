@@ -22,6 +22,7 @@ import {
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
+import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
@@ -60,7 +61,10 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
- *   Not a manifest key — see {@link loadManifest}.
+ * @property {import('../../authoring/gap-report/type').GapReportHandler} [__gapReport]
+ *   validated package-owned handler from the `gapReport` NAMED export.
+ * @property {string} [__gapReportError] isolated named-handler validation error.
+ *   Named exports are not manifest keys — see {@link loadManifest}.
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -82,6 +86,29 @@ export function findManifestPaths(dir) {
 }
 
 /**
+ * Parse the optional named gap-report handler without making it part of the
+ * default manifest schema. A malformed handler is isolated from every other
+ * integration contribution and represented as a failed delivery at fan-out.
+ *
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {{handler?: import('../../authoring/gap-report/type').GapReportHandler, error?: string}}
+ */
+function parseGapReportHandlerExport(value, label) {
+  if (value === undefined) return {};
+  try {
+    return {
+      handler: parseGapReportHandler(
+        value,
+        `${label} named export "gapReport"`,
+      ),
+    };
+  } catch (error) {
+    return {error: error instanceof Error ? error.message : String(error)};
+  }
+}
+
+/**
  * Load and validate a manifest module's default export, while isolating the
  * optional `agentDocs` contribution from the manifest's other fields.
  *
@@ -91,13 +118,13 @@ export function findManifestPaths(dir) {
  * The raw object is also inspected before parsing so unknown-key warnings retain
  * forward compatibility.
  *
- * `debug` comes back separately because it is a named export, not a manifest
- * key. A CLI that does not know it simply does not read it.
+ * `debug` and `gapReport` come back separately because they are named exports,
+ * not manifest keys. A CLI that does not know them simply does not read them.
  *
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, agentDocsError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, agentDocsError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -107,6 +134,7 @@ export async function loadManifest(
   const mod = await importUserModule(file, {fresh});
   const raw = mod?.default;
   const baseManifest = parseIntegrationBase(raw, label);
+  const gapReport = parseGapReportHandlerExport(mod?.gapReport, label);
   const hasAgentDocs =
     raw != null &&
     typeof raw === 'object' &&
@@ -139,6 +167,8 @@ export async function loadManifest(
             mod.debug
           )
         : undefined,
+    gapReport: gapReport.handler,
+    gapReportError: gapReport.error,
     agentDocsError,
   };
 }
@@ -251,6 +281,10 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let unknownKeys;
   /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
   let debugHandler;
+  /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
+  let gapReportHandler;
+  /** @type {string | undefined} */
+  let gapReportError;
   /** @type {string | undefined} */
   let agentDocsError;
   try {
@@ -258,6 +292,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       manifest,
       unknownKeys,
       debug: debugHandler,
+      gapReport: gapReportHandler,
+      gapReportError,
       agentDocsError,
     } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
   } catch (err) {
@@ -295,6 +331,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __debug: debugHandler,
+    __gapReport: gapReportHandler,
+    __gapReportError: gapReportError,
     __spec: spec,
     __packageDir: packageDir,
     __packageExports: pkg.exports ?? null,
@@ -339,6 +377,10 @@ export async function loadIntegrations(
     let unknownKeys;
     /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
     let debugHandler;
+    /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
+    let gapReportHandler;
+    /** @type {string | undefined} */
+    let gapReportError;
     /** @type {string | undefined} */
     let agentDocsError;
     try {
@@ -346,6 +388,8 @@ export async function loadIntegrations(
         manifest,
         unknownKeys,
         debug: debugHandler,
+        gapReport: gapReportHandler,
+        gapReportError,
         agentDocsError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
@@ -388,6 +432,8 @@ export async function loadIntegrations(
       __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,
+      __gapReport: gapReportHandler,
+      __gapReportError: gapReportError,
       __spec: spec,
       __packageDir: packageDir,
       __packageExports: pkg.exports ?? null,

@@ -291,6 +291,11 @@ add('swizzle --list', ['swizzle', '--list'],
 add('swizzle (not found)', ['swizzle', 'NotARealComponent99'],
   () => apiCall(api.swizzle, 'NotARealComponent99', {cwd: ROOT}));
 
+// Gap report categories are read-only and deterministic; filing paths are
+// exercised with isolated package handlers in the focused suite.
+add('gap-report --list-categories', ['gap-report', '--list-categories'],
+  () => apiCall(api.gapReport, undefined, {listCategories: true, cwd: ROOT}));
+
 // Upgrade — list + the two argument-validation errors are read-only: they
 // return/throw before any codemod or agent-docs side effect, so the api matches
 // the CLI envelope exactly. The full run/status pipeline is covered by the

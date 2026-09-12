@@ -85,6 +85,7 @@ export const JSON_SUPPORTED = new Set([
   'search',
   'build',
   'swizzle',
+  'gap-report',
   'template',
   'hook',
   'theme build',
@@ -260,6 +261,7 @@ const commands = [
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'blog', path: './commands/blog.mjs', register: 'registerBlog'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
+  {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'layout', path: './commands/layout.mjs', register: 'registerLayout'},

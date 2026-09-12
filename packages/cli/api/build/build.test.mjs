@@ -198,6 +198,43 @@ describe('build kit — a thin kit says what to try next', () => {
     expect(r.data.hint).toBeTruthy();
   });
 
+  it('recommends reading the layout, not scaffolding it, on a loose match', async () => {
+    // The kit already decides this: `directMatch` false means the top page is
+    // a reference, and the renderer says so in prose. The page's `command` is
+    // what a program reads instead of that prose, so it has to agree — before
+    // this it still said `template <name>`, the scaffold.
+    const r = await build('notifications', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(false);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page.command).toMatch(/--skeleton$/);
+    }
+  });
+
+  it('recommends scaffolding on a direct match', async () => {
+    const r = await build('contact form', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page.command).not.toMatch(/--skeleton/);
+    }
+  });
+
+  it('keeps the recommendation package-manager-agnostic', async () => {
+    // Appending a flag must not turn into prefixing an invocation; that stays
+    // the renderer's job.
+    const r = await build('notifications', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    for (const page of r.data.pages) {
+      expect(page.command).not.toMatch(/^(pnpm|npm|yarn|bun|npx)\b/);
+    }
+  });
+
   it('keeps recovery commands bare, for the caller to render', async () => {
     // The API cannot know how a project invokes the CLI. A baked-in `astryx
     // component --list` does not resolve in a pnpm workspace.

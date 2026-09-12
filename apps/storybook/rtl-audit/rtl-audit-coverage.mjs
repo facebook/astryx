@@ -2,12 +2,227 @@
 
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
- * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
- * @output Contextual decoration candidates, pair verdicts, component-filter
- *   reconciliation, and per-component measured / verified-N-A / coverage-gap
- *   classifications.
+ * @input Rendered DOM decorations, canonical package rosters, Storybook routes,
+ *   curated targets, and D1/D5/D6/curated audit results.
+ * @output Audited package/story routing, contextual decoration candidates,
+ *   component-filter reconciliation, and per-component measured / verified-N-A /
+ *   coverage-gap classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
+
+import componentPackages from '../../../scripts/component-packages.cjs';
+
+const {COMPONENT_PACKAGES, COMPONENT_PACKAGE_NAMES} = componentPackages;
+
+export const AUDITED_PACKAGE_NAMES = COMPONENT_PACKAGE_NAMES;
+export const AUDITED_STORY_PREFIXES = Object.freeze([
+  ...new Set(COMPONENT_PACKAGES.flatMap(pkg => pkg.storyPrefixes)),
+]);
+
+function packageForStoryId(
+  storyId,
+  packageNames = AUDITED_PACKAGE_NAMES,
+) {
+  return COMPONENT_PACKAGES.find(
+    pkg =>
+      packageNames.includes(pkg.name) &&
+      pkg.storyPrefixes.some(prefix => storyId.startsWith(prefix)),
+  )?.name ?? null;
+}
+
+function pascalCase(value) {
+  return (value.match(/[A-Za-z0-9]+/g) ?? [])
+    .map(word => `${word[0]?.toUpperCase() ?? ''}${word.slice(1)}`)
+    .join('');
+}
+
+function singularize(value) {
+  if (value === 'Axes') return 'Axis';
+  return value.endsWith('s') ? value.slice(0, -1) : value;
+}
+
+function componentsFromStoryTitle(
+  title,
+  preferredPackage,
+  publicComponentsByPackage,
+) {
+  const titleSegments = title?.split('/') ?? [];
+  const namespace = titleSegments[0] ?? '';
+  const finalSegment = titleSegments.at(-1) ?? '';
+  const candidates = new Set();
+  for (const part of finalSegment.split(/\s*(?:&|\band\b)\s*/i)) {
+    const name = pascalCase(part);
+    if (!name) continue;
+    const singular = singularize(name);
+    candidates.add(name);
+    candidates.add(singular);
+    candidates.add(`Chart${name}`);
+    candidates.add(`Chart${singular}`);
+  }
+  const matchesIn = packageName =>
+    (publicComponentsByPackage[packageName] ?? [])
+      .filter(component => candidates.has(component))
+      .map(component => `${packageName}/${component}`);
+  const namespacePackages = COMPONENT_PACKAGES
+    .filter(pkg => pkg.storyNamespaces.includes(namespace))
+    .map(pkg => pkg.name)
+    .filter(packageName => packageName in publicComponentsByPackage);
+  const eligiblePackages = namespacePackages.length > 0
+    ? namespacePackages
+    : Object.keys(publicComponentsByPackage);
+  const preferred = preferredPackage && eligiblePackages.includes(preferredPackage)
+    ? matchesIn(preferredPackage)
+    : [];
+  if (preferred.length > 0) return preferred;
+  return eligiblePackages
+    .filter(packageName => packageName !== preferredPackage)
+    .flatMap(matchesIn);
+}
+
+/** Resolve the best default package/component route encoded in a story id. */
+export function componentFromStoryId(
+  storyId,
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
+) {
+  const packageName = packageForStoryId(storyId, packageNames);
+  if (!packageName) {
+    return `unknown/${storyId.split('--')[0]}`;
+  }
+  const segment = storyId.slice(packageName.length + 1).split('--')[0];
+  const normalized = segment.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const publicComponents = publicComponentsByPackage[packageName] ?? [];
+  const exact = publicComponents.find(
+    component => component.toLowerCase() === normalized,
+  );
+  const fallback = exact ??
+    (publicComponents.includes('Chart') ? 'Chart' : segment);
+  return `${packageName}/${fallback}`;
+}
+
+/** Resolve a curated target's declared component in the story's package. */
+export function componentFromTarget(
+  target,
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
+) {
+  const declared = target?.component?.trim();
+  if (!declared) {
+    return componentFromStoryId(
+      target.storyId,
+      packageNames,
+      publicComponentsByPackage,
+    );
+  }
+  if (declared.includes('/')) {
+    return declared;
+  }
+  const packageName = packageForStoryId(target.storyId, packageNames);
+  return packageName
+    ? `${packageName}/${declared}`
+    : `unknown/${declared}`;
+}
+
+/**
+ * Route each story to its public component owner(s). Story titles project onto
+ * the canonical public-component roster; curated targets provide exact aliases
+ * for surfaces whose titles do not name their owner.
+ */
+export function buildStoryComponentRoutes({
+  stories,
+  storyIds,
+  targets = [],
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
+}) {
+  const normalizedStories = stories ?? storyIds.map(id => ({id, title: ''}));
+  const aliases = new Map();
+  for (const target of targets) {
+    const component = componentFromTarget(
+      target,
+      packageNames,
+      publicComponentsByPackage,
+    );
+    const current = aliases.get(target.storyId) ?? [];
+    current.push(component);
+    aliases.set(target.storyId, current);
+  }
+
+  return normalizedStories.flatMap(story => {
+    const packageName = packageForStoryId(story.id, packageNames);
+    const explicitComponents = aliases.get(story.id) ?? [];
+    const titleComponents = explicitComponents.length === 0
+      ? componentsFromStoryTitle(
+          story.title,
+          packageName,
+          publicComponentsByPackage,
+        )
+      : [];
+    const components = [...explicitComponents, ...titleComponents];
+    if (components.length === 0) {
+      components.push(
+        componentFromStoryId(
+          story.id,
+          packageNames,
+          publicComponentsByPackage,
+        ),
+      );
+    }
+    return Array.from(
+      new Map(
+        components.map(component => [component.toLowerCase(), component]),
+      ).values(),
+    ).map(component => ({id: story.id, component}));
+  });
+}
+
+export function filterStoryRoutesByPackages(
+  routes,
+  packageNames,
+  packages = COMPONENT_PACKAGES,
+) {
+  return routes.filter(({component, id}) => {
+    const ownerPackage = component.split('/')[0];
+    if (packageNames.includes(ownerPackage)) return true;
+    if (ownerPackage !== 'unknown') return false;
+    const fallbackPackage = packages.find(pkg =>
+      pkg.storyPrefixes.some(prefix => id.startsWith(prefix)),
+    )?.name;
+    return fallbackPackage != null && packageNames.includes(fallbackPackage);
+  });
+}
+
+/** Whether a package-qualified route owns a bare or qualified filter. */
+function routeMatchesComponentFilter(route, filter) {
+  const component = route.component.toLowerCase();
+  const bareComponent = component.split('/').at(-1);
+  const requested = filter.toLowerCase();
+  return component === requested || bareComponent === requested;
+}
+
+/** Package-qualified owner routes selected by bare or qualified filters. */
+export function componentRoutesForFilters(routes, filters) {
+  if (filters.length === 0) return routes;
+  return routes.filter(route =>
+    filters.some(filter => routeMatchesComponentFilter(route, filter)),
+  );
+}
+
+/** Story ids owned by any bare or package-qualified component filter. */
+export function storyIdsForComponentFilters(routes, filters) {
+  return [
+    ...new Set(
+      componentRoutesForFilters(routes, filters).map(route => route.id),
+    ),
+  ];
+}
+
+/** Selected owners for which the canonical Storybook route has no story. */
+export function unresolvedComponentFilters(routes, filters) {
+  return filters.filter(
+    filter => !routes.some(route => routeMatchesComponentFilter(route, filter)),
+  );
+}
 
 const EXPLICIT_GLYPH_PAIRS = new Map([
   ['/', '\\'],
@@ -389,10 +604,12 @@ export function buildAuditedComponentRoster({
 }) {
   const normalizedFilters = filters.map(filter => filter.toLowerCase());
   const knownComponents = [...sourceComponents, ...storyComponents];
+  const matchesFilter = (component, filter) =>
+    component.toLowerCase() === filter || componentName(component) === filter;
   const unmatchedFilters = normalizedFilters
     .filter(
       filter =>
-        !knownComponents.some(component => componentName(component) === filter),
+        !knownComponents.some(component => matchesFilter(component, filter)),
     )
     .map(filter => `unknown/${filter}`);
 
@@ -406,7 +623,7 @@ export function buildAuditedComponentRoster({
   ).filter(
     component =>
       normalizedFilters.length === 0 ||
-      normalizedFilters.includes(componentName(component)),
+      normalizedFilters.some(filter => matchesFilter(component, filter)),
   );
 }
 

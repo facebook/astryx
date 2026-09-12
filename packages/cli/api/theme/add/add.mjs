@@ -78,11 +78,25 @@ export async function themeAdd(slug, options = {}) {
     throw err;
   }
 
-  const writes = match.files.map(name => ({
-    name,
-    src: path.join(themeSrcDir, name),
-    dest: path.join(resolvedDir, name),
-  }));
+  let writes;
+  try {
+    writes = match.files.map(name => ({
+      name,
+      src: path.join(themeSrcDir, name),
+      dest: assertWithin(name, resolvedDir, {
+        label: `theme destination for ${name}`,
+      }),
+    }));
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
+    throw err;
+  }
   for (const w of writes) {
     if (!fs.existsSync(w.src)) {
       throw new AstryxError(
@@ -116,11 +130,14 @@ export async function themeAdd(slug, options = {}) {
   try {
     fs.mkdirSync(resolvedDir, {recursive: true});
     for (const w of writes) {
-      fs.mkdirSync(path.dirname(w.dest), {recursive: true});
-      const tmp = `${w.dest}.${process.pid}.tmp`;
+      const dest = assertWithin(w.name, resolvedDir, {
+        label: `theme destination for ${w.name}`,
+      });
+      fs.mkdirSync(path.dirname(dest), {recursive: true});
+      const tmp = `${dest}.${process.pid}.tmp`;
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
       fs.writeFileSync(tmp, contents);
-      staged.push({tmp, dest: w.dest});
+      staged.push({tmp, dest});
     }
     for (const s of staged) {
       fs.renameSync(s.tmp, s.dest);
@@ -132,6 +149,13 @@ export async function themeAdd(slug, options = {}) {
       } catch {
         /* best-effort */
       }
+    }
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
     }
     throw new AstryxError(
       `Failed to write theme files: ${/** @type {any} */ (err).message}`,
