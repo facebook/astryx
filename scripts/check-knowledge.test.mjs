@@ -28,7 +28,7 @@ function fixtureRoot() {
     path.join(root, 'docs/templates/knowledge'),
     {recursive: true},
   );
-  for (const version of ['v1.json', 'v2.json', 'v3.json']) {
+  for (const version of ['v1.json', 'v2.json', 'v3.json', 'v4.json']) {
     fs.copyFileSync(
       path.join(repoRoot, `docs/schemas/knowledge/${version}`),
       path.join(root, `docs/schemas/knowledge/${version}`),
@@ -199,7 +199,7 @@ function themeRecord(overrides = {}) {
 
 function systemSpecRecord(overrides = {}) {
   const values = {
-    schema_version: '1',
+    schema_version: '4',
     template_version: '1',
     kind: 'system-spec',
     id: 'spec:AST-900',
