@@ -249,9 +249,9 @@ test('native family CSS is correct on first paint and every attribute-only switc
   ).toBe('rgb(255, 0, 0)');
   expect(stylesheetRequests).toHaveLength(beforeSwitchRequests);
 
-  await page
-    .locator('[data-demo-root]')
-    .evaluate(element => element.setAttribute('data-astryx-media', 'dark'));
+  await switchable.evaluate(element =>
+    element.setAttribute('data-astryx-media', 'dark'),
+  );
   await expect
     .poll(() =>
       switchable.evaluate(element =>
