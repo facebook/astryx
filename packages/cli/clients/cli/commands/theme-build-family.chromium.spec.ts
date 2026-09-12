@@ -192,6 +192,9 @@ test('native family CSS is correct on first paint and every attribute-only switc
   ).toBe('20px');
   await siblingButton.hover();
   expect(
+    await siblingButton.evaluate(element => getComputedStyle(element).color),
+  ).toBe('rgb(255, 0, 0)');
+  expect(
     await siblingButton.evaluate(
       element => getComputedStyle(element).outlineColor,
     ),

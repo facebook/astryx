@@ -53,7 +53,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent. localTokens accepts any valid CSS custom-property name; exact owner/lineage metadata, not a prefix, keeps it local. non-exact references stay external.',
+          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent. localTokens accepts any valid CSS custom-property name except a portable Astryx token name; exact owner/lineage metadata, not a prefix, keeps it local. non-exact references stay external.',
         },
         null,
         null,
@@ -105,7 +105,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'astryx theme build compiles defineTheme to static CSS. standalone output stays .css + .js (__built:true) + .d.ts. family mode: --family <base> <children...> requires --family-key <lower-kebab-key>; emits one <key>.css, CSS-free <key>.js, <key>.d.ts, <key>.manifest.json + receipts under current. --check verifies the complete owned set; family refuses --watch/--out and composes with --icons-specifier. load CSS with <link>, import ESM separately, switch by data-astryx-theme only. one CSS request downloads every selected member; use standalone for one-theme consumers. runnable example: packages/cli/test/fixtures/theme-family.',
+          text: 'astryx theme build compiles defineTheme to static CSS. standalone output stays .css + .js (__built:true) + .d.ts. family mode: --family <base> <children...> requires --family-key <lower-kebab-key>; emits one <key>.css, CSS-free <key>.js, <key>.d.ts, <key>.manifest.json + receipts under current. --check verifies the complete owned set; family refuses --watch/--out and composes with --icons-specifier (relative source modules are bundled; bare specifiers remain imports). load CSS with <link>, import ESM separately, switch by data-astryx-theme only. one CSS request downloads every selected member; use standalone for one-theme consumers. runnable example: packages/cli/test/fixtures/theme-family.',
         },
         null,
         null,

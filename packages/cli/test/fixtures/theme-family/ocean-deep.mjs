@@ -21,7 +21,10 @@ export const oceanDeepTheme = defineTheme({
   },
   components: {
     button: {
-      base: {borderWidth: '2px'},
+      base: {
+        borderWidth: '2px',
+        color: '#00ff00',
+      },
       'variant:tidal': {borderStyle: 'dashed'},
     },
   },

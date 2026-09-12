@@ -55,14 +55,24 @@ export function factorFamilyPlans(plans) {
           `Member "${plan.identity.name}" is missing section "${kind}".`,
         );
       }
+      const sectionKey =
+        kind === 'components'
+          ? canonicalJson(
+              section.css.map(unit => [unit.id, unitSignature(unit)]),
+            )
+          : '';
       for (const unit of section.css) {
         // Ordered conditional sections must retain member specificity. Sharing
         // them at zero specificity can make an earlier root/member declaration
-        // beat a later adaptation or media-surface write.
+        // beat a later adaptation or media-surface write. Component declarations
+        // share only when the complete section is identical, so zeroing an
+        // inherited state selector cannot make a child base delta outrank it.
         const memberOrderKey =
           kind === 'adaptations' || kind === 'on-media'
             ? `\u0000${plan.identity.name}`
-            : '';
+            : kind === 'components'
+              ? `\u0000${sectionKey}`
+              : '';
         const signature = `${unit.id}\u0000${unitSignature(unit)}${memberOrderKey}`;
         let group = bySignature.get(signature);
         if (!group) {

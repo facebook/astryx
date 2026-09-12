@@ -347,6 +347,22 @@ describe('themeBuildFamily', () => {
       fs.lstatSync(path.join(invalidCurrent, 'current')).isDirectory(),
     ).toBe(true);
 
+    const danglingRoot = path.join(fixtureDir, 'dangling-family');
+    fs.mkdirSync(path.join(danglingRoot, 'generations'), {recursive: true});
+    fs.symlinkSync(
+      'generations/gen-11111111111111111111',
+      path.join(danglingRoot, 'current'),
+      'dir',
+    );
+    await expect(
+      themeBuildFamily(
+        files,
+        {familyKey: 'dangling-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(fs.readdirSync(path.join(danglingRoot, 'generations'))).toEqual([]);
+
     const outside = path.join(fixtureDir, 'outside-generations');
     fs.mkdirSync(outside);
     const escapedRoot = path.join(fixtureDir, 'escaped-family');
@@ -405,6 +421,41 @@ describe('themeBuildFamily', () => {
     );
   });
 
+  it('keeps unmanifested pre-journal staging residue without blocking later checks', async () => {
+    await themeBuildFamily(
+      files,
+      {familyKey: 'ocean-family'},
+      {cwd: fixtureDir},
+    );
+    const staging = path.join(
+      fixtureDir,
+      'ocean-family',
+      'generations',
+      '.gen-00000000000000000000.staging-11111111-1111-4111-8111-111111111111',
+    );
+    fs.mkdirSync(staging);
+    fs.writeFileSync(path.join(staging, 'partial-write'), 'unmanifested');
+    const journalResidue = path.join(
+      fixtureDir,
+      'ocean-family',
+      '.journal-22222222-2222-4222-8222-222222222222.tmp',
+    );
+    fs.writeFileSync(journalResidue, 'unmanifested journal bytes');
+
+    const checked = await themeBuildFamily(
+      files,
+      {familyKey: 'ocean-family', check: true},
+      {cwd: fixtureDir},
+    );
+    expect(checked.data.upToDate).toBe(true);
+    expect(fs.readFileSync(path.join(staging, 'partial-write'), 'utf8')).toBe(
+      'unmanifested',
+    );
+    expect(fs.readFileSync(journalResidue, 'utf8')).toBe(
+      'unmanifested journal bytes',
+    );
+  });
+
   it('allocates collision-safe registry bindings and preserves complete inherited values', async () => {
     fs.writeFileSync(
       path.join(fixtureDir, 'base-registry.mjs'),
@@ -452,5 +503,36 @@ describe('themeBuildFamily', () => {
     });
     expect(module.registryChildTheme.indicators.check()).toBe('base-check');
     expect(module.registryChildTheme.indicators.radio()).toBe('child-radio');
+
+    fs.writeFileSync(
+      path.join(fixtureDir, 'misleading-registry.mjs'),
+      `export const wrong = {close: () => 'wrong'}; export const right = {close: () => 'right'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'misleading-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {wrong, right} from './misleading-registry.mjs';\n// Documentation example only: icons: wrong\nexport const misleadingBaseTheme=defineTheme({name:'misleading-base', icons:right});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'misleading-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {misleadingBaseTheme} from './misleading-base.mjs';\nexport const misleadingChildTheme=defineTheme({name:'misleading-child', extends:misleadingBaseTheme});\n`,
+    );
+    await themeBuildFamily(
+      ['misleading-base.mjs', 'misleading-child.mjs'],
+      {familyKey: 'misleading-family'},
+      {cwd: fixtureDir},
+    );
+    const misleading = await import(
+      `${
+        pathToFileURL(
+          path.join(
+            fixtureDir,
+            'misleading-family',
+            'current',
+            'misleading-family.js',
+          ),
+        ).href
+      }?test=${Date.now()}`
+    );
+    expect(misleading.misleadingBaseTheme.icons.close()).toBe('right');
   });
 });

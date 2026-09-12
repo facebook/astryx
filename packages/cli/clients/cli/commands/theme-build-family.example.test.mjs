@@ -120,11 +120,58 @@ describe('public theme-family example', () => {
     expect(assets.some(file => file.endsWith('.js'))).toBe(true);
   });
 
+  it('bundles a relative icon override so current stays relocatable', async () => {
+    fs.writeFileSync(
+      path.join(project, 'replacement-icons.mjs'),
+      `export const icons = {close: 'replacement-close'};\n`,
+    );
+    await themeBuildFamily(
+      ['ocean.mjs', 'ocean-calm.mjs'],
+      {
+        familyKey: 'override-family',
+        iconsSpecifier: './replacement-icons.mjs',
+      },
+      {cwd: project},
+    );
+    fs.rmSync(path.join(project, 'replacement-icons.mjs'));
+    fs.rmSync(path.join(project, 'ocean-registry.mjs'));
+    const built = await import(
+      `${
+        pathToFileURL(
+          path.join(
+            project,
+            'override-family',
+            'current',
+            'override-family.js',
+          ),
+        ).href
+      }?override=${Date.now()}`
+    );
+    expect(built.oceanTheme.icons.close).toBe('replacement-close');
+    expect(built.oceanCalmTheme.icons.close).toBe('replacement-close');
+  });
+
+  it('rejects a missing relative icon override before publication', async () => {
+    await expect(
+      themeBuildFamily(
+        ['ocean.mjs', 'ocean-calm.mjs'],
+        {
+          familyKey: 'missing-override-family',
+          iconsSpecifier: './missing-icons.mjs',
+        },
+        {cwd: project},
+      ),
+    ).rejects.toThrow(/does not exist/);
+    expect(fs.existsSync(path.join(project, 'missing-override-family'))).toBe(
+      false,
+    );
+  });
+
   it('rejects one icon override for two distinct family sources', async () => {
     await expect(
       themeBuildFamily(
         members,
-        {familyKey: 'ocean-family', iconsSpecifier: './icons.mjs'},
+        {familyKey: 'ocean-family', iconsSpecifier: '@example/icons'},
         {cwd: project},
       ),
     ).rejects.toThrow(/more than one distinct family icon registry/);

@@ -224,9 +224,9 @@ export const myTheme = defineTheme({
 
   /**
    * Optional theme-family-local roles. Choose any valid CSS custom-property
-   * name; exact owner and lineage metadata keep it local without a required
-   * prefix. References match case-sensitively, and these names do not become
-   * portable Astryx tokens.
+   * name that is not already a portable Astryx token; exact owner and lineage
+   * metadata keep it local without a required prefix. References match
+   * case-sensitively, and these names do not become portable Astryx tokens.
    */
   // localTokens: {'--demo-selection-ink': ['#0077B6', '#48CAE4']},
 

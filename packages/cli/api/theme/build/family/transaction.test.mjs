@@ -128,6 +128,39 @@ describe('family generation transaction', () => {
     expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
   });
 
+  it('keeps a rollback journal when the uncommitted ownership proof is missing', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterJournal: () => {
+            throw new Error('stop before pointer');
+          },
+        },
+      }),
+    ).toThrow(/stop before pointer/);
+    fs.rmSync(
+      path.join(root, 'generations', 'gen-second', second.manifestPath),
+    );
+
+    expect(() =>
+      checkFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        expectedGeneration: first,
+      }),
+    ).toThrow(/no valid ownership manifest/);
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(true);
+    expect(
+      fs.existsSync(path.join(root, 'generations', 'gen-second', 'family.css')),
+    ).toBe(true);
+  });
+
   it('finishes a committed generation after a crash following pointer replacement', () => {
     const first = generation('family', 'gen-first', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...first});
@@ -283,6 +316,17 @@ describe('family generation transaction', () => {
     expect(
       fs.existsSync(path.join(root, 'generations', 'gen-first', 'family.css')),
     ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.join(root, 'generations', 'gen-first', first.manifestPath),
+      ),
+    ).toBe(true);
+
+    const third = generation('family', 'gen-third', 'green');
+    expect(() =>
+      publishFamilyGeneration({root, artifactKey: 'family', ...third}),
+    ).not.toThrow();
+    expect(fs.readFileSync(unowned, 'utf8')).toBe('keep');
   });
 
   it('refuses to clear a committed journal when prior ownership proof is missing', () => {
@@ -371,16 +415,18 @@ describe('family generation transaction', () => {
     );
   });
 
-  it('removes exact transaction-temporary residue before check', () => {
+  it('preserves unmanifested transaction-shaped residue without blocking check', () => {
     const first = generation('family', 'gen-first', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...first});
-    fs.writeFileSync(path.join(root, '.journal.tmp'), 'partial');
-    fs.symlinkSync(
-      'generations/gen-first',
-      path.join(root, '.current.tmp'),
-      'dir',
-    );
-    fs.mkdirSync(path.join(root, '.probe'));
+    const residue = [
+      '.journal-11111111-1111-4111-8111-111111111111.tmp',
+      '.current-22222222-2222-4222-8222-222222222222.tmp',
+      '.probe-33333333-3333-4333-8333-333333333333',
+    ];
+    fs.writeFileSync(path.join(root, residue[0]), 'partial');
+    fs.symlinkSync('generations/gen-first', path.join(root, residue[1]), 'dir');
+    fs.mkdirSync(path.join(root, residue[2]));
+    fs.writeFileSync(path.join(root, residue[2], 'partial'), 'probe');
 
     const checked = checkFamilyGeneration({
       root,
@@ -388,10 +434,10 @@ describe('family generation transaction', () => {
       expectedGeneration: first,
     });
     expect(checked.upToDate).toBe(true);
-    for (const name of ['.journal.tmp', '.current.tmp', '.probe']) {
-      expect(fs.lstatSync(path.join(root, name), {throwIfNoEntry: false})).toBe(
-        undefined,
-      );
+    for (const name of residue) {
+      expect(
+        fs.lstatSync(path.join(root, name), {throwIfNoEntry: false}),
+      ).toBeDefined();
     }
   });
 

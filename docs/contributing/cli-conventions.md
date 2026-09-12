@@ -104,14 +104,14 @@ astryx theme build \
 
 Its matrix against the flags already on `theme build`:
 
-| Pair                              | Answer                                                                                                         |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `--family` `--family-key`         | Required together. The key is refused outside family mode and is not normalized.                               |
-| `--family` `--watch`              | Refused before output writes.                                                                                  |
-| `--family` `--out`                | Refused; the keyed family owns its coordinated output location.                                                |
-| `--family` `--check`              | They compose. Check recovers an interrupted transaction, then compares the complete manifest-owned family set. |
-| `--family` `--icons-specifier`    | They compose when the family has one source icon registry; the specifier applies to that generated ESM import. |
-| `--family` positional theme files | Refused; every selected member belongs inside the `--family` value list.                                       |
+| Pair                              | Answer                                                                                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--family` `--family-key`         | Required together. The key is refused outside family mode and is not normalized.                                                                             |
+| `--family` `--watch`              | Refused before output writes.                                                                                                                                |
+| `--family` `--out`                | Refused; the keyed family owns its coordinated output location.                                                                                              |
+| `--family` `--check`              | They compose. Check recovers an interrupted transaction, then compares the complete manifest-owned family set.                                               |
+| `--family` `--icons-specifier`    | They compose for one source icon registry. A relative module resolves from its owning theme source and is bundled; a bare specifier remains a static import. |
+| `--family` positional theme files | Refused; every selected member belongs inside the `--family` value list.                                                                                     |
 
 A family build eagerly puts every selected member into one stylesheet. Loading
 that stylesheet makes every member ready on first paint and lets an app switch

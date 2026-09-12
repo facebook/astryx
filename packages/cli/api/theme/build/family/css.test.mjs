@@ -66,6 +66,36 @@ describe('family CSS factoring', () => {
     expect(() => postcss.parse(css)).not.toThrow();
   });
 
+  it('keeps inherited state specificity when a child adds a base declaration', () => {
+    const componentPlan = (name, parentName, componentRules) =>
+      createMemberPlan({
+        identity: {name, sourceId: `${name}.mjs`, parentName},
+        resolved: {name, tokens: {}, components: {}},
+        dataDefaults: '',
+        rules: {prose: [], component: componentRules},
+        adaptations: {prose: '', component: ''},
+        onMedia: '',
+        colorScheme: '',
+        registries: {},
+        fonts: [],
+        typeAugmentations: '',
+        provenance: {},
+      });
+    const css = renderFamilyCSS(
+      factorFamilyPlans([
+        componentPlan('base', null, ['.astryx-button:hover { color: red; }']),
+        componentPlan('child', 'base', [
+          '.astryx-button:hover { color: red; }',
+          '.astryx-button { color: green; }',
+        ]),
+      ]),
+    );
+
+    expect(css.match(/color: red/g)).toHaveLength(2);
+    expect(css).not.toContain(':where(.astryx-button:hover)');
+    expect(() => postcss.parse(css)).not.toThrow();
+  });
+
   it('keeps each member’s authored adaptation order when values reverse', () => {
     const adaptationPlan = (name, parentName, values) =>
       createMemberPlan({

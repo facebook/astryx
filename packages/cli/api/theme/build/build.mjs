@@ -2623,6 +2623,13 @@ function assertFamilyRootAvailable(root) {
     ) {
       collision(currentPath);
     }
+    const targetPath = path.join(root, ...target.split('/'));
+    if (
+      !fs.lstatSync(targetPath, {throwIfNoEntry: false}) &&
+      !fs.lstatSync(path.join(root, '.journal.json'), {throwIfNoEntry: false})
+    ) {
+      collision(currentPath);
+    }
   }
   const generationsPath = path.join(root, 'generations');
   const generationsStat = fs.lstatSync(generationsPath, {
@@ -2637,28 +2644,11 @@ function assertFamilyRootAvailable(root) {
       const entryPath = path.join(generationsPath, entry);
       const stat = fs.lstatSync(entryPath);
       if (!stat.isDirectory()) collision(entryPath);
-      if (/^\.gen-[a-f0-9]{20}\.staging-\d+-\d+$/.test(entry)) {
-        const stagedEntries = fs.readdirSync(entryPath);
-        if (stagedEntries.length === 0) continue;
-        const stagedManifest = path.join(
-          entryPath,
-          `${artifactKey}.manifest.json`,
-        );
-        try {
-          const manifest = JSON.parse(fs.readFileSync(stagedManifest, 'utf8'));
-          if (
-            manifest?.schemaVersion === 1 &&
-            manifest?.artifactKey === artifactKey &&
-            manifest?.artifacts?.manifest === `${artifactKey}.manifest.json`
-          ) {
-            continue;
-          }
-        } catch {
-          // Fall through to the collision error below. Unknown staged bytes are
-          // never treated as family-owned merely because their name resembles
-          // an internal temporary path.
-        }
-        collision(entryPath);
+      if (/^\.gen-[a-f0-9]{20}\.staging-[a-f0-9-]{36}$/.test(entry)) {
+        // A pre-journal crash may leave no complete manifest. Keep such bytes
+        // untouched, but do not let private staging residue block a later
+        // generation; random UUIDs prevent a future writer from reusing it.
+        continue;
       }
       if (!/^gen-[a-f0-9]{20}$/.test(entry)) collision(entryPath);
       const manifestPath = path.join(entryPath, `${artifactKey}.manifest.json`);
@@ -2691,16 +2681,14 @@ function assertFamilyRootAvailable(root) {
     collision(lockPath);
   }
 
-  const allowed = new Set([
-    'current',
-    'generations',
-    '.lock',
-    '.journal.json',
-    '.journal.tmp',
-    '.current.tmp',
-    '.probe',
-  ]);
-  const unrelated = fs.readdirSync(root).filter(entry => !allowed.has(entry));
+  const allowed = new Set(['current', 'generations', '.lock', '.journal.json']);
+  /** @param {string} entry */
+  const isPrivateResidue = entry =>
+    /^\.(?:journal|current)-[a-f0-9-]{36}\.tmp$/.test(entry) ||
+    /^\.probe-[a-f0-9-]{36}$/.test(entry);
+  const unrelated = fs
+    .readdirSync(root)
+    .filter(entry => !allowed.has(entry) && !isPrivateResidue(entry));
   if (unrelated.length > 0) {
     throw new AstryxError(
       `Theme family output would claim an existing unowned path: ${path.join(root, unrelated[0])}`,

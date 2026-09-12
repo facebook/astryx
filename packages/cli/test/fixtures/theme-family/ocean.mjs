@@ -21,7 +21,10 @@ export const oceanTheme = defineTheme({
       base: {
         color: 'var(--demo-selection-ink)',
         backgroundColor: 'var(--color-background-surface)',
-        ':hover': {outlineColor: 'var(--color-accent)'},
+        ':hover': {
+          color: '#ff0000',
+          outlineColor: 'var(--color-accent)',
+        },
       },
     },
   },

@@ -119,7 +119,24 @@ export function planFamilyRegistries(input) {
         }
         if (role === 'icons') {
           iconSources.add(sourceKey);
-          if (iconsSpecifier) specifier = iconsSpecifier;
+          if (iconsSpecifier) {
+            if (
+              iconsSpecifier.startsWith('.') ||
+              path.isAbsolute(iconsSpecifier)
+            ) {
+              const overrideTarget = iconsSpecifier.startsWith('.')
+                ? resolveRelativeImport(prepared.filePath, iconsSpecifier)
+                : iconsSpecifier;
+              if (!fs.existsSync(overrideTarget)) {
+                throw new Error(
+                  `Family icon override module does not exist: ${overrideTarget}`,
+                );
+              }
+              specifier = overrideTarget;
+            } else {
+              specifier = iconsSpecifier;
+            }
+          }
         }
         const id = `${node.name}:${role}`;
         requests.push({...info, id, specifier});
@@ -199,7 +216,12 @@ export function planFamilyRegistries(input) {
     imports: allocation.imports.map(renderImport),
     expressions,
     requests,
-    external: iconsSpecifier ? [iconsSpecifier] : [],
+    external:
+      iconsSpecifier &&
+      !iconsSpecifier.startsWith('.') &&
+      !path.isAbsolute(iconsSpecifier)
+        ? [iconsSpecifier]
+        : [],
     needsPickHelper: requests.some(request => request.id.endsWith(':source')),
   };
 }

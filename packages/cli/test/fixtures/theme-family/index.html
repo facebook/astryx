@@ -18,6 +18,12 @@
         .unrelated {
           color: rgb(20 20 20);
         }
+        /* Adversarial later shared rule: the member delta must still win. */
+        @scope ([data-astryx-theme='ocean-deep']) to ([data-astryx-theme]) {
+          :where(.astryx-button) {
+            border-width: 9px;
+          }
+        }
       }
       body {
         font-family: system-ui;
@@ -34,9 +40,11 @@
         color: var(--demo-selection-ink);
         padding: 16px;
       }
-      .astryx-button {
-        border-style: solid;
-        padding: 8px 12px;
+      @layer astryx-base {
+        .astryx-button {
+          border-style: solid;
+          padding: 8px 12px;
+        }
       }
     </style>
   </head>

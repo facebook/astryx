@@ -7,12 +7,10 @@
  * @position Theme-agnostic filesystem boundary for AST-034 family artifacts
  */
 
-import {createHash} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-
-let uniqueCounter = 0;
 
 /**
  * @typedef {object} FamilyManifest
@@ -139,7 +137,7 @@ function acquireLock(root) {
  * @param {string} root
  */
 export function probeAtomicPointer(root) {
-  const probe = path.join(root, '.probe');
+  const probe = path.join(root, `.probe-${randomUUID()}`);
   try {
     fs.mkdirSync(path.join(probe, 'a'), {recursive: true});
     fs.mkdirSync(path.join(probe, 'b'), {recursive: true});
@@ -208,8 +206,7 @@ function replaceCurrent(root, target) {
   }
 
   assertSafeRelativePath(target);
-  const temporary = path.join(root, '.current.tmp');
-  fs.rmSync(temporary, {force: true});
+  const temporary = path.join(root, `.current-${randomUUID()}.tmp`);
   fs.symlinkSync(target, temporary, 'dir');
   try {
     fs.renameSync(temporary, currentPath);
@@ -324,10 +321,10 @@ function removeManifestOwnedGeneration(
     return false;
   }
 
-  const ownedPaths = [
-    ...info.manifest.owned.map(owned => owned.path),
-    manifestPath,
-  ].sort((a, b) => b.length - a.length);
+  const ownedPaths = info.manifest.owned
+    .map(owned => owned.path)
+    .filter(relative => relative !== manifestPath)
+    .sort((a, b) => b.length - a.length);
   for (const relative of ownedPaths) {
     const file = path.join(info.generationDir, ...relative.split('/'));
     try {
@@ -337,12 +334,22 @@ function removeManifestOwnedGeneration(
       if (errorCode(error) !== 'ENOENT') throw error;
     }
   }
-  try {
-    fs.rmdirSync(info.generationDir);
-  } catch {
-    // An unmanifested file keeps the directory alive by design. Every path the
-    // manifest owned is already gone, so manifest-bounded cleanup completed.
+  const remaining = fs
+    .readdirSync(info.generationDir)
+    .filter(entry => entry !== path.basename(manifestPath));
+  if (remaining.length === 0) {
+    fs.unlinkSync(info.manifestFile);
+    removeEmptyParents(path.dirname(info.manifestFile), info.generationDir);
+    try {
+      fs.rmdirSync(info.generationDir);
+    } catch {
+      // A concurrent observer is unsupported, but a newly created unrelated
+      // path still remains outside this manifest's deletion authority.
+    }
   }
+  // When unrelated data remains, retain the manifest as proof that the removed
+  // paths belonged to this superseded generation. A later cleanup can finish
+  // after the unrelated data is moved without guessing from the directory name.
   return true;
 }
 
@@ -390,8 +397,7 @@ function cleanupGenerations(
 /** @param {string} root @param {unknown} journal */
 function writeJournal(root, journal) {
   const finalPath = path.join(root, '.journal.json');
-  const temporary = path.join(root, '.journal.tmp');
-  fs.rmSync(temporary, {force: true});
+  const temporary = path.join(root, `.journal-${randomUUID()}.tmp`);
   durableWrite(temporary, `${JSON.stringify(journal, null, 2)}\n`);
   fs.renameSync(temporary, finalPath);
   fsyncDirectory(root);
@@ -411,16 +417,6 @@ function removeJournal(root) {
  * @param {string} manifestPath
  */
 function recover(root, artifactKey, manifestPath) {
-  let removedTemporary = false;
-  for (const temporaryName of ['.journal.tmp', '.current.tmp', '.probe']) {
-    const temporary = path.join(root, temporaryName);
-    if (fs.lstatSync(temporary, {throwIfNoEntry: false})) {
-      fs.rmSync(temporary, {recursive: true, force: true});
-      removedTemporary = true;
-    }
-  }
-  if (removedTemporary) fsyncDirectory(root);
-
   const journalPath = path.join(root, '.journal.json');
   if (!fs.existsSync(journalPath)) return;
 
@@ -486,12 +482,20 @@ function recover(root, artifactKey, manifestPath) {
     fsyncDirectory(root);
   }
 
-  removeManifestOwnedGeneration(
+  const nextPath = path.join(root, ...journal.next.target.split('/'));
+  const nextExists =
+    fs.lstatSync(nextPath, {throwIfNoEntry: false}) !== undefined;
+  const removedNext = removeManifestOwnedGeneration(
     root,
     journal.next.target,
     manifestPath,
     artifactKey,
   );
+  if (nextExists && !removedNext) {
+    throw new Error(
+      `Cannot complete family rollback because ${journal.next.target} has no valid ownership manifest.`,
+    );
+  }
   removeJournal(root);
 }
 
@@ -567,7 +571,7 @@ export function publishFamilyGeneration(input) {
     const generationTarget = `generations/${generationId}`;
     const generationDir = path.join(root, 'generations', generationId);
     if (!fs.existsSync(generationDir)) {
-      const stagingName = `.${generationId}.staging-${process.pid}-${uniqueCounter++}`;
+      const stagingName = `.${generationId}.staging-${randomUUID()}`;
       const stagingDir = path.join(root, 'generations', stagingName);
       fs.mkdirSync(stagingDir);
       const writeEntries = [...files].sort(([a], [b]) => {

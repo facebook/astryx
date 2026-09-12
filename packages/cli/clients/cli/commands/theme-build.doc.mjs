@@ -19,7 +19,7 @@ export const doc = {
     'Compiles defineTheme sources with the exact CSS compiler used by <Theme>. Standalone mode ' +
     'writes one complete CSS, JavaScript, and declaration set per positional file. Family mode ' +
     'takes its sources through --family, requires --family-key, and publishes one complete keyed ' +
-    'CSS-free artifact set for attribute-only switching. With --check it writes nothing except ' +
+    'artifact set with a CSS-free ESM for attribute-only switching. With --check it writes nothing except ' +
     'mandatory interrupted-transaction recovery and reports whether the complete owned set drifted. ' +
     'When a separate build step emits the icon registry, --icons-specifier declares the fully ' +
     'specified module path that generated JavaScript should import.',
@@ -35,7 +35,7 @@ export const doc = {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
       description:
-        'Override the icon-registry import in the generated JS module (for example, ./icons.mjs)',
+        'Override the icon registry: standalone emits this import; family mode bundles a relative source module or preserves a bare specifier',
     },
     {
       flag: '--family <base> <children...>',
