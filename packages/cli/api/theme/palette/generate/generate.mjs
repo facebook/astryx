@@ -6,6 +6,7 @@ import {
   assertWithin,
   PathSafetyError,
 } from '../../../../foundation/fs/path-safety.mjs';
+import {publishNewFile} from '../../../../foundation/fs/publish-file.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../../error.mjs';
 import {
@@ -259,7 +260,7 @@ function writeFilesAtomically(files, overwrite) {
       } else {
         // Publishing by hard link is an atomic no-replace operation. A target
         // created after the initial existence check therefore remains safe.
-        fs.linkSync(file.temporary, file.path);
+        publishNewFile(file.temporary, file.path);
         file.published = true;
         fs.unlinkSync(file.temporary);
       }
