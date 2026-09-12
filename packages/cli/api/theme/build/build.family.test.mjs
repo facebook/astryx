@@ -228,6 +228,23 @@ describe('themeBuildFamily', () => {
     });
   });
 
+  it('uses the artifact key only as the coordinated output stem', async () => {
+    await themeBuildFamily(files, {familyKey: 'ocean-one'}, {cwd: fixtureDir});
+    await themeBuildFamily(files, {familyKey: 'ocean-two'}, {cwd: fixtureDir});
+    const read = (key, extension) =>
+      fs.readFileSync(
+        path.join(fixtureDir, key, 'current', `${key}.${extension}`),
+        'utf8',
+      );
+    const cssBody = css => css.replace(/^\/\*[\s\S]*?\*\/\n/, '');
+
+    expect(cssBody(read('ocean-one', 'css'))).toBe(
+      cssBody(read('ocean-two', 'css')),
+    );
+    expect(read('ocean-one', 'js')).toBe(read('ocean-two', 'js'));
+    expect(read('ocean-one', 'd.ts')).toBe(read('ocean-two', 'd.ts'));
+  });
+
   it('detects missing output, a lost zero-delta identity, and a renamed member without publishing', async () => {
     await themeBuildFamily(
       files,

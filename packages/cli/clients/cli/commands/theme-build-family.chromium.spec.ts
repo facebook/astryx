@@ -50,6 +50,28 @@ test.beforeAll(async () => {
   );
   fs.cpSync(fixture, project, {recursive: true});
   await themeBuildFamily(members, {familyKey: 'ocean-family'}, {cwd: project});
+  fs.cpSync(
+    path.join(project, 'ocean-family'),
+    path.join(project, 'relocated-family'),
+    {recursive: true, dereference: false},
+  );
+  fs.writeFileSync(
+    path.join(project, 'relocated-main.mjs'),
+    fs
+      .readFileSync(path.join(project, 'main.mjs'), 'utf8')
+      .replaceAll('ocean-family/current', 'relocated-family/current'),
+  );
+  fs.writeFileSync(
+    path.join(project, 'relocated.html'),
+    fs
+      .readFileSync(path.join(project, 'index.html'), 'utf8')
+      .replaceAll('ocean-family/current', 'relocated-family/current')
+      .replace('./main.mjs', './relocated-main.mjs'),
+  );
+  fs.writeFileSync(
+    path.join(project, 'rejected-wrapper.css'),
+    `@import './missing-parent.css';\n@scope ([data-astryx-theme="ocean-deep"]) { :scope { --child-only: applied; } }\n`,
+  );
 
   server = http.createServer((request, response) => {
     const pathname = decodeURIComponent(
@@ -194,4 +216,43 @@ test('native family CSS is correct on first paint and every attribute-only switc
     path: testInfo.outputPath('theme-family-raw-link.png'),
     fullPage: true,
   });
+
+  familyCSSRequests.length = 0;
+  await page.goto(`${baseURL}/relocated.html`, {waitUntil: 'networkidle'});
+  expect(errors).toEqual([]);
+  expect(familyCSSRequests).toHaveLength(1);
+  const relocated = page.locator('[data-member="switchable"]');
+  expect(await accent(relocated)).toBe('#0077b6');
+});
+
+test('the rejected per-member wrapper exposes partial CSS when its parent is missing', async ({
+  page,
+}) => {
+  await page.goto(`${baseURL}/index.html`, {waitUntil: 'networkidle'});
+  const result = await page.evaluate(async href => {
+    document.head
+      .querySelectorAll('link[rel="stylesheet"]')
+      .forEach(link => link.remove());
+    document.body.innerHTML =
+      '<main data-astryx-theme="ocean-deep" id="root">Child</main>';
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    const failed = new Promise<boolean>(resolve => {
+      link.addEventListener('load', () => resolve(false), {once: true});
+      link.addEventListener('error', () => resolve(true), {once: true});
+    });
+    document.head.append(link);
+    const linkFailed = await failed;
+    const root = document.querySelector('#root');
+    if (!root) {
+      throw new Error('Rejected wrapper root is missing.');
+    }
+    const childValue = getComputedStyle(root)
+      .getPropertyValue('--child-only')
+      .trim();
+    return {linkFailed, childValue};
+  }, `${baseURL}/rejected-wrapper.css`);
+
+  expect(result).toEqual({linkFailed: true, childValue: 'applied'});
 });
