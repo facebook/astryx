@@ -8,17 +8,42 @@
  *   performed after the reachable ordered cascade is assembled.
  */
 
-import type {ComponentStyleMap, DefinedTheme, TokenValue} from './defineTheme';
-import type {ResolvedOnMedia} from './onMediaTokens';
+import type {DefinedTheme, TokenValue} from './defineTheme';
 
-const LOCAL_TOKEN_PREFIX = '--astryx-theme-';
 const THEME_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
-const LOCAL_TOKEN_SUFFIX_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const CSS_VAR_PATTERN = /var\(\s*(--[^,\s)]+)/gi;
 
-/** Whether a custom-property name belongs to Astryx's reserved local namespace. */
-export function isReservedThemeLocalTokenName(name: string): boolean {
-  return name.startsWith(LOCAL_TOKEN_PREFIX);
+function isAsciiNameCodePoint(codePoint: number): boolean {
+  return (
+    codePoint === 0x2d ||
+    codePoint === 0x5f ||
+    (codePoint >= 0x30 && codePoint <= 0x39) ||
+    (codePoint >= 0x41 && codePoint <= 0x5a) ||
+    (codePoint >= 0x61 && codePoint <= 0x7a)
+  );
+}
+
+function isNewline(codePoint: number): boolean {
+  return codePoint === 0x0a || codePoint === 0x0c || codePoint === 0x0d;
+}
+
+function isHexDigit(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x30 && codePoint <= 0x39) ||
+    (codePoint >= 0x41 && codePoint <= 0x46) ||
+    (codePoint >= 0x61 && codePoint <= 0x66)
+  );
+}
+
+/**
+ * Whether a string is one complete CSS custom-property name.
+ *
+ * Custom-property names are case-sensitive dashed identifiers. Keep escaped and
+ * non-ASCII names byte-for-byte rather than normalizing them: spelling is part
+ * of identity, while ownership lives in explicit metadata.
+ */
+function isValidCSSCustomPropertyName(name: string): boolean {
+  const parsed = readCustomPropertyName(name, 0);
+  return parsed?.end === name.length;
 }
 
 export interface ResolvedLocalTokenContract {
@@ -29,14 +54,6 @@ export interface ResolvedLocalTokenContract {
 
 function hasOwn(object: object, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
-}
-
-function isExactLocalTokenName(name: string, owner: string): boolean {
-  const prefix = `${LOCAL_TOKEN_PREFIX}${owner}-`;
-  return (
-    name.startsWith(prefix) &&
-    LOCAL_TOKEN_SUFFIX_PATTERN.test(name.slice(prefix.length))
-  );
 }
 
 function resolveTokenValue(value: TokenValue, path: string): string {
@@ -56,18 +73,78 @@ function resolveTokenValue(value: TokenValue, path: string): string {
   );
 }
 
+function readCustomPropertyName(
+  value: string,
+  start: number,
+): {name: string; end: number} | undefined {
+  if (value.slice(start, start + 2) !== '--') {return undefined;}
+
+  let index = start + 2;
+  while (index < value.length) {
+    const codePoint = value.codePointAt(index);
+    if (codePoint === undefined || codePoint === 0) {break;}
+
+    if (codePoint === 0x5c) {
+      const nextIndex = index + 1;
+      const next = value.codePointAt(nextIndex);
+      if (next === undefined || isNewline(next)) {break;}
+
+      if (isHexDigit(next)) {
+        let cursor = nextIndex;
+        let digits = 0;
+        while (
+          cursor < value.length &&
+          digits < 6 &&
+          isHexDigit(value.codePointAt(cursor) ?? -1)
+        ) {
+          cursor += 1;
+          digits += 1;
+        }
+        const whitespace = value.codePointAt(cursor);
+        if (
+          whitespace === 0x20 ||
+          whitespace === 0x09 ||
+          whitespace === 0x0a ||
+          whitespace === 0x0c ||
+          whitespace === 0x0d
+        ) {
+          cursor +=
+            whitespace === 0x0d && value.codePointAt(cursor + 1) === 0x0a
+              ? 2
+              : 1;
+        }
+        index = cursor;
+        continue;
+      }
+
+      index = nextIndex + (next > 0xffff ? 2 : 1);
+      continue;
+    }
+
+    if (codePoint < 0x80 && !isAsciiNameCodePoint(codePoint)) {break;}
+    index += codePoint > 0xffff ? 2 : 1;
+  }
+
+  return index > start + 2
+    ? {name: value.slice(start, index), end: index}
+    : undefined;
+}
+
 function collectCustomPropertyReferences(
   value: unknown,
   refs: Set<string>,
 ): void {
   if (typeof value === 'string') {
-    CSS_VAR_PATTERN.lastIndex = 0;
+    const functionPattern = /var\s*\(/gi;
     for (
-      let match = CSS_VAR_PATTERN.exec(value);
+      let match = functionPattern.exec(value);
       match;
-      match = CSS_VAR_PATTERN.exec(value)
+      match = functionPattern.exec(value)
     ) {
-      refs.add(match[1]);
+      let start = functionPattern.lastIndex;
+      while (/\s/.test(value[start] ?? '')) {start += 1;}
+      const reference = readCustomPropertyName(value, start);
+      if (reference) {refs.add(reference.name);}
     }
     return;
   }
@@ -80,16 +157,6 @@ function collectCustomPropertyReferences(
   if (value && typeof value === 'object') {
     for (const nested of Object.values(value)) {
       collectCustomPropertyReferences(nested, refs);
-    }
-  }
-}
-
-function collectLocalReferences(value: unknown, refs: Set<string>): void {
-  const customProperties = new Set<string>();
-  collectCustomPropertyReferences(value, customProperties);
-  for (const name of customProperties) {
-    if (isReservedThemeLocalTokenName(name)) {
-      refs.add(name);
     }
   }
 }
@@ -208,27 +275,6 @@ export function assertNoTokenCycles(
   }
 }
 
-function assertDeclaredReferences(
-  localTokens: Record<string, string>,
-  components: ComponentStyleMap | undefined,
-  onDark: ResolvedOnMedia | undefined,
-  onLight: ResolvedOnMedia | undefined,
-): void {
-  const refs = new Set<string>();
-  collectLocalReferences(localTokens, refs);
-  collectLocalReferences(components, refs);
-  collectLocalReferences(onDark?.components, refs);
-  collectLocalReferences(onLight?.components, refs);
-
-  for (const reference of refs) {
-    if (!hasOwn(localTokens, reference)) {
-      throw new Error(
-        `Theme-local token reference "${reference}" has no declaration in the enrolled theme lineage.`,
-      );
-    }
-  }
-}
-
 function assertInheritedContract(
   themeName: string,
   base: DefinedTheme,
@@ -267,7 +313,7 @@ function assertInheritedContract(
       typeof value !== 'string' ||
       !owner ||
       !lineage.includes(owner) ||
-      !isExactLocalTokenName(name, owner)
+      !isValidCSSCustomPropertyName(name)
     ) {
       throw new Error(
         `defineTheme("${themeName}"): inherited local token "${name}" does not match its exact lineage metadata.`,
@@ -287,7 +333,7 @@ function assertInheritedContract(
  * Resolve and validate the opt-in theme-local token contract.
  *
  * Themes that omit `localTokens` and do not extend an enrolled base bypass this
- * function's reserved-namespace checks so legacy token behavior stays intact.
+ * function's exact owner and lineage checks so legacy token behavior stays intact.
  */
 export function resolveLocalTokenContract(
   input: {
@@ -296,9 +342,6 @@ export function resolveLocalTokenContract(
   },
   base: DefinedTheme | undefined,
   tokens: Record<string, string>,
-  components: ComponentStyleMap | undefined,
-  onDark: ResolvedOnMedia | undefined,
-  onLight: ResolvedOnMedia | undefined,
 ): ResolvedLocalTokenContract | undefined {
   const directlyEnrolled = hasOwn(input, 'localTokens');
   const inherited = base?.__localTokenLineage !== undefined;
@@ -335,13 +378,12 @@ export function resolveLocalTokenContract(
 
   for (const [name, value] of Object.entries(declarations ?? {})) {
     const inheritedOwner = owners[name];
+    if (!isValidCSSCustomPropertyName(name)) {
+      throw new Error(
+        `defineTheme("${input.name}"): local token "${name}" must be a valid CSS custom-property name.`,
+      );
+    }
     if (!inheritedOwner) {
-      const expectedPrefix = `${LOCAL_TOKEN_PREFIX}${input.name}-`;
-      if (!isExactLocalTokenName(name, input.name)) {
-        throw new Error(
-          `defineTheme("${input.name}"): local token "${name}" must use the exact namespace "${expectedPrefix}" followed by a lowercase kebab-case purpose.`,
-        );
-      }
       owners[name] = input.name;
     }
     localTokens[name] = resolveTokenValue(
@@ -363,7 +405,6 @@ export function resolveLocalTokenContract(
     }
   }
 
-  assertDeclaredReferences(localTokens, components, onDark, onLight);
   assertNoTokenCycles(localTokens, `defineTheme("${input.name}").localTokens`);
 
   return {
@@ -385,23 +426,9 @@ export function resolveAdaptationLocalTokens(
   ruleIndex: number,
   declarations: Record<string, TokenValue> | undefined,
   rootLocalTokens: Record<string, string> | undefined,
-  tokens: Record<string, string>,
-  components: ComponentStyleMap | undefined,
 ): Record<string, string> | undefined {
   const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].value.localTokens`;
-  if (declarations === undefined) {
-    const refs = new Set<string>();
-    collectLocalReferences(tokens, refs);
-    collectLocalReferences(components, refs);
-    for (const reference of refs) {
-      if (!rootLocalTokens || !hasOwn(rootLocalTokens, reference)) {
-        throw new Error(
-          `${path}: theme-local token reference "${reference}" has no declaration in the enrolled root theme lineage.`,
-        );
-      }
-    }
-    return undefined;
-  }
+  if (declarations === undefined) {return undefined;}
   if (
     declarations === null ||
     typeof declarations !== 'object' ||
@@ -418,19 +445,6 @@ export function resolveAdaptationLocalTokens(
       );
     }
     resolved[name] = resolveTokenValue(value, `${path}["${name}"]`);
-  }
-
-  const effective = {...rootLocalTokens, ...resolved};
-  const refs = new Set<string>();
-  collectLocalReferences(resolved, refs);
-  collectLocalReferences(tokens, refs);
-  collectLocalReferences(components, refs);
-  for (const reference of refs) {
-    if (!hasOwn(effective, reference)) {
-      throw new Error(
-        `${path}: theme-local token reference "${reference}" has no declaration in the enrolled root theme lineage.`,
-      );
-    }
   }
 
   return Object.keys(resolved).length > 0 ? resolved : undefined;

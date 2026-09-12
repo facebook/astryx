@@ -309,10 +309,10 @@ export interface DefineThemeInput {
    *  Only include tokens you want to override; defaults fill the rest. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /**
-   * Theme-family-local CSS custom properties. Keys use the complete
-   * `--astryx-theme-${name}-...` spelling and values follow `TokenValue`.
-   * These names are available only to this enrolled theme lineage and do not
-   * become portable `TokenName` values.
+   * Theme-family-local CSS custom properties. Keys may use any valid custom-
+   * property name and values follow `TokenValue`. Exact owner and lineage
+   * metadata keep these names local without imposing a spelling prefix.
+   * These names do not become portable `TokenName` values.
    */
   localTokens?: Record<string, TokenValue>;
   /**
@@ -577,14 +577,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   const __onDark = resolveOnMedia('dark', input.onDark, base?.__onDark);
   const __onLight = resolveOnMedia('light', input.onLight, base?.__onLight);
 
-  const localTokenContract = resolveLocalTokenContract(
-    input,
-    base,
-    tokens,
-    components,
-    __onDark,
-    __onLight,
-  );
+  const localTokenContract = resolveLocalTokenContract(input, base, tokens);
 
   // Adaptations inherit their breakpoint map and ordered rules. Every rule is
   // re-resolved against this theme's effective root axes, so a child can change

@@ -443,27 +443,28 @@ describe('theme-local adaptation values', () => {
     ).toThrow(/write it through value.localTokens/);
   });
 
-  it('rejects reserved local-token names through value.tokens even when unenrolled', () => {
-    expect(() =>
-      defineTheme({
-        name: 'reserved-rule-token',
-        adaptations: {
-          rules: [
-            {
-              when: {pointer: 'coarse'},
-              value: {
-                tokens: {
-                  '--astryx-theme-unrelated-owner-control-height': '44px',
-                },
+  it('keeps a prefix-similar value.tokens key portable when it is not enrolled', () => {
+    const name = '--astryx-theme-unrelated-owner-control-height';
+    const theme = defineTheme({
+      name: 'external-rule-token',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {
+                [name]: '44px',
               },
             },
-          ],
-        },
-      } as unknown as DefineThemeInput),
-    ).toThrow(/reserved.*value\.localTokens/i);
+          },
+        ],
+      },
+    } as unknown as DefineThemeInput);
+
+    expect(theme.__adaptationRules?.[0].tokens[name]).toBe('44px');
   });
 
-  it('rejects undeclared references and conditional cycles', () => {
+  it('keeps undeclared references external and rejects conditional cycles', () => {
     expect(() =>
       defineTheme({
         name: 'local-root',
@@ -485,7 +486,7 @@ describe('theme-local adaptation values', () => {
           ],
         },
       }),
-    ).toThrow(/has no declaration/);
+    ).not.toThrow();
 
     const a = '--astryx-theme-cycle-local-a';
     const b = '--astryx-theme-cycle-local-b';

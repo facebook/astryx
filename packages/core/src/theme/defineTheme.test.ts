@@ -165,20 +165,20 @@ describe('defineTheme', () => {
   });
 
   it.each([
-    ['Uppercase', '--astryx-theme-Uppercase-color-accent'],
-    ['wrong-space', '--astryx-theme-other-color-accent'],
-    ['wrong-space', '--astryx-theme-wrong-space-Color-accent'],
-  ])('rejects malformed local token enrollment for %s', (name, token) => {
+    ['missing custom-property prefix', 'color-accent'],
+    ['empty custom-property name', '--'],
+    ['unescaped whitespace', '--color accent'],
+  ])('rejects malformed local token enrollment for %s', (label, token) => {
     expect(() =>
       defineTheme({
-        name,
+        name: 'ocean',
         localTokens: {[token]: '#123456'},
       }),
-    ).toThrow(/localTokens|local token/);
+    ).toThrow(/valid CSS custom-property name/);
   });
 
   it.each(['VAR', 'vAr'])(
-    'rejects undeclared local references using %s() in nested and media component rules',
+    'keeps non-exact local-looking references using %s() external',
     functionName => {
       expect(() =>
         defineTheme({
@@ -194,23 +194,23 @@ describe('defineTheme', () => {
             },
           },
         }),
-      ).toThrow(/has no declaration/);
+      ).not.toThrow();
 
       expect(() =>
         defineTheme({
           name: 'ocean',
-          localTokens: {},
+          localTokens: {'--Demo-Ink': '#123456'},
           onDark: {
             components: {
               badge: {
                 base: {
-                  color: `${functionName}(--astryx-theme-ocean-color-missing)`,
+                  color: `${functionName}(--demo-ink)`,
                 },
               },
             },
           },
         }),
-      ).toThrow(/has no declaration/);
+      ).not.toThrow();
     },
   );
 
@@ -1235,7 +1235,7 @@ describe('defineTheme extends', () => {
     ]);
   });
 
-  it('rejects a new declaration in another theme namespace', () => {
+  it('lets a child own a valid new declaration regardless of prefix', () => {
     const base = defineTheme({
       name: 'base-theme',
       localTokens: {
@@ -1243,15 +1243,16 @@ describe('defineTheme extends', () => {
       },
     });
 
-    expect(() =>
-      defineTheme({
-        name: 'child-theme',
-        extends: base,
-        localTokens: {
-          '--astryx-theme-base-theme-color-new-role': '#abcdef',
-        },
-      }),
-    ).toThrow(/exact namespace/);
+    const child = defineTheme({
+      name: 'child-theme',
+      extends: base,
+      localTokens: {
+        '--demo-new-role': '#abcdef',
+      },
+    });
+
+    expect(child.localTokens?.['--demo-new-role']).toBe('#abcdef');
+    expect(child.__localTokenOwners?.['--demo-new-role']).toBe('child-theme');
   });
 
   it('inherits tokens from base theme', () => {
