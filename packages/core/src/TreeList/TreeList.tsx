@@ -325,6 +325,7 @@ export function TreeList({
           description={item.description}
           startContent={item.startContent}
           endContent={item.endContent}
+          className={item.className}
           hasChildren={hasChildren}
           hasExpandableItems={hasExpandableItems}
           onClick={item.onClick}

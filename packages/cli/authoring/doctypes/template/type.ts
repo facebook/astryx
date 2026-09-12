@@ -138,6 +138,7 @@ export type TemplateCategory =
   | 'Login - SSO'
   | 'Login - Split'
   // Tools
+  | 'Tools - Canvas Editor'
   | 'Tools - File Explorer'
   | 'Tools - Page Editor'
   | 'Tools - IDE'
