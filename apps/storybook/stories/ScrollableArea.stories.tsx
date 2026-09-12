@@ -194,12 +194,12 @@ const meta = {
     axis: 'block',
     label: 'Scrollable example',
     role: 'group',
-    scrollChaining: 'allow',
+    overscroll: 'allow',
   },
   argTypes: {
     axis: {control: 'select', options: ['inline', 'block', 'both']},
     role: {control: 'select', options: ['group', 'region']},
-    scrollChaining: {control: 'select', options: ['allow', 'contain']},
+    overscroll: {control: 'select', options: ['allow', 'contain']},
   },
 } satisfies Meta<typeof ScrollableArea>;
 
@@ -282,14 +282,14 @@ function NestedChainingExample({policy}: {policy: 'allow' | 'contain'}) {
       <ScrollableArea
         axis="block"
         label={`${policy} outer activity`}
-        scrollChaining="allow"
+        overscroll="allow"
         xstyle={[styles.viewport, styles.nestedOuter]}>
         <VStack gap={3} xstyle={styles.contentPadding}>
           <Text>Scroll the nested areas, then continue at each edge.</Text>
           <ScrollableArea
             axis="block"
             label={`${policy} fitting nested area`}
-            scrollChaining={policy}
+            overscroll={policy}
             data-evidence={`${policy}-fitting-nested`}
             xstyle={styles.nestedViewport}>
             <Rows count={1} />
@@ -297,7 +297,7 @@ function NestedChainingExample({policy}: {policy: 'allow' | 'contain'}) {
           <ScrollableArea
             axis="block"
             label={`${policy} overflowing nested area`}
-            scrollChaining={policy}
+            overscroll={policy}
             data-evidence={`${policy}-overflowing-nested`}
             xstyle={styles.nestedViewport}>
             <Rows count={6} />
@@ -309,7 +309,7 @@ function NestedChainingExample({policy}: {policy: 'allow' | 'contain'}) {
   );
 }
 
-export const ScrollChaining: Story = {
+export const Overscroll: Story = {
   render: () => (
     <HStack gap={4} xstyle={styles.canvas}>
       <NestedChainingExample policy="allow" />

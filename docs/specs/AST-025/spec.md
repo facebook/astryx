@@ -213,10 +213,10 @@ interface ScrollAxisState {
 interface UseScrollableAreaOptions {
   axis: ScrollAxis;
   keyboardAccess: KeyboardAccess;
-  scrollChaining?: 'allow' | 'contain';
+  overscroll?: 'allow' | 'contain';
 }
 
-type ElementProps<E extends HTMLElement> = React.HTMLAttributes<E> &
+type ElementProps<E extends HTMLElement> = BaseProps<E> &
   React.RefAttributes<E>;
 
 interface UseScrollableAreaResult {

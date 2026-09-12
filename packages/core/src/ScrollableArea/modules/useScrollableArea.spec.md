@@ -51,7 +51,7 @@ and scroll chaining without inserting structure.
 | -------------- | ---------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------------- | --------- |
 | axis           | `inline`, `block`, `both`          | requested logical scroll intent       | required                  | `spec:AST-025`                            | stable    |
 | keyboard owner | `content`, named `viewport`        | where keyboard scrolling is reached   | required                  | `spec:AST-025`                            | stable    |
-| chaining       | `allow`, `contain`                 | edge propagation on effective axes    | `allow`                   | `spec:AST-025`                            | stable    |
+| overscroll     | `allow`, `contain`                 | edge propagation on effective axes    | `allow`                   | `spec:AST-025`                            | stable    |
 | axis state     | `isScrollable`, `atStart`, `atEnd` | effective ownership and logical edges | inactive, both edges true | `module:ScrollableArea/useScrollableArea` | stable    |
 
 ## Behavioral contract

@@ -20,11 +20,11 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type HTMLAttributes,
   type Ref,
   type RefAttributes,
   type RefCallback,
 } from 'react';
+import type {BaseProps} from '../BaseProps';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {mergeRefs} from '../utils/mergeRefs';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -39,7 +39,7 @@ import {
 } from './scrollOwnerRegistry';
 
 export type ScrollAxis = 'inline' | 'block' | 'both';
-export type ScrollChaining = 'allow' | 'contain';
+export type ScrollOverscroll = 'allow' | 'contain';
 
 export type ScrollKeyboardAccess =
   | {owner: 'content'}
@@ -59,13 +59,11 @@ export interface ScrollableAreaState {
 export interface UseScrollableAreaOptions {
   axis: ScrollAxis;
   keyboardAccess: ScrollKeyboardAccess;
-  scrollChaining?: ScrollChaining;
+  overscroll?: ScrollOverscroll;
 }
 
-export type ScrollableElementProps<E extends HTMLElement> = HTMLAttributes<E> &
-  RefAttributes<E> & {
-    [key: `data-${string}`]: string | undefined;
-  };
+export type ScrollableElementProps<E extends HTMLElement> = BaseProps<E> &
+  RefAttributes<E>;
 
 export interface UseScrollableAreaResult {
   getViewportProps<E extends HTMLElement>(
@@ -147,7 +145,7 @@ function useStableComposedRef(
 export function useScrollableArea({
   axis,
   keyboardAccess,
-  scrollChaining = 'allow',
+  overscroll = 'allow',
 }: UseScrollableAreaOptions): UseScrollableAreaResult {
   const [viewport, setViewport] = useState<HTMLElement | null>(null);
   const [content, setContent] = useState<HTMLElement | null>(null);
@@ -300,9 +298,8 @@ export function useScrollableArea({
         document.activeElement === viewport;
       const behaviorStyle: CSSProperties = {...props.style};
       const containInline =
-        scrollChaining === 'contain' && state.inline.isScrollable;
-      const containBlock =
-        scrollChaining === 'contain' && state.block.isScrollable;
+        overscroll === 'contain' && state.inline.isScrollable;
+      const containBlock = overscroll === 'contain' && state.block.isScrollable;
       const inlinePhysical = mapping.inline;
       const blockPhysical = mapping.block;
 
@@ -352,7 +349,7 @@ export function useScrollableArea({
       getComposedViewportRef,
       keyboardAccess,
       mapping,
-      scrollChaining,
+      overscroll,
       state,
       viewport,
     ],

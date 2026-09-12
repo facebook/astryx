@@ -6,7 +6,7 @@ export const docs = {
   displayName: 'useScrollableArea',
   keywords: ['scroll', 'overflow', 'logical axis', 'keyboard', 'overscroll', 'sticky', 'resize'],
   params: [
-    {name: 'options', type: 'UseScrollableAreaOptions', description: 'Logical scroll intent, keyboard owner, and chaining policy.', required: true},
+    {name: 'options', type: 'UseScrollableAreaOptions', description: 'Logical scroll intent, keyboard owner, and overscroll policy.', required: true},
   ],
   returns: [
     {name: 'getViewportProps', type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>', description: 'Composes caller viewport props and refs with measurement, accessibility, chaining, and owner registration.'},
@@ -31,7 +31,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description: 'Composes logical-axis scrolling into caller-owned viewport/content elements with stable effective-axis and edge state.',
-  paramDescriptions: {options: 'axis, keyboard owner, and allow/contain chaining policy.'},
+  paramDescriptions: {options: 'axis, keyboard owner, and allow/contain overscroll policy.'},
   returnDescriptions: {
     getViewportProps: 'safe viewport prop/ref composition with behavior-owned accessibility and chaining.',
     getContentProps: 'safe observed content-box prop/ref composition.',

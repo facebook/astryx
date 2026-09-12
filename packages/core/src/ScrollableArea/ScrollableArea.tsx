@@ -20,7 +20,7 @@ import type {BaseProps} from '../BaseProps';
 import {
   useScrollableArea,
   type ScrollAxis,
-  type ScrollChaining,
+  type ScrollOverscroll,
 } from '../hooks/useScrollableArea';
 import {colorVars} from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -80,7 +80,7 @@ export interface ScrollableAreaProps extends Omit<
   /** Semantics for the named scroll viewport. @default 'group' */
   role?: 'group' | 'region';
   /** Whether effective axes pass scroll gestures to ancestors at an edge. @default 'allow' */
-  scrollChaining?: ScrollChaining;
+  overscroll?: ScrollOverscroll;
   /** Ref connected to the native scroll viewport. */
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -108,7 +108,7 @@ export function ScrollableArea({
   axis = 'block',
   label,
   role = 'group',
-  scrollChaining = 'allow',
+  overscroll = 'allow',
   ref,
   xstyle,
   className,
@@ -118,7 +118,7 @@ export function ScrollableArea({
   const {getViewportProps, getContentProps} = useScrollableArea({
     axis,
     keyboardAccess: {owner: 'viewport', label, role},
-    scrollChaining,
+    overscroll,
   });
 
   const mergedViewportProps = mergeProps(

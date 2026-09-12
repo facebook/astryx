@@ -56,11 +56,11 @@ shared behavior hook, not the exclusive owner of that behavior.
 
 ## Public concepts
 
-| Concept            | Closed values or states               | Meaning                                    | Availability by variant/orientation/state | Default | Owner                      | Stability | Invalid-value behavior |
-| ------------------ | ------------------------------------- | ------------------------------------------ | ----------------------------------------- | ------- | -------------------------- | --------- | ---------------------- |
-| logical axis       | `inline`, `block`, `both`             | axes where native scrolling is allowed     | all                                       | `block` | `spec:AST-025`             | stable    | type error             |
-| chaining           | `allow`, `contain`                    | whether effective axes chain at an edge    | all                                       | `allow` | `spec:AST-025`             | stable    | type error             |
-| viewport semantics | `group`, `region` plus required label | names a conditional keyboard scroll target | all                                       | `group` | `component:ScrollableArea` | stable    | type error             |
+| Concept            | Closed values or states               | Meaning                                     | Availability by variant/orientation/state | Default | Owner                      | Stability | Invalid-value behavior |
+| ------------------ | ------------------------------------- | ------------------------------------------- | ----------------------------------------- | ------- | -------------------------- | --------- | ---------------------- |
+| logical axis       | `inline`, `block`, `both`             | axes where native scrolling is allowed      | all                                       | `block` | `spec:AST-025`             | stable    | type error             |
+| overscroll         | `allow`, `contain`                    | whether effective axes propagate at an edge | all                                       | `allow` | `spec:AST-025`             | stable    | type error             |
+| viewport semantics | `group`, `region` plus required label | names a conditional keyboard scroll target  | all                                       | `group` | `component:ScrollableArea` | stable    | type error             |
 
 ## Behavioral and layout contract
 

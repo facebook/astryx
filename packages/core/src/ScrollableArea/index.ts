@@ -13,7 +13,7 @@ export {useScrollableArea} from '../hooks/useScrollableArea';
 export type {
   ScrollAxis,
   ScrollAxisState,
-  ScrollChaining,
+  ScrollOverscroll,
   ScrollKeyboardAccess,
   ScrollableAreaState,
   ScrollableElementProps,

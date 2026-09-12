@@ -131,7 +131,7 @@ describe('ScrollableArea', () => {
       <ScrollableArea
         axis="both"
         label="Canvas"
-        scrollChaining="contain"
+        overscroll="contain"
         data-testid="viewport">
         Canvas
       </ScrollableArea>,

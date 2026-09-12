@@ -6,7 +6,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useScrollableArea,
   type ScrollAxis,
-  type ScrollChaining,
+  type ScrollOverscroll,
 } from './useScrollableArea';
 import {
   findNearestScrollOwner,
@@ -16,7 +16,7 @@ import {getLogicalAxisMapping} from './scrollGeometry';
 
 interface FixtureProps {
   axis?: ScrollAxis;
-  chaining?: ScrollChaining;
+  chaining?: ScrollOverscroll;
   externalRef?: Ref<HTMLDivElement>;
   onScroll?: React.UIEventHandler<HTMLDivElement>;
 }
@@ -34,7 +34,7 @@ function Fixture({
       label: 'Scrollable results',
       role: 'region',
     },
-    scrollChaining: chaining,
+    overscroll: chaining,
   });
 
   return (
@@ -274,7 +274,7 @@ describe('useScrollableArea', () => {
       const area = useScrollableArea({
         axis: 'inline',
         keyboardAccess: {owner: 'content'},
-        scrollChaining: 'contain',
+        overscroll: 'contain',
       });
       return (
         <div

@@ -60,7 +60,7 @@ export {useScrollableArea} from './useScrollableArea';
 export type {
   ScrollAxis,
   ScrollAxisState,
-  ScrollChaining,
+  ScrollOverscroll,
   ScrollKeyboardAccess,
   ScrollableAreaState,
   ScrollableElementProps,
