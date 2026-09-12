@@ -57,7 +57,7 @@ export const LEGACY_MARKER_END = '<!-- XDS:END -->';
  * targets are user-chosen and not enumerable here.)
  */
 export const AGENT_DOC_PATHS = [
-  AGENTS_MD, // Codex / ChatGPT / generic
+  AGENTS_MD, // Codex / ChatGPT / Muse / generic
   CLAUDE_MD, // Claude Code (root)
   CLAUDE_DIR_MD, // Claude Code (.claude/CLAUDE.md)
   CURSOR_RULES, // Cursor
