@@ -1,5 +1,9 @@
 # @xds/theme-y2k
 
+# 0.6.1
+
+---
+
 # 0.6.0
 
 #### Breaking Changes
