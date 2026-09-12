@@ -370,10 +370,15 @@ describe('DateRangeInput', () => {
       expect(
         screen.queryByRole('listbox', {hidden: true}),
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByRole('group', {name: 'Preset date ranges', hidden: true}),
-      ).toBeInTheDocument();
-      expect(getButton('Last 7 days')).toBeInTheDocument();
+      const group = screen.getByRole('group', {
+        name: 'Preset date ranges',
+        hidden: true,
+      });
+      expect(group).toBeInTheDocument();
+      expect(group).toHaveClass('astryx-date-range-input-presets');
+      expect(getButton('Last 7 days')).toHaveClass(
+        'astryx-date-range-input-preset',
+      );
     });
 
     it('marks the applied preset with aria-current, not aria-selected', () => {
@@ -386,9 +391,14 @@ describe('DateRangeInput', () => {
         />,
       );
       const active = getButton('Last 7 days');
+      expect(active).toHaveClass('astryx-date-range-input-preset');
+      expect(active).toHaveAttribute('data-selected', 'selected');
       expect(active).toHaveAttribute('aria-current', 'true');
       expect(active).not.toHaveAttribute('aria-selected');
       const inactive = getButton('This month');
+      expect(inactive).toHaveClass('astryx-date-range-input-preset');
+      expect(inactive).not.toHaveAttribute('data-selected');
+      expect(inactive).not.toHaveAttribute('data-disabled');
       expect(inactive).not.toHaveAttribute('aria-current');
     });
   });
@@ -831,7 +841,10 @@ describe('DateRangeInput range-span forwarding', () => {
     const withinCap = getButton('Last 3 days');
     const overCap = getButton('Last 30 days');
     expect(withinCap).not.toBeDisabled();
+    expect(withinCap).not.toHaveAttribute('data-disabled');
     expect(overCap).toBeDisabled();
+    expect(overCap).toHaveClass('astryx-date-range-input-preset');
+    expect(overCap).toHaveAttribute('data-disabled', 'disabled');
 
     fireEvent.click(overCap);
     expect(handleChange).not.toHaveBeenCalled();
