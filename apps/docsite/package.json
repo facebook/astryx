@@ -6,7 +6,7 @@
     "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
     "generate": "node scripts/check-workspace-build.mjs && pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
     "dev": "pnpm generate && next dev --webpack",
-    "build": "pnpm generate && next build --webpack",
+    "build": "pnpm generate && next build --webpack && node scripts/check-template-gallery-bundle.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

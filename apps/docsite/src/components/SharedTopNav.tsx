@@ -105,6 +105,7 @@ const NAV_ITEMS = [
 
 export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [hasLoadedSearch, setHasLoadedSearch] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const {mode, themeMode, toggleMode} = useThemeMode();
@@ -126,6 +127,7 @@ export function SharedTopNav() {
       ) {
         event.preventDefault();
         trackSearch({target: 'open'});
+        setHasLoadedSearch(true);
         setIsSearchOpen(true);
       }
     };
@@ -207,6 +209,7 @@ export function SharedTopNav() {
                 icon={<Search size={20} />}
                 onClick={() => {
                   trackSearch({target: 'open'});
+                  setHasLoadedSearch(true);
                   setIsSearchOpen(true);
                 }}
               />
@@ -290,9 +293,12 @@ export function SharedTopNav() {
           </HStack>
         }
       />
-      {isSearchOpen && (
+      {hasLoadedSearch && (
         <Suspense fallback={null}>
-          <LazySearchPalette isOpen onOpenChange={setIsSearchOpen} />
+          <LazySearchPalette
+            isOpen={isSearchOpen}
+            onOpenChange={setIsSearchOpen}
+          />
         </Suspense>
       )}
       {!isMobileNavEnabled && (
