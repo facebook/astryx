@@ -34,7 +34,7 @@
  * map whose entry shape depends on that level:
  *   - 'names'   -> ComponentListEntry[]  (name + owner package)
  *   - 'compact' -> ComponentBriefEntry[] (name + 1-line description + import)
- *   - 'full'    -> ComponentDoc[]        (full authored doc per entry)
+ *   - 'full'    -> ComponentFullEntry[] (full authored doc + ownership)
  * @typedef {object} ComponentListResponse
  * @property {'component.list'} type
  * @property {ComponentListData} data
@@ -45,8 +45,13 @@
  * @typedef {(
  *   | {detail: 'names'; components: Record<string, ComponentListEntry[]>}
  *   | {detail: 'compact'; components: Record<string, ComponentBriefEntry[]>}
- *   | {detail: 'full'; components: Record<string, import('@astryxdesign/cli/authoring').ComponentDoc[]>}
+ *   | {detail: 'full'; components: Record<string, ComponentFullEntry[]>}
  * )} ComponentListData
+ */
+
+/**
+ * A full ComponentDoc plus additive optional ownership metadata.
+ * @typedef {import('@astryxdesign/cli/authoring').ComponentDoc & Partial<ComponentOwnership>} ComponentFullEntry
  */
 
 /**
@@ -56,6 +61,8 @@
  * @typedef {object} ComponentListEntry
  * @property {string} name
  * @property {string} package - Owner package, e.g. '@astryxdesign/core' or '@acme/astryx-meta'.
+ * @property {string} [import] - Exact consumer import specifier.
+ * @property {string} [replaces] - Core component identity this entry replaces.
  */
 
 /**

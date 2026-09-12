@@ -15,20 +15,125 @@ import {
   CORE_PACKAGE,
   discoverComponents,
   discoverExternalComponentsGrouped,
-  discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
+  resolveIntegrationImportPath,
 } from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
-import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
+import {loadComponentCatalogSafely, loadComponentDoc, withOwnership} from '../_adapter.mjs';
 
 /**
  * @typedef {import('../component.type.mjs').ComponentListResponse} ComponentListResponse
  * @typedef {import('../component.type.mjs').ComponentListEntry} ComponentListEntry
  * @typedef {import('../component.type.mjs').ComponentBriefEntry} ComponentBriefEntry
  */
+
+/**
+ * @param {any} record
+ * @param {string} coreDir
+ * @returns {string}
+ */
+function importFor(record, coreDir) {
+  if (record.package === CORE_PACKAGE) return resolveImportPath(coreDir, record.name);
+  return record.import ?? resolveIntegrationImportPath({
+    exportsMap: record.integration?.__packageExports,
+    packageDir: record.integration?.__packageDir,
+    docPath: record.docPath,
+    packageName: record.package,
+  }, record.name);
+}
+
+/** @param {any} docs @param {string} fallbackName */
+function normalizeFullDoc(docs, fallbackName) {
+  const name =
+    typeof docs?.name === 'string' && docs.name.trim() !== ''
+      ? docs.name
+      : fallbackName;
+  const displayName =
+    typeof docs?.displayName === 'string' && docs.displayName.trim() !== ''
+      ? docs.displayName
+      : name;
+  const normalized = {...docs, name, displayName};
+  if (normalized.type != null && normalized.type !== 'component') {
+    normalized.type = 'component';
+  }
+  if (Array.isArray(normalized.components)) {
+    normalized.usage = {
+      ...normalized.usage,
+      description:
+        normalized.usage?.description ?? normalized.description ?? '',
+    };
+    normalized.components = normalized.components
+      .filter((/** @type {any} */ entry) => entry && typeof entry.name === 'string')
+      .map((/** @type {any} */ entry) => {
+        const isReference = Object.keys(entry).every(key =>
+          ['name', 'registry'].includes(key),
+        );
+        return isReference
+          ? entry
+          : {
+              ...entry,
+              displayName: entry.displayName ?? entry.name,
+              description: entry.description ?? '',
+            };
+      });
+    return normalized;
+  }
+  if (typeof normalized.subComponentOf === 'string') {
+    normalized.description = normalized.description ?? '';
+    normalized.props = Array.isArray(normalized.props) ? normalized.props : [];
+    return normalized;
+  }
+  normalized.usage = {
+    ...normalized.usage,
+    description: normalized.usage?.description ?? normalized.description ?? '',
+  };
+  normalized.props = Array.isArray(normalized.props) ? normalized.props : [];
+  return normalized;
+}
+
+/** @param {string} name */
+function minimalFullDoc(name) {
+  return {
+    name,
+    displayName: name,
+    usage: {description: ''},
+    props: [],
+  };
+}
+
+/** @param {any} catalog */
+function unslottedIntegrationRecords(catalog) {
+  return catalog
+    .entries()
+    .filter(
+      (/** @type {any} */ record) =>
+        record.package !== CORE_PACKAGE &&
+        (record.replaces == null || !catalog.hasCatalogCore(record.replaces)),
+    );
+}
+
+/**
+ * @param {any} record
+ * @returns {string}
+ */
+function integrationGroupKey(record) {
+  const groupLabel = record.group ?? record.package;
+  return `${groupLabel} (${record.package})`;
+}
+
+/** @param {any} catalog @param {string} category */
+function integrationRecordsForCategory(catalog, category) {
+  const key = category.toLowerCase();
+  return unslottedIntegrationRecords(catalog).filter(
+    (/** @type {any} */ record) =>
+      [record.category, record.group].some(
+        value => typeof value === 'string' && value.toLowerCase() === key,
+      ),
+  );
+}
 
 /**
  * Build the `component.list` envelope. The list taxonomy is collapsed: all
@@ -46,6 +151,7 @@ import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
  */
 export async function componentList(coreDir, {cwd, category, detail, zh, dense, lang}) {
   const components = discoverComponents(coreDir);
+  const {catalog, loadedIntegrations} = await loadComponentCatalogSafely(cwd, coreDir);
 
   if (category) {
     const match = Object.entries(components).find(
@@ -59,20 +165,38 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
       );
     }
 
+    const integrationRecords = integrationRecordsForCategory(catalog, match[0]);
+
     if (detail === 'compact') {
       /** @type {ComponentBriefEntry[]} */
       const entries = [];
       for (const comp of match[1]) {
-        const readme = findComponentReadme(coreDir, comp);
-        if (readme && readme.endsWith('.doc.mjs')) {
+        const selected = catalog.resolve(comp) ?? catalog.core(comp);
+        const name = selected?.name ?? comp;
+        const readme = selected?.docPath ?? findComponentReadme(coreDir, comp);
+        const importPath = selected ? importFor(selected, coreDir) : resolveImportPath(coreDir, comp);
+        if (readme) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang});
-            entries.push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+            entries.push({name, description: docs.usage?.description || docs.description || '', import: importPath});
           } catch {
-            entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            entries.push({name, description: '', import: importPath});
           }
         } else {
-          entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+          entries.push({name, description: '', import: importPath});
+        }
+      }
+      for (const record of integrationRecords) {
+        const importPath = importFor(record, coreDir);
+        try {
+          const docs = await loadComponentDoc(record.docPath, {zh, lang});
+          entries.push({
+            name: record.name,
+            description: docs.usage?.description || docs.description || '',
+            import: importPath,
+          });
+        } catch {
+          entries.push({name: record.name, description: '', import: importPath});
         }
       }
       return {type: 'component.list', data: {detail: 'compact', components: {[match[0]]: entries}}};
@@ -82,15 +206,60 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
       /** @type {any[]} */
       const entries = [];
       for (const comp of match[1]) {
-        const readme = findComponentReadme(coreDir, comp);
-        if (readme && readme.endsWith('.doc.mjs')) {
+        const selected = catalog.resolve(comp) ?? catalog.core(comp);
+        const name = selected?.name ?? comp;
+        const readme = selected?.docPath ?? findComponentReadme(coreDir, comp);
+        if (readme) {
           try {
-            entries.push(await loadComponentDoc(readme, {zh, lang, dense}));
+            const docs = await loadComponentDoc(readme, {zh, lang, dense});
+            const fullDoc = normalizeFullDoc(docs, name);
+            entries.push(
+              selected
+                ? withOwnership(
+                    fullDoc,
+                    /** @type {any} */ (selected),
+                    name,
+                    coreDir,
+                  )
+                : fullDoc,
+            );
           } catch {
-            entries.push({name: `XDS${comp}`, description: ''});
+            const fullDoc = minimalFullDoc(name);
+            entries.push(
+              selected
+                ? withOwnership(
+                    fullDoc,
+                    /** @type {any} */ (selected),
+                    name,
+                    coreDir,
+                  )
+                : fullDoc,
+            );
           }
         } else {
-          entries.push({name: `XDS${comp}`, description: ''});
+          entries.push(minimalFullDoc(name));
+        }
+      }
+      for (const record of integrationRecords) {
+        try {
+          const docs = await loadComponentDoc(record.docPath, {zh, lang, dense});
+          entries.push(
+            withOwnership(
+              normalizeFullDoc(docs, record.name),
+              /** @type {any} */ (record),
+              record.name,
+              coreDir,
+            ),
+          );
+        } catch {
+          entries.push(
+            withOwnership(
+              minimalFullDoc(record.name),
+              /** @type {any} */ (record),
+              record.name,
+              coreDir,
+            ),
+          );
         }
       }
       return {type: 'component.list', data: {detail: 'full', components: {[match[0]]: entries}}};
@@ -99,9 +268,29 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     // Default: brief — package-qualified object list for the category.
     // Pre-1.0 JSON contract: members are {name, package} objects, not bare
     // strings, so consumers can disambiguate ownership.
+    /** @type {ComponentListEntry[]} */
+    const entries = match[1].map(name => {
+      const selected = catalog.resolve(name) ?? catalog.core(name);
+      return {
+        name: selected?.name ?? name,
+        package: selected?.package ?? CORE_PACKAGE,
+        import: selected
+          ? importFor(selected, coreDir)
+          : resolveImportPath(coreDir, name),
+        ...(selected?.replaces == null ? null : {replaces: selected.replaces}),
+      };
+    });
+    entries.push(
+      ...integrationRecords.map((/** @type {any} */ record) => ({
+        name: record.name,
+        package: record.package,
+        import: importFor(record, coreDir),
+        ...(record.replaces == null ? null : {replaces: record.replaces}),
+      })),
+    );
     return {
       type: 'component.list',
-      data: {detail: 'names', components: {[match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE}))}},
+      data: {detail: 'names', components: {[match[0]]: entries}},
     };
   }
 
@@ -112,17 +301,35 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     for (const [cat, comps] of Object.entries(components)) {
       result[cat] = [];
       for (const comp of comps) {
-        const readme = findComponentReadme(coreDir, comp);
-        if (readme && readme.endsWith('.doc.mjs')) {
+        const selected = catalog.resolve(comp) ?? catalog.core(comp);
+        const name = selected?.name ?? comp;
+        const readme = selected?.docPath ?? findComponentReadme(coreDir, comp);
+        const importPath = selected ? importFor(selected, coreDir) : resolveImportPath(coreDir, comp);
+        if (readme) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang});
-            result[cat].push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+            result[cat].push({name, description: docs.usage?.description || docs.description || '', import: importPath});
           } catch {
-            result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            result[cat].push({name, description: '', import: importPath});
           }
         } else {
-          result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+          result[cat].push({name, description: '', import: importPath});
         }
+      }
+    }
+    for (const record of unslottedIntegrationRecords(catalog)) {
+      const key = integrationGroupKey(record);
+      if (!result[key]) result[key] = [];
+      const importPath = importFor(record, coreDir);
+      try {
+        const docs = await loadComponentDoc(record.docPath, {zh, lang});
+        result[key].push({
+          name: record.name,
+          description: docs.usage?.description || docs.description || '',
+          import: importPath,
+        });
+      } catch {
+        result[key].push({name: record.name, description: '', import: importPath});
       }
     }
     return {type: 'component.list', data: {detail: 'compact', components: result}};
@@ -134,16 +341,63 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     for (const [cat, comps] of Object.entries(components)) {
       result[cat] = [];
       for (const comp of comps) {
-        const readme = findComponentReadme(coreDir, comp);
-        if (readme && readme.endsWith('.doc.mjs')) {
+        const selected = catalog.resolve(comp) ?? catalog.core(comp);
+        const name = selected?.name ?? comp;
+        const readme = selected?.docPath ?? findComponentReadme(coreDir, comp);
+        if (readme) {
           try {
-            result[cat].push(await loadComponentDoc(readme, {zh, lang, dense}));
+            const docs = await loadComponentDoc(readme, {zh, lang, dense});
+            const fullDoc = normalizeFullDoc(docs, name);
+            result[cat].push(
+              selected
+                ? withOwnership(
+                    fullDoc,
+                    /** @type {any} */ (selected),
+                    name,
+                    coreDir,
+                  )
+                : fullDoc,
+            );
           } catch {
-            result[cat].push({name: `XDS${comp}`, description: ''});
+            const fullDoc = minimalFullDoc(name);
+            result[cat].push(
+              selected
+                ? withOwnership(
+                    fullDoc,
+                    /** @type {any} */ (selected),
+                    name,
+                    coreDir,
+                  )
+                : fullDoc,
+            );
           }
         } else {
-          result[cat].push({name: `XDS${comp}`, description: ''});
+          result[cat].push(minimalFullDoc(name));
         }
+      }
+    }
+    for (const record of unslottedIntegrationRecords(catalog)) {
+      const key = integrationGroupKey(record);
+      if (!result[key]) result[key] = [];
+      try {
+        const docs = await loadComponentDoc(record.docPath, {zh, lang, dense});
+        result[key].push(
+          withOwnership(
+            normalizeFullDoc(docs, record.name),
+            /** @type {any} */ (record),
+            record.name,
+            coreDir,
+          ),
+        );
+      } catch {
+        result[key].push(
+          withOwnership(
+            minimalFullDoc(record.name),
+            /** @type {any} */ (record),
+            record.name,
+            coreDir,
+          ),
+        );
       }
     }
     return {type: 'component.list', data: {detail: 'full', components: result}};
@@ -151,33 +405,39 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
 
   // Default: brief — package-qualified object list (core + integrations).
   // Pre-1.0 JSON contract: each group's members are {name, package} objects.
-  /** @type {Record<string, Array<{name: string, package: string}>>} */
+  /** @type {Record<string, Array<{name: string, package: string, import?: string, replaces?: string}>>} */
   const listData = {};
   for (const [cat, comps] of Object.entries(components)) {
-    listData[cat] = comps.map(n => ({name: n, package: CORE_PACKAGE}));
+    listData[cat] = comps.map(name => {
+      const selected = catalog.resolve(name) ?? catalog.core(name);
+      return {
+        name: selected?.name ?? name,
+        package: selected?.package ?? CORE_PACKAGE,
+        import: selected ? importFor(selected, coreDir) : resolveImportPath(coreDir, name),
+        ...(selected?.replaces == null ? null : {replaces: selected.replaces}),
+      };
+    });
   }
 
-  // Integration components (authoritative source: loadedIntegrations).
-  const loadedIntegrations = await loadIntegrationsSafely(cwd);
-  const seenIntegration = new Set();
-  for (const integration of loadedIntegrations) {
-    seenIntegration.add(integration.name);
-    const owned = discoverIntegrationComponents(integration);
-    // Group integration components by their doc `group`, falling back to the
-    // package name. Keys are package-qualified so they never collide with
-    // core groups or each other.
-    /** @type {Map<string, Array<{name: string, package: string}>>} */
-    const byGroup = new Map();
-    for (const rec of owned) {
-      const groupLabel = rec.group ?? integration.name;
-      const key = `${groupLabel} (${integration.name})`;
-      if (!byGroup.has(key)) byGroup.set(key, []);
-      byGroup.get(key)?.push({name: rec.name, package: integration.name});
-    }
-    for (const [key, members] of byGroup) {
-      members.sort((a, b) => a.name.localeCompare(b.name));
-      listData[key] = members;
-    }
+  // Non-replacing integration components follow the Core catalog. Replacement
+  // components already occupy their target's Core slot above.
+  const effectiveIntegrations = unslottedIntegrationRecords(catalog);
+  const seenIntegration = new Set(loadedIntegrations.map(integration => integration.name));
+  /** @type {Map<string, Array<{name: string, package: string, import?: string, replaces?: string}>>} */
+  const byGroup = new Map();
+  for (const record of effectiveIntegrations) {
+    const key = integrationGroupKey(record);
+    if (!byGroup.has(key)) byGroup.set(key, []);
+    byGroup.get(key)?.push({
+      name: record.name,
+      package: record.package,
+      import: importFor(record, coreDir),
+      ...(record.replaces == null ? null : {replaces: record.replaces}),
+    });
+  }
+  for (const [key, members] of byGroup) {
+    members.sort((a, b) => a.name.localeCompare(b.name));
+    listData[key] = members;
   }
 
   // Back-compat: node_modules-scanned external packages (pkg.astryx.docs)

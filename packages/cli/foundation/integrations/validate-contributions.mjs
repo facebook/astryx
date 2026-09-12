@@ -27,7 +27,7 @@ import {isValidSemver} from '../env/semver.mjs';
 import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
-import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import {discoverIntegrationComponentContributions} from '../discovery/component-catalog.mjs';
 import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 
@@ -176,36 +176,27 @@ async function checkTemplates(integration, issues) {
 }
 
 /**
- * Validate the integration's components via the landed ownership discovery.
- * Feature-detected: if the component-ownership export isn't present in this
- * build (sibling PR not yet merged), component validation is skipped rather
- * than hard-failing.
- *
- * `discoverIntegrationComponents` returns ownership records and does not throw
- * on a missing same-stem source — it records `sourcePath: null`. We surface
- * each such record as an `invalid_component` error.
+ * Validate each component doc's replacement metadata. Component source is
+ * optional: docs-only integrations remain discoverable for reference, while
+ * source and swizzle commands report source availability at use time.
  * @param {LoadedIntegration} integration loaded-integration-shaped object
  * @param {Issue[]} issues
  */
 async function checkComponents(integration, issues) {
   if (!integration.components || !fs.existsSync(integration.components)) return;
-  const discover = componentDiscovery.discoverIntegrationComponents;
-  if (typeof discover !== 'function') return; // feature not present yet
+  const discover = discoverIntegrationComponentContributions;
   try {
-    const records = (await discover(integration)) ?? [];
-    for (const record of records) {
-      if (record?.sourcePath == null) {
-        issues.push(
-          issueError(
-            'invalid_component',
-            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx.`,
-          ),
-        );
-      }
+    const {records, errors} = await discover(integration);
+    for (const error of errors) {
+      issues.push(issueError('invalid_component', error.message));
     }
     for (const name of findSourceOnlyCandidates(
       integration.components,
-      records.map(record => record.name),
+      records.flatMap(record =>
+        record.sourcePath == null
+          ? []
+          : [path.basename(record.sourcePath, path.extname(record.sourcePath))],
+      ),
     )) {
       issues.push(
         issueWarning(

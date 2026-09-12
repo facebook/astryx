@@ -502,12 +502,12 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   let examples = docs.examples || [];
 
   if ('props' in docs) {
-    props = docs.props;
+    props = Array.isArray(docs.props) ? docs.props : [];
   } else if ('components' in docs) {
     const entry = docs.components.find((/** @type {any} */ c) => c.name === displayName);
     if (entry) {
-      props = entry.props;
-      description = entry.description;
+      props = Array.isArray(entry.props) ? entry.props : [];
+      description = entry.description ?? description;
       examples = entry.examples || docs.examples || [];
     }
   }

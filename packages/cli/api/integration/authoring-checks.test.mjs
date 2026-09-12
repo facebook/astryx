@@ -17,6 +17,7 @@ import {
   integrationTemplateConflicts,
   shellArg,
 } from './authoring-checks.mjs';
+import {doc as integrationComponentConflictsDoc} from './integrationComponentConflicts.doc.mjs';
 
 let tmpDir;
 
@@ -42,7 +43,7 @@ function writeIntegration({id, name, type = 'block', root = tmpDir}) {
   );
 }
 
-function writeComponentIntegration(componentName) {
+function writeComponentIntegration(componentName, {replaces, extra = []} = {}) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
@@ -52,14 +53,19 @@ function writeComponentIntegration(componentName) {
     `export default {components: './components'};\n`,
   );
   fs.mkdirSync(path.join(tmpDir, 'components'), {recursive: true});
-  fs.writeFileSync(
-    path.join(tmpDir, 'components', `${componentName}.doc.mjs`),
-    `export default {type: 'component', name: ${JSON.stringify(componentName)}, displayName: ${JSON.stringify(componentName)}, description: 'Fixture component.', props: []};\n`,
-  );
-  fs.writeFileSync(
-    path.join(tmpDir, 'components', `${componentName}.tsx`),
-    'export default function Fixture() { return null; }\n',
-  );
+  for (const component of [{name: componentName, replaces}, ...extra]) {
+    const replacement = component.replaces === undefined
+      ? ''
+      : `, replaces: ${JSON.stringify(component.replaces)}`;
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', `${component.name}.doc.mjs`),
+      `export default {type: 'component', name: ${JSON.stringify(component.name)}, displayName: ${JSON.stringify(component.name)}, description: 'Fixture component.', usage: {description: 'Fixture component.'}, props: []${replacement}};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', `${component.name}.tsx`),
+      'export default function Fixture() { return null; }\n',
+    );
+  }
 }
 
 function writeDocIntegration({name, replaces, extendsTopic}) {
@@ -92,6 +98,26 @@ beforeEach(() => {
 
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+describe('integration component-conflict schema documentation', () => {
+  it('documents replacement and stable conflict entry fields', () => {
+    const response = integrationComponentConflictsDoc.returns?.find(
+      item => item.type === 'integration.component-conflicts',
+    );
+    expect(response?.description).toContain('replacements');
+    for (const field of [
+      'name',
+      'severity',
+      'relationship',
+      'target',
+      'integrationPackage',
+      'message',
+      'command',
+    ]) {
+      expect(response?.description).toContain(field);
+    }
+  });
 });
 
 describe('integrationTemplateConflicts', () => {
@@ -235,6 +261,172 @@ describe('integrationComponentConflicts', () => {
         ),
       }),
     ]);
+  });
+
+  it('warns for Core-documented symbols without top-level catalog records', async () => {
+    writeComponentIntegration('Heading', {extra: [{name: 'Code'}]});
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.conflicts.map(conflict => conflict.name).sort()).toEqual([
+      'Code',
+      'Heading',
+    ]);
+  });
+
+  it('reports a valid replacement as intentional and gives Core access', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {replaces: core.name});
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.conflicts).toEqual([]);
+    expect(result.data.replacements).toEqual([
+      expect.objectContaining({
+        name: 'AcmeReplacement',
+        relationship: 'replaces',
+        target: core.name,
+        command: expect.stringContaining(
+          `component ${core.name} --package @astryxdesign/core`,
+        ),
+      }),
+    ]);
+  });
+
+  it('reports only the configured winning replacement as active', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    for (const [packageName, componentName] of [
+      ['@one/meta', 'OneReplacement'],
+      ['@two/meta', 'TwoReplacement'],
+    ]) {
+      const packageDir = path.join(
+        tmpDir,
+        'node_modules',
+        ...packageName.split('/'),
+      );
+      fs.mkdirSync(path.join(packageDir, 'components'), {recursive: true});
+      fs.writeFileSync(
+        path.join(packageDir, 'package.json'),
+        JSON.stringify({name: packageName, version: '1.0.0'}),
+      );
+      fs.writeFileSync(
+        path.join(packageDir, 'astryx.integration.mjs'),
+        "export default {components: './components'};\n",
+      );
+      fs.writeFileSync(
+        path.join(packageDir, 'components', `${componentName}.doc.mjs`),
+        `export const docs = {name: '${componentName}', displayName: '${componentName}', replaces: '${core.name}', usage: {description: 'Replacement.'}, props: []};\n`,
+      );
+    }
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      "export default {integrations: ['@one/meta', '@two/meta']};\n",
+    );
+
+    const losing = await integrationComponentConflicts('@one/meta', {cwd: tmpDir});
+    const winning = await integrationComponentConflicts('@two/meta', {cwd: tmpDir});
+
+    expect(losing.data.replacements).toEqual([]);
+    expect(winning.data.replacements).toEqual([
+      expect.objectContaining({name: 'TwoReplacement', target: core.name}),
+    ]);
+  });
+
+  it('does not recommend a second replacement for a same-package native owner', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {
+      replaces: core.name,
+      extra: [{name: core.name}],
+    });
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+    const conflict = result.data.conflicts.find(item => item.name === core.name);
+
+    expect(conflict?.message).toContain('second replacement declaration');
+    expect(conflict?.message).not.toContain('declaring `replaces');
+  });
+
+  it('rejects a replacement component whose own name is a different Core identity', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [ownName, target] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration(ownName.name, {replaces: target.name});
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'ambiguous_component_replacement',
+          severity: 'error',
+        }),
+      ]),
+    );
+    expect(result.data.conflicts).toEqual([]);
+  });
+
+  it('fails when a replacement target is missing', async () => {
+    writeComponentIntegration('AcmeReplacement', {replaces: 'NotAComponent'});
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({code: 'missing_component_replacement', severity: 'error'}),
+    ]));
+  });
+
+  it('fails when two components replace the same Core target', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {
+      replaces: core.name,
+      extra: [{name: 'OtherReplacement', replaces: core.name}],
+    });
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({code: 'ambiguous_component_replacement', severity: 'error'}),
+    ]));
+    expect(result.data.conflicts).toEqual([]);
+  });
+
+  it('fails when replaces is not a non-empty string', async () => {
+    writeComponentIntegration('AcmeReplacement', {replaces: 42});
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({code: 'invalid_component', severity: 'error'}),
+    ]));
+  });
+
+  it('does not report a replacement as active when a malformed sibling withdraws the package', async () => {
+    const coreDir = findCoreDir(tmpDir);
+    const [core] = discoverOwnedComponents(coreDir, []);
+    writeComponentIntegration('AcmeReplacement', {replaces: core.name});
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Broken.doc.mjs'),
+      "export const docs = {name: 'Broken', replaces: null, props: []};\n",
+    );
+
+    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.replacements).toEqual([]);
+    expect(result.data.conflicts).toEqual([]);
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({code: 'invalid_component', severity: 'error'}),
+      ]),
+    );
   });
 
   it('does not flag an integration-only component name', async () => {

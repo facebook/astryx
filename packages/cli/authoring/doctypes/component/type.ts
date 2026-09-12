@@ -45,7 +45,15 @@ export interface ComponentBaseDoc {
    *  regex derivation. Backfill with
    *  `apps/docsite/scripts/backfill-display-name.mjs`. */
   displayName: string;
-  /** Exact consumer import specifier for integration-owned components. */
+  /** Name of the Core component this integration component replaces. When the
+   *  integration is active, unqualified discovery and selection resolve the
+   *  Core name to this component. The component keeps its own `name`, and an
+   *  explicit `--package @astryxdesign/core` selection still reaches Core. */
+  replaces?: string;
+  /** Exact consumer import specifier for this integration-owned component. The
+   *  CLI normally derives it from the package exports map and the doc path; set
+   *  this only when one entry point exports several components or inference
+   *  cannot name the public specifier. */
   import?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common

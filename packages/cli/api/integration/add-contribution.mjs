@@ -251,7 +251,7 @@ async function addComponent(name, options) {
 
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
   const importSpecifier = `${owner}/${sourcePath}`;
-  const docContents = `export default {\n  type: 'component',\n  name: '${name}',\n  import: ${JSON.stringify(importSpecifier)},\n  description: '${name} component.',\n  props: [],\n};\n`;
+  const docContents = `export default {\n  type: 'component',\n  name: '${name}',\n  displayName: '${name}',\n  import: ${JSON.stringify(importSpecifier)},\n  description: '${name} component.',\n  usage: {description: '${name} component.'},\n  props: [],\n};\n`;
   const sourceContents = `export function ${name}() {\n  return <div>${name}</div>;\n}\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */

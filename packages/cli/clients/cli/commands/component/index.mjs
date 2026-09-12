@@ -15,7 +15,6 @@ import {
   formatCompact,
   formatBrief,
   formatProps,
-  formatBriefAll,
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
@@ -28,7 +27,10 @@ import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
 import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {Project} from '../../../../foundation/config/project.mjs';
-import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
+import {
+  warnOnIntegrationIssues,
+  warnOnProjectIssues,
+} from '../../../../foundation/integrations/integration-warnings.mjs';
 import {doc as componentCommand} from '../component.doc.mjs';
 import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
 
@@ -113,6 +115,7 @@ export function registerComponent(program) {
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnProjectIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }
@@ -162,9 +165,18 @@ export function registerComponent(program) {
           // One list type across all three detail levels; the depth is carried
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
-            // --detail full — dense per-component docs (signature, props, theming,
-            // examples). Verbatim doc block from the shared formatter.
-            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
+            const groups = result.data.components;
+            const entries = [];
+            for (const [cat, items] of Object.entries(groups)) {
+              const isUngrouped = items.length === 1 && items[0]?.name === cat;
+              if (!isUngrouped) entries.push(`## ${cat}\n`);
+              for (const item of items) {
+                const resolvedName = item.name.replace(/^XDS/, '');
+                const importHint = /** @type {any} */ (item).import ?? resolveImportPath(coreDir, resolvedName);
+                entries.push(formatBrief(item, resolvedName, importHint, {themeData}));
+              }
+            }
+            emit(code(entries.join('\n')));
             break;
           }
 
@@ -205,7 +217,7 @@ export function registerComponent(program) {
           }
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
           const importCell = item => {
-            const importPath = resolveImportPath(coreDir, item.name);
+            const importPath = item.import ?? resolveImportPath(coreDir, item.name);
             const qualify =
               item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
@@ -230,8 +242,8 @@ export function registerComponent(program) {
         }
 
         case 'component.detail': {
-          const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          const resolvedName = result.data.name || (name || '').replace(/^XDS/, '');
+          const importHint = result.data.import ?? resolveImportPath(coreDir, resolvedName);
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))

@@ -23,7 +23,7 @@ export const doc = {
       name: 'components',
       type: 'string',
       description:
-        'Relative path to the components/docs root (resolved to absolute).',
+        'Relative path to the components/docs root (resolved to absolute). Each component doc may declare `replaces` to take over a Core component identity while keeping the original available through an explicit Core package selection.',
       example: "'./src/components'",
     },
     {

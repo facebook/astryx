@@ -24,6 +24,7 @@ function scaffold({
   withCodemods = true,
   brokenComponent = false,
   brokenCodemod = false,
+  componentReplaces = null,
   docs = null,
   unknownKeys = null,
   agentDocs = null,
@@ -63,9 +64,12 @@ function scaffold({
   if (withComponents) {
     const compDir = path.join(pkgDir, 'components');
     fs.mkdirSync(compDir, {recursive: true});
+    const replacement = componentReplaces == null
+      ? ''
+      : `, replaces: ${JSON.stringify(componentReplaces)}`;
     fs.writeFileSync(
       path.join(compDir, 'Widget.doc.mjs'),
-      `export const docs = { name: 'Widget', usage: {description: 'A widget'} };\n`,
+      `export const docs = { name: 'Widget', displayName: 'Widget'${replacement}, usage: {description: 'A widget'}, props: [] };\n`,
     );
     if (!brokenComponent) {
       fs.writeFileSync(
@@ -73,7 +77,7 @@ function scaffold({
         `export function Widget() { return null; }\n`,
       );
     }
-    // brokenComponent => doc with no sibling .tsx (invalid_component issue).
+    // brokenComponent => docs-only component with no sibling .tsx.
   }
 
   if (withTemplates) {
@@ -328,6 +332,16 @@ describe('Project discovery', () => {
     expect(widget.sourcePath).toMatch(/Widget\.tsx$/);
   });
 
+  it('components() replaces a Core identity and preserves package-qualified owners', async () => {
+    scaffold({componentReplaces: 'AppShell'});
+    const project = await Project.load(tmpDir);
+    const catalog = await project.componentCatalog();
+
+    expect(catalog.resolve('AppShell')).toMatchObject({name: 'Widget', package: '@acme/widgets'});
+    expect(catalog.resolvePackage('AppShell', '@astryxdesign/core')).toMatchObject({name: 'AppShell'});
+    expect((await project.components()).filter(c => c.name === 'AppShell')).toEqual([]);
+  });
+
   it('templates() returns integration templates type-tagged', async () => {
     scaffold();
     const project = await Project.load(tmpDir);
@@ -470,15 +484,20 @@ describe('Project forward compatibility', () => {
 });
 
 describe('Project issues (skip + warn)', () => {
-  it('collects issues for a broken integration and skips its contributions', async () => {
+  it('keeps a docs-only component discoverable without a source error', async () => {
     scaffold({brokenComponent: true});
     const project = await Project.load(tmpDir);
     const comps = await project.components();
-    // Widget is skipped because its source is missing.
-    expect(comps.find(c => c.package === '@acme/widgets')).toBeUndefined();
-    const issues = await project.issues();
-    expect(issues.length).toBeGreaterThan(0);
-    expect(issues.some(i => i.package === '@acme/widgets')).toBe(true);
+    expect(comps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Widget',
+          package: '@acme/widgets',
+          sourcePath: null,
+        }),
+      ]),
+    );
+    expect(await project.issues()).toEqual([]);
   });
 
   it('does not throw when an integration codemod is broken', async () => {
@@ -492,7 +511,7 @@ describe('Project issues (skip + warn)', () => {
   });
 
   it('issues() dedupes and is complete on demand', async () => {
-    scaffold({brokenComponent: true});
+    scaffold({brokenCodemod: true});
     const project = await Project.load(tmpDir);
     // Call a discovery method first (collects some), then issues().
     await project.components();
@@ -507,7 +526,7 @@ describe('Project issues (skip + warn)', () => {
   });
 
   it('issues() validates integrations not yet visited by a discovery call', async () => {
-    scaffold({brokenComponent: true});
+    scaffold({brokenCodemod: true});
     const project = await Project.load(tmpDir);
     // No discovery call at all — issues() must still surface the broken one.
     const issues = await project.issues();
@@ -554,7 +573,20 @@ describe('Project caching', () => {
     const comps1 = await p1.components();
     const p2 = await Project.load(tmpDir, {cache});
     const comps2 = await p2.components();
-    // Same cached value across Project instances (same key path).
+    // Same identity (cached value) and no additional discovery walk.
     expect(comps2).toBe(comps1);
+  });
+
+  it('replays replacement validation issues from a shared cache', async () => {
+    scaffold({componentReplaces: 'MissingCoreComponent'});
+    const cache = new InMemoryConfigCache();
+
+    const first = await Project.load(tmpDir, {cache});
+    await first.componentCatalog();
+    expect((await first.issues()).some(issue => issue.code === 'missing_component_replacement')).toBe(true);
+
+    const second = await Project.load(tmpDir, {cache});
+    await second.componentCatalog();
+    expect((await second.issues()).some(issue => issue.code === 'missing_component_replacement')).toBe(true);
   });
 });

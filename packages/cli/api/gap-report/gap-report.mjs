@@ -164,14 +164,12 @@ async function selectTarget(project, component, packageName) {
   const bareComponent = component.startsWith('XDS')
     ? component.slice(3)
     : component;
+  const catalog = await project.componentCatalog();
+  const selected = catalog.resolve(bareComponent);
+  if (selected) return targetForPackage(project, selected.package);
+
   const owners = [
-    ...new Set(
-      (await project.components())
-        .filter(
-          record => record.name.toLowerCase() === bareComponent.toLowerCase(),
-        )
-        .map(record => record.package),
-    ),
+    ...new Set(catalog.owners(bareComponent).map(record => record.package)),
   ];
 
   if (owners.length > 1) {

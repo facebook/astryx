@@ -65,6 +65,24 @@ describe('importUserModule', () => {
     expect(mod.named).toBe('hi');
   });
 
+  it('transforms a named .ts export inside node_modules', async () => {
+    const packageDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
+    fs.mkdirSync(packageDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(packageDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', type: 'module'}),
+    );
+    const file = path.join(packageDir, 'Widget.doc.ts');
+    fs.writeFileSync(
+      file,
+      `export const docs = await Promise.resolve({name: 'Widget'});\n`,
+    );
+
+    const mod = await importUserModule(file);
+
+    expect(mod.docs).toEqual({name: 'Widget'});
+  });
+
   it.each(['mjs', 'js', 'ts'])(
     'freshly reloads a changed .%s module while normal loading stays cached',
     async extension => {

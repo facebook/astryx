@@ -14,6 +14,7 @@ import {fileURLToPath} from 'node:url';
 import {
   doctor,
   checkImplicitIntegrations,
+  checkIntegrationIssues,
   checkVersionAlignment,
   checkPackageManager,
 } from './doctor.mjs';
@@ -62,6 +63,54 @@ describe('doctor leaf', () => {
     const r = await doctor({cwd});
     const {pass, warn, fail, info} = r.data.summary;
     expect(pass + warn + fail + info).toBe(r.data.checks.length);
+  }, SLOW);
+
+  it('surfaces cross-package replacement precedence in root Doctor', async () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({name: 'consumer'}),
+      'astryx.config.mjs':
+        "export default {integrations: ['@acme/one', '@acme/two']};\n",
+      'node_modules/@acme/one/package.json': JSON.stringify({
+        name: '@acme/one',
+        version: '1.0.0',
+      }),
+      'node_modules/@acme/one/astryx.integration.mjs':
+        "export default {components: './components', docs: './docs'};\n",
+      'node_modules/@acme/one/components/FirstNav.doc.mjs':
+        "export const docs = {name: 'FirstNav', displayName: 'First Nav', replaces: 'SideNav', usage: {description: 'First.'}, props: []};\n",
+      'node_modules/@acme/one/components/FirstNav.tsx':
+        'export function FirstNav() { return null; }\n',
+      'node_modules/@acme/one/docs/FirstGuide.doc.mjs':
+        "export default {type: 'generic', name: 'first-guide', replaces: 'getting-started', title: 'First', description: 'First.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'First.'}]}]};\n",
+      'node_modules/@acme/two/package.json': JSON.stringify({
+        name: '@acme/two',
+        version: '1.0.0',
+      }),
+      'node_modules/@acme/two/astryx.integration.mjs':
+        "export default {components: './components', docs: './docs'};\n",
+      'node_modules/@acme/two/components/SecondNav.doc.mjs':
+        "export const docs = {name: 'SecondNav', displayName: 'Second Nav', replaces: 'SideNav', usage: {description: 'Second.'}, props: []};\n",
+      'node_modules/@acme/two/components/SecondNav.tsx':
+        'export function SecondNav() { return null; }\n',
+      'node_modules/@acme/two/docs/SecondGuide.doc.mjs':
+        "export default {type: 'generic', name: 'second-guide', replaces: 'getting-started', title: 'Second', description: 'Second.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Second.'}]}]};\n",
+    });
+    fs.mkdirSync(path.join(dir, 'packages'), {recursive: true});
+    fs.symlinkSync(path.join(REPO, 'packages', 'core'), path.join(dir, 'packages', 'core'));
+
+    const r = await doctor({cwd: dir});
+    const integration = r.data.checks.find(
+      check => check.id === 'integration-issues',
+    );
+    expect(integration).toMatchObject({status: 'warn'});
+    expect(integration.message).toContain('replaced by both');
+    expect(integration.message).toContain('Topic "getting-started"');
+    expect(integration.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({code: 'duplicate_doc'}),
+      ]),
+    );
+    expect(integration.fix).toContain('astryx.config');
   }, SLOW);
 
   it('reports the core node-version and core-installed checks', async () => {
@@ -211,6 +260,48 @@ describe('checkPackageManager', () => {
     const c = checkPackageManager({cwd: dir});
     expect(c.status).toBe('warn');
     expect(c.message).toContain('yarn.lock');
+  });
+});
+
+describe('checkIntegrationIssues', () => {
+  it('surfaces cross-package catalog warnings through root Doctor', () => {
+    const c = checkIntegrationIssues({
+      integrationIssues: [
+        {
+          package: '@acme/second',
+          code: 'ambiguous_component_replacement',
+          severity: 'warning',
+          message:
+            'Core component "SideNav" is replaced by both @acme/first and @acme/second.',
+        },
+      ],
+    });
+
+    expect(c).toMatchObject({id: 'integration-issues', status: 'warn'});
+    expect(c.message).toContain('@acme/second');
+    expect(c.message).toContain('replaced by both');
+    expect(c.fix).toContain('astryx.config');
+  });
+
+  it('does not truncate project-wide issue details', () => {
+    const issues = Array.from({length: 5}, (_, index) => ({
+      package: `@acme/pkg-${index + 1}`,
+      code: 'ambiguous_component_replacement',
+      severity: /** @type {const} */ ('warning'),
+      message: `replacement warning ${index + 1}`,
+    }));
+
+    const c = checkIntegrationIssues({integrationIssues: issues});
+
+    expect(c.issues).toHaveLength(5);
+    expect(c.message).toContain('replacement warning 5');
+  });
+
+  it('passes when the project has no integration issues', () => {
+    expect(checkIntegrationIssues({integrationIssues: []})).toMatchObject({
+      id: 'integration-issues',
+      status: 'pass',
+    });
   });
 });
 

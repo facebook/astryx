@@ -129,16 +129,55 @@ async function loadConfigSafely(cwd) {
  * Build the set of OWNER packages that provide a component named `name` across
  * core + every loaded integration.
  * @param {string} coreDir
+ * @param {Project|null} project
  * @param {Array<{name: string, components?: string, issuesUrl?: string}>} loadedIntegrations
  * @param {string} name
  * @param {string|undefined} coreIssuesUrl
- * @returns {Array<{package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined}>}
+ * @returns {Promise<{owners: Array<{name: string, package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined}>, selected: {name: string, package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined}|undefined}>}
  */
-function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
+async function resolveOwners(coreDir, project, loadedIntegrations, name, coreIssuesUrl) {
+  if (project) {
+    const catalog = await project.componentCatalog();
+    const toOwner = (/** @type {any} */ record) => ({
+      name: record.name,
+      package: record.package,
+      sourceDir: record.sourcePath ? path.dirname(record.sourcePath) : null,
+      ownerPackage: record.package,
+      issuesUrl: record.package === CORE_PACKAGE
+        ? coreIssuesUrl || DEFAULT_ISSUES_URL
+        : record.issuesUrl,
+    });
+    const ownerRecords = catalog.owners(name).filter(
+      record =>
+        record.package !== CORE_PACKAGE ||
+        fs.existsSync(path.join(coreDir, 'src', record.name)),
+    );
+    const owners = ownerRecords.map(toOwner);
+    const coreComponentDir = path.join(coreDir, 'src', name);
+    if (!owners.some(owner => owner.package === CORE_PACKAGE) && fs.existsSync(coreComponentDir)) {
+      owners.unshift({
+        name,
+        package: CORE_PACKAGE,
+        sourceDir: coreComponentDir,
+        ownerPackage: CORE_PACKAGE,
+        issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
+      });
+    }
+    const selectedRecord = catalog.resolve(name);
+    let selected =
+      selectedRecord && ownerRecords.includes(selectedRecord)
+        ? toOwner(selectedRecord)
+        : undefined;
+    if (owners.length > 1 && selectedRecord?.replaces == null) selected = undefined;
+    if (!selected && owners.length === 1) selected = owners[0];
+    return {owners, selected};
+  }
+
   const owners = [];
   const coreComponentDir = path.join(coreDir, 'src', name);
   if (fs.existsSync(coreComponentDir)) {
     owners.push({
+      name,
       package: CORE_PACKAGE,
       sourceDir: coreComponentDir,
       ownerPackage: CORE_PACKAGE,
@@ -150,13 +189,14 @@ function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
     if (!docPath) continue;
     const sourcePath = findIntegrationComponentSource(integration, name);
     owners.push({
+      name,
       package: integration.name,
       sourceDir: sourcePath ? path.dirname(sourcePath) : null,
       ownerPackage: integration.name,
       issuesUrl: integration.issuesUrl,
     });
   }
-  return owners;
+  return {owners, selected: owners.length === 1 ? owners[0] : undefined};
 }
 
 /** @param {string} file */
@@ -203,7 +243,13 @@ export async function swizzleCopy(component, options = {}) {
   const coreIssuesUrl = project
     ? project.issuesUrl({package: CORE_PACKAGE})
     : undefined;
-  const allOwners = resolveOwners(coreDir, loadedIntegrations, dirName, coreIssuesUrl);
+  const {owners: allOwners, selected} = await resolveOwners(
+    coreDir,
+    project,
+    loadedIntegrations,
+    dirName,
+    coreIssuesUrl,
+  );
 
   if (allOwners.length === 0) {
     throw new AstryxError(
@@ -215,7 +261,11 @@ export async function swizzleCopy(component, options = {}) {
 
   let owner;
   if (pkg) {
-    owner = allOwners.find(o => o.package === pkg);
+    const requested = dirName.toLowerCase();
+    const packageOwners = allOwners.filter(o => o.package === pkg);
+    owner =
+      packageOwners.find(o => o.name.toLowerCase() === requested) ??
+      packageOwners[0];
     if (!owner) {
       throw new AstryxError(
         `Component "${dirName}" is not provided by package "${pkg}".`,
@@ -223,6 +273,8 @@ export async function swizzleCopy(component, options = {}) {
         ERROR_CODES.ERR_UNKNOWN_COMPONENT,
       );
     }
+  } else if (selected) {
+    owner = selected;
   } else if (allOwners.length > 1) {
     throw new AstryxError(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
@@ -233,9 +285,18 @@ export async function swizzleCopy(component, options = {}) {
     owner = allOwners[0];
   }
 
+  const selectedName = owner.name;
+  try {
+    sanitizeName(selectedName, {label: 'resolved component name'});
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, [], ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
   if (!owner.sourceDir || !fs.existsSync(owner.sourceDir)) {
     throw new AstryxError(
-      `No source found for "${dirName}" in package "${owner.package}".`,
+      `No source found for "${selectedName}" in package "${owner.package}".`,
       [],
       ERROR_CODES.ERR_NO_SOURCE,
     );
@@ -253,7 +314,7 @@ export async function swizzleCopy(component, options = {}) {
     }
     throw err;
   }
-  const outputDir = path.join(outputBase, dirName);
+  const outputDir = path.join(outputBase, selectedName);
 
   // Pre-flight overwrite check before any mkdir/writeFile.
   const sourceFiles = fs.readdirSync(componentDir).filter(file => {
@@ -302,11 +363,11 @@ export async function swizzleCopy(component, options = {}) {
       !isExcludedFromCopy(f) &&
       fs.statSync(path.join(componentDir, f)).isFile(),
   );
-  const feedback = buildFeedback(dirName, owner.issuesUrl);
+  const feedback = buildFeedback(selectedName, owner.issuesUrl);
 
   /** @type {import('../swizzle.type.mjs').SwizzleCopyResponse['data']} */
   const data = {
-    component: dirName,
+    component: selectedName,
     package: owner.package,
     outputDir: relOutput,
     filesCopied: copied,

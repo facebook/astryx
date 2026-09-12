@@ -157,23 +157,58 @@ function printTemplateConflicts(data) {
  * @param {import('../../../api/integration/authoring-checks.type.mjs').IntegrationComponentConflictResponse['data']} data
  */
 function printComponentConflicts(data) {
+  const replacements = data.replacements ?? [];
   const output = [
     section(
       `Checking integration components: ${integrationLabel(data) ?? '(local package)'}`,
     ),
     ...issueBlocks(data.issues),
   ];
-  if (data.conflicts.length === 0) {
-    output.push(text('[ok] No component names conflict with Core.'));
-  } else {
+  if (replacements.length > 0) {
+    output.push(
+      records(
+        replacements.map(replacement => ({
+          severity: 'info',
+          ...replacement,
+        })),
+        {
+          fields: [
+            'severity',
+            'name',
+            'relationship',
+            'target',
+            'integrationPackage',
+            'message',
+            'command',
+          ],
+          format: {severity: statusToken},
+        },
+      ),
+    );
+  }
+  if (data.conflicts.length === 0 && replacements.length === 0) {
+    output.push(text('[ok] No component names overlap with Core.'));
+  } else if (data.conflicts.length > 0) {
     output.push(
       records(data.conflicts, {
-        fields: ['severity', 'name', 'integrationPackage', 'message', 'command'],
+        fields: [
+          'severity',
+          'name',
+          'relationship',
+          'target',
+          'integrationPackage',
+          'message',
+          'command',
+        ],
         format: {severity: statusToken},
       }),
+    );
+  }
+  if (data.conflicts.length > 0 || replacements.length > 0) {
+    output.push(
       text(
-        `${data.conflicts.length} Core component conflict(s). ` +
-          'Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.',
+        `${replacements.length} declared replacement(s), ${data.conflicts.length} accidental Core overlap(s). ` +
+          'Declared replacements become the unqualified default; accidental overlaps still require --package.',
       ),
     );
   }
