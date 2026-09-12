@@ -38,7 +38,73 @@
  * descendant when an ANCESTOR is hovered, which is a different question (a
  * row may legitimately highlight around a disabled control) and is left
  * alone.
+ *
+ * GAP, known and tracked: `:hover` combined with a pseudo-ELEMENT —
+ * `:hover::after`, `:hover::before` — is NOT autofixed, anywhere.
+ * `@stylexjs/babel-plugin@0.19.0`'s getCompoundPseudoPriority() cannot match
+ * the nested parens in `:where(:not(:disabled,[aria-disabled="true"]))` and
+ * bails to a wrong priority default, which silently drops the rule's
+ * specificity boost and can let an unrelated resting rule win instead — see
+ * facebook/astryx#5442, where this broke SelectableCard/Thumbnail/
+ * ClickableCard's hover overlay. Autofixing a `:hover::after` key would
+ * reintroduce that exact regression, so the fixer stays off for this shape
+ * until the upstream tokenizer is fixed. The key is still REPORTED, though:
+ * an unguarded `:hover::after`/`:hover::before` is real, ordinary lint
+ * output everywhere except the three files below, same as any other
+ * unguarded hover key — only the autofix is withheld.
+ *
+ * EXEMPT_SITES narrows the reported-but-not-flagged case to exactly the
+ * three (file, top-level style key) pairs where this PR verified, by hand,
+ * that JS-level gating already makes the guard redundant
+ * (`!isDisabled && styles.hoverOnPointer`, or equivalent). The exemption is
+ * keyed on the style object's own property name, not just the filename: a
+ * new `:hover::after`/`:hover::before` key under any OTHER name in these
+ * same files is still reported, and needs the same by-hand verification
+ * before it's added here.
  */
+const EXEMPT_SITES = [
+  {file: /[/\\]SelectableCard[/\\]SelectableCard\.tsx$/, key: 'hoverOnPointer'},
+  {file: /[/\\]Thumbnail[/\\]Thumbnail\.tsx$/, key: 'hoverOnPointer'},
+  {file: /[/\\]ClickableCard[/\\]ClickableCard\.tsx$/, key: 'hoverOnPointer'},
+];
+
+function isExemptSite(filename, styleKeyName) {
+  if (!filename || !styleKeyName) return false;
+  return EXEMPT_SITES.some(
+    site => site.key === styleKeyName && site.file.test(filename),
+  );
+}
+
+/** Is `objectExpr` the object literal passed directly to `stylex.create()`? */
+function isStylexCreateArgument(objectExpr) {
+  const parent = objectExpr?.parent;
+  return (
+    parent?.type === 'CallExpression' &&
+    parent.callee?.type === 'MemberExpression' &&
+    parent.callee.object?.name === 'stylex' &&
+    parent.callee.property?.name === 'create'
+  );
+}
+
+/**
+ * The name of the top-level property passed directly to `stylex.create({})`
+ * that encloses `node` — e.g. `hoverOnPointer` in
+ * `stylex.create({hoverOnPointer: {':hover::after': {...}}})`.
+ */
+function getEnclosingStyleKeyName(node) {
+  let current = node;
+  while (current) {
+    if (
+      current.type === 'Property' &&
+      current.parent?.type === 'ObjectExpression' &&
+      isStylexCreateArgument(current.parent)
+    ) {
+      return keyOf(current);
+    }
+    current = current.parent;
+  }
+  return null;
+}
 
 /** Zero-specificity guard appended to a self-hover selector. */
 const GUARD = ':where(:not(:disabled,[aria-disabled="true"]))';
@@ -57,6 +123,17 @@ function isSelfHoverKey(key) {
 /** Already guarded, in any spelling a hand might use. */
 function hasDisabledGuard(key) {
   return /:not\([^)]*(?::disabled|\[aria-disabled)/.test(key);
+}
+
+/**
+ * Combines `:hover` with a pseudo-ELEMENT (`::after`, `::before`, ...).
+ *
+ * See the GAP note in the file header: guarding this shape hits a StyleX
+ * tokenizer bug that silently breaks the rule it's meant to protect, so it's
+ * deliberately left unguarded and unflagged until that's fixed upstream.
+ */
+function hasPseudoElement(key) {
+  return key.includes('::');
 }
 
 /**
@@ -110,15 +187,31 @@ const rule = {
       unguardedHover:
         "'{{key}}' still matches a disabled element — browsers suppress a disabled control's events, not its hover styling. " +
         "Write '{{fixed}}' instead (`:where()` adds no specificity, so overrides are unaffected).",
+      unguardedHoverPseudoElement:
+        "'{{key}}' still matches a disabled element, and can't be autofixed: guarding a `:hover` + pseudo-element key hits a " +
+        '@stylexjs/babel-plugin@0.19.0 tokenizer bug that silently drops the guard\'s specificity boost (facebook/astryx#5442). ' +
+        "Verify by hand whether this component already excludes the disabled case in JS (e.g. only applying the class when " +
+        "`!isDisabled`) — if so, this key is fine as-is; if not, this is a real hover-while-disabled bug.",
     },
     schema: [],
   },
   create(context) {
+    const filename = context.filename ?? context.getFilename();
     return {
       Property(node) {
         if (!isInsideStylexCreate(node)) return;
         const key = keyOf(node);
         if (!isSelfHoverKey(key) || hasDisabledGuard(key)) return;
+
+        if (hasPseudoElement(key)) {
+          if (isExemptSite(filename, getEnclosingStyleKeyName(node))) return;
+          context.report({
+            node: node.key,
+            messageId: 'unguardedHoverPseudoElement',
+            data: {key},
+          });
+          return;
+        }
 
         const fixed = guardKey(key);
         context.report({
@@ -143,4 +236,12 @@ const rule = {
 };
 
 export default rule;
-export {GUARD, guardKey, isSelfHoverKey, hasDisabledGuard};
+export {
+  GUARD,
+  guardKey,
+  isSelfHoverKey,
+  hasDisabledGuard,
+  hasPseudoElement,
+  isExemptSite,
+  getEnclosingStyleKeyName,
+};
