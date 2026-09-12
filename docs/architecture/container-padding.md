@@ -20,6 +20,7 @@ applies_to:
     packages/core/src/Lightbox/,
     packages/core/src/MobileNav/,
     packages/core/src/Section/,
+    packages/core/src/ScrollableArea/,
     packages/core/src/Layout/,
     packages/core/src/Divider/,
     packages/core/src/Table/,
@@ -29,12 +30,13 @@ applies_to:
 verified_by:
   [
     packages/core/src/Section/Section.test.tsx,
+    packages/core/src/ScrollableArea/ScrollableArea.test.tsx,
     packages/core/src/Layout/Layout.test.tsx,
     packages/core/src/Layout/LayoutSlots.test.tsx,
     packages/core/src/Layout/overlayPaddingReset.test.tsx,
     packages/core/src/Layout/__tests__/edgeCompensation.test.tsx,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-025/DEC-2]
 ---
 
 # Container padding architecture
@@ -46,8 +48,9 @@ each logical edge. Without it, a full-bleed child cannot cancel the padding it
 actually received, a nested region cannot preserve one content line, and an
 overlay can inherit geometry from a visual box it no longer occupies.
 
-This record describes the shipped internal protocol. It does not add a public
-prop, CSS variable, theme capability, or new participant.
+This record describes the shared internal protocol. It does not make its CSS
+variables public API. `spec:AST-025/DEC-2` adds ScrollableArea as an explicit
+participant with no padding and no bleed by default.
 
 ## System model
 
@@ -74,18 +77,20 @@ The protocol has four layers:
 
 ### Shipped publishers and consumers
 
-| Role                | Current participants                                   | Shipped responsibility                                                                                        |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Container publisher | Card, Section, Dialog                                  | Resolve component padding and publish logical-edge and Layout inset variables through `container()`           |
-| Region publisher    | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel | Publish baseline or explicit-padding geometry; automatic outer-edge publication has the conformance gap below |
-| Bleed consumer      | Section, Layout, Divider, Table                        | Subtract inherited inset on the edges each component is designed to escape                                    |
-| Alignment consumer  | Toolbar and edge-compensating child components         | Read the current inline inset to align visible content rather than stacked touch-target padding               |
-| Boundary owner      | Layer surfaces and dialog-based overlay roots          | Apply `overlayPaddingReset` before descendants read inherited page geometry                                   |
+| Role                | Current participants                                   | Shipped responsibility                                                                                                     |
+| ------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Container publisher | Card, Section, Dialog, ScrollableArea                  | Resolve component padding or publish explicit content-box padding as logical-edge and Layout inset variables               |
+| Region publisher    | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel | Publish baseline or explicit-padding geometry; automatic outer-edge publication has the conformance gap below              |
+| Bleed consumer      | Section, ScrollableArea, Layout, Divider, Table        | Subtract inherited inset on the edges each component is designed to escape; ScrollableArea does so only with `isFullBleed` |
+| Alignment consumer  | Toolbar and edge-compensating child components         | Read the current inline inset to align visible content rather than stacked touch-target padding                            |
+| Boundary owner      | Layer surfaces and dialog-based overlay roots          | Apply `overlayPaddingReset` before descendants read inherited page geometry                                                |
 
 The participant list is the shared container system, not a Layout-owned family:
-Section and Layout publish or redistribute insets, Table and Divider consume
-bleed geometry, and Toolbar consumes alignment geometry. Participation here does
-not by itself make Table or Divider a member of `family:layout-regions`.
+Section and ScrollableArea publish content inset, Section and opt-in full-bleed
+ScrollableArea instances consume inherited inset, Layout redistributes inset,
+Table and Divider consume bleed geometry, and Toolbar consumes alignment geometry.
+Participation here does not by itself make Table, Divider, or ScrollableArea a
+member of `family:layout-regions`.
 
 `--_section-padding-propagated` is separate from the public
 `--astryx-section-padding` property. The private value carries one ancestor
@@ -168,25 +173,26 @@ evidence, not part of this documentation stack.
   logical-edge setters, Section propagation, and the overlay reset.
 - `packages/core/src/Layout/edgeCompensation.stylex.ts` — owns the container-side
   alignment adjustment for marked edge content.
-- Card, Section, Dialog, and Layout region implementations — publish their
-  current geometry.
-- Section, Layout, Divider, Table, and Toolbar implementations — consume the
-  current geometry for bleed or alignment.
+- Card, Section, Dialog, ScrollableArea, and Layout region implementations —
+  publish their current geometry.
+- Section, ScrollableArea, Layout, Divider, Table, and Toolbar implementations —
+  consume the current geometry for bleed or alignment.
 - Overlay roots — apply the reset at the visual boundary.
 
 ## Deciding specs
 
-None. This record names the already shipped protocol and its current ownership
-boundaries.
+- `spec:AST-025/DEC-2` — ScrollableArea publishes optional content padding and
+  consumes inherited inset only through explicit full bleed.
 
 ## Verification
 
-| Invariant  | Evidence                                                               | Failure signal                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV2, INV5 | `Section.test.tsx` per-edge and nested-propagation tests               | A per-edge prop leaves a stale geometry variable, or nested Sections lose the shipped propagation order                                            |
-| INV4       | Layout source review plus `Layout.test.tsx` and `LayoutSlots.test.tsx` | Slot presence stops selecting the shipped applied outer/inner edge styles; exact republished geometry remains limited by the named conformance gap |
-| INV6       | `overlayPaddingReset.test.tsx`                                         | An overlay inherits page inset, loses its theme's Section padding, or lets ancestor Section propagation cross the boundary                         |
-| INV3, INV7 | `Layout/__tests__/edgeCompensation.test.tsx` plus component tests      | An unmarked child is compensated, or marked edge content loses direct-child discoverability                                                        |
+| Invariant        | Evidence                                                               | Failure signal                                                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV2, INV5       | `Section.test.tsx` per-edge and nested-propagation tests               | A per-edge prop leaves a stale geometry variable, or nested Sections lose the shipped propagation order                                            |
+| INV2, INV3, INV8 | `ScrollableArea.test.tsx` padding and full-bleed tests                 | The content box publishes inset different from its applied padding, or the viewport escapes inherited padding without explicit full bleed          |
+| INV4             | Layout source review plus `Layout.test.tsx` and `LayoutSlots.test.tsx` | Slot presence stops selecting the shipped applied outer/inner edge styles; exact republished geometry remains limited by the named conformance gap |
+| INV6             | `overlayPaddingReset.test.tsx`                                         | An overlay inherits page inset, loses its theme's Section padding, or lets ancestor Section propagation cross the boundary                         |
+| INV3, INV7       | `Layout/__tests__/edgeCompensation.test.tsx` plus component tests      | An unmarked child is compensated, or marked edge content loses direct-child discoverability                                                        |
 
 The current suite does not provide one browser matrix that compares computed
 padding and bleed across every publisher and consumer. Component tests and the

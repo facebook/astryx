@@ -18,6 +18,21 @@ import type {CSSProperties, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {
+  paddingStyles,
+  paddingInlineStyles,
+  paddingInlineStartStyles,
+  paddingInlineEndStyles,
+  paddingBlockStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingInlineStartVarStyles,
+  containerPaddingInlineEndVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+} from '../Layout/padding.stylex';
+import type {SpacingStep} from '../utils/types';
+import {
   useScrollableArea,
   type ScrollAxis,
   type ScrollOverscroll,
@@ -44,6 +59,20 @@ const styles = stylex.create({
     containerType: {
       default: null,
       '@supports (container-type: scroll-state)': 'scroll-state',
+    },
+  },
+  fullBleed: {
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    maxInlineSize:
+      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
+    marginBlockStart: {
+      default: null,
+      ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
+    },
+    marginBlockEnd: {
+      default: null,
+      ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
     },
   },
   inline: {
@@ -81,6 +110,22 @@ export interface ScrollableAreaProps extends Omit<
   role?: 'group' | 'region';
   /** Whether effective axes pass scroll gestures to ancestors at an edge. @default 'allow' */
   overscroll?: ScrollOverscroll;
+  /** Content padding using the shared spacing scale. @default 0 */
+  padding?: SpacingStep;
+  /** Logical inline-axis content padding; overrides `padding` on that axis. */
+  paddingInline?: SpacingStep;
+  /** Logical inline-start content padding; overrides broader padding values. */
+  paddingInlineStart?: SpacingStep;
+  /** Logical inline-end content padding; overrides broader padding values. */
+  paddingInlineEnd?: SpacingStep;
+  /** Logical block-axis content padding; overrides `padding` on that axis. */
+  paddingBlock?: SpacingStep;
+  /** Logical block-start content padding; overrides broader padding values. */
+  paddingBlockStart?: SpacingStep;
+  /** Logical block-end content padding; overrides broader padding values. */
+  paddingBlockEnd?: SpacingStep;
+  /** Let the viewport escape inherited container padding. @default false */
+  isFullBleed?: boolean;
   /** Ref connected to the native scroll viewport. */
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -109,6 +154,14 @@ export function ScrollableArea({
   label,
   role = 'group',
   overscroll = 'allow',
+  padding = 0,
+  paddingInline,
+  paddingInlineStart,
+  paddingInlineEnd,
+  paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
+  isFullBleed = false,
   ref,
   xstyle,
   className,
@@ -126,6 +179,7 @@ export function ScrollableArea({
     stylex.props(
       styles.viewport,
       styles[axis],
+      isFullBleed && styles.fullBleed,
       focusOutlineStyles.focusVisible,
       xstyle,
     ),
@@ -152,6 +206,33 @@ export function ScrollableArea({
           ...stylex.props(
             styles.content,
             axis !== 'block' && styles.contentWithInlineOverflow,
+            paddingStyles[padding],
+            containerPaddingInlineVarStyles[padding],
+            containerPaddingBlockStartVarStyles[padding],
+            containerPaddingBlockEndVarStyles[padding],
+            paddingInline != null && paddingInlineStyles[paddingInline],
+            paddingInline != null &&
+              containerPaddingInlineVarStyles[paddingInline],
+            paddingBlock != null && paddingBlockStyles[paddingBlock],
+            paddingBlock != null &&
+              containerPaddingBlockStartVarStyles[paddingBlock],
+            paddingBlock != null &&
+              containerPaddingBlockEndVarStyles[paddingBlock],
+            paddingInlineStart != null &&
+              paddingInlineStartStyles[paddingInlineStart],
+            paddingInlineStart != null &&
+              containerPaddingInlineStartVarStyles[paddingInlineStart],
+            paddingInlineEnd != null &&
+              paddingInlineEndStyles[paddingInlineEnd],
+            paddingInlineEnd != null &&
+              containerPaddingInlineEndVarStyles[paddingInlineEnd],
+            paddingBlockStart != null &&
+              paddingBlockStartStyles[paddingBlockStart],
+            paddingBlockStart != null &&
+              containerPaddingBlockStartVarStyles[paddingBlockStart],
+            paddingBlockEnd != null && paddingBlockEndStyles[paddingBlockEnd],
+            paddingBlockEnd != null &&
+              containerPaddingBlockEndVarStyles[paddingBlockEnd],
           ),
           style: {
             minInlineSize: '100%',

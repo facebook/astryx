@@ -6,6 +6,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
+import {Section} from '@astryxdesign/core/Section';
 import {Text} from '@astryxdesign/core/Text';
 import {
   colorVars,
@@ -34,6 +35,9 @@ const styles = stylex.create({
   viewportCompact: {
     inlineSize: 260,
     blockSize: 140,
+  },
+  containerViewport: {
+    blockSize: 180,
   },
   contentPadding: {
     padding: spacingVars['--spacing-3'],
@@ -170,8 +174,8 @@ const styles = stylex.create({
   scrollbarStable: {
     scrollbarGutter: 'stable both-edges',
   },
-  scrollbarAccent: {
-    scrollbarColor: `${colorVars['--color-accent']} transparent`,
+  scrollbarNeutral: {
+    scrollbarColor: `${colorVars['--color-neutral']} transparent`,
   },
   transformedHost: {
     inlineSize: 360,
@@ -516,6 +520,25 @@ export const TransformedClippedAncestor: Story = {
   parameters: {controls: {disable: true}},
 };
 
+export const ContainerIntegration: Story = {
+  render: () => (
+    <div {...stylex.props(styles.canvas)}>
+      <Section padding={4} width={340}>
+        <ScrollableArea
+          axis="block"
+          label="Full-bleed activity"
+          isFullBleed
+          padding={3}
+          data-evidence="container-integration"
+          xstyle={styles.containerViewport}>
+          <Rows count={6} />
+        </ScrollableArea>
+      </Section>
+    </div>
+  ),
+  parameters: {controls: {disable: true}},
+};
+
 export const NativeScrollbarPresentation: Story = {
   render: () => (
     <VStack gap={4} xstyle={styles.canvas}>
@@ -539,12 +562,14 @@ export const NativeScrollbarPresentation: Story = {
         ]}>
         <Cards count={6} />
       </ScrollableArea>
-      <Text weight="semibold">Consumer color override, transparent track</Text>
+      <Text weight="semibold">
+        Consumer neutral override, transparent track
+      </Text>
       <ScrollableArea
         axis="inline"
-        label="Accent native scrollbar"
-        data-evidence="scrollbar-accent"
-        xstyle={[styles.viewport, styles.scrollbarAccent]}>
+        label="Neutral native scrollbar"
+        data-evidence="scrollbar-neutral"
+        xstyle={[styles.viewport, styles.scrollbarNeutral]}>
         <Cards count={6} />
       </ScrollableArea>
     </VStack>

@@ -166,6 +166,57 @@ describe('ScrollableArea', () => {
     expect(content.style.inlineSize).toBe('');
   });
 
+  it('publishes content padding without changing the viewport default', () => {
+    const {rerender} = render(
+      <ScrollableArea label="Messages" data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+    const viewport = screen.getByTestId('viewport');
+    const content = viewport.firstElementChild as HTMLElement;
+    const defaultViewportClass = viewport.className;
+    const defaultContentClass = content.className;
+
+    rerender(
+      <ScrollableArea
+        label="Messages"
+        padding={4}
+        paddingInlineEnd={2}
+        data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+
+    expect(viewport.className).toBe(defaultViewportClass);
+    expect(content.className).not.toBe(defaultContentClass);
+    const source = stylesSource();
+    expect(source).toContain('containerPaddingInlineVarStyles[padding]');
+    expect(source).toContain(
+      'containerPaddingInlineEndVarStyles[paddingInlineEnd]',
+    );
+  });
+
+  it('keeps inherited container bleed opt-in on the viewport', () => {
+    const {rerender} = render(
+      <ScrollableArea label="Messages" data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+    const viewport = screen.getByTestId('viewport');
+    const containedClass = viewport.className;
+
+    rerender(
+      <ScrollableArea label="Messages" isFullBleed data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+
+    expect(viewport.className).not.toBe(containedClass);
+    const source = stylesSource();
+    expect(source).toContain('var(--container-padding-inline-start, 0px)');
+    expect(source).toContain('isFullBleed && styles.fullBleed');
+  });
+
   it('uses the neutral token for native scrollbar color with a transparent track', () => {
     const source = stylesSource();
     expect(source).toContain("colorVars['--color-neutral']");
