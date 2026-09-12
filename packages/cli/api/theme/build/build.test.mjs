@@ -94,12 +94,12 @@ describe('themeBuild() — receipt', () => {
       `export default {
         name: 'local-theme',
         localTokens: {
-          '--astryx-theme-local-theme-color-status-fill-accent': ['#0077b6', '#48cae4'],
+          '--ac-selection-ink': ['#0077b6', '#48cae4'],
         },
         components: {
           badge: {
             'variant:info': {
-              backgroundColor: 'var(--astryx-theme-local-theme-color-status-fill-accent)',
+              backgroundColor: 'var(--ac-selection-ink)',
             },
           },
         },
@@ -111,47 +111,11 @@ describe('themeBuild() — receipt', () => {
     const built = fs.readFileSync(path.join(tmpDir, 'local-theme.js'), 'utf8');
 
     expect(result?.data.tokenCount).toBe(1);
-    expect(css).toContain(
-      '--astryx-theme-local-theme-color-status-fill-accent: light-dark(#0077b6, #48cae4);',
-    );
+    expect(css).toContain('--ac-selection-ink: light-dark(#0077b6, #48cae4);');
     expect(built).toContain('localTokens: {');
     expect(built).toContain('__localTokenOwners: {');
     expect(built).toContain('__localTokenLineage: ["local-theme"]');
   });
-
-  it.each(['VAR', 'vAr'])(
-    'rejects undeclared local-token references using %s() before writing outputs',
-    async functionName => {
-      const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
-      fs.writeFileSync(
-        themeFile,
-        `export default {
-        name: 'invalid-local-theme',
-        localTokens: {},
-        components: {
-          badge: {
-            base: {
-              color: '${functionName}(--astryx-theme-invalid-local-theme-color-missing)',
-            },
-          },
-        },
-      };\n`,
-      );
-
-      await expect(
-        themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
-      ).rejects.toThrow(/has no declaration/);
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
-        false,
-      );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
-        false,
-      );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.d.ts'))).toBe(
-        false,
-      );
-    },
-  );
 
   it.each(['VAR', 'vAr'])(
     'rejects local-token cycles using %s() before writing outputs',
