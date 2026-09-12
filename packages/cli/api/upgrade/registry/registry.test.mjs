@@ -5,6 +5,12 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
+  createShadcnPrecompiledDeclaration,
+  shadcnJavaScriptTarget,
+  shadcnPrecompiledDeclarationTarget,
+  transformShadcnJavaScriptSource,
+} from '../../../authoring/shadcn/source-variants.mjs';
+import {
   createRegistryReceipt,
   registryReceiptTarget,
   serializeRegistryReceipt,
@@ -23,29 +29,50 @@ const ITEM = {
 const SOURCE_TARGET = 'components/astryx/examples/ButtonBasic.tsx';
 const REGISTRY_PATH = 'registry/example-button-basic/ButtonBasic.tsx';
 const RECEIPT_TARGET = registryReceiptTarget(SOURCE_TARGET, ITEM.name);
+const JAVASCRIPT_TARGET = shadcnJavaScriptTarget(SOURCE_TARGET);
+
+function javascriptVariant(content) {
+  return {
+    format: 'javascript',
+    target: JAVASCRIPT_TARGET,
+    content: transformShadcnJavaScriptSource(content),
+  };
+}
 
 let project;
 let root;
 
 function receipt(content, overrides = {}) {
+  const target = overrides.target ?? SOURCE_TARGET;
+  const registryPath = overrides.registryPath ?? REGISTRY_PATH;
+  const item = overrides.item ?? ITEM;
+  const receiptTarget =
+    overrides.receiptTarget ?? registryReceiptTarget(target, item.name);
   return createRegistryReceipt({
-    item: overrides.item ?? ITEM,
+    item,
     sourceVersion: overrides.version ?? '0.5.0',
-    receiptTarget: RECEIPT_TARGET,
+    receiptTarget,
     files: [
       {
         id: 'primary',
-        target: SOURCE_TARGET,
-        registryPath: REGISTRY_PATH,
+        target,
+        registryPath,
         content,
+        variants: overrides.variants ?? [],
       },
     ],
   });
 }
 
-function seed({base, current = base, receiptValue = receipt(base)}) {
-  const sourcePath = path.join(root, SOURCE_TARGET);
-  const receiptPath = path.join(root, RECEIPT_TARGET);
+function seed({
+  base,
+  current = base,
+  receiptValue = receipt(base),
+  sourceTarget = SOURCE_TARGET,
+  receiptTarget = RECEIPT_TARGET,
+}) {
+  const sourcePath = path.join(root, sourceTarget);
+  const receiptPath = path.join(root, receiptTarget);
   fs.mkdirSync(path.dirname(sourcePath), {recursive: true});
   fs.mkdirSync(path.dirname(receiptPath), {recursive: true});
   if (current !== null) fs.writeFileSync(sourcePath, current, 'utf8');
@@ -60,19 +87,24 @@ function seed({base, current = base, receiptValue = receipt(base)}) {
 }
 
 function remote(latest, overrides = {}) {
+  const itemIdentity = overrides.item ?? ITEM;
+  const target = overrides.target ?? SOURCE_TARGET;
+  const registryPath = overrides.registryPath ?? REGISTRY_PATH;
+  const receiptBaseTarget = registryReceiptTarget(target, itemIdentity.name);
   const receiptFiles = [
     {
       id: 'primary',
-      target: SOURCE_TARGET,
-      registryPath: REGISTRY_PATH,
+      target,
+      registryPath,
       content: latest,
+      variants: overrides.variants ?? [],
     },
     ...(overrides.extraFiles ?? []),
   ];
   const nextReceipt = createRegistryReceipt({
-    item: overrides.item ?? ITEM,
+    item: itemIdentity,
     sourceVersion: overrides.version ?? '0.6.0',
-    receiptTarget: RECEIPT_TARGET,
+    receiptTarget: receiptBaseTarget,
     files: receiptFiles,
   });
   const item = {
@@ -81,7 +113,7 @@ function remote(latest, overrides = {}) {
     files: [
       ...receiptFiles.map(file => ({
         path: file.registryPath,
-        type: 'registry:block',
+        type: file.id === 'types' ? 'registry:file' : 'registry:block',
         target: file.target,
         content:
           file.id === 'primary'
@@ -89,9 +121,9 @@ function remote(latest, overrides = {}) {
             : file.content,
       })),
       {
-        path: 'registry/example-button-basic/astryx-receipt.json',
+        path: `registry/${itemIdentity.name}/astryx-receipt.json`,
         type: 'registry:file',
-        target: overrides.receiptTarget ?? RECEIPT_TARGET,
+        target: overrides.receiptTarget ?? receiptBaseTarget,
         content: serializeRegistryReceipt(nextReceipt),
       },
     ],
@@ -303,6 +335,255 @@ describe('registry composition upgrades', () => {
     ).toBe('0.6.0');
   });
 
+  it('updates the JavaScript install variant selected by stock ShadCN', async () => {
+    const base = "export const value: string = 'old';\n";
+    const latest = "export const value: string = 'new';\n";
+    const installedReceipt = receipt(base, {
+      variants: [javascriptVariant(base)],
+    });
+    const sourcePath = path.join(root, JAVASCRIPT_TARGET);
+    const receiptPath = path.join(root, RECEIPT_TARGET);
+    fs.mkdirSync(path.dirname(sourcePath), {recursive: true});
+    fs.mkdirSync(path.dirname(receiptPath), {recursive: true});
+    fs.writeFileSync(sourcePath, transformShadcnJavaScriptSource(base), 'utf8');
+    fs.writeFileSync(
+      receiptPath,
+      serializeRegistryReceipt(installedReceipt),
+      'utf8',
+    );
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          variants: [javascriptVariant(latest)],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({updated: 1, conflicts: 0});
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(
+      transformShadcnJavaScriptSource(latest),
+    );
+    expect(fs.existsSync(path.join(root, SOURCE_TARGET))).toBe(false);
+    const nextReceipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    expect(nextReceipt.schemaVersion).toBe(2);
+    expect(nextReceipt.files[0].variants[0].registryTarget).toBe(
+      JAVASCRIPT_TARGET,
+    );
+  });
+
+  it('treats printer-only JavaScript drift as pristine', async () => {
+    const base = "export const value: string = 'old';\n";
+    const latest = "export const value: string = 'new';\n";
+    const installedReceipt = receipt(base, {
+      variants: [javascriptVariant(base)],
+    });
+    const sourcePath = path.join(root, JAVASCRIPT_TARGET);
+    const receiptPath = path.join(root, RECEIPT_TARGET);
+    fs.mkdirSync(path.dirname(sourcePath), {recursive: true});
+    fs.mkdirSync(path.dirname(receiptPath), {recursive: true});
+    fs.writeFileSync(sourcePath, 'export   const value = "old";\n', 'utf8');
+    fs.writeFileSync(
+      receiptPath,
+      serializeRegistryReceipt(installedReceipt),
+      'utf8',
+    );
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          variants: [javascriptVariant(latest)],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({updated: 1, conflicts: 0});
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(
+      transformShadcnJavaScriptSource(latest),
+    );
+  });
+
+  it('three-way merges edits in a JavaScript install variant', async () => {
+    const base =
+      "const title: string = 'title';\n" +
+      "const body: string = 'body';\n" +
+      "const spacer: string = 'spacer';\n" +
+      "const footer: string = 'footer';\n" +
+      'export {title, body, spacer, footer};\n';
+    const latest = base.replace("'footer'", "'new footer'");
+    const current = transformShadcnJavaScriptSource(base).replace(
+      "'title'",
+      "'custom title'",
+    );
+    const sourcePath = path.join(root, JAVASCRIPT_TARGET);
+    const receiptPath = path.join(root, RECEIPT_TARGET);
+    fs.mkdirSync(path.dirname(sourcePath), {recursive: true});
+    fs.mkdirSync(path.dirname(receiptPath), {recursive: true});
+    fs.writeFileSync(sourcePath, current, 'utf8');
+    fs.writeFileSync(
+      receiptPath,
+      serializeRegistryReceipt(
+        receipt(base, {variants: [javascriptVariant(base)]}),
+      ),
+      'utf8',
+    );
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          variants: [javascriptVariant(latest)],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({merged: 1, conflicts: 0});
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(
+      transformShadcnJavaScriptSource(latest).replace(
+        "'title'",
+        "'custom title'",
+      ),
+    );
+  });
+
+  it('repairs a version 1 JavaScript install on its first upgrade', async () => {
+    const base = "export const value: string = 'old';\n";
+    const latest = "export const value: string = 'new';\n";
+    const currentReceipt = receipt(base);
+    const {variants: _variants, ...legacyFile} = currentReceipt.files[0];
+    const legacyReceipt = {
+      ...currentReceipt,
+      schemaVersion: 1,
+      files: [legacyFile],
+    };
+    const sourcePath = path.join(root, JAVASCRIPT_TARGET);
+    const receiptPath = path.join(root, RECEIPT_TARGET);
+    fs.mkdirSync(path.dirname(sourcePath), {recursive: true});
+    fs.mkdirSync(path.dirname(receiptPath), {recursive: true});
+    fs.writeFileSync(sourcePath, transformShadcnJavaScriptSource(base), 'utf8');
+    fs.writeFileSync(
+      receiptPath,
+      serializeRegistryReceipt(legacyReceipt),
+      'utf8',
+    );
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          variants: [javascriptVariant(latest)],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({updated: 1, conflicts: 0});
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(
+      transformShadcnJavaScriptSource(latest),
+    );
+    expect(JSON.parse(fs.readFileSync(receiptPath, 'utf8')).schemaVersion).toBe(
+      2,
+    );
+  });
+
+  it('adds a strict TypeScript declaration while upgrading legacy precompiled JSX', async () => {
+    const target = 'components/astryx/examples/CompiledExample.jsx';
+    const registryPath = 'registry/example-button-basic/CompiledExample.jsx';
+    const receiptTarget = registryReceiptTarget(target, ITEM.name);
+    const base =
+      "export default function CompiledExample() { return 'old'; }\n";
+    const latest =
+      "export default function CompiledExample() { return 'new'; }\n";
+    const currentReceipt = receipt(base, {target, registryPath, receiptTarget});
+    const {variants: _variants, ...legacyFile} = currentReceipt.files[0];
+    const legacyReceipt = {
+      ...currentReceipt,
+      schemaVersion: 1,
+      files: [legacyFile],
+    };
+    const {sourcePath, receiptPath} = seed({
+      base,
+      receiptValue: legacyReceipt,
+      sourceTarget: target,
+      receiptTarget,
+    });
+    const typesTarget = shadcnPrecompiledDeclarationTarget(target);
+    const typesContent = createShadcnPrecompiledDeclaration(target);
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          target,
+          registryPath,
+          extraFiles: [
+            {
+              id: 'types',
+              target: typesTarget,
+              registryPath: 'registry/example-button-basic/astryx-types.d.mts',
+              content: typesContent,
+              variants: [],
+            },
+          ],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({updated: 1, conflicts: 0});
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(latest);
+    expect(fs.readFileSync(path.join(root, typesTarget), 'utf8')).toBe(
+      typesContent,
+    );
+    expect(result.writtenFiles).toContain(path.join(root, typesTarget));
+    const nextReceipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    expect(nextReceipt.schemaVersion).toBe(2);
+    expect(nextReceipt.files.map(file => file.id)).toEqual([
+      'primary',
+      'types',
+    ]);
+  });
+
+  it('reports an unreadable generated declaration target without aborting the run', async () => {
+    const target = 'components/astryx/examples/CompiledExample.jsx';
+    const registryPath = 'registry/example-button-basic/CompiledExample.jsx';
+    const receiptTarget = registryReceiptTarget(target, ITEM.name);
+    const base =
+      "export default function CompiledExample() { return 'old'; }\n";
+    const currentReceipt = receipt(base, {target, registryPath, receiptTarget});
+    const {variants: _variants, ...legacyFile} = currentReceipt.files[0];
+    seed({
+      base,
+      receiptValue: {...currentReceipt, schemaVersion: 1, files: [legacyFile]},
+      sourceTarget: target,
+      receiptTarget,
+    });
+    const typesTarget = shadcnPrecompiledDeclarationTarget(target);
+    fs.mkdirSync(path.join(root, typesTarget), {recursive: true});
+
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(base, {
+          target,
+          registryPath,
+          extraFiles: [
+            {
+              id: 'types',
+              target: typesTarget,
+              registryPath: 'registry/example-button-basic/astryx-types.d.mts',
+              content: createShadcnPrecompiledDeclaration(target),
+              variants: [],
+            },
+          ],
+        }),
+      },
+    );
+
+    expect(result.summary).toMatchObject({invalid: 1, conflicts: 1, failed: 0});
+    expect(fs.lstatSync(path.join(root, typesTarget)).isDirectory()).toBe(true);
+  });
+
   it('rolls back source when the receipt write fails', async () => {
     if (process.platform === 'win32') return;
     const {sourcePath, receiptPath} = seed({base: 'old\n'});
@@ -508,6 +789,28 @@ describe('registry composition upgrades', () => {
     expect(result.summary.failed).toBe(1);
     expect(result.summary.items[0].message).toMatch(/misplaced/);
     expect(fs.readFileSync(sourcePath, 'utf8')).toBe('old\n');
+  });
+
+  it('rejects a remote JavaScript variant that disagrees with canonical source', async () => {
+    const base = "export const value: string = 'old';\n";
+    const latest = "export const value: string = 'new';\n";
+    const {sourcePath} = seed({base});
+    const result = await reconcile(
+      {apply: true},
+      {
+        fetchImpl: remote(latest, {
+          variants: [
+            javascriptVariant("export const value: string = 'tampered';\n"),
+          ],
+        }),
+      },
+    );
+
+    expect(result.summary.failed).toBe(1);
+    expect(result.summary.items[0].message).toMatch(
+      /invalid javascript variant/,
+    );
+    expect(fs.readFileSync(sourcePath, 'utf8')).toBe(base);
   });
 
   it('rejects a remote receipt that disagrees with shipped source', async () => {
