@@ -69,7 +69,7 @@ export const doc = {
       name: 'options.integration',
       type: 'string[]',
       description:
-        'Explicit integration package names / file paths to process.',
+        'Explicit integration package names to process. Bare npm names only; file paths and relative segments are rejected.',
     },
     {
       name: 'options.path',

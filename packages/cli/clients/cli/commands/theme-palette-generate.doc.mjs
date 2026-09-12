@@ -18,7 +18,10 @@ export const doc = {
     'Without --out it prints a preview. With --out it writes a candidate file and detached ' +
     'receipt. --preview writes a standardized, self-contained HTML review artifact. ' +
     'TypeScript output is directly importable and contains no generator dependency. ' +
-    'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit.',
+    'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit. ' +
+    'When used in a theme integration, import the generated candidate from the theme source ' +
+    'and list the candidate, receipt, and palette config in the theme catalog entry\'s `files` array ' +
+    'so `astryx theme add` copies them into the consumer project.',
   fn: 'themePaletteGenerate',
   args: [{name: 'config', param: 'configPath', required: true}],
   options: [
