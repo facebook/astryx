@@ -5,7 +5,7 @@
 /**
  * @file useScrollableArea.ts
  * @input Logical scroll intent, keyboard ownership, caller-owned viewport/content props
- * @output Safe prop getters, logical-to-physical axis mapping, and stable per-axis effective scroll state
+ * @output Safe prop getters and stable per-axis effective scroll state
  * @position Canonical behavior core for ScrollableArea and structure-owning adopters
  *
  * SYNC: When modified, update:
@@ -24,8 +24,10 @@ import {
   type RefAttributes,
   type RefCallback,
 } from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {mergeProps} from '../utils/mergeProps';
 import {mergeRefs} from '../utils/mergeRefs';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {
@@ -42,6 +44,7 @@ import {
 
 export type ScrollAxis = 'inline' | 'block' | 'both';
 export type ScrollOverscroll = 'allow' | 'contain';
+export type ScrollStickyContainment = 'whenScrollable' | 'always';
 
 export type ScrollKeyboardAccess =
   | {owner: 'content'}
@@ -62,6 +65,7 @@ export interface UseScrollableAreaOptions {
   axis: ScrollAxis;
   keyboardAccess: ScrollKeyboardAccess;
   overscroll?: ScrollOverscroll;
+  stickyContainment?: ScrollStickyContainment;
 }
 
 export type ScrollableElementProps<E extends HTMLElement> = BaseProps<E> &
@@ -75,10 +79,6 @@ export interface UseScrollableAreaResult {
     props?: ScrollableElementProps<E>,
   ): ScrollableElementProps<E>;
   state: ScrollableAreaState;
-  /** Requested axes whose content currently exceeds the viewport by more than 1px. */
-  overflow: LogicalOverflowGeometry;
-  /** Current logical-to-physical mapping derived from writing mode and direction. */
-  axisMapping: LogicalAxisMapping;
 }
 
 const INACTIVE_AXIS_STATE: ScrollAxisState = {
@@ -100,6 +100,13 @@ const INITIAL_MAPPING: LogicalAxisMapping = {
   inlineReversed: false,
   blockReversed: false,
 };
+
+const styles = stylex.create({
+  overflow: (
+    overflowX: 'auto' | 'hidden' | 'clip',
+    overflowY: 'auto' | 'hidden' | 'clip',
+  ) => ({overflowX, overflowY}),
+});
 
 function axisIsRequested(requested: ScrollAxis, axis: 'inline' | 'block') {
   return requested === axis || requested === 'both';
@@ -130,6 +137,21 @@ function mappingsEqual(a: LogicalAxisMapping, b: LogicalAxisMapping): boolean {
     a.inlineReversed === b.inlineReversed &&
     a.blockReversed === b.blockReversed
   );
+}
+
+function withoutOwnedOverflow(
+  style: CSSProperties | undefined,
+): CSSProperties | undefined {
+  if (style == null) {
+    return undefined;
+  }
+  const result = {...style};
+  delete result.overflow;
+  delete result.overflowX;
+  delete result.overflowY;
+  delete result.overflowInline;
+  delete result.overflowBlock;
+  return result;
 }
 
 function useStableComposedRef(
@@ -163,6 +185,7 @@ export function useScrollableArea({
   axis,
   keyboardAccess,
   overscroll = 'allow',
+  stickyContainment = 'whenScrollable',
 }: UseScrollableAreaOptions): UseScrollableAreaResult {
   const [viewport, setViewport] = useState<HTMLElement | null>(null);
   const [content, setContent] = useState<HTMLElement | null>(null);
@@ -329,12 +352,45 @@ export function useScrollableArea({
     ): ScrollableElementProps<E> => {
       const hasEffectiveAxis =
         state.inline.isScrollable || state.block.isScrollable;
+      const requestedX =
+        (axisIsRequested(axis, 'inline') && mapping.inline === 'x') ||
+        (axisIsRequested(axis, 'block') && mapping.block === 'x');
+      const requestedY =
+        (axisIsRequested(axis, 'inline') && mapping.inline === 'y') ||
+        (axisIsRequested(axis, 'block') && mapping.block === 'y');
+      const overflowingX =
+        (overflow.inline && mapping.inline === 'x') ||
+        (overflow.block && mapping.block === 'x');
+      const overflowingY =
+        (overflow.inline && mapping.inline === 'y') ||
+        (overflow.block && mapping.block === 'y');
+      const containsSticky =
+        overflowingX || overflowingY || stickyContainment === 'always';
+      const scrollsOnX =
+        stickyContainment === 'always' ? requestedX : overflowingX;
+      const scrollsOnY =
+        stickyContainment === 'always' ? requestedY : overflowingY;
+      const {xstyle, ...domProps} = props;
+      const callerProps = {
+        ...domProps,
+        style: withoutOwnedOverflow(domProps.style),
+      };
+      const styledProps = mergeProps(
+        callerProps,
+        stylex.props(
+          xstyle,
+          styles.overflow(
+            containsSticky ? (scrollsOnX ? 'auto' : 'hidden') : 'clip',
+            containsSticky ? (scrollsOnY ? 'auto' : 'hidden') : 'clip',
+          ),
+        ),
+      ) as ScrollableElementProps<E>;
       const keepsProgrammaticFocus =
         !hasEffectiveAxis &&
         viewport != null &&
         typeof document !== 'undefined' &&
         document.activeElement === viewport;
-      const behaviorStyle: CSSProperties = {...props.style};
+      const behaviorStyle: CSSProperties = {...styledProps.style};
       const containInline =
         overscroll === 'contain' && state.inline.isScrollable;
       const containBlock = overscroll === 'contain' && state.block.isScrollable;
@@ -366,9 +422,9 @@ export function useScrollableArea({
           : {};
 
       const result: ScrollableElementProps<E> = {
-        ...props,
+        ...styledProps,
         ...keyboardProps,
-        ref: getComposedViewportRef(props.ref),
+        ref: getComposedViewportRef(styledProps.ref),
         style: behaviorStyle,
         'data-scroll-axis': axis,
         'data-scrollable-inline': state.inline.isScrollable
@@ -387,8 +443,10 @@ export function useScrollableArea({
       getComposedViewportRef,
       keyboardAccess,
       mapping,
+      overflow,
       overscroll,
       state,
+      stickyContainment,
       viewport,
     ],
   );
@@ -407,11 +465,5 @@ export function useScrollableArea({
     [getComposedContentRef],
   );
 
-  return {
-    getViewportProps,
-    getContentProps,
-    state,
-    overflow,
-    axisMapping: mapping,
-  };
+  return {getViewportProps, getContentProps, state};
 }

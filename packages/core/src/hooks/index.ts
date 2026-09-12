@@ -61,17 +61,13 @@ export type {
   ScrollAxis,
   ScrollAxisState,
   ScrollOverscroll,
+  ScrollStickyContainment,
   ScrollKeyboardAccess,
   ScrollableAreaState,
   ScrollableElementProps,
   UseScrollableAreaOptions,
   UseScrollableAreaResult,
 } from './useScrollableArea';
-export type {
-  LogicalAxisMapping,
-  LogicalOverflowGeometry,
-  PhysicalScrollAxis,
-} from './scrollGeometry';
 
 export {useScrollLock} from './useScrollLock';
 

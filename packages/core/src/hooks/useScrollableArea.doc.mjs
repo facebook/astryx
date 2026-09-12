@@ -4,24 +4,73 @@
 export const docs = {
   name: 'useScrollableArea',
   displayName: 'useScrollableArea',
-  keywords: ['scroll', 'overflow', 'logical axis', 'keyboard', 'overscroll', 'sticky', 'resize'],
+  keywords: [
+    'scroll',
+    'overflow',
+    'logical axis',
+    'keyboard',
+    'overscroll',
+    'sticky',
+    'resize',
+  ],
   params: [
-    {name: 'options', type: 'UseScrollableAreaOptions', description: 'Logical scroll intent, keyboard owner, and overscroll policy.', required: true},
+    {
+      name: 'options',
+      type: 'UseScrollableAreaOptions',
+      description:
+        'Logical scroll intent, keyboard owner, overscroll policy, and fitting Sticky containment.',
+      required: true,
+    },
   ],
   returns: [
-    {name: 'getViewportProps', type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>', description: 'Composes caller viewport props and refs with measurement, accessibility, chaining, and owner registration.'},
-    {name: 'getContentProps', type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>', description: 'Composes caller content-box props and refs with content observation.'},
-    {name: 'state', type: 'ScrollableAreaState', description: 'Stable inline and block effective-scroll and logical-edge state.'},
-    {name: 'overflow', type: 'LogicalOverflowGeometry', description: 'Requested axes whose content geometry currently exceeds the viewport by more than 1px, independent of CSS overflow capability.'},
-    {name: 'axisMapping', type: 'LogicalAxisMapping', description: 'Current logical-to-physical axis mapping derived from writing mode and direction.'},
+    {
+      name: 'getViewportProps',
+      type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>',
+      description:
+        'Consumes caller viewport props, xstyle, and refs; composes fitting/active overflow, Sticky containment, accessibility, chaining, and owner registration.',
+    },
+    {
+      name: 'getContentProps',
+      type: '<E extends HTMLElement>(props?: ScrollableElementProps<E>) => ScrollableElementProps<E>',
+      description:
+        'Composes caller content-box props and refs with content observation.',
+    },
+    {
+      name: 'state',
+      type: 'ScrollableAreaState',
+      description:
+        'Stable inline and block effective-scroll and logical-edge state.',
+    },
   ],
   usage: {
-    description: 'Adds canonical axis-aware scroll behavior to structure owned by the caller. An axis is effective only when its computed overflow is scroll-capable and geometry exceeds the shared 1px tolerance. Both viewport and content boxes are observed.',
+    description:
+      'Adds canonical axis-aware scroll behavior to structure owned by the caller. An axis is effective only when its computed overflow is scroll-capable and geometry exceeds the shared 1px tolerance. Both viewport and content boxes are observed.',
     bestPractices: [
-      {guidance: true, description: 'Pass already-resolved props and refs through both prop getters, then spread each returned object once.'},
-      {guidance: true, description: 'Use viewport keyboard ownership only when the viewport itself should enter the tab order; provide a concise accessible label.'},
-      {guidance: true, description: 'Use content keyboard ownership when an existing focusable descendant gives keyboard users access to all overflowed content.'},
-      {guidance: false, description: 'Attach only the viewport getter. A real observed content box is required for live overflow changes.'},
+      {
+        guidance: true,
+        description:
+          'Pass already-resolved props and refs through both prop getters, then spread each returned object once.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use viewport keyboard ownership only when the viewport itself should enter the tab order; provide a concise accessible label.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use content keyboard ownership when an existing focusable descendant gives keyboard users access to all overflowed content.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pass caller `xstyle` through `getViewportProps`; the getter composes it with fitting clip, active overflow, and Sticky containment.',
+      },
+      {
+        guidance: false,
+        description:
+          'Attach only the viewport getter. A real observed content box is required for live overflow changes.',
+      },
     ],
   },
   relatedComponents: ['ScrollableArea'],
@@ -32,19 +81,27 @@ export const docs = {
 
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
-  description: 'Composes logical-axis scrolling into caller-owned viewport/content elements with stable effective-axis and edge state.',
-  paramDescriptions: {options: 'axis, keyboard owner, and allow/contain overscroll policy.'},
+  description:
+    'Composes logical-axis scrolling into caller-owned viewport/content elements with stable effective-axis and edge state.',
+  paramDescriptions: {
+    options:
+      'axis, keyboard owner, allow/contain overscroll policy, and fitting Sticky containment.',
+  },
   returnDescriptions: {
-    getViewportProps: 'safe viewport prop/ref composition with behavior-owned accessibility and chaining.',
+    getViewportProps:
+      'safe viewport prop/ref/xstyle composition with behavior-owned overflow, accessibility, and chaining.',
     getContentProps: 'safe observed content-box prop/ref composition.',
     state: 'inline/block isScrollable, atStart, and atEnd state.',
-    overflow: 'requested axes with more than 1px of excess content geometry',
-    axisMapping: 'current logical inline/block mapping to physical x/y axes.',
   },
   usage: {
-    description: 'Use for existing structures that need ScrollableArea behavior without another wrapper.',
+    description:
+      'Use for existing structures that need ScrollableArea behavior without another wrapper.',
     bestPractices: [
-      {guidance: true, description: 'Spread each prop getter result once on its owner element.'},
+      {
+        guidance: true,
+        description:
+          'Spread each prop getter result once on its owner element.',
+      },
       {guidance: false, description: 'Skip the real content-box getter.'},
     ],
   },

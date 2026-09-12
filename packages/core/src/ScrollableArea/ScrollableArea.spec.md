@@ -136,7 +136,8 @@ shared behavior hook, not the exclusive owner of that behavior.
 
 ## Family and system relationships
 
-- `module:ScrollableArea/useScrollableArea` owns the reusable behavior contract.
+- `module:ScrollableArea/useScrollableArea` owns reusable measurement,
+  overflow-boundary, Sticky-containment, accessibility, and registration behavior.
 - `architecture:container-padding` owns optional content inset publication and
   opt-in viewport bleed.
 - `spec:AST-025` owns shared effective-axis, observation, accessibility, overscroll,

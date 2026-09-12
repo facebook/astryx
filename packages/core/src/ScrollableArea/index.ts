@@ -17,14 +17,10 @@ export type {
   ScrollAxis,
   ScrollAxisState,
   ScrollOverscroll,
+  ScrollStickyContainment,
   ScrollKeyboardAccess,
   ScrollableAreaState,
   ScrollableElementProps,
   UseScrollableAreaOptions,
   UseScrollableAreaResult,
 } from '../hooks/useScrollableArea';
-export type {
-  LogicalAxisMapping,
-  LogicalOverflowGeometry,
-  PhysicalScrollAxis,
-} from '../hooks/scrollGeometry';

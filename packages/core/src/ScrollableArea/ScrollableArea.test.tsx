@@ -173,8 +173,9 @@ describe('ScrollableArea', () => {
     expect(content.className).not.toBe(inlineContentClass);
     expect(content.style.inlineSize).toBe('');
     const source = stylesSource();
-    expect(source).toContain('dynamicStyles.overflow(');
+    expect(source).not.toContain('dynamicStyles.overflow(');
     expect(source).not.toContain('logicalOverflowStyle');
+    expect(hookSource()).toContain('styles.overflow(');
     expect(source).toContain("minInlineSize: '100%'");
     expect(source).toContain("inlineSize: 'max-content'");
   });
@@ -283,6 +284,10 @@ describe('ScrollableArea', () => {
     expect(source).toContain("'scroll-state'");
   });
 });
+
+function hookSource(): string {
+  return readFileSync('packages/core/src/hooks/useScrollableArea.ts', 'utf8');
+}
 
 function stylesSource(): string {
   // This focused source assertion complements the built-CSS browser probe: it

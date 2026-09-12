@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {act, render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {useRef, type Ref} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useScrollableArea,
   type ScrollAxis,
   type ScrollOverscroll,
+  type ScrollStickyContainment,
 } from './useScrollableArea';
 import {
   findNearestScrollOwner,
@@ -14,9 +16,14 @@ import {
 } from './scrollOwnerRegistry';
 import {getLogicalAxisMapping} from './scrollGeometry';
 
+const testStyles = stylex.create({
+  viewport: {borderWidth: 1, borderStyle: 'solid'},
+});
+
 interface FixtureProps {
   axis?: ScrollAxis;
   chaining?: ScrollOverscroll;
+  stickyContainment?: ScrollStickyContainment;
   externalRef?: Ref<HTMLDivElement>;
   onScroll?: React.UIEventHandler<HTMLDivElement>;
 }
@@ -24,19 +31,20 @@ interface FixtureProps {
 function Fixture({
   axis = 'inline',
   chaining = 'allow',
+  stickyContainment,
   externalRef,
   onScroll,
 }: FixtureProps) {
-  const {getViewportProps, getContentProps, state, overflow, axisMapping} =
-    useScrollableArea({
-      axis,
-      keyboardAccess: {
-        owner: 'viewport',
-        label: 'Scrollable results',
-        role: 'region',
-      },
-      overscroll: chaining,
-    });
+  const {getViewportProps, getContentProps, state} = useScrollableArea({
+    axis,
+    keyboardAccess: {
+      owner: 'viewport',
+      label: 'Scrollable results',
+      role: 'region',
+    },
+    overscroll: chaining,
+    stickyContainment,
+  });
 
   return (
     <>
@@ -45,15 +53,14 @@ function Fixture({
         {...getViewportProps({
           ref: externalRef,
           onScroll,
-          style: {overflowX: 'auto', overflowY: 'auto'},
+          xstyle: testStyles.viewport,
+          style: {backgroundColor: 'red', overflowX: 'scroll'},
         })}>
         <div data-testid="content" {...getContentProps()}>
           <span data-testid="descendant">Content</span>
         </div>
       </div>
       <output data-testid="state">{JSON.stringify(state)}</output>
-      <output data-testid="overflow">{JSON.stringify(overflow)}</output>
-      <output data-testid="axis-mapping">{JSON.stringify(axisMapping)}</output>
     </>
   );
 }
@@ -88,10 +95,6 @@ function state(): {
   return JSON.parse(screen.getByTestId('state').textContent ?? '{}');
 }
 
-function overflow(): {inline: boolean; block: boolean} {
-  return JSON.parse(screen.getByTestId('overflow').textContent ?? '{}');
-}
-
 function makeMeasurable(viewport: HTMLElement) {
   setGeometry(viewport, {
     clientWidth: 100,
@@ -122,9 +125,26 @@ describe('useScrollableArea', () => {
         return {observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn()};
       }),
     );
+    const nativeGetComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(element => {
+      const computed = nativeGetComputedStyle(element);
+      return new Proxy(computed, {
+        // eslint-disable-next-line @typescript-eslint/promise-function-async -- Proxy traps must remain synchronous
+        get(target, property) {
+          if (element instanceof HTMLElement && property === 'overflowX') {
+            return element.style.overflowX || 'auto';
+          }
+          if (element instanceof HTMLElement && property === 'overflowY') {
+            return element.style.overflowY || 'auto';
+          }
+          return Reflect.get(target, property, target);
+        },
+      });
+    });
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -146,6 +166,32 @@ describe('useScrollableArea', () => {
     expect(viewport).not.toHaveAttribute('tabindex');
     expect(viewport).toHaveAttribute('role', 'region');
     expect(viewport).toHaveAccessibleName('Scrollable results');
+    expect(viewport).not.toHaveAttribute('xstyle');
+    expect(viewport.style.backgroundColor).toBe('red');
+    expect(viewport.style.overflowX).toBe('');
+    expect(viewport.getAttribute('style')).toContain('clip');
+  });
+
+  it('owns fitting and explicit Sticky overflow styling for direct adopters', () => {
+    const {rerender} = render(<Fixture />);
+    const viewport = screen.getByTestId('viewport');
+    expect(viewport.getAttribute('style')).toContain('clip');
+
+    rerender(<Fixture stickyContainment="always" />);
+    expect(viewport.getAttribute('style')).toContain('auto');
+    expect(viewport.getAttribute('style')).toContain('hidden');
+  });
+
+  it('activates only the overflowing physical axis when both are requested', () => {
+    render(<Fixture axis="both" />);
+    const viewport = screen.getByTestId('viewport');
+    makeMeasurable(viewport);
+    setGeometry(viewport, {scrollWidth: 180});
+
+    void act(() => viewport.dispatchEvent(new Event('scroll')));
+    flushFrame();
+    expect(viewport.getAttribute('style')).toContain('--x-overflowX: auto');
+    expect(viewport.getAttribute('style')).toContain('--x-overflowY: hidden');
   });
 
   it('requires scroll-capable computed overflow and more than 1px excess geometry', () => {
@@ -156,14 +202,12 @@ describe('useScrollableArea', () => {
     setGeometry(viewport, {scrollWidth: 101});
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
-    expect(overflow()).toEqual({inline: false, block: false});
     expect(state().inline.isScrollable).toBe(false);
 
     viewport.style.overflowX = 'hidden';
     setGeometry(viewport, {scrollWidth: 140});
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
-    expect(overflow()).toEqual({inline: true, block: false});
     expect(state().inline.isScrollable).toBe(false);
 
     viewport.style.overflowX = 'auto';
@@ -260,14 +304,6 @@ describe('useScrollableArea', () => {
 
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
-    expect(
-      JSON.parse(screen.getByTestId('axis-mapping').textContent ?? '{}'),
-    ).toEqual({
-      inline: 'y',
-      block: 'x',
-      inlineReversed: false,
-      blockReversed: true,
-    });
     expect(state()).toEqual({
       inline: {isScrollable: false, atStart: true, atEnd: true},
       block: {isScrollable: true, atStart: false, atEnd: true},

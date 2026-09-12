@@ -170,7 +170,7 @@ the behavior.
   MUST publish the actual logical padding of its content box, using zero when no
   padding is requested. Its viewport MAY consume inherited padding only through an
   explicit full-bleed option; scrollability alone MUST NOT escape a parent container.
-- **FR21 — Fitting scroll intent does not imply Sticky containment.** A reference
+- **FR21 — Fitting scroll intent does not imply Sticky containment.** A participating
   viewport whose requested axes have no excess geometry MUST use `clip` on both
   physical axes. This prevents pre-measure paint overflow without creating a CSS
   scroll container, so native Sticky descendants can resolve to an outer effective
@@ -227,6 +227,7 @@ interface UseScrollableAreaOptions {
   axis: ScrollAxis;
   keyboardAccess: KeyboardAccess;
   overscroll?: 'allow' | 'contain';
+  stickyContainment?: 'whenScrollable' | 'always';
 }
 
 type ElementProps<E extends HTMLElement> = BaseProps<E> &
@@ -248,11 +249,12 @@ interface UseScrollableAreaResult {
 
 Each prop getter receives the adopter's already-resolved element props and public
 ref, composes them with the hook's behavior through the shared prop/ref utilities,
-and returns one safe spread object. `getViewportProps` adds behavior-owned keyboard,
-ARIA, event, data-state, overscroll, and registration behavior without choosing the
-viewport's layout or paint. `getContentProps` composes content observation with an
-existing content ref and props. Neither a loose prop bag nor a separate callback ref
-makes spread order part of the contract.
+and returns one safe spread object. `getViewportProps` consumes caller `xstyle` and
+adds behavior-owned fitting clip, axis-specific active overflow, explicit Sticky
+containment, keyboard, ARIA, event, data-state, overscroll, and registration behavior
+without choosing viewport sizing or scrollbar presentation. `getContentProps`
+composes content observation with an existing content ref and props. Neither a loose
+prop bag nor a separate callback ref makes spread order part of the contract.
 
 Native scrollbar width, color, and gutter remain CSS on the viewport rather than
 hook options. Optional custom presenters and scroll shadows consume the same
@@ -408,7 +410,7 @@ silently widen a container's visual boundary.
 **Reference:** `spec:AST-025/DEC-3`
 **Decider:** `cixzhang`, `2026-09-12`
 
-The reference viewport uses `clip` on both physical axes until requested content
+The shared hook applies `clip` on both physical axes until requested content
 exceeds its geometry. This avoids pre-measure paint overflow without creating a CSS
 scroll container, so a fitting area does not silently intercept native Sticky from
 an outer owner. Geometry-only overflow state activates the writing-mode-resolved
