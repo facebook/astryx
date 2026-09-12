@@ -51,12 +51,16 @@ describe('createMemberPlan', () => {
       input({dataDefaults: '', rules: {prose: [], component: []}}),
     );
 
-    expect(plan.sections.find(section => section.kind === 'data-defaults')).toMatchObject({
+    expect(
+      plan.sections.find(section => section.kind === 'data-defaults'),
+    ).toMatchObject({
       empty: true,
       tracks: ['css'],
       css: [],
     });
-    expect(plan.sections.find(section => section.kind === 'registries')).toMatchObject({
+    expect(
+      plan.sections.find(section => section.kind === 'registries'),
+    ).toMatchObject({
       empty: true,
       tracks: ['js'],
     });
@@ -81,7 +85,10 @@ describe('createMemberPlan', () => {
     );
     expect(tokens.css.map(unit => unit.property)).toEqual(['--ink', '--paper']);
     expect(components.css).toEqual([
-      expect.objectContaining({selector: '.astryx-button::before', property: 'color'}),
+      expect.objectContaining({
+        selector: '.astryx-button::before',
+        property: 'color',
+      }),
     ]);
   });
 });

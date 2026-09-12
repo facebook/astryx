@@ -9,7 +9,9 @@
  * Invocation                                 -> type discriminator
  * ------------------------------------------------------------------
  * xds --json theme build <file>             -> theme.build
+ * xds --json theme build --family …         -> theme.build
  * xds --json theme build <file> --check     -> theme.build.check
+ * xds --json theme build --family … --check -> theme.build.check
  * xds --json theme build <a> <b> …          -> theme.build.batch
  * xds --json theme list                     -> theme.list
  * xds --json theme add <slug>               -> theme.add
@@ -22,7 +24,10 @@
  */
 
 /**
- * xds --json theme build <file>
+ * xds --json theme build <file>, or a --family build. In family mode `name`
+ * is the artifact key, counts sum the selected complete members, and css/js/dts
+ * name the one current keyed set; the manifest and receipts sit beside them
+ * without widening this existing response shape.
  * @typedef {object} ThemeBuildResponse
  * @property {'theme.build'} type
  * `warnings` are defects the theme author should fix. `notices` are advisories
@@ -32,7 +37,9 @@
  */
 
 /**
- * xds --json theme build <file> --check
+ * xds --json theme build <file> --check, or the same --family selection and key.
+ * Family check performs mandatory journal recovery first, then compares the
+ * complete manifest-owned set without publishing a generation.
  * @typedef {object} ThemeBuildCheckResponse
  * @property {'theme.build.check'} type
  * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[]}} data

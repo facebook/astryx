@@ -89,6 +89,8 @@ export const THEME_LINEAGE = Symbol.for('astryx.theme.lineage');
  * @property {Record<string, unknown>} modules - `virtualModules` for jiti.
  * @property {(theme: any) => any[]} lineageOf - Every raw input that fed a
  *   theme, following its own `extends` chain and spread provenance.
+ * @property {(theme: any) => any | undefined} inputOf - Exact raw defineTheme
+ *   input associated with one resolved theme, when observed.
  * @property {(theme: any) => any[]} unobservedIn - Lineage members this
  *   recorder never saw and that carry no adaptation metadata; ask before
  *   `strip`.
@@ -288,6 +290,10 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       // imported at all; a partial root is better than none, and a core
       // missing its own root entry is already broken.
       '@astryxdesign/core': wrapNamespace(coreRootModule ?? coreThemeModule),
+    },
+
+    inputOf(theme) {
+      return lineageFor(theme)?.input;
     },
 
     lineageOf(theme) {

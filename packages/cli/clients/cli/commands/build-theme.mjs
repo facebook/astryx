@@ -45,7 +45,11 @@ import {
   serializePaletteCandidate,
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
-import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
+import {
+  themeBuild,
+  themeBuildFamily,
+  importSpecifier,
+} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -399,11 +403,62 @@ export function registerTheme(program) {
   defineCommand(theme, themeBuildCommand, {
     fn: themeBuildFn,
     action: async (
-      /** @type {string[]} */ files,
-      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string}} */ options,
+      /** @type {string[] | undefined} */ files,
+      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string, family?: string[], familyKey?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
-      const entries = files.map(file => ({
+      const positionalFiles = files ?? [];
+      const familyFiles = options.family ?? [];
+
+      if (options.familyKey && !options.family) {
+        return cliError('--family-key requires --family', {
+          code: ERROR_CODES.ERR_INVALID_OPTION,
+        });
+      }
+      if (options.family && !options.familyKey) {
+        return cliError('--family-key is required with --family', {
+          code: ERROR_CODES.ERR_MISSING_ARGUMENT,
+        });
+      }
+      if (options.family && positionalFiles.length > 0) {
+        return cliError(
+          'positional theme files cannot be combined with --family',
+          {
+            code: ERROR_CODES.ERR_INVALID_OPTION,
+          },
+        );
+      }
+      if (!options.family && positionalFiles.length === 0) {
+        return cliError('theme build needs a file or --family', {
+          code: ERROR_CODES.ERR_MISSING_ARGUMENT,
+        });
+      }
+      if (options.family && familyFiles.length < 2) {
+        return cliError('--family needs a base and at least one child theme', {
+          code: ERROR_CODES.ERR_INVALID_ARGUMENT,
+        });
+      }
+      if (options.family && options.watch) {
+        return cliError('--family cannot be combined with --watch', {
+          code: ERROR_CODES.ERR_INVALID_OPTION,
+        });
+      }
+      if (options.family && options.out) {
+        return cliError('--family cannot be combined with --out', {
+          code: ERROR_CODES.ERR_INVALID_OPTION,
+        });
+      }
+      if (
+        options.familyKey &&
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.familyKey)
+      ) {
+        return cliError('--family-key must be an exact ASCII lower-kebab key', {
+          code: ERROR_CODES.ERR_INVALID_OPTION,
+        });
+      }
+
+      const selectedFiles = options.family ? familyFiles : positionalFiles;
+      const entries = selectedFiles.map(file => ({
         file,
         filePath: path.resolve(process.cwd(), file),
       }));
@@ -466,6 +521,49 @@ export function registerTheme(program) {
       // ✓/warning lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
+      if (options.family) {
+        let result;
+        try {
+          result = await themeBuildFamily(
+            familyFiles,
+            {
+              familyKey: options.familyKey,
+              check: options.check,
+              iconsSpecifier: options.iconsSpecifier,
+            },
+            {cwd: process.cwd()},
+          );
+        } catch (error) {
+          const err =
+            /** @type {import('../../../api/error.mjs').AstryxError} */ (error);
+          return cliError(err.message, {
+            suggestions: err.suggestions,
+            code: err.code,
+          });
+        }
+        if (json) {
+          jsonOut(result);
+        } else if (result.type === 'theme.build.check') {
+          emit(
+            text(
+              result.data.upToDate
+                ? `✓ Theme family "${result.data.name}" is up to date.`
+                : `✗ Theme family "${result.data.name}" has ${result.data.stale.length} stale output(s).`,
+            ),
+          );
+        } else {
+          emit(
+            text(
+              `✓ Built theme family "${result.data.name}" → ${result.data.outputs.css}`,
+            ),
+          );
+        }
+        if (result.type === 'theme.build.check' && !result.data.upToDate) {
+          process.exitCode = 1;
+        }
+        return NO_RESULT_SET;
+      }
+
       /** @type {Array<{file: string, receipt: import('../../../api/theme/theme.type.mjs').ThemeBuildResponse | import('../../../api/theme/theme.type.mjs').ThemeBuildCheckResponse | null}>} */
       const results = [];
       let stale = false;
@@ -591,7 +689,10 @@ export function registerTheme(program) {
       try {
         result =
           options.list || !slug
-            ? await themeListAvailable({cwd: process.cwd(), package: options.package})
+            ? await themeListAvailable({
+                cwd: process.cwd(),
+                package: options.package,
+              })
             : await themeAdd(slug, {
                 targetPath,
                 overwrite: options.overwrite,

@@ -16,17 +16,21 @@ export const doc = {
   namespace: 'cli',
   summary: 'Compile one or more defineTheme files to CSS + JS',
   description:
-    'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
-    'files and compiles them in one process, in argument order, stopping at the first ' +
-    'failure; an app with several themes does not need a shell loop. With --check it writes ' +
-    'nothing and instead reports whether the committed outputs have drifted from source. ' +
-    'When a separate build step emits the icon registry, --icons-specifier declares the ' +
-    'fully specified module path that the generated JS should import.',
+    'Compiles defineTheme sources with the exact CSS compiler used by <Theme>. Standalone mode ' +
+    'writes one complete CSS, JavaScript, and declaration set per positional file. Family mode ' +
+    'takes its sources through --family, requires --family-key, and publishes one complete keyed ' +
+    'CSS-free artifact set for attribute-only switching. With --check it writes nothing except ' +
+    'mandatory interrupted-transaction recovery and reports whether the complete owned set drifted. ' +
+    'When a separate build step emits the icon registry, --icons-specifier declares the fully ' +
+    'specified module path that generated JavaScript should import.',
   fn: 'themeBuild',
-  args: [{name: 'files', param: 'file', required: true, variadic: true}],
+  args: [{name: 'files', param: 'file', required: false, variadic: true}],
   options: [
-    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path (single theme only)'},
+    {
+      flag: '-o, --out <path>',
+      param: 'options.out',
+      description: 'Output CSS file path (single theme only)',
+    },
     {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
@@ -34,8 +38,19 @@ export const doc = {
         'Override the icon-registry import in the generated JS module (for example, ./icons.mjs)',
     },
     {
+      flag: '--family <base> <children...>',
+      description:
+        'Build one base and its selected descendants as a single complete family artifact set',
+    },
+    {
+      flag: '--family-key <key>',
+      description:
+        'Required lower-kebab filename stem for --family output (for example ocean-family)',
+    },
+    {
       flag: '-w, --watch',
-      description: 'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
+      description:
+        'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
     },
     {
       flag: '-c, --check',
@@ -56,6 +71,15 @@ export const doc = {
     {
       label: 'Check for drift (CI)',
       cli: 'astryx theme build ./src/themes/ocean.ts --check',
+    },
+    {
+      label:
+        'Build a complete theme family for one-request loading and switching',
+      cli: 'astryx theme build --family ./src/themes/ocean.ts ./src/themes/ocean-deep.ts --family-key ocean-family',
+    },
+    {
+      label: 'Check a committed family artifact set for drift (CI)',
+      cli: 'astryx theme build --family ./src/themes/ocean.ts ./src/themes/ocean-deep.ts --family-key ocean-family --check',
     },
     {
       label: 'Build against a separately compiled icon registry',

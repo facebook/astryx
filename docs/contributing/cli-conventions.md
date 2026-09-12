@@ -89,23 +89,35 @@ agent finds it before a person does.
 
 ### Worked example: `theme build --family`
 
-`--family <base> <children…>` builds a base theme and the themes that `extends`
-it as one unit: the base stylesheet restates the shared declarations once,
-scoped to every member, and each member carries only its own deltas.
+`--family <base> <children…>` selects one base theme and its direct or indirect
+`extends` descendants for one complete family build. `--family-key <key>` is
+required with it and accepts an exact lower-kebab key. The key names one
+`<key>.css`, one CSS-free `<key>.js`, one `<key>.d.ts`, and one
+`<key>.manifest.json` plus receipts in the current immutable generation.
+There are no per-member family CSS or JavaScript files.
+
+```sh
+astryx theme build \
+  --family ./src/themes/ocean.ts ./src/themes/ocean-deep.ts \
+  --family-key ocean-family
+```
 
 Its matrix against the flags already on `theme build`:
 
-| Pair                           | Answer                                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `--family` `--watch`           | Refused, explicitly, with a message naming both.                                                        |
-| `--family` `--out`             | Cannot co-occur: `--out` with more than one file is already refused, and `--family` needs at least two. |
-| `--family` `--check`           | They compose — `--check` verifies the family-shaped output.                                             |
-| `--family` `--icons-specifier` | They compose.                                                                                           |
+| Pair                              | Answer                                                                                                         |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `--family` `--family-key`         | Required together. The key is refused outside family mode and is not normalized.                               |
+| `--family` `--watch`              | Refused before output writes.                                                                                  |
+| `--family` `--out`                | Refused; the keyed family owns its coordinated output location.                                                |
+| `--family` `--check`              | They compose. Check recovers an interrupted transaction, then compares the complete manifest-owned family set. |
+| `--family` `--icons-specifier`    | They compose when the family has one source icon registry; the specifier applies to that generated ESM import. |
+| `--family` positional theme files | Refused; every selected member belongs inside the `--family` value list.                                       |
 
-That third row carries a consequence worth writing down: `--check`'s answer now
-depends on whether `--family` was passed, because the two modes emit different
-CSS. CI has to check with the same flags it built with. A cell that changes what
-another flag _means_ is a documentation obligation, not just a test.
+A family build eagerly puts every selected member into one stylesheet. Loading
+that stylesheet makes every member ready on first paint and lets an app switch
+by changing only `data-astryx-theme`; it also means the browser downloads the
+whole selected family. Use the unchanged standalone build when an app needs one
+complete theme. CI must repeat the same family selection and key with `--check`.
 
 ## Flags with the same name
 

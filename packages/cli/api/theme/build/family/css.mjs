@@ -12,7 +12,7 @@ function quoteAttribute(value) {
   return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
 }
 
-/** Split a selector list only at top-level commas. */
+/** @param {string} selector */
 function splitSelectorList(selector) {
   const parts = [];
   let start = 0;
@@ -51,7 +51,7 @@ function splitSelectorList(selector) {
   return parts;
 }
 
-/** Find the first top-level pseudo-element delimiter. */
+/** @param {string} selector */
 function pseudoElementIndex(selector) {
   let round = 0;
   let square = 0;
@@ -94,6 +94,7 @@ function pseudoElementIndex(selector) {
 /**
  * Zero one selector's specificity without placing a pseudo-element inside the
  * forgiving :where() list, which browsers silently discard.
+ * @param {string} selector
  */
 function zeroSelector(selector) {
   if (selector.trimStart().startsWith(':where(')) return selector;
@@ -121,6 +122,7 @@ function renderGroup(group) {
   if (unit.scope === 'member') {
     const starts = group.members
       .map(
+        /** @param {string} name */
         name => `[data-astryx-theme="${quoteAttribute(name)}"]`,
       )
       .join(', ');

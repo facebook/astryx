@@ -334,16 +334,19 @@ describe('theme template stays in sync with the theme system', () => {
     const known = new Set(Object.values(tokenGroups()).flat());
     const {publicVars} = themingTargets();
     // Domain tokens (syntax, data-viz) live outside tokens.stylex.ts and are
-    // referenced by prefix in the inventory, not by full name.
-    const domainPrefixes = [
-      '--color-syntax-',
-      '--color-data-',
-      '--astryx-theme-my-theme-',
-    ];
+    // referenced by prefix in the inventory, not by full name. The template's
+    // owner-chosen local token is a declaration, not a portable token claim.
+    const domainPrefixes = ['--color-syntax-', '--color-data-'];
+    const localDeclarations = new Set(
+      [...template.matchAll(/localTokens:\s*\{[\s\S]*?'(--[^']+)'\s*:/g)].map(
+        match => match[1],
+      ),
+    );
     const bogus = templateVars().filter(
       v =>
         !known.has(v) &&
         !publicVars.has(v) &&
+        !localDeclarations.has(v) &&
         !domainPrefixes.some(p => v.startsWith(p) || p.startsWith(v)),
     );
     expect(

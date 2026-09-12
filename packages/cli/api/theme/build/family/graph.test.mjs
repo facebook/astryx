@@ -71,10 +71,7 @@ describe('buildFamilyGraph', () => {
     );
 
     expect(() =>
-      buildFamilyGraph([
-        base,
-        {...base, sourceId: 'themes/reexport.ts'},
-      ]),
+      buildFamilyGraph([base, {...base, sourceId: 'themes/reexport.ts'}]),
     ).toThrow(/same theme object/i);
 
     expect(() =>
@@ -88,10 +85,7 @@ describe('buildFamilyGraph', () => {
   it('rejects multiple roots, missing ancestors, and cycles', () => {
     const base = entry('ocean', 'themes/ocean.ts', null);
     expect(() =>
-      buildFamilyGraph([
-        base,
-        entry('stray', 'themes/stray.ts', null),
-      ]),
+      buildFamilyGraph([base, entry('stray', 'themes/stray.ts', null)]),
     ).toThrow(/exactly one root/i);
 
     expect(() =>

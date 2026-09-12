@@ -58,6 +58,19 @@ import {
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
+import {allocateMemberBindings} from './family/bindings.mjs';
+import {renderFamilyCSS} from './family/css.mjs';
+import {generateFamilyTypes} from './family/dts.mjs';
+import {generateFamilyESM} from './family/esm.mjs';
+import {factorFamilyPlans} from './family/factor.mjs';
+import {buildFamilyGraph} from './family/graph.mjs';
+import {createFamilyGeneration} from './family/manifest.mjs';
+import {createMemberPlan} from './family/plan.mjs';
+import {planFamilyRegistries} from './family/registries.mjs';
+import {
+  checkFamilyGeneration,
+  publishFamilyGeneration,
+} from './family/transaction.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -1183,15 +1196,18 @@ function isSyncLoaderLimitation(error) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
+ * @param {ReturnType<typeof createJiti>} [sharedLoader]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function importThemeModule(filePath, interception) {
-  const jiti = createJiti(import.meta.url, {
-    moduleCache: false,
-    jsx: true,
-    extensions: THEME_MODULE_EXTENSIONS,
-    ...(interception ? {virtualModules: interception.modules} : {}),
-  });
+async function importThemeModule(filePath, interception, sharedLoader) {
+  const jiti =
+    sharedLoader ??
+    createJiti(import.meta.url, {
+      moduleCache: false,
+      jsx: true,
+      extensions: THEME_MODULE_EXTENSIONS,
+      ...(interception ? {virtualModules: interception.modules} : {}),
+    });
 
   /** @type {any} */
   let mod;
@@ -1259,11 +1275,12 @@ function isThemeObject(value) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
+ * @param {ReturnType<typeof createJiti>} [sharedLoader]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function extractThemeDefinition(filePath, interception) {
+async function extractThemeDefinition(filePath, interception, sharedLoader) {
   try {
-    return await importThemeModule(filePath, interception);
+    return await importThemeModule(filePath, interception, sharedLoader);
   } catch (jitiError) {
     try {
       return {
@@ -1322,35 +1339,75 @@ function extractThemeDefinitionLegacy(filePath) {
 }
 
 /**
- * Extract icon import info from a theme source file.
- * Returns { importPath, exportName } or null if no icons.
+ * Extract one registry binding from a theme source. Family mode uses both icon
+ * and indicator descriptors; standalone mode keeps its historical icon path.
  *
- * Looks for patterns like:
- *   import { defaultIconRegistry } from './icons';
- *   icons: defaultIconRegistry,
  * @param {string} filePath
- * @returns {{exportName: string, importPath: string} | null}
+ * @param {'icons'|'indicators'} field
+ * @returns {{exportName: string, sourceLocalName: string, importedName: string, importKind: 'named'|'default'|'namespace', importPath: string} | null}
  */
-function extractIconInfo(filePath) {
+function extractRegistryInfo(filePath, field) {
   const content = fs.readFileSync(filePath, 'utf8');
-
-  // Find the icons field in defineTheme
-  const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-  if (!iconsMatch) return null;
-
-  const varName = /** @type {string} */ (iconsMatch[1]);
-
-  // Find the import for that variable
-  const importRegex = new RegExp(
-    `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
+  const fieldMatch = content.match(
+    new RegExp(`\\b${field}\\s*:\\s*([A-Za-z_$][A-Za-z0-9_$]*)`),
   );
-  const importMatch = content.match(importRegex);
-  if (!importMatch) return null;
+  if (!fieldMatch) return null;
+  const sourceLocalName = fieldMatch[1];
 
-  return {
-    exportName: varName,
-    importPath: /** @type {string} */ (importMatch[1]),
-  };
+  const imports = content.matchAll(
+    /import\s+([\s\S]*?)\s+from\s*['"]([^'"]+)['"]\s*;?/g,
+  );
+  for (const match of imports) {
+    const clause = match[1].trim();
+    const importPath = match[2];
+    const named = clause.match(/\{([\s\S]*?)\}/)?.[1] ?? '';
+    for (const item of named
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)) {
+      const parts = item.split(/\s+as\s+/);
+      const importedName = parts[0].trim();
+      const localName = (parts[1] ?? parts[0]).trim();
+      if (localName === sourceLocalName) {
+        return {
+          exportName: sourceLocalName,
+          sourceLocalName,
+          importedName,
+          importKind: 'named',
+          importPath,
+        };
+      }
+    }
+    const namespace = clause.match(/^\*\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*)$/);
+    if (namespace?.[1] === sourceLocalName) {
+      return {
+        exportName: sourceLocalName,
+        sourceLocalName,
+        importedName: '*',
+        importKind: 'namespace',
+        importPath,
+      };
+    }
+    const defaultName = clause.split(',')[0].trim();
+    if (
+      /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(defaultName) &&
+      defaultName === sourceLocalName
+    ) {
+      return {
+        exportName: sourceLocalName,
+        sourceLocalName,
+        importedName: 'default',
+        importKind: 'default',
+        importPath,
+      };
+    }
+  }
+  return null;
+}
+
+/** @param {string} filePath */
+function extractIconInfo(filePath) {
+  return extractRegistryInfo(filePath, 'icons');
 }
 
 /**
@@ -1846,6 +1903,7 @@ export async function themeBuild(
   {cwd = process.cwd()} = {},
 ) {
   const filePath = path.resolve(cwd, file);
+  const internalOptions = /** @type {any} */ (options);
 
   if (!fs.existsSync(filePath)) {
     throw new AstryxError(
@@ -1862,16 +1920,23 @@ export async function themeBuild(
   // resolving, so the raw input captured here is the only remaining witness
   // to what the author wrote. Costs no extra execution — the theme is loaded
   // once either way — and a core that CAN compile them needs none of it.
-  const interception = _generateAdaptationCSS
-    ? undefined
-    : interceptCore(_coreThemeModule, _coreRootModule);
+  const familyContext = internalOptions.__familyContext;
+  const interception =
+    familyContext?.interception ??
+    (_generateAdaptationCSS
+      ? undefined
+      : interceptCore(_coreThemeModule, _coreRootModule));
 
   // Extract theme definition
   let themeDef;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
   try {
-    const loaded = await extractThemeDefinition(filePath, interception);
+    const loaded = await extractThemeDefinition(
+      filePath,
+      interception,
+      familyContext?.loader,
+    );
     themeDef = loaded.theme;
     loadDegradation = loaded.degraded;
   } catch (e) {
@@ -1894,7 +1959,9 @@ export async function themeBuild(
   );
   const unobservedLineage =
     interception && hasCoverageGap ? interception.unobservedIn(themeDef) : [];
-  if (interception) interception.strip(themeDef);
+  const observedRawInput = interception?.inputOf(themeDef);
+  const rawInput = observedRawInput ?? themeDef;
+  if (interception && !familyContext) interception.strip(themeDef);
 
   if (!themeDef.name) {
     throw new AstryxError(
@@ -1988,6 +2055,7 @@ export async function themeBuild(
 
   let css;
   let resolvedTheme;
+  let compilerSections;
   {
     // jiti returns an already-resolved theme; a plain object literal (or the
     // legacy eval path) returns raw defineTheme input, which still has to go
@@ -2131,8 +2199,9 @@ export async function themeBuild(
     }
     // Media-surface rules come last so onDark/onLight win over matching
     // adaptations on the same resolved leaf.
+    let onMediaCss = '';
     if (_generateOnMediaCSS) {
-      const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+      onMediaCss = _generateOnMediaCSS(resolvedTheme);
       if (onMediaCss) {
         cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
       }
@@ -2162,6 +2231,13 @@ export async function themeBuild(
       );
     }
     css = cssParts.join('\n\n') + '\n';
+    compilerSections = {
+      dataDefaults: baseCss,
+      rules: {component, prose},
+      adaptations: adaptationCss,
+      onMedia: onMediaCss,
+      colorScheme: colorSchemeDecl,
+    };
   }
 
   // Source path relative to cwd — used in @generated headers
@@ -2205,6 +2281,7 @@ export async function themeBuild(
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
   const iconInfo = extractIconInfo(filePath);
+  const indicatorInfo = extractRegistryInfo(filePath, 'indicators');
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -2236,6 +2313,40 @@ export async function themeBuild(
   const dtsContent =
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
+
+  if (internalOptions.__collect) {
+    const unloadedFonts = [
+      ...new Set([
+        ...collectUnloadedFonts(resolvedTheme),
+        ...adaptationRuleValues(resolvedTheme).flatMap(value =>
+          collectUnloadedFonts(value),
+        ),
+      ]),
+    ];
+    return /** @type {any} */ ({
+      type: 'theme.build.prepared',
+      data: {
+        filePath,
+        sourceRelative,
+        sourceBytes: fs.readFileSync(filePath),
+        theme: resolvedTheme,
+        loadedTheme: themeDef,
+        rawInput,
+        lineageObserved: observedRawInput !== undefined,
+        compilerSections,
+        iconInfo,
+        indicatorInfo,
+        typeAugmentations: variantDecl ?? '',
+        versions,
+        warnings: warningMessages,
+        notices: unloadedFonts.map(
+          family =>
+            `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`,
+        ),
+        loadDegradation,
+      },
+    });
+  }
 
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
   // each into place. If any stage step fails we clean up partials and
@@ -2403,6 +2514,309 @@ Or with a <link> tag:
       },
       warnings: warningMessages,
       notices: noticeMessages,
+    },
+  };
+}
+
+const FAMILY_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** @param {string} value */
+function posixPath(value) {
+  return value.split(path.sep).join('/');
+}
+
+/**
+ * Refuse a key-owned output root that already contains an unrelated top-level
+ * path. Transaction internals stay private and are the only accepted entries.
+ *
+ * @param {string} root
+ */
+function assertFamilyRootAvailable(root) {
+  if (!fs.existsSync(root)) return;
+  if (!fs.lstatSync(root).isDirectory()) {
+    throw new AstryxError(
+      `Theme family output collides with an existing path: ${root}`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
+  const allowed = new Set(['current', 'generations', '.lock', '.journal.json']);
+  const unrelated = fs.readdirSync(root).filter(entry => !allowed.has(entry));
+  if (unrelated.length > 0) {
+    throw new AstryxError(
+      `Theme family output would claim an existing unowned path: ${path.join(root, unrelated[0])}`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
+}
+
+/**
+ * Build one selected family into a single keyed immutable generation.
+ * This is an internal command seam, deliberately not re-exported from the
+ * package's public programmatic API.
+ *
+ * @param {string[]} files
+ * @param {{familyKey: string, check?: boolean, iconsSpecifier?: string}} options
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse>}
+ */
+export async function themeBuildFamily(
+  files,
+  options,
+  {cwd = process.cwd()} = {},
+) {
+  if (!Array.isArray(files) || files.length < 2) {
+    throw new AstryxError(
+      '--family needs at least two theme files.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (!FAMILY_KEY_PATTERN.test(options.familyKey ?? '')) {
+    throw new AstryxError(
+      '--family-key must be an exact ASCII lower-kebab key.',
+      undefined,
+      options.familyKey
+        ? ERROR_CODES.ERR_INVALID_OPTION
+        : ERROR_CODES.ERR_MISSING_ARGUMENT,
+    );
+  }
+  if (!_defineTheme || !_generateThemeRulesSplit) {
+    throw new AstryxError(
+      'Could not load @astryxdesign/core/theme — family builds require the shared web compiler.',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
+
+  const interception = interceptCore(_coreThemeModule, _coreRootModule);
+  const loader = createJiti(import.meta.url, {
+    moduleCache: true,
+    jsx: true,
+    extensions: THEME_MODULE_EXTENSIONS,
+    virtualModules: interception.modules,
+  });
+  // Jiti normally shares Node's process-wide CommonJS cache. A family needs one
+  // cache within this graph for exact object identity, but no cache across
+  // builds, where it would retain an earlier source revision and its stripped
+  // lineage markers.
+  loader.cache = Object.create(null);
+  const familyContext = {interception, loader};
+  const requested = files
+    .map(file => ({
+      file,
+      filePath: path.resolve(cwd, file),
+      sourceId: posixPath(path.relative(cwd, path.resolve(cwd, file))),
+    }))
+    .sort((a, b) =>
+      a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0,
+    );
+
+  const prepared = [];
+  for (const source of requested) {
+    const result = /** @type {any} */ (
+      await themeBuild(
+        source.file,
+        /** @type {any} */ ({
+          iconsSpecifier: options.iconsSpecifier,
+          __collect: true,
+          __familyContext: familyContext,
+        }),
+        {cwd},
+      )
+    );
+    if (!result || result.type !== 'theme.build.prepared') {
+      throw new Error(
+        `Theme "${source.file}" did not produce a complete plan.`,
+      );
+    }
+    if (
+      result.data.loadDegradation?.topLevelAwait ||
+      (!result.data.lineageObserved &&
+        result.data.rawInput !== result.data.loadedTheme)
+    ) {
+      throw new Error(
+        `Theme "${source.file}" has an extension edge that cannot be proven through every loader path.`,
+      );
+    }
+    prepared.push({...source, ...result.data});
+  }
+
+  let graph;
+  try {
+    graph = buildFamilyGraph(
+      prepared.map(member => ({
+        sourceId: member.sourceId,
+        sourceBytes: member.sourceBytes,
+        theme: member.theme,
+        rawInput: member.rawInput,
+      })),
+    );
+  } catch (error) {
+    throw new AstryxError(
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+
+  const byTheme = new Map(prepared.map(member => [member.theme, member]));
+  const plans = graph.order.map(node => {
+    const member = byTheme.get(node.theme);
+    if (!member) throw new Error(`No prepared member for "${node.name}".`);
+    return createMemberPlan({
+      identity: {
+        name: node.name,
+        sourceId: node.sourceId,
+        parentName: node.parentName,
+      },
+      resolved: node.theme,
+      dataDefaults: member.compilerSections.dataDefaults,
+      rules: member.compilerSections.rules,
+      adaptations: member.compilerSections.adaptations,
+      onMedia: member.compilerSections.onMedia,
+      colorScheme: member.compilerSections.colorScheme,
+      registries: {
+        icons: member.iconInfo,
+        indicators: member.indicatorInfo,
+      },
+      fonts: member.notices,
+      typeAugmentations: member.typeAugmentations,
+      provenance: {sourceId: node.sourceId},
+    });
+  });
+
+  const rootNode = graph.byName.get(graph.rootName);
+  const rootMember = rootNode ? byTheme.get(rootNode.theme) : undefined;
+  if (!rootMember) throw new Error('Theme family root source is missing.');
+  const familyRoot = path.join(
+    path.dirname(rootMember.filePath),
+    options.familyKey,
+  );
+  assertFamilyRootAvailable(familyRoot);
+
+  const bindings = allocateMemberBindings(graph.order.map(node => node.name));
+  let registryPlan;
+  try {
+    registryPlan = planFamilyRegistries({
+      graph,
+      preparedByTheme: byTheme,
+      iconsSpecifier: options.iconsSpecifier,
+      reserved: bindings.values(),
+    });
+  } catch (error) {
+    throw new AstryxError(
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const command = `astryx theme build --family ${graph.order
+    .map(node => node.sourceId)
+    .join(' ')} --family-key ${options.familyKey}`;
+  const versions = prepared[0].versions;
+  const css =
+    generatedHeader(
+      graph.order.map(node => node.sourceId).join(', '),
+      'css',
+      command,
+      versions,
+    ) + renderFamilyCSS(factorFamilyPlans(plans));
+  const js = await generateFamilyESM(graph, bindings, registryPlan);
+  const dts = generateFamilyTypes(
+    graph,
+    bindings,
+    plans.map(
+      plan =>
+        plan.sections.find(section => section.kind === 'exports')?.data
+          ?.typeAugmentations ?? '',
+    ),
+  );
+  const generation = createFamilyGeneration({
+    artifactKey: options.familyKey,
+    graph,
+    plans,
+    css,
+    js,
+    dts,
+    tools: versions,
+    command,
+    warnings: prepared.flatMap(member => member.warnings),
+    notices: prepared.flatMap(member => member.notices),
+  });
+
+  const relativeCurrent = posixPath(
+    path.relative(cwd, path.join(familyRoot, 'current')),
+  );
+  if (options.check) {
+    let checked;
+    try {
+      checked = checkFamilyGeneration({
+        root: familyRoot,
+        artifactKey: options.familyKey,
+        expectedGeneration: generation,
+      });
+    } catch (error) {
+      throw new AstryxError(
+        error instanceof Error ? error.message : String(error),
+        undefined,
+        ERROR_CODES.ERR_WRITE_FAILED,
+      );
+    }
+    return {
+      type: 'theme.build.check',
+      data: {
+        name: options.familyKey,
+        upToDate: checked.upToDate,
+        stale: checked.stale.map(item => ({
+          ...item,
+          path: `${relativeCurrent}/${item.path}`,
+        })),
+        checked: checked.checked.map(item => `${relativeCurrent}/${item}`),
+      },
+    };
+  }
+
+  try {
+    publishFamilyGeneration({
+      root: familyRoot,
+      artifactKey: options.familyKey,
+      ...generation,
+    });
+  } catch (error) {
+    throw new AstryxError(
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
+  }
+
+  const tokenCount = graph.order.reduce(
+    (count, node) =>
+      count +
+      Object.keys(node.theme.tokens ?? {}).length +
+      Object.keys(node.theme.localTokens ?? {}).length,
+    0,
+  );
+  const componentCount = graph.order.reduce(
+    (count, node) => count + Object.keys(node.theme.components ?? {}).length,
+    0,
+  );
+  return {
+    type: 'theme.build',
+    data: {
+      name: options.familyKey,
+      tokenCount,
+      componentCount,
+      sizeKB: parseFloat((Buffer.byteLength(css) / 1024).toFixed(1)),
+      outputs: {
+        css: `${relativeCurrent}/${options.familyKey}.css`,
+        js: `${relativeCurrent}/${options.familyKey}.js`,
+        dts: `${relativeCurrent}/${options.familyKey}.d.ts`,
+      },
+      warnings: [...new Set(prepared.flatMap(member => member.warnings))],
+      notices: [...new Set(prepared.flatMap(member => member.notices))],
     },
   };
 }

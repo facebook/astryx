@@ -182,7 +182,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using complete --astryx-theme-<name>-* custom-property names; these roles remain inside that enrolled theme family and do not expand the shared token vocabulary. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using any valid CSS custom-property name; exact owner and lineage metadata keep those names inside the enrolled theme family without a required prefix. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -205,12 +205,12 @@ const myTheme = defineTheme({
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
   localTokens: {
-    '--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4'],
+    '--demo-selection-ink': ['#0077B6', '#48CAE4'],
   },
   components: {
     badge: {
       'variant:info': {
-        backgroundColor: 'var(--astryx-theme-my-theme-color-status-fill-accent)',
+        backgroundColor: 'var(--demo-selection-ink)',
       },
     },
   },
@@ -540,7 +540,71 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
+          text: 'For a base theme and related descendants, family mode publishes one failure-atomic set instead of one complete stylesheet per member:',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build and verify a theme family',
+          code: `astryx theme build \\
+  --family ./src/themes/ocean.ts ./src/themes/ocean-deep.ts ./src/themes/ocean-midnight.ts \\
+  --family-key ocean-family
+
+astryx theme build \\
+  --family ./src/themes/ocean.ts ./src/themes/ocean-deep.ts ./src/themes/ocean-midnight.ts \\
+  --family-key ocean-family --check`,
+        },
+        {
+          type: 'table',
+          headers: ['Family file', 'Contract'],
+          rows: [
+            [
+              'ocean-family.css',
+              'One native stylesheet containing every selected member. Shared declarations appear once; member differences remain scoped.',
+            ],
+            [
+              'ocean-family.js',
+              'One CSS-free standard ESM module exporting every complete resolved member.',
+            ],
+            [
+              'ocean-family.d.ts',
+              'One declaration module for every family export and custom-value augmentation.',
+            ],
+            [
+              'ocean-family.manifest.json + receipts',
+              'Generation, ownership, check, and recovery evidence. Applications do not evaluate these files at runtime.',
+            ],
+          ],
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Load the family CSS without a bundler',
+          code: `<link rel="stylesheet" href="./ocean-family/current/ocean-family.css" />
+<script type="module">
+  import {oceanDeepTheme} from './ocean-family/current/ocean-family.js';
+</script>`,
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Switch a loaded family member',
+          code: `import './ocean-family/current/ocean-family.css';
+import {
+  oceanTheme,
+  oceanDeepTheme,
+} from './ocean-family/current/ocean-family.js';
+
+const themes = {ocean: oceanTheme, 'ocean-deep': oceanDeepTheme};
+root.dataset.astryxTheme = themes[nextTheme].name;`,
+        },
+        {
+          type: 'prose',
+          text: 'CSS loading and ESM loading are independent: importing the module does not make styles ready. After the one family stylesheet loads, switching needs only the theme identity attribute and causes no stylesheet request. The family stylesheet eagerly downloads every selected member; keep using the unchanged standalone build when an app needs only one complete theme. The executable nested/sibling and zero-delta example lives at `packages/cli/test/fixtures/theme-family`.',
+        },
+        {
+          type: 'prose',
+          text: "For a standalone build, `theme build` emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, remain omitted from standalone generated JavaScript. Move the registry to a separate module and use a named import for that build flow.",
         },
         {
           type: 'code',

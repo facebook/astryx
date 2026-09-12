@@ -67,7 +67,9 @@ describe('family generation transaction', () => {
     const first = generation('family', 'gen-first', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...first});
 
-    expect(fs.lstatSync(path.join(root, 'current')).isSymbolicLink()).toBe(true);
+    expect(fs.lstatSync(path.join(root, 'current')).isSymbolicLink()).toBe(
+      true,
+    );
     expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
       'generations/gen-first',
     );
@@ -101,7 +103,11 @@ describe('family generation transaction', () => {
         root,
         artifactKey: 'family',
         ...second,
-        hooks: {afterJournal: () => { throw new Error('fault after journal'); }},
+        hooks: {
+          afterJournal: () => {
+            throw new Error('fault after journal');
+          },
+        },
       }),
     ).toThrow(/fault after journal/);
 
@@ -130,7 +136,11 @@ describe('family generation transaction', () => {
         root,
         artifactKey: 'family',
         ...second,
-        hooks: {afterPointer: () => { throw new Error('fault after pointer'); }},
+        hooks: {
+          afterPointer: () => {
+            throw new Error('fault after pointer');
+          },
+        },
       }),
     ).toThrow(/fault after pointer/);
 

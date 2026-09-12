@@ -223,11 +223,12 @@ export const myTheme = defineTheme({
   },
 
   /**
-   * Optional theme-family-local roles. Use the complete exact name and keep
-   * references inside this maintained theme family. These do not become
+   * Optional theme-family-local roles. Choose any valid CSS custom-property
+   * name; exact owner and lineage metadata keep it local without a required
+   * prefix. References match case-sensitively, and these names do not become
    * portable Astryx tokens.
    */
-  // localTokens: {'--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4']},
+  // localTokens: {'--demo-selection-ink': ['#0077B6', '#48CAE4']},
 
   // ───────────────────────────────────────────────────────────────────────
   // components — per-component CSS, emitted inside

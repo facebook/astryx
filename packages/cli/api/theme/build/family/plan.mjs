@@ -31,19 +31,21 @@ function sha256(value) {
   return `sha256-${createHash('sha256').update(value).digest('hex')}`;
 }
 
-/** @param {unknown} value */
+/** @param {unknown} value @returns {string} */
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value !== null && typeof value === 'object') {
-    return `{${Object.keys(value)
+    const record = /** @type {Record<string, unknown>} */ (value);
+    return `{${Object.keys(record)
       .sort()
-      .map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .map(key => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
       .join(',')}}`;
   }
-  if (typeof value === 'function') return JSON.stringify(`[function:${value.name}]`);
+  if (typeof value === 'function')
+    return JSON.stringify(`[function:${value.name}]`);
   if (typeof value === 'symbol') return JSON.stringify(String(value));
   if (value === undefined) return 'null';
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? 'null';
 }
 
 /** @param {unknown} value */
@@ -171,7 +173,8 @@ export function createMemberPlan(input) {
   const tokenRules = [];
   const componentRules = [];
   for (const rule of input.rules.component) {
-    if (postcss.parse(rule).first?.type === 'rule' && postcss.parse(rule).first.selector === ':scope') {
+    const first = postcss.parse(rule).first;
+    if (first?.type === 'rule' && first.selector === ':scope') {
       tokenRules.push(rule);
     } else {
       componentRules.push(rule);
@@ -319,7 +322,9 @@ export function createMemberPlan(input) {
     specs.length !== SECTION_KINDS.length ||
     specs.some((section, index) => section.kind !== SECTION_KINDS[index])
   ) {
-    throw new Error('Theme compilation plan is missing or reorders a required section.');
+    throw new Error(
+      'Theme compilation plan is missing or reorders a required section.',
+    );
   }
 
   const sections = specs.map(section => ({

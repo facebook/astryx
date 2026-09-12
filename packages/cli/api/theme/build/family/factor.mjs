@@ -9,16 +9,17 @@
 
 import {SECTION_KINDS} from './plan.mjs';
 
-/** @param {unknown} value */
+/** @param {unknown} value @returns {string} */
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value !== null && typeof value === 'object') {
-    return `{${Object.keys(value)
+    const record = /** @type {Record<string, unknown>} */ (value);
+    return `{${Object.keys(record)
       .sort()
-      .map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .map(key => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
       .join(',')}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? 'null';
 }
 
 /** @param {any} unit */
@@ -39,7 +40,8 @@ function unitSignature(unit) {
  * @param {Array<{identity: {name: string}, sections: Array<{kind: string, css: any[]}>}>} plans
  */
 export function factorFamilyPlans(plans) {
-  if (plans.length === 0) throw new Error('Cannot factor an empty theme family.');
+  if (plans.length === 0)
+    throw new Error('Cannot factor an empty theme family.');
 
   const groups = [];
   for (const kind of SECTION_KINDS) {
@@ -49,7 +51,9 @@ export function factorFamilyPlans(plans) {
     for (const plan of plans) {
       const section = plan.sections.find(candidate => candidate.kind === kind);
       if (!section) {
-        throw new Error(`Member "${plan.identity.name}" is missing section "${kind}".`);
+        throw new Error(
+          `Member "${plan.identity.name}" is missing section "${kind}".`,
+        );
       }
       for (const unit of section.css) {
         const signature = `${unit.id}\u0000${unitSignature(unit)}`;

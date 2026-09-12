@@ -14,18 +14,19 @@ function sha256(value) {
   return `sha256-${createHash('sha256').update(value).digest('hex')}`;
 }
 
-/** @param {unknown} value */
+/** @param {unknown} value @returns {string} */
 function canonicalJson(value) {
   if (Array.isArray(value)) {
     return `[${value.map(canonicalJson).join(',')}]`;
   }
   if (value !== null && typeof value === 'object') {
-    return `{${Object.keys(value)
+    const record = /** @type {Record<string, unknown>} */ (value);
+    return `{${Object.keys(record)
       .sort()
-      .map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .map(key => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
       .join(',')}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? 'null';
 }
 
 /** @param {string} a @param {string} b */
@@ -75,7 +76,9 @@ export function buildFamilyGraph(entries) {
   for (const entry of entries) {
     const name = entry.theme?.name;
     if (typeof name !== 'string' || name.length === 0) {
-      throw new Error(`Family source "${entry.sourceId}" has no stable theme name.`);
+      throw new Error(
+        `Family source "${entry.sourceId}" has no stable theme name.`,
+      );
     }
     if (byIdentity.has(entry.theme)) {
       throw new Error(
@@ -103,12 +106,11 @@ export function buildFamilyGraph(entries) {
     )
       ? entry.rawInput.extends
       : undefined;
-    const parent = parentValue == null ? undefined : byIdentity.get(parentValue);
+    const parent =
+      parentValue == null ? undefined : byIdentity.get(parentValue);
     if (parentValue != null && !parent) {
       const named =
-        typeof parentValue?.name === 'string'
-          ? ` "${parentValue.name}"`
-          : '';
+        typeof parentValue?.name === 'string' ? ` "${parentValue.name}"` : '';
       throw new Error(
         `Theme "${entry.theme.name}" has missing selected ancestor${named}.`,
       );
