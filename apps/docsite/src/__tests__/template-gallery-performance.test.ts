@@ -29,6 +29,14 @@ describe('template gallery playground links', () => {
     expect(gallery).not.toContain('buildPlaygroundHref(item.source)');
   });
 
+  it('does not render the live preview while the dialog is closed', () => {
+    const dialog = source('components/TemplatePreviewDialog.tsx');
+
+    expect(dialog).toMatch(
+      /\{isOpen && \(\s*<TemplatePreviewSurface[\s\S]*?\/>\s*\)\}/,
+    );
+  });
+
   it('lets the playground resolve the encoded template slug', () => {
     const playground = source('app/playground/PlaygroundClient.tsx');
 

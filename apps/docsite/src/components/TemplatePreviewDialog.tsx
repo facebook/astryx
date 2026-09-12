@@ -481,10 +481,12 @@ export function TemplatePreviewDialog({
         content={
           <LayoutContent isScrollable={false} padding={0}>
             <div {...stylex.props(styles.body)} ref={hostRef}>
-              <TemplatePreviewSurface
-                key={deferredCurrent.slug}
-                slug={deferredCurrent.slug}
-              />
+              {isOpen && (
+                <TemplatePreviewSurface
+                  key={deferredCurrent.slug}
+                  slug={deferredCurrent.slug}
+                />
+              )}
               {isPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
                   <Skeleton width="100%" height="100%" />
