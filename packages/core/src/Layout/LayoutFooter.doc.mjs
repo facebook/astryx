@@ -8,6 +8,15 @@ export const docs = {
   displayName: 'Layout Footer',
   isHiddenFromOverview: true,
   description: 'Bottom bar for action bars, pagination, and status bars.',
+  playground: {
+    defaults: {
+      children: 'Footer Content',
+      hasDivider: true,
+    },
+    wrapper: {
+      component: 'Layout',
+    },
+  },
   props: [
     {
       name: 'children',
