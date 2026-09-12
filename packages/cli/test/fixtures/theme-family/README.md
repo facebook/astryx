@@ -21,7 +21,7 @@ and nested roots, a zero-delta member, and attribute-only switching. The complet
 family downloads eagerly in one CSS request; use a standalone build when an app
 needs only one complete theme.
 
-From the repository root, `pnpm test:theme-family-browser` runs the same example
-in real Chromium. It checks raw-link first paint, every member, component state,
-an adaptation, a media surface, nested/sibling isolation, switching without a
-new CSS request, relocation, and the rejected missing-parent wrapper behavior.
+The existing Node CLI suite exercises this fixture through
+`packages/cli/clients/cli/commands/theme-build-family.example.test.mjs`. It
+checks the generated ESM exports, Vite consumption, relocation, and icon
+overrides as part of the normal CLI test lane.

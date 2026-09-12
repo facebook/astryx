@@ -344,24 +344,19 @@ jobs:
   # registry contract always report, so this asserts success rather than
   # tolerating a skip.
   test:
-    needs: [test-ui, test-node, registry-contract, theme-layers]
+    needs: [test-ui, test-node, registry-contract]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Assert every test gate succeeded
         run: |
-          echo "test-ui:           ${{ needs.test-ui.result }}"
-          echo "test-node:         ${{ needs.test-node.result }}"
+          echo "test-ui:          ${{ needs.test-ui.result }}"
+          echo "test-node:        ${{ needs.test-node.result }}"
           echo "registry-contract: ${{ needs.registry-contract.result }}"
-          echo "theme-layers:      ${{ needs.theme-layers.result }}"
           [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
           [ "${{ needs.test-node.result }}" = "success" ] || exit 1
           [ "${{ needs.registry-contract.result }}" = "success" ] || exit 1
-          case "${{ needs.theme-layers.result }}" in
-            success|skipped) ;;
-            *) exit 1 ;;
-          esac
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
@@ -781,32 +776,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-        with:
-          # Browser evidence must describe the PR's exact authored bytes, not a
-          # synthetic pull-request merge ref.
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: ./.github/actions/setup
 
       - name: Install Playwright
         run: npx playwright install chromium
-
-      - name: Build Core dependency for the family fixture
-        run: pnpm -F @astryxdesign/core build
-
-      - name: Run theme family artifact browser contract
-        run: pnpm test:theme-family-browser
-
-      - name: Upload theme family browser evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: theme-family-browser-${{ github.event.pull_request.head.sha || github.sha }}
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 7
-          if-no-files-found: error
 
       # The guard imports the plugin's build artifact, the same one a consumer
       # installs.

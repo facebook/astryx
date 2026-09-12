@@ -108,6 +108,24 @@ describe('theme build family CLI', () => {
       data: {name: 'family'},
     });
 
+    const current = path.join(cwd, 'family', 'current');
+    expect(fs.lstatSync(current).isSymbolicLink()).toBe(true);
+    expect(fs.readlinkSync(current)).toMatch(/^generations\//);
+    expect(fs.readdirSync(current).sort()).toEqual([
+      'family.css',
+      'family.d.ts',
+      'family.js',
+      'family.manifest.json',
+      'receipts',
+    ]);
+    expect(fs.readdirSync(path.join(current, 'receipts')).sort()).toEqual([
+      'build.json',
+      'members',
+    ]);
+    expect(
+      fs.readdirSync(path.join(current, 'receipts', 'members')).sort(),
+    ).toEqual(['000-base.json', '001-child.json']);
+
     const checked = await runCli(
       [
         '--json',
