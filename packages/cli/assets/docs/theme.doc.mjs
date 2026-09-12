@@ -76,7 +76,7 @@ function App() {
             [
               'Neutral',
               "import {neutralTheme} from '@astryxdesign/theme-neutral'",
-              'Muted, minimal aesthetic with system fonts. A good starting point.',
+              'Muted, minimal aesthetic with Figtree typography. A good starting point.',
             ],
             [
               'Butter',
