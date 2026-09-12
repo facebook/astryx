@@ -250,7 +250,8 @@ async function addComponent(name, options) {
   }
 
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
-  const importSpecifier = `${owner}/${sourcePath}`;
+  const extensionlessPath = sourcePath.replace(/\.tsx?$/u, '');
+  const importSpecifier = `${owner}/${extensionlessPath}`;
   const docContents = `export default {\n  type: 'component',\n  name: '${name}',\n  import: ${JSON.stringify(importSpecifier)},\n  description: '${name} component.',\n  props: [],\n};\n`;
   const sourceContents = `export function ${name}() {\n  return <div>${name}</div>;\n}\n`;
 
@@ -263,7 +264,7 @@ async function addComponent(name, options) {
     packageFile,
     rootPath,
     path.basename(manifestFile),
-    [{subpath: sourcePath, target: sourcePath}],
+    [{subpath: extensionlessPath, target: sourcePath}],
   );
   if (pkgUpdate != null) {
     plans.push({
@@ -576,6 +577,7 @@ async function addTemplate(name, options) {
 
   const pascalName = kebabToPascal(name);
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
+  const extensionlessPath = sourcePath.replace(/\.tsx?$/u, '');
   const specContents = `export default {\n  type: '${templateType}',\n  name: '${name}',\n  description: '${kebabToTitle(name)} template.',\n};\n`;
   const sourceContents = `export default function ${pascalName}() {\n  return <div>${kebabToTitle(name)}</div>;\n}\n`;
 
@@ -588,7 +590,7 @@ async function addTemplate(name, options) {
     packageFile,
     rootPath,
     path.basename(manifestFile),
-    [{subpath: sourcePath, target: sourcePath}],
+    [{subpath: extensionlessPath, target: sourcePath}],
   );
   if (pkgUpdate != null) {
     plans.push({

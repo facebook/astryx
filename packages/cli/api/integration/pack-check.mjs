@@ -421,13 +421,17 @@ async function validatePackedComponentExports(integration, scratchBase) {
  */
 async function validatePackedTemplateExports(integration, scratchBase) {
   const {templates} = await discoverIntegrationTemplatesForOne(integration);
-  const entries = templates.map(template => ({
-    id: template.dirName,
-    specifier: `${integration.name}/${path
+  const entries = templates.map(template => {
+    const relPath = path
       .relative(integration.__packageDir, template.filePath)
       .split(path.sep)
-      .join('/')}`,
-  }));
+      .join('/');
+    const extensionless = relPath.replace(/\.tsx?$/u, '');
+    return {
+      id: template.dirName,
+      specifier: `${integration.name}/${extensionless}`,
+    };
+  });
   const resolved = resolveConsumerSpecifiers(
     entries.map(entry => entry.specifier),
     scratchBase,
@@ -461,6 +465,135 @@ async function validatePackedTemplateExports(integration, scratchBase) {
     }
   }
   return issues;
+}
+
+const TS_EXTENSION_RE = /\.tsx?$/u;
+
+/**
+ * Reject specifiers that end in a TypeScript extension — they fail under
+ * default `moduleResolution` with TS5097/TS2307 unless the consumer enables
+ * `allowImportingTsExtensions`.
+ *
+ * @param {Array<{label: string, specifier: string}>} entries
+ * @returns {Issue[]}
+ */
+function validateSpecifierExtensions(entries) {
+  /** @type {Issue[]} */
+  const issues = [];
+  for (const {label, specifier} of entries) {
+    if (TS_EXTENSION_RE.test(specifier)) {
+      issues.push(
+        error(
+          'typescript_extension_in_specifier',
+          `${label} advertises import "${specifier}", which ends in a TypeScript extension. A consumer with default moduleResolution will reject it (TS5097). Use an extensionless specifier mapped through the package exports.`,
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+/**
+ * Verify that specifiers resolve under TypeScript's `moduleResolution: "node16"`
+ * using TypeScript's own resolver API. This avoids full compilation (which would
+ * need JSX config and React types) while proving that the specifier is
+ * resolvable through the package exports map.
+ *
+ * Falls back to {@link validateSpecifierExtensions} when TypeScript is not
+ * available in the project's node_modules.
+ *
+ * @param {Array<{label: string, specifier: string, exportName: string}>} entries
+ * @param {string} scratchBase
+ * @returns {Issue[]}
+ */
+function validateTypeScriptConsumer(entries, scratchBase) {
+  if (entries.length === 0) return [];
+
+  // Always check specifier extensions first — .tsx/.ts imports are unconditionally
+  // invalid under default TypeScript settings regardless of resolution.
+  const extensionIssues = validateSpecifierExtensions(entries);
+
+  // Find tsc to locate the TypeScript module
+  const tscBin = findTscBinary(scratchBase);
+  if (!tscBin) {
+    return extensionIssues;
+  }
+
+  // Use TypeScript's module resolution API (not full compilation) to verify
+  // that each specifier resolves through the package exports map.
+  const tsDir = path.dirname(path.dirname(tscBin));
+  const resolver = path.join(scratchBase, '.astryx-ts-resolve.mjs');
+  const source = [
+    `import {createRequire} from 'node:module';`,
+    `const require = createRequire(${JSON.stringify(path.join(tsDir, 'package.json'))});`,
+    `const ts = require(${JSON.stringify(tsDir)});`,
+    `const specs = JSON.parse(process.argv[2]);`,
+    `const opts = {moduleResolution: ts.ModuleResolutionKind.Node16, module: ts.ModuleKind.Node16};`,
+    `const host = ts.createCompilerHost(opts);`,
+    `const fromFile = ${JSON.stringify(path.join(scratchBase, 'check.ts'))};`,
+    `const out = {};`,
+    `for (const s of specs) {`,
+    `  const r = ts.resolveModuleName(s, fromFile, opts, host);`,
+    `  out[s] = r.resolvedModule ? {file: r.resolvedModule.resolvedFileName} : {error: 'not resolved'};`,
+    `}`,
+    `console.log(JSON.stringify(out));`,
+  ].join('\n');
+
+  fs.writeFileSync(resolver, source, {flag: 'wx'});
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [resolver, JSON.stringify([...new Set(entries.map(e => e.specifier))])],
+      {cwd: scratchBase, encoding: 'utf-8', timeout: 30_000},
+    );
+
+    if (result.error || result.status !== 0) {
+      // TypeScript resolver failed to run — fall back to extension check only
+      return extensionIssues;
+    }
+
+    /** @type {Record<string, {file?: string, error?: string}>} */
+    let parsed;
+    try {
+      parsed = JSON.parse(result.stdout);
+    } catch {
+      return extensionIssues;
+    }
+
+    /** @type {Issue[]} */
+    const resolverIssues = [];
+    for (const {label, specifier} of entries) {
+      const entry = parsed[specifier];
+      if (!entry?.file) {
+        resolverIssues.push(
+          error(
+            'typescript_consumer_unresolvable',
+            `${label} import "${specifier}" cannot be resolved by TypeScript under moduleResolution:node16. Ensure the package exports map maps an extensionless subpath to the source file.`,
+          ),
+        );
+      }
+    }
+    return [...extensionIssues, ...resolverIssues];
+  } finally {
+    fs.rmSync(resolver, {force: true});
+  }
+}
+
+/**
+ * Walk up from `startDir` looking for `node_modules/typescript/bin/tsc`.
+ * @param {string} startDir
+ * @returns {string|null}
+ */
+function findTscBinary(startDir) {
+  let dir = path.resolve(startDir);
+  for (let depth = 0; depth < 30; depth++) {
+    const candidate = path.join(dir, 'node_modules', 'typescript', 'bin', 'tsc');
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
 }
 
 /**
@@ -715,6 +848,59 @@ export async function integrationPackCheck(options = {}) {
         scratchBase,
       )),
     );
+
+    // ── Phase 4: TypeScript consumer resolution ──
+    // Collect every public specifier and verify a TypeScript consumer with
+    // default moduleResolution can resolve them. This runs UNCONDITIONALLY —
+    // a package without an exports map still publishes a .tsx doc import
+    // that a default TS consumer rejects (TS5097/TS2307).
+    /** @type {Array<{label: string, specifier: string, exportName: string}>} */
+    const tsEntries = [];
+    const componentRecords = discoverIntegrationComponents(
+      packedResult.integration,
+    );
+    for (const record of componentRecords) {
+      let docs;
+      try {
+        docs = await loadComponentDoc(record.docPath);
+      } catch {
+        continue;
+      }
+      const specifier =
+        /** @type {{import?: string}} */ (docs).import ??
+        resolveIntegrationImportPath(
+          {
+            exportsMap: packedResult.integration.__packageExports,
+            packageDir: packedResult.integration.__packageDir,
+            docPath: record.docPath,
+            packageName: packedResult.integration.name,
+          },
+          record.name,
+        );
+      tsEntries.push({
+        label: `Component "${record.name}"`,
+        specifier,
+        exportName: record.name,
+      });
+    }
+    const {templates: packedTemplates} =
+      await discoverIntegrationTemplatesForOne(packedResult.integration);
+    for (const template of packedTemplates) {
+      const relPath = path
+        .relative(
+          packedResult.integration.__packageDir,
+          template.filePath,
+        )
+        .split(path.sep)
+        .join('/');
+      const extensionless = relPath.replace(/\.tsx?$/u, '');
+      tsEntries.push({
+        label: `Template "${template.dirName}"`,
+        specifier: `${packedResult.integration.name}/${extensionless}`,
+        exportName: 'default',
+      });
+    }
+    issues.push(...validateTypeScriptConsumer(tsEntries, scratchBase));
 
     return buildReceipt(
       pkgName,
