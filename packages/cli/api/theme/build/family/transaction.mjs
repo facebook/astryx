@@ -1,0 +1,670 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file transaction.mjs
+ * @input One complete content-identified file set and a family-owned manifest
+ * @output Atomic current-pointer publication, recovery, cleanup, and check
+ * @position Theme-agnostic filesystem boundary for AST-034 family artifacts
+ */
+
+import {createHash} from 'node:crypto';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+
+let uniqueCounter = 0;
+
+/** @param {string | Buffer} value */
+function sha256(value) {
+  return `sha256-${createHash('sha256').update(value).digest('hex')}`;
+}
+
+/** @param {string | Buffer} value */
+function bytes(value) {
+  return Buffer.isBuffer(value) ? value : Buffer.from(value);
+}
+
+/** @param {string} relative */
+function assertSafeRelativePath(relative) {
+  if (
+    relative.length === 0 ||
+    path.isAbsolute(relative) ||
+    relative.includes('\\') ||
+    relative.split('/').some(part => part === '' || part === '.' || part === '..')
+  ) {
+    throw new Error(`Unsafe family-owned path "${relative}".`);
+  }
+}
+
+/** @param {string} directory */
+function fsyncDirectory(directory) {
+  const fd = fs.openSync(directory, 'r');
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+/** @param {string} file @param {string | Buffer} content */
+function durableWrite(file, content) {
+  fs.mkdirSync(path.dirname(file), {recursive: true});
+  const fd = fs.openSync(file, 'wx');
+  try {
+    fs.writeFileSync(fd, bytes(content));
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+/** @param {number} pid */
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code !== 'ESRCH';
+  }
+}
+
+/** @param {string} root */
+function acquireLock(root) {
+  const lockPath = path.join(root, '.lock');
+  const owner = {hostname: os.hostname(), pid: process.pid};
+  const target = Buffer.from(JSON.stringify(owner)).toString('base64url');
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      fs.symlinkSync(target, lockPath);
+      fsyncDirectory(root);
+      return () => {
+        try {
+          fs.unlinkSync(lockPath);
+          fsyncDirectory(root);
+        } catch (error) {
+          if (error?.code !== 'ENOENT') throw error;
+        }
+      };
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+
+      let prior;
+      try {
+        prior = JSON.parse(
+          Buffer.from(fs.readlinkSync(lockPath), 'base64url').toString('utf8'),
+        );
+      } catch {
+        throw new Error(
+          `Theme family output is locked by an unreadable lock at ${lockPath}.`,
+        );
+      }
+      const stale =
+        prior?.hostname === owner.hostname &&
+        Number.isInteger(prior?.pid) &&
+        !processIsAlive(prior.pid);
+      if (!stale || attempt > 0) {
+        throw new Error(`Theme family output is locked at ${lockPath}.`);
+      }
+      fs.unlinkSync(lockPath);
+      fsyncDirectory(root);
+    }
+  }
+  throw new Error(`Theme family output is locked at ${lockPath}.`);
+}
+
+/**
+ * Probe the actual destination filesystem for every primitive publication needs.
+ * Node exposes fsync rather than macOS F_FULLFSYNC, so this establishes the
+ * strongest ordering guarantee available through the supported runtime.
+ *
+ * @param {string} root
+ */
+export function probeAtomicPointer(root) {
+  const probe = path.join(
+    root,
+    `.probe-${process.pid}-${uniqueCounter++}`,
+  );
+  try {
+    fs.mkdirSync(path.join(probe, 'a'), {recursive: true});
+    fs.mkdirSync(path.join(probe, 'b'), {recursive: true});
+    fs.writeFileSync(path.join(probe, 'a', 'value'), 'probe');
+    fs.symlinkSync('a', path.join(probe, 'pointer'), 'dir');
+    if (!fs.lstatSync(path.join(probe, 'pointer')).isSymbolicLink()) {
+      throw new Error('directory pointer was not created as a symbolic link');
+    }
+    fs.symlinkSync('b', path.join(probe, 'next'), 'dir');
+    fs.renameSync(path.join(probe, 'next'), path.join(probe, 'pointer'));
+    if (fs.readlinkSync(path.join(probe, 'pointer')) !== 'b') {
+      throw new Error('atomic symbolic-link replacement did not take effect');
+    }
+    fsyncDirectory(probe);
+    const fd = fs.openSync(path.join(probe, 'a', 'value'), 'r+');
+    try {
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (error) {
+    throw new Error(
+      `This filesystem cannot publish a theme family atomically at ${root}: ${error.message}`,
+    );
+  } finally {
+    fs.rmSync(probe, {recursive: true, force: true});
+  }
+}
+
+/** @param {string} root */
+function readCurrent(root) {
+  const currentPath = path.join(root, 'current');
+  try {
+    const stat = fs.lstatSync(currentPath);
+    if (!stat.isSymbolicLink()) {
+      throw new Error(`Theme family current pointer is not a symbolic link: ${currentPath}.`);
+    }
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+
+  const target = fs.readlinkSync(currentPath).split(path.sep).join('/');
+  assertSafeRelativePath(target);
+  if (!target.startsWith('generations/')) {
+    throw new Error(`Theme family current pointer escapes generations: ${target}.`);
+  }
+  return {target, generationId: target.slice('generations/'.length)};
+}
+
+/** @param {string} root @param {string | null} target */
+function replaceCurrent(root, target) {
+  const currentPath = path.join(root, 'current');
+  if (target === null) {
+    try {
+      fs.unlinkSync(currentPath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    return;
+  }
+
+  assertSafeRelativePath(target);
+  const temporary = path.join(
+    root,
+    `.current-${process.pid}-${uniqueCounter++}.tmp`,
+  );
+  fs.symlinkSync(target, temporary, 'dir');
+  try {
+    fs.renameSync(temporary, currentPath);
+  } finally {
+    fs.rmSync(temporary, {force: true});
+  }
+}
+
+/**
+ * @param {string} root
+ * @param {string} generationTarget
+ * @param {string} manifestPath
+ * @param {string} artifactKey
+ */
+function readManifest(root, generationTarget, manifestPath, artifactKey) {
+  assertSafeRelativePath(generationTarget);
+  assertSafeRelativePath(manifestPath);
+  const generationDir = path.join(root, ...generationTarget.split('/'));
+  const manifestFile = path.join(generationDir, ...manifestPath.split('/'));
+  const content = fs.readFileSync(manifestFile);
+  const manifest = JSON.parse(content.toString('utf8'));
+  if (
+    manifest?.schemaVersion !== 1 ||
+    manifest?.artifactKey !== artifactKey ||
+    manifest?.artifacts?.manifest !== manifestPath ||
+    !Array.isArray(manifest?.owned)
+  ) {
+    throw new Error(`Invalid family manifest at ${manifestFile}.`);
+  }
+  for (const owned of manifest.owned) {
+    assertSafeRelativePath(owned.path);
+    if (typeof owned.digest !== 'string') {
+      throw new Error(`Invalid family manifest digest at ${manifestFile}.`);
+    }
+  }
+  return {
+    manifest,
+    content,
+    digest: sha256(content),
+    generationDir,
+    manifestFile,
+  };
+}
+
+/**
+ * @param {string} root
+ * @param {string} generationTarget
+ * @param {string} manifestPath
+ * @param {string} artifactKey
+ */
+function validateGeneration(root, generationTarget, manifestPath, artifactKey) {
+  const info = readManifest(root, generationTarget, manifestPath, artifactKey);
+  for (const owned of info.manifest.owned) {
+    const file = path.join(info.generationDir, ...owned.path.split('/'));
+    const actual = sha256(fs.readFileSync(file));
+    if (actual !== owned.digest) {
+      throw new Error(`Family generation digest mismatch for ${owned.path}.`);
+    }
+  }
+  return info;
+}
+
+/** @param {string} start @param {string} stop */
+function removeEmptyParents(start, stop) {
+  let current = start;
+  while (current.startsWith(stop) && current !== stop) {
+    try {
+      fs.rmdirSync(current);
+    } catch {
+      return;
+    }
+    current = path.dirname(current);
+  }
+}
+
+/**
+ * Delete only files whose own manifest proves family ownership. Unknown files
+ * and directories survive; a broad filename pattern never grants ownership.
+ *
+ * @param {string} root
+ * @param {string} generationTarget
+ * @param {string} manifestPath
+ * @param {string} artifactKey
+ */
+function removeManifestOwnedGeneration(
+  root,
+  generationTarget,
+  manifestPath,
+  artifactKey,
+) {
+  let info;
+  try {
+    info = readManifest(root, generationTarget, manifestPath, artifactKey);
+  } catch {
+    return false;
+  }
+
+  const ownedPaths = [
+    ...info.manifest.owned.map(owned => owned.path),
+    manifestPath,
+  ].sort((a, b) => b.length - a.length);
+  for (const relative of ownedPaths) {
+    const file = path.join(info.generationDir, ...relative.split('/'));
+    try {
+      fs.unlinkSync(file);
+      removeEmptyParents(path.dirname(file), info.generationDir);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  }
+  try {
+    fs.rmdirSync(info.generationDir);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {string} root
+ * @param {string | null} activeTarget
+ * @param {string | null} protectedTarget
+ * @param {string} manifestPath
+ * @param {string} artifactKey
+ * @param {(() => void) | undefined} duringCleanup
+ */
+function cleanupGenerations(
+  root,
+  activeTarget,
+  protectedTarget,
+  manifestPath,
+  artifactKey,
+  duringCleanup,
+) {
+  const generationsDir = path.join(root, 'generations');
+  if (!fs.existsSync(generationsDir)) return;
+  for (const name of fs.readdirSync(generationsDir).sort()) {
+    const target = `generations/${name}`;
+    if (target === activeTarget || target === protectedTarget) continue;
+    const full = path.join(generationsDir, name);
+    if (!fs.lstatSync(full).isDirectory()) continue;
+    duringCleanup?.();
+    removeManifestOwnedGeneration(root, target, manifestPath, artifactKey);
+  }
+  fsyncDirectory(generationsDir);
+}
+
+/** @param {string} root @param {unknown} journal */
+function writeJournal(root, journal) {
+  const finalPath = path.join(root, '.journal.json');
+  const temporary = path.join(
+    root,
+    `.journal-${process.pid}-${uniqueCounter++}.tmp`,
+  );
+  durableWrite(temporary, `${JSON.stringify(journal, null, 2)}\n`);
+  fs.renameSync(temporary, finalPath);
+  fsyncDirectory(root);
+}
+
+/** @param {string} root */
+function removeJournal(root) {
+  fs.unlinkSync(path.join(root, '.journal.json'));
+  fsyncDirectory(root);
+}
+
+/**
+ * Resolve a prior interrupted commit under the family lock.
+ *
+ * @param {string} root
+ * @param {string} artifactKey
+ * @param {string} manifestPath
+ */
+function recover(root, artifactKey, manifestPath) {
+  const journalPath = path.join(root, '.journal.json');
+  if (!fs.existsSync(journalPath)) return;
+
+  let journal;
+  try {
+    journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+  } catch {
+    throw new Error(`Theme family journal is unreadable at ${journalPath}.`);
+  }
+  if (
+    journal?.artifactKey !== artifactKey ||
+    typeof journal?.next?.target !== 'string' ||
+    typeof journal?.next?.manifestDigest !== 'string' ||
+    (journal.prev !== null &&
+      (typeof journal?.prev?.target !== 'string' ||
+        typeof journal?.prev?.manifestDigest !== 'string'))
+  ) {
+    throw new Error(`Theme family journal is invalid at ${journalPath}.`);
+  }
+
+  const current = readCurrent(root);
+  if (current?.target === journal.next.target) {
+    const next = validateGeneration(
+      root,
+      journal.next.target,
+      manifestPath,
+      artifactKey,
+    );
+    if (next.digest !== journal.next.manifestDigest) {
+      throw new Error('Committed family generation does not match its journal.');
+    }
+    cleanupGenerations(
+      root,
+      journal.next.target,
+      null,
+      manifestPath,
+      artifactKey,
+    );
+    removeJournal(root);
+    return;
+  }
+
+  if (journal.prev) {
+    const previous = validateGeneration(
+      root,
+      journal.prev.target,
+      manifestPath,
+      artifactKey,
+    );
+    if (previous.digest !== journal.prev.manifestDigest) {
+      throw new Error('Prior family generation does not match its journal.');
+    }
+    if (current?.target !== journal.prev.target) {
+      replaceCurrent(root, journal.prev.target);
+      fsyncDirectory(root);
+    }
+  } else if (current) {
+    replaceCurrent(root, null);
+    fsyncDirectory(root);
+  }
+
+  removeManifestOwnedGeneration(
+    root,
+    journal.next.target,
+    manifestPath,
+    artifactKey,
+  );
+  removeJournal(root);
+}
+
+/**
+ * @param {Map<string, string | Buffer>} files
+ * @param {string} manifestPath
+ * @param {string} artifactKey
+ * @param {string} generationId
+ */
+function validateExpected(files, manifestPath, artifactKey, generationId) {
+  if (!files.has(manifestPath)) {
+    throw new Error(`Family generation is missing ${manifestPath}.`);
+  }
+  for (const relative of files.keys()) assertSafeRelativePath(relative);
+  const manifest = JSON.parse(bytes(files.get(manifestPath)).toString('utf8'));
+  if (
+    manifest?.schemaVersion !== 1 ||
+    manifest?.artifactKey !== artifactKey ||
+    manifest?.generationId !== generationId ||
+    manifest?.artifacts?.manifest !== manifestPath ||
+    !Array.isArray(manifest?.owned)
+  ) {
+    throw new Error('Expected family manifest does not describe this generation.');
+  }
+  const expectedOwned = new Map(
+    [...files]
+      .filter(([relative]) => relative !== manifestPath)
+      .map(([relative, content]) => [relative, sha256(bytes(content))]),
+  );
+  if (expectedOwned.size !== manifest.owned.length) {
+    throw new Error('Expected family manifest ownership set is incomplete.');
+  }
+  for (const owned of manifest.owned) {
+    if (expectedOwned.get(owned.path) !== owned.digest) {
+      throw new Error(`Expected family manifest digest differs for ${owned.path}.`);
+    }
+  }
+}
+
+/**
+ * Publish one complete immutable generation and atomically select it.
+ *
+ * @param {{root: string, artifactKey: string, generationId: string, files: Map<string, string | Buffer>, manifestPath: string, hooks?: {afterStage?: () => void, afterValidate?: () => void, afterJournal?: () => void, afterPointer?: () => void, duringCleanup?: () => void}}} input
+ */
+export function publishFamilyGeneration(input) {
+  const {root, artifactKey, generationId, files, manifestPath, hooks = {}} = input;
+  validateExpected(files, manifestPath, artifactKey, generationId);
+  fs.mkdirSync(root, {recursive: true});
+  fs.mkdirSync(path.join(root, 'generations'), {recursive: true});
+  fsyncDirectory(root);
+  const release = acquireLock(root);
+  try {
+    recover(root, artifactKey, manifestPath);
+    probeAtomicPointer(root);
+
+    const generationTarget = `generations/${generationId}`;
+    const generationDir = path.join(root, 'generations', generationId);
+    if (!fs.existsSync(generationDir)) {
+      const stagingName = `.${generationId}.staging-${process.pid}-${uniqueCounter++}`;
+      const stagingDir = path.join(root, 'generations', stagingName);
+      fs.mkdirSync(stagingDir);
+      try {
+        for (const [relative, content] of [...files].sort(([a], [b]) =>
+          a < b ? -1 : a > b ? 1 : 0,
+        )) {
+          durableWrite(path.join(stagingDir, ...relative.split('/')), content);
+        }
+        for (const directory of [
+          ...new Set(
+            [...files.keys()].map(relative =>
+              path.dirname(path.join(stagingDir, ...relative.split('/'))),
+            ),
+          ),
+        ].sort((a, b) => b.length - a.length)) {
+          fsyncDirectory(directory);
+        }
+        fsyncDirectory(stagingDir);
+        hooks.afterStage?.();
+        fs.renameSync(stagingDir, generationDir);
+        fsyncDirectory(path.join(root, 'generations'));
+      } catch (error) {
+        // A manifest inside staging is the only cleanup authority. Move nothing
+        // into place after a failed stage; the next successful build may remove
+        // only the files that manifest names.
+        throw error;
+      }
+    }
+
+    const next = validateGeneration(
+      root,
+      generationTarget,
+      manifestPath,
+      artifactKey,
+    );
+    for (const [relative, content] of files) {
+      const actual = fs.readFileSync(
+        path.join(generationDir, ...relative.split('/')),
+      );
+      if (!actual.equals(bytes(content))) {
+        throw new Error(`Existing family generation differs for ${relative}.`);
+      }
+    }
+    hooks.afterValidate?.();
+
+    const current = readCurrent(root);
+    let previous = null;
+    if (current) {
+      const priorManifest = validateGeneration(
+        root,
+        current.target,
+        manifestPath,
+        artifactKey,
+      );
+      previous = {
+        target: current.target,
+        manifestDigest: priorManifest.digest,
+      };
+    }
+
+    writeJournal(root, {
+      schemaVersion: 1,
+      artifactKey,
+      prev: previous,
+      next: {target: generationTarget, manifestDigest: next.digest},
+      paths: [...files.keys()].sort(),
+    });
+    hooks.afterJournal?.();
+
+    if (current?.target !== generationTarget) {
+      replaceCurrent(root, generationTarget);
+    }
+    hooks.afterPointer?.();
+    fsyncDirectory(root);
+
+    cleanupGenerations(
+      root,
+      generationTarget,
+      null,
+      manifestPath,
+      artifactKey,
+      hooks.duringCleanup,
+    );
+    removeJournal(root);
+  } finally {
+    release();
+  }
+}
+
+/**
+ * Recover if necessary, then compare the expected complete owned set in memory.
+ * This never creates a generation or moves `current` after recovery.
+ *
+ * @param {{root: string, artifactKey: string, expectedGeneration: {generationId: string, files: Map<string, string | Buffer>, manifestPath: string}}} input
+ * @returns {{upToDate: boolean, stale: Array<{path: string, reason: 'missing'|'outdated'}>, checked: string[]}}
+ */
+export function checkFamilyGeneration(input) {
+  const {root, artifactKey, expectedGeneration} = input;
+  const {generationId, files, manifestPath} = expectedGeneration;
+  validateExpected(files, manifestPath, artifactKey, generationId);
+
+  if (!fs.existsSync(root)) {
+    const checked = [...files.keys()].sort();
+    return {
+      upToDate: false,
+      stale: checked.map(relative => ({path: relative, reason: 'missing'})),
+      checked,
+    };
+  }
+
+  const release = acquireLock(root);
+  try {
+    recover(root, artifactKey, manifestPath);
+    const current = readCurrent(root);
+    const checked = new Set(files.keys());
+    /** @type {Array<{path: string, reason: 'missing'|'outdated'}>} */
+    const stale = [];
+    if (!current) {
+      for (const relative of [...files.keys()].sort()) {
+        stale.push({path: relative, reason: 'missing'});
+      }
+      return {upToDate: false, stale, checked: [...checked].sort()};
+    }
+
+    let prior;
+    try {
+      prior = readManifest(root, current.target, manifestPath, artifactKey);
+    } catch {
+      for (const relative of [...files.keys()].sort()) {
+        stale.push({path: relative, reason: 'missing'});
+      }
+      return {upToDate: false, stale, checked: [...checked].sort()};
+    }
+
+    const priorOwned = new Set([
+      ...prior.manifest.owned.map(owned => owned.path),
+      manifestPath,
+    ]);
+    for (const relative of priorOwned) checked.add(relative);
+
+    for (const [relative, content] of files) {
+      const file = path.join(
+        root,
+        ...current.target.split('/'),
+        ...relative.split('/'),
+      );
+      if (!fs.existsSync(file)) {
+        stale.push({path: relative, reason: 'missing'});
+      } else if (!fs.readFileSync(file).equals(bytes(content))) {
+        stale.push({path: relative, reason: 'outdated'});
+      }
+    }
+    for (const relative of priorOwned) {
+      if (!files.has(relative)) {
+        stale.push({path: relative, reason: 'outdated'});
+      }
+    }
+    stale.sort((a, b) =>
+      a.path === b.path
+        ? a.reason < b.reason
+          ? -1
+          : a.reason > b.reason
+            ? 1
+            : 0
+        : a.path < b.path
+          ? -1
+          : 1,
+    );
+    return {
+      upToDate: stale.length === 0,
+      stale,
+      checked: [...checked].sort(),
+    };
+  } finally {
+    release();
+  }
+}
