@@ -52,10 +52,13 @@
 /**
  * A single entry in a `component.list` group at `detail: 'names'`. Pre-1.0 the
  * list moved from bare strings to package-qualified objects so consumers can
- * disambiguate ownership (core vs. an integration package).
+ * disambiguate ownership (core vs. an integration package). Integration entries
+ * carry `import` — the package-authored specifier; core entries omit it (the
+ * specifier is derived from the component name by the renderer).
  * @typedef {object} ComponentListEntry
  * @property {string} name
  * @property {string} package - Owner package, e.g. '@astryxdesign/core' or '@acme/astryx-meta'.
+ * @property {string} [import] - Import specifier; present for integration components, absent for core.
  */
 
 /**

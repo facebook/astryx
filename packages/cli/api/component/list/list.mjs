@@ -18,6 +18,7 @@ import {
   discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
+  resolveIntegrationImportPath,
 } from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -166,13 +167,24 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     // Group integration components by their doc `group`, falling back to the
     // package name. Keys are package-qualified so they never collide with
     // core groups or each other.
-    /** @type {Map<string, Array<{name: string, package: string}>>} */
+    /** @type {Map<string, Array<{name: string, package: string, import?: string}>>} */
     const byGroup = new Map();
     for (const rec of owned) {
       const groupLabel = rec.group ?? integration.name;
       const key = `${groupLabel} (${integration.name})`;
       if (!byGroup.has(key)) byGroup.set(key, []);
-      byGroup.get(key)?.push({name: rec.name, package: integration.name});
+      // Resolve the import specifier so list views (both JSON and human)
+      // report the package-authored path instead of a core import.
+      const importPath = resolveIntegrationImportPath(
+        {
+          exportsMap: integration.__packageExports,
+          packageDir: integration.__packageDir,
+          docPath: rec.docPath,
+          packageName: integration.name,
+        },
+        rec.name,
+      );
+      byGroup.get(key)?.push({name: rec.name, package: integration.name, import: importPath});
     }
     for (const [key, members] of byGroup) {
       members.sort((a, b) => a.name.localeCompare(b.name));

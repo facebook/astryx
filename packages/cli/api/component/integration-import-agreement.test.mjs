@@ -316,3 +316,120 @@ describe('integration component import specifiers', () => {
     ).toBe('@acme/widgets');
   });
 });
+
+/**
+ * Scaffold a default-export component doc (the shape `integration add component`
+ * generates). This is a separate function because the existing scaffold writes
+ * a named `export const docs`, and we need to test both.
+ */
+function scaffoldDefaultExport({exports: exportsMap, docImport} = {}) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name: 'consumer', version: '1.0.0'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.config.mjs'),
+    "export default {integrations: ['@acme/widgets']};\n",
+  );
+
+  const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
+  const componentDir = path.join(pkgDir, 'src', 'Carousel');
+  fs.mkdirSync(componentDir, {recursive: true});
+
+  fs.writeFileSync(
+    path.join(pkgDir, 'package.json'),
+    JSON.stringify({
+      name: '@acme/widgets',
+      version: '1.0.0',
+      ...(exportsMap ? {exports: exportsMap} : {}),
+    }),
+  );
+  fs.writeFileSync(
+    path.join(pkgDir, 'astryx.integration.mjs'),
+    "export default {components: './src'};\n",
+  );
+  fs.writeFileSync(
+    path.join(componentDir, 'AcmeCarousel.tsx'),
+    'export const AcmeCarousel = () => null;\n',
+  );
+  // Default export — the shape integration add component writes
+  fs.writeFileSync(
+    path.join(componentDir, 'AcmeCarousel.doc.mjs'),
+    `export default ${JSON.stringify(
+      {
+        type: 'component',
+        name: 'AcmeCarousel',
+        displayName: 'Acme Carousel',
+        keywords: ['carousel', 'slides'],
+        usage: {description: 'A carousel that cycles through slides.'},
+        props: [],
+        ...(docImport ? {import: docImport} : {}),
+      },
+      null,
+      2,
+    )};\n`,
+  );
+}
+
+describe('default-export component doc agreement', () => {
+  it(
+    'component detail loads a default-export doc without crashing',
+    async () => {
+      scaffoldDefaultExport({exports: SUBPATH_EXPORTS});
+      const result = await component('AcmeCarousel', {cwd: tmpDir});
+      expect(result.type).toBe('component.detail');
+      expect(result.data.name).toBe('AcmeCarousel');
+      expect(result.data.import).toBe('@acme/widgets/Carousel');
+      expect(result.data.package).toBe('@acme/widgets');
+    },
+    SLOW,
+  );
+
+  it(
+    'a doc-authored import in a default export wins over the resolved subpath',
+    async () => {
+      scaffoldDefaultExport({exports: SUBPATH_EXPORTS, docImport: '@acme/widgets/Alias'});
+      const result = await component('AcmeCarousel', {cwd: tmpDir});
+      expect(result.data.import).toBe('@acme/widgets/Alias');
+    },
+    SLOW,
+  );
+
+  it(
+    'search finds a default-export component with the correct import',
+    async () => {
+      scaffoldDefaultExport({exports: SUBPATH_EXPORTS});
+      const found = await search('carousel', {cwd: tmpDir});
+      const hit = searchImportFor(found, 'AcmeCarousel');
+      expect(hit).toBe('@acme/widgets/Carousel');
+    },
+    SLOW,
+  );
+
+  it(
+    'component and search agree on a default-export component',
+    async () => {
+      scaffoldDefaultExport({exports: SUBPATH_EXPORTS});
+      const {detail, found} = await bothSurfaces();
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'list includes the integration import for a default-export component',
+    async () => {
+      scaffoldDefaultExport({exports: SUBPATH_EXPORTS});
+      const result = await component(undefined, {cwd: tmpDir, list: true});
+      expect(result.type).toBe('component.list');
+      const allEntries = Object.values(result.data.components).flat();
+      const entry = allEntries.find(e => e.name === 'AcmeCarousel');
+      expect(entry).toBeDefined();
+      expect(entry.package).toBe('@acme/widgets');
+      // The import must be the integration subpath, not a core path.
+      expect(/** @type {any} */ (entry).import).toBe('@acme/widgets/Carousel');
+    },
+    SLOW,
+  );
+});

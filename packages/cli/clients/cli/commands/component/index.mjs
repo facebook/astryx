@@ -205,7 +205,10 @@ export function registerComponent(program) {
           }
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
           const importCell = item => {
-            const importPath = resolveImportPath(coreDir, item.name);
+            // Use a precomputed import when the API supplies one (integration
+            // components carry it); only fall back to the core resolver for
+            // core components.
+            const importPath = item.import ?? resolveImportPath(coreDir, item.name);
             const qualify =
               item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
@@ -231,7 +234,11 @@ export function registerComponent(program) {
 
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          // Use the import the API already resolved (which honors integration
+          // packages and doc-authored specifiers) rather than recomputing from
+          // core, which silently reports the wrong path for every integration
+          // component.
+          const importHint = result.data.import ?? resolveImportPath(coreDir, resolvedName);
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))

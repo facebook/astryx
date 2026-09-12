@@ -140,7 +140,10 @@ export function mergeTranslation(docs, translation) {
  */
 export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
-  const docs = mod.docs;
+  // Support both the new stamped default export (`export default {type: 'component', …}`)
+  // and the legacy named export (`export const docs = {…}`). Default wins when both
+  // are present, matching loadComponentDoc's precedence.
+  const docs = mod?.default ?? mod.docs;
 
   // Resolve which translation to use (--lang takes priority over legacy flags)
   const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
