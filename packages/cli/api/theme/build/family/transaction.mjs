@@ -127,17 +127,37 @@ function acquireLock(root) {
   };
 
   if (fs.lstatSync(reclaimPath, {throwIfNoEntry: false})) {
+    const staleTarget = fs.readlinkSync(reclaimPath);
     const reclaimOwner = readLockOwner(reclaimPath);
     if (!isStaleLock(reclaimOwner, owner)) {
       throw new Error(
         `Theme family lock recovery is active at ${reclaimPath}.`,
       );
     }
-    const staleTarget = fs.readlinkSync(reclaimPath);
-    if (fs.readlinkSync(reclaimPath) !== staleTarget) {
+    const quarantine = path.join(root, `.lock-reclaim-stale-${randomUUID()}`);
+    try {
+      fs.renameSync(reclaimPath, quarantine);
+    } catch (error) {
+      if (errorCode(error) === 'ENOENT') {
+        throw new Error(
+          `Theme family lock recovery changed at ${reclaimPath}.`,
+          {
+            cause: error,
+          },
+        );
+      }
+      throw error;
+    }
+    if (fs.readlinkSync(quarantine) !== staleTarget) {
+      try {
+        fs.renameSync(quarantine, reclaimPath);
+      } catch {
+        // Another reclaimer won the empty path. The moved owner will verify
+        // its token before touching the primary lock.
+      }
       throw new Error(`Theme family lock recovery changed at ${reclaimPath}.`);
     }
-    fs.unlinkSync(reclaimPath);
+    fs.unlinkSync(quarantine);
     fsyncDirectory(root);
   }
   try {
@@ -174,6 +194,9 @@ function acquireLock(root) {
     if (!isStaleLock(confirmed, owner)) {
       throw new Error(`Theme family output is locked at ${lockPath}.`);
     }
+    if (fs.readlinkSync(reclaimPath) !== target) {
+      throw new Error(`Theme family lock recovery changed at ${reclaimPath}.`);
+    }
     fs.unlinkSync(lockPath);
     fsyncDirectory(root);
     try {
@@ -195,10 +218,13 @@ function acquireLock(root) {
   /** @type {unknown} */
   let cleanupError;
   try {
+    if (fs.readlinkSync(reclaimPath) !== target) {
+      throw new Error(`Theme family lock recovery changed at ${reclaimPath}.`);
+    }
     fs.unlinkSync(reclaimPath);
     fsyncDirectory(root);
   } catch (error) {
-    if (errorCode(error) !== 'ENOENT') cleanupError = error;
+    cleanupError = error;
   }
   if (cleanupError) {
     if (acquired) release();

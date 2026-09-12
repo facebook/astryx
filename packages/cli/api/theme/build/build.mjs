@@ -2708,7 +2708,8 @@ function assertFamilyRootAvailable(root) {
   /** @param {string} entry */
   const isPrivateResidue = entry =>
     /^\.(?:journal|current)-[a-f0-9-]{36}\.tmp$/.test(entry) ||
-    /^\.probe-[a-f0-9-]{36}$/.test(entry);
+    /^\.probe-[a-f0-9-]{36}$/.test(entry) ||
+    /^\.lock-reclaim-stale-[a-f0-9-]{36}$/.test(entry);
   const unrelated = fs
     .readdirSync(root)
     .filter(entry => !allowed.has(entry) && !isPrivateResidue(entry));
