@@ -25,8 +25,10 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > registry/classifier/workflow mutation runs the full audit rather than accepting
 > an empty scope. CI partitions that full scope into one bounded shard per
 > canonical package, each with four browser workers; the stable `pr-rtl` context
-> succeeds only after every applicable shard produces a complete package report.
-> An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
+> succeeds only after every applicable shard produces a report whose requested
+> package/filter and nonzero planned/completed scan counts match. Missing or
+> malformed analysis/index input, a noncanonical owner, stale output, and an
+> all-skipped matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
 > scope so package discovery and curated aliases cannot skip their own check. The
 > full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
 > Omit `--filter` to run it locally. The blocking accessibility audit consumes the

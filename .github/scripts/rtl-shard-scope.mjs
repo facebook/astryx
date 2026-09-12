@@ -2,7 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import fs from 'node:fs';
-import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import {fileURLToPath, pathToFileURL} from 'node:url';
+import componentPackages from '../../scripts/component-packages.cjs';
 
 /**
  * @file Strict per-package scope resolver for the pull-request RTL matrix.
@@ -10,6 +12,12 @@ import {pathToFileURL} from 'node:url';
  * @output GitHub step outputs describing whether and how that shard must run.
  * @position Hard-fail setup step before the soft audit-findings step.
  */
+
+const {COMPONENT_PACKAGE_NAMES, packageHasPublicComponent} = componentPackages;
+const PROJECT_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
 
 const HARNESS_SMOKE_OWNERS = {
   lab: ['lab/Chart'],
@@ -19,16 +27,33 @@ const HARNESS_SMOKE_OWNERS = {
 function ownerArray(analysis, qualifiedKey, legacyKey) {
   const qualified = analysis[qualifiedKey];
   if (qualified != null) {
-    if (!Array.isArray(qualified) || qualified.some(value => typeof value !== 'string')) {
+    if (
+      !Array.isArray(qualified) ||
+      qualified.some(value => typeof value !== 'string')
+    ) {
       throw new Error(`${qualifiedKey} must be an array of strings`);
     }
     return {owners: qualified, qualified: true};
   }
   const legacy = analysis[legacyKey] ?? [];
-  if (!Array.isArray(legacy) || legacy.some(value => typeof value !== 'string')) {
+  if (
+    !Array.isArray(legacy) ||
+    legacy.some(value => typeof value !== 'string')
+  ) {
     throw new Error(`${legacyKey} must be an array of strings`);
   }
   return {owners: legacy, qualified: false};
+}
+
+function isCanonicalOwner(owner) {
+  const separator = owner.indexOf('/');
+  if (separator <= 0 || owner.indexOf('/', separator + 1) !== -1) return false;
+  const packageName = owner.slice(0, separator);
+  const componentName = owner.slice(separator + 1);
+  return (
+    COMPONENT_PACKAGE_NAMES.includes(packageName) &&
+    packageHasPublicComponent(PROJECT_ROOT, packageName, componentName)
+  );
 }
 
 export function readAnalysis(analysisPath) {
@@ -40,7 +65,11 @@ export function readAnalysis(analysisPath) {
       cause: error,
     });
   }
-  if (analysis == null || typeof analysis !== 'object' || Array.isArray(analysis)) {
+  if (
+    analysis == null ||
+    typeof analysis !== 'object' ||
+    Array.isArray(analysis)
+  ) {
     throw new Error('Analysis artifact must be a JSON object');
   }
   const added = ownerArray(analysis, 'newComponentOwners', 'newComponents');
@@ -53,9 +82,13 @@ export function readAnalysis(analysisPath) {
   if (owners.some(owner => owner.includes('\n') || owner.includes('\r'))) {
     throw new Error('Analysis owner values must not contain line breaks');
   }
+  const qualified = added.qualified && modified.qualified;
   return {
     owners,
-    qualified: added.qualified && modified.qualified,
+    qualified,
+    invalidOwners: qualified
+      ? owners.filter(owner => !isCanonicalOwner(owner))
+      : [],
   };
 }
 
@@ -66,8 +99,8 @@ export function resolveRtlShardScope({
   hasHarness,
   analysis,
 }) {
-  if (!/^[a-z][a-z0-9-]*$/.test(packageName)) {
-    throw new Error(`Invalid package name: ${packageName}`);
+  if (!COMPONENT_PACKAGE_NAMES.includes(packageName)) {
+    throw new Error(`Invalid canonical package name: ${packageName}`);
   }
   const full = reason => ({
     shouldRun: true,
@@ -76,6 +109,9 @@ export function resolveRtlShardScope({
     reason,
   });
   if (forceFull) return full('policy-sensitive scope');
+  if ((analysis.invalidOwners ?? []).length > 0) {
+    return full('noncanonical component scope');
+  }
   if (!analysis.qualified && analysis.owners.length > 0) {
     return full('unqualified component scope');
   }
@@ -151,7 +187,10 @@ function writeGithubOutputs(outputPath, scope) {
   );
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   try {
     const analysis = readAnalysis(arg('analysis'));
     const scope = resolveRtlShardScope({

@@ -180,9 +180,7 @@ describe('ci.yml RTL package sharding', () => {
   const join = workflow.jobs['pr-rtl'];
 
   it('runs one bounded shard for every canonical component package', () => {
-    expect(shard.strategy.matrix.package).toEqual([
-      ...COMPONENT_PACKAGE_NAMES,
-    ]);
+    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
     expect(shard['runs-on']).toBe('4-core-ubuntu');
     expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
     expect(shard['continue-on-error']).not.toBe(true);
@@ -199,11 +197,17 @@ describe('ci.yml RTL package sharding', () => {
     expect(audit['continue-on-error']).toBe(true);
     expect(validation.if).toBe('always()');
     expect(validation.run).toContain('steps.rtl-scope.outcome');
-    expect(validation.run).toContain('produced no explicit should_run decision');
+    expect(validation.run).toContain(
+      'produced no explicit should_run decision',
+    );
     expect(runLines(shard)).toContain('--packages "$PACKAGE"');
     expect(runLines(shard)).toContain('--concurrency 4');
-    expect(runLines(shard)).toContain('test -s rtl-audit-report.json');
-    expect(runLines(shard)).toContain('.coverage.total > 0');
+    expect(runLines(shard)).toContain(
+      '.github/scripts/rtl-report-completion.mjs',
+    );
+    expect(runLines(shard)).toContain(
+      '--filter "${{ steps.rtl-scope.outputs.filter }}"',
+    );
   });
 
   it('keeps pr-rtl as a fail-closed join over every matrix shard', () => {
@@ -214,6 +218,16 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('needs.check-components.result');
     expect(commands).toContain('needs.pr-rtl-shard.result');
     expect(commands).toContain('.github/scripts/rtl-join.mjs');
+    expect(commands).toContain('--reports-dir rtl-shard-reports');
+    const download = join.steps.find(
+      step => step.name === 'Download applicable RTL shard reports',
+    );
+    expect(download['continue-on-error']).toBe(true);
+    expect(download.with.pattern).toBe('rtl-audit-report-*');
+    const requireStep = join.steps.find(
+      step => step.name === 'Require every applicable RTL shard',
+    );
+    expect(requireStep.if).toBe('always()');
   });
 
   it('publishes a distinct report artifact for each package shard', () => {

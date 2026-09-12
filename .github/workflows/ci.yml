@@ -1056,12 +1056,10 @@ jobs:
               echo "Applicable RTL audit did not run: $AUDIT_OUTCOME"
               exit 1
             fi
-            test -s rtl-audit-report.json
-            jq -e --arg package "${{ matrix.package }}" '
-              .scope.packages == [$package] and
-              .coverage.total > 0 and
-              (.coverage.registryError == null)
-            ' rtl-audit-report.json
+            node .github/scripts/rtl-report-completion.mjs \
+              --report rtl-audit-report.json \
+              --package "${{ matrix.package }}" \
+              --filter "${{ steps.rtl-scope.outputs.filter }}"
           elif [ "$SHOULD_RUN" = "false" ]; then
             if [ "$AUDIT_OUTCOME" != "skipped" ]; then
               echo "Out-of-scope RTL audit unexpectedly ran: $AUDIT_OUTCOME"
@@ -1193,9 +1191,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Download applicable RTL shard reports
+        if: ${{ needs.check-components.result == 'success' && (needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true') }}
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: rtl-audit-report-*
+          path: rtl-shard-reports
+
       - name: Require every applicable RTL shard
+        if: always()
         run: |
           node .github/scripts/rtl-join.mjs \
             --check-components "${{ needs.check-components.result }}" \
             --shards "${{ needs.pr-rtl-shard.result }}" \
-            --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}"
+            --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
+            --reports-dir rtl-shard-reports

@@ -6,11 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
-import {
-  readAnalysis,
-  resolveRtlShardScope,
-} from './rtl-shard-scope.mjs';
+import componentPackages from '../../scripts/component-packages.cjs';
+import {readAnalysis, resolveRtlShardScope} from './rtl-shard-scope.mjs';
 
+const {COMPONENT_PACKAGE_NAMES} = componentPackages;
 const SCRIPT = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   'rtl-shard-scope.mjs',
@@ -92,7 +91,11 @@ describe('RTL shard scope', () => {
         hasHarness: false,
         analysis: {owners: [], qualified: true},
       }),
-    ).toMatchObject({shouldRun: true, components: 'full vega roster', filter: ''});
+    ).toMatchObject({
+      shouldRun: true,
+      components: 'full vega roster',
+      filter: '',
+    });
   });
 
   it('runs the full package for unresolved component scope', () => {
@@ -124,9 +127,11 @@ describe('RTL shard scope', () => {
       shouldRun: true,
       filter: 'charts/Chart,charts/ChartLegend',
     });
-    expect(resolveRtlShardScope({...input, packageName: 'core'})).toMatchObject({
-      shouldRun: false,
-    });
+    expect(resolveRtlShardScope({...input, packageName: 'core'})).toMatchObject(
+      {
+        shouldRun: false,
+      },
+    );
   });
 
   it('fails closed to a full shard for unqualified legacy owner data', () => {
@@ -139,6 +144,28 @@ describe('RTL shard scope', () => {
         analysis: {owners: ['Button'], qualified: false},
       }),
     ).toMatchObject({shouldRun: true, components: 'full core roster'});
+  });
+
+  it('fails closed to full shards for a noncanonical qualified owner', () => {
+    const analysis = {
+      owners: ['unknown/Thing'],
+      qualified: true,
+      invalidOwners: ['unknown/Thing'],
+    };
+    for (const packageName of COMPONENT_PACKAGE_NAMES) {
+      expect(
+        resolveRtlShardScope({
+          packageName,
+          forceFull: false,
+          hasComponents: true,
+          hasHarness: false,
+          analysis,
+        }),
+      ).toMatchObject({
+        shouldRun: true,
+        components: `full ${packageName} roster`,
+      });
+    }
   });
 });
 
@@ -157,6 +184,7 @@ describe('RTL shard scope artifact handling', () => {
       expect(readAnalysis(file)).toEqual({
         owners: ['charts/ChartLegend'],
         qualified: true,
+        invalidOwners: [],
       });
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
@@ -171,11 +199,27 @@ describe('RTL shard scope artifact handling', () => {
       JSON.stringify({newComponentOwners: 'charts/ChartLegend'}),
       'newComponentOwners must be an array of strings',
     ],
-  ])('rejects %s analysis before writing shard outputs', (_name, input, message) => {
-    const result = runCli(input);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain(message);
-    expect(result.output).toBe('');
+  ])(
+    'rejects %s analysis before writing shard outputs',
+    (_name, input, message) => {
+      const result = runCli(input);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(message);
+      expect(result.output).toBe('');
+    },
+  );
+
+  it('turns a noncanonical qualified owner into full package scope', () => {
+    const result = runCli(
+      JSON.stringify({
+        newComponentOwners: ['unknown/Thing'],
+        modifiedComponentOwners: [],
+      }),
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('should_run=true');
+    expect(result.output).toContain('components=full charts roster');
+    expect(result.output).toContain('reason=noncanonical component scope');
   });
 
   it('writes explicit outputs only after valid analysis resolves', () => {
