@@ -330,6 +330,19 @@ describe('themeBuildFamily', () => {
     expect(
       fs.readFileSync(path.join(fixtureDir, 'blocked-family'), 'utf8'),
     ).toBe('user data');
+
+    const invalidCurrent = path.join(fixtureDir, 'invalid-current');
+    fs.mkdirSync(path.join(invalidCurrent, 'current'), {recursive: true});
+    await expect(
+      themeBuildFamily(
+        files,
+        {familyKey: 'invalid-current'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(
+      fs.lstatSync(path.join(invalidCurrent, 'current')).isDirectory(),
+    ).toBe(true);
   });
 
   it('rejects a source that exports more than one distinct family member', async () => {

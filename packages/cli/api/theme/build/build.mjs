@@ -2541,6 +2541,53 @@ function assertFamilyRootAvailable(root) {
       ERROR_CODES.ERR_FILE_EXISTS,
     );
   }
+  /** @param {string} pathValue */
+  const collision = pathValue => {
+    throw new AstryxError(
+      `Theme family output collides with an existing path: ${pathValue}`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  };
+  const currentPath = path.join(root, 'current');
+  if (
+    fs.existsSync(currentPath) ||
+    fs.lstatSync(currentPath, {throwIfNoEntry: false})
+  ) {
+    const stat = fs.lstatSync(currentPath);
+    if (!stat.isSymbolicLink()) collision(currentPath);
+    const target = fs.readlinkSync(currentPath).split(path.sep).join('/');
+    if (
+      path.isAbsolute(target) ||
+      target.includes('\\') ||
+      !target.startsWith('generations/') ||
+      target
+        .split('/')
+        .some(part => part === '' || part === '.' || part === '..')
+    ) {
+      collision(currentPath);
+    }
+  }
+  const generationsPath = path.join(root, 'generations');
+  if (
+    fs.existsSync(generationsPath) &&
+    !fs.lstatSync(generationsPath).isDirectory()
+  ) {
+    collision(generationsPath);
+  }
+  const journalPath = path.join(root, '.journal.json');
+  if (fs.existsSync(journalPath) && !fs.lstatSync(journalPath).isFile()) {
+    collision(journalPath);
+  }
+  const lockPath = path.join(root, '.lock');
+  if (
+    (fs.existsSync(lockPath) ||
+      fs.lstatSync(lockPath, {throwIfNoEntry: false})) &&
+    !fs.lstatSync(lockPath).isSymbolicLink()
+  ) {
+    collision(lockPath);
+  }
+
   const allowed = new Set(['current', 'generations', '.lock', '.journal.json']);
   const unrelated = fs.readdirSync(root).filter(entry => !allowed.has(entry));
   if (unrelated.length > 0) {
