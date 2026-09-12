@@ -1,7 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {describe, it, expect} from 'vitest';
-import {stripTemplateAssetRefs, template} from './template.mjs';
+import {stripTemplateAssetRefs, template, extractComponents} from './template.mjs';
 
 describe('stripTemplateAssetRefs', () => {
   it('replaces a /template-assets image path with an inline data URI', () => {
@@ -101,5 +104,36 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
     expect(result.data.skeleton).not.toContain('<XDS');
 
     expect(result.data.skeleton).toContain('columns={{minWidth: 200}}');
+  });
+
+  it('filters out local helper components that are not imported from @astryxdesign/core', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-test-'));
+    const pagePath = path.join(tmpDir, 'page.tsx');
+    fs.writeFileSync(
+      pagePath,
+      `
+import {Card} from '@astryxdesign/core/Layout';
+
+function TimelineSection() {
+  return <div />;
+}
+
+export default function Page() {
+  return (
+    <Card>
+      <TimelineSection />
+    </Card>
+  );
+}
+      `
+    );
+    
+    try {
+      const components = extractComponents(pagePath);
+      expect(components).toContain('Card');
+      expect(components).not.toContain('Timeline');
+    } finally {
+      fs.rmSync(tmpDir, {recursive: true, force: true});
+    }
   });
 });
