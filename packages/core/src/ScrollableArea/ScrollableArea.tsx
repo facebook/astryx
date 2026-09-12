@@ -4,7 +4,7 @@
 
 /**
  * @file ScrollableArea.tsx
- * @input Logical scroll intent, accessible name, chaining policy, and content
+ * @input Logical scroll intent, accessible name, overscroll policy, viewport sizing, content padding, and content
  * @output Native scroll viewport with an observed real content box
  * @position Reference composition over useScrollableArea
  *
@@ -31,7 +31,7 @@ import {
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
 } from '../Layout/padding.stylex';
-import type {SpacingStep} from '../utils/types';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import {
   useScrollableArea,
   type ScrollAxis,
@@ -96,6 +96,15 @@ const styles = stylex.create({
   },
 });
 
+const dynamicStyles = stylex.create({
+  sizing: (
+    width: SizeValue | null,
+    height: SizeValue | null,
+    maxWidth: SizeValue | null,
+    minHeight: SizeValue | null,
+  ) => ({width, height, maxWidth, minHeight}),
+});
+
 export interface ScrollableAreaProps extends Omit<
   BaseProps<HTMLDivElement>,
   'aria-label' | 'children' | 'role' | 'tabIndex'
@@ -110,6 +119,14 @@ export interface ScrollableAreaProps extends Omit<
   role?: 'group' | 'region';
   /** Whether effective axes pass scroll gestures to ancestors at an edge. @default 'allow' */
   overscroll?: ScrollOverscroll;
+  /** Width of the viewport; numbers are interpreted as pixels. */
+  width?: SizeValue;
+  /** Height of the viewport; numbers are interpreted as pixels. */
+  height?: SizeValue;
+  /** Maximum width of the viewport. */
+  maxWidth?: SizeValue;
+  /** Minimum height of the viewport. */
+  minHeight?: SizeValue;
   /** Content padding using the shared spacing scale. @default 0 */
   padding?: SpacingStep;
   /** Logical inline-axis content padding; overrides `padding` on that axis. */
@@ -154,6 +171,10 @@ export function ScrollableArea({
   label,
   role = 'group',
   overscroll = 'allow',
+  width,
+  height,
+  maxWidth,
+  minHeight,
   padding = 0,
   paddingInline,
   paddingInlineStart,
@@ -181,6 +202,12 @@ export function ScrollableArea({
       styles[axis],
       isFullBleed && styles.fullBleed,
       focusOutlineStyles.focusVisible,
+      dynamicStyles.sizing(
+        width ?? null,
+        height ?? null,
+        maxWidth ?? null,
+        minHeight ?? null,
+      ),
       xstyle,
     ),
     className,
@@ -234,11 +261,6 @@ export function ScrollableArea({
             paddingBlockEnd != null &&
               containerPaddingBlockEndVarStyles[paddingBlockEnd],
           ),
-          style: {
-            minInlineSize: '100%',
-            minBlockSize: '100%',
-            ...(axis !== 'block' ? {inlineSize: 'max-content'} : null),
-          },
         })}>
         {children}
       </div>

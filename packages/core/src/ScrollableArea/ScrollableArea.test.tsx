@@ -153,8 +153,9 @@ describe('ScrollableArea', () => {
     const content = viewport.firstElementChild as HTMLElement;
     expect(viewport.style.overflowInline).toBe('auto');
     expect(viewport.style.overflowBlock).toBe('hidden');
-    expect(content.style.inlineSize).toBe('max-content');
-    expect(content.style.minInlineSize).toBe('100%');
+    const inlineContentClass = content.className;
+    expect(content.style.inlineSize).toBe('');
+    expect(content.style.minInlineSize).toBe('');
 
     rerender(
       <ScrollableArea axis="block" label="Timeline" data-testid="viewport">
@@ -163,7 +164,28 @@ describe('ScrollableArea', () => {
     );
     expect(viewport.style.overflowInline).toBe('hidden');
     expect(viewport.style.overflowBlock).toBe('auto');
+    expect(content.className).not.toBe(inlineContentClass);
     expect(content.style.inlineSize).toBe('');
+    const source = stylesSource();
+    expect(source).toContain("minInlineSize: '100%'");
+    expect(source).toContain("inlineSize: 'max-content'");
+  });
+
+  it('accepts standard container sizing props on the viewport', () => {
+    render(
+      <ScrollableArea
+        label="Messages"
+        width={320}
+        height="50vh"
+        maxWidth="100%"
+        minHeight={120}
+        data-testid="viewport">
+        Messages
+      </ScrollableArea>,
+    );
+
+    expect(screen.getByTestId('viewport')).toBeInTheDocument();
+    expect(stylesSource()).toContain('dynamicStyles.sizing(');
   });
 
   it('publishes content padding without changing the viewport default', () => {
