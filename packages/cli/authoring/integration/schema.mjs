@@ -68,6 +68,9 @@ export const agentDocsSchema = z.object({
 export const integrationBaseSchema = z.object({
   components: z.string().optional(),
   templates: z.string().optional(),
+  templateReplacements: z
+    .record(z.string().min(1), z.string().min(1))
+    .optional(),
   codemods: z.string().optional(),
   docs: z.string().optional(),
   themes: z.string().optional(),
@@ -88,6 +91,28 @@ export const integrationSchema = integrationBaseSchema.extend({
 });
 
 /**
+ * Reject manifest map keys that JavaScript object assignment treats specially.
+ * @param {unknown} input
+ * @param {string} label
+ */
+export function assertSafeIntegrationKeys(input, label) {
+  if (input == null || typeof input !== 'object' || Array.isArray(input))
+    return;
+  const replacements = /** @type {{templateReplacements?: unknown}} */ (input)
+    .templateReplacements;
+  if (
+    replacements != null &&
+    typeof replacements === 'object' &&
+    !Array.isArray(replacements) &&
+    Object.hasOwn(replacements, '__proto__')
+  ) {
+    throw new Error(
+      `${label} field "templateReplacements" must not declare the reserved key "__proto__".`,
+    );
+  }
+}
+
+/**
  * Parse every default-manifest field except the independently isolated
  * `agentDocs` contribution.
  * @param {unknown} input
@@ -95,6 +120,7 @@ export const integrationSchema = integrationBaseSchema.extend({
  * @returns {Omit<AstryxIntegration, 'agentDocs'>}
  */
 export function parseIntegrationBase(input, label) {
+  assertSafeIntegrationKeys(input, label);
   const result = integrationBaseSchema.safeParse(input);
   if (!result.success) throw new Error(formatZodError(label, result.error));
   return result.data;

@@ -31,6 +31,15 @@ describe('parseIntegration (load boundary)', () => {
     expect(parseIntegration({themes: './themes'})).toEqual({
       themes: './themes',
     });
+    expect(
+      parseIntegration({
+        templates: './templates',
+        templateReplacements: {'acme-app-shell': 'shell-side-nav'},
+      }),
+    ).toEqual({
+      templates: './templates',
+      templateReplacements: {'acme-app-shell': 'shell-side-nav'},
+    });
     expect(() =>
       parseIntegration({components: './c', issuesUrl: 'https://example.com/i'}),
     ).not.toThrow();
@@ -66,7 +75,9 @@ describe('parseIntegration (load boundary)', () => {
           ? 'https://example.com/issues'
           : key === 'agentDocs'
             ? {}
-            : './x',
+            : key === 'templateReplacements'
+              ? {'acme-app-shell': 'shell-side-nav'}
+              : './x',
       ]),
     );
     expect(unknownIntegrationKeys(everyKnownKey)).toEqual([]);
@@ -80,6 +91,26 @@ describe('parseIntegration (load boundary)', () => {
 
   it('rejects a non-URL issuesUrl', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
+  });
+
+  it('rejects an invalid template replacement declaration', () => {
+    expect(reason({templateReplacements: {'acme-app-shell': 42}})).toContain(
+      'templateReplacements',
+    );
+    expect(reason({templateReplacements: {'': 'shell-side-nav'}})).toContain(
+      'templateReplacements',
+    );
+    expect(reason({templateReplacements: {'acme-app-shell': ''}})).toContain(
+      'templateReplacements',
+    );
+  });
+
+  it('rejects an own __proto__ replacement key before parsing can drop it', () => {
+    const templateReplacements = JSON.parse('{"__proto__":"shell-side-nav"}');
+    expect(Object.hasOwn(templateReplacements, '__proto__')).toBe(true);
+    expect(reason({templateReplacements})).toContain(
+      'reserved key "__proto__"',
+    );
   });
 
   it('accepts an optional append array as manifest data', () => {

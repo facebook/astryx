@@ -7,6 +7,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {existsCaseExact} from '../fs/paths.mjs';
+import {loadComponentDoc} from './component-loader.mjs';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
@@ -673,6 +674,53 @@ export function discoverIntegrationComponents(integration) {
 
   scanDir(componentsDir);
   return [...byName.values()];
+}
+
+/**
+ * Load and validate every discovered integration component independently.
+ * Invalid metadata or a missing same-stem source removes only that component;
+ * callers can report the returned errors while retaining valid siblings.
+ *
+ * @param {{name: string, components?: string, issuesUrl?: string}} integration
+ * @returns {Promise<{
+ *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}>,
+ *   discovered: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>,
+ *   errors: Array<{name: string, message: string}>,
+ * }>}
+ */
+export async function discoverValidIntegrationComponents(integration) {
+  const discovered = discoverIntegrationComponents(integration);
+  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}>} */
+  const components = [];
+  /** @type {Array<{name: string, message: string}>} */
+  const errors = [];
+
+  for (const record of discovered) {
+    if (record.sourcePath == null) {
+      errors.push({
+        name: record.name,
+        message: `Component "${record.name}" is missing its same-stem source file ${record.name}.tsx.`,
+      });
+      continue;
+    }
+    try {
+      await loadComponentDoc(record.docPath);
+      components.push(
+        /** @type {{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}} */ (
+          record
+        ),
+      );
+    } catch (err) {
+      errors.push({
+        name: record.name,
+        message: `Component "${record.name}" has invalid metadata: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      });
+    }
+  }
+
+  return {components, discovered, errors};
 }
 
 /**

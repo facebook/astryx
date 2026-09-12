@@ -49,7 +49,7 @@ export function registerSearch(program) {
 
       try {
         const project = await Project.load(process.cwd());
-        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnIntegrationIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }

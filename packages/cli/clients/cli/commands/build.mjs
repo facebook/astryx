@@ -187,10 +187,13 @@ export function registerBuild(program) {
       // `template <name> <path>` scaffolds into your project; <path> is the file
       // (or folder) to write it to — a placeholder, since we can't know your
       // layout. `--skeleton` and `component <Name>` just print, so no path.
+      const pageCommand = pages.length
+        ? formatCliCommand(pages[0].command)
+        : null;
       const startCmd = directMatch
-        ? `${run} template ${pages[0].name} <path>`
+        ? `${pageCommand} <path>`
         : pages.length
-          ? `${run} template ${pages[0].name} --skeleton`
+          ? pageCommand
           : `${run} component AppShell`;
       const startNote = directMatch
         ? `This \`${pages[0].name}\` page template appears to be the closest to what you want, so we recommend scaffolding it into your project — replace \`<path>\` with the file (or folder) to write it to — then adapting. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`

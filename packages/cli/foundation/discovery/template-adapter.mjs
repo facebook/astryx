@@ -43,6 +43,53 @@ export function pkgOf(t) {
 }
 
 /**
+ * Every id that should resolve to a discovered template. Replacements keep
+ * their own integration id and also own the Core id they replace.
+ * @param {{dirName: string, replaces?: string}} template
+ * @returns {string[]}
+ */
+export function templateLookupIds(template) {
+  if (template.replaces && template.replaces !== template.dirName) {
+    return [template.dirName, template.replaces];
+  }
+  return [template.dirName];
+}
+
+/**
+ * Remove entries shadowed in the default discovery view while retaining them in
+ * package-scoped views. An active replacement owns its target id. A rejected
+ * same-id declaration falls back to Core when a Core template of the same kind
+ * owns that id; otherwise the integration template remains available by kind.
+ * @param {DiscoveredTemplate[]} templates
+ * @returns {DiscoveredTemplate[]}
+ */
+export function effectiveTemplateDiscovery(templates) {
+  const activeTargets = new Set(
+    templates
+      .filter(template => template.replaces != null)
+      .map(template => `${template.type}:${template.replaces}`),
+  );
+  const coreIds = new Set(
+    templates
+      .filter(template => pkgOf(template) === CORE_PACKAGE)
+      .map(template => `${template.type}:${template.dirName}`),
+  );
+  return templates.filter(template => {
+    if (
+      template.replacementRejected &&
+      template.replacementTarget === template.dirName &&
+      coreIds.has(`${template.type}:${template.dirName}`)
+    ) {
+      return false;
+    }
+    return (
+      !activeTargets.has(`${template.type}:${template.dirName}`) ||
+      template.replaces != null
+    );
+  });
+}
+
+/**
  * A discovered template (page or block), normalized across core, external, and
  * integration sources. Not every source populates every field, so
  * source-specific extras (`aspectRatio`, `isShowcase`, `package`) are optional.
@@ -64,6 +111,11 @@ export function pkgOf(t) {
  * @property {string} filePath
  * @property {string} docPath
  * @property {string} [package]
+ * @property {boolean} [autolinked] whether the owning integration was discovered
+ *   from package.json rather than named in astryx.config
+ * @property {string} [replaces] active Core template id this integration template replaces
+ * @property {boolean} [replacementRejected] whether an invalid declaration was disabled
+ * @property {string} [replacementTarget] disabled declaration target
  */
 
 /**
@@ -72,6 +124,15 @@ export function pkgOf(t) {
  * @property {string} package
  * @property {string} [template]
  * @property {string} message
+ * @property {string} [code]
+ * @property {'warning' | 'error'} [severity]
+ * @property {string} [replacementTarget] Core target whose replacement set is invalid
+ * @property {boolean} [autolinked] whether the declaration came from an autolinked integration
+ */
+
+/**
+ * A semantic error in an integration template replacement declaration.
+ * @typedef {TemplateDiscoveryError & {code: 'missing_template_replacement_target' | 'ambiguous_template_replacement' | 'invalid_template_replacement', severity: 'warning' | 'error'}} TemplateReplacementError
  */
 
 /**
@@ -436,38 +497,291 @@ export async function discoverCoreTemplates() {
 }
 
 /**
- * @param {string} [cwd]
- * @returns {Promise<DiscoveredTemplate[]>}
+ * Apply valid integration replacements to a raw template set.
+ *
+ * One declaration owns its Core target. When different configured packages
+ * replace the same target, the later package wins and discovery returns a
+ * warning, matching integration-doc replacement order. Multiple declarations
+ * inside one package are invalid and fail closed. Missing targets and kind
+ * mismatches also fail closed: Core stays selected and every integration
+ * template remains addressable by its own id.
+ *
+ * @param {DiscoveredTemplate[]} templates
+ * @param {TemplateDiscoveryError[]} [declarationErrors]
+ * @returns {{templates: DiscoveredTemplate[], errors: TemplateReplacementError[]}}
  */
-export async function discoverAll(cwd = process.cwd()) {
+export function applyTemplateReplacements(templates, declarationErrors = []) {
+  /** @type {Map<string, DiscoveredTemplate[]>} */
+  const coreById = new Map();
+  /** @type {Map<string, DiscoveredTemplate[]>} */
+  const replacementsByTarget = new Map();
+
+  for (const template of templates) {
+    if (pkgOf(template) === CORE_PACKAGE) {
+      const matches = coreById.get(template.dirName) ?? [];
+      matches.push(template);
+      coreById.set(template.dirName, matches);
+    }
+    if (template.replaces != null) {
+      const replacements = replacementsByTarget.get(template.replaces) ?? [];
+      replacements.push(template);
+      replacementsByTarget.set(template.replaces, replacements);
+    }
+  }
+
+  const activeReplacements = new Set();
+  const replacedCore = new Set();
+  /** @type {TemplateReplacementError[]} */
+  const errors = declarationErrors.map(error => ({
+    ...error,
+    code: /** @type {TemplateReplacementError['code']} */ (
+      error.code ?? 'invalid_template_replacement'
+    ),
+    severity: error.severity ?? 'error',
+  }));
+  /** @param {TemplateReplacementError} error */
+  const pushError = error => {
+    if (
+      errors.some(
+        existing =>
+          existing.code === error.code &&
+          existing.package === error.package &&
+          existing.template === error.template &&
+          existing.message === error.message,
+      )
+    ) {
+      return;
+    }
+    errors.push(error);
+  };
+  for (const [target, replacements] of replacementsByTarget) {
+    const targetErrors = errors.filter(
+      error => error.replacementTarget === target,
+    );
+    const hasExplicitIntent =
+      replacements.some(replacement => !replacement.autolinked) ||
+      targetErrors.some(error => !error.autolinked);
+    const contenders = hasExplicitIntent
+      ? replacements.filter(replacement => !replacement.autolinked)
+      : replacements;
+    let targetInvalid = targetErrors.some(
+      error =>
+        error.severity === 'error' && (!hasExplicitIntent || !error.autolinked),
+    );
+
+    /** @type {Map<string, DiscoveredTemplate[]>} */
+    const byPackage = new Map();
+    for (const replacement of replacements) {
+      const pkg = pkgOf(replacement);
+      const fromPackage = byPackage.get(pkg) ?? [];
+      fromPackage.push(replacement);
+      byPackage.set(pkg, fromPackage);
+    }
+    for (const [pkg, declarations] of byPackage) {
+      if (declarations.length < 2) continue;
+      if (!hasExplicitIntent || !declarations[0].autolinked) {
+        targetInvalid = true;
+      }
+      const message =
+        `${pkg} declares ${declarations.length} templates as replacements for Core ` +
+        `template "${target}" (${declarations.map(template => template.dirName).join(', ')}). ` +
+        'One package must declare at most one replacement for a Core target.';
+      for (const declaration of declarations) {
+        pushError({
+          code: 'ambiguous_template_replacement',
+          severity: 'error',
+          package: pkg,
+          template: declaration.dirName,
+          replacementTarget: target,
+          autolinked: declaration.autolinked,
+          message,
+        });
+      }
+    }
+
+    const coreMatches = coreById.get(target) ?? [];
+    /** @type {Map<DiscoveredTemplate, DiscoveredTemplate>} */
+    const coreMatchByReplacement = new Map();
+    for (const replacement of replacements) {
+      const invalidAffectsTarget =
+        !hasExplicitIntent || !replacement.autolinked;
+      if (coreMatches.length === 0) {
+        if (invalidAffectsTarget) targetInvalid = true;
+        pushError({
+          code: 'missing_template_replacement_target',
+          severity: 'error',
+          package: pkgOf(replacement),
+          template: replacement.dirName,
+          replacementTarget: target,
+          autolinked: replacement.autolinked,
+          message: `Template "${replacement.dirName}" replaces "${target}", which is not a Core template id.`,
+        });
+        continue;
+      }
+      const sameType = coreMatches.filter(
+        core => core.type === replacement.type,
+      );
+      if (sameType.length !== 1) {
+        if (invalidAffectsTarget) targetInvalid = true;
+        const kinds = coreMatches.map(core => core.type).join(', ');
+        pushError({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgOf(replacement),
+          template: replacement.dirName,
+          replacementTarget: target,
+          autolinked: replacement.autolinked,
+          message:
+            `Template "${replacement.dirName}" is a ${replacement.type} template, but Core ` +
+            `template "${target}" is ${kinds || 'not available'}. A replacement must have the same type.`,
+        });
+        continue;
+      }
+      coreMatchByReplacement.set(replacement, sameType[0]);
+    }
+
+    const validContenders = contenders.filter(replacement =>
+      coreMatchByReplacement.has(replacement),
+    );
+    if (targetInvalid || validContenders.length === 0) continue;
+
+    const replacement = validContenders[validContenders.length - 1];
+    const validReplacements = replacements.filter(candidate =>
+      coreMatchByReplacement.has(candidate),
+    );
+    if (validReplacements.length > 1) {
+      const autolinkedLost =
+        hasExplicitIntent &&
+        validReplacements.some(candidate => candidate.autolinked);
+      const allAutolinked = validReplacements.every(
+        candidate => candidate.autolinked,
+      );
+      pushError({
+        code: 'ambiguous_template_replacement',
+        severity: 'warning',
+        package: pkgOf(replacement),
+        template: replacement.dirName,
+        replacementTarget: target,
+        autolinked: replacement.autolinked,
+        message: autolinkedLost
+          ? `Core template "${target}" is replaced by ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is explicitly configured, so it wins over autolinked integrations.`
+          : allAutolinked
+            ? `Core template "${target}" is replaced by autolinked dependencies ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is listed later in package.json dependencies, so it wins. Add the intended package to astryx.config integrations to make precedence explicit.`
+            : `Core template "${target}" is replaced by ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is configured later, so it wins.`,
+      });
+    }
+
+    activeReplacements.add(replacement);
+    const coreMatch = coreMatchByReplacement.get(replacement);
+    if (coreMatch) replacedCore.add(coreMatch);
+  }
+
+  const effective = templates.flatMap(template => {
+    if (replacedCore.has(template)) return [];
+    if (template.replaces != null && !activeReplacements.has(template)) {
+      const fallback = {
+        ...template,
+        replacementRejected: true,
+        replacementTarget: template.replaces,
+      };
+      delete fallback.replaces;
+      return [fallback];
+    }
+    return [template];
+  });
+
+  return {
+    templates: effective.sort((a, b) => a.name.localeCompare(b.name)),
+    errors,
+  };
+}
+
+/**
+ * Discover the raw Core, external, and integration template set before
+ * replacement declarations are applied.
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ */
+async function discoverAllSources(cwd = process.cwd()) {
   const [core, external, integration] = await Promise.all([
     discoverCoreTemplates(),
     discoverExternalBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
-  return [...core, ...external, ...integration.templates].sort((a, b) =>
+  return {
+    templates: [...core, ...external, ...integration.templates],
+    errors: integration.errors,
+  };
+}
+
+/**
+ * Discover every template without hiding replaced Core originals. Internal
+ * package-qualified selection uses this view.
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAllUnresolved(cwd = process.cwd()) {
+  return (await discoverAllSources(cwd)).templates.sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 }
 
 /**
- * Like {@link discoverAll} but also returns integration-template discovery
- * errors (missing same-stem source, missing `type`, load failure). Use this
- * when the caller wants to warn about malformed integration templates.
+ * Resolve replacement declarations while retaining package-addressable entries
+ * that are shadowed or rejected in the default discovery view.
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: Array<TemplateDiscoveryError | TemplateReplacementError>}>}
+ */
+async function resolveAllSources(cwd = process.cwd()) {
+  const discovered = await discoverAllSources(cwd);
+  const replacementErrors = discovered.errors.filter(
+    error => error.replacementTarget != null,
+  );
+  const resolved = applyTemplateReplacements(
+    discovered.templates,
+    replacementErrors,
+  );
+  return {
+    templates: resolved.templates,
+    errors: [
+      ...discovered.errors.filter(error => error.replacementTarget == null),
+      ...resolved.errors,
+    ],
+  };
+}
+
+/**
+ * Discover the resolved catalog before default-view shadowing. Internal
+ * package-qualified selection uses this view.
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAllResolved(cwd = process.cwd()) {
+  return (await resolveAllSources(cwd)).templates;
+}
+
+/**
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAll(cwd = process.cwd()) {
+  return effectiveTemplateDiscovery(await discoverAllResolved(cwd));
+}
+
+/**
+ * Like {@link discoverAll} but also returns integration-template discovery and
+ * replacement-declaration errors. Use this when the caller wants to warn about
+ * malformed integration templates or inactive replacement declarations.
  *
  * @param {string} [cwd]
- * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: Array<TemplateDiscoveryError | TemplateReplacementError>}>}
  */
 export async function discoverAllWithErrors(cwd = process.cwd()) {
-  const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
-    discoverAllBlocks(cwd),
-    discoverIntegrationTemplates(cwd),
-  ]);
-  const templates = [...pages, ...blocks, ...integration.templates].sort(
-    (a, b) => a.name.localeCompare(b.name),
-  );
-  return {templates, errors: integration.errors};
+  const resolved = await resolveAllSources(cwd);
+  return {
+    templates: effectiveTemplateDiscovery(resolved.templates),
+    errors: resolved.errors,
+  };
 }
 
 /**
@@ -553,12 +867,89 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
 }
 
 /**
+ * Validate manifest replacement declarations against one integration's usable
+ * template set before cross-package precedence is considered.
+ * @param {{name?: string, __spec?: string, __autolinked?: boolean, templates?: string, templateReplacements?: Record<string, string>}} integration
+ * @param {DiscoveredTemplate[]} templates
+ * @param {TemplateDiscoveryError[]} errors
+ * @param {boolean} rootAvailable
+ */
+function validateTemplateReplacementDeclarations(
+  integration,
+  templates,
+  errors,
+  rootAvailable,
+) {
+  const pkg = integration.name ?? integration.__spec ?? 'integration';
+  const declarations = Object.entries(integration.templateReplacements ?? {});
+  if (declarations.length === 0) return;
+
+  if (!rootAvailable) {
+    for (const [template, target] of declarations) {
+      errors.push({
+        code: 'invalid_template_replacement',
+        severity: 'error',
+        package: pkg,
+        autolinked: integration.__autolinked,
+        template,
+        replacementTarget: target,
+        message:
+          `templateReplacements declares "${template}" -> "${target}", but ` +
+          'the integration has no available templates root.',
+      });
+    }
+    return;
+  }
+
+  const discoveredIds = new Set(templates.map(template => template.dirName));
+  /** @type {Map<string, string[]>} */
+  const idsByTarget = new Map();
+  for (const [template, target] of declarations) {
+    const ids = idsByTarget.get(target) ?? [];
+    ids.push(template);
+    idsByTarget.set(target, ids);
+    if (!discoveredIds.has(template)) {
+      errors.push({
+        code: 'invalid_template_replacement',
+        severity: 'error',
+        package: pkg,
+        autolinked: integration.__autolinked,
+        template,
+        replacementTarget: target,
+        message:
+          `templateReplacements declares "${template}" -> "${target}", but ` +
+          `this integration contributes no usable template with id "${template}".`,
+      });
+    }
+  }
+
+  for (const [target, ids] of idsByTarget) {
+    if (ids.length < 2) continue;
+    const message =
+      `${pkg} declares ${ids.length} templates as replacements for Core template ` +
+      `"${target}" (${ids.join(', ')}). One package must declare at most one ` +
+      'replacement for a Core target.';
+    for (const template of ids) {
+      errors.push({
+        code: 'ambiguous_template_replacement',
+        severity: 'error',
+        package: pkg,
+        autolinked: integration.__autolinked,
+        template,
+        replacementTarget: target,
+        message,
+      });
+    }
+  }
+}
+
+/**
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
  * than thrown. Exposed for `doctor integration validate` and template authoring checks.
  *
- * @param {{name?: string, __spec?: string, templates?: string}} integration
+ * @param {{name?: string, __spec?: string, __autolinked?: boolean, templates?: string, templateReplacements?: Record<string, string>}} integration
  * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
  */
 export async function discoverIntegrationTemplatesForOne(integration) {
@@ -569,7 +960,15 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 
   const root = integration?.templates;
   const pkgLabel = integration?.name ?? integration?.__spec ?? 'integration';
-  if (!root || !fs.existsSync(root)) return {templates, errors};
+  if (!root || !fs.existsSync(root)) {
+    validateTemplateReplacementDeclarations(
+      integration,
+      templates,
+      errors,
+      false,
+    );
+    return {templates, errors};
+  }
 
   for (const docPath of findIntegrationDocFiles(root)) {
     const suffix = matchedTemplateSuffix(docPath);
@@ -639,9 +1038,16 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
+      autolinked: integration.__autolinked,
+      replaces:
+        integration.templateReplacements != null &&
+        Object.hasOwn(integration.templateReplacements, id)
+          ? integration.templateReplacements[id]
+          : undefined,
     });
   }
 
+  validateTemplateReplacementDeclarations(integration, templates, errors, true);
   return {templates, errors};
 }
 

@@ -50,7 +50,18 @@ async function loadBlocks(cwd) {
   const blocks = [];
   try {
     const all = await discoverTemplates(cwd);
-    for (const t of all) if (t.type === 'block') blocks.push({...t, kind: 'template'});
+    const templates = all.filter(template => template.type === 'block');
+    /** @type {Map<string, import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate>} */
+    const byId = new Map();
+    // Exact ids are the fallback. Active replacement aliases override them in a
+    // second pass, matching template() regardless of discovery/display order.
+    for (const template of templates) byId.set(template.dirName, template);
+    for (const template of templates) {
+      if (template.replaces != null) byId.set(template.replaces, template);
+    }
+    for (const [id, template] of byId) {
+      blocks.push({...template, dirName: id, kind: 'template'});
+    }
   } catch {
     // discovery is best-effort
   }
@@ -91,7 +102,10 @@ export function formatIssue(issue) {
  * @param {string} expression
  * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
-export async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
+export async function analyze(
+  expression,
+  {form = 'auto', loose = false, cwd = process.cwd()} = {},
+) {
   // Validate inputs in the API (not just the CLI): an empty expression or an
   // unknown --form must error, not silently parse as an empty/compact layout.
   if (typeof expression !== 'string' || expression.trim() === '') {
@@ -108,9 +122,10 @@ export async function analyze(expression, {form = 'auto', loose = false, cwd = p
       ERROR_CODES.ERR_INVALID_OPTION,
     );
   }
-  const registry = /** @type {import('../../foundation/xle/xle-ast').Registry} */ (
-    /** @type {unknown} */ (await buildRegistry({cwd}))
-  );
+  const registry =
+    /** @type {import('../../foundation/xle/xle-ast').Registry} */ (
+      /** @type {unknown} */ (await buildRegistry({cwd}))
+    );
   const blocks = await loadBlocks(cwd);
 
   /** @type {import('../../foundation/xle/xle-ast').XLEDoc} */
