@@ -20,6 +20,10 @@ import {
 } from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {
+  templateMetadata,
+  templateMetadataCount,
+} from '../generated/templateMetadataRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
@@ -974,6 +978,17 @@ describe('templateRegistry', () => {
   it('discovers page templates', () => {
     expect(templateCount).toBeGreaterThan(10);
     expect(templates.length).toBe(templateCount);
+    expect(templateMetadataCount).toBe(templateCount);
+    expect(templateMetadata).toHaveLength(templateCount);
+  });
+
+  it('keeps source out of the metadata-only registry', () => {
+    expect(templateMetadata.map(template => template.slug)).toEqual(
+      templates.map(template => template.slug),
+    );
+    for (const template of templateMetadata) {
+      expect(template).not.toHaveProperty('source');
+    }
   });
 
   it('templates have required fields', () => {

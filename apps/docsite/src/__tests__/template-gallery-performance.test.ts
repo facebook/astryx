@@ -27,6 +27,15 @@ describe('template gallery playground links', () => {
     expect(dialog).toContain('buildTemplatePlaygroundHref(item.slug)');
     expect(gallery).not.toMatch(/source:\s*[ti]\.source/);
     expect(gallery).not.toContain('buildPlaygroundHref(item.source)');
+    expect(gallery).toContain('generated/templateMetadataRegistry');
+
+    const topNav = source('components/SharedTopNav.tsx');
+    const searchPalette = source('components/SearchPalette.tsx');
+    expect(searchPalette).toContain('generated/templateMetadataRegistry');
+    expect(topNav).not.toContain('generated/templateRegistry');
+    expect(topNav).not.toContain('generated/templateMetadataRegistry');
+    expect(topNav).toContain('lazy(() =>');
+    expect(topNav).toMatch(/\{isSearchOpen && \([\s\S]*?<LazySearchPalette/);
   });
 
   it('does not render the live preview while the dialog is closed', () => {
