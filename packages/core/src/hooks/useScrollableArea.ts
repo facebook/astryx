@@ -120,17 +120,19 @@ function mappingsEqual(a: LogicalAxisMapping, b: LogicalAxisMapping): boolean {
 function useStableComposedRef(
   internalRef: RefCallback<HTMLElement>,
 ): (externalRef: Ref<HTMLElement> | undefined) => RefCallback<HTMLElement> {
-  const cacheRef = useRef(
-    new Map<Ref<HTMLElement> | undefined, RefCallback<HTMLElement>>(),
-  );
+  const cachedExternalRef = useRef<Ref<HTMLElement> | undefined>(undefined);
+  const cachedComposedRef = useRef<RefCallback<HTMLElement> | null>(null);
   return useCallback(
     (externalRef: Ref<HTMLElement> | undefined) => {
-      const cached = cacheRef.current.get(externalRef);
-      if (cached != null) {
-        return cached;
+      if (
+        cachedComposedRef.current != null &&
+        Object.is(cachedExternalRef.current, externalRef)
+      ) {
+        return cachedComposedRef.current;
       }
       const composed = mergeRefs(externalRef, internalRef);
-      cacheRef.current.set(externalRef, composed);
+      cachedExternalRef.current = externalRef;
+      cachedComposedRef.current = composed;
       return composed;
     },
     [internalRef],

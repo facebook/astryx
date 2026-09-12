@@ -88,9 +88,12 @@ export interface ScrollableAreaProps extends Omit<
 /**
  * A native scroll viewport with axis-aware accessibility and chaining.
  *
- * The root is the viewport. Its single child is a real observed content box;
- * inline scrolling gives that box max-content inline sizing so content growth
- * changes measurable geometry. Native scrolling and platform scrollbars remain
+ * The root is the viewport. Its single child is a normal block content box with
+ * a 100% minimum size; children participate in that box rather than directly in
+ * viewport flex/grid layout. Inline scrolling gives the box max-content inline
+ * sizing, and its minimum block size deliberately does not create a definite
+ * percentage-height basis. Use the hook on owned structure when those formatting
+ * semantics must stay unchanged. Native scrolling and platform scrollbars remain
  * authoritative.
  *
  * @example

@@ -173,6 +173,17 @@ const styles = stylex.create({
   scrollbarAccent: {
     scrollbarColor: `${colorVars['--color-accent']} transparent`,
   },
+  transformedHost: {
+    inlineSize: 360,
+    transform: 'perspective(700px) rotateY(0deg)',
+  },
+  clippedFrame: {
+    overflow: 'clip',
+    borderRadius: radiusVars['--radius-container'],
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border-emphasized'],
+  },
 });
 
 const meta = {
@@ -463,6 +474,45 @@ function RTLBehaviorProbeStory() {
 
 export const RTLBehaviorProbe: Story = {
   render: () => <RTLBehaviorProbeStory />,
+  parameters: {controls: {disable: true}},
+};
+
+function TransformedClipDemo() {
+  const [activations, setActivations] = useState(0);
+  return (
+    <VStack gap={2} xstyle={styles.canvas}>
+      <Text type="supporting" color="secondary">
+        The native viewport remains clickable inside a perspective ancestor and
+        a clipped rounded frame.
+      </Text>
+      <div {...stylex.props(styles.transformedHost)}>
+        <div {...stylex.props(styles.clippedFrame)}>
+          <ScrollableArea
+            axis="block"
+            label="Transformed clipped activity"
+            data-evidence="transformed-clipped"
+            xstyle={styles.viewportCompact}>
+            <VStack gap={2} xstyle={styles.contentPadding}>
+              <Button
+                label="Activate clipped target"
+                data-transform-hit-target="true"
+                onClick={() => setActivations(value => value + 1)}>
+                Activate clipped target
+              </Button>
+              <Text data-transform-hit-count="true">
+                Activations: {activations}
+              </Text>
+              <Rows count={5} />
+            </VStack>
+          </ScrollableArea>
+        </div>
+      </div>
+    </VStack>
+  );
+}
+
+export const TransformedClippedAncestor: Story = {
+  render: () => <TransformedClipDemo />,
   parameters: {controls: {disable: true}},
 };
 
