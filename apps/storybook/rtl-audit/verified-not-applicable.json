@@ -184,5 +184,14 @@
   {
     "component": "core/StatusDot",
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "lab/ChartArea",
+    "reason": "ChartArea draws SVG area geometry in the parent Chart's physical data coordinate space. It owns no text, directional glyph, logical placement, control order, scrolling, dragging, overlay, or keyboard behavior; document direction does not change the supplied x-domain order or the upper/lower band geometry.",
+    "evidence": {
+      "apps/storybook/stories/ChartArea.stories.tsx": "sha256:ed3d18084e14f4288652415300035ee5a5ee9dd2cb47e8c63be356c2f474e338",
+      "packages/lab/src/Chart/ChartArea.tsx": "sha256:91b6be4e9d89016ab0a67003bc2de3632cb8a4c5841ab9d947e62e42bada566f",
+      "packages/lab/src/Chart/index.ts": "sha256:4540f4909d0b3f663bc21173717b181d92af6ef6fe9f3f2af4d6b0e8cc5484fb"
+    }
   }
 ]
