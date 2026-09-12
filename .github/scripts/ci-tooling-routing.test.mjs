@@ -127,12 +127,14 @@ describe('Node-tooling CI routing', () => {
       'test-ui',
       'test-node',
       'registry-contract',
+      'theme-layers',
     ]);
     expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
     const testJoin = step(ci.jobs.test, 'Assert every test gate succeeded').run;
     expect(testJoin).toContain('needs.test-node.result');
     expect(testJoin).toContain('needs.test-ui.result');
     expect(testJoin).toContain('needs.registry-contract.result');
+    expect(testJoin).toContain('needs.theme-layers.result');
     const buildJoin = step(
       ci.jobs.build,
       'Assert parallel builds succeeded',

@@ -395,6 +395,81 @@ describe('family generation transaction', () => {
     ).toBe(true);
   });
 
+  it('authenticates the prior manifest before committed cleanup', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterPointer: () => {
+            throw new Error('stop before cleanup');
+          },
+        },
+      }),
+    ).toThrow(/stop before cleanup/);
+    fs.appendFileSync(
+      path.join(root, 'generations', 'gen-first', first.manifestPath),
+      '\n',
+    );
+
+    expect(() =>
+      checkFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        expectedGeneration: second,
+      }),
+    ).toThrow(/Prior family generation does not match its journal/);
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(true);
+    expect(
+      fs.existsSync(path.join(root, 'generations', 'gen-first', 'family.css')),
+    ).toBe(true);
+  });
+
+  it('never follows a substituted directory while cleaning owned files', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterPointer: () => {
+            throw new Error('stop before cleanup');
+          },
+        },
+      }),
+    ).toThrow(/stop before cleanup/);
+    const external = path.join(root, 'external-receipts');
+    fs.mkdirSync(external);
+    fs.writeFileSync(path.join(external, 'build.json'), 'unrelated');
+    const receiptDirectory = path.join(
+      root,
+      'generations',
+      'gen-first',
+      'receipts',
+    );
+    fs.rmSync(receiptDirectory, {recursive: true});
+    fs.symlinkSync(external, receiptDirectory, 'dir');
+
+    expect(() =>
+      checkFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        expectedGeneration: second,
+      }),
+    ).toThrow(/non-directory parent/);
+    expect(fs.readFileSync(path.join(external, 'build.json'), 'utf8')).toBe(
+      'unrelated',
+    );
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(true);
+  });
+
   it('rejects a current pointer whose directory name disagrees with its manifest', () => {
     const expected = generation('family', 'gen-content-addressed', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...expected});
@@ -505,6 +580,22 @@ describe('family generation transaction', () => {
         fs.lstatSync(path.join(root, name), {throwIfNoEntry: false}),
       ).toBeDefined();
     }
+  });
+
+  it('does not race a concurrent stale-lock reclaimer', () => {
+    fs.symlinkSync(
+      Buffer.from(
+        JSON.stringify({hostname: os.hostname(), pid: process.pid}),
+      ).toString('base64url'),
+      path.join(root, '.lock-reclaim'),
+    );
+    const next = generation('family', 'gen-next', 'green');
+    expect(() =>
+      publishFamilyGeneration({root, artifactKey: 'family', ...next}),
+    ).toThrow(/lock recovery is active/);
+    expect(fs.existsSync(path.join(root, 'generations', 'gen-next'))).toBe(
+      false,
+    );
   });
 
   it('refuses an active same-host lock', () => {

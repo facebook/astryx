@@ -600,7 +600,7 @@ root.dataset.astryxTheme = themes[nextTheme].name;`,
         },
         {
           type: 'prose',
-          text: 'CSS loading and ESM loading are independent: importing the module does not make styles ready. After the one family stylesheet loads, switching needs only the theme identity attribute and causes no stylesheet request. Relative `--icons-specifier` modules resolve from the theme source that owns the registry and are bundled into the family ESM; bare specifiers remain static external imports. The family stylesheet eagerly downloads every selected member; keep using the unchanged standalone build when an app needs only one complete theme. The executable nested/sibling and zero-delta example lives at `packages/cli/test/fixtures/theme-family`.',
+          text: 'CSS loading and ESM loading are independent: importing the module does not make styles ready. After the one family stylesheet loads, switching needs only the theme identity attribute and causes no stylesheet request. Relative `--icons-specifier` modules resolve from the theme source that owns the registry and are bundled into the family ESM; bare specifiers remain static external imports and are rejected when their resolvable browser graph imports CSS. The family stylesheet eagerly downloads every selected member; keep using the unchanged standalone build when an app needs only one complete theme. See the [public runnable nested/sibling and zero-delta example](https://github.com/facebook/astryx/tree/main/packages/cli/test/fixtures/theme-family).',
         },
         {
           type: 'prose',

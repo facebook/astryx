@@ -34,7 +34,7 @@ function indentJson(value) {
 /**
  * @param {{order: Array<{name: string, theme: Record<string, any>}>}} graph
  * @param {Map<string, string>} bindings
- * @param {{imports: string[], expressions: Map<string, {icons?: string, indicators?: string}>, external?: string[], needsPickHelper?: boolean}} [registryPlan]
+ * @param {{imports: string[], expressions: Map<string, {icons?: string, indicators?: string}>, external?: string[], externalChecks?: Array<{specifier: string, resolveDir: string}>, needsPickHelper?: boolean}} [registryPlan]
  */
 export async function generateFamilyESM(graph, bindings, registryPlan) {
   const blocks = [
@@ -72,6 +72,37 @@ export async function generateFamilyESM(graph, bindings, registryPlan) {
 
   const source = `${blocks.join('\n\n')}\n`;
   if ((registryPlan?.imports.length ?? 0) === 0) return source;
+
+  for (const check of registryPlan?.externalChecks ?? []) {
+    let inspection;
+    try {
+      inspection = await bundle({
+        stdin: {
+          contents: `import ${JSON.stringify(check.specifier)};`,
+          loader: 'js',
+          resolveDir: check.resolveDir,
+          sourcefile: 'astryx-registry-css-check.mjs',
+        },
+        bundle: true,
+        write: false,
+        outfile: 'registry-check.js',
+        format: 'esm',
+        platform: 'browser',
+        target: 'es2022',
+        legalComments: 'none',
+        logLevel: 'silent',
+      });
+    } catch {
+      // Bare imports may intentionally resolve only in the consumer's runtime.
+      // If this environment can resolve the graph, however, CSS is forbidden.
+      continue;
+    }
+    if (inspection.outputFiles.some(file => file.path.endsWith('.css'))) {
+      throw new Error(
+        `Bare family registry ${JSON.stringify(check.specifier)} imports CSS; the family ESM must stay CSS-free.`,
+      );
+    }
+  }
 
   const result = await bundle({
     stdin: {

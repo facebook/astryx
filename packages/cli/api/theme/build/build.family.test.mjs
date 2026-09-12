@@ -7,12 +7,46 @@
  * @position End-to-end AST-034 family artifact contract tests
  */
 
+import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {themeBuildFamily} from './build.mjs';
+import {publishFamilyGeneration} from './family/transaction.mjs';
+
+const digest = value =>
+  `sha256-${createHash('sha256').update(value).digest('hex')}`;
+
+function interruptedGeneration(key, generationId) {
+  const files = new Map([
+    [`${key}.css`, ':root{}\n'],
+    [`${key}.js`, 'export {};\n'],
+    [`${key}.d.ts`, 'export {};\n'],
+  ]);
+  const owned = [...files].map(([ownedPath, content]) => ({
+    path: ownedPath,
+    digest: digest(content),
+  }));
+  const manifestPath = `${key}.manifest.json`;
+  files.set(
+    manifestPath,
+    `${JSON.stringify({
+      schemaVersion: 1,
+      artifactKey: key,
+      generationId,
+      artifacts: {
+        css: `${key}.css`,
+        js: `${key}.js`,
+        dts: `${key}.d.ts`,
+        manifest: manifestPath,
+      },
+      owned,
+    })}\n`,
+  );
+  return {generationId, files, manifestPath};
+}
 
 vi.setConfig({testTimeout: 120_000});
 
@@ -468,6 +502,47 @@ describe('themeBuildFamily', () => {
     );
   });
 
+  it('recovers a journal before a later selected-source error', async () => {
+    await themeBuildFamily(
+      files,
+      {familyKey: 'ocean-family'},
+      {cwd: fixtureDir},
+    );
+    const familyRoot = path.join(fixtureDir, 'ocean-family');
+    const priorTarget = fs.readlinkSync(path.join(familyRoot, 'current'));
+    const interrupted = interruptedGeneration(
+      'ocean-family',
+      'gen-11111111111111111111',
+    );
+    expect(() =>
+      publishFamilyGeneration({
+        root: familyRoot,
+        artifactKey: 'ocean-family',
+        ...interrupted,
+        hooks: {
+          afterJournal: () => {
+            throw new Error('stop before pointer');
+          },
+        },
+      }),
+    ).toThrow(/stop before pointer/);
+
+    await expect(
+      themeBuildFamily(
+        ['ocean.mjs', 'missing-child.mjs'],
+        {familyKey: 'ocean-family', check: true},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow();
+    expect(fs.existsSync(path.join(familyRoot, '.journal.json'))).toBe(false);
+    expect(fs.readlinkSync(path.join(familyRoot, 'current'))).toBe(priorTarget);
+    expect(
+      fs.existsSync(
+        path.join(familyRoot, 'generations', interrupted.generationId),
+      ),
+    ).toBe(false);
+  });
+
   it('keeps unmanifested pre-journal staging residue without blocking later checks', async () => {
     await themeBuildFamily(
       files,
@@ -500,6 +575,47 @@ describe('themeBuildFamily', () => {
     );
     expect(fs.readFileSync(journalResidue, 'utf8')).toBe(
       'unmanifested journal bytes',
+    );
+  });
+
+  it('rejects a resolvable bare registry graph that imports CSS', async () => {
+    const packageRoot = path.join(fixtureDir, 'node_modules', 'css-registry');
+    fs.mkdirSync(packageRoot, {recursive: true});
+    fs.writeFileSync(
+      path.join(packageRoot, 'package.json'),
+      JSON.stringify({
+        name: 'css-registry',
+        type: 'module',
+        exports: {'.': {browser: './browser.mjs', default: './node.mjs'}},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(packageRoot, 'node.mjs'),
+      `export const icons={close:'node-close'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(packageRoot, 'browser.mjs'),
+      `import './registry.css';\nexport const icons={close:'browser-close'};\n`,
+    );
+    fs.writeFileSync(path.join(packageRoot, 'registry.css'), '.icon{}\n');
+    fs.writeFileSync(
+      path.join(fixtureDir, 'css-registry-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {icons} from 'css-registry';\nexport const cssRegistryBaseTheme=defineTheme({name:'css-registry-base', icons});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'css-registry-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {cssRegistryBaseTheme} from './css-registry-base.mjs';\nexport const cssRegistryChildTheme=defineTheme({name:'css-registry-child', extends:cssRegistryBaseTheme});\n`,
+    );
+
+    await expect(
+      themeBuildFamily(
+        ['css-registry-base.mjs', 'css-registry-child.mjs'],
+        {familyKey: 'css-registry-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/imports CSS.*CSS-free/);
+    expect(fs.existsSync(path.join(fixtureDir, 'css-registry-family'))).toBe(
+      false,
     );
   });
 
@@ -553,7 +669,7 @@ describe('themeBuildFamily', () => {
 
     fs.writeFileSync(
       path.join(fixtureDir, 'misleading-registry.mjs'),
-      `export const wrong = {close: () => 'wrong'}; export const right = {close: () => 'right'};\n`,
+      `const make=value=>()=>value; export const wrong = {close: make('wrong')}; export const right = {close: make('right')};\n`,
     );
     fs.writeFileSync(
       path.join(fixtureDir, 'misleading-base.mjs'),
@@ -622,5 +738,41 @@ describe('themeBuildFamily', () => {
       close: 'replacement-close',
       menu: 'inline-menu',
     });
+
+    fs.writeFileSync(
+      path.join(fixtureDir, 'fallback-replacement.mjs'),
+      `export const icons={close:()=> 'replacement-function'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'fallback-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nconst captured='original-function';\nconst registry={close:()=>captured};\nexport const fallbackBaseTheme=defineTheme({name:'fallback-base', icons:registry});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'fallback-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {fallbackBaseTheme} from './fallback-base.mjs';\nexport const fallbackChildTheme=defineTheme({name:'fallback-child', extends:fallbackBaseTheme});\n`,
+    );
+    await themeBuildFamily(
+      ['fallback-base.mjs', 'fallback-child.mjs'],
+      {
+        familyKey: 'fallback-override-family',
+        iconsSpecifier: './fallback-replacement.mjs',
+      },
+      {cwd: fixtureDir},
+    );
+    const fallbackOverride = await import(
+      `${
+        pathToFileURL(
+          path.join(
+            fixtureDir,
+            'fallback-override-family',
+            'current',
+            'fallback-override-family.js',
+          ),
+        ).href
+      }?test=${Date.now()}`
+    );
+    expect(fallbackOverride.fallbackBaseTheme.icons.close()).toBe(
+      'replacement-function',
+    );
   });
 });

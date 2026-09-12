@@ -83,6 +83,8 @@ export function planFamilyRegistries(input) {
   const requests = [];
   /** @type {Map<string, Record<string, any>>} */
   const own = new Map();
+  /** @type {Map<string, Set<string>>} */
+  const completeRolesByMember = new Map();
   const iconSources = new Set();
 
   for (const node of graph.order) {
@@ -100,6 +102,44 @@ export function planFamilyRegistries(input) {
       );
       if (!hasOwn) continue;
       const ownValue = prepared.rawInput[role];
+      const parentHasRole = node.parentName
+        ? completeRolesByMember.get(node.parentName)?.has(role) === true
+        : false;
+      if (role === 'icons' && iconsSpecifier && !parentHasRole) {
+        let specifier = iconsSpecifier;
+        if (iconsSpecifier.startsWith('.')) {
+          specifier = resolveRelativeImport(prepared.filePath, iconsSpecifier);
+          if (!fs.existsSync(specifier)) {
+            throw new Error(
+              `Family icon override module does not exist: ${specifier}`,
+            );
+          }
+        }
+        const id = `${node.name}:${role}`;
+        const sourceKey = info
+          ? info.importPath.startsWith('.')
+            ? resolveRelativeImport(prepared.filePath, info.importPath)
+            : info.importPath
+          : prepared.filePath;
+        iconSources.add(sourceKey);
+        requests.push({
+          ...(info ?? {
+            importedName: 'icons',
+            importKind: 'named',
+            sourceLocalName: 'icons',
+            memberAccess: '',
+          }),
+          id,
+          specifier,
+          ownerFilePath: prepared.filePath,
+        });
+        roles[role] = {
+          kind: 'import',
+          requestId: id,
+          memberAccess: info?.memberAccess ?? '',
+        };
+        continue;
+      }
       if (info) {
         let specifier = info.importPath;
         let sourceKey = specifier;
@@ -134,7 +174,12 @@ export function planFamilyRegistries(input) {
           }
         }
         const id = `${node.name}:${role}`;
-        requests.push({...info, id, specifier});
+        requests.push({
+          ...info,
+          id,
+          specifier,
+          ownerFilePath: prepared.filePath,
+        });
         roles[role] = {
           kind: 'import',
           requestId: id,
@@ -150,6 +195,7 @@ export function planFamilyRegistries(input) {
           importedName: '*',
           importKind: 'namespace',
           sourceLocalName: `source_${node.name}`,
+          ownerFilePath: prepared.filePath,
         });
         roles[role] = {
           kind: 'source',
@@ -160,6 +206,12 @@ export function planFamilyRegistries(input) {
         };
       }
     }
+    completeRolesByMember.set(
+      node.name,
+      new Set(
+        ['icons', 'indicators'].filter(role => node.theme[role] !== undefined),
+      ),
+    );
     own.set(node.name, roles);
   }
 
@@ -209,10 +261,29 @@ export function planFamilyRegistries(input) {
     expressions.set(node.name, result);
   }
 
+  const externalChecks = [
+    ...new Map(
+      requests
+        .filter(
+          request =>
+            !request.specifier.startsWith('.') &&
+            !path.isAbsolute(request.specifier),
+        )
+        .map(request => [
+          `${request.ownerFilePath}\u0000${request.specifier}`,
+          {
+            specifier: request.specifier,
+            resolveDir: path.dirname(request.ownerFilePath),
+          },
+        ]),
+    ).values(),
+  ];
+
   return {
     imports: allocation.imports.map(renderImport),
     expressions,
     requests,
+    externalChecks,
     external:
       iconsSpecifier &&
       !iconsSpecifier.startsWith('.') &&

@@ -105,7 +105,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'astryx theme build compiles defineTheme to static CSS. standalone output stays .css + .js (__built:true) + .d.ts. family mode: --family <base> <children...> requires --family-key <lower-kebab-key>; emits one <key>.css, CSS-free <key>.js, <key>.d.ts, <key>.manifest.json + receipts under current. --check verifies the complete owned set; family refuses --watch/--out and composes with --icons-specifier (relative source modules are bundled; bare specifiers remain imports). load CSS with <link>, import ESM separately, switch by data-astryx-theme only. one CSS request downloads every selected member; use standalone for one-theme consumers. runnable example: packages/cli/test/fixtures/theme-family.',
+          text: 'astryx theme build compiles defineTheme to static CSS. standalone output stays .css + .js (__built:true) + .d.ts. family mode: --family <base> <children...> requires --family-key <lower-kebab-key>; emits one <key>.css, CSS-free <key>.js, <key>.d.ts, <key>.manifest.json + receipts under current. --check verifies the complete owned set; family refuses --watch/--out and composes with --icons-specifier (relative source modules are bundled; bare specifiers remain imports and are rejected when their resolvable browser graph imports CSS). load CSS with <link>, import ESM separately, switch by data-astryx-theme only. one CSS request downloads every selected member; use standalone for one-theme consumers. public runnable example: https://github.com/facebook/astryx/tree/main/packages/cli/test/fixtures/theme-family.',
         },
         null,
         null,

@@ -118,6 +118,25 @@ describe('public theme-family example', () => {
     const assets = fs.readdirSync(path.join(project, 'dist/assets'));
     expect(assets.some(file => file.endsWith('.css'))).toBe(true);
     expect(assets.some(file => file.endsWith('.js'))).toBe(true);
+
+    const jsOnlyEntry = path.join(project, 'js-only-entry.mjs');
+    fs.writeFileSync(
+      jsOnlyEntry,
+      `import {oceanTheme} from './ocean-family/current/ocean-family.js';\nconsole.log(oceanTheme.name);\n`,
+    );
+    await viteBuild({
+      root: project,
+      logLevel: 'silent',
+      build: {
+        outDir: 'dist-js-only',
+        emptyOutDir: true,
+        rollupOptions: {input: jsOnlyEntry},
+      },
+    });
+    const jsOnlyFiles = fs.readdirSync(path.join(project, 'dist-js-only'), {
+      recursive: true,
+    });
+    expect(jsOnlyFiles.some(file => String(file).endsWith('.css'))).toBe(false);
   });
 
   it('bundles a relative icon override so current stays relocatable', async () => {

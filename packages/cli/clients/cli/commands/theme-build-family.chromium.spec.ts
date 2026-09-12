@@ -227,6 +227,28 @@ test('native family CSS is correct on first paint and every attribute-only switc
   expect(new Set(samples)).toEqual(new Set(['#020b12']));
   expect(stylesheetRequests).toHaveLength(beforeSwitchRequests);
 
+  await page.locator('select').selectOption('ocean-calm');
+  await expect.poll(() => accent(switchable)).toBe('#0077b6');
+  expect(
+    await switchable.evaluate(element =>
+      getComputedStyle(element)
+        .getPropertyValue('--color-background-surface')
+        .trim(),
+    ),
+  ).toBe('#e8f7ff');
+  const calmButton = switchable.locator('button');
+  expect(
+    await calmButton.evaluate(element => getComputedStyle(element).paddingLeft),
+  ).toBe('20px');
+  expect(
+    await calmButton.evaluate(element => getComputedStyle(element).borderWidth),
+  ).toBe('3px');
+  await calmButton.hover();
+  expect(
+    await calmButton.evaluate(element => getComputedStyle(element).color),
+  ).toBe('rgb(255, 0, 0)');
+  expect(stylesheetRequests).toHaveLength(beforeSwitchRequests);
+
   await page
     .locator('[data-demo-root]')
     .evaluate(element => element.setAttribute('data-astryx-media', 'dark'));

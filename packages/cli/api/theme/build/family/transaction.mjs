@@ -82,51 +82,119 @@ function processIsAlive(pid) {
   }
 }
 
+/** @param {string} lockPath */
+function readLockOwner(lockPath) {
+  try {
+    return JSON.parse(
+      Buffer.from(fs.readlinkSync(lockPath), 'base64url').toString('utf8'),
+    );
+  } catch {
+    throw new Error(
+      `Theme family output is locked by an unreadable lock at ${lockPath}.`,
+    );
+  }
+}
+
+/** @param {any} prior @param {{hostname: string, pid: number}} owner */
+function isStaleLock(prior, owner) {
+  return (
+    prior?.hostname === owner.hostname &&
+    Number.isInteger(prior?.pid) &&
+    !processIsAlive(prior.pid)
+  );
+}
+
 /** @param {string} root */
 function acquireLock(root) {
   const lockPath = path.join(root, '.lock');
-  const owner = {hostname: os.hostname(), pid: process.pid};
+  const reclaimPath = path.join(root, '.lock-reclaim');
+  const owner = {
+    hostname: os.hostname(),
+    pid: process.pid,
+    nonce: randomUUID(),
+  };
   const target = Buffer.from(JSON.stringify(owner)).toString('base64url');
+  const release = () => {
+    try {
+      if (fs.readlinkSync(lockPath) !== target) {
+        throw new Error(`Theme family lock ownership changed at ${lockPath}.`);
+      }
+      fs.unlinkSync(lockPath);
+      fsyncDirectory(root);
+    } catch (error) {
+      if (errorCode(error) !== 'ENOENT') throw error;
+    }
+  };
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  if (fs.lstatSync(reclaimPath, {throwIfNoEntry: false})) {
+    throw new Error(`Theme family lock recovery is active at ${reclaimPath}.`);
+  }
+  try {
+    fs.symlinkSync(target, lockPath);
+    fsyncDirectory(root);
+    return release;
+  } catch (error) {
+    if (errorCode(error) !== 'EEXIST') throw error;
+  }
+
+  const prior = readLockOwner(lockPath);
+  if (!isStaleLock(prior, owner)) {
+    throw new Error(`Theme family output is locked at ${lockPath}.`);
+  }
+
+  try {
+    fs.symlinkSync(target, reclaimPath);
+    fsyncDirectory(root);
+  } catch (error) {
+    if (errorCode(error) === 'EEXIST') {
+      throw new Error(
+        `Theme family lock recovery is active at ${reclaimPath}.`,
+        {cause: error},
+      );
+    }
+    throw error;
+  }
+
+  let acquired = false;
+  /** @type {unknown} */
+  let operationError;
+  try {
+    const confirmed = readLockOwner(lockPath);
+    if (!isStaleLock(confirmed, owner)) {
+      throw new Error(`Theme family output is locked at ${lockPath}.`);
+    }
+    fs.unlinkSync(lockPath);
+    fsyncDirectory(root);
     try {
       fs.symlinkSync(target, lockPath);
       fsyncDirectory(root);
-      return () => {
-        try {
-          fs.unlinkSync(lockPath);
-          fsyncDirectory(root);
-        } catch (error) {
-          if (errorCode(error) !== 'ENOENT') throw error;
-        }
-      };
+      acquired = true;
     } catch (error) {
-      if (errorCode(error) !== 'EEXIST') throw error;
-
-      let prior;
-      try {
-        prior = JSON.parse(
-          Buffer.from(fs.readlinkSync(lockPath), 'base64url').toString('utf8'),
-        );
-      } catch {
-        throw new Error(
-          `Theme family output is locked by an unreadable lock at ${lockPath}.`,
-        );
-      }
-      const stale =
-        prior?.hostname === owner.hostname &&
-        Number.isInteger(prior?.pid) &&
-        !processIsAlive(prior.pid);
-      if (!stale || attempt > 0) {
+      if (errorCode(error) === 'EEXIST') {
         throw new Error(`Theme family output is locked at ${lockPath}.`, {
           cause: error,
         });
       }
-      fs.unlinkSync(lockPath);
-      fsyncDirectory(root);
+      throw error;
     }
+  } catch (error) {
+    operationError = error;
   }
-  throw new Error(`Theme family output is locked at ${lockPath}.`);
+
+  /** @type {unknown} */
+  let cleanupError;
+  try {
+    fs.unlinkSync(reclaimPath);
+    fsyncDirectory(root);
+  } catch (error) {
+    if (errorCode(error) !== 'ENOENT') cleanupError = error;
+  }
+  if (cleanupError) {
+    if (acquired) release();
+    throw cleanupError;
+  }
+  if (operationError) throw operationError;
+  return release;
 }
 
 /**
@@ -217,6 +285,35 @@ function replaceCurrent(root, target) {
 }
 
 /**
+ * Resolve an owned file without following a substituted directory or final
+ * symlink outside the immutable generation.
+ * @param {string} generationDir
+ * @param {string} relative
+ */
+function assertRegularOwnedFile(generationDir, relative) {
+  assertSafeRelativePath(relative);
+  const parts = relative.split('/');
+  let current = generationDir;
+  for (const part of parts.slice(0, -1)) {
+    current = path.join(current, part);
+    const stat = fs.lstatSync(current);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      throw new Error(
+        `Family-owned path has a non-directory parent: ${relative}.`,
+      );
+    }
+  }
+  const finalPart = parts.at(-1);
+  if (!finalPart) throw new Error(`Unsafe family-owned path "${relative}".`);
+  const file = path.join(current, finalPart);
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    throw new Error(`Family-owned path is not a regular file: ${relative}.`);
+  }
+  return file;
+}
+
+/**
  * @param {string} root
  * @param {string} generationTarget
  * @param {string} manifestPath
@@ -232,8 +329,18 @@ function readManifest(
 ) {
   assertSafeRelativePath(generationTarget);
   assertSafeRelativePath(manifestPath);
-  const generationDir = path.join(root, ...generationTarget.split('/'));
-  const manifestFile = path.join(generationDir, ...manifestPath.split('/'));
+  const targetParts = generationTarget.split('/');
+  if (targetParts.length !== 2 || targetParts[0] !== 'generations') {
+    throw new Error(`Invalid family generation target: ${generationTarget}.`);
+  }
+  const generationDir = path.join(root, ...targetParts);
+  const generationStat = fs.lstatSync(generationDir);
+  if (!generationStat.isDirectory() || generationStat.isSymbolicLink()) {
+    throw new Error(
+      `Family generation is not a real directory: ${generationTarget}.`,
+    );
+  }
+  const manifestFile = assertRegularOwnedFile(generationDir, manifestPath);
   const content = fs.readFileSync(manifestFile);
   const manifest = /** @type {FamilyManifest} */ (
     JSON.parse(content.toString('utf8'))
@@ -278,7 +385,7 @@ function validateGeneration(root, generationTarget, manifestPath, artifactKey) {
     path.posix.basename(generationTarget),
   );
   for (const owned of info.manifest.owned) {
-    const file = path.join(info.generationDir, ...owned.path.split('/'));
+    const file = assertRegularOwnedFile(info.generationDir, owned.path);
     const actual = sha256(fs.readFileSync(file));
     if (actual !== owned.digest) {
       throw new Error(`Family generation digest mismatch for ${owned.path}.`);
@@ -340,8 +447,8 @@ function removeManifestOwnedGeneration(
     .filter(relative => relative !== manifestPath)
     .sort((a, b) => b.length - a.length);
   for (const relative of ownedPaths) {
-    const file = path.join(info.generationDir, ...relative.split('/'));
     try {
+      const file = assertRegularOwnedFile(info.generationDir, relative);
       fs.unlinkSync(file);
       removeEmptyParents(path.dirname(file), info.generationDir);
     } catch (error) {
@@ -352,8 +459,12 @@ function removeManifestOwnedGeneration(
     .readdirSync(info.generationDir)
     .filter(entry => entry !== path.basename(manifestPath));
   if (remaining.length === 0) {
-    fs.unlinkSync(info.manifestFile);
-    removeEmptyParents(path.dirname(info.manifestFile), info.generationDir);
+    const manifestFile = assertRegularOwnedFile(
+      info.generationDir,
+      manifestPath,
+    );
+    fs.unlinkSync(manifestFile);
+    removeEmptyParents(path.dirname(manifestFile), info.generationDir);
     try {
       fs.rmdirSync(info.generationDir);
     } catch {
@@ -391,7 +502,15 @@ function cleanupGenerations(
     const target = `generations/${name}`;
     if (target === activeTarget || target === protectedTarget) continue;
     const full = path.join(generationsDir, name);
-    if (!fs.lstatSync(full).isDirectory()) continue;
+    const fullStat = fs.lstatSync(full);
+    if (!fullStat.isDirectory() || fullStat.isSymbolicLink()) {
+      if (requiredTargets.has(target)) {
+        throw new Error(
+          `Cannot complete family cleanup because ${target} is not a real directory.`,
+        );
+      }
+      continue;
+    }
     duringCleanup?.();
     const removedOwned = removeManifestOwnedGeneration(
       root,
@@ -451,6 +570,13 @@ function recover(root, artifactKey, manifestPath) {
   ) {
     throw new Error(`Theme family journal is invalid at ${journalPath}.`);
   }
+  for (const entry of [journal.next, journal.prev].filter(Boolean)) {
+    assertSafeRelativePath(entry.target);
+    const parts = entry.target.split('/');
+    if (parts.length !== 2 || parts[0] !== 'generations') {
+      throw new Error(`Theme family journal is invalid at ${journalPath}.`);
+    }
+  }
 
   const current = readCurrent(root);
   if (current?.target === journal.next.target) {
@@ -464,6 +590,39 @@ function recover(root, artifactKey, manifestPath) {
       throw new Error(
         'Committed family generation does not match its journal.',
       );
+    }
+    if (journal.prev) {
+      /** @type {ReturnType<typeof readManifest> | undefined} */
+      let previous;
+      try {
+        previous = readManifest(
+          root,
+          journal.prev.target,
+          manifestPath,
+          artifactKey,
+        );
+      } catch (error) {
+        const previousDirectory = path.join(
+          root,
+          ...journal.prev.target.split('/'),
+        );
+        const previousStat = fs.lstatSync(previousDirectory, {
+          throwIfNoEntry: false,
+        });
+        if (
+          !previousStat?.isDirectory() ||
+          previousStat.isSymbolicLink() ||
+          fs.readdirSync(previousDirectory).length !== 0
+        ) {
+          throw new Error(
+            `Prior family generation has no valid ownership manifest at ${journal.prev.target}.`,
+            {cause: error},
+          );
+        }
+      }
+      if (previous && previous.digest !== journal.prev.manifestDigest) {
+        throw new Error('Prior family generation does not match its journal.');
+      }
     }
     cleanupGenerations(
       root,

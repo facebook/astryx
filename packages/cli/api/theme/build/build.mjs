@@ -1415,44 +1415,6 @@ function extractRegistryInfo(filePath, field) {
 }
 
 /**
- * @param {unknown} left
- * @param {unknown} right
- * @param {WeakMap<object, object>} [seen]
- * @returns {boolean}
- */
-function registryValuesEqual(left, right, seen = new WeakMap()) {
-  if (Object.is(left, right)) return true;
-  if (typeof left === 'function' && typeof right === 'function') {
-    return (
-      Function.prototype.toString.call(left) ===
-      Function.prototype.toString.call(right)
-    );
-  }
-  if (
-    left === null ||
-    right === null ||
-    typeof left !== 'object' ||
-    typeof right !== 'object'
-  ) {
-    return false;
-  }
-  if (seen.get(left) === right) return true;
-  seen.set(left, right);
-  const leftRecord = /** @type {Record<string, unknown>} */ (left);
-  const rightRecord = /** @type {Record<string, unknown>} */ (right);
-  const leftKeys = Object.keys(leftRecord).sort();
-  const rightKeys = Object.keys(rightRecord).sort();
-  return (
-    leftKeys.length === rightKeys.length &&
-    leftKeys.every(
-      (key, index) =>
-        key === rightKeys[index] &&
-        registryValuesEqual(leftRecord[key], rightRecord[key], seen),
-    )
-  );
-}
-
-/**
  * Prove a textual import descriptor against the exact evaluated field value.
  * A comment, call, conditional, or unrelated earlier property can resemble the
  * source pattern; those cases fall back to bundling the selected source member.
@@ -1476,7 +1438,7 @@ function verifyRegistryInfo(filePath, info, expected, loader) {
     for (const part of info.memberAccess.split('.').filter(Boolean)) {
       value = value?.[part];
     }
-    return registryValuesEqual(value, expected) ? info : null;
+    return Object.is(value, expected) ? info : null;
   } catch {
     return null;
   }
@@ -2736,7 +2698,13 @@ function assertFamilyRootAvailable(root) {
     collision(lockPath);
   }
 
-  const allowed = new Set(['current', 'generations', '.lock', '.journal.json']);
+  const allowed = new Set([
+    'current',
+    'generations',
+    '.lock',
+    '.lock-reclaim',
+    '.journal.json',
+  ]);
   /** @param {string} entry */
   const isPrivateResidue = entry =>
     /^\.(?:journal|current)-[a-f0-9-]{36}\.tmp$/.test(entry) ||
@@ -2826,6 +2794,29 @@ export async function themeBuildFamily(
     import('./family/registries.mjs'),
     import('./family/transaction.mjs'),
   ]);
+
+  // The public syntax designates the first path as the base. Recover that
+  // output before loading any selected source, so a source/graph error cannot
+  // strand an already journaled publication. The resolved graph repeats this
+  // check below for programmatic callers that supply a different order.
+  const declaredFamilyRoot = path.join(
+    path.dirname(path.resolve(cwd, files[0])),
+    options.familyKey,
+  );
+  assertFamilyRootAvailable(declaredFamilyRoot);
+  try {
+    recoverFamilyOutput({
+      root: declaredFamilyRoot,
+      artifactKey: options.familyKey,
+      manifestPath: `${options.familyKey}.manifest.json`,
+    });
+  } catch (error) {
+    throw new AstryxError(
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
+  }
 
   const interception = interceptCore(_coreThemeModule, _coreRootModule);
   const loader = createJiti(import.meta.url, {
