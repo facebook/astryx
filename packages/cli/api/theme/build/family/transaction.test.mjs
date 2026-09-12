@@ -582,6 +582,20 @@ describe('family generation transaction', () => {
     }
   });
 
+  it('recovers a stale lock-reclamation marker', () => {
+    fs.symlinkSync(
+      Buffer.from(
+        JSON.stringify({hostname: os.hostname(), pid: 2147483647}),
+      ).toString('base64url'),
+      path.join(root, '.lock-reclaim'),
+    );
+    const next = generation('family', 'gen-next', 'green');
+    expect(() =>
+      publishFamilyGeneration({root, artifactKey: 'family', ...next}),
+    ).not.toThrow();
+    expect(fs.existsSync(path.join(root, '.lock-reclaim'))).toBe(false);
+  });
+
   it('does not race a concurrent stale-lock reclaimer', () => {
     fs.symlinkSync(
       Buffer.from(

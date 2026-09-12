@@ -527,9 +527,10 @@ describe('themeBuildFamily', () => {
       }),
     ).toThrow(/stop before pointer/);
 
+    fs.mkdirSync(path.join(fixtureDir, 'other-source-dir'));
     await expect(
       themeBuildFamily(
-        ['ocean.mjs', 'missing-child.mjs'],
+        ['other-source-dir/missing-child.mjs', 'ocean.mjs'],
         {familyKey: 'ocean-family', check: true},
         {cwd: fixtureDir},
       ),
@@ -591,11 +592,11 @@ describe('themeBuildFamily', () => {
     );
     fs.writeFileSync(
       path.join(packageRoot, 'node.mjs'),
-      `export const icons={close:'node-close'};\n`,
+      `export const icons={close:'node-close'};\nexport const makeIcon=()=>()=> 'node-icon';\n`,
     );
     fs.writeFileSync(
       path.join(packageRoot, 'browser.mjs'),
-      `import './registry.css';\nexport const icons={close:'browser-close'};\n`,
+      `import './registry.css';\nexport const icons={close:'browser-close'};\nexport const makeIcon=()=>()=> 'browser-icon';\n`,
     );
     fs.writeFileSync(path.join(packageRoot, 'registry.css'), '.icon{}\n');
     fs.writeFileSync(
@@ -615,6 +616,25 @@ describe('themeBuildFamily', () => {
       ),
     ).rejects.toThrow(/imports CSS.*CSS-free/);
     expect(fs.existsSync(path.join(fixtureDir, 'css-registry-family'))).toBe(
+      false,
+    );
+
+    fs.writeFileSync(
+      path.join(fixtureDir, 'css-fallback-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {makeIcon} from 'css-registry';\nconst icons={close:makeIcon()};\nexport const cssFallbackBaseTheme=defineTheme({name:'css-fallback-base', icons});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'css-fallback-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {cssFallbackBaseTheme} from './css-fallback-base.mjs';\nexport const cssFallbackChildTheme=defineTheme({name:'css-fallback-child', extends:cssFallbackBaseTheme});\n`,
+    );
+    await expect(
+      themeBuildFamily(
+        ['css-fallback-base.mjs', 'css-fallback-child.mjs'],
+        {familyKey: 'css-fallback-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/imports CSS.*CSS-free/);
+    expect(fs.existsSync(path.join(fixtureDir, 'css-fallback-family'))).toBe(
       false,
     );
   });
@@ -774,5 +794,37 @@ describe('themeBuildFamily', () => {
     expect(fallbackOverride.fallbackBaseTheme.icons.close()).toBe(
       'replacement-function',
     );
+
+    fs.writeFileSync(
+      path.join(fixtureDir, 'global-registry.mjs'),
+      `export const icons={close:()=> 'global-close'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'global-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {icons as Object} from './global-registry.mjs';\nexport const globalBaseTheme=defineTheme({name:'global-base', icons:Object});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'global-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {globalBaseTheme} from './global-base.mjs';\nconst captured='global-menu';\nexport const globalChildTheme=defineTheme({name:'global-child', extends:globalBaseTheme, icons:{menu:()=>captured}});\n`,
+    );
+    await themeBuildFamily(
+      ['global-base.mjs', 'global-child.mjs'],
+      {familyKey: 'global-binding-family'},
+      {cwd: fixtureDir},
+    );
+    const globalBindings = await import(
+      `${
+        pathToFileURL(
+          path.join(
+            fixtureDir,
+            'global-binding-family',
+            'current',
+            'global-binding-family.js',
+          ),
+        ).href
+      }?test=${Date.now()}`
+    );
+    expect(globalBindings.globalBaseTheme.icons.close()).toBe('global-close');
+    expect(globalBindings.globalChildTheme.icons.menu()).toBe('global-menu');
   });
 });

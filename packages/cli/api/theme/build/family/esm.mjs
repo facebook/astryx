@@ -89,6 +89,7 @@ export async function generateFamilyESM(graph, bindings, registryPlan) {
         format: 'esm',
         platform: 'browser',
         target: 'es2022',
+        treeShaking: false,
         legalComments: 'none',
         logLevel: 'silent',
       });

@@ -2795,27 +2795,45 @@ export async function themeBuildFamily(
     import('./family/transaction.mjs'),
   ]);
 
-  // The public syntax designates the first path as the base. Recover that
-  // output before loading any selected source, so a source/graph error cannot
-  // strand an already journaled publication. The resolved graph repeats this
-  // check below for programmatic callers that supply a different order.
-  const declaredFamilyRoot = path.join(
-    path.dirname(path.resolve(cwd, files[0])),
-    options.familyKey,
+  // Recover every selected source directory that carries a journal for this
+  // exact artifact key before loading any source. This stays invocation-order
+  // independent while avoiding writes to unrelated same-named directories.
+  const recoveryRoots = new Set(
+    files.map(file =>
+      path.join(path.dirname(path.resolve(cwd, file)), options.familyKey),
+    ),
   );
-  assertFamilyRootAvailable(declaredFamilyRoot);
-  try {
-    recoverFamilyOutput({
-      root: declaredFamilyRoot,
-      artifactKey: options.familyKey,
-      manifestPath: `${options.familyKey}.manifest.json`,
+  for (const recoveryRoot of recoveryRoots) {
+    const recoveryRootStat = fs.lstatSync(recoveryRoot, {
+      throwIfNoEntry: false,
     });
-  } catch (error) {
-    throw new AstryxError(
-      error instanceof Error ? error.message : String(error),
-      undefined,
-      ERROR_CODES.ERR_WRITE_FAILED,
-    );
+    if (!recoveryRootStat?.isDirectory() || recoveryRootStat.isSymbolicLink()) {
+      continue;
+    }
+    const journalPath = path.join(recoveryRoot, '.journal.json');
+    const journalStat = fs.lstatSync(journalPath, {throwIfNoEntry: false});
+    if (!journalStat?.isFile() || journalStat.isSymbolicLink()) continue;
+    let journal;
+    try {
+      journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+    } catch {
+      continue;
+    }
+    if (journal?.artifactKey !== options.familyKey) continue;
+    assertFamilyRootAvailable(recoveryRoot);
+    try {
+      recoverFamilyOutput({
+        root: recoveryRoot,
+        artifactKey: options.familyKey,
+        manifestPath: `${options.familyKey}.manifest.json`,
+      });
+    } catch (error) {
+      throw new AstryxError(
+        error instanceof Error ? error.message : String(error),
+        undefined,
+        ERROR_CODES.ERR_WRITE_FAILED,
+      );
+    }
   }
 
   const interception = interceptCore(_coreThemeModule, _coreRootModule);
@@ -2970,7 +2988,7 @@ export async function themeBuildFamily(
       graph,
       preparedByTheme: byTheme,
       iconsSpecifier: options.iconsSpecifier,
-      reserved: [...bindings.values(), '__astryxPickTheme'],
+      reserved: [...bindings.values(), '__astryxPickTheme', 'Object', 'Error'],
     });
   } catch (error) {
     throw new AstryxError(

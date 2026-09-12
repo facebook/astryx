@@ -46,11 +46,17 @@ describe('family binding allocation', () => {
           importKind: 'namespace',
           sourceLocalName: '__astryxPickTheme',
         },
+        {
+          id: 'global-collision',
+          specifier: './global.mjs',
+          importedName: 'icons',
+          sourceLocalName: 'Object',
+        },
       ],
-      ['oceanTheme', '__astryxPickTheme'],
+      ['oceanTheme', '__astryxPickTheme', 'Object', 'Error'],
     );
 
-    expect(allocation.imports).toHaveLength(3);
+    expect(allocation.imports).toHaveLength(4);
     expect(allocation.byRequest.get('base-icons-again')).toBe(
       allocation.byRequest.get('base-icons'),
     );
@@ -58,5 +64,6 @@ describe('family binding allocation', () => {
     expect(allocation.byRequest.get('source-fallback')).toBe(
       '__astryxPickTheme_2',
     );
+    expect(allocation.byRequest.get('global-collision')).toBe('Object_2');
   });
 });

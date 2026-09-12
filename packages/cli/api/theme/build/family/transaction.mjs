@@ -127,7 +127,18 @@ function acquireLock(root) {
   };
 
   if (fs.lstatSync(reclaimPath, {throwIfNoEntry: false})) {
-    throw new Error(`Theme family lock recovery is active at ${reclaimPath}.`);
+    const reclaimOwner = readLockOwner(reclaimPath);
+    if (!isStaleLock(reclaimOwner, owner)) {
+      throw new Error(
+        `Theme family lock recovery is active at ${reclaimPath}.`,
+      );
+    }
+    const staleTarget = fs.readlinkSync(reclaimPath);
+    if (fs.readlinkSync(reclaimPath) !== staleTarget) {
+      throw new Error(`Theme family lock recovery changed at ${reclaimPath}.`);
+    }
+    fs.unlinkSync(reclaimPath);
+    fsyncDirectory(root);
   }
   try {
     fs.symlinkSync(target, lockPath);
@@ -552,7 +563,11 @@ function removeJournal(root) {
  */
 function recover(root, artifactKey, manifestPath) {
   const journalPath = path.join(root, '.journal.json');
-  if (!fs.existsSync(journalPath)) return;
+  const journalStat = fs.lstatSync(journalPath, {throwIfNoEntry: false});
+  if (!journalStat) return;
+  if (!journalStat.isFile() || journalStat.isSymbolicLink()) {
+    throw new Error(`Theme family journal is unreadable at ${journalPath}.`);
+  }
 
   let journal;
   try {

@@ -263,19 +263,13 @@ export function planFamilyRegistries(input) {
 
   const externalChecks = [
     ...new Map(
-      requests
-        .filter(
-          request =>
-            !request.specifier.startsWith('.') &&
-            !path.isAbsolute(request.specifier),
-        )
-        .map(request => [
-          `${request.ownerFilePath}\u0000${request.specifier}`,
-          {
-            specifier: request.specifier,
-            resolveDir: path.dirname(request.ownerFilePath),
-          },
-        ]),
+      requests.map(request => [
+        `${request.ownerFilePath}\u0000${request.specifier}`,
+        {
+          specifier: request.specifier,
+          resolveDir: path.dirname(request.ownerFilePath),
+        },
+      ]),
     ).values(),
   ];
 
