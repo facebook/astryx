@@ -232,14 +232,14 @@ describe('useTableRowExpansion (detail panel)', () => {
     // content does: the chevron column's width plus a cell's own padding.
     render(<Harness initialExpanded={new Set(['a'])} />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
-      paddingInlineStart: 'calc(40px + var(--spacing-3))',
+      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-3))',
     });
   });
 
   it('tracks the table density it is rendered at', () => {
     render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
-      paddingInlineStart: 'calc(40px + var(--spacing-4))',
+      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-4))',
     });
   });
 

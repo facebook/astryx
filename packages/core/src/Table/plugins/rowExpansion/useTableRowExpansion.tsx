@@ -215,13 +215,13 @@ const dividerStyles = stylex.create({
  */
 const panelIndentStyles = stylex.create({
   compact: {
-    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-2']})`,
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-2']})`,
   },
   balanced: {
-    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-3']})`,
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-3']})`,
   },
   spacious: {
-    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-4']})`,
   },
 });
 
