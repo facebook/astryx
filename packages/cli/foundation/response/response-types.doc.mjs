@@ -31,7 +31,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
+        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.',
     },
     {
       value: 'component.detail',
