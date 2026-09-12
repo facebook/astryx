@@ -164,6 +164,13 @@ type Story = StoryObj;
  *
  * Collapsed branches are unmounted, not hidden — the `<tbody>` holds exactly
  * the visible rows.
+ *
+ * With expandable rows the table is a WAI-ARIA treegrid. Keyboard: Tab lands
+ * on one row, ArrowUp/ArrowDown move between rows, ArrowRight expands (then
+ * enters the first child), ArrowLeft collapses (or moves to the parent),
+ * Home/End jump to the ends, Enter toggles. The chevron and any other control
+ * inside a cell stay in the Tab order. Row focus only in this version — cell
+ * navigation is not implemented.
  */
 export const Default: Story = {
   render: () => {

@@ -224,6 +224,14 @@ export interface TableColumn<T extends Record<string, unknown>> {
 export interface TableRenderProps {
   htmlProps: HTMLAttributes<HTMLTableElement>;
   xstyle: StyleXStyles[];
+  /**
+   * Ref for the `<table>` element. Plugins can set this to access the table
+   * DOM node (a keyboard model that walks the rows, say). BaseTable merges it
+   * with the consumer's own `ref`, so neither displaces the other; a plugin
+   * that finds a `ref` already present composes by merging its own
+   * (`mergeRefs`), as `useTableTreeData` does.
+   */
+  ref?: Ref<HTMLTableElement>;
 }
 
 /** Props passed through the plugin pipeline for the header `<tr>` */

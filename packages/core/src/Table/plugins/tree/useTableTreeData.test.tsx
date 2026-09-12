@@ -9,11 +9,11 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Table} from '../../Table';
-import type {TableColumn} from '../../types';
+import type {TableColumn, TablePlugin} from '../../types';
 import {useTableSelection, useTableSelectionState} from '../selection';
 import {useTableSortableState} from '../sortable';
 import {useTableTreeData} from './useTableTreeData';
@@ -881,5 +881,318 @@ describe('useTableTreeData: expand-all header control', () => {
     expect(kids.indexOf(toggle)).toBeLessThan(
       kids.findIndex(n => n.textContent === 'Name' || n.contains(label)),
     );
+  });
+});
+
+// =============================================================================
+// Treegrid semantics
+// =============================================================================
+
+const flatRows: FileRow[] = [
+  {id: 'a', name: 'alpha', size: 1},
+  {id: 'b', name: 'beta', size: 2},
+];
+
+/** Tree + selection, nothing expanded: a row with a checkbox and a chevron. */
+function TreeWithSelectionTable() {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const {visibleData, treeConfig} = useTableTreeState<FileRow>({
+    data: fileTree,
+    idKey: 'id',
+  });
+  const {selectionConfig} = useTableSelectionState({
+    data: visibleData,
+    idKey: 'id',
+    selectedKeys,
+    setSelectedKeys,
+  });
+  const tree = useTableTreeData(treeConfig);
+  const selection = useTableSelection(selectionConfig);
+  return (
+    <Table
+      data={visibleData}
+      columns={columns}
+      idKey="id"
+      plugins={{tree, selection}}
+    />
+  );
+}
+
+function focusRow(text: string): HTMLElement {
+  const row = getRowByText(text);
+  row.focus();
+  return row;
+}
+
+describe('useTableTreeData — treegrid role', () => {
+  it('exposes the table as a treegrid when rows are expandable', () => {
+    render(<TreeTable />);
+
+    expect(screen.getByRole('treegrid')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('keeps the native table role for flat data', () => {
+    render(<TreeTable data={flatRows} />);
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByRole('treegrid')).toBeNull();
+  });
+
+  it('drops the treegrid role when nested data becomes flat', () => {
+    const {rerender} = render(<TreeTable data={fileTree} />);
+    expect(screen.getByRole('treegrid')).toBeInTheDocument();
+
+    rerender(<TreeTable data={flatRows} />);
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByRole('treegrid')).toBeNull();
+  });
+
+  it('sets aria-posinset / aria-setsize from each sibling group', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+
+    // Roots: src, README.md. Under src: components, utils.ts.
+    expect(getRowByText('src')).toHaveAttribute('aria-posinset', '1');
+    expect(getRowByText('src')).toHaveAttribute('aria-setsize', '2');
+    expect(getRowByText('README.md')).toHaveAttribute('aria-posinset', '2');
+    expect(getRowByText('README.md')).toHaveAttribute('aria-setsize', '2');
+    expect(getRowByText('components')).toHaveAttribute('aria-posinset', '1');
+    expect(getRowByText('components')).toHaveAttribute('aria-setsize', '2');
+    expect(getRowByText('utils.ts')).toHaveAttribute('aria-posinset', '2');
+    expect(getRowByText('utils.ts')).toHaveAttribute('aria-setsize', '2');
+  });
+
+  it('numbers aria-posinset in the sorted sibling order', () => {
+    render(
+      <TreeTable
+        sortSiblings={siblings =>
+          [...siblings].sort((a, b) =>
+            a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+          )
+        }
+      />,
+    );
+
+    // 'README.md' sorts before 'src'.
+    expect(getRowByText('README.md')).toHaveAttribute('aria-posinset', '1');
+    expect(getRowByText('src')).toHaveAttribute('aria-posinset', '2');
+  });
+
+  it('preserves a table ref set by an earlier plugin', () => {
+    const earlierRef = vi.fn();
+    function TwoPluginTable() {
+      const {visibleData, treeConfig} = useTableTreeState<FileRow>({
+        data: fileTree,
+        idKey: 'id',
+      });
+      const tree = useTableTreeData(treeConfig);
+      const earlier: TablePlugin<FileRow> = {
+        transformTable: props => ({...props, ref: earlierRef}),
+      };
+      return (
+        <Table
+          data={visibleData}
+          columns={columns}
+          idKey="id"
+          plugins={{earlier, tree}}
+        />
+      );
+    }
+
+    render(<TwoPluginTable />);
+
+    expect(earlierRef).toHaveBeenCalledWith(screen.getByRole('treegrid'));
+  });
+});
+
+// =============================================================================
+// Roving tabindex (row focus)
+// =============================================================================
+
+describe('useTableTreeData — roving tabindex', () => {
+  it('makes exactly one body row tabbable and the rest tabindex=-1', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+
+    const rows = getBodyRows();
+    expect(rows[0]).toHaveAttribute('tabindex', '0');
+    for (const row of rows.slice(1)) {
+      expect(row).toHaveAttribute('tabindex', '-1');
+    }
+    // The header row is not part of the roving set.
+    expect(screen.getAllByRole('row')[0]).not.toHaveAttribute('tabindex');
+  });
+
+  it('leaves rows out of the tab order for flat data', () => {
+    render(<TreeTable data={flatRows} />);
+
+    for (const row of getBodyRows()) {
+      expect(row).not.toHaveAttribute('tabindex');
+    }
+  });
+
+  it('drops the row tab stop when nested data becomes flat', () => {
+    const {rerender} = render(<TreeTable data={fileTree} />);
+    expect(getBodyRows()[0]).toHaveAttribute('tabindex', '0');
+
+    rerender(<TreeTable data={flatRows} />);
+
+    for (const row of getBodyRows()) {
+      expect(row).not.toHaveAttribute('tabindex');
+    }
+  });
+
+  it('moves the tab stop with keyboard focus', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'ArrowDown'});
+
+    expect(getRowByText('components')).toHaveAttribute('tabindex', '0');
+    expect(src).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('keeps the in-cell controls reachable by Tab from the focused row', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable />);
+    const src = focusRow('src');
+    expect(src).toHaveFocus();
+
+    await user.tab();
+
+    expect(within(src).getByRole('button', {name: 'Expand row'})).toHaveFocus();
+  });
+});
+
+// =============================================================================
+// Keyboard model (row focus)
+// =============================================================================
+
+describe('useTableTreeData — keyboard model', () => {
+  it('ArrowDown / ArrowUp move focus across the visible rows', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'ArrowDown'});
+    expect(getRowByText('components')).toHaveFocus();
+    fireEvent.keyDown(getRowByText('components'), {key: 'ArrowDown'});
+    expect(getRowByText('utils.ts')).toHaveFocus();
+    fireEvent.keyDown(getRowByText('utils.ts'), {key: 'ArrowUp'});
+    expect(getRowByText('components')).toHaveFocus();
+  });
+
+  it('Home / End jump to the first and last visible rows', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    const components = focusRow('components');
+
+    fireEvent.keyDown(components, {key: 'End'});
+    expect(getRowByText('README.md')).toHaveFocus();
+    fireEvent.keyDown(getRowByText('README.md'), {key: 'Home'});
+    expect(getRowByText('src')).toHaveFocus();
+  });
+
+  it('ArrowRight expands a collapsed row in place, then enters its first child', () => {
+    render(<TreeTable />);
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'ArrowRight'});
+
+    expect(src).toHaveAttribute('aria-expanded', 'true');
+    // Focus survives the expand re-render.
+    expect(src).toHaveFocus();
+    expect(getRowByText('components')).toBeInTheDocument();
+
+    fireEvent.keyDown(src, {key: 'ArrowRight'});
+    expect(getRowByText('components')).toHaveFocus();
+  });
+
+  it('ArrowLeft moves from a child to its parent, then collapses the parent', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    const utils = focusRow('utils.ts');
+
+    fireEvent.keyDown(utils, {key: 'ArrowLeft'});
+    const src = getRowByText('src');
+    expect(src).toHaveFocus();
+
+    fireEvent.keyDown(src, {key: 'ArrowLeft'});
+    expect(src).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('utils.ts')).toBeNull();
+    expect(src).toHaveFocus();
+  });
+
+  it('Enter toggles an expandable row and is inert on a leaf', () => {
+    render(<TreeTable />);
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'Enter'});
+    expect(src).toHaveAttribute('aria-expanded', 'true');
+
+    const readme = focusRow('README.md');
+    fireEvent.keyDown(readme, {key: 'Enter'});
+    expect(readme).not.toHaveAttribute('aria-expanded');
+    expect(readme).toHaveFocus();
+  });
+
+  it('follows the reading direction: ArrowLeft expands under dir="rtl"', () => {
+    // jsdom resolves `direction` from an element's own `dir` only (no
+    // inheritance), so the attribute goes on the <table> the hook reads.
+    const rtl: TablePlugin<FileRow> = {
+      transformTable: props => ({
+        ...props,
+        htmlProps: {...props.htmlProps, dir: 'rtl'},
+      }),
+    };
+    function RtlTreeTable() {
+      const {visibleData, treeConfig} = useTableTreeState<FileRow>({
+        data: fileTree,
+        idKey: 'id',
+      });
+      const tree = useTableTreeData(treeConfig);
+      return (
+        <Table
+          data={visibleData}
+          columns={columns}
+          idKey="id"
+          plugins={{rtl, tree}}
+        />
+      );
+    }
+    render(<RtlTreeTable />);
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'ArrowLeft'});
+
+    expect(src).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not typeahead on printable characters', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    const src = focusRow('src');
+
+    // 'r' would match README.md under tree typeahead.
+    const notPrevented = fireEvent.keyDown(src, {key: 'r'});
+
+    expect(notPrevented).toBe(true);
+    expect(src).toHaveFocus();
+  });
+
+  it('leaves keys alone when they originate from a control inside a cell', () => {
+    render(<TreeWithSelectionTable />);
+    const src = getRowByText('src');
+
+    // Space on the selection checkbox must keep its native meaning.
+    const checkbox = within(src).getByRole('checkbox');
+    checkbox.focus();
+    const notPrevented = fireEvent.keyDown(checkbox, {key: ' '});
+    expect(notPrevented).toBe(true);
+    expect(src).toHaveAttribute('aria-expanded', 'false');
+
+    // Arrow keys from the chevron button do not move row focus.
+    const chevron = within(src).getByRole('button', {name: 'Expand row'});
+    chevron.focus();
+    fireEvent.keyDown(chevron, {key: 'ArrowDown'});
+    expect(chevron).toHaveFocus();
   });
 });
