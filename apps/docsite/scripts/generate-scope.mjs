@@ -329,3 +329,4 @@ console.log(`  ${SCOPE_THEMES.length} themes`);
 console.log(
   `  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`,
 );
+console.log('  recharts');

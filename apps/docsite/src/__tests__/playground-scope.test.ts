@@ -37,6 +37,39 @@ const CORE_PKG_PATH = path.resolve(
   '../../../../packages/core/package.json',
 );
 
+const TEMPLATE_PAGES_DIR = path.resolve(
+  __dirname,
+  '../../../../packages/cli/assets/templates/pages',
+);
+
+/** Mirrors the runner's asset list — those are stubbed, not scoped. */
+const ASSET_RE =
+  /\.(png|jpe?g|gif|svg|webp|ico|bmp|css|scss|less|sass|woff2?|ttf|eot|otf|mp4|webm|ogg|mp3|wav)$/i;
+
+/**
+ * Real import statements only. Anchored to the start of a line and required to
+ * end there, so the `from '...'` inside a code sample a template renders as a
+ * string — documentation-technical has one — is not mistaken for a dependency.
+ * The `}` branch catches the closing line of a multi-line import.
+ */
+const IMPORT_RE = /^\s*(?:import\b[^'"]*?|\}\s*)from\s+'([^']+)';?\s*$/gm;
+
+/**
+ * Top-level keys of the generated `scope` object. Quoted for anything with a
+ * slash or dash, bare where the name is a valid identifier. Lowercased to
+ * match how the runner builds `scopeLookup`.
+ */
+function getScopeKeys(content: string): Set<string> {
+  const keys = new Set<string>();
+  for (const match of content.matchAll(/^ {2}'([^']+)':/gm)) {
+    keys.add(match[1].toLowerCase());
+  }
+  for (const match of content.matchAll(/^ {2}([A-Za-z][\w-]*):/gm)) {
+    keys.add(match[1].toLowerCase());
+  }
+  return keys;
+}
+
 /**
  * Same skip pattern as generate-scope.mjs — non-component exports like
  * CSS files, utils, hooks, theme, etc.
@@ -188,5 +221,44 @@ describe('playground-scope', () => {
   it('includes next/image stub', () => {
     expect(scopeContent).toContain("'next/image':");
     expect(scopeContent).toContain("React.createElement('img', props)");
+  });
+
+  // ── What the templates actually import ─────────────────────────────────
+
+  it('resolves every bare import in the page templates', () => {
+    // The assertions above are an allowlist, and an allowlist only covers what
+    // someone remembered to add. Recharts was missing from the scope for as
+    // long as the dashboard templates existed, and nothing here noticed,
+    // because nothing asked the templates what they need. The runner's
+    // fallback makes that silent: an unresolved module yields a proxy whose
+    // every export is `() => null`, so the charts vanished while the legends
+    // around them kept painting. Ask the templates instead.
+    const specifiers = new Set<string>();
+    for (const dir of fs.readdirSync(TEMPLATE_PAGES_DIR)) {
+      const page = path.join(TEMPLATE_PAGES_DIR, dir, 'page.tsx');
+      if (!fs.existsSync(page)) {
+        continue;
+      }
+      const source = fs.readFileSync(page, 'utf-8');
+      for (const match of source.matchAll(IMPORT_RE)) {
+        const id = match[1];
+        // Relative paths resolve within the template, and assets are stubbed
+        // by the runner on purpose.
+        if (id.startsWith('.') || ASSET_RE.test(id)) {
+          continue;
+        }
+        specifiers.add(id);
+      }
+    }
+
+    expect(specifiers.size).toBeGreaterThan(5);
+    // The runner lowercases both sides when resolving, so '@astryxdesign/
+    // core/Theme' finds the 'theme' entry. Match that here or the test
+    // reports gaps the playground does not actually have.
+    const keys = getScopeKeys(scopeContent);
+    const missing = [...specifiers]
+      .filter(id => !keys.has(id.toLowerCase()))
+      .sort();
+    expect(missing).toEqual([]);
   });
 });
