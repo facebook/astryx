@@ -25,10 +25,13 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > registry/classifier/workflow mutation runs the full audit rather than accepting
 > an empty scope. CI partitions that full scope into one bounded shard per
 > canonical package, each with four browser workers; the stable `pr-rtl` context
-> succeeds only after every applicable shard produces a report whose requested
-> package/filter and nonzero planned/completed scan counts match. Missing or
-> malformed analysis/index input, a noncanonical owner, stale output, and an
-> all-skipped matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
+> succeeds only after all five scope manifests arrive and every applicable
+> package produces a report whose requested package/filter, duplicate-free exact
+> D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted
+> policy requires full scope, every manifest must be runnable with an empty
+> filter and all five package reports must arrive. A planned scan ending in ERROR
+> is incomplete. Missing or malformed analysis/index/manifest input, a noncanonical owner, stale output, a missing or unexpected report, and
+> an all-skipped required matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
 > scope so package discovery and curated aliases cannot skip their own check. The
 > full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
 > Omit `--filter` to run it locally. The blocking accessibility audit consumes the
@@ -232,7 +235,9 @@ public component names come from `scripts/component-packages.cjs`; Storybook
 titles project onto that canonical roster across Core, Lab, Charts, Rich Text,
 and Vega, including one-to-many grouped titles such as
 `Charts/Chrome/Axes & Grids`. Curated targets remain the exact alias when a title
-cannot name its owner:
+cannot name its owner. An entry with an empty `dims` array is route-only: it
+binds a public owner to a story that renders it for universal D1/D5/D6 scanning
+without inventing a curated measurement.
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason

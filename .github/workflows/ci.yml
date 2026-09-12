@@ -127,7 +127,7 @@ jobs:
   # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -155,6 +155,13 @@ jobs:
       - name: Check for component changes
         id: check
         run: |
+          if [ "${{ needs.check-scope.outputs.docsite_only }}" = "true" ] \
+            || [ "${{ needs.check-scope.outputs.spec_only }}" = "true" ] \
+            || [ "${{ needs.check-scope.outputs.tooling_only }}" = "true" ]; then
+            printf 'has_components=false\nhas_rtl_components=false\nhas_rtl_harness=false\nforce_full_component_audits=false\nhas_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            echo "Trusted specialized lane — component audits explicitly not applicable."
+            exit 0
+          fi
           if ! MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null); then
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} — running full component audits"
             printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
@@ -689,8 +696,9 @@ jobs:
       - name: Run accessibility audit
         run: |
           COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
+          ANALYSIS_FORCE_FULL=$(jq -r '.forceFullComponentAudits // false' analysis.json)
           SCOPE_ARGS=()
-          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ -n "$COMPONENTS" ]; then
+          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ "$ANALYSIS_FORCE_FULL" != "true" ] && [ -n "$COMPONENTS" ]; then
             SCOPE_ARGS=(--components "$COMPONENTS")
           else
             echo "Component scope is policy-sensitive or unresolved — running the full accessibility audit."
@@ -954,7 +962,8 @@ jobs:
   # routing and target changes prove themselves instead of skipping their own
   # check. A policy-sensitive full run spans ~2,000 stories and exceeded the
   # single-job budget, so CI partitions it by canonical package; each shard runs
-  # four browser workers, and the stable pr-rtl join requires all five reports.
+  # four browser workers, and the stable pr-rtl join requires all five scope
+  # manifests plus a report from every applicable package.
   # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
@@ -964,7 +973,8 @@ jobs:
   #
   # Audit findings remain SOFT while the stability window is observed: the audit
   # step may fail after writing a report. Missing/canceled/incomplete shards are
-  # HARD failures, and the pr-rtl join cannot pass without every package report.
+  # HARD failures, and the pr-rtl join cannot pass without every package scope
+  # manifest and every applicable report.
   # To promote findings too, remove the audit step's continue-on-error.
   pr-rtl-shard:
     name: pr-rtl (${{ matrix.package }})
@@ -1019,6 +1029,7 @@ jobs:
             --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --has-components "${{ needs.check-components.outputs.has_rtl_components }}" \
             --has-harness "${{ needs.check-components.outputs.has_rtl_harness }}" \
+            --manifest rtl-shard-scope.json \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Run RTL audit
@@ -1174,12 +1185,15 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload RTL audit report
-        if: always() && steps.rtl-scope.outputs.should_run == 'true'
+      - name: Upload RTL shard evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-${{ matrix.package }}
-          path: rtl-audit-report.json
+          path: |
+            rtl-shard-scope.json
+            rtl-audit-report.json
+          if-no-files-found: error
           retention-days: 1
 
   # Stable required context joining the five package shards above.
@@ -1206,4 +1220,5 @@ jobs:
             --check-components "${{ needs.check-components.result }}" \
             --shards "${{ needs.pr-rtl-shard.result }}" \
             --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
+            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports

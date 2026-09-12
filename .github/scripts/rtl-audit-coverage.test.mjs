@@ -4,6 +4,7 @@
  * @file Unit tests for RTL contextual decorations and applicability coverage.
  */
 
+import fs from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {describe, expect, it} from 'vitest';
 import componentPackages from '../../scripts/component-packages.cjs';
@@ -358,9 +359,10 @@ describe('audited package and story routing', () => {
   const publicComponentsByPackage = Object.fromEntries(
     AUDITED_PACKAGE_NAMES.map(packageName => {
       const pkg = componentPackage(packageName);
-      const components = pkg.layout === 'flat'
-        ? flatPackageComponentNames(process.cwd(), pkg)
-        : nestedPackageComponentNames(process.cwd(), pkg);
+      const components =
+        pkg.layout === 'flat'
+          ? flatPackageComponentNames(process.cwd(), pkg)
+          : nestedPackageComponentNames(process.cwd(), pkg);
       return [packageName, components];
     }),
   );
@@ -431,6 +433,14 @@ describe('audited package and story routing', () => {
           title: 'Lab/RichTextEditor',
         },
         {
+          id: 'lab-richtexteditor--with-auto-link',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--markdown-serializers',
+          title: 'Lab/RichTextEditor',
+        },
+        {
           id: 'vega-vegachart--radial-plot',
           title: 'Vega/VegaChart',
         },
@@ -451,6 +461,14 @@ describe('audited package and story routing', () => {
         {
           component: 'richtext/RichTextEditorToolbar',
           storyId: 'lab-richtexteditor--with-toolbar',
+        },
+        {
+          component: 'richtext/RichTextEditorAutoLinkPlugin',
+          storyId: 'lab-richtexteditor--with-auto-link',
+        },
+        {
+          component: 'richtext/RichTextView',
+          storyId: 'lab-richtexteditor--markdown-serializers',
         },
       ],
       publicComponentsByPackage,
@@ -490,6 +508,14 @@ describe('audited package and story routing', () => {
         component: 'richtext/RichTextEditorToolbar',
       },
       {
+        id: 'lab-richtexteditor--with-auto-link',
+        component: 'richtext/RichTextEditorAutoLinkPlugin',
+      },
+      {
+        id: 'lab-richtexteditor--markdown-serializers',
+        component: 'richtext/RichTextView',
+      },
+      {
         id: 'vega-vegachart--radial-plot',
         component: 'vega/VegaChart',
       },
@@ -524,7 +550,9 @@ describe('audited package and story routing', () => {
       'charts/ChartLegend',
       'charts/ChartSwatch',
       'charts/ChartTooltip',
+      'richtext/RichTextEditorAutoLinkPlugin',
       'richtext/RichTextEditorToolbar',
+      'richtext/RichTextView',
     ];
     expect(storyIdsForComponentFilters(routes, groupedOwners)).toEqual([
       'charts-chrome-legend--default',
@@ -532,11 +560,13 @@ describe('audited package and story routing', () => {
       'charts-chrome-swatch--gallery',
       'charts-chrome-tooltip--default',
       'lab-richtexteditor--with-toolbar',
+      'lab-richtexteditor--with-auto-link',
+      'lab-richtexteditor--markdown-serializers',
     ]);
     expect(unresolvedComponentFilters(routes, groupedOwners)).toEqual([]);
-    expect(
-      unresolvedComponentFilters(routes, ['charts/MissingOwner']),
-    ).toEqual(['charts/MissingOwner']);
+    expect(unresolvedComponentFilters(routes, ['charts/MissingOwner'])).toEqual(
+      ['charts/MissingOwner'],
+    );
 
     expect(
       buildAuditedComponentRoster({
@@ -573,6 +603,45 @@ describe('audited package and story routing', () => {
         filters: groupedOwners,
       }),
     ).toEqual(groupedOwners);
+  });
+
+  it('routes every public Rich Text owner to a story that renders it', () => {
+    const targets = JSON.parse(
+      fs.readFileSync(
+        new URL('../../apps/storybook/rtl-audit/targets.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const routes = buildStoryComponentRoutes({
+      stories: [
+        {
+          id: 'lab-richtexteditor--default',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-toolbar',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--with-auto-link',
+          title: 'Lab/RichTextEditor',
+        },
+        {
+          id: 'lab-richtexteditor--markdown-serializers',
+          title: 'Lab/RichTextEditor',
+        },
+      ],
+      targets,
+      publicComponentsByPackage,
+    });
+    const owners = richTextComponents.map(component => `richtext/${component}`);
+    expect(unresolvedComponentFilters(routes, owners)).toEqual([]);
+    expect(storyIdsForComponentFilters(routes, owners)).toEqual([
+      'lab-richtexteditor--default',
+      'lab-richtexteditor--with-toolbar',
+      'lab-richtexteditor--with-auto-link',
+      'lab-richtexteditor--markdown-serializers',
+    ]);
   });
 
   it('classifies measured Chart owners and verified direction-neutral owners without gaps', () => {
@@ -643,6 +712,8 @@ describe('audited package and story routing', () => {
       gaps: 0,
       staleVerifiedNa: 0,
     });
-    expect(coverage.results.map(result => result.component)).toEqual(components);
+    expect(coverage.results.map(result => result.component)).toEqual(
+      components,
+    );
   });
 });

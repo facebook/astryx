@@ -12,7 +12,7 @@ const SCRIPT = path.join(
   '../../apps/storybook/rtl-audit/rtl-audit.mjs',
 );
 
-function runWithIndex(indexContent) {
+function runWithIndex(indexContent, {env = {}, timeout} = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-audit-cli-'));
   const storybook = path.join(dir, 'storybook');
   const output = path.join(dir, 'rtl-audit-report.json');
@@ -49,7 +49,11 @@ function runWithIndex(indexContent) {
         '--concurrency',
         '1',
       ],
-      {encoding: 'utf8'},
+      {
+        encoding: 'utf8',
+        env: {...process.env, ...env},
+        timeout,
+      },
     );
     return {...result, reportExists: fs.existsSync(output)};
   } finally {
@@ -88,6 +92,33 @@ describe('RTL audit CLI input completion', () => {
     expect(result.stderr).toContain(
       'no runnable stories resolved for charts scope',
     );
+    expect(result.reportExists).toBe(false);
+  });
+
+  it('closes the story server when Chromium cannot launch', () => {
+    const result = runWithIndex(
+      JSON.stringify({
+        entries: {
+          'charts-legend--default': {
+            id: 'charts-legend--default',
+            title: 'Charts/ChartLegend',
+            type: 'story',
+          },
+        },
+      }),
+      {
+        env: {
+          PLAYWRIGHT_BROWSERS_PATH: path.join(
+            os.tmpdir(),
+            'missing-playwright-browsers',
+          ),
+        },
+        timeout: 5000,
+      },
+    );
+    expect(result.error).toBeUndefined();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('browserType.launch');
     expect(result.reportExists).toBe(false);
   });
 });

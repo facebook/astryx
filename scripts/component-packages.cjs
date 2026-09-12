@@ -183,6 +183,27 @@ function flatPackageComponentNames(repoRoot, packageConfig) {
   return exportedComponentNames(path.join(repoRoot, packageConfig.src));
 }
 
+/** Names one component directory's current consumer docs declare. */
+function documentedComponentNames(componentDir) {
+  const names = new Set();
+  let files;
+  try {
+    files = fs.readdirSync(componentDir, {withFileTypes: true});
+  } catch {
+    return [];
+  }
+  for (const file of files) {
+    if (!file.isFile() || !file.name.endsWith('.doc.mjs')) continue;
+    const content = fs.readFileSync(path.join(componentDir, file.name), 'utf8');
+    for (const match of content.matchAll(
+      /\bname:\s*['"]([A-Z][A-Za-z0-9]*)['"]/g,
+    )) {
+      names.add(match[1]);
+    }
+  }
+  return [...names];
+}
+
 /** Names current consumer docs identify as independent public components. */
 function documentedNestedComponentNames(sourceDir) {
   let entries;
@@ -195,18 +216,10 @@ function documentedNestedComponentNames(sourceDir) {
   const names = new Set();
   for (const entry of entries) {
     if (!entry.isDirectory() || !COMPONENT_NAME.test(entry.name)) continue;
-    const componentDir = path.join(sourceDir, entry.name);
-    for (const file of fs.readdirSync(componentDir, {withFileTypes: true})) {
-      if (!file.isFile() || !file.name.endsWith('.doc.mjs')) continue;
-      const content = fs.readFileSync(
-        path.join(componentDir, file.name),
-        'utf8',
-      );
-      for (const match of content.matchAll(
-        /\bname:\s*['"]([A-Z][A-Za-z0-9]*)['"]/g,
-      )) {
-        names.add(match[1]);
-      }
+    for (const name of documentedComponentNames(
+      path.join(sourceDir, entry.name),
+    )) {
+      names.add(name);
     }
   }
   return [...names];
@@ -241,6 +254,7 @@ module.exports = {
   COMPONENT_PACKAGE_NAMES,
   componentExportsFromBarrel,
   componentPackage,
+  documentedComponentNames,
   documentedNestedComponentNames,
   exportedComponentNames,
   flatPackageComponentNames,

@@ -22,6 +22,59 @@ function completeReport() {
       plannedStoryScans: 2,
       completedPositionalScans: 2,
       completedDecorationScans: 2,
+      plannedComponentIdentities: ['charts/ChartLegend'],
+      completedComponentIdentities: ['charts/ChartLegend'],
+      plannedD1Identities: ['charts/ChartLegend::charts-legend--default'],
+      completedD1Identities: ['charts/ChartLegend::charts-legend--default'],
+      plannedStoryIdentities: [
+        'charts/ChartLegend::charts-legend--default',
+        'charts/ChartLegend::charts-legend--many-items',
+      ],
+      completedPositionalIdentities: [
+        'charts/ChartLegend::charts-legend--default',
+        'charts/ChartLegend::charts-legend--many-items',
+      ],
+      completedDecorationIdentities: [
+        'charts/ChartLegend::charts-legend--default',
+        'charts/ChartLegend::charts-legend--many-items',
+      ],
+    },
+    autoDiscovery: {
+      results: [
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-legend--default',
+          verdict: 'pass',
+        },
+      ],
+    },
+    positionalMirror: {
+      results: [
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-legend--default',
+          verdict: 'fail',
+        },
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-legend--many-items',
+          verdict: 'N-A',
+        },
+      ],
+    },
+    directionalDecorations: {
+      results: [
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-legend--default',
+          verdict: 'pass',
+        },
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-legend--many-items',
+          verdict: 'N-A',
+        },
+      ],
     },
     coverage: {total: 1},
   };
@@ -84,6 +137,61 @@ describe('RTL report completion contract', () => {
       },
     ],
     [
+      'duplicate component identities',
+      report => {
+        report.completion.completedComponentIdentities = [
+          'charts/ChartLegend',
+          'charts/ChartLegend',
+        ];
+      },
+    ],
+    [
+      'substituted D1 identity',
+      report => {
+        report.completion.completedD1Identities[0] =
+          'charts/ChartLegend::charts-legend--substitute';
+      },
+    ],
+    [
+      'missing story identity',
+      report => {
+        report.completion.completedPositionalIdentities.pop();
+      },
+    ],
+    [
+      'substituted story identity',
+      report => {
+        report.completion.completedDecorationIdentities[1] =
+          'charts/ChartLegend::charts-legend--substitute';
+      },
+    ],
+    [
+      'unexpected story identity',
+      report => {
+        report.completion.completedPositionalIdentities.push(
+          'charts/ChartLegend::charts-legend--unexpected',
+        );
+      },
+    ],
+    [
+      'D1 ERROR result',
+      report => {
+        report.autoDiscovery.results[0].verdict = 'ERROR';
+      },
+    ],
+    [
+      'D5 ERROR result',
+      report => {
+        report.positionalMirror.results[0].verdict = 'ERROR';
+      },
+    ],
+    [
+      'D6 ERROR result',
+      report => {
+        report.directionalDecorations.results[0].verdict = 'ERROR';
+      },
+    ],
+    [
       'empty coverage roster',
       report => {
         report.coverage.total = 0;
@@ -129,6 +237,39 @@ describe('RTL report completion contract', () => {
       );
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain('Could not read RTL shard report');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
+  it('CLI rejects a report whose planned scans all errored', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-report-error-'));
+    const reportPath = path.join(dir, 'report.json');
+    try {
+      const report = completeReport();
+      for (const section of [
+        report.autoDiscovery,
+        report.positionalMirror,
+        report.directionalDecorations,
+      ]) {
+        for (const result of section.results) result.verdict = 'ERROR';
+      }
+      fs.writeFileSync(reportPath, JSON.stringify(report));
+      const result = spawnSync(
+        process.execPath,
+        [
+          SCRIPT,
+          '--report',
+          reportPath,
+          '--package',
+          'charts',
+          '--filter',
+          'charts/ChartLegend',
+        ],
+        {encoding: 'utf8'},
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('results are missing, unsuccessful');
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
     }

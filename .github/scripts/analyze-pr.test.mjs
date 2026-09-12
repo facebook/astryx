@@ -57,6 +57,8 @@ function buildFixture() {
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/lab/src/Sankey'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/richtext/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/vega/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
@@ -66,7 +68,10 @@ function buildFixture() {
   git(upstream, ['config', 'user.email', 'test@test.co']);
   git(upstream, ['config', 'user.name', 'Test']);
   fs.writeFileSync(path.join(upstream, 'package.json'), '{}');
-  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/index.ts'), "export {Card} from './Card';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.tsx'), 'export function Card() {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.doc.mjs'), "export default {name: 'Card'};\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), "export {Card} from './Card';\n");
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
   fs.writeFileSync(
@@ -74,9 +79,29 @@ function buildFixture() {
     'export function RichTextEditor() {}\n',
   );
   fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
+    'export function RichTextEditorAutoLinkPlugin() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextView.tsx'),
+    'export function RichTextView() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/index.ts'),
+    [
+      "export {RichTextEditor} from './RichTextEditor';",
+      "export {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';",
+      "export {RichTextView} from './RichTextView';",
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(
     path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
     'export function VegaChart() {}\n',
   );
+  fs.writeFileSync(path.join(upstream, 'packages/vega/src/index.ts'), "export {VegaChart} from './VegaChart';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const shared = true;\n');
+  fs.writeFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const family = true;\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/neutral/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
@@ -108,9 +133,19 @@ function buildFixture() {
     'export const richTextChanged = true\n',
   );
   fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
+    'export const autoLinkChanged = true\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextView.tsx'),
+    'export const viewChanged = true\n',
+  );
+  fs.appendFileSync(
     path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
     'export const vegaChanged = true\n',
   );
+  fs.appendFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const sharedChanged = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const familyChanged = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
@@ -148,15 +183,26 @@ describe('analyze-pr shallow-clone recovery', () => {
       expect(analysis.modifiedComponents).toEqual([
         'Card',
         'RichTextEditor',
+        'RichTextEditorAutoLinkPlugin',
+        'RichTextView',
         'VegaChart',
       ]);
       expect(analysis.modifiedComponentOwners).toEqual([
         'core/Card',
         'richtext/RichTextEditor',
+        'richtext/RichTextEditorAutoLinkPlugin',
+        'richtext/RichTextView',
         'vega/VegaChart',
       ]);
+      expect(analysis.modifiedComponentOwners).not.toContain('core/InteractiveRoleContext');
+      expect(analysis.modifiedComponentOwners).not.toContain('lab/Sankey');
+      expect(analysis.forceFullComponentAudits).toBe(true);
+      expect(analysis.unresolvedComponentSources).toEqual(
+        expect.arrayContaining(['core/InteractiveRoleContext', 'lab/Sankey']),
+      );
       expect(analysis.changedPackages).toEqual([
         '@astryxdesign/core',
+        '@astryxdesign/lab',
         '@astryxdesign/richtext',
         '@astryxdesign/vega',
       ]);

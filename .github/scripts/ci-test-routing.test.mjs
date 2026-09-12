@@ -179,6 +179,27 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
+  it('keeps specialized lanes as explicit successful no-audit classifications', () => {
+    const classification = workflow.jobs['check-components'];
+    expect(classification.if).toBe("github.event_name == 'pull_request'");
+    const commands = runLines(classification);
+    for (const lane of ['docsite_only', 'spec_only', 'tooling_only']) {
+      expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
+    }
+    expect(commands).toContain('has_components=false');
+    expect(commands).toContain('has_rtl_components=false');
+    expect(commands).toContain('has_rtl_harness=false');
+    expect(commands).toContain('force_full_component_audits=false');
+    expect(commands).toContain('has_stable_visual=false');
+  });
+
+  it('broadens both browser audits for unresolved canonical source ownership', () => {
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      '.forceFullComponentAudits // false',
+    );
+    expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
+  });
+
   it('runs one bounded shard for every canonical component package', () => {
     expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
     expect(shard['runs-on']).toBe('4-core-ubuntu');
@@ -193,6 +214,7 @@ describe('ci.yml RTL package sharding', () => {
     );
     expect(scope['continue-on-error']).not.toBe(true);
     expect(scope.run).toContain('.github/scripts/rtl-shard-scope.mjs');
+    expect(scope.run).toContain('--manifest rtl-shard-scope.json');
     expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
     expect(audit['continue-on-error']).toBe(true);
     expect(validation.if).toBe('always()');
@@ -219,6 +241,9 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('needs.pr-rtl-shard.result');
     expect(commands).toContain('.github/scripts/rtl-join.mjs');
     expect(commands).toContain('--reports-dir rtl-shard-reports');
+    expect(commands).toContain(
+      '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
+    );
     const download = join.steps.find(
       step => step.name === 'Download applicable RTL shard reports',
     );
@@ -230,11 +255,15 @@ describe('ci.yml RTL package sharding', () => {
     expect(requireStep.if).toBe('always()');
   });
 
-  it('publishes a distinct report artifact for each package shard', () => {
+  it('publishes a distinct scope manifest and optional report for each shard', () => {
     const upload = shard.steps.find(step =>
       step.uses?.startsWith('actions/upload-artifact@'),
     );
+    expect(upload.if).toBe('always()');
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
+    expect(upload.with.path).toContain('rtl-shard-scope.json');
+    expect(upload.with.path).toContain('rtl-audit-report.json');
+    expect(upload.with['if-no-files-found']).toBe('error');
   });
 });
 

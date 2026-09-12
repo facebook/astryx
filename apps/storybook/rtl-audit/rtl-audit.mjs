@@ -947,6 +947,22 @@ async function mapPool(items, pages, fn) {
   return out;
 }
 
+const runtime = {
+  server: null,
+  browser: null,
+  pages: [],
+  coarseContext: null,
+};
+
+async function cleanupRuntime() {
+  await Promise.all(runtime.pages.map(page => page.close().catch(() => {})));
+  await runtime.coarseContext?.close().catch(() => {});
+  await runtime.browser?.close().catch(() => {});
+  if (runtime.server) {
+    await new Promise(resolve => runtime.server.close(() => resolve()));
+  }
+}
+
 (async () => {
   // A failed invocation must never leave an earlier successful report behind.
   fs.rmSync(OUT, {force: true});
@@ -1012,12 +1028,15 @@ async function mapPool(items, pages, fn) {
   });
 
   const {server, port} = await serve(path.resolve(DIST));
+  runtime.server = server;
   const browser = await chromium.launch();
+  runtime.browser = browser;
   const pages = await Promise.all(
     Array.from({length: CONCURRENCY}, () =>
       browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
     ),
   );
+  runtime.pages = pages;
   const page = pages[0]; // curated dims run serially on the first page
   const d8BrowserContract = await verifyD8BrowserContract(page);
   const coarseContext = await browser.newContext({
@@ -1026,23 +1045,24 @@ async function mapPool(items, pages, fn) {
     hasTouch: true,
     isMobile: true,
   });
+  runtime.coarseContext = coarseContext;
   const coarsePage = await coarseContext.newPage();
 
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
   const pmResults = []; // D5 positional-mirror
   const decorationResults = []; // D6 contextual directional decoration
+  const perComponent = new Map();
+  for (const {component, id} of scopedStoryRoutes) {
+    if (!perComponent.has(component)) perComponent.set(component, id);
+  }
+  const d1Targets = [...perComponent]
+    .map(([component, id]) => ({comp: component, id}));
   if (!CURATED_ONLY) {
     // D1 runs one representative story per component (extra stories add little
     // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
     // positioned bug can be story-specific (only a `withStatus` variant mounts
     // the offending element), so we don't collapse to one-per-component.
-    const perComponent = new Map();
-    for (const {component, id} of scopedStoryRoutes) {
-      if (!perComponent.has(component)) perComponent.set(component, id);
-    }
-    const d1Targets = [...perComponent]
-      .map(([component, id]) => ({comp: component, id}));
     autoResults.push(
       ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
         try {
@@ -1145,11 +1165,6 @@ async function mapPool(items, pages, fn) {
   });
   if (verifiedNaError) coverage.registryError = verifiedNaError;
 
-  await Promise.all(pages.map(p => p.close().catch(() => {})));
-  await coarseContext.close().catch(() => {});
-  await browser.close();
-  server.close();
-
   const autoFails = autoResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   // No allowlist: every not-RTL component is a surprise. The RTL migration is
   // complete, so any directional icon that fails to mirror is a real regression.
@@ -1168,6 +1183,23 @@ async function mapPool(items, pages, fn) {
       plannedStoryScans: scopedStoryRoutes.length,
       completedPositionalScans: pmResults.length,
       completedDecorationScans: decorationResults.length,
+      plannedComponentIdentities: [
+        ...new Set(scopedStoryRoutes.map(route => route.component)),
+      ].sort(),
+      completedComponentIdentities: autoResults.map(result => result.component).sort(),
+      plannedD1Identities: d1Targets.map(target => `${target.comp}::${target.id}`).sort(),
+      completedD1Identities: autoResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
+      plannedStoryIdentities: scopedStoryRoutes
+        .map(route => `${route.component}::${route.id}`)
+        .sort(),
+      completedPositionalIdentities: pmResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
+      completedDecorationIdentities: decorationResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
     },
     dist: DIST,
     selfChecks: {d8LogicalInline: d8BrowserContract},
@@ -1215,8 +1247,10 @@ async function mapPool(items, pages, fn) {
     decorationFails.length > 0 ||
     (coverage.enforced && (coverage.gaps > 0 || coverage.staleVerifiedNa > 0 || coverage.registryError != null)) ||
     curatedResults.some(r => r.rollup === 'not-RTL' || r.rollup === 'ERROR' || r.rollup === 'MISSING-STORY');
-  process.exit(anySignal ? 1 : 0);
-})().catch(error => {
-  console.error(`FATAL: ${error.message}`);
-  process.exitCode = 2;
-});
+  process.exitCode = anySignal ? 1 : 0;
+})()
+  .catch(error => {
+    console.error(`FATAL: ${error.message}`);
+    process.exitCode = 2;
+  })
+  .finally(cleanupRuntime);

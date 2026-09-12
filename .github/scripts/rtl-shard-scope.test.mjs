@@ -23,6 +23,7 @@ function runCli(analysisText) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-shard-scope-'));
   const analysis = path.join(dir, 'analysis.json');
   const output = path.join(dir, 'github-output');
+  const manifest = path.join(dir, 'scope.json');
   try {
     if (analysisText !== null) fs.writeFileSync(analysis, analysisText);
     const result = spawnSync(
@@ -39,6 +40,8 @@ function runCli(analysisText) {
         'true',
         '--has-harness',
         'false',
+        '--manifest',
+        manifest,
         '--github-output',
         output,
       ],
@@ -47,6 +50,9 @@ function runCli(analysisText) {
     return {
       ...result,
       output: fs.existsSync(output) ? fs.readFileSync(output, 'utf8') : '',
+      manifest: fs.existsSync(manifest)
+        ? JSON.parse(fs.readFileSync(manifest, 'utf8'))
+        : null,
     };
   } finally {
     fs.rmSync(dir, {recursive: true, force: true});
@@ -108,6 +114,27 @@ describe('RTL shard scope', () => {
         analysis: {owners: [], qualified: true},
       }),
     ).toMatchObject({shouldRun: true, components: 'full core roster'});
+  });
+
+  it('runs every package fully when analysis found an unresolved source', () => {
+    const analysis = {
+      ...qualifiedAnalysis,
+      forceFullComponentAudits: true,
+    };
+    for (const packageName of COMPONENT_PACKAGE_NAMES) {
+      expect(
+        resolveRtlShardScope({
+          packageName,
+          forceFull: false,
+          hasComponents: true,
+          hasHarness: false,
+          analysis,
+        }),
+      ).toMatchObject({
+        shouldRun: true,
+        components: `full ${packageName} roster`,
+      });
+    }
   });
 
   it('runs only the canonical harness smoke packages', () => {
@@ -184,6 +211,7 @@ describe('RTL shard scope artifact handling', () => {
       expect(readAnalysis(file)).toEqual({
         owners: ['charts/ChartLegend'],
         qualified: true,
+        forceFullComponentAudits: false,
         invalidOwners: [],
       });
     } finally {
@@ -194,6 +222,15 @@ describe('RTL shard scope artifact handling', () => {
   it.each([
     ['missing', null, 'Could not read analysis artifact'],
     ['malformed', '{not json', 'Could not read analysis artifact'],
+    [
+      'wrong force-full shape',
+      JSON.stringify({
+        newComponentOwners: [],
+        modifiedComponentOwners: [],
+        forceFullComponentAudits: 'true',
+      }),
+      'forceFullComponentAudits must be a boolean',
+    ],
     [
       'wrong owner shape',
       JSON.stringify({newComponentOwners: 'charts/ChartLegend'}),
@@ -206,6 +243,7 @@ describe('RTL shard scope artifact handling', () => {
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(message);
       expect(result.output).toBe('');
+      expect(result.manifest).toBeNull();
     },
   );
 
@@ -232,5 +270,10 @@ describe('RTL shard scope artifact handling', () => {
     expect(result.status).toBe(0);
     expect(result.output).toContain('should_run=true');
     expect(result.output).toContain('filter=charts/ChartLegend');
+    expect(result.manifest).toEqual({
+      package: 'charts',
+      shouldRun: true,
+      filter: 'charts/ChartLegend',
+    });
   });
 });

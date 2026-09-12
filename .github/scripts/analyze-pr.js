@@ -13,6 +13,9 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 const {
   COMPONENT_PACKAGES,
+  documentedComponentNames,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
 } = require('../../scripts/component-packages.cjs');
 
 const args = process.argv.slice(2);
@@ -40,31 +43,26 @@ const PACKAGES = COMPONENT_PACKAGES.map(pkg => ({
 const pkgSrc = (pkg) => pkg.src;
 const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
-// Directories under a package's src that are not components.
-const EXCLUDED_DIRS = ['hooks', 'theme', 'utils', 'i18n', '__tests__'];
-
-// Get list of component names for a package, honoring its src layout.
+// Get canonical direct public component names for a package. Nested family,
+// context, and shared directories deliberately stay unresolved so audits widen.
 function getComponentNames(pkg) {
-  const srcPath = path.join(process.cwd(), pkgSrc(pkg));
+  if (pkg.layout === 'flat') {
+    return flatPackageComponentNames(process.cwd(), pkg);
+  }
+  const canonical = new Set(nestedPackageComponentNames(process.cwd(), pkg));
+  const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
   try {
-    const entries = fs.readdirSync(srcPath, { withFileTypes: true });
-    if (pkg.layout === 'flat') {
-      // Flat: each PascalCase *.tsx (not a test/story/context) is a component.
-      return entries
-        .filter(
-          (e) =>
-            e.isFile() &&
-            /^[A-Z]\w+\.tsx$/.test(e.name) &&
-            !e.name.includes('.test.') &&
-            !e.name.includes('.stories.') &&
-            !e.name.endsWith('Context.tsx'),
-        )
-        .map((e) => e.name.replace(/\.tsx$/, ''));
-    }
-    // Nested: each non-excluded directory is a component.
-    return entries
-      .filter((e) => e.isDirectory() && !EXCLUDED_DIRS.includes(e.name))
-      .map((e) => e.name);
+    return fs
+      .readdirSync(sourceDir, {withFileTypes: true})
+      .filter(entry => entry.isDirectory())
+      .filter(entry => {
+        const names = documentedComponentNames(
+          path.join(sourceDir, entry.name),
+        ).filter(name => canonical.has(name));
+        return names.length === 1 && names[0] === entry.name;
+      })
+      .map(entry => entry.name)
+      .sort();
   } catch {
     return [];
   }
@@ -527,6 +525,7 @@ function analyze() {
   const modifiedComponents = [];
   const newComponentOwners = [];
   const modifiedComponentOwners = [];
+  const unresolvedComponentSources = [];
   const componentStats = {};
   const changedPackages = new Set();
 
@@ -558,7 +557,13 @@ function analyze() {
           ? relativePath.replace(/\.tsx?$/, '').split('/')[0]
           : relativePath.split('/')[0];
 
-      if (!allComponents.includes(componentName)) continue;
+      if (!allComponents.includes(componentName)) {
+        const source = `${pkg.packageName}/${componentName}`;
+        if (!unresolvedComponentSources.includes(source)) {
+          unresolvedComponentSources.push(source);
+        }
+        continue;
+      }
       const existsInBase = componentExistsInBase(pkg, componentName);
       const owner = `${pkg.packageName}/${componentName}`;
       const owners = existsInBase ? modifiedComponentOwners : newComponentOwners;
@@ -613,6 +618,8 @@ function analyze() {
     modifiedComponents,
     newComponentOwners,
     modifiedComponentOwners,
+    unresolvedComponentSources,
+    forceFullComponentAudits: unresolvedComponentSources.length > 0,
     newExports,
     componentStats,
     changedPackages: [...changedPackages],

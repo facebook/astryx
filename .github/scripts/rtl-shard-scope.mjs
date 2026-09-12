@@ -79,6 +79,12 @@ export function readAnalysis(analysisPath) {
     'modifiedComponents',
   );
   const owners = [...added.owners, ...modified.owners];
+  if (
+    analysis.forceFullComponentAudits !== undefined &&
+    typeof analysis.forceFullComponentAudits !== 'boolean'
+  ) {
+    throw new Error('Analysis forceFullComponentAudits must be a boolean');
+  }
   if (owners.some(owner => owner.includes('\n') || owner.includes('\r'))) {
     throw new Error('Analysis owner values must not contain line breaks');
   }
@@ -86,6 +92,7 @@ export function readAnalysis(analysisPath) {
   return {
     owners,
     qualified,
+    forceFullComponentAudits: analysis.forceFullComponentAudits === true,
     invalidOwners: qualified
       ? owners.filter(owner => !isCanonicalOwner(owner))
       : [],
@@ -109,6 +116,9 @@ export function resolveRtlShardScope({
     reason,
   });
   if (forceFull) return full('policy-sensitive scope');
+  if (analysis.forceFullComponentAudits) {
+    return full('unresolved canonical component source');
+  }
   if ((analysis.invalidOwners ?? []).length > 0) {
     return full('noncanonical component scope');
   }
@@ -187,20 +197,38 @@ function writeGithubOutputs(outputPath, scope) {
   );
 }
 
+function writeScopeManifest(manifestPath, packageName, scope) {
+  if (!manifestPath) return;
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify(
+      {
+        package: packageName,
+        shouldRun: scope.shouldRun,
+        filter: scope.filter,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   try {
     const analysis = readAnalysis(arg('analysis'));
+    const packageName = arg('package');
     const scope = resolveRtlShardScope({
-      packageName: arg('package'),
+      packageName,
       forceFull: booleanArg('force-full'),
       hasComponents: booleanArg('has-components'),
       hasHarness: booleanArg('has-harness'),
       analysis,
     });
     writeGithubOutputs(arg('github-output'), scope);
+    writeScopeManifest(arg('manifest'), packageName, scope);
     console.log(`${scope.reason}: ${scope.components || 'not applicable'}`);
   } catch (error) {
     console.error(error.message);

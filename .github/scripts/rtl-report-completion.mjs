@@ -18,6 +18,43 @@ function expectedFilters(filter) {
     .filter(Boolean);
 }
 
+function sameIdentitySet(planned, completed) {
+  if (
+    !Array.isArray(planned) ||
+    !Array.isArray(completed) ||
+    planned.length === 0
+  ) {
+    return false;
+  }
+  if (
+    new Set(planned).size !== planned.length ||
+    new Set(completed).size !== completed.length
+  ) {
+    return false;
+  }
+  return (
+    JSON.stringify([...planned].sort()) ===
+    JSON.stringify([...completed].sort())
+  );
+}
+
+function successfulResultIdentities(results) {
+  if (!Array.isArray(results)) return null;
+  const identities = [];
+  for (const result of results) {
+    if (
+      result == null ||
+      typeof result.component !== 'string' ||
+      typeof result.storyId !== 'string' ||
+      !['pass', 'fail', 'N-A'].includes(result.verdict)
+    ) {
+      return null;
+    }
+    identities.push(`${result.component}::${result.storyId}`);
+  }
+  return identities;
+}
+
 export function validateRtlReport(report, {packageName, filter = ''}) {
   const fail = message => ({ok: false, message});
   if (report == null || typeof report !== 'object' || Array.isArray(report)) {
@@ -52,6 +89,67 @@ export function validateRtlReport(report, {packageName, filter = ''}) {
     completion.completedDecorationScans !== completion.plannedStoryScans
   ) {
     return fail('RTL story scan count is missing, zero, or incomplete');
+  }
+  if (
+    !sameIdentitySet(
+      completion.plannedComponentIdentities,
+      completion.completedComponentIdentities,
+    )
+  ) {
+    return fail(
+      'RTL component identity set is missing, duplicated, or substituted',
+    );
+  }
+  if (
+    !sameIdentitySet(
+      completion.plannedD1Identities,
+      completion.completedD1Identities,
+    )
+  ) {
+    return fail('RTL D1 identity set is missing, duplicated, or substituted');
+  }
+  if (
+    !sameIdentitySet(
+      completion.plannedStoryIdentities,
+      completion.completedPositionalIdentities,
+    ) ||
+    !sameIdentitySet(
+      completion.plannedStoryIdentities,
+      completion.completedDecorationIdentities,
+    )
+  ) {
+    return fail(
+      'RTL story identity set is missing, duplicated, or substituted',
+    );
+  }
+  const d1Results = successfulResultIdentities(report.autoDiscovery?.results);
+  if (
+    d1Results == null ||
+    !sameIdentitySet(completion.plannedD1Identities, d1Results) ||
+    !sameIdentitySet(
+      completion.plannedComponentIdentities,
+      report.autoDiscovery.results.map(result => result.component),
+    )
+  ) {
+    return fail('RTL D1 results are missing, unsuccessful, or out of scope');
+  }
+  const positionalResults = successfulResultIdentities(
+    report.positionalMirror?.results,
+  );
+  if (
+    positionalResults == null ||
+    !sameIdentitySet(completion.plannedStoryIdentities, positionalResults)
+  ) {
+    return fail('RTL D5 results are missing, unsuccessful, or out of scope');
+  }
+  const decorationResults = successfulResultIdentities(
+    report.directionalDecorations?.results,
+  );
+  if (
+    decorationResults == null ||
+    !sameIdentitySet(completion.plannedStoryIdentities, decorationResults)
+  ) {
+    return fail('RTL D6 results are missing, unsuccessful, or out of scope');
   }
   if (!Number.isInteger(report.coverage?.total) || report.coverage.total <= 0) {
     return fail('RTL coverage roster is empty');
