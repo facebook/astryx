@@ -115,6 +115,11 @@ export type ChatComposerTrigger = {
   /** Character that activates this trigger menu (e.g. '@', '/') */
   character: string;
   /**
+   * If true, the trigger menu remains open when the user types a space,
+   * allowing multi-word queries. Default is false (single-token only).
+   */
+  allowWhitespace?: boolean;
+  /**
    * Search source providing items for this trigger.
    * Reuses the same SearchSource interface as Typeahead \u2014
    * supports sync/async search, bootstrap, and cancel().
