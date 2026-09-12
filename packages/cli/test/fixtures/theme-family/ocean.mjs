@@ -1,5 +1,10 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {defineTheme} from '@astryxdesign/core/theme';
-import {icons as themeAssets, indicators as themeIndicators} from './ocean-registry.mjs';
+import {
+  icons as themeAssets,
+  indicators as themeIndicators,
+} from './ocean-registry.mjs';
 
 export const oceanTheme = defineTheme({
   name: 'ocean',

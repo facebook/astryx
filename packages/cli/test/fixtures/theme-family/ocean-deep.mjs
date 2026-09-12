@@ -1,6 +1,11 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {defineTheme} from '@astryxdesign/core/theme';
 import {oceanTheme} from './ocean.mjs';
-import {icons as themeAssets, indicators as themeIndicators} from './deep-registry.mjs';
+import {
+  icons as themeAssets,
+  indicators as themeIndicators,
+} from './deep-registry.mjs';
 
 export const oceanDeepTheme = defineTheme({
   name: 'ocean-deep',

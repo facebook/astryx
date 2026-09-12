@@ -758,11 +758,29 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Browser evidence must describe the PR's exact authored bytes, not a
+          # synthetic pull-request merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: ./.github/actions/setup
 
       - name: Install Playwright
         run: npx playwright install chromium
+
+      - name: Run theme family artifact browser contract
+        run: pnpm test:theme-family-browser
+
+      - name: Upload theme family browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: theme-family-browser-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: error
 
       # The guard imports the plugin's build artifact, the same one a consumer
       # installs.

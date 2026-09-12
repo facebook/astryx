@@ -1,26 +1,71 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>Theme family artifacts</title>
+    <style>
+      @layer astryx-theme {
+        .unrelated-before {
+          text-decoration-color: rgb(10 10 10);
+        }
+      }
+    </style>
     <link rel="stylesheet" href="./ocean-family/current/ocean-family.css" />
     <style>
       @layer astryx-theme {
-        .unrelated { color: rgb(20 20 20); }
+        .unrelated {
+          color: rgb(20 20 20);
+        }
       }
-      body { font-family: system-ui; }
-      .grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .card { background: var(--color-background-surface); border: 1px solid var(--color-accent); border-radius: var(--radius-container); color: var(--demo-selection-ink); padding: 16px; }
-      .astryx-button { border-style: solid; padding: 8px 12px; }
+      body {
+        font-family: system-ui;
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .card {
+        background: var(--color-background-surface);
+        border: 1px solid var(--color-accent);
+        border-radius: var(--radius-container);
+        color: var(--demo-selection-ink);
+        padding: 16px;
+      }
+      .astryx-button {
+        border-style: solid;
+        padding: 8px 12px;
+      }
     </style>
   </head>
   <body>
-    <label>Theme <select><option>ocean</option><option>ocean-calm</option><option>ocean-deep</option><option>ocean-midnight</option></select></label>
-    <main class="grid unrelated" data-demo-root data-astryx-theme="ocean">
-      <section class="card" data-member="switchable"><button class="astryx-button">Switchable root</button></section>
-      <section class="card" data-astryx-theme="ocean-deep" data-member="sibling"><button class="astryx-button">Sibling root</button></section>
-      <section class="card" data-astryx-theme="ocean-calm" data-member="nested"><button class="astryx-button">Nested zero-delta root</button></section>
+    <label
+      >Theme
+      <select>
+        <option>ocean</option>
+        <option>ocean-calm</option>
+        <option>ocean-deep</option>
+        <option>ocean-midnight</option>
+      </select></label
+    >
+    <main
+      class="grid unrelated unrelated-before"
+      data-demo-root
+      data-astryx-theme="ocean">
+      <section class="card" data-member="switchable">
+        <button class="astryx-button">Switchable root</button>
+      </section>
+      <section
+        class="card"
+        data-astryx-theme="ocean-deep"
+        data-member="sibling">
+        <button class="astryx-button">Sibling root</button>
+      </section>
+      <section class="card" data-astryx-theme="ocean-calm" data-member="nested">
+        <button class="astryx-button">Nested zero-delta root</button>
+      </section>
     </main>
     <script type="module" src="./main.mjs"></script>
   </body>

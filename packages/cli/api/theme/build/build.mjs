@@ -58,19 +58,6 @@ import {
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
-import {allocateMemberBindings} from './family/bindings.mjs';
-import {renderFamilyCSS} from './family/css.mjs';
-import {generateFamilyTypes} from './family/dts.mjs';
-import {generateFamilyESM} from './family/esm.mjs';
-import {factorFamilyPlans} from './family/factor.mjs';
-import {buildFamilyGraph} from './family/graph.mjs';
-import {createFamilyGeneration} from './family/manifest.mjs';
-import {createMemberPlan} from './family/plan.mjs';
-import {planFamilyRegistries} from './family/registries.mjs';
-import {
-  checkFamilyGeneration,
-  publishFamilyGeneration,
-} from './family/transaction.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -1197,7 +1184,7 @@ function isSyncLoaderLimitation(error) {
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @param {ReturnType<typeof createJiti>} [sharedLoader]
- * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, candidateCount: number, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
 async function importThemeModule(filePath, interception, sharedLoader) {
   const jiti =
@@ -1236,12 +1223,21 @@ async function importThemeModule(filePath, interception, sharedLoader) {
     mod = await jiti.import(filePath, {default: true});
   }
 
-  if (isThemeObject(mod)) return {theme: mod, degraded};
+  if (isThemeObject(mod)) {
+    return {theme: mod, candidateCount: 1, degraded};
+  }
 
   if (mod && typeof mod === 'object') {
-    if (isThemeObject(mod.default)) return {theme: mod.default, degraded};
-    for (const value of Object.values(mod)) {
-      if (isThemeObject(value)) return {theme: value, degraded};
+    const values = isThemeObject(mod.default)
+      ? [mod.default, ...Object.values(mod)]
+      : Object.values(mod);
+    const candidates = [...new Set(values.filter(isThemeObject))];
+    if (candidates.length > 0) {
+      return {
+        theme: candidates[0],
+        candidateCount: candidates.length,
+        degraded,
+      };
     }
   }
 
@@ -1276,7 +1272,7 @@ function isThemeObject(value) {
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @param {ReturnType<typeof createJiti>} [sharedLoader]
- * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, candidateCount: number, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
 async function extractThemeDefinition(filePath, interception, sharedLoader) {
   try {
@@ -1285,6 +1281,7 @@ async function extractThemeDefinition(filePath, interception, sharedLoader) {
     try {
       return {
         theme: extractThemeDefinitionLegacy(filePath),
+        candidateCount: 1,
         degraded: {topLevelAwait: false, commonJs: false},
       };
     } catch {
@@ -1929,6 +1926,8 @@ export async function themeBuild(
 
   // Extract theme definition
   let themeDef;
+  /** @type {number} */
+  let themeCandidateCount;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
   try {
@@ -1938,6 +1937,7 @@ export async function themeBuild(
       familyContext?.loader,
     );
     themeDef = loaded.theme;
+    themeCandidateCount = loaded.candidateCount;
     loadDegradation = loaded.degraded;
   } catch (e) {
     const err = /** @type {Error} */ (e);
@@ -2331,6 +2331,7 @@ export async function themeBuild(
         sourceBytes: fs.readFileSync(filePath),
         theme: resolvedTheme,
         loadedTheme: themeDef,
+        themeCandidateCount,
         rawInput,
         lineageObserved: observedRawInput !== undefined,
         compilerSections,
@@ -2590,18 +2591,42 @@ export async function themeBuildFamily(
     );
   }
 
+  const [
+    {allocateMemberBindings},
+    {renderFamilyCSS},
+    {generateFamilyTypes},
+    {generateFamilyESM},
+    {factorFamilyPlans},
+    {buildFamilyGraph},
+    {createFamilyGeneration},
+    {createMemberPlan},
+    {planFamilyRegistries},
+    {checkFamilyGeneration, publishFamilyGeneration},
+  ] = await Promise.all([
+    import('./family/bindings.mjs'),
+    import('./family/css.mjs'),
+    import('./family/dts.mjs'),
+    import('./family/esm.mjs'),
+    import('./family/factor.mjs'),
+    import('./family/graph.mjs'),
+    import('./family/manifest.mjs'),
+    import('./family/plan.mjs'),
+    import('./family/registries.mjs'),
+    import('./family/transaction.mjs'),
+  ]);
+
   const interception = interceptCore(_coreThemeModule, _coreRootModule);
   const loader = createJiti(import.meta.url, {
     moduleCache: true,
+    fsCache: false,
     jsx: true,
     extensions: THEME_MODULE_EXTENSIONS,
     virtualModules: interception.modules,
   });
   // Jiti normally shares Node's process-wide CommonJS cache. A family needs one
   // cache within this graph for exact object identity, but no cache across
-  // builds, where it would retain an earlier source revision and its stripped
-  // lineage markers.
-  loader.cache = Object.create(null);
+  // builds, where it would retain an earlier source revision and its lineage
+  // markers. The selected source directories are evicted below before loading.
   const familyContext = {interception, loader};
   const requested = files
     .map(file => ({
@@ -2612,6 +2637,23 @@ export async function themeBuildFamily(
     .sort((a, b) =>
       a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0,
     );
+
+  const sourceDirectories = [
+    ...new Set(requested.map(source => path.dirname(source.filePath))),
+  ];
+  const loaderCache = /** @type {Record<string, unknown>} */ (
+    familyContext.loader.cache ?? {}
+  );
+  for (const cachedPath of Object.keys(loaderCache)) {
+    if (
+      sourceDirectories.some(directory => {
+        const relative = path.relative(directory, cachedPath);
+        return relative !== '..' && !relative.startsWith(`..${path.sep}`);
+      })
+    ) {
+      delete loaderCache[cachedPath];
+    }
+  }
 
   const prepared = [];
   for (const source of requested) {
@@ -2629,6 +2671,11 @@ export async function themeBuildFamily(
     if (!result || result.type !== 'theme.build.prepared') {
       throw new Error(
         `Theme "${source.file}" did not produce a complete plan.`,
+      );
+    }
+    if (result.data.themeCandidateCount !== 1) {
+      throw new Error(
+        `Theme family source "${source.file}" exports ${result.data.themeCandidateCount} distinct theme objects; each selected source must identify exactly one member.`,
       );
     }
     if (

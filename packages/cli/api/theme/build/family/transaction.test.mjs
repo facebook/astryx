@@ -8,9 +8,11 @@
  */
 
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {
   checkFamilyGeneration,
@@ -192,6 +194,140 @@ describe('family generation transaction', () => {
     expect(fs.existsSync(path.join(root, 'generations', 'gen-second'))).toBe(
       false,
     );
+  });
+
+  it.each(['afterWrite', 'afterStage', 'afterValidate'])(
+    'keeps the prior generation active after a fault at %s',
+    hook => {
+      const first = generation('family', 'gen-first', 'red');
+      publishFamilyGeneration({root, artifactKey: 'family', ...first});
+      const second = generation('family', 'gen-second', 'blue');
+      let fired = false;
+      const fail = () => {
+        if (fired) return;
+        fired = true;
+        throw new Error(`fault at ${hook}`);
+      };
+
+      expect(() =>
+        publishFamilyGeneration({
+          root,
+          artifactKey: 'family',
+          ...second,
+          hooks: {[hook]: fail},
+        }),
+      ).toThrow(`fault at ${hook}`);
+      expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+        'generations/gen-first',
+      );
+
+      expect(() =>
+        publishFamilyGeneration({root, artifactKey: 'family', ...second}),
+      ).not.toThrow();
+      expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+        'generations/gen-second',
+      );
+    },
+  );
+
+  it('recovers a real process exit after journaling', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    const payload = path.join(root, 'payload.json');
+    fs.writeFileSync(
+      payload,
+      JSON.stringify({
+        generationId: second.generationId,
+        manifestPath: second.manifestPath,
+        files: [...second.files],
+      }),
+    );
+    const runner = path.join(root, 'crash.mjs');
+    const transactionURL = pathToFileURL(
+      path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        'transaction.mjs',
+      ),
+    ).href;
+    fs.writeFileSync(
+      runner,
+      `import fs from 'node:fs';\nimport {publishFamilyGeneration} from ${JSON.stringify(transactionURL)};\nconst input=JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));\npublishFamilyGeneration({root:process.argv[2], artifactKey:'family', generationId:input.generationId, manifestPath:input.manifestPath, files:new Map(input.files), hooks:{afterJournal(){process.exit(37);}}});\n`,
+    );
+
+    const exited = spawnSync(process.execPath, [runner, root, payload]);
+    expect(exited.status).toBe(37);
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: first,
+    });
+    expect(checked.upToDate).toBe(true);
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
+  });
+
+  it('preserves unmanifested data inside a superseded generation', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const unowned = path.join(
+      root,
+      'generations',
+      'gen-first',
+      'user-authored.txt',
+    );
+    fs.writeFileSync(unowned, 'keep');
+
+    const second = generation('family', 'gen-second', 'blue');
+    publishFamilyGeneration({root, artifactKey: 'family', ...second});
+    expect(fs.readFileSync(unowned, 'utf8')).toBe('keep');
+    expect(
+      fs.existsSync(path.join(root, 'generations', 'gen-first', 'family.css')),
+    ).toBe(false);
+  });
+
+  it('finishes cleanup after a fault following the committed pointer', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          duringCleanup: () => {
+            throw new Error('fault during cleanup');
+          },
+        },
+      }),
+    ).toThrow(/fault during cleanup/);
+    expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+      'generations/gen-second',
+    );
+
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: second,
+    });
+    expect(checked.upToDate).toBe(true);
+    expect(fs.existsSync(path.join(root, 'generations', 'gen-first'))).toBe(
+      false,
+    );
+  });
+
+  it('refuses an active same-host lock', () => {
+    fs.symlinkSync(
+      Buffer.from(
+        JSON.stringify({hostname: os.hostname(), pid: process.pid}),
+      ).toString('base64url'),
+      path.join(root, '.lock'),
+    );
+    const next = generation('family', 'gen-next', 'green');
+    expect(() =>
+      publishFamilyGeneration({root, artifactKey: 'family', ...next}),
+    ).toThrow(/locked/);
   });
 
   it('reclaims a lock whose owning process no longer exists', () => {

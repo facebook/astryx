@@ -120,18 +120,18 @@ describe('themeBuild() — receipt', () => {
   });
 
   it.each(['VAR', 'vAr'])(
-    'rejects undeclared local-token references using %s() before writing outputs',
+    'keeps unenrolled prefix-like references using %s() external',
     async functionName => {
-      const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
+      const themeFile = path.join(tmpDir, 'external-reference-theme.mjs');
       fs.writeFileSync(
         themeFile,
         `export default {
-        name: 'invalid-local-theme',
+        name: 'external-reference-theme',
         localTokens: {},
         components: {
           badge: {
             base: {
-              color: '${functionName}(--astryx-theme-invalid-local-theme-color-missing)',
+              color: '${functionName}(--astryx-theme-external-reference-theme-color-missing)',
             },
           },
         },
@@ -139,17 +139,21 @@ describe('themeBuild() — receipt', () => {
       );
 
       await expect(
-        themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
-      ).rejects.toThrow(/has no declaration/);
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
-        false,
+        themeBuild('external-reference-theme.mjs', {}, {cwd: tmpDir}),
+      ).resolves.toMatchObject({type: 'theme.build'});
+      const css = fs.readFileSync(
+        path.join(tmpDir, 'external-reference-theme.css'),
+        'utf8',
       );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
-        false,
+      expect(css).toContain(
+        '--astryx-theme-external-reference-theme-color-missing',
       );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.d.ts'))).toBe(
-        false,
-      );
+      expect(
+        fs.existsSync(path.join(tmpDir, 'external-reference-theme.js')),
+      ).toBe(true);
+      expect(
+        fs.existsSync(path.join(tmpDir, 'external-reference-theme.d.ts')),
+      ).toBe(true);
     },
   );
 

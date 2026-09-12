@@ -527,7 +527,7 @@ export function registerTheme(program) {
           result = await themeBuildFamily(
             familyFiles,
             {
-              familyKey: options.familyKey,
+              familyKey: /** @type {string} */ (options.familyKey),
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
             },

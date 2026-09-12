@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {defineTheme} from '@astryxdesign/core/theme';
 import {oceanDeepTheme} from './ocean-deep.mjs';
 
