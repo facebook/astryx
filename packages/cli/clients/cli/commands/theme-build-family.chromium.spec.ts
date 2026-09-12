@@ -241,8 +241,8 @@ test('native family CSS is correct on first paint and every attribute-only switc
     await calmButton.evaluate(element => getComputedStyle(element).paddingLeft),
   ).toBe('20px');
   expect(
-    await calmButton.evaluate(element => getComputedStyle(element).borderWidth),
-  ).toBe('3px');
+    await calmButton.evaluate(element => getComputedStyle(element).color),
+  ).toBe('rgb(7, 59, 76)');
   await calmButton.hover();
   expect(
     await calmButton.evaluate(element => getComputedStyle(element).color),
