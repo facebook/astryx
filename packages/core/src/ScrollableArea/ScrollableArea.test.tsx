@@ -81,6 +81,10 @@ describe('ScrollableArea', () => {
       </ScrollableArea>,
     );
     const viewport = screen.getByTestId('viewport');
+    // jsdom does not resolve StyleX's dynamic CSS variables. Mirror the
+    // generated class values so this integration test can exercise measurement.
+    viewport.style.overflowX = 'hidden';
+    viewport.style.overflowY = 'auto';
     setGeometry(viewport, {
       clientWidth: 100,
       clientHeight: 100,
@@ -151,8 +155,9 @@ describe('ScrollableArea', () => {
     );
     const viewport = screen.getByTestId('viewport');
     const content = viewport.firstElementChild as HTMLElement;
-    expect(viewport.style.overflowInline).toBe('auto');
-    expect(viewport.style.overflowBlock).toBe('hidden');
+    const inlineViewportClass = viewport.className;
+    expect(viewport.style.overflowInline).toBe('');
+    expect(viewport.style.overflowBlock).toBe('');
     const inlineContentClass = content.className;
     expect(content.style.inlineSize).toBe('');
     expect(content.style.minInlineSize).toBe('');
@@ -162,11 +167,14 @@ describe('ScrollableArea', () => {
         Timeline
       </ScrollableArea>,
     );
-    expect(viewport.style.overflowInline).toBe('hidden');
-    expect(viewport.style.overflowBlock).toBe('auto');
+    expect(viewport.className).not.toBe(inlineViewportClass);
+    expect(viewport.style.overflowInline).toBe('');
+    expect(viewport.style.overflowBlock).toBe('');
     expect(content.className).not.toBe(inlineContentClass);
     expect(content.style.inlineSize).toBe('');
     const source = stylesSource();
+    expect(source).toContain('dynamicStyles.overflow(');
+    expect(source).not.toContain('logicalOverflowStyle');
     expect(source).toContain("minInlineSize: '100%'");
     expect(source).toContain("inlineSize: 'max-content'");
   });

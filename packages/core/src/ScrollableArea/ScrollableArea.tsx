@@ -14,7 +14,7 @@
  * - /apps/storybook/stories/ScrollableArea.stories.tsx
  */
 
-import type {CSSProperties, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {
@@ -75,17 +75,6 @@ const styles = stylex.create({
       ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
     },
   },
-  inline: {
-    overflowInline: 'auto',
-    overflowBlock: 'hidden',
-  },
-  block: {
-    overflowInline: 'hidden',
-    overflowBlock: 'auto',
-  },
-  both: {
-    overflow: 'auto',
-  },
   content: {
     boxSizing: 'border-box',
     minInlineSize: '100%',
@@ -96,7 +85,17 @@ const styles = stylex.create({
   },
 });
 
+const overflowByAxis = {
+  inline: {inline: 'auto', block: 'hidden'},
+  block: {inline: 'hidden', block: 'auto'},
+  both: {inline: 'auto', block: 'auto'},
+} as const;
+
 const dynamicStyles = stylex.create({
+  overflow: (
+    overflowInline: 'auto' | 'hidden',
+    overflowBlock: 'auto' | 'hidden',
+  ) => ({overflowInline, overflowBlock}),
   sizing: (
     width: SizeValue | null,
     height: SizeValue | null,
@@ -195,11 +194,11 @@ export function ScrollableArea({
     overscroll,
   });
 
+  const overflow = overflowByAxis[axis];
   const mergedViewportProps = mergeProps(
     themeProps('scrollable-area', {axis}),
     stylex.props(
       styles.viewport,
-      styles[axis],
       isFullBleed && styles.fullBleed,
       focusOutlineStyles.focusVisible,
       dynamicStyles.sizing(
@@ -209,21 +208,15 @@ export function ScrollableArea({
         minHeight ?? null,
       ),
       xstyle,
+      dynamicStyles.overflow(overflow.inline, overflow.block),
     ),
     className,
     style,
   );
-  const logicalOverflowStyle: CSSProperties =
-    axis === 'both'
-      ? {overflow: 'auto'}
-      : axis === 'inline'
-        ? {overflowInline: 'auto', overflowBlock: 'hidden'}
-        : {overflowInline: 'hidden', overflowBlock: 'auto'};
   const viewportProps = getViewportProps<HTMLDivElement>({
     ...props,
     ref,
     ...mergedViewportProps,
-    style: {...mergedViewportProps.style, ...logicalOverflowStyle},
   });
 
   return (
