@@ -383,6 +383,37 @@ describe('family generation transaction', () => {
     expect(checked.stale.every(item => item.reason === 'missing')).toBe(true);
   });
 
+  it('recovers when a crash leaves an empty superseded directory after manifest removal', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterPointer: () => {
+            throw new Error('stop before cleanup');
+          },
+        },
+      }),
+    ).toThrow(/stop before cleanup/);
+    const oldDirectory = path.join(root, 'generations', 'gen-first');
+    for (const entry of fs.readdirSync(oldDirectory)) {
+      fs.rmSync(path.join(oldDirectory, entry), {recursive: true, force: true});
+    }
+
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: second,
+    });
+    expect(checked.upToDate).toBe(true);
+    expect(fs.existsSync(oldDirectory)).toBe(false);
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
+  });
+
   it('finishes cleanup after a fault following the committed pointer', () => {
     const first = generation('family', 'gen-first', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...first});

@@ -66,9 +66,9 @@ export function sanitizeBinding(value) {
   return candidate;
 }
 
-/** @param {string[]} names */
-export function allocateMemberBindings(names) {
-  const used = new Set(RESERVED);
+/** @param {string[]} names @param {Iterable<string>} [reserved] */
+export function allocateMemberBindings(names, reserved = []) {
+  const used = new Set([...RESERVED, ...reserved]);
   const result = new Map();
   for (const name of names) {
     const base = `${sanitizeBinding(name)}Theme`;

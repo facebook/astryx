@@ -314,10 +314,17 @@ function removeManifestOwnedGeneration(
   manifestPath,
   artifactKey,
 ) {
+  assertSafeRelativePath(generationTarget);
   let info;
   try {
     info = readManifest(root, generationTarget, manifestPath, artifactKey);
   } catch {
+    const generationDir = path.join(root, ...generationTarget.split('/'));
+    const stat = fs.lstatSync(generationDir, {throwIfNoEntry: false});
+    if (stat?.isDirectory() && fs.readdirSync(generationDir).length === 0) {
+      fs.rmdirSync(generationDir);
+      return true;
+    }
     return false;
   }
 
@@ -560,7 +567,9 @@ export function publishFamilyGeneration(input) {
     hooks = {},
   } = input;
   validateExpected(files, manifestPath, artifactKey, generationId);
+  const rootExisted = fs.lstatSync(root, {throwIfNoEntry: false}) !== undefined;
   fs.mkdirSync(root, {recursive: true});
+  if (!rootExisted) fsyncDirectory(path.dirname(root));
   fs.mkdirSync(path.join(root, 'generations'), {recursive: true});
   fsyncDirectory(root);
   const release = acquireLock(root);

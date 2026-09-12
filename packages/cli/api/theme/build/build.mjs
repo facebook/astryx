@@ -2656,6 +2656,14 @@ function assertFamilyRootAvailable(root) {
       try {
         manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
       } catch {
+        if (
+          fs.readdirSync(entryPath).length === 0 &&
+          fs.lstatSync(path.join(root, '.journal.json'), {
+            throwIfNoEntry: false,
+          })
+        ) {
+          continue;
+        }
         collision(entryPath);
       }
       if (
@@ -2889,14 +2897,17 @@ export async function themeBuildFamily(
   );
   assertFamilyRootAvailable(familyRoot);
 
-  const bindings = allocateMemberBindings(graph.order.map(node => node.name));
+  const bindings = allocateMemberBindings(
+    graph.order.map(node => node.name),
+    ['DefinedTheme'],
+  );
   let registryPlan;
   try {
     registryPlan = planFamilyRegistries({
       graph,
       preparedByTheme: byTheme,
       iconsSpecifier: options.iconsSpecifier,
-      reserved: bindings.values(),
+      reserved: [...bindings.values(), '__astryxPickTheme'],
     });
   } catch (error) {
     throw new AstryxError(

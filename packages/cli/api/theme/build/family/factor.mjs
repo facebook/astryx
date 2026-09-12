@@ -37,13 +37,17 @@ function unitSignature(unit) {
 }
 
 /**
- * @param {Array<{identity: {name: string}, sections: Array<{kind: string, css: any[]}>}>} plans
+ * @param {Array<{identity: {name: string, parentName: string|null}, sections: Array<{kind: string, css: any[]}>}>} plans
  */
 export function factorFamilyPlans(plans) {
   if (plans.length === 0)
     throw new Error('Cannot factor an empty theme family.');
 
   const groups = [];
+  const rootName = plans.find(plan => plan.identity.parentName === null)
+    ?.identity.name;
+  if (!rootName)
+    throw new Error('Cannot factor a family without one root plan.');
   for (const kind of SECTION_KINDS) {
     /** @type {Map<string, {unit: any, members: string[], firstSeen: number}>} */
     const bySignature = new Map();
@@ -89,7 +93,9 @@ export function factorFamilyPlans(plans) {
           kind,
           unit: group.unit,
           members: group.members,
-          shared: group.unit.scope === 'global' || group.members.length > 1,
+          shared:
+            group.unit.scope === 'global' ||
+            (group.members.length > 1 && group.members.includes(rootName)),
         })),
     );
   }

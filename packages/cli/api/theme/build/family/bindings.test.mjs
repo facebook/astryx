@@ -5,15 +5,15 @@ import {allocateImportBindings, allocateMemberBindings} from './bindings.mjs';
 
 describe('family binding allocation', () => {
   it('makes colliding member names deterministic and legal', () => {
-    const bindings = allocateMemberBindings([
-      'ocean-deep',
-      'oceanDeep',
-      'default',
-    ]);
+    const bindings = allocateMemberBindings(
+      ['ocean-deep', 'oceanDeep', 'default', 'Defined'],
+      ['DefinedTheme'],
+    );
     expect([...bindings.values()]).toEqual([
       'oceanDeepTheme',
       'oceanDeepTheme_2',
       '_defaultTheme',
+      'DefinedTheme_2',
     ]);
   });
 
@@ -38,14 +38,24 @@ describe('family binding allocation', () => {
           importedName: 'registry',
           sourceLocalName: 'assets',
         },
+        {
+          id: 'source-fallback',
+          specifier: './source.mjs',
+          importedName: '*',
+          importKind: 'namespace',
+          sourceLocalName: '__astryxPickTheme',
+        },
       ],
-      ['oceanTheme'],
+      ['oceanTheme', '__astryxPickTheme'],
     );
 
-    expect(allocation.imports).toHaveLength(2);
+    expect(allocation.imports).toHaveLength(3);
     expect(allocation.byRequest.get('base-icons-again')).toBe(
       allocation.byRequest.get('base-icons'),
     );
     expect(allocation.byRequest.get('child-icons')).toBe('assets_2');
+    expect(allocation.byRequest.get('source-fallback')).toBe(
+      '__astryxPickTheme_2',
+    );
   });
 });
