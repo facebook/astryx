@@ -104,6 +104,35 @@ describe('themeAdd with integration themes', () => {
     ).toContain('oceanBlue');
   });
 
+  it('rejects a nested destination symlink that escapes the project', async () => {
+    installThemeIntegration(
+      '@acme/themes',
+      'ocean',
+      "import {oceanBlue} from './tokens/colors';\nexport const oceanTheme = {oceanBlue};\n",
+      {'tokens/colors.ts': "export const oceanBlue = '#0064e0';\n"},
+    );
+    const outsideDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-theme-outside-'),
+    );
+    try {
+      const targetDir = path.join(tmpDir, 'src', 'themes', 'ocean');
+      fs.mkdirSync(targetDir, {recursive: true});
+      fs.symlinkSync(
+        outsideDir,
+        path.join(targetDir, 'tokens'),
+        process.platform === 'win32' ? 'junction' : 'dir',
+      );
+
+      await expect(themeAdd('ocean', {cwd: tmpDir})).rejects.toMatchObject({
+        code: 'ERR_PATH_TRAVERSAL',
+      });
+      expect(fs.existsSync(path.join(outsideDir, 'colors.ts'))).toBe(false);
+      expect(fs.existsSync(path.join(targetDir, 'oceanTheme.ts'))).toBe(false);
+    } finally {
+      fs.rmSync(outsideDir, {recursive: true, force: true});
+    }
+  });
+
   it('fails closed on a duplicate slug and resolves it with package scope', async () => {
     installThemeIntegration('@acme/themes', 'neutral');
 
