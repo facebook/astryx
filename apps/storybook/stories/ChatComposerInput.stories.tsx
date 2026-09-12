@@ -231,6 +231,7 @@ export const MentionTrigger: Story = {
     const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
+      allowSpaces: true,
       renderItem: item => (
         <TypeaheadItem
           item={item}
@@ -356,6 +357,7 @@ export const MultipleTriggers: Story = {
     const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
+      allowSpaces: true,
       onSelect: item => ({
         value: `@${item.id}`,
         label: item.label,

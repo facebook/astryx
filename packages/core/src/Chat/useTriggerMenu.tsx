@@ -190,6 +190,9 @@ function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   return null;
 }
 
+const MAX_TRIGGER_WORDS = 5;
+const PUNCTUATION_TERMINATORS = new Set(['.', ',', '!', '?', ';', ':']);
+
 function findActiveTrigger(
   textBeforeCursor: string,
   triggers: ChatComposerTrigger[],
@@ -198,10 +201,16 @@ function findActiveTrigger(
   query: string;
   triggerStart: number;
 } | null {
+  const anyAllowsSpaces = triggers.some(t => t.allowSpaces);
+
   for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
     const char = textBeforeCursor[i];
 
-    if (char === ' ' || char === '\n') {
+    if (char === '\n' || PUNCTUATION_TERMINATORS.has(char)) {
+      return null;
+    }
+
+    if (!anyAllowsSpaces && char === ' ') {
       return null;
     }
 
@@ -210,7 +219,25 @@ function findActiveTrigger(
         const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
         if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
           const query = textBeforeCursor.slice(i + 1);
-          return {trigger, query, triggerStart: i};
+
+          for (let j = 0; j < query.length; j++) {
+            if (PUNCTUATION_TERMINATORS.has(query[j])) {
+              return null;
+            }
+          }
+
+          if (trigger.allowSpaces) {
+            const words = query.trim().split(/\s+/).filter(Boolean);
+            if (words.length > MAX_TRIGGER_WORDS) {
+              return null;
+            }
+            return {trigger, query, triggerStart: i};
+          } else {
+            if (query.includes(' ')) {
+              return null;
+            }
+            return {trigger, query, triggerStart: i};
+          }
         }
       }
     }
@@ -330,6 +357,15 @@ export function useTriggerMenu(
     removeAnchorSpan();
     popover.hide();
     triggerStartRef.current = -1;
+    setState(prev => ({
+      ...prev,
+      isActive: false,
+      activeTrigger: null,
+      query: '',
+      items: [],
+      highlightedIndex: 0,
+      isLoading: false,
+    }));
   }, [popover, state.activeTrigger, removeAnchorSpan]);
 
   // Anchor the popover to the cursor position (not the entire input).
