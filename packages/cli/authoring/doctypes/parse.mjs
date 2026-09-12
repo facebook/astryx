@@ -4,8 +4,8 @@
  * @file The doc load boundary. `parseDoc` validates an unknown loaded doc value
  * into its typed shape (or throws a readable error), dispatching on the stamped
  * `type` and falling back to legacy shape-sniffing for unstamped docs. Its
- * acceptance set matches the old permissive `ComponentDocSchema` exactly, so
- * every existing `.doc.*` keeps loading unchanged.
+ * acceptance set preserves the old permissive `ComponentDocSchema` while new
+ * stamped kinds, including `theme`, use their sealed parser.
  */
 
 import {parseComponent} from './component/parse.mjs';
@@ -16,6 +16,7 @@ import {parseSchema} from './schema/parse.mjs';
 import {parseCommand} from './command/parse.mjs';
 import {parseEnum} from './enum/parse.mjs';
 import {parseNamespace} from './namespace/parse.mjs';
+import {parseTheme} from './theme/parse.mjs';
 import {parseLegacyDoc} from './legacy.mjs';
 
 /** @typedef {import('./types').ComponentDoc} ComponentDoc */
@@ -27,6 +28,7 @@ import {parseLegacyDoc} from './legacy.mjs';
 /** @typedef {import('./types').CommandDoc} CommandDoc */
 /** @typedef {import('./types').EnumDoc} EnumDoc */
 /** @typedef {import('./types').NamespaceDoc} NamespaceDoc */
+/** @typedef {import('./types').ThemeDoc} ThemeDoc */
 
 /**
  * Validate an unknown loaded doc value into its typed shape, or throw.
@@ -36,7 +38,7 @@ import {parseLegacyDoc} from './legacy.mjs';
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc | NamespaceDoc}
+ * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc | NamespaceDoc | ThemeDoc}
  */
 export function parseDoc(input, label = 'doc') {
   const type =
@@ -62,6 +64,8 @@ export function parseDoc(input, label = 'doc') {
       return parseEnum(input, label);
     case 'namespace':
       return parseNamespace(input, label);
+    case 'theme':
+      return parseTheme(input, label);
     case undefined:
       return parseLegacyDoc(input, label);
     default:

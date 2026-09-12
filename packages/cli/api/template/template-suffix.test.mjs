@@ -1,25 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The canonical `.template.{ts,mjs,js}` suffix is discovered identically
- * to the legacy `.doc.{ts,mjs,js}` suffix.
+ * @file The canonical `.doc.{mjs,ts,js}` suffix is discovered identically
+ * to the released `.template.{ts,mjs,js}` compatibility suffix.
  *
- * Template-spec files are named for what they are: a scaffoldable TEMPLATE
- * stamped with `type: 'page' | 'block'`. The `.doc.*` suffix was
- * inherited from the component-doc convention and is still accepted during the
- * transition. These tests stand up integration templates and external blocks in
- * both families and assert byte-for-byte-equivalent discovery + scaffolding.
+ * AST-035 makes `.doc.mjs` the canonical typed descriptor for every
+ * contribution kind. Stable 0.6.0 already accepted `.template.*`, so these tests
+ * keep that family as a compatibility input and assert equivalent discovery +
+ * scaffolding.
  */
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {
-  template,
-  findShowcase,
-  findRelatedBlocks,
-} from './template.mjs';
+import {template, findShowcase, findRelatedBlocks} from './template.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -82,8 +77,8 @@ afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
-describe('integration templates: .template.* discovered like legacy .doc.*', () => {
-  for (const suffix of ['.template.ts', '.template.mjs', '.doc.mjs']) {
+describe('integration templates: canonical .doc.* plus released .template.* compatibility', () => {
+  for (const suffix of ['.doc.mjs', '.doc.ts', '.template.mjs']) {
     it(`discovers + lists a page template authored as ${suffix}`, async () => {
       const pkgDir = installWidgets(tmpDir);
       writeTemplate(pkgDir, 'pricing', {kind: 'page', suffix});
@@ -124,7 +119,7 @@ describe('integration templates: .template.* discovered like legacy .doc.*', () 
     });
   }
 
-  it('treats a .template.ts and a legacy .doc.mjs identically (same shape)', async () => {
+  it('treats canonical .doc.mjs and released .template.ts identically (same shape)', async () => {
     const pkgDir = installWidgets(tmpDir);
     writeTemplate(pkgDir, 'gauge', {kind: 'block', suffix: '.template.ts'});
     writeTemplate(pkgDir, 'chip', {kind: 'block', suffix: '.doc.mjs'});
@@ -143,12 +138,25 @@ describe('integration templates: .template.* discovered like legacy .doc.*', () 
     expect(gauge.type).toBe(chip.type);
     expect(gauge.package).toBe(chip.package);
   });
+  it('prefers the canonical .doc.mjs when both suffix families exist', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'pricing', {kind: 'page', suffix: '.doc.mjs'});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'pricing.template.ts'),
+      "export default {type: 'page', name: 'compatibility name', description: 'compatibility'};\n",
+    );
+
+    const result = await template(undefined, {list: true, cwd: tmpDir});
+    const matches = result.data.filter(entry => entry.id === 'pricing');
+    expect(matches).toHaveLength(1);
+    expect(matches[0].name).toBe('pricing name');
+  });
 });
 
-describe('external showcase blocks: .template.* discovered like legacy .doc.*', () => {
+describe('external showcase blocks: canonical .doc.* plus released .template.* compatibility', () => {
   /**
    * Create a consumer whose @test/ext package contributes two showcase blocks,
-   * one authored as `Foo.template.ts` and one as legacy `Bar.doc.mjs`.
+   * one authored with released `Foo.template.ts` and one with canonical `Bar.doc.mjs`.
    */
   function makeShowcaseFixture() {
     // Symlink the real core package (needed by findCoreDir during discovery).
@@ -166,7 +174,7 @@ describe('external showcase blocks: .template.* discovered like legacy .doc.*', 
     const extDir = path.join(tmpDir, 'node_modules', '@test', 'ext');
     const blocksDir = path.join(extDir, 'blocks', 'components');
 
-    // Foo showcase — canonical .template.ts (stamped type: 'block' default export).
+    // Foo showcase — released .template.ts compatibility input.
     const fooDir = path.join(blocksDir, 'Foo');
     fs.mkdirSync(fooDir, {recursive: true});
     fs.writeFileSync(
@@ -185,7 +193,7 @@ describe('external showcase blocks: .template.* discovered like legacy .doc.*', 
       "'use client';\nexport default function FooShowcase() { return <div>Foo</div>; }",
     );
 
-    // Bar showcase — legacy .doc.mjs (export const doc).
+    // Bar showcase — canonical .doc.mjs (historical named export).
     const barDir = path.join(blocksDir, 'Bar');
     fs.mkdirSync(barDir, {recursive: true});
     fs.writeFileSync(
@@ -209,7 +217,11 @@ describe('external showcase blocks: .template.* discovered like legacy .doc.*', 
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: '@test/ext',
-        astryx: {docs: './src', category: 'Common', blocks: './blocks/components'},
+        astryx: {
+          docs: './src',
+          category: 'Common',
+          blocks: './blocks/components',
+        },
       }),
     );
     fs.mkdirSync(path.join(extDir, 'src'), {recursive: true});
@@ -223,7 +235,7 @@ describe('external showcase blocks: .template.* discovered like legacy .doc.*', 
     expect(result.filePath).toContain('FooShowcase.tsx');
   });
 
-  it('findShowcase resolves a legacy .doc.mjs external block by componentsUsed', async () => {
+  it('findShowcase resolves a canonical .doc.mjs external block by componentsUsed', async () => {
     makeShowcaseFixture();
     const result = await findShowcase('Bar', tmpDir);
     expect(result).not.toBeNull();

@@ -93,10 +93,10 @@ export type ReferenceContentBlock =
  * they aren't tied to a specific component — just drop a .doc.mjs file
  * in the docs/ directory and it shows up in `astryx docs`.
  *
- * Every reference .doc.mjs must export a single `docs` constant:
+ * Every new reference .doc.mjs default-exports a stamped object:
  *
  *   /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} *\/
- *   export const docs = { ... };
+ *   export default { type: 'generic', ... };
  */
 export interface ReferenceDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant for the stamped default-export format

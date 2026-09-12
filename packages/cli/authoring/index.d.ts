@@ -23,15 +23,16 @@
 // ═══════════════════════════════════════════════════════════════════════
 // AUTHOR THESE — each is the default export of one authored file.
 // ═══════════════════════════════════════════════════════════════════════
-export type {ComponentDoc} from './doctypes/types'; //   Button.doc.{ts,mjs}
-export type {HookDoc} from './doctypes/types'; //         useToast.doc.{ts,mjs}
+export type {ComponentDoc} from './doctypes/types'; //   Button.doc.mjs
+export type {HookDoc} from './doctypes/types'; //         useToast.doc.mjs
 export type {FunctionDoc} from './doctypes/types'; //     search.doc.mjs (hook | api)
-export type {ReferenceDoc} from './doctypes/types'; //    theming.doc.{ts,mjs}
-export type {TemplateDoc} from './doctypes/types'; //     Foo.template.{ts,mjs}
+export type {ReferenceDoc} from './doctypes/types'; //    theming.doc.mjs
+export type {TemplateDoc} from './doctypes/types'; //     Foo.doc.mjs
 export type {SchemaDoc} from './doctypes/types'; //       config.doc.mjs (object shape)
 export type {CommandDoc} from './doctypes/types'; //      search.doc.mjs (CLI command)
 export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (vocabulary)
 export type {NamespaceDoc} from './doctypes/types'; //    cli.doc.mjs (hierarchy)
+export type {ThemeDoc} from './doctypes/types'; //        oceanTheme.doc.mjs
 export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
 export type {DebugEvent} from './debug/type'; //          one recorded CLI run
 export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
@@ -58,6 +59,7 @@ export {parseSchema} from './doctypes/schema/parse.mjs';
 export {parseCommand} from './doctypes/command/parse.mjs';
 export {parseEnum} from './doctypes/enum/parse.mjs';
 export {parseNamespace} from './doctypes/namespace/parse.mjs';
+export {parseTheme} from './doctypes/theme/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
