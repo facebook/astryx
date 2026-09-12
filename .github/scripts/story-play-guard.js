@@ -21,13 +21,13 @@
  * a story that cannot boot must not pass by silence.
  */
 
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 
 const args = process.argv.slice(2);
-const getArg = (name) => {
+const getArg = name => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
@@ -38,6 +38,20 @@ const port = Number(getArg('port') || 6010);
 // Stories whose play assertions are load-bearing. Adding a story here is the
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row',
+    hasTouch: true,
+    guards:
+      'on a coarse pointer, an empty trailing combobox stays on the nearly full token row without overlapping the full Clear all hit area',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row-rtl',
+    hasTouch: true,
+    guards:
+      'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
+  },
   {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
@@ -57,7 +71,7 @@ const CONTENT_TYPES = {
 };
 
 function createServer(dir, listenPort) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = http.createServer((req, res) => {
       const filePath = path
         .join(dir, req.url === '/' ? 'index.html' : req.url)
@@ -77,8 +91,7 @@ function createServer(dir, listenPort) {
           return;
         }
         res.writeHead(200, {
-          'Content-Type':
-            CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
+          'Content-Type': CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
         });
         res.end(data);
       });
@@ -92,7 +105,7 @@ function createServer(dir, listenPort) {
 // is emitted only after the play function resolves; every failure mode has
 // its own event. Attached before any preview code runs so no event is missed.
 function recordStoryOutcome() {
-  window.__storyOutcome = { done: false, errors: [] };
+  window.__storyOutcome = {done: false, errors: []};
   const ERROR_EVENTS = [
     'playFunctionThrewException',
     'unhandledErrorsWhilePlaying',
@@ -100,7 +113,7 @@ function recordStoryOutcome() {
     'storyErrored',
     'storyMissing',
   ];
-  const describe = (payload) => {
+  const describe = payload => {
     if (payload == null) return '';
     if (typeof payload === 'string') return payload;
     return [payload.name, payload.title, payload.message, payload.description]
@@ -117,9 +130,9 @@ function recordStoryOutcome() {
       window.__storyOutcome.done = true;
     });
     for (const event of ERROR_EVENTS) {
-      channel.on(event, (payload) => {
+      channel.on(event, payload => {
         window.__storyOutcome.errors.push(
-          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`
+          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`,
         );
         window.__storyOutcome.done = true;
       });
@@ -130,14 +143,15 @@ function recordStoryOutcome() {
 
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
+  const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story`,
-    { waitUntil: 'domcontentloaded', timeout: 30000 }
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
+    {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
     () => window.__storyOutcome && window.__storyOutcome.done === true,
     null,
-    { timeout: 30000 }
+    {timeout: 30000},
   );
   return page.evaluate(() => window.__storyOutcome);
 }
@@ -154,31 +168,32 @@ async function run() {
   let failures = 0;
 
   try {
-    const context = await browser.newContext({
-      viewport: { width: 1280, height: 900 },
-    });
-
     for (const target of TARGETS) {
+      const context = await browser.newContext({
+        viewport: {width: 1280, height: 900},
+        hasTouch: target.hasTouch === true,
+      });
       const page = await context.newPage();
       try {
         const outcome = await probe(page, target);
         if (outcome.errors.length > 0) {
           failures++;
           console.error(
-            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`
+            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`,
           );
         } else {
           console.log(
-            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`
+            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`,
           );
         }
       } catch (e) {
         failures++;
         console.error(
-          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`
+          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`,
         );
       } finally {
         await page.close();
+        await context.close();
       }
     }
   } finally {
@@ -187,7 +202,9 @@ async function run() {
   }
 
   if (failures > 0) {
-    console.error(`\nFailing: ${failures} story play function(s) did not pass.`);
+    console.error(
+      `\nFailing: ${failures} story play function(s) did not pass.`,
+    );
     return 1;
   }
   console.log('\nAll story play guards passed.');
@@ -195,10 +212,10 @@ async function run() {
 }
 
 run()
-  .then((code) => {
+  .then(code => {
     process.exitCode = code;
   })
-  .catch((e) => {
+  .catch(e => {
     console.error('Story play guard failed:', e);
     process.exit(1);
   });
