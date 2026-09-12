@@ -2,6 +2,10 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  shadcnJavaScriptTarget,
+  transformShadcnJavaScriptSource,
+} from './source-variants.mjs';
+import {
   createRegistryReceipt,
   parseRegistryReceipt,
   registryContentHash,
@@ -26,7 +30,16 @@ function receipt() {
         id: 'primary',
         target,
         registryPath: 'registry/example-button-basic/ButtonExample.tsx',
-        content: 'export default function Example() { return null; }\n',
+        content: 'export default function Example(): null { return null; }\n',
+        variants: [
+          {
+            format: 'javascript',
+            target: shadcnJavaScriptTarget(target),
+            content: transformShadcnJavaScriptSource(
+              'export default function Example(): null { return null; }\n',
+            ),
+          },
+        ],
       },
     ],
   });
@@ -44,16 +57,65 @@ describe('ShadCN registry receipts', () => {
 
   it('records the installed base bytes and a relative target', () => {
     const value = receipt();
+    expect(value.schemaVersion).toBe(2);
     expect(value.files[0]).toMatchObject({
       id: 'primary',
       target: '../ButtonExample.tsx',
       registryTarget: 'components/astryx/examples/ButtonExample.tsx',
       registryPath: 'registry/example-button-basic/ButtonExample.tsx',
       sha256: registryContentHash(value.files[0].content),
+      variants: [
+        expect.objectContaining({
+          format: 'javascript',
+          target: '../ButtonExample.jsx',
+          registryTarget: 'components/astryx/examples/ButtonExample.jsx',
+        }),
+      ],
     });
+    expect(value.files[0].variants[0].sha256).toBe(
+      registryContentHash(value.files[0].variants[0].content),
+    );
     expect(
       parseRegistryReceipt(JSON.parse(serializeRegistryReceipt(value))),
     ).toEqual(value);
+  });
+
+  it('permits a canonical JavaScript base without a duplicate variant', () => {
+    const target = 'components/astryx/examples/CompiledExample.jsx';
+    const value = createRegistryReceipt({
+      item: {
+        name: 'example-compiled',
+        path: 'examples/compiled',
+        aliases: [],
+        kind: 'example',
+      },
+      sourceVersion: '0.6.0',
+      receiptTarget: registryReceiptTarget(target, 'example-compiled'),
+      files: [
+        {
+          id: 'primary',
+          target,
+          registryPath: 'registry/example-compiled/CompiledExample.jsx',
+          content:
+            'export default function CompiledExample() { return null; }\n',
+          variants: [],
+        },
+      ],
+    });
+
+    expect(parseRegistryReceipt(value).files[0].variants).toEqual([]);
+  });
+
+  it('continues to parse version 1 receipts without variants', () => {
+    const value = receipt();
+    const {variants: _variants, ...legacyFile} = value.files[0];
+    expect(
+      parseRegistryReceipt({
+        ...value,
+        schemaVersion: 1,
+        files: [legacyFile],
+      }),
+    ).toMatchObject({schemaVersion: 1, files: [{id: 'primary'}]});
   });
 
   it('rejects duplicate file identities', () => {
@@ -66,6 +128,33 @@ describe('ShadCN registry receipts', () => {
     ).toThrow(/must be unique/);
   });
 
+  it('rejects duplicate or escaping install variants', () => {
+    const value = receipt();
+    const variant = value.files[0].variants[0];
+    expect(() =>
+      parseRegistryReceipt({
+        ...value,
+        files: [
+          {
+            ...value.files[0],
+            variants: [variant, {...variant}],
+          },
+        ],
+      }),
+    ).toThrow(/variant formats must be unique/);
+    expect(() =>
+      parseRegistryReceipt({
+        ...value,
+        files: [
+          {
+            ...value.files[0],
+            variants: [{...variant, target: '../../outside.jsx'}],
+          },
+        ],
+      }),
+    ).toThrow(/adjacent source file/);
+  });
+
   it('rejects traversal and corrupt hashes', () => {
     const value = receipt();
     expect(() =>
@@ -74,6 +163,14 @@ describe('ShadCN registry receipts', () => {
         files: [{...value.files[0], target: '../../outside.tsx'}],
       }),
     ).toThrow(/adjacent source file/);
+    for (const target of ['../.', '../..']) {
+      expect(() =>
+        parseRegistryReceipt({
+          ...value,
+          files: [{...value.files[0], target}],
+        }),
+      ).toThrow(/adjacent source file/);
+    }
     expect(() =>
       parseRegistryReceipt({
         ...value,
