@@ -1155,6 +1155,10 @@
     "defaultMessage": "{label} submenu",
     "description": "Accessible name for the flyout dialog that opens from a collapsed (icon-only) SideNav item to show its sub-items. {label} is the parent item's label. Example: `Settings submenu`."
   },
+  "@astryx.spinner.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only default accessible name for a bare Spinner with no visible label. Present-progressive form, matching the other loading-state strings (`typeahead.loading`, `commandPalette.loading`, `button.loading`). Used only when the consumer sets neither `aria-label` nor a string `label`."
+  },
   "@astryx.tableFiltering.filterByColumn": {
     "defaultMessage": "Filter {header}",
     "description": "Triple-use string on per-column filter controls: visible label, placeholder, AND aria label. `{header}` is the column header — example: `Filter Name`. Keep short."
