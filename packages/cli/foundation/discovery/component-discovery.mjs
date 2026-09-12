@@ -8,6 +8,31 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {existsCaseExact} from '../fs/paths.mjs';
 
+import {discoverExternalPackages} from '../fs/paths.mjs';
+import {cachedDirents, cachedExists, createFsCache} from '../fs/paths.mjs';
+
+/**
+ * Process-lifetime memo of filesystem listings per workspace root, so
+ * resolving many names against one core costs roughly one directory walk
+ * instead of one walk per name. Only the exact-resolver path below opts in;
+ * every other finder keeps uncached behavior by default.
+ * @type {Map<string, {exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}>}
+ */
+const fsCacheByCoreDir = new Map();
+
+/**
+ * @param {string} coreDir
+ * @returns {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}}
+ */
+function fsCacheFor(coreDir) {
+  let hit = fsCacheByCoreDir.get(coreDir);
+  if (!hit) {
+    hit = createFsCache();
+    fsCacheByCoreDir.set(coreDir, hit);
+  }
+  return hit;
+}
+
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
 /** The owner package name for built-in (core) components. */
@@ -235,45 +260,56 @@ export function discoverComponents(coreDir) {
  * if the sub-component is documented there.
  * @param {string} coreDir
  * @param {string} name
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
  * @returns {string | null}
  */
-export function findComponentReadme(coreDir, name) {
+export function findComponentReadme(coreDir, name, fsCache = null) {
   const srcDir = path.join(coreDir, 'src');
   const exactDoc = `${name}.doc.mjs`;
   const xdsDoc = `XDS${name}.doc.mjs`;
+  /** @type {(dir: string) => import('node:fs').Dirent[]} */
+  const readEntries = dir =>
+    fsCache
+      ? (cachedDirents(fsCache, dir) ?? [])
+      : fs.readdirSync(dir, {withFileTypes: true});
+  /** @type {(dir: string) => string[]} */
+  const readNames = dir =>
+    fsCache
+      ? (cachedDirents(fsCache, dir) ?? []).map(e => e.name)
+      : fs.readdirSync(dir);
 
   // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/Astryx{Name}.doc.mjs
   const direct = path.join(srcDir, name, exactDoc);
-  if (existsCaseExact(direct, srcDir)) return direct;
+  if (existsCaseExact(direct, srcDir, fsCache)) return direct;
   const directXds = path.join(srcDir, name, xdsDoc);
-  if (existsCaseExact(directXds, srcDir)) return directXds;
+  if (existsCaseExact(directXds, srcDir, fsCache)) return directXds;
 
   // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const entries = readEntries(srcDir);
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
-    if (existsCaseExact(nested, srcDir)) return nested;
+    if (existsCaseExact(nested, srcDir, fsCache)) return nested;
     const nestedXds = path.join(srcDir, entry.name, name, xdsDoc);
-    if (existsCaseExact(nestedXds, srcDir)) return nestedXds;
+    if (existsCaseExact(nestedXds, srcDir, fsCache)) return nestedXds;
   }
 
   // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/Astryx{Name}.doc.mjs
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const perComp = path.join(srcDir, entry.name, exactDoc);
-    if (existsCaseExact(perComp, srcDir)) return perComp;
+    if (existsCaseExact(perComp, srcDir, fsCache)) return perComp;
     const perCompXds = path.join(srcDir, entry.name, xdsDoc);
-    if (existsCaseExact(perCompXds, srcDir)) return perCompXds;
+    if (existsCaseExact(perCompXds, srcDir, fsCache)) return perCompXds;
   }
 
   // Sub-component fallback: find the source file, then walk up
   // looking for any .doc.mjs in the same or parent directories
-  const sourcePath = findComponentSource(coreDir, name);
+  const sourcePath = findComponentSource(coreDir, name, fsCache);
   if (sourcePath) {
     let dir = path.dirname(sourcePath);
     while (dir.startsWith(srcDir)) {
-      const dirEntries = fs.readdirSync(dir);
+      const dirEntries = readNames(dir);
       for (const f of dirEntries) {
         if (f.endsWith('.doc.mjs')) return path.join(dir, f);
       }
@@ -296,9 +332,10 @@ export function findComponentReadme(coreDir, name) {
  * bare `@astryxdesign/core` root instead of its tree-shakeable subpath.
  * @param {string} coreDir
  * @param {string} name
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
  * @returns {string | null}
  */
-export function findComponentSource(coreDir, name) {
+export function findComponentSource(coreDir, name, fsCache = null) {
   const srcDir = path.join(coreDir, 'src');
   // Try the prefixed forms (`XDSButton.tsx`) first since that is the current
   // on-disk convention, then the bare forms (`Button.tsx`) that the Astryx-prefix
@@ -316,13 +353,15 @@ export function findComponentSource(coreDir, name) {
    * @returns {string | null}
    */
   function searchDir(dirPath) {
-    if (!fs.existsSync(dirPath)) return null;
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const dirExists = fsCache ? cachedExists(fsCache, dirPath) : fs.existsSync(dirPath);
+    if (!dirExists) return null;
+    const cached = fsCache ? cachedDirents(fsCache, dirPath) : null;
+    const entries = cached ?? fs.readdirSync(dirPath, {withFileTypes: true});
 
     // Check for an exact match (prefixed or bare) first
     for (const candidate of candidateFiles) {
       const exact = path.join(dirPath, candidate);
-      if (existsCaseExact(exact, dirPath)) return exact;
+      if (existsCaseExact(exact, dirPath, fsCache)) return exact;
     }
 
     // Recurse into subdirectories
@@ -337,17 +376,19 @@ export function findComponentSource(coreDir, name) {
 
   // Search in the component's directory
   const directDir = path.join(srcDir, name);
-  if (existsCaseExact(directDir, srcDir)) {
+  if (existsCaseExact(directDir, srcDir, fsCache)) {
     const found = searchDir(directDir);
     if (found) return found;
   }
 
   // Search nested (component might be under a parent dir)
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
-  for (const entry of entries) {
+  const cachedSrc = fsCache ? cachedDirents(fsCache, srcDir) : null;
+  const nestedEntries =
+    cachedSrc ?? fs.readdirSync(srcDir, {withFileTypes: true});
+  for (const entry of nestedEntries) {
     if (!entry.isDirectory()) continue;
     const nestedDir = path.join(srcDir, entry.name, name);
-    if (existsCaseExact(nestedDir, srcDir)) {
+    if (existsCaseExact(nestedDir, srcDir, fsCache)) {
       const found = searchDir(nestedDir);
       if (found) return found;
     }
@@ -572,10 +613,14 @@ export function discoverExternalComponentsGrouped(docsDir) {
  * Returns the path to {Name}.doc.mjs or null.
  * @param {string} docsDir
  * @param {string} name
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
  * @returns {string | null}
  */
-export function findExternalComponentDoc(docsDir, name) {
-  if (!fs.existsSync(docsDir)) return null;
+export function findExternalComponentDoc(docsDir, name, fsCache = null) {
+  const dirExists = fsCache
+    ? cachedExists(fsCache, docsDir)
+    : fs.existsSync(docsDir);
+  if (!dirExists) return null;
   const target = `${name}.doc.mjs`;
 
   /**
@@ -583,7 +628,8 @@ export function findExternalComponentDoc(docsDir, name) {
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const cached = fsCache ? cachedDirents(fsCache, dirPath) : null;
+    const entries = cached ?? fs.readdirSync(dirPath, {withFileTypes: true});
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -682,22 +728,31 @@ export function discoverIntegrationComponents(integration) {
  *
  * @param {{components?: string}} integration
  * @param {string} name bare component name (no `XDS`/`Astryx` prefix)
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
  * @returns {string|null}
  */
-export function findIntegrationComponentDoc(integration, name) {
+export function findIntegrationComponentDoc(integration, name, fsCache = null) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !fs.existsSync(componentsDir)) return null;
+  if (!componentsDir) return null;
+  const dirExists = fsCache
+    ? cachedExists(fsCache, componentsDir)
+    : fs.existsSync(componentsDir);
+  if (!dirExists) return null;
 
   /**
    * @param {string} dirPath
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const cached = fsCache ? cachedDirents(fsCache, dirPath) : null;
+    const entries = cached ?? fs.readdirSync(dirPath, {withFileTypes: true});
     // Exact same-stem match (precedence order) first in this dir.
     for (const suffix of INTEGRATION_DOC_SUFFIXES) {
       const candidate = path.join(dirPath, `${name}${suffix}`);
-      if (fs.existsSync(candidate)) return candidate;
+      const candidateExists = fsCache
+        ? cachedExists(fsCache, candidate)
+        : fs.existsSync(candidate);
+      if (candidateExists) return candidate;
     }
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
@@ -719,10 +774,15 @@ export function findIntegrationComponentDoc(integration, name) {
  *
  * @param {{components?: string}} integration
  * @param {string} name bare component name
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
  * @returns {string|null}
  */
-export function findIntegrationComponentSource(integration, name) {
-  const docPath = findIntegrationComponentDoc(integration, name);
+export function findIntegrationComponentSource(
+  integration,
+  name,
+  fsCache = null,
+) {
+  const docPath = findIntegrationComponentDoc(integration, name, fsCache);
   if (!docPath) return null;
   return integrationSourceForDoc(docPath);
 }
@@ -774,6 +834,137 @@ export function discoverOwnedComponents(coreDir, loadedIntegrations = []) {
   }
 
   return records;
+}
+
+/**
+ * Build the set of owner packages that provide a component with this name
+ * across core + every loaded integration. This is the one exact resolver
+ * both `astryx component <Name>` (via the adapter) and the template
+ * skeleton/show filter use: a core owner needs a resolving doc
+ * (`findComponentReadme`, including the source-walk-up fallback), an
+ * integration owner needs a same-stem doc. Zero owners falls through to the
+ * back-compat external lookup in the caller; more than one owner is
+ * ambiguous without an explicit `--package`.
+ *
+ * @param {string} coreDir
+ * @param {string} dirName - bare component name (no `XDS` prefix)
+ * @param {Array<{name: string, components?: string, issuesUrl?: string}>} loadedIntegrations
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional listing memo; callers resolving many names pass one to bound total work.
+ * @returns {Array<{package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, integration: {name: string, components?: string, issuesUrl?: string}|null}>}
+ */
+export function resolveComponentOwners(
+  coreDir,
+  dirName,
+  loadedIntegrations,
+  fsCache = null,
+) {
+  const coreDocPath = findComponentReadme(coreDir, dirName, fsCache);
+  /** @type {Array<{package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, integration: {name: string, components?: string, issuesUrl?: string}|null}>} */
+  const owners = [];
+  if (coreDocPath) {
+    owners.push({
+      package: CORE_PACKAGE,
+      docPath: coreDocPath,
+      sourcePath: findComponentSource(coreDir, dirName, fsCache),
+      issuesUrl: undefined,
+      integration: null,
+    });
+  }
+  for (const integration of loadedIntegrations) {
+    const docPath = findIntegrationComponentDoc(integration, dirName, fsCache);
+    if (!docPath) continue;
+    owners.push({
+      package: integration.name,
+      docPath,
+      sourcePath: findIntegrationComponentSource(integration, dirName, fsCache),
+      issuesUrl: integration.issuesUrl,
+      integration,
+    });
+  }
+  return owners;
+}
+
+/**
+ * Whether a component name resolves through the component subsystem,
+ * mirroring the exact (non-fuzzy) path of `astryx component <Name>`: exactly
+ * one owner (core doc, loaded integration doc, or back-compat external doc;
+ * several owners without `--package` is the ambiguity error, so such names
+ * are not advertised).
+ *
+ * This is the predicate the template layer filters skeleton/show
+ * `components` lists against, one selected-template name at a time, so a
+ * cold `template --show/--skeleton` never imports all 202 core docs the way
+ * a whole-index build does (#4677). Pure filesystem checks (no doc
+ * imports); results are memoized per workspace for in-process repeats, and
+ * listings are memoized per workspace so one lookup costs roughly one
+ * directory walk no matter how many names it checks.
+ *
+ * @param {string} name component name (the `XDS` prefix is stripped, as in `astryx component`)
+ * @param {{coreDir: string, loadedIntegrations?: Array<{name: string, components?: string, issuesUrl?: string}>, cwd?: string}} ctx resolution context; `cwd` is only used for back-compat externals
+ * @returns {boolean} true iff the name resolves exactly and unambiguously
+ */
+export function isResolvableComponentName(
+  name,
+  {coreDir, loadedIntegrations = [], cwd = process.cwd()},
+) {
+  const dirName = name.replace(/^XDS/, '');
+  // Keyed by owner roots, not just package names: one process can query two
+  // projects whose same-named integrations — or legacy externals found from
+  // different cwds — resolve from different roots.
+  const memoKey = [
+    coreDir,
+    dirName,
+    loadedIntegrations
+      .map(i => `${i.name}:${i.components ?? ''}`)
+      .sort()
+      .join(','),
+    externalPackagesFor(cwd)
+      .map(e => `${e.name}:${e.docsDir}`)
+      .sort()
+      .join(','),
+  ].join('|');
+  const cached = resolvableNameCache.get(memoKey);
+  if (cached !== undefined) return cached;
+  const fsCache = fsCacheFor(coreDir);
+  const owners = resolveComponentOwners(
+    coreDir,
+    dirName,
+    loadedIntegrations,
+    fsCache,
+  );
+  let resolvable = owners.length === 1;
+  if (!resolvable && owners.length === 0) {
+    const externalPkgs = externalPackagesFor(cwd).filter(
+      ext => !loadedIntegrations.some(i => i.name === ext.name),
+    );
+    for (const ext of externalPkgs) {
+      if (findExternalComponentDoc(ext.docsDir, dirName, fsCache)) {
+        resolvable = true;
+        break;
+      }
+    }
+  }
+  resolvableNameCache.set(memoKey, resolvable);
+  return resolvable;
+}
+
+/** @type {Map<string, boolean>} per-workspace exact-resolution cache */
+const resolvableNameCache = new Map();
+
+/** @type {Map<string, Array<{name: string, category: string, docsDir: string, blocksDir: string|null}>>} back-compat external packages per workspace */
+const externalPackagesCache = new Map();
+
+/**
+ * @param {string} cwd
+ * @returns {Array<{name: string, category: string, docsDir: string, blocksDir: string|null}>}
+ */
+function externalPackagesFor(cwd) {
+  let hit = externalPackagesCache.get(cwd);
+  if (!hit) {
+    hit = discoverExternalPackages(cwd);
+    externalPackagesCache.set(cwd, hit);
+  }
+  return hit;
 }
 
 // ── Legacy markdown-parsing functions ────────────────────────────────

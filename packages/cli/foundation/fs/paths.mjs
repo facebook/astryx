@@ -174,10 +174,22 @@ export function listComponents(coreDir) {
  *
  * @param {string} targetPath - Path to probe; must be inside `rootDir`.
  * @param {string} rootDir - Already-real path; it and its parents are not checked.
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}|null} [fsCache] - Optional memo from `createFsCache()`; callers resolving many names against one workspace pass it to bound total filesystem work.
  * @returns {boolean}
  */
-export function existsCaseExact(targetPath, rootDir) {
-  if (!fs.existsSync(targetPath)) return false;
+export function existsCaseExact(targetPath, rootDir, fsCache = null) {
+  /** @type {(p: string) => boolean} */
+  const exists = fsCache
+    ? p => cachedExists(fsCache, p)
+    : p => fs.existsSync(p);
+  /** @type {(d: string) => string[]|null} */
+  const readdir = fsCache
+    ? d => {
+        const hit = cachedDirents(fsCache, d);
+        return hit === null ? null : hit.map(e => e.name);
+      }
+    : d => safeReaddirNames(d);
+  if (!exists(targetPath)) return false;
 
   const rel = path.relative(rootDir, targetPath);
   if (rel === '') return true;
@@ -185,14 +197,73 @@ export function existsCaseExact(targetPath, rootDir) {
 
   let dir = rootDir;
   for (const segment of rel.split(path.sep)) {
-    let entries;
-    try {
-      entries = fs.readdirSync(dir);
-    } catch {
-      return false;
-    }
-    if (!entries.includes(segment)) return false;
+    const entries = readdir(dir);
+    if (entries === null || !entries.includes(segment)) return false;
     dir = path.join(dir, segment);
   }
   return true;
+}
+
+/**
+ * Create a process-lifetime memo for filesystem listings. Resolution paths
+ * that probe many names against one workspace (e.g. template component
+ * filtering) pass one cache through every probe so a cold lookup costs
+ * roughly one directory walk instead of one walk per name. Only callers
+ * that opt in are affected; every resolver keeps uncached behavior by
+ * default. Entries reflect first observation (short-lived CLI/test
+ * processes never mutate the tree mid-run).
+ *
+ * @returns {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}}
+ */
+export function createFsCache() {
+  return {exists: new Map(), dirents: new Map()};
+}
+
+/**
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}} fsCache
+ * @param {string} p
+ * @returns {boolean}
+ */
+export function cachedExists(fsCache, p) {
+  let hit = fsCache.exists.get(p);
+  if (hit === undefined) {
+    hit = fs.existsSync(p);
+    fsCache.exists.set(p, hit);
+  }
+  return hit;
+}
+
+/**
+ * @param {{exists: Map<string, boolean>, dirents: Map<string, import('node:fs').Dirent[]|null>}} fsCache
+ * @param {string} d
+ * @returns {import('node:fs').Dirent[]|null} entries, or null when the directory cannot be read
+ */
+export function cachedDirents(fsCache, d) {
+  let hit = fsCache.dirents.get(d);
+  if (hit === undefined) {
+    hit = safeReaddirEntries(d);
+    fsCache.dirents.set(d, hit);
+  }
+  return hit;
+}
+
+/**
+ * @param {string} d
+ * @returns {import('node:fs').Dirent[]|null} entries, or null when the directory cannot be read
+ */
+function safeReaddirEntries(d) {
+  try {
+    return fs.readdirSync(d, {withFileTypes: true});
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} d
+ * @returns {string[]|null} entry names, or null when the directory cannot be read
+ */
+function safeReaddirNames(d) {
+  const hit = safeReaddirEntries(d);
+  return hit === null ? null : hit.map(e => e.name);
 }

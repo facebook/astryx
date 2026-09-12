@@ -26,8 +26,7 @@ import {
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
-  findIntegrationComponentDoc,
-  findIntegrationComponentSource,
+  resolveComponentOwners,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
@@ -157,36 +156,18 @@ function resolveExternalPackage(packageName, cwd) {
  * Build the set of OWNER packages that provide a component with this name
  * across core + every loaded integration. This is what lets the CLI
  * disambiguate by package and expose the owner's source + issuesUrl.
+ * Single shared implementation lives in foundation/discovery (same import
+ * direction as the other discovery helpers below); the template
+ * skeleton/show filter resolves through it too.
  * @param {string} coreDir
  * @param {string} dirName - bare component name (no `XDS` prefix)
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @returns {ComponentOwner[]}
  */
 export function resolveOwners(coreDir, dirName, loadedIntegrations) {
-  const coreDocPath = findComponentReadme(coreDir, dirName);
-  /** @type {ComponentOwner[]} */
-  const owners = [];
-  if (coreDocPath) {
-    owners.push({
-      package: CORE_PACKAGE,
-      docPath: coreDocPath,
-      sourcePath: findComponentSource(coreDir, dirName),
-      issuesUrl: undefined,
-      integration: null,
-    });
-  }
-  for (const integration of loadedIntegrations) {
-    const docPath = findIntegrationComponentDoc(integration, dirName);
-    if (!docPath) continue;
-    owners.push({
-      package: integration.name,
-      docPath,
-      sourcePath: findIntegrationComponentSource(integration, dirName),
-      issuesUrl: integration.issuesUrl,
-      integration,
-    });
-  }
-  return owners;
+  return /** @type {ComponentOwner[]} */ (
+    resolveComponentOwners(coreDir, dirName, loadedIntegrations)
+  );
 }
 
 /**

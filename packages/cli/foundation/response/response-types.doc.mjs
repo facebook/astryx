@@ -158,12 +158,12 @@ export const doc = {
     {
       value: 'template.show',
       description:
-        "The resolved template's raw source plus its description, kind, and the component names it composes.",
+        "The resolved template's raw source plus its description, kind, and the template's resolvable components (every listed name resolves through `astryx component <Name>`).",
     },
     {
       value: 'template.skeleton',
       description:
-        "A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.",
+        "A layout skeleton (structural tags with spatial annotations) plus the template's description and its resolvable components (every listed name resolves through `astryx component <Name>`).",
     },
     {
       value: 'template.copy',
