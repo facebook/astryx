@@ -72,6 +72,17 @@ describe('Kbd', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument();
   });
 
+  it('normalises the "esc" and "return" aliases useHotkeys accepts (#5403)', () => {
+    const {unmount} = render(<Kbd keys="esc" />);
+    expect(screen.getByText('Esc')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Escape');
+    unmount();
+
+    render(<Kbd keys="return" />);
+    expect(screen.getByText('↵')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Enter');
+  });
+
   it('exposes a spoken accessible name and hides the glyphs (obs-1)', () => {
     render(<Kbd keys="mod+shift+k" />);
     // The wrapper carries a screen-reader name built from spoken key labels
