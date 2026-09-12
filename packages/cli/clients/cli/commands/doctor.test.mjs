@@ -184,7 +184,10 @@ describe('doctor — individual checks', () => {
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
-      fs.writeFileSync(configPath, 'throw new Error("boom");\nexport default {};');
+      fs.writeFileSync(
+        configPath,
+        'throw new Error("boom");\nexport default {};',
+      );
       const res = await checkConfig({cwd: fixtureDir, configPath});
       expect(res.status).toBe('fail');
       expect(res.fix).toBeTruthy();
@@ -214,7 +217,10 @@ describe('doctor — individual checks', () => {
   });
 
   it('agent-docs: WARN when docs exist without XDS markers', () => {
-    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# AGENTS\nno markers here');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '# AGENTS\nno markers here',
+    );
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('warn');
   });
@@ -248,12 +254,16 @@ describe('doctor — individual checks', () => {
   });
 
   it('peer-deps: fix names a scoped missing peer (no empty install command)', () => {
-    const coreDir = installCore('0.0.14', {'@stylexjs/stylex': '^0.19.0'});
+    // Use a fixture name that no workspace package provides: isolated linking
+    // must not make this missing-peer assertion depend on the repo tool graph.
+    const coreDir = installCore('0.0.14', {
+      '@acme/missing-peer': '^1.2.3',
+    });
     const res = checkPeerDeps({cwd: tmpDir, coreDir});
     expect(res.status).toBe('warn');
     // The scope must survive version-stripping — `split('@')[0]` used to drop it,
     // leaving a bare `npm install ` with no package name.
-    expect(res.fix).toContain('npm install @stylexjs/stylex');
+    expect(res.fix).toContain('npm install @acme/missing-peer');
     expect(res.fix).not.toMatch(/npm install\s*`/);
   });
 
