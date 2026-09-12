@@ -332,7 +332,13 @@ export function SelectableCard({
   // handling, so we deliberately do not toggle on Space here (would double).
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
-      if (!isDisabled && event.key === 'Enter') {
+      if (isDisabled) {
+        if (event.key === ' ' || event.key === 'Enter') {
+          event.preventDefault();
+        }
+        return;
+      }
+      if (event.key === 'Enter') {
         event.preventDefault();
         onChange(!isSelected);
       }
@@ -397,8 +403,13 @@ export function SelectableCard({
         type="checkbox"
         checked={isSelected}
         aria-label={label}
-        disabled={isDisabled}
-        onChange={() => onChange(!isSelected)}
+        aria-disabled={isDisabled ? 'true' : undefined}
+        onChange={() => {
+          if (isDisabled) {
+            return;
+          }
+          onChange(!isSelected);
+        }}
         onKeyDown={handleKeyDown}
         {...stylex.props(styles.srOnly)}
       />
