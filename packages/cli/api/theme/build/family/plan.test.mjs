@@ -66,6 +66,45 @@ describe('createMemberPlan', () => {
     });
   });
 
+  it('includes JavaScript-only data and cyclic registry identity in the plan digest', () => {
+    const baseline = input();
+    const changed = input({
+      resolved: {...baseline.resolved, icons: {close: 'changed'}},
+    });
+    expect(createMemberPlan(changed).planDigest).not.toBe(
+      createMemberPlan(baseline).planDigest,
+    );
+
+    const cyclic = {};
+    cyclic.self = cyclic;
+    expect(() =>
+      createMemberPlan(
+        input({resolved: {...baseline.resolved, icons: cyclic}}),
+      ),
+    ).not.toThrow();
+  });
+
+  it('keeps color-scheme activation scoped to the matching family member', () => {
+    const plan = createMemberPlan(
+      input({
+        colorScheme:
+          ':root { color-scheme: light dark; }\nhtml[data-theme="light"] { color-scheme: light; }\nhtml[data-theme="dark"] { color-scheme: dark; }',
+      }),
+    );
+    const colorScheme = plan.sections.find(
+      section => section.kind === 'color-scheme',
+    );
+    expect(colorScheme.css).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({selector: ':scope', scope: 'member'}),
+        expect.objectContaining({
+          selector: expect.stringContaining('html[data-theme="light"]'),
+          scope: 'member',
+        }),
+      ]),
+    );
+  });
+
   it('separates token declarations from complete component lowering', () => {
     const plan = createMemberPlan(
       input({

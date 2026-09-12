@@ -49,6 +49,13 @@ describe('theme build family CLI', () => {
     expect(missing.status).toBe(1);
     expect(missing.stderr).toMatch(/--family-key.*required/i);
 
+    const oneMember = await runCli(
+      ['theme', 'build', '--family', 'base.mjs', '--family-key', 'family'],
+      cwd,
+    );
+    expect(oneMember.status).toBe(1);
+    expect(oneMember.stderr).toMatch(/base and at least one child/i);
+
     const outside = await runCli(
       ['theme', 'build', 'base.mjs', '--family-key', 'family'],
       cwd,
@@ -67,14 +74,7 @@ describe('theme build family CLI', () => {
 
   it('refuses positional files, watch, and out while composing with check', async () => {
     const positional = await runCli(
-      [
-        'theme',
-        'build',
-        'base.mjs',
-        ...family,
-        '--family-key',
-        'family',
-      ],
+      ['theme', 'build', 'base.mjs', ...family, '--family-key', 'family'],
       cwd,
     );
     expect(positional.status).toBe(1);
@@ -90,7 +90,16 @@ describe('theme build family CLI', () => {
     }
 
     const built = await runCli(
-      ['--json', 'theme', 'build', ...family, '--family-key', 'family'],
+      [
+        '--json',
+        'theme',
+        'build',
+        ...family,
+        '--family-key',
+        'family',
+        '--icons-specifier',
+        '@example/icons',
+      ],
       cwd,
     );
     expect(built.status).toBe(0);
@@ -107,6 +116,8 @@ describe('theme build family CLI', () => {
         ...family,
         '--family-key',
         'family',
+        '--icons-specifier',
+        '@example/icons',
         '--check',
       ],
       cwd,
@@ -115,6 +126,34 @@ describe('theme build family CLI', () => {
     expect(JSON.parse(checked.stdout)).toMatchObject({
       type: 'theme.build.check',
       data: {name: 'family', upToDate: true},
+    });
+
+    fs.writeFileSync(
+      path.join(cwd, 'family', 'current', 'family.css'),
+      'stale',
+    );
+    const stale = await runCli(
+      [
+        '--json',
+        'theme',
+        'build',
+        ...family,
+        '--family-key',
+        'family',
+        '--icons-specifier',
+        '@example/icons',
+        '--check',
+      ],
+      cwd,
+    );
+    expect(stale.status).toBe(1);
+    expect(JSON.parse(stale.stdout)).toMatchObject({
+      type: 'theme.build.check',
+      data: {
+        name: 'family',
+        upToDate: false,
+        stale: [expect.objectContaining({reason: 'outdated'})],
+      },
     });
   }, 120_000);
 });

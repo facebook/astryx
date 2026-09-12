@@ -19,6 +19,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {pathToFileURL} from 'node:url';
 import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
@@ -118,6 +119,32 @@ describe('themeBuild() — receipt', () => {
     expect(built).toContain('__localTokenOwners: {');
     expect(built).toContain('__localTokenLineage: ["local-theme"]');
   });
+
+  it.each([
+    ['default', `import icons from './icons.mjs';`],
+    ['namespace', `import * as icons from './icons.mjs';`],
+  ])(
+    'keeps the standalone %s icon-import behavior loadable',
+    async (kind, iconImport) => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'icons.mjs'),
+        `export const close='close'; export default {close};\n`,
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'registry-theme.mjs'),
+        `${iconImport}\nexport default {name:'registry-theme', tokens:{'--color-accent':'red'}, icons};\n`,
+      );
+
+      await themeBuild('registry-theme.mjs', {}, {cwd: tmpDir});
+      const builtPath = path.join(tmpDir, 'registry-theme.js');
+      const source = fs.readFileSync(builtPath, 'utf8');
+      expect(source).not.toMatch(/import\s*\{\s*icons\s*\}/);
+      const built = await import(
+        `${pathToFileURL(builtPath).href}?kind=${kind}-${Date.now()}`
+      );
+      expect(built.registryThemeTheme.icons).toBeUndefined();
+    },
+  );
 
   it.each(['VAR', 'vAr'])(
     'keeps unenrolled prefix-like references using %s() external',

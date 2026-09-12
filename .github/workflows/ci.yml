@@ -333,19 +333,24 @@ jobs:
   # registry contract always report, so this asserts success rather than
   # tolerating a skip.
   test:
-    needs: [test-ui, test-node, registry-contract]
+    needs: [test-ui, test-node, registry-contract, theme-layers]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Assert every test gate succeeded
         run: |
-          echo "test-ui:          ${{ needs.test-ui.result }}"
-          echo "test-node:        ${{ needs.test-node.result }}"
+          echo "test-ui:           ${{ needs.test-ui.result }}"
+          echo "test-node:         ${{ needs.test-node.result }}"
           echo "registry-contract: ${{ needs.registry-contract.result }}"
+          echo "theme-layers:      ${{ needs.theme-layers.result }}"
           [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
           [ "${{ needs.test-node.result }}" = "success" ] || exit 1
           [ "${{ needs.registry-contract.result }}" = "success" ] || exit 1
+          case "${{ needs.theme-layers.result }}" in
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
@@ -767,6 +772,9 @@ jobs:
 
       - name: Install Playwright
         run: npx playwright install chromium
+
+      - name: Build Core dependency for the family fixture
+        run: pnpm -F @astryxdesign/core build
 
       - name: Run theme family artifact browser contract
         run: pnpm test:theme-family-browser

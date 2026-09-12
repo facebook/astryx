@@ -16,9 +16,14 @@ export const oceanDeepTheme = defineTheme({
   tokens: {
     '--color-accent': '#023e8a',
     '--color-background-surface': '#081c2b',
+    '--color-text-primary': ['#caf0f8', '#ffffff'],
+    '--radius-container': '24px',
   },
   components: {
-    button: {base: {borderWidth: '2px'}},
+    button: {
+      base: {borderWidth: '2px'},
+      'variant:tidal': {borderStyle: 'dashed'},
+    },
   },
   icons: themeAssets,
   indicators: themeIndicators,

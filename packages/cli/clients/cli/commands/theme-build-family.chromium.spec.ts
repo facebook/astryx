@@ -19,7 +19,7 @@ const members = [
   'ocean-calm.mjs',
 ];
 let project: string;
-let server: http.Server;
+let server: http.Server | undefined;
 let baseURL: string;
 
 declare global {
@@ -53,7 +53,11 @@ test.beforeAll(async () => {
   fs.cpSync(
     path.join(project, 'ocean-family'),
     path.join(project, 'relocated-family'),
-    {recursive: true, dereference: false},
+    {
+      recursive: true,
+      dereference: false,
+      verbatimSymlinks: true,
+    },
   );
   fs.writeFileSync(
     path.join(project, 'relocated-main.mjs'),
@@ -72,8 +76,12 @@ test.beforeAll(async () => {
     path.join(project, 'rejected-wrapper.css'),
     `@import './missing-parent.css';\n@scope ([data-astryx-theme="ocean-deep"]) { :scope { --child-only: applied; } }\n`,
   );
+  fs.writeFileSync(
+    path.join(project, 'blank.html'),
+    '<!doctype html><html><head></head><body></body></html>',
+  );
 
-  server = http.createServer((request, response) => {
+  const activeServer = http.createServer((request, response) => {
     const pathname = decodeURIComponent(
       new URL(request.url ?? '/', 'http://example.test').pathname,
     );
@@ -95,8 +103,11 @@ test.beforeAll(async () => {
     });
     fs.createReadStream(file).pipe(response);
   });
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-  const address = server.address();
+  server = activeServer;
+  await new Promise<void>(resolve =>
+    activeServer.listen(0, '127.0.0.1', resolve),
+  );
+  const address = activeServer.address();
   if (!address || typeof address === 'string') {
     throw new Error('No server port.');
   }
@@ -104,9 +115,12 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await new Promise<void>((resolve, reject) =>
-    server.close(error => (error ? reject(error) : resolve())),
-  );
+  const activeServer = server;
+  if (activeServer) {
+    await new Promise<void>((resolve, reject) =>
+      activeServer.close(error => (error ? reject(error) : resolve())),
+    );
+  }
   fs.rmSync(project, {recursive: true, force: true});
 });
 
@@ -115,7 +129,7 @@ test('native family CSS is correct on first paint and every attribute-only switc
 }, testInfo) => {
   await page.setViewportSize({width: 600, height: 720});
   const errors: string[] = [];
-  const familyCSSRequests: string[] = [];
+  const stylesheetRequests: string[] = [];
   page.on('console', message => {
     if (message.type() === 'error') {
       errors.push(message.text());
@@ -123,8 +137,8 @@ test('native family CSS is correct on first paint and every attribute-only switc
   });
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => {
-    if (request.url().endsWith('/ocean-family.css')) {
-      familyCSSRequests.push(request.url());
+    if (request.resourceType() === 'stylesheet') {
+      stylesheetRequests.push(request.url());
     }
   });
   await page.addInitScript(() => {
@@ -140,7 +154,7 @@ test('native family CSS is correct on first paint and every attribute-only switc
 
   await page.goto(`${baseURL}/index.html`, {waitUntil: 'networkidle'});
   expect(errors).toEqual([]);
-  expect(familyCSSRequests).toHaveLength(1);
+  expect(stylesheetRequests).toHaveLength(1);
   expect(await page.evaluate(() => window.__firstPaintAccent)).toBe('#0077b6');
 
   const switchable = page.locator('[data-member="switchable"]');
@@ -153,6 +167,12 @@ test('native family CSS is correct on first paint and every attribute-only switc
   expect(await accent(switchable)).toBe('#0077b6');
   expect(await accent(sibling)).toBe('#023e8a');
   expect(await accent(nested)).toBe('#0077b6');
+  expect(
+    await sibling.evaluate(element => getComputedStyle(element).colorScheme),
+  ).toBe('light dark');
+  expect(
+    await nested.evaluate(element => getComputedStyle(element).colorScheme),
+  ).not.toBe('light dark');
 
   const siblingButton = sibling.locator('button');
   expect(
@@ -165,6 +185,11 @@ test('native family CSS is correct on first paint and every attribute-only switc
       element => getComputedStyle(element).paddingLeft,
     ),
   ).toBe('20px');
+  expect(
+    await sibling.evaluate(element =>
+      getComputedStyle(element).getPropertyValue('--radius-container').trim(),
+    ),
+  ).toBe('20px');
   await siblingButton.hover();
   expect(
     await siblingButton.evaluate(
@@ -172,10 +197,10 @@ test('native family CSS is correct on first paint and every attribute-only switc
     ),
   ).toBe('rgb(2, 62, 138)');
 
-  const beforeSwitchRequests = familyCSSRequests.length;
+  const beforeSwitchRequests = stylesheetRequests.length;
   await page.locator('select').selectOption('ocean-deep');
   await expect.poll(() => accent(switchable)).toBe('#023e8a');
-  expect(familyCSSRequests).toHaveLength(beforeSwitchRequests);
+  expect(stylesheetRequests).toHaveLength(beforeSwitchRequests);
   const samples = await page.evaluate(async () => {
     const root = document.querySelector<HTMLElement>('[data-demo-root]');
     const card = document.querySelector<HTMLElement>(
@@ -197,7 +222,7 @@ test('native family CSS is correct on first paint and every attribute-only switc
     return values;
   });
   expect(new Set(samples)).toEqual(new Set(['#020b12']));
-  expect(familyCSSRequests).toHaveLength(beforeSwitchRequests);
+  expect(stylesheetRequests).toHaveLength(beforeSwitchRequests);
 
   await page
     .locator('[data-demo-root]')
@@ -217,10 +242,19 @@ test('native family CSS is correct on first paint and every attribute-only switc
     fullPage: true,
   });
 
-  familyCSSRequests.length = 0;
+  const relocatedCurrent = path.join(project, 'relocated-family', 'current');
+  expect(path.isAbsolute(fs.readlinkSync(relocatedCurrent))).toBe(false);
+  expect(fs.realpathSync(relocatedCurrent)).toContain(
+    path.join(project, 'relocated-family', 'generations'),
+  );
+  fs.rmSync(path.join(project, 'ocean-family'), {
+    recursive: true,
+    force: true,
+  });
+  stylesheetRequests.length = 0;
   await page.goto(`${baseURL}/relocated.html`, {waitUntil: 'networkidle'});
   expect(errors).toEqual([]);
-  expect(familyCSSRequests).toHaveLength(1);
+  expect(stylesheetRequests).toHaveLength(1);
   const relocated = page.locator('[data-member="switchable"]');
   expect(await accent(relocated)).toBe('#0077b6');
 });
@@ -228,7 +262,7 @@ test('native family CSS is correct on first paint and every attribute-only switc
 test('the rejected per-member wrapper exposes partial CSS when its parent is missing', async ({
   page,
 }) => {
-  await page.goto(`${baseURL}/index.html`, {waitUntil: 'networkidle'});
+  await page.goto(`${baseURL}/blank.html`, {waitUntil: 'networkidle'});
   const result = await page.evaluate(async href => {
     document.head
       .querySelectorAll('link[rel="stylesheet"]')

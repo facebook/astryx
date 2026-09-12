@@ -577,7 +577,12 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   const __onDark = resolveOnMedia('dark', input.onDark, base?.__onDark);
   const __onLight = resolveOnMedia('light', input.onLight, base?.__onLight);
 
-  const localTokenContract = resolveLocalTokenContract(input, base, tokens);
+  const localTokenContract = resolveLocalTokenContract(
+    input,
+    base,
+    tokens,
+    new Set(Object.keys(tokenDefaults)),
+  );
 
   // Adaptations inherit their breakpoint map and ordered rules. Every rule is
   // re-resolved against this theme's effective root axes, so a child can change

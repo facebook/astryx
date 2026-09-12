@@ -38,6 +38,7 @@
  */
 
 import * as fs from 'node:fs';
+import {createRequire} from 'node:module';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
@@ -1341,15 +1342,19 @@ function extractThemeDefinitionLegacy(filePath) {
  *
  * @param {string} filePath
  * @param {'icons'|'indicators'} field
- * @returns {{exportName: string, sourceLocalName: string, importedName: string, importKind: 'named'|'default'|'namespace', importPath: string} | null}
+ * @returns {{exportName: string, sourceLocalName: string, importedName: string, importKind: 'named'|'default'|'namespace', importPath: string, memberAccess: string} | null}
  */
 function extractRegistryInfo(filePath, field) {
   const content = fs.readFileSync(filePath, 'utf8');
   const fieldMatch = content.match(
-    new RegExp(`\\b${field}\\s*:\\s*([A-Za-z_$][A-Za-z0-9_$]*)`),
+    new RegExp(
+      `\\b${field}\\s*:\\s*([A-Za-z_$][A-Za-z0-9_$]*(?:\\s*\\.\\s*[A-Za-z_$][A-Za-z0-9_$]*)*)`,
+    ),
   );
   if (!fieldMatch) return null;
-  const sourceLocalName = fieldMatch[1];
+  const expression = fieldMatch[1].replaceAll(/\s/g, '');
+  const [sourceLocalName, ...memberParts] = expression.split('.');
+  const memberAccess = memberParts.map(part => `.${part}`).join('');
 
   const imports = content.matchAll(
     /import\s+([\s\S]*?)\s+from\s*['"]([^'"]+)['"]\s*;?/g,
@@ -1372,6 +1377,7 @@ function extractRegistryInfo(filePath, field) {
           importedName,
           importKind: 'named',
           importPath,
+          memberAccess,
         };
       }
     }
@@ -1383,6 +1389,7 @@ function extractRegistryInfo(filePath, field) {
         importedName: '*',
         importKind: 'namespace',
         importPath,
+        memberAccess,
       };
     }
     const defaultName = clause.split(',')[0].trim();
@@ -1396,15 +1403,47 @@ function extractRegistryInfo(filePath, field) {
         importedName: 'default',
         importKind: 'default',
         importPath,
+        memberAccess,
       };
     }
   }
   return null;
 }
 
+/**
+ * Prove a textual import descriptor against the exact evaluated field value.
+ * A comment, call, conditional, or unrelated earlier property can resemble the
+ * source pattern; those cases fall back to bundling the selected source member.
+ *
+ * @param {string} filePath
+ * @param {ReturnType<typeof extractRegistryInfo>} info
+ * @param {unknown} expected
+ * @param {ReturnType<typeof createJiti>} loader
+ */
+function verifyRegistryInfo(filePath, info, expected, loader) {
+  if (!info) return null;
+  try {
+    const resolved = createRequire(filePath).resolve(info.importPath);
+    const imported = loader(resolved);
+    let value =
+      info.importKind === 'namespace'
+        ? imported
+        : info.importedName === 'default'
+          ? (imported.default ?? imported)
+          : imported[info.importedName];
+    for (const part of info.memberAccess.split('.').filter(Boolean)) {
+      value = value?.[part];
+    }
+    return value === expected ? info : null;
+  } catch {
+    return null;
+  }
+}
+
 /** @param {string} filePath */
 function extractIconInfo(filePath) {
-  return extractRegistryInfo(filePath, 'icons');
+  const info = extractRegistryInfo(filePath, 'icons');
+  return info?.importKind === 'named' ? info : null;
 }
 
 /**
@@ -2280,8 +2319,25 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
+  const extractedIconInfo = extractRegistryInfo(filePath, 'icons');
+  const extractedIndicatorInfo = extractRegistryInfo(filePath, 'indicators');
+  const familyIconInfo = familyContext?.loader
+    ? verifyRegistryInfo(
+        filePath,
+        extractedIconInfo,
+        rawInput.icons,
+        familyContext.loader,
+      )
+    : extractedIconInfo;
+  const indicatorInfo = familyContext?.loader
+    ? verifyRegistryInfo(
+        filePath,
+        extractedIndicatorInfo,
+        rawInput.indicators,
+        familyContext.loader,
+      )
+    : extractedIndicatorInfo;
   const iconInfo = extractIconInfo(filePath);
-  const indicatorInfo = extractRegistryInfo(filePath, 'indicators');
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -2335,7 +2391,7 @@ export async function themeBuild(
         rawInput,
         lineageObserved: observedRawInput !== undefined,
         compilerSections,
-        iconInfo,
+        iconInfo: familyIconInfo,
         indicatorInfo,
         typeAugmentations: variantDecl ?? '',
         versions,
@@ -2569,11 +2625,58 @@ function assertFamilyRootAvailable(root) {
     }
   }
   const generationsPath = path.join(root, 'generations');
-  if (
-    fs.existsSync(generationsPath) &&
-    !fs.lstatSync(generationsPath).isDirectory()
-  ) {
+  const generationsStat = fs.lstatSync(generationsPath, {
+    throwIfNoEntry: false,
+  });
+  if (generationsStat && !generationsStat.isDirectory()) {
     collision(generationsPath);
+  }
+  if (generationsStat) {
+    const artifactKey = path.basename(root);
+    for (const entry of fs.readdirSync(generationsPath)) {
+      const entryPath = path.join(generationsPath, entry);
+      const stat = fs.lstatSync(entryPath);
+      if (!stat.isDirectory()) collision(entryPath);
+      if (/^\.gen-[a-f0-9]{20}\.staging-\d+-\d+$/.test(entry)) {
+        const stagedEntries = fs.readdirSync(entryPath);
+        if (stagedEntries.length === 0) continue;
+        const stagedManifest = path.join(
+          entryPath,
+          `${artifactKey}.manifest.json`,
+        );
+        try {
+          const manifest = JSON.parse(fs.readFileSync(stagedManifest, 'utf8'));
+          if (
+            manifest?.schemaVersion === 1 &&
+            manifest?.artifactKey === artifactKey &&
+            manifest?.artifacts?.manifest === `${artifactKey}.manifest.json`
+          ) {
+            continue;
+          }
+        } catch {
+          // Fall through to the collision error below. Unknown staged bytes are
+          // never treated as family-owned merely because their name resembles
+          // an internal temporary path.
+        }
+        collision(entryPath);
+      }
+      if (!/^gen-[a-f0-9]{20}$/.test(entry)) collision(entryPath);
+      const manifestPath = path.join(entryPath, `${artifactKey}.manifest.json`);
+      let manifest;
+      try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      } catch {
+        collision(entryPath);
+      }
+      if (
+        manifest?.schemaVersion !== 1 ||
+        manifest?.artifactKey !== artifactKey ||
+        manifest?.generationId !== entry ||
+        manifest?.artifacts?.manifest !== `${artifactKey}.manifest.json`
+      ) {
+        collision(entryPath);
+      }
+    }
   }
   const journalPath = path.join(root, '.journal.json');
   if (fs.existsSync(journalPath) && !fs.lstatSync(journalPath).isFile()) {
@@ -2588,7 +2691,15 @@ function assertFamilyRootAvailable(root) {
     collision(lockPath);
   }
 
-  const allowed = new Set(['current', 'generations', '.lock', '.journal.json']);
+  const allowed = new Set([
+    'current',
+    'generations',
+    '.lock',
+    '.journal.json',
+    '.journal.tmp',
+    '.current.tmp',
+    '.probe',
+  ]);
   const unrelated = fs.readdirSync(root).filter(entry => !allowed.has(entry));
   if (unrelated.length > 0) {
     throw new AstryxError(
@@ -2808,7 +2919,9 @@ export async function themeBuildFamily(
   }
   const command = `astryx theme build --family ${graph.order
     .map(node => node.sourceId)
-    .join(' ')} --family-key ${options.familyKey}`;
+    .join(' ')} --family-key ${options.familyKey}${
+    options.iconsSpecifier ? ` --icons-specifier ${options.iconsSpecifier}` : ''
+  }`;
   const versions = prepared[0].versions;
   const css =
     generatedHeader(

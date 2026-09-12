@@ -19,6 +19,7 @@ const SERIALIZED_FIELDS = [
   '__onDark',
   '__onLight',
   '__adaptations',
+  '__adaptationRules',
   '__axes',
 ];
 

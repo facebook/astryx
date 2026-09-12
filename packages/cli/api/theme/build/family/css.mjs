@@ -3,7 +3,7 @@
 /**
  * @file css.mjs
  * @input Factored complete family plans
- * @output One native layered stylesheet for every selected member
+ * @output One native layered stylesheet containing every selected member
  * @position AST-034 family CSS packaging and zero-specificity boundary
  */
 

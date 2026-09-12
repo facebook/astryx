@@ -285,6 +285,60 @@ describe('family generation transaction', () => {
     ).toBe(false);
   });
 
+  it('refuses to clear a committed journal when prior ownership proof is missing', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterPointer: () => {
+            throw new Error('stop before cleanup');
+          },
+        },
+      }),
+    ).toThrow(/stop before cleanup/);
+    fs.rmSync(path.join(root, 'generations', 'gen-first', first.manifestPath));
+
+    expect(() =>
+      checkFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        expectedGeneration: second,
+      }),
+    ).toThrow(/no valid ownership manifest/);
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(true);
+    expect(
+      fs.existsSync(path.join(root, 'generations', 'gen-first', 'family.css')),
+    ).toBe(true);
+  });
+
+  it('rejects a current pointer whose directory name disagrees with its manifest', () => {
+    const expected = generation('family', 'gen-content-addressed', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...expected});
+    fs.renameSync(
+      path.join(root, 'generations', expected.generationId),
+      path.join(root, 'generations', 'gen-wrong-name'),
+    );
+    fs.unlinkSync(path.join(root, 'current'));
+    fs.symlinkSync(
+      'generations/gen-wrong-name',
+      path.join(root, 'current'),
+      'dir',
+    );
+
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: expected,
+    });
+    expect(checked.upToDate).toBe(false);
+    expect(checked.stale.every(item => item.reason === 'missing')).toBe(true);
+  });
+
   it('finishes cleanup after a fault following the committed pointer', () => {
     const first = generation('family', 'gen-first', 'red');
     publishFamilyGeneration({root, artifactKey: 'family', ...first});
@@ -315,6 +369,30 @@ describe('family generation transaction', () => {
     expect(fs.existsSync(path.join(root, 'generations', 'gen-first'))).toBe(
       false,
     );
+  });
+
+  it('removes exact transaction-temporary residue before check', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    fs.writeFileSync(path.join(root, '.journal.tmp'), 'partial');
+    fs.symlinkSync(
+      'generations/gen-first',
+      path.join(root, '.current.tmp'),
+      'dir',
+    );
+    fs.mkdirSync(path.join(root, '.probe'));
+
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: first,
+    });
+    expect(checked.upToDate).toBe(true);
+    for (const name of ['.journal.tmp', '.current.tmp', '.probe']) {
+      expect(fs.lstatSync(path.join(root, name), {throwIfNoEntry: false})).toBe(
+        undefined,
+      );
+    }
   });
 
   it('refuses an active same-host lock', () => {

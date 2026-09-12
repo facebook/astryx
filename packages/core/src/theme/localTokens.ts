@@ -77,17 +77,23 @@ function readCustomPropertyName(
   value: string,
   start: number,
 ): {name: string; end: number} | undefined {
-  if (value.slice(start, start + 2) !== '--') {return undefined;}
+  if (value.slice(start, start + 2) !== '--') {
+    return undefined;
+  }
 
   let index = start + 2;
   while (index < value.length) {
     const codePoint = value.codePointAt(index);
-    if (codePoint === undefined || codePoint === 0) {break;}
+    if (codePoint === undefined || codePoint === 0) {
+      break;
+    }
 
     if (codePoint === 0x5c) {
       const nextIndex = index + 1;
       const next = value.codePointAt(nextIndex);
-      if (next === undefined || isNewline(next)) {break;}
+      if (next === undefined || isNewline(next)) {
+        break;
+      }
 
       if (isHexDigit(next)) {
         let cursor = nextIndex;
@@ -121,7 +127,9 @@ function readCustomPropertyName(
       continue;
     }
 
-    if (codePoint < 0x80 && !isAsciiNameCodePoint(codePoint)) {break;}
+    if (codePoint < 0x80 && !isAsciiNameCodePoint(codePoint)) {
+      break;
+    }
     index += codePoint > 0xffff ? 2 : 1;
   }
 
@@ -142,9 +150,13 @@ function collectCustomPropertyReferences(
       match = functionPattern.exec(value)
     ) {
       let start = functionPattern.lastIndex;
-      while (/\s/.test(value[start] ?? '')) {start += 1;}
+      while (/\s/.test(value[start] ?? '')) {
+        start += 1;
+      }
       const reference = readCustomPropertyName(value, start);
-      if (reference) {refs.add(reference.name);}
+      if (reference) {
+        refs.add(reference.name);
+      }
     }
     return;
   }
@@ -342,6 +354,7 @@ export function resolveLocalTokenContract(
   },
   base: DefinedTheme | undefined,
   tokens: Record<string, string>,
+  portableTokenNames: ReadonlySet<string> = new Set(Object.keys(tokens)),
 ): ResolvedLocalTokenContract | undefined {
   const directlyEnrolled = hasOwn(input, 'localTokens');
   const inherited = base?.__localTokenLineage !== undefined;
@@ -398,7 +411,7 @@ export function resolveLocalTokenContract(
         `defineTheme("${input.name}"): inherited local token "${name}" has no owner metadata.`,
       );
     }
-    if (hasOwn(tokens, name)) {
+    if (hasOwn(tokens, name) || portableTokenNames.has(name)) {
       throw new Error(
         `defineTheme("${input.name}"): token "${name}" cannot be declared in both tokens and localTokens.`,
       );
@@ -428,7 +441,9 @@ export function resolveAdaptationLocalTokens(
   rootLocalTokens: Record<string, string> | undefined,
 ): Record<string, string> | undefined {
   const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].value.localTokens`;
-  if (declarations === undefined) {return undefined;}
+  if (declarations === undefined) {
+    return undefined;
+  }
   if (
     declarations === null ||
     typeof declarations !== 'object' ||

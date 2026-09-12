@@ -20,3 +20,8 @@ Open `index.html` through an HTTP server after building. It demonstrates sibling
 and nested roots, a zero-delta member, and attribute-only switching. The complete
 family downloads eagerly in one CSS request; use a standalone build when an app
 needs only one complete theme.
+
+From the repository root, `pnpm test:theme-family-browser` runs the same example
+in real Chromium. It checks raw-link first paint, every member, component state,
+an adaptation, a media surface, nested/sibling isolation, switching without a
+new CSS request, relocation, and the rejected missing-parent wrapper behavior.

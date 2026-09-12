@@ -31,33 +31,53 @@ function sha256(value) {
   return `sha256-${createHash('sha256').update(value).digest('hex')}`;
 }
 
-/** @param {unknown} value @returns {string} */
-function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (value !== null && typeof value === 'object') {
-    const record = /** @type {Record<string, unknown>} */ (value);
-    return `{${Object.keys(record)
-      .sort()
-      .map(key => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
-      .join(',')}}`;
+/**
+ * @param {unknown} value
+ * @param {Set<object>} [seen]
+ * @returns {string}
+ */
+function canonicalJson(value, seen = new Set()) {
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return JSON.stringify('[circular]');
+    seen.add(value);
+    const result = `[${value.map(item => canonicalJson(item, seen)).join(',')}]`;
+    seen.delete(value);
+    return result;
   }
-  if (typeof value === 'function')
-    return JSON.stringify(`[function:${value.name}]`);
+  if (value !== null && typeof value === 'object') {
+    if (seen.has(value)) return JSON.stringify('[circular]');
+    seen.add(value);
+    const record = /** @type {Record<string, unknown>} */ (value);
+    const result = `{${Object.keys(record)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${canonicalJson(record[key], seen)}`)
+      .join(',')}}`;
+    seen.delete(value);
+    return result;
+  }
+  if (typeof value === 'function') {
+    return JSON.stringify(
+      `[function:${Function.prototype.toString.call(value)}]`,
+    );
+  }
   if (typeof value === 'symbol') return JSON.stringify(String(value));
   if (value === undefined) return 'null';
   return JSON.stringify(value) ?? 'null';
 }
 
-/** @param {unknown} value */
-function isEmptyData(value) {
-  return (
-    value == null ||
-    value === '' ||
-    (Array.isArray(value) && value.every(isEmptyData)) ||
-    (typeof value === 'object' &&
-      !Array.isArray(value) &&
-      Object.values(value).every(isEmptyData))
+/** @param {unknown} value @param {Set<object>} [seen] @returns {boolean} */
+function isEmptyData(value, seen = new Set()) {
+  if (value == null || value === '') return true;
+  if (typeof value !== 'object') return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  const empty = /** @type {boolean} */ (
+    Array.isArray(value)
+      ? value.every(item => isEmptyData(item, seen))
+      : Object.values(value).every(item => isEmptyData(item, seen))
   );
+  seen.delete(value);
+  return empty;
 }
 
 /**
@@ -79,7 +99,7 @@ function isEmptyData(value) {
  * assigns the section identity before factoring; no resolved object is diffed.
  *
  * @param {string} css
- * @param {{prefix: string, layer: CSSUnit['layer'], scope: CSSUnit['scope'], defaultSelectorKind: CSSUnit['selectorKind']}} options
+ * @param {{prefix: string, layer: CSSUnit['layer'], scope: CSSUnit['scope'], defaultSelectorKind: CSSUnit['selectorKind'], orderedTokens?: boolean}} options
  * @returns {CSSUnit[]}
  */
 function parseUnits(css, options) {
@@ -108,7 +128,9 @@ function parseUnits(css, options) {
           : options.defaultSelectorKind;
       const semanticId =
         selectorKind === 'token'
-          ? node.prop
+          ? options.orderedTokens
+            ? `${ruleOrder}/${node.prop}`
+            : node.prop
           : `${ruleOrder}/${rule.selector}/${declarationOrder}/${node.prop}`;
       units.push({
         id: `${options.prefix}/${semanticId}`,
@@ -151,6 +173,24 @@ function withoutScopeAtRule(css) {
   const root = postcss.parse(css);
   root.walkAtRules('scope', atRule => {
     atRule.replaceWith(...(atRule.nodes ?? []));
+  });
+  return root.toString();
+}
+
+/** @param {string} css */
+function memberColorSchemeCSS(css) {
+  if (!css.trim()) return '';
+  const root = postcss.parse(css);
+  root.walkRules(rule => {
+    if (rule.selector === ':root') {
+      rule.selector = ':scope';
+    } else if (rule.selector === 'html[data-theme="light"]') {
+      rule.selector =
+        ':scope:where([data-theme="light"]), :where(html[data-theme="light"]) :scope';
+    } else if (rule.selector === 'html[data-theme="dark"]') {
+      rule.selector =
+        ':scope:where([data-theme="dark"]), :where(html[data-theme="dark"]) :scope';
+    }
   });
   return root.toString();
 }
@@ -248,6 +288,7 @@ export function createMemberPlan(input) {
         layer: 'astryx-theme',
         scope: 'member',
         defaultSelectorKind: 'component',
+        orderedTokens: true,
       }),
       data: {
         normalized: input.resolved.__adaptations ?? null,
@@ -263,6 +304,7 @@ export function createMemberPlan(input) {
         layer: 'astryx-theme',
         scope: 'member',
         defaultSelectorKind: 'component',
+        orderedTokens: true,
       }),
       data: {
         dark: input.resolved.__onDark ?? null,
@@ -272,11 +314,12 @@ export function createMemberPlan(input) {
     {
       kind: 'color-scheme',
       tracks: ['css'],
-      css: parseUnits(input.colorScheme, {
+      css: parseUnits(memberColorSchemeCSS(input.colorScheme), {
         prefix: 'color-scheme',
         layer: 'astryx-theme',
-        scope: 'global',
-        defaultSelectorKind: 'global',
+        scope: 'member',
+        defaultSelectorKind: 'component',
+        orderedTokens: true,
       }),
       data: null,
     },
@@ -336,6 +379,7 @@ export function createMemberPlan(input) {
     kind: section.kind,
     tracks: section.tracks,
     css: section.css,
+    data: section.data,
     empty: section.empty,
   }));
 

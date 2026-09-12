@@ -41,6 +41,7 @@ export const oceanDeepTheme = defineTheme({
   name: 'ocean-deep',
   extends: oceanTheme,
   tokens: {'--color-accent': '#023e8a'},
+  components: {button: {'variant:family-special': {borderStyle: 'dashed'}}},
 });
 `,
   );
@@ -122,6 +123,8 @@ describe('themeBuildFamily', () => {
 
     const jsSource = fs.readFileSync(current('ocean-family.js'), 'utf8');
     expect(jsSource).not.toMatch(/(?:import|from)\s*['"][^'"]+\.css['"]/);
+    const dtsSource = fs.readFileSync(current('ocean-family.d.ts'), 'utf8');
+    expect(dtsSource).toContain('family-special');
     const module = await import(
       `${pathToFileURL(current('ocean-family.js')).href}?test=${Date.now()}`
     );
@@ -343,6 +346,41 @@ describe('themeBuildFamily', () => {
     expect(
       fs.lstatSync(path.join(invalidCurrent, 'current')).isDirectory(),
     ).toBe(true);
+
+    const outside = path.join(fixtureDir, 'outside-generations');
+    fs.mkdirSync(outside);
+    const escapedRoot = path.join(fixtureDir, 'escaped-family');
+    fs.mkdirSync(escapedRoot);
+    fs.symlinkSync(outside, path.join(escapedRoot, 'generations'), 'dir');
+    await expect(
+      themeBuildFamily(files, {familyKey: 'escaped-family'}, {cwd: fixtureDir}),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(fs.readdirSync(outside)).toEqual([]);
+
+    const unownedGenerationRoot = path.join(
+      fixtureDir,
+      'unowned-generation-family',
+    );
+    fs.mkdirSync(path.join(unownedGenerationRoot, 'generations', 'notes'), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(unownedGenerationRoot, 'generations', 'notes', 'keep.txt'),
+      'keep',
+    );
+    await expect(
+      themeBuildFamily(
+        files,
+        {familyKey: 'unowned-generation-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(
+      fs.readFileSync(
+        path.join(unownedGenerationRoot, 'generations', 'notes', 'keep.txt'),
+        'utf8',
+      ),
+    ).toBe('keep');
   });
 
   it('rejects a source that exports more than one distinct family member', async () => {
@@ -370,19 +408,19 @@ describe('themeBuildFamily', () => {
   it('allocates collision-safe registry bindings and preserves complete inherited values', async () => {
     fs.writeFileSync(
       path.join(fixtureDir, 'base-registry.mjs'),
-      `export const sharedRegistry = {close: 'base-close', menu: 'base-menu'};\nexport const sharedIndicators = {check: () => 'base-check'};\n`,
+      `export const bundle = {icons: {close: 'base-close', menu: 'base-menu'}, indicators: {check: () => 'base-check'}};\n`,
     );
     fs.writeFileSync(
       path.join(fixtureDir, 'child-registry.mjs'),
-      `export const sharedRegistry = {close: 'child-close'};\nexport const sharedIndicators = {radio: () => 'child-radio'};\n`,
+      `export const bundle = {icons: {close: 'child-close'}, indicators: {radio: () => 'child-radio'}};\n`,
     );
     fs.writeFileSync(
       path.join(fixtureDir, 'registry-base.mjs'),
-      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {sharedRegistry as assets, sharedIndicators as marks} from './base-registry.mjs';\nexport const registryBaseTheme = defineTheme({name: 'registry-base', icons: assets, indicators: marks});\n`,
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {bundle as assets} from './base-registry.mjs';\nexport const registryBaseTheme = defineTheme({name: 'registry-base', icons: assets.icons, indicators: assets.indicators});\n`,
     );
     fs.writeFileSync(
       path.join(fixtureDir, 'registry-child.mjs'),
-      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {registryBaseTheme} from './registry-base.mjs';\nimport {sharedRegistry as assets, sharedIndicators as marks} from './child-registry.mjs';\nexport const registryChildTheme = defineTheme({name: 'registry-child', extends: registryBaseTheme, icons: assets, indicators: marks});\n`,
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {registryBaseTheme} from './registry-base.mjs';\nimport {bundle as assets} from './child-registry.mjs';\nexport const registryChildTheme = defineTheme({name: 'registry-child', extends: registryBaseTheme, icons: assets.icons, indicators: assets.indicators});\n`,
     );
 
     await themeBuildFamily(
@@ -397,10 +435,8 @@ describe('themeBuildFamily', () => {
       'registry-family.js',
     );
     const source = fs.readFileSync(modulePath, 'utf8');
-    expect(source).toContain('sharedRegistry');
-    expect(source).toContain('sharedRegistry2');
-    expect(source).toContain('sharedIndicators');
-    expect(source).toContain('sharedIndicators2');
+    expect(source).toContain('bundle');
+    expect(source).toContain('bundle2');
     expect(source).not.toContain(fixtureDir);
 
     const module = await import(

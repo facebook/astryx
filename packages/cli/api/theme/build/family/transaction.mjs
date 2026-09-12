@@ -139,7 +139,7 @@ function acquireLock(root) {
  * @param {string} root
  */
 export function probeAtomicPointer(root) {
-  const probe = path.join(root, `.probe-${process.pid}-${uniqueCounter++}`);
+  const probe = path.join(root, '.probe');
   try {
     fs.mkdirSync(path.join(probe, 'a'), {recursive: true});
     fs.mkdirSync(path.join(probe, 'b'), {recursive: true});
@@ -208,10 +208,8 @@ function replaceCurrent(root, target) {
   }
 
   assertSafeRelativePath(target);
-  const temporary = path.join(
-    root,
-    `.current-${process.pid}-${uniqueCounter++}.tmp`,
-  );
+  const temporary = path.join(root, '.current.tmp');
+  fs.rmSync(temporary, {force: true});
   fs.symlinkSync(target, temporary, 'dir');
   try {
     fs.renameSync(temporary, currentPath);
@@ -225,8 +223,15 @@ function replaceCurrent(root, target) {
  * @param {string} generationTarget
  * @param {string} manifestPath
  * @param {string} artifactKey
+ * @param {string} [expectedGenerationId]
  */
-function readManifest(root, generationTarget, manifestPath, artifactKey) {
+function readManifest(
+  root,
+  generationTarget,
+  manifestPath,
+  artifactKey,
+  expectedGenerationId,
+) {
   assertSafeRelativePath(generationTarget);
   assertSafeRelativePath(manifestPath);
   const generationDir = path.join(root, ...generationTarget.split('/'));
@@ -238,6 +243,8 @@ function readManifest(root, generationTarget, manifestPath, artifactKey) {
   if (
     manifest?.schemaVersion !== 1 ||
     manifest?.artifactKey !== artifactKey ||
+    (expectedGenerationId !== undefined &&
+      manifest?.generationId !== expectedGenerationId) ||
     manifest?.artifacts?.manifest !== manifestPath ||
     !Array.isArray(manifest?.owned)
   ) {
@@ -265,7 +272,13 @@ function readManifest(root, generationTarget, manifestPath, artifactKey) {
  * @param {string} artifactKey
  */
 function validateGeneration(root, generationTarget, manifestPath, artifactKey) {
-  const info = readManifest(root, generationTarget, manifestPath, artifactKey);
+  const info = readManifest(
+    root,
+    generationTarget,
+    manifestPath,
+    artifactKey,
+    path.posix.basename(generationTarget),
+  );
   for (const owned of info.manifest.owned) {
     const file = path.join(info.generationDir, ...owned.path.split('/'));
     const actual = sha256(fs.readFileSync(file));
@@ -326,10 +339,11 @@ function removeManifestOwnedGeneration(
   }
   try {
     fs.rmdirSync(info.generationDir);
-    return true;
   } catch {
-    return false;
+    // An unmanifested file keeps the directory alive by design. Every path the
+    // manifest owned is already gone, so manifest-bounded cleanup completed.
   }
+  return true;
 }
 
 /**
@@ -339,6 +353,7 @@ function removeManifestOwnedGeneration(
  * @param {string} manifestPath
  * @param {string} artifactKey
  * @param {(() => void) | undefined} duringCleanup
+ * @param {Set<string>} [requiredTargets]
  */
 function cleanupGenerations(
   root,
@@ -347,6 +362,7 @@ function cleanupGenerations(
   manifestPath,
   artifactKey,
   duringCleanup,
+  requiredTargets = new Set(),
 ) {
   const generationsDir = path.join(root, 'generations');
   if (!fs.existsSync(generationsDir)) return;
@@ -356,7 +372,17 @@ function cleanupGenerations(
     const full = path.join(generationsDir, name);
     if (!fs.lstatSync(full).isDirectory()) continue;
     duringCleanup?.();
-    removeManifestOwnedGeneration(root, target, manifestPath, artifactKey);
+    const removedOwned = removeManifestOwnedGeneration(
+      root,
+      target,
+      manifestPath,
+      artifactKey,
+    );
+    if (!removedOwned && requiredTargets.has(target)) {
+      throw new Error(
+        `Cannot complete family cleanup because ${target} has no valid ownership manifest.`,
+      );
+    }
   }
   fsyncDirectory(generationsDir);
 }
@@ -364,10 +390,8 @@ function cleanupGenerations(
 /** @param {string} root @param {unknown} journal */
 function writeJournal(root, journal) {
   const finalPath = path.join(root, '.journal.json');
-  const temporary = path.join(
-    root,
-    `.journal-${process.pid}-${uniqueCounter++}.tmp`,
-  );
+  const temporary = path.join(root, '.journal.tmp');
+  fs.rmSync(temporary, {force: true});
   durableWrite(temporary, `${JSON.stringify(journal, null, 2)}\n`);
   fs.renameSync(temporary, finalPath);
   fsyncDirectory(root);
@@ -387,6 +411,16 @@ function removeJournal(root) {
  * @param {string} manifestPath
  */
 function recover(root, artifactKey, manifestPath) {
+  let removedTemporary = false;
+  for (const temporaryName of ['.journal.tmp', '.current.tmp', '.probe']) {
+    const temporary = path.join(root, temporaryName);
+    if (fs.lstatSync(temporary, {throwIfNoEntry: false})) {
+      fs.rmSync(temporary, {recursive: true, force: true});
+      removedTemporary = true;
+    }
+  }
+  if (removedTemporary) fsyncDirectory(root);
+
   const journalPath = path.join(root, '.journal.json');
   if (!fs.existsSync(journalPath)) return;
 
@@ -427,6 +461,7 @@ function recover(root, artifactKey, manifestPath) {
       manifestPath,
       artifactKey,
       undefined,
+      new Set(journal.prev ? [journal.prev.target] : []),
     );
     removeJournal(root);
     return;
@@ -612,6 +647,7 @@ export function publishFamilyGeneration(input) {
       manifestPath,
       artifactKey,
       hooks.duringCleanup,
+      new Set(previous ? [previous.target] : []),
     );
     removeJournal(root);
   } finally {
@@ -656,7 +692,13 @@ export function checkFamilyGeneration(input) {
 
     let prior;
     try {
-      prior = readManifest(root, current.target, manifestPath, artifactKey);
+      prior = readManifest(
+        root,
+        current.target,
+        manifestPath,
+        artifactKey,
+        current.generationId,
+      );
     } catch {
       for (const relative of [...files.keys()].sort()) {
         stale.push({path: relative, reason: 'missing'});

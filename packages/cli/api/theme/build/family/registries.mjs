@@ -100,6 +100,11 @@ export function planFamilyRegistries(input) {
       );
       if (!hasOwn) continue;
       const ownValue = prepared.rawInput[role];
+      if (role === 'icons' && iconsSpecifier && !info) {
+        throw new Error(
+          '--icons-specifier requires each authored icon registry to resolve to its exact imported binding.',
+        );
+      }
       if (info) {
         let specifier = info.importPath;
         let sourceKey = specifier;
@@ -118,7 +123,11 @@ export function planFamilyRegistries(input) {
         }
         const id = `${node.name}:${role}`;
         requests.push({...info, id, specifier});
-        roles[role] = {kind: 'import', requestId: id};
+        roles[role] = {
+          kind: 'import',
+          requestId: id,
+          memberAccess: info.memberAccess ?? '',
+        };
       } else if (isJsonValue(ownValue)) {
         roles[role] = {kind: 'literal', value: ownValue};
       } else {
@@ -162,7 +171,8 @@ export function planFamilyRegistries(input) {
       const descriptor = ownRoles[role];
       let authored;
       if (descriptor?.kind === 'import') {
-        authored = allocation.byRequest.get(descriptor.requestId);
+        const binding = allocation.byRequest.get(descriptor.requestId);
+        authored = `${binding}${descriptor.memberAccess}`;
       } else if (descriptor?.kind === 'literal') {
         authored = JSON.stringify(descriptor.value);
       } else if (descriptor?.kind === 'source') {

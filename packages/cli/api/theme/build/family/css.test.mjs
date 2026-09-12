@@ -66,6 +66,63 @@ describe('family CSS factoring', () => {
     expect(() => postcss.parse(css)).not.toThrow();
   });
 
+  it('keeps each member’s authored adaptation order when values reverse', () => {
+    const adaptationPlan = (name, parentName, values) =>
+      createMemberPlan({
+        identity: {name, sourceId: `${name}.mjs`, parentName},
+        resolved: {
+          name,
+          tokens: {},
+          components: {},
+          __adaptations: {},
+          __axes: {},
+        },
+        dataDefaults: '',
+        rules: {prose: [], component: []},
+        adaptations: {
+          prose: '',
+          component: values
+            .map(
+              value =>
+                `@media (pointer: coarse) { @scope ([data-astryx-theme="${name}"]) to ([data-astryx-theme]) { :scope { --tone: ${value}; } } }`,
+            )
+            .join('\n'),
+        },
+        onMedia: '',
+        colorScheme: '',
+        registries: {},
+        fonts: [],
+        typeAugmentations: '',
+        provenance: {},
+      });
+    const css = renderFamilyCSS(
+      factorFamilyPlans([
+        adaptationPlan('a', null, ['red', 'blue']),
+        adaptationPlan('b', 'a', ['blue', 'red']),
+      ]),
+    );
+    /** @type {Record<'a'|'b', string[]>} */
+    const valuesByMember = {a: [], b: []};
+    postcss.parse(css).walkAtRules('scope', atRule => {
+      const member = atRule.params.includes('"a"')
+        ? 'a'
+        : atRule.params.includes('"b"')
+          ? 'b'
+          : null;
+      if (!member) return;
+      atRule.walkDecls('--tone', declaration => {
+        valuesByMember[member].push(declaration.value);
+      });
+    });
+
+    expect(valuesByMember).toEqual({
+      a: ['red', 'blue'],
+      b: ['blue', 'red'],
+    });
+    expect(css.match(/--tone:/g)).toHaveLength(4);
+    expect(css).not.toMatch(/:where\(:scope\)\s*\{\s*--tone/);
+  });
+
   it('retains zero-delta member applicability without a member artifact', () => {
     const css = renderFamilyCSS(
       factorFamilyPlans([

@@ -56,7 +56,14 @@ export function factorFamilyPlans(plans) {
         );
       }
       for (const unit of section.css) {
-        const signature = `${unit.id}\u0000${unitSignature(unit)}`;
+        // Ordered conditional sections must retain member specificity. Sharing
+        // them at zero specificity can make an earlier root/member declaration
+        // beat a later adaptation or media-surface write.
+        const memberOrderKey =
+          kind === 'adaptations' || kind === 'on-media'
+            ? `\u0000${plan.identity.name}`
+            : '';
+        const signature = `${unit.id}\u0000${unitSignature(unit)}${memberOrderKey}`;
         let group = bySignature.get(signature);
         if (!group) {
           group = {unit, members: [], firstSeen: firstSeen++};

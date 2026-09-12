@@ -33,7 +33,10 @@ export const oceanTheme = defineTheme({
     rules: [
       {
         when: {width: {below: 'md'}},
-        value: {components: {button: {base: {paddingInline: '20px'}}}},
+        value: {
+          tokens: {'--radius-container': '20px'},
+          components: {button: {base: {paddingInline: '20px'}}},
+        },
       },
     ],
   },

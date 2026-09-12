@@ -79,6 +79,15 @@ describe('theme-local custom-property ownership', () => {
     ).toThrow(/valid CSS custom-property name/);
   });
 
+  it('rejects a portable token even when the theme does not override it', () => {
+    expect(() =>
+      defineTheme({
+        name: 'ocean',
+        localTokens: {'--color-accent': '#073b4c'},
+      }),
+    ).toThrow(/cannot be declared in both tokens and localTokens/);
+  });
+
   it('keeps existing long names byte-for-byte compatible', () => {
     const name = '--astryx-theme-ocean-color-status-fill-accent';
     const theme = defineTheme({

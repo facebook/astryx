@@ -69,6 +69,7 @@ describe('public theme-family example', () => {
       '__onDark',
       '__onLight',
       '__adaptations',
+      '__adaptationRules',
       '__axes',
       '__localTokenOwners',
       '__localTokenLineage',
@@ -85,7 +86,15 @@ describe('public theme-family example', () => {
     expect(emitted).not.toMatch(/(?:import|from)\s*['"][^'"]+\.css['"]/);
 
     const relocated = path.join(project, 'relocated-family');
-    fs.cpSync(family, relocated, {recursive: true, dereference: false});
+    fs.cpSync(family, relocated, {
+      recursive: true,
+      dereference: false,
+      verbatimSymlinks: true,
+    });
+    expect(fs.readlinkSync(path.join(relocated, 'current'))).toMatch(
+      /^generations\//,
+    );
+    fs.rmSync(family, {recursive: true, force: true});
     const relocatedModule = await import(
       `${pathToFileURL(path.join(relocated, 'current', 'ocean-family.js')).href}?relocated=${Date.now()}`
     );
