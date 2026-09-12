@@ -24,7 +24,7 @@ export const doc = {
     'When a separate build step emits the icon registry, --icons-specifier declares the fully ' +
     'specified module path that generated JavaScript should import.',
   fn: 'themeBuild',
-  args: [{name: 'files', param: 'file', required: true, variadic: true}],
+  args: [{name: 'files', param: 'file', required: false, variadic: true}],
   options: [
     {
       flag: '-o, --out <path>',
