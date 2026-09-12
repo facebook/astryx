@@ -17,6 +17,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {
   checkFamilyGeneration,
   publishFamilyGeneration,
+  recoverFamilyOutput,
 } from './transaction.mjs';
 
 const digest = value =>
@@ -82,6 +83,12 @@ describe('family generation transaction', () => {
     const unowned = path.join(root, 'generations', 'unowned', 'keep.txt');
     fs.mkdirSync(path.dirname(unowned), {recursive: true});
     fs.writeFileSync(unowned, 'keep');
+    const unrelatedEmpty = path.join(
+      root,
+      'generations',
+      'gen-00000000000000000000',
+    );
+    fs.mkdirSync(unrelatedEmpty);
 
     const second = generation('family', 'gen-second', 'blue');
     publishFamilyGeneration({root, artifactKey: 'family', ...second});
@@ -93,6 +100,34 @@ describe('family generation transaction', () => {
       false,
     );
     expect(fs.readFileSync(unowned, 'utf8')).toBe('keep');
+  });
+
+  it('exposes mandatory recovery before later planning or validation', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterJournal: () => {
+            throw new Error('stop before pointer');
+          },
+        },
+      }),
+    ).toThrow(/stop before pointer/);
+
+    recoverFamilyOutput({
+      root,
+      artifactKey: 'family',
+      manifestPath: first.manifestPath,
+    });
+    expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+      'generations/gen-first',
+    );
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
   });
 
   it('rolls back a journaled generation that never became current', () => {

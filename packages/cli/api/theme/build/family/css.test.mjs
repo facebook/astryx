@@ -44,16 +44,19 @@ describe('family CSS factoring', () => {
   it('emits shared declarations once and keeps exact member deltas', () => {
     const midnight = plan('ocean-midnight', 'blue', 'C');
     midnight.identity.parentName = 'ocean-deep';
+    const returned = plan('ocean-return', 'red', 'S');
+    returned.identity.parentName = 'ocean-deep';
     const plans = [
       plan('ocean', 'red', 'S'),
       plan('ocean-deep', 'blue', 'C'),
       midnight,
+      returned,
       plan('ocean-zero', 'red', 'S'),
     ];
     const css = renderFamilyCSS(factorFamilyPlans(plans));
 
     expect(css.match(/--shared: green/g)).toHaveLength(1);
-    expect(css.match(/--ink: red/g)).toHaveLength(1);
+    expect(css.match(/--ink: red/g)).toHaveLength(2);
     expect(css.match(/--ink: blue/g)).toHaveLength(1);
     expect(css).toContain(
       '@scope ([data-astryx-theme="ocean"], [data-astryx-theme="ocean-zero"]) to ([data-astryx-theme])',
@@ -63,6 +66,9 @@ describe('family CSS factoring', () => {
     );
     expect(css).toMatch(
       /@scope \(\[data-astryx-theme="ocean-deep"\], \[data-astryx-theme="ocean-midnight"\]\)[\s\S]*?:scope \{[\s\S]*?--ink: blue/,
+    );
+    expect(css).toMatch(
+      /@scope \(\[data-astryx-theme="ocean-return"\]\)[\s\S]*?:scope \{[\s\S]*?--ink: red/,
     );
     expect(css).toContain(':where(:scope)');
     expect(css).toContain(':scope {');

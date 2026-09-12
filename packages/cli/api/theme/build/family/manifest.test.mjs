@@ -47,6 +47,22 @@ describe('family manifest', () => {
     const second = generation();
     expect(first.generationId).toBe(second.generationId);
     expect([...first.files]).toEqual([...second.files]);
+    const changedCommand = createFamilyGeneration({
+      artifactKey: 'ocean-family',
+      graph: {
+        rootName: 'ocean',
+        sourceGraphDigest: 'sha256-source-graph',
+      },
+      plans: [plan('ocean', null), plan('ocean-calm', 'ocean')],
+      css: '/* family css */\n',
+      js: 'export const oceanTheme = {};\n',
+      dts: 'export declare const oceanTheme: object;\n',
+      tools: {cli: '0.6.0', core: '0.6.0'},
+      command: 'astryx theme build --family changed --family-key ocean-family',
+      warnings: [],
+      notices: [],
+    });
+    expect(changedCommand.generationId).not.toBe(first.generationId);
     expect(first.manifest).toMatchObject({
       schemaVersion: 1,
       artifactKey: 'ocean-family',

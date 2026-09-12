@@ -100,11 +100,6 @@ export function planFamilyRegistries(input) {
       );
       if (!hasOwn) continue;
       const ownValue = prepared.rawInput[role];
-      if (role === 'icons' && iconsSpecifier && !info) {
-        throw new Error(
-          '--icons-specifier requires each authored icon registry to resolve to its exact imported binding.',
-        );
-      }
       if (info) {
         let specifier = info.importPath;
         let sourceKey = specifier;
@@ -161,6 +156,7 @@ export function planFamilyRegistries(input) {
           requestId: id,
           memberName: node.name,
           role,
+          keys: Object.keys(ownValue ?? {}),
         };
       }
     }
@@ -194,7 +190,8 @@ export function planFamilyRegistries(input) {
         authored = JSON.stringify(descriptor.value);
       } else if (descriptor?.kind === 'source') {
         const sourceBinding = allocation.byRequest.get(descriptor.requestId);
-        authored = `__astryxPickTheme(${sourceBinding}, ${JSON.stringify(descriptor.memberName)}).${descriptor.role}`;
+        const complete = `__astryxPickTheme(${sourceBinding}, ${JSON.stringify(descriptor.memberName)}).${descriptor.role}`;
+        authored = `Object.fromEntries(${JSON.stringify(descriptor.keys)}.map(key => [key, ${complete}[key]]))`;
       }
       result[role] =
         inherited && authored

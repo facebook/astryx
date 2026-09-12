@@ -101,6 +101,7 @@ export function createFamilyGeneration(input) {
       sourceGraphDigest: graph.sourceGraphDigest,
       owned,
       tools,
+      command,
     }),
   ).slice('sha256-'.length, 'sha256-'.length + 20)}`;
   const manifestPath = `${artifactKey}.manifest.json`;

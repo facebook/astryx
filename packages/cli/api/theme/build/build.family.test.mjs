@@ -363,6 +363,53 @@ describe('themeBuildFamily', () => {
     ).rejects.toThrow(/collides with an existing path/);
     expect(fs.readdirSync(path.join(danglingRoot, 'generations'))).toEqual([]);
 
+    const nestedCurrentRoot = path.join(fixtureDir, 'nested-current-family');
+    fs.mkdirSync(path.join(nestedCurrentRoot, 'generations'), {
+      recursive: true,
+    });
+    fs.symlinkSync(
+      'generations/gen-11111111111111111111/nested',
+      path.join(nestedCurrentRoot, 'current'),
+      'dir',
+    );
+    await expect(
+      themeBuildFamily(
+        files,
+        {familyKey: 'nested-current-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(fs.readdirSync(path.join(nestedCurrentRoot, 'generations'))).toEqual(
+      [],
+    );
+
+    const danglingJournalRoot = path.join(
+      fixtureDir,
+      'dangling-journal-family',
+    );
+    fs.mkdirSync(path.join(danglingJournalRoot, 'generations'), {
+      recursive: true,
+    });
+    fs.symlinkSync(
+      'generations/gen-22222222222222222222',
+      path.join(danglingJournalRoot, 'current'),
+      'dir',
+    );
+    fs.symlinkSync(
+      'missing-journal',
+      path.join(danglingJournalRoot, '.journal.json'),
+    );
+    await expect(
+      themeBuildFamily(
+        files,
+        {familyKey: 'dangling-journal-family'},
+        {cwd: fixtureDir},
+      ),
+    ).rejects.toThrow(/collides with an existing path/);
+    expect(
+      fs.readdirSync(path.join(danglingJournalRoot, 'generations')),
+    ).toEqual([]);
+
     const outside = path.join(fixtureDir, 'outside-generations');
     fs.mkdirSync(outside);
     const escapedRoot = path.join(fixtureDir, 'escaped-family');
@@ -534,5 +581,46 @@ describe('themeBuildFamily', () => {
       }?test=${Date.now()}`
     );
     expect(misleading.misleadingBaseTheme.icons.close()).toBe('right');
+
+    fs.writeFileSync(
+      path.join(fixtureDir, 'override-root-registry.mjs'),
+      `export const icons={close:'original-close'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'override-replacement.mjs'),
+      `export const icons={close:'replacement-close'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'override-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {icons} from './override-root-registry.mjs';\nexport const overrideBaseTheme=defineTheme({name:'override-base', icons});\n`,
+    );
+    fs.writeFileSync(
+      path.join(fixtureDir, 'override-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';\nimport {overrideBaseTheme} from './override-base.mjs';\nexport const overrideChildTheme=defineTheme({name:'override-child', extends:overrideBaseTheme, icons:{menu:'inline-menu'}});\n`,
+    );
+    await themeBuildFamily(
+      ['override-base.mjs', 'override-child.mjs'],
+      {
+        familyKey: 'inline-override-family',
+        iconsSpecifier: './override-replacement.mjs',
+      },
+      {cwd: fixtureDir},
+    );
+    const overridden = await import(
+      `${
+        pathToFileURL(
+          path.join(
+            fixtureDir,
+            'inline-override-family',
+            'current',
+            'inline-override-family.js',
+          ),
+        ).href
+      }?test=${Date.now()}`
+    );
+    expect(overridden.overrideChildTheme.icons).toEqual({
+      close: 'replacement-close',
+      menu: 'inline-menu',
+    });
   });
 });

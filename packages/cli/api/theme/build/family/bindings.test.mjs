@@ -6,14 +6,15 @@ import {allocateImportBindings, allocateMemberBindings} from './bindings.mjs';
 describe('family binding allocation', () => {
   it('makes colliding member names deterministic and legal', () => {
     const bindings = allocateMemberBindings(
-      ['ocean-deep', 'oceanDeep', 'default', 'Defined'],
-      ['DefinedTheme'],
+      ['ocean-deep', 'oceanDeep', 'default', 'Defined', '__astryx-pick'],
+      ['DefinedTheme', '__astryxPickTheme'],
     );
     expect([...bindings.values()]).toEqual([
       'oceanDeepTheme',
       'oceanDeepTheme_2',
       '_defaultTheme',
       'DefinedTheme_2',
+      '__astryxPickTheme_2',
     ]);
   });
 

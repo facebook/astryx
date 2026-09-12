@@ -51,6 +51,8 @@ export function factorFamilyPlans(plans) {
   for (const kind of SECTION_KINDS) {
     /** @type {Map<string, {unit: any, members: string[], firstSeen: number}>} */
     const bySignature = new Map();
+    /** @type {Map<string, Map<string, string | null>>} */
+    const rootInheritanceByMember = new Map();
     let firstSeen = 0;
     for (const plan of plans) {
       const section = plan.sections.find(candidate => candidate.kind === kind);
@@ -65,7 +67,19 @@ export function factorFamilyPlans(plans) {
               section.css.map(unit => [unit.id, unitSignature(unit)]),
             )
           : '';
+      const parentInheritance = plan.identity.parentName
+        ? rootInheritanceByMember.get(plan.identity.parentName)
+        : undefined;
+      const currentInheritance = new Map();
       for (const unit of section.css) {
+        const semanticSignature = unitSignature(unit);
+        const inheritedFromRoot =
+          plan.identity.parentName === null ||
+          parentInheritance?.get(unit.id) === semanticSignature;
+        currentInheritance.set(
+          unit.id,
+          inheritedFromRoot ? semanticSignature : null,
+        );
         // Ordered conditional sections must retain member specificity. Sharing
         // them at zero specificity can make an earlier root/member declaration
         // beat a later adaptation or media-surface write. Component declarations
@@ -77,7 +91,8 @@ export function factorFamilyPlans(plans) {
             : kind === 'components'
               ? `\u0000${sectionKey}`
               : '';
-        const signature = `${unit.id}\u0000${unitSignature(unit)}${memberOrderKey}`;
+        const inheritanceKey = inheritedFromRoot ? 'root' : 'delta';
+        const signature = `${unit.id}\u0000${semanticSignature}${memberOrderKey}\u0000${inheritanceKey}`;
         let group = bySignature.get(signature);
         if (!group) {
           group = {unit, members: [], firstSeen: firstSeen++};
@@ -85,6 +100,7 @@ export function factorFamilyPlans(plans) {
         }
         group.members.push(plan.identity.name);
       }
+      rootInheritanceByMember.set(plan.identity.name, currentInheritance);
     }
     groups.push(
       ...[...bySignature.values()]

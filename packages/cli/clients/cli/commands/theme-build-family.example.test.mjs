@@ -165,6 +165,20 @@ describe('public theme-family example', () => {
     expect(fs.existsSync(path.join(project, 'missing-override-family'))).toBe(
       false,
     );
+
+    await expect(
+      themeBuildFamily(
+        ['ocean.mjs', 'ocean-calm.mjs'],
+        {
+          familyKey: 'absolute-override-family',
+          iconsSpecifier: path.join(project, 'replacement-icons.mjs'),
+        },
+        {cwd: project},
+      ),
+    ).rejects.toThrow(/must be relative .* or a bare module specifier/);
+    expect(fs.existsSync(path.join(project, 'absolute-override-family'))).toBe(
+      false,
+    );
   });
 
   it('rejects one icon override for two distinct family sources', async () => {

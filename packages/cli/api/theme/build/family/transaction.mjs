@@ -185,7 +185,8 @@ function readCurrent(root) {
 
   const target = fs.readlinkSync(currentPath).split(path.sep).join('/');
   assertSafeRelativePath(target);
-  if (!target.startsWith('generations/')) {
+  const targetParts = target.split('/');
+  if (targetParts.length !== 2 || targetParts[0] !== 'generations') {
     throw new Error(
       `Theme family current pointer escapes generations: ${target}.`,
     );
@@ -307,12 +308,14 @@ function removeEmptyParents(start, stop) {
  * @param {string} generationTarget
  * @param {string} manifestPath
  * @param {string} artifactKey
+ * @param {boolean} [allowEmptyWithoutManifest]
  */
 function removeManifestOwnedGeneration(
   root,
   generationTarget,
   manifestPath,
   artifactKey,
+  allowEmptyWithoutManifest = false,
 ) {
   assertSafeRelativePath(generationTarget);
   let info;
@@ -321,7 +324,11 @@ function removeManifestOwnedGeneration(
   } catch {
     const generationDir = path.join(root, ...generationTarget.split('/'));
     const stat = fs.lstatSync(generationDir, {throwIfNoEntry: false});
-    if (stat?.isDirectory() && fs.readdirSync(generationDir).length === 0) {
+    if (
+      allowEmptyWithoutManifest &&
+      stat?.isDirectory() &&
+      fs.readdirSync(generationDir).length === 0
+    ) {
       fs.rmdirSync(generationDir);
       return true;
     }
@@ -391,6 +398,7 @@ function cleanupGenerations(
       target,
       manifestPath,
       artifactKey,
+      requiredTargets.has(target),
     );
     if (!removedOwned && requiredTargets.has(target)) {
       throw new Error(
@@ -497,6 +505,7 @@ function recover(root, artifactKey, manifestPath) {
     journal.next.target,
     manifestPath,
     artifactKey,
+    true,
   );
   if (nextExists && !removedNext) {
     throw new Error(
@@ -549,6 +558,23 @@ function validateExpected(files, manifestPath, artifactKey, generationId) {
         `Expected family manifest digest differs for ${owned.path}.`,
       );
     }
+  }
+}
+
+/**
+ * Resolve an interrupted family transaction before planning can fail for an
+ * unrelated source or option error.
+ *
+ * @param {{root: string, artifactKey: string, manifestPath: string}} input
+ */
+export function recoverFamilyOutput(input) {
+  const {root, artifactKey, manifestPath} = input;
+  if (!fs.existsSync(root)) return;
+  const release = acquireLock(root);
+  try {
+    recover(root, artifactKey, manifestPath);
+  } finally {
+    release();
   }
 }
 

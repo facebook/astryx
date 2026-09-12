@@ -1351,8 +1351,12 @@ function extractRegistryInfo(filePath, field) {
       `\\b${field}\\s*:\\s*([A-Za-z_$][A-Za-z0-9_$]*(?:\\s*\\.\\s*[A-Za-z_$][A-Za-z0-9_$]*)*)`,
     ),
   );
-  if (!fieldMatch) return null;
-  const expression = fieldMatch[1].replaceAll(/\s/g, '');
+  const shorthandMatch = fieldMatch
+    ? null
+    : content.match(new RegExp(`\\b(${field})\\s*(?=[,}])`));
+  const authoredExpression = fieldMatch?.[1] ?? shorthandMatch?.[1];
+  if (!authoredExpression) return null;
+  const expression = authoredExpression.replaceAll(/\s/g, '');
   const [sourceLocalName, ...memberParts] = expression.split('.');
   const memberAccess = memberParts.map(part => `.${part}`).join('');
 
@@ -1411,6 +1415,44 @@ function extractRegistryInfo(filePath, field) {
 }
 
 /**
+ * @param {unknown} left
+ * @param {unknown} right
+ * @param {WeakMap<object, object>} [seen]
+ * @returns {boolean}
+ */
+function registryValuesEqual(left, right, seen = new WeakMap()) {
+  if (Object.is(left, right)) return true;
+  if (typeof left === 'function' && typeof right === 'function') {
+    return (
+      Function.prototype.toString.call(left) ===
+      Function.prototype.toString.call(right)
+    );
+  }
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== 'object' ||
+    typeof right !== 'object'
+  ) {
+    return false;
+  }
+  if (seen.get(left) === right) return true;
+  seen.set(left, right);
+  const leftRecord = /** @type {Record<string, unknown>} */ (left);
+  const rightRecord = /** @type {Record<string, unknown>} */ (right);
+  const leftKeys = Object.keys(leftRecord).sort();
+  const rightKeys = Object.keys(rightRecord).sort();
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) =>
+        key === rightKeys[index] &&
+        registryValuesEqual(leftRecord[key], rightRecord[key], seen),
+    )
+  );
+}
+
+/**
  * Prove a textual import descriptor against the exact evaluated field value.
  * A comment, call, conditional, or unrelated earlier property can resemble the
  * source pattern; those cases fall back to bundling the selected source member.
@@ -1434,7 +1476,7 @@ function verifyRegistryInfo(filePath, info, expected, loader) {
     for (const part of info.memberAccess.split('.').filter(Boolean)) {
       value = value?.[part];
     }
-    return value === expected ? info : null;
+    return registryValuesEqual(value, expected) ? info : null;
   } catch {
     return null;
   }
@@ -2617,6 +2659,7 @@ function assertFamilyRootAvailable(root) {
       path.isAbsolute(target) ||
       target.includes('\\') ||
       !target.startsWith('generations/') ||
+      target.split('/').length !== 2 ||
       target
         .split('/')
         .some(part => part === '' || part === '.' || part === '..')
@@ -2624,9 +2667,12 @@ function assertFamilyRootAvailable(root) {
       collision(currentPath);
     }
     const targetPath = path.join(root, ...target.split('/'));
+    const journalCandidate = fs.lstatSync(path.join(root, '.journal.json'), {
+      throwIfNoEntry: false,
+    });
     if (
       !fs.lstatSync(targetPath, {throwIfNoEntry: false}) &&
-      !fs.lstatSync(path.join(root, '.journal.json'), {throwIfNoEntry: false})
+      !journalCandidate?.isFile()
     ) {
       collision(currentPath);
     }
@@ -2677,7 +2723,8 @@ function assertFamilyRootAvailable(root) {
     }
   }
   const journalPath = path.join(root, '.journal.json');
-  if (fs.existsSync(journalPath) && !fs.lstatSync(journalPath).isFile()) {
+  const journalStat = fs.lstatSync(journalPath, {throwIfNoEntry: false});
+  if (journalStat && !journalStat.isFile()) {
     collision(journalPath);
   }
   const lockPath = path.join(root, '.lock');
@@ -2737,6 +2784,17 @@ export async function themeBuildFamily(
         : ERROR_CODES.ERR_MISSING_ARGUMENT,
     );
   }
+  if (
+    options.iconsSpecifier &&
+    (path.isAbsolute(options.iconsSpecifier) ||
+      /^[A-Za-z]:[\\/]/.test(options.iconsSpecifier))
+  ) {
+    throw new AstryxError(
+      '--icons-specifier must be relative to its theme source or a bare module specifier in family mode.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_OPTION,
+    );
+  }
   if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
       'Could not load @astryxdesign/core/theme — family builds require the shared web compiler.',
@@ -2755,7 +2813,7 @@ export async function themeBuildFamily(
     {createFamilyGeneration},
     {createMemberPlan},
     {planFamilyRegistries},
-    {checkFamilyGeneration, publishFamilyGeneration},
+    {checkFamilyGeneration, publishFamilyGeneration, recoverFamilyOutput},
   ] = await Promise.all([
     import('./family/bindings.mjs'),
     import('./family/css.mjs'),
@@ -2863,6 +2921,29 @@ export async function themeBuildFamily(
   }
 
   const byTheme = new Map(prepared.map(member => [member.theme, member]));
+
+  const rootNode = graph.byName.get(graph.rootName);
+  const rootMember = rootNode ? byTheme.get(rootNode.theme) : undefined;
+  if (!rootMember) throw new Error('Theme family root source is missing.');
+  const familyRoot = path.join(
+    path.dirname(rootMember.filePath),
+    options.familyKey,
+  );
+  assertFamilyRootAvailable(familyRoot);
+  try {
+    recoverFamilyOutput({
+      root: familyRoot,
+      artifactKey: options.familyKey,
+      manifestPath: `${options.familyKey}.manifest.json`,
+    });
+  } catch (error) {
+    throw new AstryxError(
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
+  }
+
   const plans = graph.order.map(node => {
     const member = byTheme.get(node.theme);
     if (!member) throw new Error(`No prepared member for "${node.name}".`);
@@ -2888,18 +2969,9 @@ export async function themeBuildFamily(
     });
   });
 
-  const rootNode = graph.byName.get(graph.rootName);
-  const rootMember = rootNode ? byTheme.get(rootNode.theme) : undefined;
-  if (!rootMember) throw new Error('Theme family root source is missing.');
-  const familyRoot = path.join(
-    path.dirname(rootMember.filePath),
-    options.familyKey,
-  );
-  assertFamilyRootAvailable(familyRoot);
-
   const bindings = allocateMemberBindings(
     graph.order.map(node => node.name),
-    ['DefinedTheme'],
+    ['DefinedTheme', '__astryxPickTheme'],
   );
   let registryPlan;
   try {
