@@ -123,6 +123,94 @@ describe('import hint correctness', () => {
     }
   });
 
+  describe('integration-owned components show their own package as the import hint', () => {
+    /**
+     * @param {{exports?: Record<string, string>}} [opts]
+     * @returns {string} the fixture's project root (pass as runCli's cwd)
+     */
+    function createIntegrationFixture({exports: pkgExports} = {}) {
+      const fixtureDir = fs.mkdtempSync(
+        path.join(__dirname, '__import_hint_integration_'),
+      );
+
+      fs.mkdirSync(path.join(fixtureDir, 'packages'), {recursive: true});
+      fs.symlinkSync(coreDir, path.join(fixtureDir, 'packages', 'core'));
+      fs.writeFileSync(
+        path.join(fixtureDir, 'package.json'),
+        JSON.stringify({name: 'fixture-app', version: '1.0.0'}),
+      );
+      fs.writeFileSync(
+        path.join(fixtureDir, 'astryx.config.mjs'),
+        "export default { integrations: ['@test/widgets'] };",
+      );
+
+      const intDir = path.join(fixtureDir, 'node_modules', '@test', 'widgets');
+      const compDir = path.join(intDir, 'components', 'Widget');
+      fs.mkdirSync(compDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(intDir, 'package.json'),
+        JSON.stringify({
+          name: '@test/widgets',
+          version: '1.0.0',
+          ...(pkgExports ? {exports: pkgExports} : {}),
+        }),
+      );
+      fs.writeFileSync(
+        path.join(intDir, 'astryx.integration.mjs'),
+        "export default { components: './components' };",
+      );
+      fs.writeFileSync(
+        path.join(compDir, 'Widget.doc.mjs'),
+        "export const docs = {\n  name: 'Widget',\n  usage: { description: 'A test widget.' },\n  props: [{ name: 'label', type: 'string', description: 'Label text' }],\n};\n",
+      );
+
+      return fixtureDir;
+    }
+
+    it('component <Name> (full) shows the integration package, not @astryxdesign/core', async () => {
+      const fixtureDir = createIntegrationFixture();
+      try {
+        const result = await runCli(['component', 'Widget'], fixtureDir);
+        expect(result.code).toBe(0);
+        expect(result.stdout).toContain("from '@test/widgets';");
+        expect(result.stdout).not.toContain('@astryxdesign/core');
+      } finally {
+        fs.rmSync(fixtureDir, {recursive: true, force: true});
+      }
+    });
+
+    it('component <Name> --detail brief also shows the integration package', async () => {
+      const fixtureDir = createIntegrationFixture();
+      try {
+        const result = await runCli(
+          ['component', 'Widget', '--detail', 'brief'],
+          fixtureDir,
+        );
+        expect(result.code).toBe(0);
+        expect(result.stdout).toContain('@test/widgets');
+        expect(result.stdout).not.toContain('@astryxdesign/core');
+      } finally {
+        fs.rmSync(fixtureDir, {recursive: true, force: true});
+      }
+    });
+
+    it('resolves to a subpath when the integration exports one for the component', async () => {
+      const fixtureDir = createIntegrationFixture({
+        exports: {
+          '.': './index.js',
+          './Widget': './components/Widget/index.js',
+        },
+      });
+      try {
+        const result = await runCli(['component', 'Widget'], fixtureDir);
+        expect(result.code).toBe(0);
+        expect(result.stdout).toContain("from '@test/widgets/Widget';");
+      } finally {
+        fs.rmSync(fixtureDir, {recursive: true, force: true});
+      }
+    });
+  });
+
   describe('group names do NOT resolve to incorrect import paths', () => {
     const groups = ['Checkbox', 'Radio', 'Chat', 'Tabs', 'Resizable', 'Utilities'];
 
