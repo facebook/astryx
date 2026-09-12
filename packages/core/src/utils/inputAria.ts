@@ -23,7 +23,8 @@ export interface InputARIA {
 
 type AriaID = string | null | undefined | false;
 
-function joinAriaIDs(...values: AriaID[]): string | undefined {
+/** Join ARIA id refs into one attribute value, trimming and deduplicating. */
+export function joinAriaIDs(...values: AriaID[]): string | undefined {
   const ids = values
     .flatMap(value =>
       typeof value === 'string' ? value.trim().split(/\s+/) : [],

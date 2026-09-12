@@ -296,3 +296,48 @@ describe('MetadataListItem pass-through target', () => {
     expect(handleClick).toHaveBeenCalledOnce();
   });
 });
+
+describe('MetadataList pass-through props', () => {
+  it('forwards pass-through props to the root element', () => {
+    render(
+      <MetadataList
+        aria-label="Record details"
+        id="record-meta"
+        data-source="crm"
+        data-testid="list">
+        <MetadataListItem label="Owner">Alice</MetadataListItem>
+      </MetadataList>,
+    );
+    const rootEl = screen.getByTestId('list');
+    expect(rootEl).toHaveAttribute('aria-label', 'Record details');
+    expect(rootEl).toHaveAttribute('id', 'record-meta');
+    expect(rootEl).toHaveAttribute('data-source', 'crm');
+  });
+
+  it('forwards event handlers to the root element', () => {
+    const handleClick = vi.fn();
+    render(
+      <MetadataList onClick={handleClick} data-testid="list">
+        <MetadataListItem label="Owner">Alice</MetadataListItem>
+      </MetadataList>,
+    );
+    fireEvent.click(screen.getByTestId('list'));
+    expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it('keeps component-owned theme metadata over colliding pass-throughs', () => {
+    render(
+      <MetadataList
+        columns={2}
+        orientation="horizontal"
+        data-columns="99"
+        data-orientation="vertical"
+        data-testid="list">
+        <MetadataListItem label="Owner">Alice</MetadataListItem>
+      </MetadataList>,
+    );
+    const rootEl = screen.getByTestId('list');
+    expect(rootEl).toHaveAttribute('data-columns', '2');
+    expect(rootEl).toHaveAttribute('data-orientation', 'horizontal');
+  });
+});
