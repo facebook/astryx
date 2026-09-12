@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6268,
+  "headSha": "e80ff18ad951fe11e7986811b3459b0c5778bdb7",
+  "testedSha": "e80ff18ad951fe11e7986811b3459b0c5778bdb7",
+  "baseSha": "5b0eb5dc9ada9d301b4f6c87d8c53c7f4a09073e",
+  "run": {
+    "id": 34666759554,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-12T02:32:18.495Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 382 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "e80ff18ad951fe11e7986811b3459b0c5778bdb7",
+      "headSha": "e80ff18ad951fe11e7986811b3459b0c5778bdb7",
+      "baseSha": "5b0eb5dc9ada9d301b4f6c87d8c53c7f4a09073e",
+      "runId": "34666759554",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [],
+        "stableCoreFiles": [
+          "packages/core/src/theme/defineTheme.ts",
+          "packages/core/src/theme/localTokens.ts",
+          "packages/core/src/theme/themeAdaptations.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 382,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

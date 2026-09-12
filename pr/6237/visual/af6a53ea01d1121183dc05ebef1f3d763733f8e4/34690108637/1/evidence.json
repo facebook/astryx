@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6237,
+  "headSha": "af6a53ea01d1121183dc05ebef1f3d763733f8e4",
+  "testedSha": "af6a53ea01d1121183dc05ebef1f3d763733f8e4",
+  "baseSha": "47ba5526fa93f2bbcb7c0c26ab0a49d86cf37825",
+  "run": {
+    "id": 34690108637,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-12T12:13:55.776Z",
+    "context": {
+      "sha": "af6a53ea01d1121183dc05ebef1f3d763733f8e4",
+      "runId": "34690108637",
+      "runAttempt": "1",
+      "headSha": "af6a53ea01d1121183dc05ebef1f3d763733f8e4",
+      "baseSha": "47ba5526fa93f2bbcb7c0c26ab0a49d86cf37825",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "TreeList"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/TreeList/TreeList.tsx",
+          "packages/core/src/TreeList/TreeListItem.tsx",
+          "packages/core/src/TreeList/TreeListTypes.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

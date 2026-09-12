@@ -1,0 +1,1 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{a as r,o as i}from"./FieldStatus-CzQ4kdD6.js";function a({isRequired:e=!1,isOptional:t=!1}){let{defaultOptionality:n}=(0,o.use)(r);return!t&&(e||n===`required`)}var o,s=e((()=>{o=t(n(),1),i()}));export{a as n,s as t};

@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-08-29T04:25:02.209Z",
+  "context": {
+    "sha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+    "runId": "33232925620",
+    "runAttempt": "1",
+    "headSha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+    "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Toast"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Toast/Toast.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-08-28T23:48:22.758Z",
+    "sha": "c6a8b21aeedf3b915dd4a4ef72e127013de2c731",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 252,
+    "unchanged": 238,
+    "changed": 0,
+    "added": 14,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-toast--themed-toast-action__neutral-light",
+    "core-toast--themed-toast-action__neutral-dark",
+    "core-toast--themed-toast-action__butter-light",
+    "core-toast--themed-toast-action__butter-dark",
+    "core-toast--themed-toast-action__gothic-light",
+    "core-toast--themed-toast-action__gothic-dark",
+    "core-toast--themed-toast-action__stone-light",
+    "core-toast--themed-toast-action__stone-dark",
+    "core-toast--themed-toast-action__y2k-light",
+    "core-toast--themed-toast-action__y2k-dark",
+    "core-toast--themed-toast-action__matcha-light",
+    "core-toast--themed-toast-action__matcha-dark",
+    "core-toast--themed-toast-action__chocolate-light",
+    "core-toast--themed-toast-action__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

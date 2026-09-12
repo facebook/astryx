@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5617,
+  "headSha": "422561915e9ee0a3c0bbc97f746c8c31410bb494",
+  "testedSha": "422561915e9ee0a3c0bbc97f746c8c31410bb494",
+  "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+  "run": {
+    "id": 33463971282,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-01T03:17:55.450Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 3470 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "422561915e9ee0a3c0bbc97f746c8c31410bb494",
+      "headSha": "422561915e9ee0a3c0bbc97f746c8c31410bb494",
+      "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+      "runId": "33463971282",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "Toast"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Toast/Toast.tsx",
+          "packages/core/src/Toast/useToast.tsx",
+          "packages/core/src/theme/Theme.tsx",
+          "packages/core/src/theme/useTheme.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 3470,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "Toast"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

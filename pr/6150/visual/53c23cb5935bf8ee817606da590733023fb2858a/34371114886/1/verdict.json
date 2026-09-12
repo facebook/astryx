@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-09T16:04:53.218Z",
+  "context": {
+    "sha": "53c23cb5935bf8ee817606da590733023fb2858a",
+    "runId": "34371114886",
+    "runAttempt": "1",
+    "headSha": "53c23cb5935bf8ee817606da590733023fb2858a",
+    "baseSha": "83a74f62290167d3432a9baf2e13897392d0903c",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Button",
+        "ClickableCard"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Button/__tests__/Button.a11y.known-failures.ts",
+        "packages/core/src/ClickableCard/ClickableCard.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-09T13:21:32.655Z",
+    "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

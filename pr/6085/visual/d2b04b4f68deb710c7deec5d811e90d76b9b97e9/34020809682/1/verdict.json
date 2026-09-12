@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-06T08:26:41.282Z",
+  "context": {
+    "sha": "d2b04b4f68deb710c7deec5d811e90d76b9b97e9",
+    "runId": "34020809682",
+    "runAttempt": "1",
+    "headSha": "d2b04b4f68deb710c7deec5d811e90d76b9b97e9",
+    "baseSha": "b2e6a1d6b0fb9e5ca976b4d53f29f1b476ec3f61",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Chat",
+        "CommandPalette",
+        "ComplexSelector",
+        "DateInput",
+        "DateRangeInput",
+        "DateTimeInput",
+        "Field",
+        "FileInput",
+        "NumberInput",
+        "Selector",
+        "TextArea",
+        "TextInput",
+        "TimeInput",
+        "Typeahead"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Chat/ChatComposerInput.tsx",
+        "packages/core/src/CommandPalette/CommandPaletteInput.tsx",
+        "packages/core/src/ComplexSelector/ComplexSelector.tsx",
+        "packages/core/src/DateInput/DateInput.tsx",
+        "packages/core/src/DateInput/NativeDateField.tsx",
+        "packages/core/src/DateInput/TouchDateField.tsx",
+        "packages/core/src/DateRangeInput/DateRangeInput.tsx",
+        "packages/core/src/DateTimeInput/DateTimeInput.tsx",
+        "packages/core/src/DateTimeInput/TouchDateTimeField.tsx",
+        "packages/core/src/DateTimeInput/nativePickerSegmentStyles.ts",
+        "packages/core/src/Field/PanelSearchInput.tsx",
+        "packages/core/src/FileInput/FileInput.tsx",
+        "packages/core/src/NumberInput/NumberInput.tsx",
+        "packages/core/src/Selector/Selector.tsx",
+        "packages/core/src/TextArea/TextArea.tsx",
+        "packages/core/src/TextInput/TextInput.tsx",
+        "packages/core/src/TimeInput/TimeInput.tsx",
+        "packages/core/src/Typeahead/BaseTypeahead.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": [
+        "@astryxdesign/richtext"
+      ]
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-05T07:37:37.596Z",
+    "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 32,
+    "unchanged": 30,
+    "changed": 2,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+      "diffPixels": 3992,
+      "diffRatio": 0.005076,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--fruit-ripeness-grid",
+      "title": "Core/ComplexSelector",
+      "name": "Fruit ripeness selector",
+      "component": "ComplexSelector",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+      "diffPixels": 3825,
+      "diffRatio": 0.004864,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--fruit-ripeness-grid",
+      "title": "Core/ComplexSelector",
+      "name": "Fruit ripeness selector",
+      "component": "ComplexSelector",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    }
+  ],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6045,
+    "headSha": "bfad9758bf7e5cfa6124e46cd80412ec727850a6",
+    "headRef": "feat/init-muse-agent-preset",
+    "headRepository": "oliprovscode/astryx",
+    "headRepositoryId": "1357543433"
+  },
+  "sourceRun": {
+    "id": 33913758527,
+    "attempt": 2,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6045/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6045/sandbox/",
+      "indexSha256": "5d9d1b57fa08c310992e9a5370405e82158692f3b088accdea6a8a8fd1058d67"
+    }
+  }
+}

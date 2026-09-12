@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6225,
+    "headSha": "dbd9f1a488c8b53ee76bfdff804f1d6c6f8b0a9c",
+    "headRef": "feat/slider-control-theme-target",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34510261658,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6225/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6225/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

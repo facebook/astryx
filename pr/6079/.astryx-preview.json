@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6079,
+    "headSha": "54a225879dc43ba739a27cb0e6caf273fa473729",
+    "headRef": "rocky/issue-5991-neutral-figtree",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 34303759200,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6079/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6079/sandbox/",
+      "indexSha256": "967c4582e051c2edfc3e2dd40ef0b51de014f9a806c9c4fa7bace5b041663fb5"
+    }
+  }
+}

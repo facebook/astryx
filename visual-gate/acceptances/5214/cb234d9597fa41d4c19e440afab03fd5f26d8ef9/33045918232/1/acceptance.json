@@ -1,0 +1,1956 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5214,
+  "headSha": "cb234d9597fa41d4c19e440afab03fd5f26d8ef9",
+  "testedSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "baseSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "run": {
+    "id": 33045918232,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "b211298eb3ffddc6b36990891615cba66029b2d1",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "core-spinner--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "43a9cc8a31c12176db6ee15f4ad157936df73fa2805455b96db59fc3bb4b15ec",
+      "shot": {
+        "sha256": "43a9cc8a31c12176db6ee15f4ad157936df73fa2805455b96db59fc3bb4b15ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "72577cb55eba7f5aef30820424051731086d99c730fd3e70f90984e5c8a7c0c3",
+      "shot": {
+        "sha256": "72577cb55eba7f5aef30820424051731086d99c730fd3e70f90984e5c8a7c0c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "08a57c4d7fe677be49daffc87f155b095431e7d8db5dea23718e440b74e91cb1",
+      "shot": {
+        "sha256": "08a57c4d7fe677be49daffc87f155b095431e7d8db5dea23718e440b74e91cb1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0868fd91aab59d547751ae5eb5427fe433b7fde1f3035ca1ff04d68cfb9ac78d",
+      "shot": {
+        "sha256": "0868fd91aab59d547751ae5eb5427fe433b7fde1f3035ca1ff04d68cfb9ac78d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d686cf79f514179e9759e0effaf9ff41d31b387998c538047150d458d653bb20",
+      "shot": {
+        "sha256": "d686cf79f514179e9759e0effaf9ff41d31b387998c538047150d458d653bb20",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a43e6393c9d62b2ab9cb69dd0fae2dc414feafd9f70e15659f011a267f47386a",
+      "shot": {
+        "sha256": "a43e6393c9d62b2ab9cb69dd0fae2dc414feafd9f70e15659f011a267f47386a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "82ecb59efa1538f9d3812797d6593d482e9266927ef30b0e8e3332adb2d99f26",
+      "shot": {
+        "sha256": "82ecb59efa1538f9d3812797d6593d482e9266927ef30b0e8e3332adb2d99f26",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f33d7e4e1aa99b1167ed7bcfa0343959d80ab8ede215002d406d3673f3b3c255",
+      "shot": {
+        "sha256": "f33d7e4e1aa99b1167ed7bcfa0343959d80ab8ede215002d406d3673f3b3c255",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02de4797ae3bdda436d1c12c88c799604ca3202e4bab27d8a54b7dd8ca061b7b",
+      "shot": {
+        "sha256": "02de4797ae3bdda436d1c12c88c799604ca3202e4bab27d8a54b7dd8ca061b7b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e731c647ccdb72ad4c82df5375e9c232290d036bc76df9fad185097231814b4",
+      "shot": {
+        "sha256": "4e731c647ccdb72ad4c82df5375e9c232290d036bc76df9fad185097231814b4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "63aa7483b1b19d2c81ad35426c9233c2ff2d367a3640a9a44f4b505c4f80062b",
+      "shot": {
+        "sha256": "63aa7483b1b19d2c81ad35426c9233c2ff2d367a3640a9a44f4b505c4f80062b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6b054e8ac2320fda39f619be54a7b28cda284b863dc67b5c39538e3702bf0550",
+      "shot": {
+        "sha256": "6b054e8ac2320fda39f619be54a7b28cda284b863dc67b5c39538e3702bf0550",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f72582068f0db62efb6c23d6c6b5de76292565a9b92c0c6634f0368aff6596c7",
+      "shot": {
+        "sha256": "f72582068f0db62efb6c23d6c6b5de76292565a9b92c0c6634f0368aff6596c7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27d1942a68d8375642fd3d9a8d9a19c0962a466423ff464fdb7eb0a1ee6dcf2b",
+      "shot": {
+        "sha256": "27d1942a68d8375642fd3d9a8d9a19c0962a466423ff464fdb7eb0a1ee6dcf2b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b8296cc5ee5b160232cc369470beb138e10f21142140dc90729b3a2f491fe5c6",
+      "shot": {
+        "sha256": "b8296cc5ee5b160232cc369470beb138e10f21142140dc90729b3a2f491fe5c6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e3e93010723e7fe14baaaefb64f8d89b5af3ec2548d8bdeb613847811639fc7",
+      "shot": {
+        "sha256": "4e3e93010723e7fe14baaaefb64f8d89b5af3ec2548d8bdeb613847811639fc7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7a3be5eab056501f556891e58cfff55e6c990dc46cd738c9d0a27295eb698f2f",
+      "shot": {
+        "sha256": "7a3be5eab056501f556891e58cfff55e6c990dc46cd738c9d0a27295eb698f2f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3da79b0cd3824db229138a6eeeb286c1e8080ec11ad2a178e0d084d9a5f1cc1a",
+      "shot": {
+        "sha256": "3da79b0cd3824db229138a6eeeb286c1e8080ec11ad2a178e0d084d9a5f1cc1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a6e3d9578545551db8f01240784a890e90ab898b2917e1b08d4a1212b3d7615e",
+      "shot": {
+        "sha256": "a6e3d9578545551db8f01240784a890e90ab898b2917e1b08d4a1212b3d7615e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d3449ec1a94dbb0c12b7c2f4e5e141d022f00df7ca1fa08012bd814628311239",
+      "shot": {
+        "sha256": "d3449ec1a94dbb0c12b7c2f4e5e141d022f00df7ca1fa08012bd814628311239",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "85d6aa1c2c71b9c5b6df56bc721df2aa21be859a7eefd2ac08ac4f6889d8ec84",
+      "shot": {
+        "sha256": "85d6aa1c2c71b9c5b6df56bc721df2aa21be859a7eefd2ac08ac4f6889d8ec84",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "99ccb4ceb8b2cf1fd538f387e865b3e37192882052198e90f4cb6ef1211a7ec7",
+      "shot": {
+        "sha256": "99ccb4ceb8b2cf1fd538f387e865b3e37192882052198e90f4cb6ef1211a7ec7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "65ea9d62e6cbba559ce656917939264964604d45afdc6be6de1ef1e23ca4da39",
+      "shot": {
+        "sha256": "65ea9d62e6cbba559ce656917939264964604d45afdc6be6de1ef1e23ca4da39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "47fbcfd489dc23e80521eac4dcccf327f57fa4b4400d479bf521541ba0447dab",
+      "shot": {
+        "sha256": "47fbcfd489dc23e80521eac4dcccf327f57fa4b4400d479bf521541ba0447dab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb9be45b17ca8f4948af61eded8520459ae4a8f7ee3451cfb223a568417d2fa7",
+      "shot": {
+        "sha256": "bb9be45b17ca8f4948af61eded8520459ae4a8f7ee3451cfb223a568417d2fa7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--sizes__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e1f278194bc500d57b028fcf20dfd94a9bd9191c577f889099af60049912610",
+      "shot": {
+        "sha256": "4e1f278194bc500d57b028fcf20dfd94a9bd9191c577f889099af60049912610",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--sizes",
+        "title": "Core/Spinner",
+        "name": "Sizes",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "42cb7503ad6be20e4630cead6fc1132055525049285d57de89d3f24fcb3f5554",
+      "shot": {
+        "sha256": "42cb7503ad6be20e4630cead6fc1132055525049285d57de89d3f24fcb3f5554",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4d7471bed12f3dfc0ac9bb3afc8ef6d0c65e0a282d16d9bf2906a7904fe18172",
+      "shot": {
+        "sha256": "4d7471bed12f3dfc0ac9bb3afc8ef6d0c65e0a282d16d9bf2906a7904fe18172",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e3c000c58e0f5b97a921d382df8c026fb38ca35425759223d1a32bcd4f3310e2",
+      "shot": {
+        "sha256": "e3c000c58e0f5b97a921d382df8c026fb38ca35425759223d1a32bcd4f3310e2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "367c6491b7352ddf3e7f687d37032d5ed76858fb5e301ce2ec104d84c957433b",
+      "shot": {
+        "sha256": "367c6491b7352ddf3e7f687d37032d5ed76858fb5e301ce2ec104d84c957433b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ef6bfe9210778ada56949237ec2e1ea41d96d16fbe26b5a5ad01e0db72bcbdfe",
+      "shot": {
+        "sha256": "ef6bfe9210778ada56949237ec2e1ea41d96d16fbe26b5a5ad01e0db72bcbdfe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "937a437ad26390a64f40938173892f12a1115928231e7eb7356ec679d6af4b0f",
+      "shot": {
+        "sha256": "937a437ad26390a64f40938173892f12a1115928231e7eb7356ec679d6af4b0f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b80ccaf0d457236d91e8d04814357bb295baa90aabd710ef6239e7ddda854044",
+      "shot": {
+        "sha256": "b80ccaf0d457236d91e8d04814357bb295baa90aabd710ef6239e7ddda854044",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fa1807e7b2b9678e9430b9ab17f1ee8afea8ce502e69632e6133996c96af9867",
+      "shot": {
+        "sha256": "fa1807e7b2b9678e9430b9ab17f1ee8afea8ce502e69632e6133996c96af9867",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a2d2004e281dce0c29db3c46710687bc1a047a157d15ad153ff98da135b891ef",
+      "shot": {
+        "sha256": "a2d2004e281dce0c29db3c46710687bc1a047a157d15ad153ff98da135b891ef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5ce8329024ad40dbe2b927e55d15b1e0295478103f2d6f2ea936173b475cadda",
+      "shot": {
+        "sha256": "5ce8329024ad40dbe2b927e55d15b1e0295478103f2d6f2ea936173b475cadda",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "01e8892228f1bcf28faf7dda7f34601f5ad5584ceb710586c694abff0ee7c5ce",
+      "shot": {
+        "sha256": "01e8892228f1bcf28faf7dda7f34601f5ad5584ceb710586c694abff0ee7c5ce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d0725c987d77537dcbae0c873bce476daa35f24dd472bc4ca14221100dcf92c4",
+      "shot": {
+        "sha256": "d0725c987d77537dcbae0c873bce476daa35f24dd472bc4ca14221100dcf92c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6d0c51e1db9631f6da809ca3688be30c584e265bafeac255cffe96d5cda1eae2",
+      "shot": {
+        "sha256": "6d0c51e1db9631f6da809ca3688be30c584e265bafeac255cffe96d5cda1eae2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--shades__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d69a9b4cfa10e0d63b75188f87f4e9df0eae8b379ba7dbdf02d8c30b629e40af",
+      "shot": {
+        "sha256": "d69a9b4cfa10e0d63b75188f87f4e9df0eae8b379ba7dbdf02d8c30b629e40af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--shades",
+        "title": "Core/Spinner",
+        "name": "Shades",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5bcd1f39ea1a0065ae3f9a0ae50e423cb6f22a47f6798aa20e4e7dccd7b1acb0",
+      "shot": {
+        "sha256": "5bcd1f39ea1a0065ae3f9a0ae50e423cb6f22a47f6798aa20e4e7dccd7b1acb0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "65b11769a0ef6cdaaa967848f2cdda5c2b7f6c7f8f5a99e9f90a483984206d07",
+      "shot": {
+        "sha256": "65b11769a0ef6cdaaa967848f2cdda5c2b7f6c7f8f5a99e9f90a483984206d07",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "827f66b0783b3321adbac8195c645d217ac4e8c1416bdcc2acf7fa0f74e70138",
+      "shot": {
+        "sha256": "827f66b0783b3321adbac8195c645d217ac4e8c1416bdcc2acf7fa0f74e70138",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb2704b1d61a5d5641a3c7222e5d8309630de5b5c590834e2abe1e65d9194c75",
+      "shot": {
+        "sha256": "bb2704b1d61a5d5641a3c7222e5d8309630de5b5c590834e2abe1e65d9194c75",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b9fe530b15866d69851e6bfe1bc5444f84cd6e98c2d66a7ed90d100a06a38a9a",
+      "shot": {
+        "sha256": "b9fe530b15866d69851e6bfe1bc5444f84cd6e98c2d66a7ed90d100a06a38a9a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c1cd520fb13bf248c2f12f625608415a2491e49ccf333edaabbe001e021d283e",
+      "shot": {
+        "sha256": "c1cd520fb13bf248c2f12f625608415a2491e49ccf333edaabbe001e021d283e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "571ba7cd2d0028f5817e1bc683abd66e975fca55961f262368d4b81c84dd3b2e",
+      "shot": {
+        "sha256": "571ba7cd2d0028f5817e1bc683abd66e975fca55961f262368d4b81c84dd3b2e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69b40197732a090e963bce061f0fd84bfef270bf771ead195791894244c83f1f",
+      "shot": {
+        "sha256": "69b40197732a090e963bce061f0fd84bfef270bf771ead195791894244c83f1f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c77a920d236e3cbcf03342098b1ac14f842546f20db4e2946ac5b3b7a4b17f0d",
+      "shot": {
+        "sha256": "c77a920d236e3cbcf03342098b1ac14f842546f20db4e2946ac5b3b7a4b17f0d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02e6645ee89735d62d814754e2ed9059374c40bff588e3af1f5b2b06c97dfb9d",
+      "shot": {
+        "sha256": "02e6645ee89735d62d814754e2ed9059374c40bff588e3af1f5b2b06c97dfb9d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "423100162cf0d754701fbcefc412a0ec5b6aec89a99348945a9044a5346692db",
+      "shot": {
+        "sha256": "423100162cf0d754701fbcefc412a0ec5b6aec89a99348945a9044a5346692db",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b2b902f4e6bcef9a74295d97129702216012b6e34b92fb1fb71c3100d3926891",
+      "shot": {
+        "sha256": "b2b902f4e6bcef9a74295d97129702216012b6e34b92fb1fb71c3100d3926891",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "620361e3909cbb9f442fe6ce123d4f1a2f7256686e99afef7e30fa2c1618dc75",
+      "shot": {
+        "sha256": "620361e3909cbb9f442fe6ce123d4f1a2f7256686e99afef7e30fa2c1618dc75",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--with-label__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5711d205eacf72b0aa7e2fd98784d021c67c8e670f1974f84cd0b7e88cbd5581",
+      "shot": {
+        "sha256": "5711d205eacf72b0aa7e2fd98784d021c67c8e670f1974f84cd0b7e88cbd5581",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--with-label",
+        "title": "Core/Spinner",
+        "name": "With Label",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3cc3a798df02ab634e0e4bdf5d6be43eda7777faa3600570ffd0475dbc397cbd",
+      "shot": {
+        "sha256": "3cc3a798df02ab634e0e4bdf5d6be43eda7777faa3600570ffd0475dbc397cbd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "84e3d3f9952cde74a93a2b41fbf2a8e1b020885b69fd2fd367e48661b6e9887d",
+      "shot": {
+        "sha256": "84e3d3f9952cde74a93a2b41fbf2a8e1b020885b69fd2fd367e48661b6e9887d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eba135165fbc85f18b97fa0166461cce7e428780e48b5fcda1d6e9e29418a3b7",
+      "shot": {
+        "sha256": "eba135165fbc85f18b97fa0166461cce7e428780e48b5fcda1d6e9e29418a3b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1c5ccfd09d2497b8f7d545c18bcdc057254aaab2d64a845b417316c45c238c7e",
+      "shot": {
+        "sha256": "1c5ccfd09d2497b8f7d545c18bcdc057254aaab2d64a845b417316c45c238c7e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e8d7a6fed6e26796eae104261754ab582fd3aacf372968c119f8e0e7fc34e4a2",
+      "shot": {
+        "sha256": "e8d7a6fed6e26796eae104261754ab582fd3aacf372968c119f8e0e7fc34e4a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "edf9438690e855c525c47514d882483ed0212c766c254cdaaf810a6ad40e188e",
+      "shot": {
+        "sha256": "edf9438690e855c525c47514d882483ed0212c766c254cdaaf810a6ad40e188e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "375298bc2318318aaa9fff99bef35e1a3634cb969598ad2d33614b9015cfabe1",
+      "shot": {
+        "sha256": "375298bc2318318aaa9fff99bef35e1a3634cb969598ad2d33614b9015cfabe1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7db3c1453580694b705b1fe446209f7dc75a48e19b3ad1a0e7c4ac481536d0c4",
+      "shot": {
+        "sha256": "7db3c1453580694b705b1fe446209f7dc75a48e19b3ad1a0e7c4ac481536d0c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f98f90d11d37ae2f6aaf642475ba0ecdd942d127360b9ef8ee4fb992df74ba0",
+      "shot": {
+        "sha256": "3f98f90d11d37ae2f6aaf642475ba0ecdd942d127360b9ef8ee4fb992df74ba0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "002313b803bdc4b31c913d73e3495e51ce7d3a325b68da2ff70fd225f309f998",
+      "shot": {
+        "sha256": "002313b803bdc4b31c913d73e3495e51ce7d3a325b68da2ff70fd225f309f998",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f06eba3c0cdc15fb806ebbc57bcc2b4b8f22aae5749e50d46ed9c25b4a80cb25",
+      "shot": {
+        "sha256": "f06eba3c0cdc15fb806ebbc57bcc2b4b8f22aae5749e50d46ed9c25b4a80cb25",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "414c2b8b56ff33d672513e775646e4bae49cd47e5301a19a813f383aafe97479",
+      "shot": {
+        "sha256": "414c2b8b56ff33d672513e775646e4bae49cd47e5301a19a813f383aafe97479",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "90a3f816f14bf338e6c06f82fac85d74caecd28e6e40f4db92505edb162bd70a",
+      "shot": {
+        "sha256": "90a3f816f14bf338e6c06f82fac85d74caecd28e6e40f4db92505edb162bd70a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-geometry__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "887e5647b74567790120320ae669482c5b01a9e9b2a38344f61b153e98c5535b",
+      "shot": {
+        "sha256": "887e5647b74567790120320ae669482c5b01a9e9b2a38344f61b153e98c5535b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-geometry",
+        "title": "Core/Spinner",
+        "name": "Themed Geometry (per size)",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "343818fb2f842c774c2de3eba1728d65dc140b25d957b3c3afd7766cb7764c06",
+      "shot": {
+        "sha256": "343818fb2f842c774c2de3eba1728d65dc140b25d957b3c3afd7766cb7764c06",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ca773ea6e0ccd2aa59372892272f874084067392d8fae374396065702bbf7673",
+      "shot": {
+        "sha256": "ca773ea6e0ccd2aa59372892272f874084067392d8fae374396065702bbf7673",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7de3836fb627fa5fe81c8ed9bf8c4da9c15852320225c936a1c89bbb4b501f0d",
+      "shot": {
+        "sha256": "7de3836fb627fa5fe81c8ed9bf8c4da9c15852320225c936a1c89bbb4b501f0d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b64532c15680568001973aa262573868b08b12bb7535e0c939e6f742e6b441b7",
+      "shot": {
+        "sha256": "b64532c15680568001973aa262573868b08b12bb7535e0c939e6f742e6b441b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a60de5adceca3e30f999287248f2478ce96ed5cfc90768a137500650fd4872c4",
+      "shot": {
+        "sha256": "a60de5adceca3e30f999287248f2478ce96ed5cfc90768a137500650fd4872c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c40c4b5301e439e7935b1c1f58f63b726a107822c13ee7a2bb550fee60de5023",
+      "shot": {
+        "sha256": "c40c4b5301e439e7935b1c1f58f63b726a107822c13ee7a2bb550fee60de5023",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bc82fae7d6d71da416ce4ded85ce218b3318da9c177dfd24ee7f46f313708b25",
+      "shot": {
+        "sha256": "bc82fae7d6d71da416ce4ded85ce218b3318da9c177dfd24ee7f46f313708b25",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e42064e6fb75f0d6cf59fcae7cd365d86c2fed69eadc3d195e7a6410b45fc83f",
+      "shot": {
+        "sha256": "e42064e6fb75f0d6cf59fcae7cd365d86c2fed69eadc3d195e7a6410b45fc83f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6a5b7a5e1b98ded7a3928212b26dd30096158387777ed1d191fbe9a5c05a946b",
+      "shot": {
+        "sha256": "6a5b7a5e1b98ded7a3928212b26dd30096158387777ed1d191fbe9a5c05a946b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "901837998e9faefc46fff2d94b9325a06ede1df381ad6101edf7cd1314fd4ce5",
+      "shot": {
+        "sha256": "901837998e9faefc46fff2d94b9325a06ede1df381ad6101edf7cd1314fd4ce5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8906458a6848c2f69a2bad3d719f86ba1647233c4886fdc146e6712aea4c79af",
+      "shot": {
+        "sha256": "8906458a6848c2f69a2bad3d719f86ba1647233c4886fdc146e6712aea4c79af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "552a0060e371b740ab4ad212c0c2376ed855c09c18026c54a44584cf75bc6d84",
+      "shot": {
+        "sha256": "552a0060e371b740ab4ad212c0c2376ed855c09c18026c54a44584cf75bc6d84",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "562750807c65bf8dde9abbd12811d50bbfa50dc6428191741b0a8fe19c09979c",
+      "shot": {
+        "sha256": "562750807c65bf8dde9abbd12811d50bbfa50dc6428191741b0a8fe19c09979c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-color__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b9c35e9596b6c3e8ff14bfb06ef3c66acd376fd2dac93c590231324fcbd78cc7",
+      "shot": {
+        "sha256": "b9c35e9596b6c3e8ff14bfb06ef3c66acd376fd2dac93c590231324fcbd78cc7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-color",
+        "title": "Core/Spinner",
+        "name": "Themed Color (per shade)",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a4cf42019fff6c5e488244c1f69a6b20773e646821cacccd1cb547127f69b4a0",
+      "shot": {
+        "sha256": "a4cf42019fff6c5e488244c1f69a6b20773e646821cacccd1cb547127f69b4a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e80952b6142c7a99ef8ce054d476492e35351a99669fe02ee6133c8d753b22c",
+      "shot": {
+        "sha256": "8e80952b6142c7a99ef8ce054d476492e35351a99669fe02ee6133c8d753b22c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cfcb255ca07d2af70d425a0d02d269bb019aa9f9ea6261cd9c3ea54397157552",
+      "shot": {
+        "sha256": "cfcb255ca07d2af70d425a0d02d269bb019aa9f9ea6261cd9c3ea54397157552",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4a128d0692d7df795f6a8312093973824f83d6ac5071a8c1ccdfffe1a9e6f784",
+      "shot": {
+        "sha256": "4a128d0692d7df795f6a8312093973824f83d6ac5071a8c1ccdfffe1a9e6f784",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f304beed48693543aa3e60ab83b5eea3039f41fe40c416b0828822685ad8eb57",
+      "shot": {
+        "sha256": "f304beed48693543aa3e60ab83b5eea3039f41fe40c416b0828822685ad8eb57",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e5ca0fedc2a98e263ba79285429e1e904f8dcdd4be78834d330896c7c5b5c9f",
+      "shot": {
+        "sha256": "5e5ca0fedc2a98e263ba79285429e1e904f8dcdd4be78834d330896c7c5b5c9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4cc3f4a67741fed1d4a1c9bdfbf0683488a9d4a6397f73bd310b50d167b7ced2",
+      "shot": {
+        "sha256": "4cc3f4a67741fed1d4a1c9bdfbf0683488a9d4a6397f73bd310b50d167b7ced2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "adcd4e7a7c57191646ad068b7b91d9fe40d456c3f25ff1ce711f29142f8eeaf7",
+      "shot": {
+        "sha256": "adcd4e7a7c57191646ad068b7b91d9fe40d456c3f25ff1ce711f29142f8eeaf7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2f29e1889dde9cb81a2a26e49c8ec0d3848ae91c31ee940bad078a0ea4fdcf4c",
+      "shot": {
+        "sha256": "2f29e1889dde9cb81a2a26e49c8ec0d3848ae91c31ee940bad078a0ea4fdcf4c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3d0b9e8916d1e417cd6775d0ef5f75769a1d25dec8ca7eaec9189a93e5bb1866",
+      "shot": {
+        "sha256": "3d0b9e8916d1e417cd6775d0ef5f75769a1d25dec8ca7eaec9189a93e5bb1866",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b1b82b3dc21e36e8ee3231e52caa61c8847fe585afd6663b15075f5865af2ef0",
+      "shot": {
+        "sha256": "b1b82b3dc21e36e8ee3231e52caa61c8847fe585afd6663b15075f5865af2ef0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9fbabfaed26d966f0c9dcabb3ba6c439da440c7545dee49852f3c9a68e4de6a0",
+      "shot": {
+        "sha256": "9fbabfaed26d966f0c9dcabb3ba6c439da440c7545dee49852f3c9a68e4de6a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1e9950b2480b4a0ecc50e2a3b559180c0e086104b88f26279540add94e733c35",
+      "shot": {
+        "sha256": "1e9950b2480b4a0ecc50e2a3b559180c0e086104b88f26279540add94e733c35",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-spinner--themed-hairline-stroke__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e9144672e044106b7ac724fb5e031efea70685835558ac704ca4dbe6e220044f",
+      "shot": {
+        "sha256": "e9144672e044106b7ac724fb5e031efea70685835558ac704ca4dbe6e220044f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--themed-hairline-stroke",
+        "title": "Core/Spinner",
+        "name": "Themed Hairline Stroke",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "These 12 frames add Spinner coverage; no existing pixels changed, and sensor-backed review verified unchanged defaults plus the intentional themed geometry.",
+    "commentId": 5436103797,
+    "at": "2026-08-27T08:06:26.348Z"
+  }
+}

@@ -1,0 +1,99 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{D as r,E as i,F as a,P as o,b as ee,n as te,p as s,t as c}from"./ime-Dy4QRKoo.js";import{B as l,E as ne,F as u,t as d}from"./utils-HJIp2CYO.js";import{t as f}from"./jsx-runtime-DqZldVDK.js";import{n as re,t as ie}from"./useMergedRefs-QqD-ek11.js";import{l as ae,t as p}from"./i18n-hjoBHy0K.js";import{t as oe}from"./Icon-CDNRBkXA.js";import{t as m}from"./Icon-B1Jcw32f.js";import{n as se,t as h}from"./useAnnounce-D0prHD0W.js";import{n as ce,t as g}from"./usePopover-4MSULVWi.js";function _({ref:e,item:t,icon:n,description:i,isDisabled:o=!1,group:ee,xstyle:te,className:s,style:c,...l}){return t.element?(0,v.jsx)(v.Fragment,{children:t.element}):(0,v.jsxs)(`div`,{ref:e,...u(r(`typeahead-item`),a(y.container,o&&y.disabled,te),s,c),...l,children:[n,(0,v.jsxs)(`div`,{className:`astryx78zum5 astryxdt5ytf astryx98rzlu astryxeuugli`,children:[(0,v.jsx)(`span`,{className:`astryxcr08ib astryx1kq96og astryx1sodnla astryx1tgivj0 astryxb3r6kr astryxlyipyv astryxuxw1ft`,children:t.label}),i&&(0,v.jsx)(`span`,{className:`astryx141an7d astryx1ltkj2j astryxv1l7n4 astryxb3r6kr astryxlyipyv astryxuxw1ft`,children:i})]})]})}var v,y,b=e((()=>{n(),o(),d(),i(),v=f(),y={container:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kOIVth:`astryx1txdalj`,kAzted:`astryx2lwn1j`,$$css:!0},disabled:{kSiTet:`astryxbyyjgo`,$$css:!0}},_.displayName=`TypeaheadItem`,_.__docgenInfo={description:`Default item component for typeahead dropdown results.
+
+Renders a label with optional icon and description.
+Exported for use in custom \`renderItem\` implementations.
+
+@example
+\`\`\`
+<Typeahead searchSource={source} value={v} onChange={setV} label="Search" />
+<Typeahead
+  searchSource={source}
+  value={v}
+  onChange={setV}
+  label="Search"
+  renderItem={(item) => (
+    <TypeaheadItem
+      item={item}
+      icon={<Avatar src={item.auxiliaryData.avatar} size="sm" />}
+      description={item.auxiliaryData.role}
+    />
+  )}
+/>
+\`\`\``,methods:[],displayName:`TypeaheadItem`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:``},item:{required:!0,tsType:{name:`T`},description:`The search result item.`},icon:{required:!1,tsType:{name:`ReactNode`},description:`Icon or avatar to display before the label.`},description:{required:!1,tsType:{name:`string`},description:`Description text displayed below the label.`},isDisabled:{required:!1,tsType:{name:`boolean`},description:`Whether this item is disabled.
+@default false`,defaultValue:{value:`false`,computed:!1}},group:{required:!1,tsType:{name:`string`},description:`Group label for grouping items visually.`}},composes:[`Omit`]}}));function le(e,t){return e.length>0&&e.length<t}var x,S,C,w,ue,T,de=e((()=>{x=t(n(),1),o(),g(),h(),c(),b(),m(),s(),d(),i(),p(),ie(),S=f(),C={kzqmXN:`astryx5lhr3w`,$$css:!0},w={input:{k1xSpc:`astryx1lliihq`,kUk6DE:`astryx98rzlu`,k7Eaqz:`astryxfvyar9`,kMzoRj:`astryxc342km`,ksu8eU:`astryxng3xce`,kmVPX3:`astryx1717udv`,kMv6JI:`astryx9ynric`,kGuDYH:`astryxjm74w1 astryx6pjikd`,kLWn49:`astryxw6l6zx`,kMwMTN:`astryx1tgivj0`,kWkggS:`astryxjbqb8w`,kI3sdo:`astryx1a2a7pz`,k8Qsv1:`astryxeyghm5`,$$css:!0},inputDisabled:{kkrTdU:`astryxt0e3qv`,$$css:!0},popover:{k7Eaqz:`astryxrzjruh`,$$css:!0},popoverCustomWidth:e=>[C,{"--x-width":(e=>typeof e==`number`?e+`px`:e??void 0)(`${e}px`)}],item:{kB7OPa:`astryx9f619`,k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kzqmXN:`astryxh8yej3`,kmVPX3:`astryxlsj2fj`,kaIpWk:`astryxh6dtrn`,kkrTdU:`astryx1ypdohk astryx16khyan`,kI3sdo:`astryx1a2a7pz`,kWkggS:`astryxjbqb8w`,kQgIW9:`astryx1gs6z28`,k9WMMc:`astryx1yc453h`,$$css:!0},itemHighlighted:{kWkggS:`astryx1lmrjuc`,$$css:!0},itemSelected:{k63SB2:`astryx1e4wzip`,$$css:!0}},ue={sm:{k8WAf4:`astryxu0wf1k`,kLKAdn:null,kGO01o:null,kg3NbH:`astryxf314gf`,kuDDbn:null,kE3dHu:null,kP0aTx:null,kpe85a:null,$$css:!0},md:{k8WAf4:`astryx1vofgu7`,kLKAdn:null,kGO01o:null,$$css:!0},lg:{k8WAf4:`astryxce4md1`,kLKAdn:null,kGO01o:null,$$css:!0}},T=function({searchSource:e,value:t,onChange:n,renderItem:i,placeholder:o,hasEntriesOnFocus:s=!1,maxMenuItems:c=10,menuWidth:d,minQueryLength:f=1,emptySearchResultsText:ie,isDisabled:p=!1,isFocusableDisabled:m=!1,hasAutoFocus:h=!1,onChangeQuery:g,onOpenChange:v,__queryEntries:y,inputId:b,ariaDescribedBy:C,ariaLabelledBy:T,inputXStyle:de,inputTabIndex:fe,anchorRef:E,onKeyDown:D,onPaste:O,transformQuery:k,debounceMs:A=150,size:pe=`md`,ref:me}){let j=ae(),he=o??j(`@astryx.typeahead.searchPlaceholder`),M=ie??j(`@astryx.typeahead.emptySearchResults`),ge=(0,x.useId)(),_e=b??ge,N=(0,x.useId)(),ve=(0,x.useRef)(null),P=(0,x.useRef)(null),F=se(),[I,L]=(0,x.useState)(``),[R,z]=(0,x.useState)([]),[B,V]=(0,x.useState)(-1),[ye,H]=(0,x.useState)(!1),[be,U]=(0,x.useState)(!1),W=(0,x.useRef)(!1),G=(0,x.useRef)(null),K=(0,x.useRef)(0),q=(0,x.useRef)(0),J=ce({onShow:(0,x.useCallback)(()=>{v?.(!0)},[v]),onHide:(0,x.useCallback)(()=>{v?.(!1),V(-1),e.cancel?.()},[v,e]),hasLightDismiss:!0,hasCloseButton:!1,hasAutoFocus:!1,role:`none`}),Y=(0,x.useCallback)(()=>{W.current?document.addEventListener(`click`,()=>requestAnimationFrame(()=>J.show()),{once:!0}):J.show()},[J]);(0,x.useEffect)(()=>{let e=E?.current??P.current;return e&&J.triggerRef(e),()=>{J.triggerRef(null)}},[J,E]);let xe=(0,x.useCallback)(async t=>{e.cancel?.();let n=++K.current;H(!0),U(!0);try{let r=await e.search(t);if(K.current!==n)return;q.current=n;let i=r.slice(0,c),a=[...i,...y?.(t,i)??[]];z(a),V(a.length>0?0:-1),(r.length>0||t.length>0)&&Y(),t.length>0&&F(a.length===0?M:j(`@astryx.typeahead.resultCount`,{count:a.length}))}catch{if(K.current!==n)return;z([]),V(-1)}finally{K.current===n&&H(!1)}},[e,c,Y,F,M,y,j]),X=(0,x.useCallback)(async()=>{let t=++K.current;H(!0);try{let n=await e.bootstrap();if(K.current!==t)return;q.current=t;let r=n.slice(0,c);z(r),V(r.length>0?0:-1),n.length>0&&Y()}catch{if(K.current!==t)return;z([])}finally{K.current===t&&H(!1)}},[e,c,Y]),Z=(0,x.useCallback)(t=>{if(L(t),g?.(t),G.current&&clearTimeout(G.current),t.length===0&&(K.current++,e.cancel?.(),H(!1),!s)){z([]),V(-1),U(!1),F(``),J.hide();return}if(le(t,f)){K.current++,e.cancel?.();let n=y?.(t,[])??[];z(n),V(n.length>0?0:-1),U(!1),H(!1),F(``),n.length>0?Y():J.hide();return}let n=()=>{t.length>0?xe(t):s&&X()};A<=0?n():G.current=setTimeout(n,A)},[g,s,f,y,Y,xe,X,J,A,e,F]),Se=(0,x.useCallback)(e=>{let t=e.target.value,n=`isComposing`in e.nativeEvent&&e.nativeEvent.isComposing;Z(k&&!n?k(t):t)},[Z,k]),Ce=(0,x.useCallback)(e=>{if(O?.(e),!k||p||e.defaultPrevented)return;let t=e.currentTarget,n=t.selectionStart??t.value.length,r=t.selectionEnd??t.value.length,i=e.clipboardData.getData(`text`),a=t.value.slice(0,n)+i+t.value.slice(r),o=k(a);o!==a&&(e.preventDefault(),Z(o))},[O,k,p,Z]),we=(0,x.useCallback)(e=>{if(!k||p)return;let t=e.currentTarget.value,n=k(t);n!==t&&Z(n)},[k,p,Z]),Q=(0,x.useCallback)(t=>{K.current++,G.current&&=(clearTimeout(G.current),null),e.cancel?.(),n(t),L(``),z([]),U(!1),H(!1),J.hide(),ve.current?.focus()},[n,J,e]),Te=(0,x.useCallback)(()=>{p||(s&&R.length===0&&I.length===0?X():R.length>0&&(I.length>0||s)&&q.current===K.current&&Y())},[p,s,R.length,I.length,X,Y]),Ee=(0,x.useCallback)(e=>{if(!J.isOpen)return;let t=e.relatedTarget;if(t){let e=E?.current??P.current,n=document.getElementById(J.id);if(e?.contains(t)||n?.contains(t))return}J.hide()},[J,E]),De=(0,x.useCallback)(e=>{if(D?.(e),!e.defaultPrevented&&!te(e.nativeEvent)){if(!J.isOpen){e.key===`ArrowDown`&&(s||I.length>0)&&(e.preventDefault(),R.length>0?(J.show(),V(0)):s&&!le(I,f)&&X());return}switch(e.key){case`ArrowDown`:e.preventDefault(),R.length>0&&V(e=>e<R.length-1?e+1:0);break;case`ArrowUp`:e.preventDefault(),R.length>0&&V(e=>e>0?e-1:R.length-1);break;case`Enter`:e.preventDefault(),B>=0&&B<R.length&&Q(R[B]);break;case`Escape`:e.preventDefault(),J.hide();break;case`Tab`:J.hide();break;case`Home`:J.isOpen&&(e.preventDefault(),R.length>0&&V(0));break;case`End`:J.isOpen&&(e.preventDefault(),R.length>0&&V(R.length-1));break}}},[J,R,B,Q,s,I,f,X,D]),$=(0,x.useCallback)(e=>`${N}-option-${e}`,[N]);(0,x.useEffect)(()=>{!J.isOpen||B<0||B>=R.length||document.getElementById($(B))?.scrollIntoView?.({block:`nearest`})},[J.isOpen,B,$,R.length]);let Oe=t==null?null:l(t.id,()=>R.indexOf(t));return(0,x.useEffect)(()=>()=>{G.current&&clearTimeout(G.current),e.cancel?.()},[e]),(0,S.jsxs)(S.Fragment,{children:[(0,S.jsx)(`input`,{ref:re(me,ve,P),id:_e,type:`text`,role:`combobox`,"aria-expanded":J.isOpen,"aria-controls":N,"aria-activedescendant":J.isOpen&&B>=0&&B<R.length?$(B):void 0,"aria-autocomplete":`list`,"aria-describedby":C,"aria-labelledby":T,"aria-disabled":m?`true`:void 0,tabIndex:fe,value:I,onChange:Se,onPointerDown:()=>{W.current=!0,document.addEventListener(`click`,()=>{W.current=!1},{once:!0})},onFocus:Te,onBlur:Ee,onKeyDown:De,onPaste:Ce,onCompositionEnd:we,placeholder:he,disabled:p&&!m,readOnly:m||void 0,autoFocus:h,"data-autofocus":h||void 0,autoComplete:`off`,...a(w.input,p&&w.inputDisabled,de)}),ye&&(0,S.jsx)(`span`,{role:`status`,"aria-label":j(`@astryx.typeahead.loading`),className:`astryx3nfvp2 astryx6s0dn4 astryxl56j7k astryx9epnlk`,children:(0,S.jsx)(oe,{icon:`clock`,size:`sm`,color:`secondary`})}),J.render((0,S.jsx)(`div`,{id:N,role:`listbox`,"aria-label":j(`@astryx.typeahead.searchResults`),...u(r(`typeahead-dropdown`),{className:`astryx9f619 astryxuyqlj2 astryx1odjw0f astryx9epnlk`}),children:R.length===0&&be?(0,S.jsx)(`div`,{...u(r(`typeahead-empty-state`),{className:`astryx1b2ylru astryx2b8uid astryx141an7d astryxv1l7n4`}),children:M}):(()=>{let e=0,t=t=>{let n=e++,r=l(t.id,n),o=r===Oe;return(0,S.jsxs)(`div`,{id:$(n),role:`option`,"aria-selected":o,tabIndex:-1,onClick:()=>Q(t),onMouseEnter:()=>V(n),...a(w.item,ue[pe],n===B&&w.itemHighlighted,o&&w.itemSelected),children:[(0,S.jsx)(`span`,{className:`astryx78zum5 astryx98rzlu astryxeuugli`,children:i?i(t):(0,S.jsx)(_,{item:t})}),o&&(0,S.jsx)(oe,{icon:`check`,size:`sm`,color:`primary`})]},r)};return ne(R,{ungroupedFirst:!0}).map(e=>{let n=e.items.map(t);return e.heading==null?n:(0,S.jsxs)(`div`,{role:`group`,"aria-label":e.heading,children:[(0,S.jsx)(`div`,{"aria-hidden":`true`,className:`astryxf314gf astryx1xye8es astryxy143xn astryx141an7d astryx1ltkj2j astryxv1l7n4 astryx87ps6o`,children:e.heading}),n]},`group-${e.heading}`)})})()}),{placement:`below`,alignment:`start`,offset:ee[`--spacing-1`],xstyle:[w.popover,d!=null&&w.popoverCustomWidth(d)]})]})},T.displayName=`BaseTypeahead`,T.__docgenInfo={description:`Combobox engine: input, search, keyboard navigation, and dropdown.
+
+Renders only the \`<input>\` and the dropdown popover. No wrapper div,
+no border styling, no token rendering. Consumers (Typeahead,
+Tokenizer) provide their own wrapper and pass \`anchorRef\` for
+dropdown positioning.
+
+@example
+\`\`\`
+<BaseTypeahead
+  searchSource={source}
+  value={selected}
+  onChange={setSelected}
+  anchorRef={wrapperRef}
+  placeholder="Search..."
+/>
+\`\`\``,methods:[],displayName:`BaseTypeahead`,props:{ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLInputElement>`,elements:[{name:`HTMLInputElement`}]},description:``},searchSource:{required:!0,tsType:{name:`SearchSource`,elements:[{name:`T`}],raw:`SearchSource<T>`},description:`Search source providing items.`},value:{required:!0,tsType:{name:`union`,raw:`T | null`,elements:[{name:`T`},{name:`null`}]},description:`Currently selected item (null = nothing selected).`},onChange:{required:!0,tsType:{name:`signature`,type:`function`,raw:`(item: T | null) => void`,signature:{arguments:[{type:{name:`union`,raw:`T | null`,elements:[{name:`T`},{name:`null`}]},name:`item`}],return:{name:`void`}}},description:`Callback when selection changes.`},renderItem:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(item: T) => ReactNode`,signature:{arguments:[{type:{name:`T`},name:`item`}],return:{name:`ReactNode`}}},description:`Render function for dropdown items. Default: TypeaheadItem.`},placeholder:{required:!1,tsType:{name:`string`},description:`Placeholder text.`},hasEntriesOnFocus:{required:!1,tsType:{name:`boolean`},description:`Show results on focus before typing.
+@default false`,defaultValue:{value:`false`,computed:!1}},maxMenuItems:{required:!1,tsType:{name:`number`},description:`Max dropdown items to display.
+@default 10`,defaultValue:{value:`10`,computed:!1}},menuWidth:{required:!1,tsType:{name:`number`},description:`Fixed dropdown width in pixels. Never shrinks below the anchor width.`},minQueryLength:{required:!1,tsType:{name:`number`},description:`Minimum query length before the search source is queried. Below it no
+search runs and the menu stays closed, so a remote source is not asked
+for a result set that cannot be meaningful yet — and the user does not
+see "no results" for a query that was never searched.
+
+Measured with \`String.length\` (UTF-16 code units), like every other
+length check in the library.
+
+@default 1 — every non-empty query is searched.`,defaultValue:{value:`1`,computed:!1}},emptySearchResultsText:{required:!1,tsType:{name:`string`},description:`Text shown when no results found.
+@default 'No results found'`},isDisabled:{required:!1,tsType:{name:`boolean`},description:`Whether the input is disabled.
+@default false`,defaultValue:{value:`false`,computed:!1}},isFocusableDisabled:{required:!1,tsType:{name:`boolean`},description:"When disabled with a reason, keeps the input focusable via `aria-disabled`\n(instead of the native `disabled` attribute) and `readOnly` so an\nassociated disabled-reason tooltip stays discoverable by keyboard and\nassistive technology. Value mutation is still blocked by the `isDisabled`\nguards. Consumers (Typeahead) own the tooltip and wrapper.\n@default false",defaultValue:{value:`false`,computed:!1}},hasAutoFocus:{required:!1,tsType:{name:`boolean`},description:`Auto-focus on mount.
+@default false`,defaultValue:{value:`false`,computed:!1}},onChangeQuery:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(query: string) => void`,signature:{arguments:[{type:{name:`string`},name:`query`}],return:{name:`void`}}},description:`Query change callback (for logging/external use).`},onOpenChange:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(isOpen: boolean) => void`,signature:{arguments:[{type:{name:`boolean`},name:`isOpen`}],return:{name:`void`}}},description:`Callback when dropdown opens/closes.`},__queryEntries:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(query: string, results: T[]) => T[]`,signature:{arguments:[{type:{name:`string`},name:`query`},{type:{name:`Array`,elements:[{name:`T`}],raw:`T[]`},name:`results`}],return:{name:`Array`,elements:[{name:`T`}],raw:`T[]`}}},description:`Entries derived from the query text rather than fetched for it — today,
+Tokenizer's "Create ...".
+
+They are appended to whatever the search returned, and they are offered
+whatever \`minQueryLength\` says: that threshold exists to avoid a fetch
+that is too broad to be worth making, and these cost no fetch. A field
+that can create \`QA\` should not stop being able to just because a search
+for \`QA\` would match too much.
+
+Receives the results they will be appended to, so a caller can decline to
+offer an entry that duplicates one.
+
+Underscored and \`@internal\`: \`BaseTypeaheadProps\` is re-exported from the
+package entry point, so anything named on it ships as public API at the
+next cut. This is a wiring detail between Tokenizer and the base — the
+same reason \`DefinedTheme.__inputTokens\` carries its prefix.
+
+@internal`},debounceMs:{required:!1,tsType:{name:`number`},description:`Debounce delay in ms before triggering search after typing.
+Set to 0 for synchronous/local search sources that don't need debouncing.
+@default 150`,defaultValue:{value:`150`,computed:!1}},inputId:{required:!1,tsType:{name:`string`},description:`ID for the input element (for label association).`},ariaDescribedBy:{required:!1,tsType:{name:`string`},description:`Additional aria-describedby IDs.`},ariaLabelledBy:{required:!1,tsType:{name:`string`},description:`Additional aria-labelledby IDs.`},inputXStyle:{required:!1,tsType:{name:`StyleXStyles`},description:`Additional StyleX styles for the input element.`},inputTabIndex:{required:!1,tsType:{name:`number`},description:`Tab-order override for the input element. Typeahead passes \`-1\` while
+its selected-value token is shown: the input is visually collapsed
+(width 0 / opacity 0) but must stay programmatically focusable for
+token edit/clear interactions, so removing it from the Tab order is
+what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
+remains focusable via \`.focus()\` regardless of this value.`},anchorRef:{required:!1,tsType:{name:`RefObject`,elements:[{name:`union`,raw:`HTMLElement | null`,elements:[{name:`HTMLElement`},{name:`null`}]}],raw:`RefObject<HTMLElement | null>`},description:`Ref to the anchor element for dropdown positioning.
+The dropdown will be positioned relative to this element.
+If not provided, the input itself is used as the anchor.`},onKeyDown:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(e: React.KeyboardEvent<HTMLInputElement>) => void`,signature:{arguments:[{type:{name:`ReactKeyboardEvent`,raw:`React.KeyboardEvent<HTMLInputElement>`,elements:[{name:`HTMLInputElement`}]},name:`e`}],return:{name:`void`}}},description:"Additional keydown handler called before internal keyboard navigation.\nIf the handler calls `e.preventDefault()`, internal handling is skipped."},transformQuery:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(nextQuery: string) => string`,signature:{arguments:[{type:{name:`string`},name:`nextQuery`}],return:{name:`string`}}},description:`Rewrites the text a user edit would put in the input, before it becomes
+the query. Called with the value the input is about to take; whatever it
+returns is used instead. Leave it unset — or return the argument
+unchanged — and the input behaves exactly as it does without it.
+
+It runs before the query is stored, before \`onChangeQuery\` fires, and
+before a search is scheduled, so returning shorter text never fires a
+search for the text it replaced. Side effects are allowed: it runs inside
+the input's change handler, and Tokenizer uses it to lift delimited values
+out of the input and commit them as tokens.
+
+On paste it receives the value the input would hold after the paste —
+existing text with the clipboard spliced over the selection — before the
+single-line input can strip newlines from it; returning different text
+replaces the native insertion. After an IME composition ends it runs over
+the finalized text, since no further change event will carry it.
+
+Not called for query changes the component makes itself, such as the clear
+that follows a selection, and not called while an input method is
+mid-composition, because that text is not final yet.`},size:{required:!1,tsType:{name:`union`,raw:`'sm' | 'md' | 'lg'`,elements:[{name:`literal`,value:`'sm'`},{name:`literal`,value:`'md'`},{name:`literal`,value:`'lg'`}]},description:`Size of the typeahead, used to scale dropdown item padding.
+When 'sm', items get compact padding to match the trigger size.
+@default 'md'`,defaultValue:{value:`'md'`,computed:!1}}},composes:[`Omit`]}}));export{b as i,de as n,_ as r,T as t};

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6268,
+    "headSha": "dd2691858b6d22279bf62e596c9eec77929982fc",
+    "headRef": "theme-family-artifacts-implementation",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34712898838,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6268/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6268/sandbox/",
+      "indexSha256": "b03fec6d6e219cdba6749cc68e9c281a284d3da73315f9f034d86e772105db8d"
+    }
+  }
+}

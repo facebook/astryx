@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-05T06:44:03.898Z",
+  "context": {
+    "sha": "5e6ef7a65b8ea5a2a054228001c77cf5a9e50fe1",
+    "runId": "33949320116",
+    "runAttempt": "1",
+    "headSha": "5e6ef7a65b8ea5a2a054228001c77cf5a9e50fe1",
+    "baseSha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Layer"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Layer/layerStack.ts",
+        "packages/core/src/Layer/useLayerDismissal.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": [
+        "@astryxdesign/lab"
+      ]
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6225,
+  "headSha": "dbd9f1a488c8b53ee76bfdff804f1d6c6f8b0a9c",
+  "testedSha": "dbd9f1a488c8b53ee76bfdff804f1d6c6f8b0a9c",
+  "baseSha": "cac1b8f98be0324cb15d12bf84aedb04edf10ff9",
+  "run": {
+    "id": 34510261658,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-slider--default__probe-light",
+      "kind": "changed",
+      "beforeSha256": "098d8de12466d68f0d004cdb3274980cb8ae321584036c484ebf097d62da59ed",
+      "shot": {
+        "sha256": "acdbed21fb4c5a5fba2a3336508821b84cf1aa43239cf6c940dbd9526d9f5ea7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-slider--default",
+        "title": "Core/Slider",
+        "name": "Default",
+        "component": "Slider",
+        "theme": "probe",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-probe",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-slider--default__probe-dark",
+      "kind": "changed",
+      "beforeSha256": "4b2642143deec910e4dc1e99574fbdf926e790ea775294edc3cb488f17d1bc11",
+      "shot": {
+        "sha256": "5d64b1604d3f35d2a79f940d92c59b7d23aa72f61d63684e18906ab78324f182",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-slider--default",
+        "title": "Core/Slider",
+        "name": "Default",
+        "component": "Slider",
+        "theme": "probe",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-probe",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-10T18:20:56.950Z",
+    "context": {
+      "sha": "dbd9f1a488c8b53ee76bfdff804f1d6c6f8b0a9c",
+      "runId": "34510261658",
+      "runAttempt": "1",
+      "headSha": "dbd9f1a488c8b53ee76bfdff804f1d6c6f8b0a9c",
+      "baseSha": "cac1b8f98be0324cb15d12bf84aedb04edf10ff9",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Slider"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Slider/Slider.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-09T13:21:32.655Z",
+      "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 4,
+      "unchanged": 2,
+      "changed": 2,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-slider--default__probe-light",
+        "diffPixels": 15617,
+        "diffRatio": 0.019858,
+        "sizeChanged": false,
+        "storyId": "core-slider--default",
+        "title": "Core/Slider",
+        "name": "Default",
+        "component": "Slider",
+        "theme": "probe",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-slider--default__probe-dark",
+        "diffPixels": 15615,
+        "diffRatio": 0.019855,
+        "sizeChanged": false,
+        "storyId": "core-slider--default",
+        "title": "Core/Slider",
+        "name": "Default",
+        "component": "Slider",
+        "theme": "probe",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "cwm-2": {
+    "astryx": "previews/cwm-2/astryx.html",
+    "html": "previews/cwm-2/html.html",
+    "astryx-tailwind": "previews/cwm-2/astryx-tailwind.html"
+  },
+  "dd-1": {
+    "astryx": "previews/dd-1/astryx.html",
+    "html": "previews/dd-1/html.html",
+    "astryx-tailwind": "previews/dd-1/astryx-tailwind.html"
+  },
+  "fwc-8": {
+    "astryx": "previews/fwc-8/astryx.html",
+    "html": "previews/fwc-8/html.html",
+    "astryx-tailwind": "previews/fwc-8/astryx-tailwind.html"
+  },
+  "io-3": {
+    "astryx": "previews/io-3/astryx.html",
+    "html": "previews/io-3/html.html",
+    "astryx-tailwind": "previews/io-3/astryx-tailwind.html"
+  },
+  "ps-1": {
+    "astryx": "previews/ps-1/astryx.html",
+    "html": "previews/ps-1/html.html",
+    "astryx-tailwind": "previews/ps-1/astryx-tailwind.html"
+  },
+  "rc-1": {
+    "astryx": "previews/rc-1/astryx.html",
+    "html": "previews/rc-1/html.html",
+    "astryx-tailwind": "previews/rc-1/astryx-tailwind.html"
+  },
+  "sd-1": {
+    "astryx": "previews/sd-1/astryx.html",
+    "html": "previews/sd-1/html.html",
+    "astryx-tailwind": "previews/sd-1/astryx-tailwind.html"
+  },
+  "tc-7": {
+    "astryx": "previews/tc-7/astryx.html",
+    "html": "previews/tc-7/html.html",
+    "astryx-tailwind": "previews/tc-7/astryx-tailwind.html"
+  },
+  "ty-1": {
+    "astryx": "previews/ty-1/astryx.html",
+    "baseline": "previews/ty-1/baseline.html",
+    "html": "previews/ty-1/html.html",
+    "astryx-tailwind": "previews/ty-1/astryx-tailwind.html"
+  },
+  "wd-2": {
+    "astryx": "previews/wd-2/astryx.html",
+    "html": "previews/wd-2/html.html",
+    "astryx-tailwind": "previews/wd-2/astryx-tailwind.html"
+  }
+}

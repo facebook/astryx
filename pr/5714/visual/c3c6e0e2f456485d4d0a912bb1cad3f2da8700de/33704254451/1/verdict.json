@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-03T02:20:46.253Z",
+  "context": {
+    "sha": "c3c6e0e2f456485d4d0a912bb1cad3f2da8700de",
+    "runId": "33704254451",
+    "runAttempt": "1",
+    "headSha": "c3c6e0e2f456485d4d0a912bb1cad3f2da8700de",
+    "baseSha": "6e84905d7a6c66513a9c0fc79812a49aec7fa35e",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [],
+      "stableCoreFiles": [],
+      "stableThemes": [
+        "neutral"
+      ],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T06:00:40.805Z",
+    "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 810,
+    "unchanged": 772,
+    "changed": 10,
+    "added": 28,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-progressbar--variants__neutral-dark",
+      "diffPixels": 5484,
+      "diffRatio": 0.006973,
+      "sizeChanged": false,
+      "storyId": "core-progressbar--variants",
+      "title": "Core/ProgressBar",
+      "name": "Variants",
+      "component": "ProgressBar",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-progressbar--default__neutral-dark",
+      "diffPixels": 4732,
+      "diffRatio": 0.006017,
+      "sizeChanged": false,
+      "storyId": "core-progressbar--default",
+      "title": "Core/ProgressBar",
+      "name": "Default",
+      "component": "ProgressBar",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-tablerowstatus--default__neutral-dark",
+      "diffPixels": 1118,
+      "diffRatio": 0.001422,
+      "sizeChanged": false,
+      "storyId": "core-tablerowstatus--default",
+      "title": "Core/TableRowStatus",
+      "name": "Default",
+      "component": "TableRowStatus",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-tablerowstatus--default__neutral-light",
+      "diffPixels": 920,
+      "diffRatio": 0.00117,
+      "sizeChanged": false,
+      "storyId": "core-tablerowstatus--default",
+      "title": "Core/TableRowStatus",
+      "name": "Default",
+      "component": "TableRowStatus",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-segmentedcontrol--default__neutral-light",
+      "diffPixels": 592,
+      "diffRatio": 0.000753,
+      "sizeChanged": false,
+      "storyId": "core-segmentedcontrol--default",
+      "title": "Core/SegmentedControl",
+      "name": "Default",
+      "component": "SegmentedControl",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-segmentedcontrol--default__neutral-dark",
+      "diffPixels": 580,
+      "diffRatio": 0.000738,
+      "sizeChanged": false,
+      "storyId": "core-segmentedcontrol--default",
+      "title": "Core/SegmentedControl",
+      "name": "Default",
+      "component": "SegmentedControl",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-button--all-variants__neutral-dark",
+      "diffPixels": 540,
+      "diffRatio": 0.000687,
+      "sizeChanged": false,
+      "storyId": "core-button--all-variants",
+      "title": "Core/Button",
+      "name": "All Variants",
+      "component": "Button",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-button--with-end-slot__neutral-dark",
+      "diffPixels": 538,
+      "diffRatio": 0.000684,
+      "sizeChanged": false,
+      "storyId": "core-button--with-end-slot",
+      "title": "Core/Button",
+      "name": "With End Slot",
+      "component": "Button",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-chatcomposer--full-featured__neutral-dark",
+      "diffPixels": 6,
+      "diffRatio": 0.000008,
+      "sizeChanged": false,
+      "storyId": "core-chatcomposer--full-featured",
+      "title": "Core/ChatComposer",
+      "name": "Full Featured",
+      "component": "Chat",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-chatcomposer--with-attachments__neutral-dark",
+      "diffPixels": 6,
+      "diffRatio": 0.000008,
+      "sizeChanged": false,
+      "storyId": "core-chatcomposer--with-attachments",
+      "title": "Core/ChatComposer",
+      "name": "With Attachments",
+      "component": "Chat",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    }
+  ],
+  "added": [
+    "core-card--color-variants__neutral-light",
+    "core-card--color-variants__neutral-dark",
+    "core-field--status-variants__neutral-light",
+    "core-field--status-variants__neutral-dark",
+    "core-numberinput--status-variations__neutral-light",
+    "core-numberinput--status-variations__neutral-dark",
+    "core-textarea--status-variations__neutral-light",
+    "core-textarea--status-variations__neutral-dark",
+    "core-textinput--status-variations__neutral-light",
+    "core-textinput--status-variations__neutral-dark",
+    "core-timeinput--with-error-status__neutral-light",
+    "core-timeinput--with-error-status__neutral-dark",
+    "core-timeinput--with-success-status__neutral-light",
+    "core-timeinput--with-success-status__neutral-dark",
+    "core-timeinput--with-warning-status__neutral-light",
+    "core-timeinput--with-warning-status__neutral-dark",
+    "core-tokenizer--with-error__neutral-light",
+    "core-tokenizer--with-error__neutral-dark",
+    "core-tokenizer--with-success__neutral-light",
+    "core-tokenizer--with-success__neutral-dark",
+    "core-tokenizer--with-warning__neutral-light",
+    "core-tokenizer--with-warning__neutral-dark",
+    "core-typeahead--with-error__neutral-light",
+    "core-typeahead--with-error__neutral-dark",
+    "core-typeahead--with-success__neutral-light",
+    "core-typeahead--with-success__neutral-dark",
+    "core-typeahead--with-warning__neutral-light",
+    "core-typeahead--with-warning__neutral-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

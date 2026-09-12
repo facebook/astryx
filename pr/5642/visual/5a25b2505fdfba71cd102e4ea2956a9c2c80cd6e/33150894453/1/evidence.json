@@ -1,0 +1,5353 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5642,
+  "headSha": "5a25b2505fdfba71cd102e4ea2956a9c2c80cd6e",
+  "testedSha": "5a25b2505fdfba71cd102e4ea2956a9c2c80cd6e",
+  "baseSha": "936256386b74d67f88a41adee235b91699977b2f",
+  "run": {
+    "id": 33150894453,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-dialog--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7d4886f6a5092fa0588cbec38504c67796b890c645a97be98152871ac01f7038",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d957b59a506a4b00b1288e3e261921dca885502056e4e1fd9665303c23a4da28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e93dcb3bd99e01f50108165725dd416996c6728a37248f59888f30200a0affa7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3a52a42c2ddd2c49b9eb30f847b3874492bc461f5a04827954292101b0a4ddbc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3f7263e1e727cc1ca47d40d29332f83ae5099dcb4528044420d2c334af8594b0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9129bdbf88ea5efe61bdc4de6813eaf64f902893539b39ce6ef11c832fed5c9e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "932fb4b526c286c21cfc7970c0315f2a51043226aa640f46bfef34ddf4563f39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ada8be466309e9c62a99c1adf1939aaba93d392f9c490eb7df77799545b24a23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "32c65ecb996b64996d6aa2b25528fa82de8aa819fea5cbe7f76ec54958ee0aa6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "70732a6bc46cc9925a087f1c198fee4a1038a6b79b5205ac9000d3ff0f59ebad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c6b404c304e7a76e78131dd81fbc0defc0ac95681912662941fcfe4c9c9e701f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "27b9081b6d399990dfa760b9e14816cbcf61e83c1728de1130d5c0f377ab408c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--default",
+        "title": "Core/Dialog",
+        "name": "Default",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1c77f7f4879194faeaea59c141a6ef14296db740af9bd5e35f92d31cd5902d24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7ed4bf4cc994b826a89fd6fc4df43c78b1a9b37de46d8fc6657fe144d10a54bb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fac982fd4bec4af7a22f2a8801b295aa334a0a0d32ae2b94de2b848e48ca9630",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b832a97bd0db1d8d2003cbecc014073dd129c0ae64b78d51ae752c0b3444c52d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "82d36b9b7812aa7bb8f5cbb4fa28a8b1c5d7ee14fe629acdda40a94ad66af2e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5ce9b046ad4be97c71ba5ca4efa255bc8704cd0a6e1d043b6a5e4724657366ba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8eda5c373078b58b60d8f692ee813409761cc51d9fcaf3d79494db018a7e87b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5eba356c27800d822ab86cf146e38261cbc751cc8ef2f0adbf0a157baad3b959",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fed4d6016367def398a459f0f1cf53aa47f644c753cf5f7ef825e062a848d634",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b52329395f3075c43dc06d507bd7d551aa33c042165d17e99a1db79d8336c956",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bdf13f8370e8dfb0e8ad6b87acb26497a5b58bad0d4134975d6394a1cb7ab321",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a1c4163f0a4dc8caa8e9ce163cfd96152ac27ba3956868bb3d3a1f73bde172b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "50b9f22a1b0bf89ee55aed08a8be73ed67b37bf68d4cdecfbf2f7e36022ae3d6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--with-subtitle__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "245e6695345e459b82adf98fc14521fd7d658a01bc9e0ea0261afac7bf450cab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--with-subtitle",
+        "title": "Core/Dialog",
+        "name": "With Subtitle",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e23d9935af04c1c102a1555d1a3641a43cb7d347698f9357c69ff69d7382c8d9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0855fe748ce7aee89aab52a77336f2cd583f3805f20ab8273a5a8b36b4bc5a94",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9c3519a47445badc876c5d475115f285426f05a3b7defc9bea4dcbd3a792ad44",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a8c844aa09410c6c3f3c1def29c44f8591a3031b08553f6e48879f7595195514",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9d5f59ae639ffb1b44e66f1a4cb491ecf8a186ee2b77d8cae16ff92c85fdbdfa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "90c097f6d12b281f488ea25503059faf3a1887f460ec2ee2846365111e33cb8d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "826c57647c2051ad8070460e667a46c4ff26a3b5b6c544ad5f8581d5055ae619",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d9280be4624ae4bcf4ebf5c9a35117002eaa0ccf2a56495cc45f3992735b7c87",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4cb5eac32cb8175ea302e6b05cea655fad10c940217acfc3026fdeb4923c6002",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12298fe802b3c397f58cd0eac2e4f0c6554e8eec9ee5de442e8a82215647ff06",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "501e1d11cb1a374b7a31c4dcd915ffde84de17f1bf9691437ee953f69068adeb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "488c9aaad1ad2f752ad42817f726c28cdb3016655bd33a80b448193e479fa7a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3fb291f4c598b8ff8fb47678b702885718475da8c5fc15fe926b166f3b7e7dc4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-width__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "da64300846084f67c0def9156fda0e0d6743e0f75b69359668c39bf3823ee232",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-width",
+        "title": "Core/Dialog",
+        "name": "Custom Width",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eabb87702fa9aa736acb158d944970b3308fa1ee5f4c14de386a3e7ddcbd988b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "344602d9cc49313e4ab453e93d5cb7b03426a5444edbe3834c3a17ecc05ca015",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "300bbd564a3031cb315a0444188723d8774ea274e5e8c880dea0ccc7b607c7a7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9e62e4d3f5165807ce7c38ee19e118ea3e40f9fdda22eeba50ebad09d2608bef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f2dc81a81021dafc7bc10f9e74ac35f7b061fa430f7df251d032bd9256b01b04",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9064536333114a5489ab83f3a3ecb4f653da5ec1ca8e367e0f5d3ed755d11355",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "528856235cf49905058cfc23076a42bc46d20c3070eb48f8f18a318fc7369743",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "13d53613783a5b0740900eba0c003a6f7fe2f4e995a35ac486d1d6649e9773e1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8d2faec241a9e1dbe0a16cf45a1835005a7593d805edaee3f4f65ab6579ebdde",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2ddff2c6c753524d7cc2e76a2d7bd4861f54a049f2deb080b08502a6e1bb9ae7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9d19c0a0398d10a31de8abd255030c82d4c2635785c3251054a390316e096e20",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12ef170482a446ce05185b893c417efa0b7a5573daaa5a5b5859d202978c4a9c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "914b24119e6d1972e9e0723dc2287b6b4005ed99e0194c95d621725fce03bfbb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--fullscreen__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2e3f20f3b0dbcc0d43aea9657a0db1c6604e5648b90a0713b611ad9d50007748",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--fullscreen",
+        "title": "Core/Dialog",
+        "name": "Fullscreen",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2935fce76c3b15a86e0856988e3f6f8b0cda022fa5257a228ff5fc7259750439",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "181d1299af330d6e0130e91df3c74082e261de2c8a414577c28b16d244ba465a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "71b1e99d492295df5611f37a9c32c9b88baa64d74f60800a0ceb44bde6a2bc01",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3ef2180700b406507b54a1bf661d5e485bb6dd0b3b036af9501216ee1266defa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "79116c413099ab23186d7b2df199f4e1ef89db9d5ed773b8d18898f5e4ea1d39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f466fef74b484361285a00b9dad6d02c6c483d56ef6808d4e034a18bec87493a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d2d04408e6bc2967ad47c3459169495a28cb8a9b66511bf9912cfdadc2906aa0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "34d5cf6efadaa87fa50c4d3fab257e377241c751e9e889fd928e7415a907cd7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "883c612247434e95f8c938c3539d7565f3fe19027c8140eb01b2b471a33b9086",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7400eff0b6f36c79a17e0bd0fe66865753cbe6b50ec30787bdae868bd0d0d4af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1a45c1c85101356003d7a1343bc0f35bf71cffa2a39b2a2dfff4035e1fc0d6aa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b8177555fe2d5a29b66fb5e5748b48d8969611d60e1ddbf19ab36d12294cbce5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fc01efa803208ce1eb6da26a0013a736803091eadb88fd505f2a48766817cc03",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-required__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "18c004bfdd11b97985ddfc4a035ce9689d3283392ee2ba623ec8f41a59ba2ebe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-required",
+        "title": "Core/Dialog",
+        "name": "Purpose Required",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2c5b03a45fa7491ea070fd3269387b516110d5c4de33d3d5ab9477dc8780534a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9e9ed4d6caa0cb3e084ac258720aeab58ef25c43945cb04410d7b635b550a113",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "806cc599a0facc2858bebe76b3838ed5bee9541299031d059ec78dd25411a3ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a62848686ec98ee836ef2004a17ba04b51e884e849ad634a9451c75e374a4512",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b0420cca1679092f30df06394d4938753113adfe73e01bd48c6633f1af453852",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "551dd92124748147d789ee300b0e49285169ccdf7a99901714fc77e62d0880af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d80eb7433d63f237e015f0f751e8d520ddecb753ad0948eae130c229ba3c496d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d5029c586adae50a13c1b267529f3ae74d53b7a793ada460c4cdbb625f8e94dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fa9cf31783af4c73ddd058bb3606567250f8d5785aa6f7d5765c809248844f79",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b1d1f546bce46ecb3eb26f20d622176e03f61a123cfd311a98f838d93f6b07b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a0c497457825d407df2aceb1f66c65dd5f21b39095c3d1e701164075a58e2027",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "218506e458ac60654064d89cb46e4f8e37e38b2411fb756020a21b640c59f2a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c05b2474dccf47b3bccb5fbcbe75395fe37b06bbfffcfafeafd6c4600aeb3424",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-form__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "50a5c2e6d762479ec6c12e1497d5654e401ab3615884e3df319060aa62dbd688",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-form",
+        "title": "Core/Dialog",
+        "name": "Purpose Form",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64cee233bab3589999746799f6d40eaedc22efe7986e483b48fdb6a1759a924c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fbbc70c8f9cd838b0c552d917bf01e9edb6973f4b7033cc8a8f3c8fda842d439",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "afc0d87e5b552fdd1be456c66d70a013f876ba5947c6cc4287fe6acd221d2b2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3d99b623bc6d5f2f57611b9ba429d436f7bf46fd8922c03dbe74c09593204490",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "433c3395f631121910121c9509e311f068abd3e5061ec4d512ab096253fc664e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b46d85585dda366513b422f9d5b19a5ed777c6fc06c0d479df2473092853d040",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d6b8078ed0a667bf53ca5ca889aadc93552971a6393c9fc4632d7186e71e9b80",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "890fb27efe0052cd68080e28c4edb6025b86163689a76bf336dbcf7329e8dc39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9f62ecb12af2a90d9543b5b82b36eb215b0a03a080665d45583a0a89edd2dd28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7aa74cca1e0a62a2f084806449d82ee3d805f04536f95378de17e7d171976cca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ed9963c5d3dce9ee690db359fb56c7c7aa2f88b806329fc038ea20ab5abc878c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "974f51951b8cb4aa2d3cb0300146161fbfa7aa39f8801bb0a7c1499047258dd9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dab9bbbf862e28e0cb8a59d95e33618697d3c2ecb249f73ba998a2c708e8cdbc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--purpose-info__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c2cda8b96820a08d4d036d40a261c01ff13ce231c6192077b0b6d0483bbcbf32",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--purpose-info",
+        "title": "Core/Dialog",
+        "name": "Purpose Info",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d9b57976aa288d625386622a1f41b8e689a869d63dc032ce7ab500eded979263",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "688ec283759ffaa5bbe67a0191cd75316e2ff021cff49739d43fafa59302f1da",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "94baa066b7eeec69da65cc059aa5631dc9995e6c71b5f484be6c9bb1cdf481e2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ac8ef36e31c26b89030fcff17873c88f50561a34a8c0e29cf577fc5fc99226b2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8dd46eec35c7b7a251a8aacd2382787f18bef778ef3ebf522ea9a4d4c9f96dd6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3aeff6cc1058b9562cf8b2661e6218ccc200023c72eb3a60005709a2a73c9419",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "17a8b0686a92596a1e70fd535d0f0bd3d09eef85274ebba4f6d3b75255732964",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "db63de754971e86329ec43bf73754830e0ea36cfa1064283a84721e39975a9d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7faa442c03d942213815d728c80c75f648ce4e02d3470585d9c998c02e577fb1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "949833581e252a1cd3e852197ff3a4f59e9979146e2d1098702532a9e5a81abc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e58800ce9f2f2a8cd19371b4629e7e18dec674bf48e491fe6946a9a0b298601e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "112798a52f2c033ab54eecfebb1db3ace4c592730a4c84bf1c280dae10fe0b37",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c640e10fa55a4b0e6688d7f789bfb9032e2049b016a5f440f33ab4b11aa13dfd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--custom-position__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dede296b84eb33247fea4a107a06c10da0f9f7b5b9df2cda4b65cf6ce0300f19",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--custom-position",
+        "title": "Core/Dialog",
+        "name": "Custom Position",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6e2b8935f43a1bb7ff251f4ff7c1b5c2ec9c9fdaea52556f9d29c90f5cf5ea3e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8ae0c31aa1eb0284e966a576f2de8c756b15f5832951690f872319093ccff4df",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2ae0023b7cae18b66d8b23e315357fe4a7ecc6f0ed4dbb069627dc1f7617d445",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5e30ef4a4d9b703a645da423926e2df3b14f371c1c321293dd8aad566e425489",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7e7e8722efdc981e7e07b892341642e326f1e9615ba4016a7105fe93ec89dee7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4da6bdd8bde443a52f0406bd37181f5260e878a0d4d147e9e94343d90004cb8b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a3e0f542b7289f674d31726bda3c095e3ca1202db6addcb055f249792d3d1dd8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2672fddeaec8e7dd85e6767ec782be541a3e2c97a9dbda3b4dd39b1a2bf2a2ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "401afa85bec11b23beac632f8eb9f309488c2b0733bb534680064caf1297ce23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "02bad30871006818e037aff624ccf46012b0be9087242b7eb1e88d39397d6c93",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "71ac33bff702d23c96586808af38163e278bd0fb0d0c9fea6be4465fac299cf6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "27048bdfcef0b286d5650e2a34355a40c4a0227a61f4e5ae2d389864f6e65d78",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "554fe9d11f0a9b20d04733256cf04e390fccf5e9479d008231912eb59302f939",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--logical-position__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b45375614a4973f630d58b507c3429bc532be610331ea5bb755dc8eb35aa6cc0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--logical-position",
+        "title": "Core/Dialog",
+        "name": "Logical Position",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2ee4247059f3a5aad194114eb978007bf497ef409a6068f832650c34cf553ca2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a61cd74d844283d834a8cc8792ab33f374953f9d8e3885c037a04b632de5536f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f9ac84243cfda2a787706ccfc553aab02b7d588d9429dfe16fed36040235c7b8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7d73e3fca6e5698ed239a256d0dd0fad0ca6e587417ca0b71b669b6163316761",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d2d8fbc3c17d337a90016a9fe561629ed82df162fb5c3dae12dfbede4186b173",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "54a5573507b159385f4ed7a53f1981c92c11ee8cce93367287314b76640ee5e9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "250890095827956f686417e738cbdb07ae31d9a08fcb07838e96be49e02f8972",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1ed41859b709bf1b2f3197bc4e5a2268370bdc136652b04e0870d1875eb1ff81",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "17ed4efe72e587cf3047f19e49ac5e66419df2c6b97f0657313c616d3bdfb985",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f79d0db17f52c3005c1b2b28193ab50e169850bac3699473e42ca0347fa804dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3ddac18181469b2d8f630481fbcefb4c7105cccf4d784b8864110c4a23ec8120",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1828b2da28022441b00f57b5e7851685fd28292cf18f6e5fc14b2d3bd938101c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a5ad364e84e09bdab180f6957f69e0a1b525c1f970ffec62084053af4d6d35a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--scrolling-content__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b79b9afa0aabf1b09c1a0464b75e40939fb2d98c60f3ea1b313d17ca4969c2e9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--scrolling-content",
+        "title": "Core/Dialog",
+        "name": "Scrolling Content",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9aaacd79e64de91bad60c7bcacf0e58c86504af8e905e00929b58c7f0d4a2c21",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2ed131ed0e76383e303567973629f01617926645ffff0e4d597bec89ca0f267e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5a0f0e453fb7a1973c7c984d1e3f1252362925c638f4063955acf6a1420e2ae4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0a2551f5a42a601067cd2e1cdec49099cde213983585ed1caa99381ee26e1fd9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bb0e9c4af7d0bd7f6a95b7027cfffe7b99762a01b23f06b8a0e783b1309087dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "34a24e482205a3e77cb6529a259719eee71c85b4c750276af1609a862fc44e17",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ea960ebbb4d24fafb88395af4acecc25c0a355ae674fc7a8dc8fe8860336a1ef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "aa82ef7fa9299ee09501a7432dbeef04d5f924ff522a0425bd11b42fd2264398",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "33c1f768cf91b1635e1ab9232991631322ea9c6426fdc9801e1e0862d8c77dd9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7ead641ca2655b56d06d167adf34cc3f76e988f31dd2ddf167127ddffc436f2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d891ab53ba78bae96f523b2e2d2035c6c0dae87cb930486a0a6d73e60d2600cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eade2c9356352855db54aac8f085cc2751effcdb7c86ef9696e1e0828c14b122",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d761ae4b6a5dff3743cf177dbf55e2edb4e4e1aef9500f363665729b5c8c8ce7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--confirmation-dialog__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "65b1be490bf91b80df40aae3e88980cd32c1fea302c3231b4494d06307e912a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--confirmation-dialog",
+        "title": "Core/Dialog",
+        "name": "Confirmation Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "20f1846650782302d41d0060f5e40ed18009d892d577e7f98a3fe89dc66fc588",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2f7221a75a1d0594f1a930e6dcf0fbe3994f06dba4aed7a30635a43d2b7c4359",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "65cc247bc7a10562c7ef2fffc2fc8d063c89bd25b0100c0a0466eec9b15df70b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2d6025f346164ce143e295fb8ed095855ff610639408f9fbdfeaced6ca7fcf58",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "37ff60efb1fdf1003f656b55513a560822a4770ca0d07b9373f1b828911ce934",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4b3e8b8abc3deb906e2fbc0c6f000df251f9839f567923eb8a913781ff9ee878",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8d2727831983c931e0eb601946dae1e0e6a9ea75d30f7920892b20056ede7312",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5f5e981af1857c051dcef518028b6b1cbe7002f99ec3f18478e52bdee45e0857",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5d62a228671796857a27106c3ea021d428877f0c3fdd84d2349bb4fc8e9a8df3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2ed5788f2524b9d7014b4527de3766e5f2b7c4854aa6064daf6f0a48938698ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "34b066ea2002fdc9ddd6eb6932c7971565d3e3ec90cc2aa62cfa8b4e3dcd6c24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "583556e9348a5273f48ecc5b50c7861281d71ebbf92233074139dbe1d03abde0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9c71b724fd0d0a7509503ef676fb4ac2891f9aff1eff284bd16bcd3fde0baeb9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--all-purposes__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ab94b6346aa78707d028a1f7b87d1981996dd9b90fea1a392b5a3e9feeae39cc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--all-purposes",
+        "title": "Core/Dialog",
+        "name": "All Purposes",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1e6d807c8164c2b8a5a37d9cc2639b1af9b26bb2a6b133c9941875992311b3e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0540f9139625977ef9ee36a826f6bb0a5f0c654543a86f819b241e99a92def82",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9aec420a2364a311789b8bfc69ff31ba3a978fd48b6a1778feb0433a77927b21",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "83aa400848a95a2b1b3553d28273c7c6ef1777fd9ffee36f3220503666dc95d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4d717067e2e8021711f42718d55a967272d2106d21c9315e2f41e61a1a5b9b28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d64fa40709680a430e4fc22970b138218e39e0775c473f8061b115d378c5ac1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "615718e7d9236fdca25817848bfba780a55e1af625ba0d233dad30733d90ea7d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12a4b24f70e381740886e6a5e27f6a6536b839eb4124f568c584cebbe558b91a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "428e75c68555f6cdf681fd6a765159f64d9b1ba7b7c435e72bb946e1ae4b510f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "25d6c1364bcb0325a46f1b8e85793f429c83dbdb4825642131596a27f345d614",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "db9e978db4a2915acd5b447ce7e9f9f273e683f518120352d0e996108a092afb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3dd6ec809e17a72d225d28ee231e57f714f56c882d6f14fbcec897a6377449fa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "44c4042b53acec4e4502d29c0308442fc4fe80ee178b4ef19d303ccf77696a1e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--auto-focus-input__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8e4991fbc2d24862fde8210321eec4d01769572f1bd7cecc9b965e83f2d38c13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--auto-focus-input",
+        "title": "Core/Dialog",
+        "name": "Auto Focus Input",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "be274cd639dce06795261eebbd9f7dfc667d7d86a11e54a5866feaf2621f9bc3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "70ee0af224803b4539449f8279e76757c1ff60bf5474e04762934a19cb202112",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b39001d72f0ac7ace3e16b11c806dee4a51d4ddb609d5f29da5470cdb4f20901",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bf962702534b3f1c26a7ccd4a1beb8e4fe7a8e5b7be5060c10468dd8c7aef5bc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9e149b54fcdc71ef503954eeba59ee9a1a54991ca72cf30ea8a07f306c24999d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e0d360b531d6da7d5fb56fbc068f352ffa099719aa8ed39e2194a241a325e186",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7e4cc8dab77d315dbdf91ea6798d51e1eadc6623d0edf200b3b32d4142d74bfe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9828be4ca89606ea1a5a84dc7bfa429130feac0a3403811e756228bb436cbd75",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "352992988e17a5fd8e48d9e16ef3279e3dce773dad1254cd8a62bfb975aed2ea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "29a7a9a357613b1cd03a12e3076b9a16224f3036d6acd5a2baea5ba9fc9d5cf5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7b91569ab4b431dacff9594ed43923e23102717c370cc918eaf09c33667fae08",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e09b4ef659c7659dbda0a02a5f1e2033a78ea1172d72a2224b86ed0435ae1ea1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ff4018d4974f317d3154308a9c8dd678be9498a9ad0269aefd0e1b8832ef7e3e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--nested-dialogs__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "26058ec9aae97cdab700d0ded9d4d30695e7acd253b73950edfd44a006e47b98",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--nested-dialogs",
+        "title": "Core/Dialog",
+        "name": "Nested Dialogs",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eb2cae159015b3b00cf67d3bf9c2733d006a7ab9ebf50caa841dc83f169af3d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "94288e46172dbda59de849e8b52c2eebbd1a12a00e1a9ac2ba6afd6f3249685f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4de381e81433f81743ff8ba3e64a1f2fc1df60f838dcbf1736b4f7029b5c3f2b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0485f6c116fc4026e2d6d5d31f87e1bea630e3a9dec502539940b43109e212d3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1d903a2fb922aa53aed4028889b63d4f2db715f55b1d80435a078e85c88c72ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7620b3f8b3b379668df4de393f0cda1e24fe3b48fc2a18eb1346188b7e95a90a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9c6fbcbc10a8688464551698269108b465f905a56130fa64caed03a8511d56d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "aa40d3ee3c81601e46ff9fa5701870fc607ef4d11cccdfc3782d09e979de633a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9e9286c65c453c54c0472aac593e056d71f961c7ecd946d70c49b4fbb59d013f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eab15bb0bc7ce85b82d776eb02388056d9950a197f9155c7d78dfae186d160fc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4f9d063111a7898f3c6fa78d62b40d29f39d0153fa6a8478749566a0ced81c93",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "123515b920ea6d5ed242afd486fba61ba1ae709bc7d9f1e1d394e922b8af1aef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "905987f80f8a70c2f2062efce3374ad0edf7552a60a6a6f79d553dbd3b0df429",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-wide-viewport__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "849fbab4c037ed7ce5996d6942a2398d739139c69cff5b1e8ec5d9f532946627",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-wide-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / wide viewport",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e675fcd57eed48195a4b1c1808d2fff692ca9c88f32940c239561c56fdcb8500",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "07ed862e6be7f365ed8283bbecbd683cec0296dec4abd65596acda7d24906466",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a6ad62f6c247d3eef139cd251f9c5758535b7a160bd2e37a09b20bb4031dc325",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bec34246d6fe49a8448bcf1928ebccc17c6bfc7972b600d2118c4ad4a2efd368",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4ed4962f5dd2031bac0e98e4473e01f307f2006d461880e45fe232f43b244885",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "14f01a930fa4d699b6854ea1200560e8b124dd45b99c5c4b0b97a6854f848a05",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "60081adcdfa55a723c7b18c2d0c0672efcc795d1f89100f567c2d61dba55d4ed",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9cef6eb88d386317ee4182b8f75ad45b305f499c0f34333d18a287947b3e559f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7d2f564795fbe55f9c6d7d574de88dd4d1ff79a3a3009457c1c64a4fc3bde54d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c3b6dbcb460db0e24322dc1024d55e220364f6f766d056cc758c8fe69224ae45",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1fdcc8a5c02e3ef3a20720ffb761bfb757ac767da31dc106afa58e34998cebec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a26d49b5eb3789f5139dd9d022d474836d2472acdc1f3b37844a7c3973b2386f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "00691cacc19e9be41df1a4e43d1870c90709357c5c007e7168d5a554304d9902",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--readiness-narrow-viewport__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "db3615d00a32aefad3e66fb64de4c94be822601bb87e8890d3532a27bdf78495",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--readiness-narrow-viewport",
+        "title": "Core/Dialog",
+        "name": "Readiness / narrow viewport",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1e6d807c8164c2b8a5a37d9cc2639b1af9b26bb2a6b133c9941875992311b3e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0540f9139625977ef9ee36a826f6bb0a5f0c654543a86f819b241e99a92def82",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9aec420a2364a311789b8bfc69ff31ba3a978fd48b6a1778feb0433a77927b21",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "83aa400848a95a2b1b3553d28273c7c6ef1777fd9ffee36f3220503666dc95d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4d717067e2e8021711f42718d55a967272d2106d21c9315e2f41e61a1a5b9b28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d64fa40709680a430e4fc22970b138218e39e0775c473f8061b115d378c5ac1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "615718e7d9236fdca25817848bfba780a55e1af625ba0d233dad30733d90ea7d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12a4b24f70e381740886e6a5e27f6a6536b839eb4124f568c584cebbe558b91a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "428e75c68555f6cdf681fd6a765159f64d9b1ba7b7c435e72bb946e1ae4b510f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "25d6c1364bcb0325a46f1b8e85793f429c83dbdb4825642131596a27f345d614",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "db9e978db4a2915acd5b447ce7e9f9f273e683f518120352d0e996108a092afb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3dd6ec809e17a72d225d28ee231e57f714f56c882d6f14fbcec897a6377449fa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "44c4042b53acec4e4502d29c0308442fc4fe80ee178b4ef19d303ccf77696a1e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-keep-dialog__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8e4991fbc2d24862fde8210321eec4d01769572f1bd7cecc9b965e83f2d38c13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-keep-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / keep Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3c104b1701152a809da25eeacbd881bf6de6e5d6b0be481236d29ad4378dda72",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "77a52aa7ede34a0085c45c6fd631395511f44f667edc40ceca8e5d233b6eac92",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "530a698710d4fe58e0c9a0fd1eae9455652277d05cf40a7d112d59b0eb16c3e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1fe18854cc19fd49d273bcda2977c3258d4f475a07989647fda943a10e46d875",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "60f70378e5efd61d6f3bd323b00cbe2a199f8e2d1087abfa71fc329790583209",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9b4df718a143a138f893c8c798cddbde494d79fd20358c4c4d05ed3e6d5b0c95",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4d2ec89f9c71bea3763a5933f3592b6701625780589032db34e847005baa20ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "096983e56a6d0c141cb95525030c255e0996a4530cdf549251e5485b9b1a6f3d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "80440b163bcf2da6a30bc3007698525304116e37153751406ca690d845dd3757",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b981e6cd730bcd3e73fae950ed8fb56df0455c622e169d0bba1b6a43980b2f36",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "068ca463aa0e4b65698d59bc6c375e81826f09b366bee8014386980e3d9a526c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6525eab31175c8d39cc9b87896fe5e28f405cce7f89b1e1a170c643b153c185b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ff20f5853e7a0699df4b62b82e0fb2efc9968911b8918f21db619ddb262b74e3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-fullscreen-dialog__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a244f2296b4ad70643a8003d1a9297f0f3207422315025f2fd66ffe36dc66182",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-fullscreen-dialog",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / fullscreen Dialog",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d53e2af4af90bd234754d4a6049938bcbebf31308d20ba498994ba3eb0448307",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ef89e61a7b8682cfd60148918f308f8f0378b1d321ab951302641d03c0077449",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1e577e68d9720cb496eddfe7243493b96e3c30b7e6d42f4cf61fc0a3ee05e1e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7e59c64d4db0f0e56500191d0ca5569368acd3790029895bf9891762ed085be7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "57d8c5fdb1ddb0c65131bdddd28bc3ff0627db7735c8d8eaba2e95789d132d75",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3adbf4c180c84cbb4ac8015f5b54af2d563fdfd81e5510baeea7d48bb6bf1bd7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e1013b7c3ce4bcf4117c4aa9bd46d541a6a74bc930babd073c7f4ce8be5b1d77",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "416d6493750bf1272322df99d019df7cebe8e1f9b6636327ac3fcf378528cdf6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c8b8d762bebdc46c01ae26be7cff1de62a9eb840f4d7771066796a287413eb58",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "286987795c31e2a0abf8df28fc8a43af0707526ac5f21016feb7004782ae7fc5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "27fe7d2234e8a10d4441def9a6adf74a073983fec57e2d02d76fb904d4f5fcaf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4a7f132ba16e1bb17245c9f67495ce88e668063da3e639bed78cfe05190716eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5399f50726bd996231cae37243d074dbe16fab5593ec73b618e6de85bfe961f0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-dialog--mobile-presentation-bottom-sheet__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "da37db691ddd820b26367354523b376eba52c45f56439124d32b218e2c0722c6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dialog--mobile-presentation-bottom-sheet",
+        "title": "Core/Dialog",
+        "name": "Mobile presentation alternatives / BottomSheet",
+        "component": "Dialog",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-08-28T07:36:49.761Z",
+    "context": {
+      "sha": "5a25b2505fdfba71cd102e4ea2956a9c2c80cd6e",
+      "runId": "33150894453",
+      "runAttempt": "1",
+      "headSha": "5a25b2505fdfba71cd102e4ea2956a9c2c80cd6e",
+      "baseSha": "936256386b74d67f88a41adee235b91699977b2f",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Dialog"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Dialog/Dialog.tsx",
+          "packages/core/src/Dialog/DialogContext.ts",
+          "packages/core/src/Dialog/DialogHeader.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-08-27T17:27:05.366Z",
+      "sha": "f24d0e9c99f9464d711a349db70a89398bb4d8dd",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 266,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 264,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-dialog--default__butter-light",
+      "core-dialog--default__butter-dark",
+      "core-dialog--default__gothic-light",
+      "core-dialog--default__gothic-dark",
+      "core-dialog--default__stone-light",
+      "core-dialog--default__stone-dark",
+      "core-dialog--default__y2k-light",
+      "core-dialog--default__y2k-dark",
+      "core-dialog--default__matcha-light",
+      "core-dialog--default__matcha-dark",
+      "core-dialog--default__chocolate-light",
+      "core-dialog--default__chocolate-dark",
+      "core-dialog--with-subtitle__neutral-light",
+      "core-dialog--with-subtitle__neutral-dark",
+      "core-dialog--with-subtitle__butter-light",
+      "core-dialog--with-subtitle__butter-dark",
+      "core-dialog--with-subtitle__gothic-light",
+      "core-dialog--with-subtitle__gothic-dark",
+      "core-dialog--with-subtitle__stone-light",
+      "core-dialog--with-subtitle__stone-dark",
+      "core-dialog--with-subtitle__y2k-light",
+      "core-dialog--with-subtitle__y2k-dark",
+      "core-dialog--with-subtitle__matcha-light",
+      "core-dialog--with-subtitle__matcha-dark",
+      "core-dialog--with-subtitle__chocolate-light",
+      "core-dialog--with-subtitle__chocolate-dark",
+      "core-dialog--custom-width__neutral-light",
+      "core-dialog--custom-width__neutral-dark",
+      "core-dialog--custom-width__butter-light",
+      "core-dialog--custom-width__butter-dark",
+      "core-dialog--custom-width__gothic-light",
+      "core-dialog--custom-width__gothic-dark",
+      "core-dialog--custom-width__stone-light",
+      "core-dialog--custom-width__stone-dark",
+      "core-dialog--custom-width__y2k-light",
+      "core-dialog--custom-width__y2k-dark",
+      "core-dialog--custom-width__matcha-light",
+      "core-dialog--custom-width__matcha-dark",
+      "core-dialog--custom-width__chocolate-light",
+      "core-dialog--custom-width__chocolate-dark",
+      "core-dialog--fullscreen__neutral-light",
+      "core-dialog--fullscreen__neutral-dark",
+      "core-dialog--fullscreen__butter-light",
+      "core-dialog--fullscreen__butter-dark",
+      "core-dialog--fullscreen__gothic-light",
+      "core-dialog--fullscreen__gothic-dark",
+      "core-dialog--fullscreen__stone-light",
+      "core-dialog--fullscreen__stone-dark",
+      "core-dialog--fullscreen__y2k-light",
+      "core-dialog--fullscreen__y2k-dark",
+      "core-dialog--fullscreen__matcha-light",
+      "core-dialog--fullscreen__matcha-dark",
+      "core-dialog--fullscreen__chocolate-light",
+      "core-dialog--fullscreen__chocolate-dark",
+      "core-dialog--purpose-required__neutral-light",
+      "core-dialog--purpose-required__neutral-dark",
+      "core-dialog--purpose-required__butter-light",
+      "core-dialog--purpose-required__butter-dark",
+      "core-dialog--purpose-required__gothic-light",
+      "core-dialog--purpose-required__gothic-dark",
+      "core-dialog--purpose-required__stone-light",
+      "core-dialog--purpose-required__stone-dark",
+      "core-dialog--purpose-required__y2k-light",
+      "core-dialog--purpose-required__y2k-dark",
+      "core-dialog--purpose-required__matcha-light",
+      "core-dialog--purpose-required__matcha-dark",
+      "core-dialog--purpose-required__chocolate-light",
+      "core-dialog--purpose-required__chocolate-dark",
+      "core-dialog--purpose-form__neutral-light",
+      "core-dialog--purpose-form__neutral-dark",
+      "core-dialog--purpose-form__butter-light",
+      "core-dialog--purpose-form__butter-dark",
+      "core-dialog--purpose-form__gothic-light",
+      "core-dialog--purpose-form__gothic-dark",
+      "core-dialog--purpose-form__stone-light",
+      "core-dialog--purpose-form__stone-dark",
+      "core-dialog--purpose-form__y2k-light",
+      "core-dialog--purpose-form__y2k-dark",
+      "core-dialog--purpose-form__matcha-light",
+      "core-dialog--purpose-form__matcha-dark",
+      "core-dialog--purpose-form__chocolate-light",
+      "core-dialog--purpose-form__chocolate-dark",
+      "core-dialog--purpose-info__neutral-light",
+      "core-dialog--purpose-info__neutral-dark",
+      "core-dialog--purpose-info__butter-light",
+      "core-dialog--purpose-info__butter-dark",
+      "core-dialog--purpose-info__gothic-light",
+      "core-dialog--purpose-info__gothic-dark",
+      "core-dialog--purpose-info__stone-light",
+      "core-dialog--purpose-info__stone-dark",
+      "core-dialog--purpose-info__y2k-light",
+      "core-dialog--purpose-info__y2k-dark",
+      "core-dialog--purpose-info__matcha-light",
+      "core-dialog--purpose-info__matcha-dark",
+      "core-dialog--purpose-info__chocolate-light",
+      "core-dialog--purpose-info__chocolate-dark",
+      "core-dialog--custom-position__neutral-light",
+      "core-dialog--custom-position__neutral-dark",
+      "core-dialog--custom-position__butter-light",
+      "core-dialog--custom-position__butter-dark",
+      "core-dialog--custom-position__gothic-light",
+      "core-dialog--custom-position__gothic-dark",
+      "core-dialog--custom-position__stone-light",
+      "core-dialog--custom-position__stone-dark",
+      "core-dialog--custom-position__y2k-light",
+      "core-dialog--custom-position__y2k-dark",
+      "core-dialog--custom-position__matcha-light",
+      "core-dialog--custom-position__matcha-dark",
+      "core-dialog--custom-position__chocolate-light",
+      "core-dialog--custom-position__chocolate-dark",
+      "core-dialog--logical-position__neutral-light",
+      "core-dialog--logical-position__neutral-dark",
+      "core-dialog--logical-position__butter-light",
+      "core-dialog--logical-position__butter-dark",
+      "core-dialog--logical-position__gothic-light",
+      "core-dialog--logical-position__gothic-dark",
+      "core-dialog--logical-position__stone-light",
+      "core-dialog--logical-position__stone-dark",
+      "core-dialog--logical-position__y2k-light",
+      "core-dialog--logical-position__y2k-dark",
+      "core-dialog--logical-position__matcha-light",
+      "core-dialog--logical-position__matcha-dark",
+      "core-dialog--logical-position__chocolate-light",
+      "core-dialog--logical-position__chocolate-dark",
+      "core-dialog--scrolling-content__neutral-light",
+      "core-dialog--scrolling-content__neutral-dark",
+      "core-dialog--scrolling-content__butter-light",
+      "core-dialog--scrolling-content__butter-dark",
+      "core-dialog--scrolling-content__gothic-light",
+      "core-dialog--scrolling-content__gothic-dark",
+      "core-dialog--scrolling-content__stone-light",
+      "core-dialog--scrolling-content__stone-dark",
+      "core-dialog--scrolling-content__y2k-light",
+      "core-dialog--scrolling-content__y2k-dark",
+      "core-dialog--scrolling-content__matcha-light",
+      "core-dialog--scrolling-content__matcha-dark",
+      "core-dialog--scrolling-content__chocolate-light",
+      "core-dialog--scrolling-content__chocolate-dark",
+      "core-dialog--confirmation-dialog__neutral-light",
+      "core-dialog--confirmation-dialog__neutral-dark",
+      "core-dialog--confirmation-dialog__butter-light",
+      "core-dialog--confirmation-dialog__butter-dark",
+      "core-dialog--confirmation-dialog__gothic-light",
+      "core-dialog--confirmation-dialog__gothic-dark",
+      "core-dialog--confirmation-dialog__stone-light",
+      "core-dialog--confirmation-dialog__stone-dark",
+      "core-dialog--confirmation-dialog__y2k-light",
+      "core-dialog--confirmation-dialog__y2k-dark",
+      "core-dialog--confirmation-dialog__matcha-light",
+      "core-dialog--confirmation-dialog__matcha-dark",
+      "core-dialog--confirmation-dialog__chocolate-light",
+      "core-dialog--confirmation-dialog__chocolate-dark",
+      "core-dialog--all-purposes__neutral-light",
+      "core-dialog--all-purposes__neutral-dark",
+      "core-dialog--all-purposes__butter-light",
+      "core-dialog--all-purposes__butter-dark",
+      "core-dialog--all-purposes__gothic-light",
+      "core-dialog--all-purposes__gothic-dark",
+      "core-dialog--all-purposes__stone-light",
+      "core-dialog--all-purposes__stone-dark",
+      "core-dialog--all-purposes__y2k-light",
+      "core-dialog--all-purposes__y2k-dark",
+      "core-dialog--all-purposes__matcha-light",
+      "core-dialog--all-purposes__matcha-dark",
+      "core-dialog--all-purposes__chocolate-light",
+      "core-dialog--all-purposes__chocolate-dark",
+      "core-dialog--auto-focus-input__neutral-light",
+      "core-dialog--auto-focus-input__neutral-dark",
+      "core-dialog--auto-focus-input__butter-light",
+      "core-dialog--auto-focus-input__butter-dark",
+      "core-dialog--auto-focus-input__gothic-light",
+      "core-dialog--auto-focus-input__gothic-dark",
+      "core-dialog--auto-focus-input__stone-light",
+      "core-dialog--auto-focus-input__stone-dark",
+      "core-dialog--auto-focus-input__y2k-light",
+      "core-dialog--auto-focus-input__y2k-dark",
+      "core-dialog--auto-focus-input__matcha-light",
+      "core-dialog--auto-focus-input__matcha-dark",
+      "core-dialog--auto-focus-input__chocolate-light",
+      "core-dialog--auto-focus-input__chocolate-dark",
+      "core-dialog--nested-dialogs__neutral-light",
+      "core-dialog--nested-dialogs__neutral-dark",
+      "core-dialog--nested-dialogs__butter-light",
+      "core-dialog--nested-dialogs__butter-dark",
+      "core-dialog--nested-dialogs__gothic-light",
+      "core-dialog--nested-dialogs__gothic-dark",
+      "core-dialog--nested-dialogs__stone-light",
+      "core-dialog--nested-dialogs__stone-dark",
+      "core-dialog--nested-dialogs__y2k-light",
+      "core-dialog--nested-dialogs__y2k-dark",
+      "core-dialog--nested-dialogs__matcha-light",
+      "core-dialog--nested-dialogs__matcha-dark",
+      "core-dialog--nested-dialogs__chocolate-light",
+      "core-dialog--nested-dialogs__chocolate-dark",
+      "core-dialog--readiness-wide-viewport__neutral-light",
+      "core-dialog--readiness-wide-viewport__neutral-dark",
+      "core-dialog--readiness-wide-viewport__butter-light",
+      "core-dialog--readiness-wide-viewport__butter-dark",
+      "core-dialog--readiness-wide-viewport__gothic-light",
+      "core-dialog--readiness-wide-viewport__gothic-dark",
+      "core-dialog--readiness-wide-viewport__stone-light",
+      "core-dialog--readiness-wide-viewport__stone-dark",
+      "core-dialog--readiness-wide-viewport__y2k-light",
+      "core-dialog--readiness-wide-viewport__y2k-dark",
+      "core-dialog--readiness-wide-viewport__matcha-light",
+      "core-dialog--readiness-wide-viewport__matcha-dark",
+      "core-dialog--readiness-wide-viewport__chocolate-light",
+      "core-dialog--readiness-wide-viewport__chocolate-dark",
+      "core-dialog--readiness-narrow-viewport__neutral-light",
+      "core-dialog--readiness-narrow-viewport__neutral-dark",
+      "core-dialog--readiness-narrow-viewport__butter-light",
+      "core-dialog--readiness-narrow-viewport__butter-dark",
+      "core-dialog--readiness-narrow-viewport__gothic-light",
+      "core-dialog--readiness-narrow-viewport__gothic-dark",
+      "core-dialog--readiness-narrow-viewport__stone-light",
+      "core-dialog--readiness-narrow-viewport__stone-dark",
+      "core-dialog--readiness-narrow-viewport__y2k-light",
+      "core-dialog--readiness-narrow-viewport__y2k-dark",
+      "core-dialog--readiness-narrow-viewport__matcha-light",
+      "core-dialog--readiness-narrow-viewport__matcha-dark",
+      "core-dialog--readiness-narrow-viewport__chocolate-light",
+      "core-dialog--readiness-narrow-viewport__chocolate-dark",
+      "core-dialog--mobile-presentation-keep-dialog__neutral-light",
+      "core-dialog--mobile-presentation-keep-dialog__neutral-dark",
+      "core-dialog--mobile-presentation-keep-dialog__butter-light",
+      "core-dialog--mobile-presentation-keep-dialog__butter-dark",
+      "core-dialog--mobile-presentation-keep-dialog__gothic-light",
+      "core-dialog--mobile-presentation-keep-dialog__gothic-dark",
+      "core-dialog--mobile-presentation-keep-dialog__stone-light",
+      "core-dialog--mobile-presentation-keep-dialog__stone-dark",
+      "core-dialog--mobile-presentation-keep-dialog__y2k-light",
+      "core-dialog--mobile-presentation-keep-dialog__y2k-dark",
+      "core-dialog--mobile-presentation-keep-dialog__matcha-light",
+      "core-dialog--mobile-presentation-keep-dialog__matcha-dark",
+      "core-dialog--mobile-presentation-keep-dialog__chocolate-light",
+      "core-dialog--mobile-presentation-keep-dialog__chocolate-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__neutral-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__neutral-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__butter-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__butter-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__gothic-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__gothic-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__stone-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__stone-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__y2k-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__y2k-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__matcha-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__matcha-dark",
+      "core-dialog--mobile-presentation-fullscreen-dialog__chocolate-light",
+      "core-dialog--mobile-presentation-fullscreen-dialog__chocolate-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__neutral-light",
+      "core-dialog--mobile-presentation-bottom-sheet__neutral-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__butter-light",
+      "core-dialog--mobile-presentation-bottom-sheet__butter-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__gothic-light",
+      "core-dialog--mobile-presentation-bottom-sheet__gothic-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__stone-light",
+      "core-dialog--mobile-presentation-bottom-sheet__stone-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__y2k-light",
+      "core-dialog--mobile-presentation-bottom-sheet__y2k-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__matcha-light",
+      "core-dialog--mobile-presentation-bottom-sheet__matcha-dark",
+      "core-dialog--mobile-presentation-bottom-sheet__chocolate-light",
+      "core-dialog--mobile-presentation-bottom-sheet__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

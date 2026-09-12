@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5845,
+  "headSha": "e7a9a06cd0b4bf0c090c199435e8de5721560973",
+  "testedSha": "e7a9a06cd0b4bf0c090c199435e8de5721560973",
+  "baseSha": "c55ef8e21fb4d99f28c101f4ba49cec9e75b969c",
+  "run": {
+    "id": 33626744108,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-02T12:17:46.819Z",
+    "context": {
+      "sha": "e7a9a06cd0b4bf0c090c199435e8de5721560973",
+      "runId": "33626744108",
+      "runAttempt": "1",
+      "headSha": "e7a9a06cd0b4bf0c090c199435e8de5721560973",
+      "baseSha": "c55ef8e21fb4d99f28c101f4ba49cec9e75b969c",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Spinner"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Spinner/Spinner.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-02T06:00:40.805Z",
+      "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 14,
+      "unchanged": 14,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

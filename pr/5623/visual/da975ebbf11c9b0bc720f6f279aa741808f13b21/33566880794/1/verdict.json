@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-01T23:02:09.749Z",
+  "context": {
+    "sha": "da975ebbf11c9b0bc720f6f279aa741808f13b21",
+    "runId": "33566880794",
+    "runAttempt": "1",
+    "headSha": "da975ebbf11c9b0bc720f6f279aa741808f13b21",
+    "baseSha": "237d82a6b0126ad4530145fbf169dbcc68dde633",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "PowerSearch",
+        "Tokenizer",
+        "Typeahead"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/PowerSearch/PowerSearch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+        "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+        "packages/core/src/PowerSearch/types.ts",
+        "packages/core/src/Tokenizer/Tokenizer.tsx",
+        "packages/core/src/Typeahead/Typeahead.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-01T16:01:43.549Z",
+    "sha": "c5197506492beb246dc00dd976a05171a355f539",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 42,
+    "unchanged": 6,
+    "changed": 0,
+    "added": 36,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-powersearch--default__butter-light",
+    "core-powersearch--default__butter-dark",
+    "core-powersearch--default__gothic-light",
+    "core-powersearch--default__gothic-dark",
+    "core-powersearch--default__stone-light",
+    "core-powersearch--default__stone-dark",
+    "core-powersearch--default__y2k-light",
+    "core-powersearch--default__y2k-dark",
+    "core-powersearch--default__matcha-light",
+    "core-powersearch--default__matcha-dark",
+    "core-powersearch--default__chocolate-light",
+    "core-powersearch--default__chocolate-dark",
+    "core-tokenizer--default__butter-light",
+    "core-tokenizer--default__butter-dark",
+    "core-tokenizer--default__gothic-light",
+    "core-tokenizer--default__gothic-dark",
+    "core-tokenizer--default__stone-light",
+    "core-tokenizer--default__stone-dark",
+    "core-tokenizer--default__y2k-light",
+    "core-tokenizer--default__y2k-dark",
+    "core-tokenizer--default__matcha-light",
+    "core-tokenizer--default__matcha-dark",
+    "core-tokenizer--default__chocolate-light",
+    "core-tokenizer--default__chocolate-dark",
+    "core-typeahead--default__butter-light",
+    "core-typeahead--default__butter-dark",
+    "core-typeahead--default__gothic-light",
+    "core-typeahead--default__gothic-dark",
+    "core-typeahead--default__stone-light",
+    "core-typeahead--default__stone-dark",
+    "core-typeahead--default__y2k-light",
+    "core-typeahead--default__y2k-dark",
+    "core-typeahead--default__matcha-light",
+    "core-typeahead--default__matcha-dark",
+    "core-typeahead--default__chocolate-light",
+    "core-typeahead--default__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-09T07:03:55.507Z",
+  "context": {
+    "sha": "bcb165e45b1f373cb0da8b7555f0062a67cbff1e",
+    "runId": "34319499329",
+    "runAttempt": "1",
+    "headSha": "bcb165e45b1f373cb0da8b7555f0062a67cbff1e",
+    "baseSha": "491945a49d668b756ca28522baf70596bdd203ed",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "CheckboxInput",
+        "SelectableCard"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.chromium.spec.ts",
+        "packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.known-failures.ts",
+        "packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.states.ts",
+        "packages/core/src/SelectableCard/SelectableCard.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-08T04:08:03.775Z",
+    "sha": "409248619ffb6a26ca4899e4b7dcdf18007206ea",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5420,
+  "headSha": "f45cefe7ea5898dfa6c4ac73d920f72f5bd2605a",
+  "testedSha": "f45cefe7ea5898dfa6c4ac73d920f72f5bd2605a",
+  "baseSha": "4f39c7ec9c45bcecdf0035f1fec9c1fe9fc43df7",
+  "run": {
+    "id": 33619009228,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-02T10:53:16.159Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 4332 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "f45cefe7ea5898dfa6c4ac73d920f72f5bd2605a",
+      "headSha": "f45cefe7ea5898dfa6c4ac73d920f72f5bd2605a",
+      "baseSha": "4f39c7ec9c45bcecdf0035f1fec9c1fe9fc43df7",
+      "runId": "33619009228",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "Table"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Table/plugins/filtering/useTableFiltering.tsx",
+          "packages/core/src/Table/plugins/sortable/useTableSortable.tsx",
+          "packages/core/src/theme/derivedVarRegistry.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 4332,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "Table"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

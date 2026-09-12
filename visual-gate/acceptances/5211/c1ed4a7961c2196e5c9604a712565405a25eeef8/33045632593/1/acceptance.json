@@ -1,0 +1,1114 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5211,
+  "headSha": "c1ed4a7961c2196e5c9604a712565405a25eeef8",
+  "testedSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "baseSha": "c1cd389d877289b5c54b76e21be5e50b4b032633",
+  "run": {
+    "id": 33045632593,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "8313589b2b1e4236c874acdadfa190f4f3d2e119",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "42d2e57eddc5cab8865efcc1be1a47073db4fe1aca838300217df772175befff",
+      "shot": {
+        "sha256": "42d2e57eddc5cab8865efcc1be1a47073db4fe1aca838300217df772175befff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f7fcc30f5d47864445b690d076cb409fcede81d86d57c6c78117b796a1495089",
+      "shot": {
+        "sha256": "f7fcc30f5d47864445b690d076cb409fcede81d86d57c6c78117b796a1495089",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b8f82badd9cb8ba608d28cc4f5c7c5c8337197c6750302233ef12fb04ec7a558",
+      "shot": {
+        "sha256": "b8f82badd9cb8ba608d28cc4f5c7c5c8337197c6750302233ef12fb04ec7a558",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5c9b3642337ca1c970860959561c62a86dbd80baae585c9506e3a7e06f6e6e54",
+      "shot": {
+        "sha256": "5c9b3642337ca1c970860959561c62a86dbd80baae585c9506e3a7e06f6e6e54",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf9535f9d11895bea03d29f7742a333d54a32d467f367624c695cc4df1be70cd",
+      "shot": {
+        "sha256": "cf9535f9d11895bea03d29f7742a333d54a32d467f367624c695cc4df1be70cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58698690394cceaa0d6b64aefbcf05ed2ee646f82a155d3d67c794a968bfe906",
+      "shot": {
+        "sha256": "58698690394cceaa0d6b64aefbcf05ed2ee646f82a155d3d67c794a968bfe906",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "91a09d04f48df37ce94207a768ac62abba146eb8102edacc9f5e8a0cf9f0d2c9",
+      "shot": {
+        "sha256": "91a09d04f48df37ce94207a768ac62abba146eb8102edacc9f5e8a0cf9f0d2c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "80155ba12be5af9c636c0a3af30fd932cecf9f8ee1640f2f83a61b54eda62166",
+      "shot": {
+        "sha256": "80155ba12be5af9c636c0a3af30fd932cecf9f8ee1640f2f83a61b54eda62166",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fb42ecb10b4fa2b307d112d2cf9e162abd8a2bea58cdb3b34ddf8136c6344e1d",
+      "shot": {
+        "sha256": "fb42ecb10b4fa2b307d112d2cf9e162abd8a2bea58cdb3b34ddf8136c6344e1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a68408906207443728752642e34d72c763ad5c9049f6637c16e6e2d4a2cdc6cd",
+      "shot": {
+        "sha256": "a68408906207443728752642e34d72c763ad5c9049f6637c16e6e2d4a2cdc6cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "32dbf039f393767b8454c06b8b471895e670b4a903d9bf7c75a83a2423192638",
+      "shot": {
+        "sha256": "32dbf039f393767b8454c06b8b471895e670b4a903d9bf7c75a83a2423192638",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e668f4e6aaa0348f9b547cbf9cbc9ef407adf41dd83d997b76b8306980ee9bad",
+      "shot": {
+        "sha256": "e668f4e6aaa0348f9b547cbf9cbc9ef407adf41dd83d997b76b8306980ee9bad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "295ba8abc387960a3ee230bbc6660d8bafaeb80c6b11a4dfa95cd24d0d8ad1a9",
+      "shot": {
+        "sha256": "295ba8abc387960a3ee230bbc6660d8bafaeb80c6b11a4dfa95cd24d0d8ad1a9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e5a753401806a00244df69c833fa944dbd41b96eaa0d91940c38bb0a04517a1f",
+      "shot": {
+        "sha256": "e5a753401806a00244df69c833fa944dbd41b96eaa0d91940c38bb0a04517a1f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "63d8127a5c7e5f0f46931f3334141c0b476208a3f98eadfc9b1693cf5602ddba",
+      "shot": {
+        "sha256": "63d8127a5c7e5f0f46931f3334141c0b476208a3f98eadfc9b1693cf5602ddba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ec5475743c661593b370639c8b07560c5aea817c782375c2592c1818ae03edc",
+      "shot": {
+        "sha256": "8ec5475743c661593b370639c8b07560c5aea817c782375c2592c1818ae03edc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6e4e4847773c93f351aa9a2469ebbb2d59df0495261619ca52a213460113b2b7",
+      "shot": {
+        "sha256": "6e4e4847773c93f351aa9a2469ebbb2d59df0495261619ca52a213460113b2b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e08500f3d954f8bd48da57b451c3fc1aba454b05ba3735d4cca675b325e922ac",
+      "shot": {
+        "sha256": "e08500f3d954f8bd48da57b451c3fc1aba454b05ba3735d4cca675b325e922ac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5cd59ddce587ed2627c68f6f549d4d1927b65b94131f327acbcebc043714cee5",
+      "shot": {
+        "sha256": "5cd59ddce587ed2627c68f6f549d4d1927b65b94131f327acbcebc043714cee5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "756953a5481108520b95b9571d66be1f5f42985763cac3e984fa2535a61be337",
+      "shot": {
+        "sha256": "756953a5481108520b95b9571d66be1f5f42985763cac3e984fa2535a61be337",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "71ee26c2637a445b4879da5619c1ee8721880af26cd10951f4ec154ae616db7b",
+      "shot": {
+        "sha256": "71ee26c2637a445b4879da5619c1ee8721880af26cd10951f4ec154ae616db7b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d2a3b1666f5df923febac8869ec5c08aec324a7b250c7d007d71c660f44ddf31",
+      "shot": {
+        "sha256": "d2a3b1666f5df923febac8869ec5c08aec324a7b250c7d007d71c660f44ddf31",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3867cca8a2c64da9048f699c7adc23a6a4a30244345d5a19068728c6fd13e77a",
+      "shot": {
+        "sha256": "3867cca8a2c64da9048f699c7adc23a6a4a30244345d5a19068728c6fd13e77a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1f016046e42cf37c85700769b05a92c40d96e71fb23bf4e65acfc87f5fe55163",
+      "shot": {
+        "sha256": "1f016046e42cf37c85700769b05a92c40d96e71fb23bf4e65acfc87f5fe55163",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dbe30d11d8fee14e864bed99d12a0de59916a44a802d3a5341d818a206c83dc8",
+      "shot": {
+        "sha256": "dbe30d11d8fee14e864bed99d12a0de59916a44a802d3a5341d818a206c83dc8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b610f91bd84c6257efccb220ed92a16da88619213a3810e74cd3c10cb383a01f",
+      "shot": {
+        "sha256": "b610f91bd84c6257efccb220ed92a16da88619213a3810e74cd3c10cb383a01f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--tree-list-with-search",
+        "title": "Core/ComplexSelector",
+        "name": "Tree list with search",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "86b9ecdaacdf49998d3077f86718bd489ebf24716d55abf5cc52c56d0e067da3",
+      "shot": {
+        "sha256": "86b9ecdaacdf49998d3077f86718bd489ebf24716d55abf5cc52c56d0e067da3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f1439f5a09ccc054caa5c9f3d2bb247edcddcb2f0edf4338fc86e24fdc9c4042",
+      "shot": {
+        "sha256": "f1439f5a09ccc054caa5c9f3d2bb247edcddcb2f0edf4338fc86e24fdc9c4042",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "84235b2221343034e149ed7f6839e7010d8f3d7c186760b196e21f9f1deaf533",
+      "shot": {
+        "sha256": "84235b2221343034e149ed7f6839e7010d8f3d7c186760b196e21f9f1deaf533",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1ac9046fbcb13542d2b0a70454036306ee3a9353b23b416c7a17c9c322feb0c7",
+      "shot": {
+        "sha256": "1ac9046fbcb13542d2b0a70454036306ee3a9353b23b416c7a17c9c322feb0c7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e8b878c15f953e81fd192c98412ef70b7e461ed4899c72125362424d5ecbbc81",
+      "shot": {
+        "sha256": "e8b878c15f953e81fd192c98412ef70b7e461ed4899c72125362424d5ecbbc81",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c8cc849ca106ac122d829a879820da20764073de2e07067d0dc1a423a5b1ca27",
+      "shot": {
+        "sha256": "c8cc849ca106ac122d829a879820da20764073de2e07067d0dc1a423a5b1ca27",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "050bc176bf44dcd8c806c639665b8a05a75051291d28cc32bd08801db249242f",
+      "shot": {
+        "sha256": "050bc176bf44dcd8c806c639665b8a05a75051291d28cc32bd08801db249242f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dc0aa6bb9ff40a393ff13540be838c1fce2320df88f992db355563f8644245eb",
+      "shot": {
+        "sha256": "dc0aa6bb9ff40a393ff13540be838c1fce2320df88f992db355563f8644245eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "426fd88d51a077c0083d5b5edd6e6eb1a919a2b95044b153e71cc31720a7bbe8",
+      "shot": {
+        "sha256": "426fd88d51a077c0083d5b5edd6e6eb1a919a2b95044b153e71cc31720a7bbe8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "619a995bb5aaf20ebeeaef5cc4fe32e9a552493b87bf631db91037955d6e185a",
+      "shot": {
+        "sha256": "619a995bb5aaf20ebeeaef5cc4fe32e9a552493b87bf631db91037955d6e185a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a517f6897bda6599061c07898807570a0ccfe19b52c8007a8a7458cb3b51671d",
+      "shot": {
+        "sha256": "a517f6897bda6599061c07898807570a0ccfe19b52c8007a8a7458cb3b51671d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7152fb854bc1d5845d74d4f992d5d9c2892355779ec9f874cd3ac0bfcbab659f",
+      "shot": {
+        "sha256": "7152fb854bc1d5845d74d4f992d5d9c2892355779ec9f874cd3ac0bfcbab659f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "30185879645f94476cfe3bcb84f4ffbd6a96cc4c23c88350965f7b82ff159563",
+      "shot": {
+        "sha256": "30185879645f94476cfe3bcb84f4ffbd6a96cc4c23c88350965f7b82ff159563",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--category-tree-selector__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a802a8d236d213b124081225ed614ea777242eba4bef94fbf4fab7adb01a61d1",
+      "shot": {
+        "sha256": "a802a8d236d213b124081225ed614ea777242eba4bef94fbf4fab7adb01a61d1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--category-tree-selector",
+        "title": "Core/ComplexSelector",
+        "name": "Category tree selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e8b5678014cbef13c519d5ebbf33cd555f44685ef1172fb0b6c7150f7629a412",
+      "shot": {
+        "sha256": "e8b5678014cbef13c519d5ebbf33cd555f44685ef1172fb0b6c7150f7629a412",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4f2038c26bb259af6f2b263992efed3a4ab79d3207ca15459dfd2581f7ae0469",
+      "shot": {
+        "sha256": "4f2038c26bb259af6f2b263992efed3a4ab79d3207ca15459dfd2581f7ae0469",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "31d32c04ca06029f7dd38c8846b73e62f7964311d9342866adc4c6c472a4edff",
+      "shot": {
+        "sha256": "31d32c04ca06029f7dd38c8846b73e62f7964311d9342866adc4c6c472a4edff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "37b62d63f8785a1aa66ba3bf23368f4a3310c3dc2699d52a42b8b90c2e498a9d",
+      "shot": {
+        "sha256": "37b62d63f8785a1aa66ba3bf23368f4a3310c3dc2699d52a42b8b90c2e498a9d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "784dc057de9e45aa59c79536a9f6807073522273dc1eb08578167d245f7f578d",
+      "shot": {
+        "sha256": "784dc057de9e45aa59c79536a9f6807073522273dc1eb08578167d245f7f578d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1523ec7ecbc3c1ff3f27a228d9a4b0935e23032ad997892768538dd123bfe3a3",
+      "shot": {
+        "sha256": "1523ec7ecbc3c1ff3f27a228d9a4b0935e23032ad997892768538dd123bfe3a3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4a1b2ff1ae1ffdde2c331299aae141742682e2456f70197f146832de9acadb59",
+      "shot": {
+        "sha256": "4a1b2ff1ae1ffdde2c331299aae141742682e2456f70197f146832de9acadb59",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e55f9114aa451d28c52f1cc0bd25aed21f4d7f6fa2b3ed2fdb7b668bb0797b7a",
+      "shot": {
+        "sha256": "e55f9114aa451d28c52f1cc0bd25aed21f4d7f6fa2b3ed2fdb7b668bb0797b7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "83643daa72b2640ad18a46c74839250fb7eaa63a1be4d042b7f5d683e5ab3017",
+      "shot": {
+        "sha256": "83643daa72b2640ad18a46c74839250fb7eaa63a1be4d042b7f5d683e5ab3017",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69b2becf6a83264e213df3d9df6fdc13feb070d1fccc204dd7dbfa08772be9ee",
+      "shot": {
+        "sha256": "69b2becf6a83264e213df3d9df6fdc13feb070d1fccc204dd7dbfa08772be9ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "23c96a8be208c23e636af3d53846945d11fe841b516d62bde2f25b4308496a0e",
+      "shot": {
+        "sha256": "23c96a8be208c23e636af3d53846945d11fe841b516d62bde2f25b4308496a0e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "467087ff026a17ede116cdb551fedf2e760946123f9c1e26502e8d3aa7c4c693",
+      "shot": {
+        "sha256": "467087ff026a17ede116cdb551fedf2e760946123f9c1e26502e8d3aa7c4c693",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d850d6a6f07f7a4d563e69eec2b6342cdc60169972138b2e3800a55e77a63341",
+      "shot": {
+        "sha256": "d850d6a6f07f7a4d563e69eec2b6342cdc60169972138b2e3800a55e77a63341",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-complexselector--controlled-toolbar-trigger__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f1729698c30678f88d798de7b0d2bf0ead04169e0a15e6208de9092a8596d459",
+      "shot": {
+        "sha256": "f1729698c30678f88d798de7b0d2bf0ead04169e0a15e6208de9092a8596d459",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--controlled-toolbar-trigger",
+        "title": "Core/ComplexSelector",
+        "name": "Controlled toolbar trigger",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "maintain",
+    "reason": "New ComplexSelector callback story; gate 2 verified the intended readout only.",
+    "commentId": 5435909841,
+    "at": "2026-08-27T07:40:21.291Z"
+  }
+}

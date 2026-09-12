@@ -1,0 +1,1 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";function r(){return(0,i.use)(a)}var i,a,o=e((()=>{i=t(n(),1),a=(0,i.createContext)(null),a.displayName=`InteractiveRoleContext`}));export{o as n,r,a as t};

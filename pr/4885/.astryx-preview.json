@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4885,
+    "headSha": "322b08d07209158d0ead413f9952bac346c2a73d",
+    "headRef": "fix/button-busy-aria-disabled",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 34526502516,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/4885/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4885/sandbox/",
+      "indexSha256": "7d6874323bbe3c345d2d334a62b819e9c1c8966955cdff496c733a710e7352e6"
+    }
+  }
+}

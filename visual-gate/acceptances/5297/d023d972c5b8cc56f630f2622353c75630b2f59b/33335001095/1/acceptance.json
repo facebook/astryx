@@ -1,0 +1,3564 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5297,
+  "headSha": "d023d972c5b8cc56f630f2622353c75630b2f59b",
+  "testedSha": "d023d972c5b8cc56f630f2622353c75630b2f59b",
+  "baseSha": "98dd9837fb6cd40fb6470561990aecce7464968e",
+  "run": {
+    "id": 33335001095,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "85a4b5fdaf9fc4f78ff990f704b442cfc357565c",
+    "manifestDigest": "30c012db862c89320441edbf1a916be665d37a316f466bf03fe63802ea19e26e"
+  },
+  "keys": [
+    {
+      "key": "lab-resizable--vertical-split__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b548132ff79f389ac975be65873523c38e1d77b2e16312f8821543f5b562da6a",
+      "shot": {
+        "sha256": "b548132ff79f389ac975be65873523c38e1d77b2e16312f8821543f5b562da6a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0d7c3f73a3cea633199ad49c9120a2aaf34b0d59f50b3c5a60fb68233c41462d",
+      "shot": {
+        "sha256": "0d7c3f73a3cea633199ad49c9120a2aaf34b0d59f50b3c5a60fb68233c41462d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4411510afd6f60a11ce5d00c7218799fce023dda85c4477de3bbb5d5ec11c259",
+      "shot": {
+        "sha256": "4411510afd6f60a11ce5d00c7218799fce023dda85c4477de3bbb5d5ec11c259",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1537a30398f99ef53e3f31768f242d133f24695f39d8bd9d7d65019842254ed0",
+      "shot": {
+        "sha256": "1537a30398f99ef53e3f31768f242d133f24695f39d8bd9d7d65019842254ed0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ec788f11e8f7744fa9970e42c5a848bb49cc0422ecc2eba8e1e1427bc920cd7",
+      "shot": {
+        "sha256": "8ec788f11e8f7744fa9970e42c5a848bb49cc0422ecc2eba8e1e1427bc920cd7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9493d9c3e79c29c14fb9ec149d57d66fbd6ea96f0d76fb1b0036f388e82a5ca0",
+      "shot": {
+        "sha256": "9493d9c3e79c29c14fb9ec149d57d66fbd6ea96f0d76fb1b0036f388e82a5ca0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "35f30c0311352563abafbffcb80fe262fa3ce908d9fe7de1cdd9d531d97eaa68",
+      "shot": {
+        "sha256": "35f30c0311352563abafbffcb80fe262fa3ce908d9fe7de1cdd9d531d97eaa68",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "826437c8ff927726e7da160f0685daf3ead1e03ccffef5e52415f530d3785b67",
+      "shot": {
+        "sha256": "826437c8ff927726e7da160f0685daf3ead1e03ccffef5e52415f530d3785b67",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8a975a4a0bfc748bee4985497947f1d8b5bf8881ccce29c172f04775d749b9f1",
+      "shot": {
+        "sha256": "8a975a4a0bfc748bee4985497947f1d8b5bf8881ccce29c172f04775d749b9f1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "54706d5ba169bdf0feb789f07877950be89e992899827271f7deabcbebd04424",
+      "shot": {
+        "sha256": "54706d5ba169bdf0feb789f07877950be89e992899827271f7deabcbebd04424",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5505866151936b0ba8d065a302722fc67556380badad82681fc09e88d65a0eb",
+      "shot": {
+        "sha256": "c5505866151936b0ba8d065a302722fc67556380badad82681fc09e88d65a0eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "caab7c106dcdaed227b98971ad0d7ef6eff00dacaee96fc41d2d40c2507c5789",
+      "shot": {
+        "sha256": "caab7c106dcdaed227b98971ad0d7ef6eff00dacaee96fc41d2d40c2507c5789",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2842cc63a2c34ef5788260c2ed6a6e27c5c3811c6648cb515ced77535a796c05",
+      "shot": {
+        "sha256": "2842cc63a2c34ef5788260c2ed6a6e27c5c3811c6648cb515ced77535a796c05",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--vertical-split__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c713baba3d34275eff5fd66571a42cd5e0963327183b98a4f96ed405b5aa1ce2",
+      "shot": {
+        "sha256": "c713baba3d34275eff5fd66571a42cd5e0963327183b98a4f96ed405b5aa1ce2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--vertical-split",
+        "title": "Lab/Resizable",
+        "name": "Vertical Split",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9a0a28817bb98df2e91281412f54b714dcdda5d1ba9a37f2421449154435972e",
+      "shot": {
+        "sha256": "9a0a28817bb98df2e91281412f54b714dcdda5d1ba9a37f2421449154435972e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2fd9a9f819d5a2df282a9fd52a2b01f51ef05591f2f01274304684ad4977be99",
+      "shot": {
+        "sha256": "2fd9a9f819d5a2df282a9fd52a2b01f51ef05591f2f01274304684ad4977be99",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3484969eeaa7a335d8767b7af47f20ff8388453c50451514ec4ca242176efdd8",
+      "shot": {
+        "sha256": "3484969eeaa7a335d8767b7af47f20ff8388453c50451514ec4ca242176efdd8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cb4711419770bdceecd44f5d98d0d32f4c429f9133c73a41456cd509e3f292ae",
+      "shot": {
+        "sha256": "cb4711419770bdceecd44f5d98d0d32f4c429f9133c73a41456cd509e3f292ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7e407484a618a3c522de5aa7d7e7e30b09a69d49bb6ee3d7ccee0bc0b0369c2a",
+      "shot": {
+        "sha256": "7e407484a618a3c522de5aa7d7e7e30b09a69d49bb6ee3d7ccee0bc0b0369c2a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "475a6868020134fee1cec31d75ec86c7896412e72d4a5dc4ea0e2205507241b0",
+      "shot": {
+        "sha256": "475a6868020134fee1cec31d75ec86c7896412e72d4a5dc4ea0e2205507241b0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "22ecc4ecb926537255b87f48fe026ab9ac3064c238f10c8c87a4b4555e7374cd",
+      "shot": {
+        "sha256": "22ecc4ecb926537255b87f48fe026ab9ac3064c238f10c8c87a4b4555e7374cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ff707ea40113a57de77ccc69f3e6ee9474a8ebd9abe2a097aba1724eac037ff5",
+      "shot": {
+        "sha256": "ff707ea40113a57de77ccc69f3e6ee9474a8ebd9abe2a097aba1724eac037ff5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "79f51cbe50307f5cd7a51de2564a0f5eb2ddd221802a38899b551dbd79f44237",
+      "shot": {
+        "sha256": "79f51cbe50307f5cd7a51de2564a0f5eb2ddd221802a38899b551dbd79f44237",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "16cddc5e7747976a7abe87ced232143ad369faf38bd4ed8707bca66d15f2ccc9",
+      "shot": {
+        "sha256": "16cddc5e7747976a7abe87ced232143ad369faf38bd4ed8707bca66d15f2ccc9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3ccb4cb2e8d8628de17eb238629d43229dc8579513ce01a917fa4e3913b7eb2f",
+      "shot": {
+        "sha256": "3ccb4cb2e8d8628de17eb238629d43229dc8579513ce01a917fa4e3913b7eb2f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a001e9ba3a309c940767507809fcd66f4dcf63e61668d14f28b6d8d7117a7f34",
+      "shot": {
+        "sha256": "a001e9ba3a309c940767507809fcd66f4dcf63e61668d14f28b6d8d7117a7f34",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c6bd544595fe1b3f24d7a9e85a69273c774187aa943bdc0fae169bf267ef88e0",
+      "shot": {
+        "sha256": "c6bd544595fe1b3f24d7a9e85a69273c774187aa943bdc0fae169bf267ef88e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--collapsible__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b7d9aa7b4d6fa45b4214d2550ebd1dc6931b383a38d36e47a9692deeec8b420d",
+      "shot": {
+        "sha256": "b7d9aa7b4d6fa45b4214d2550ebd1dc6931b383a38d36e47a9692deeec8b420d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--collapsible",
+        "title": "Lab/Resizable",
+        "name": "Collapsible",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb15bbc1371fd7810fc27abc57f0012043325341a62f8448cd72287608da669f",
+      "shot": {
+        "sha256": "eb15bbc1371fd7810fc27abc57f0012043325341a62f8448cd72287608da669f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ba8574be8329bf286c66215fee1fa6a3bc1ff8af788c1d14ab98a0cf1d65b0a4",
+      "shot": {
+        "sha256": "ba8574be8329bf286c66215fee1fa6a3bc1ff8af788c1d14ab98a0cf1d65b0a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7e622db5af70f5a11506e10c25e9e648f49e3402dc606e257a1a70b7ffc6d98a",
+      "shot": {
+        "sha256": "7e622db5af70f5a11506e10c25e9e648f49e3402dc606e257a1a70b7ffc6d98a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d29585741207d7be44cb4eb90dad22dd44543d8228c8a44c154f0958b4e8622d",
+      "shot": {
+        "sha256": "d29585741207d7be44cb4eb90dad22dd44543d8228c8a44c154f0958b4e8622d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "56faac27bc7eb1e79c18826cd486abe32e74700801a6da5c6c7b61cb16dca9d1",
+      "shot": {
+        "sha256": "56faac27bc7eb1e79c18826cd486abe32e74700801a6da5c6c7b61cb16dca9d1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1e7da9c12793b8f2ec06c81703d4029c1d1370705e0c73f0e7aab5459d445586",
+      "shot": {
+        "sha256": "1e7da9c12793b8f2ec06c81703d4029c1d1370705e0c73f0e7aab5459d445586",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4053c230affd12ee22999698dc3a5d9ad6105072e7703627cda751b051a4c7ce",
+      "shot": {
+        "sha256": "4053c230affd12ee22999698dc3a5d9ad6105072e7703627cda751b051a4c7ce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bf7abee2e32ee967a6dd642f8c5967a19acf9a029be38b7bd70ee8a7e6fec09d",
+      "shot": {
+        "sha256": "bf7abee2e32ee967a6dd642f8c5967a19acf9a029be38b7bd70ee8a7e6fec09d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f21419bb00945d4248276feb20eb1137cf23d43da5e6ba4932c370131450cf48",
+      "shot": {
+        "sha256": "f21419bb00945d4248276feb20eb1137cf23d43da5e6ba4932c370131450cf48",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "915f5e1c6744f2bc8c64b58bf53a7b0a42b83c9304f203a3c6d133b3b5abf87f",
+      "shot": {
+        "sha256": "915f5e1c6744f2bc8c64b58bf53a7b0a42b83c9304f203a3c6d133b3b5abf87f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "635ef393b0f9b6a3a5a752ceb6d8200970225bb0a495282efcef944ad1c245a6",
+      "shot": {
+        "sha256": "635ef393b0f9b6a3a5a752ceb6d8200970225bb0a495282efcef944ad1c245a6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b0cc034dc572cba1c3d852638a02c776cadb6ebe2737c0abfc814d86381f18f5",
+      "shot": {
+        "sha256": "b0cc034dc572cba1c3d852638a02c776cadb6ebe2737c0abfc814d86381f18f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9e81d33e503c24baaf964557e7985bbbe239a06cee666cf214342c95e9ad1ecf",
+      "shot": {
+        "sha256": "9e81d33e503c24baaf964557e7985bbbe239a06cee666cf214342c95e9ad1ecf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--three-panel-ide__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7e296c1568cfe228abbf81210011a36d9698763cc6e7a5d530fd0b78788a9082",
+      "shot": {
+        "sha256": "7e296c1568cfe228abbf81210011a36d9698763cc6e7a5d530fd0b78788a9082",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--three-panel-ide",
+        "title": "Lab/Resizable",
+        "name": "Three Panel IDE",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dd18e58eef63dc52c4b7cfe6d56f8d42e7197ca78b3615da6070574d6464c222",
+      "shot": {
+        "sha256": "dd18e58eef63dc52c4b7cfe6d56f8d42e7197ca78b3615da6070574d6464c222",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ffe1002fcd75c98802ba2db0f52429d916569f85ce9a97b9f28ae668d111bca8",
+      "shot": {
+        "sha256": "ffe1002fcd75c98802ba2db0f52429d916569f85ce9a97b9f28ae668d111bca8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "725434b45ff79471a7c3f9309e4cc45ccda84882461451b613f4a065715edd0e",
+      "shot": {
+        "sha256": "725434b45ff79471a7c3f9309e4cc45ccda84882461451b613f4a065715edd0e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e6b6385c8e4b0fed2da2e8596c847611c2e28ea2e847d034d80049bf318ab8a5",
+      "shot": {
+        "sha256": "e6b6385c8e4b0fed2da2e8596c847611c2e28ea2e847d034d80049bf318ab8a5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7395bd425cea237e168e8fff6744226049765a6c637d45c6280fd0fa223cf052",
+      "shot": {
+        "sha256": "7395bd425cea237e168e8fff6744226049765a6c637d45c6280fd0fa223cf052",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ae08824a066016ba798edac3d648221baa1bd2420a2bd71d528a69e2cbbc273c",
+      "shot": {
+        "sha256": "ae08824a066016ba798edac3d648221baa1bd2420a2bd71d528a69e2cbbc273c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e9b5b86fce24cf1bc26558ca1d5c2693abd5164920ef4bca1249fa56eeb8c73",
+      "shot": {
+        "sha256": "8e9b5b86fce24cf1bc26558ca1d5c2693abd5164920ef4bca1249fa56eeb8c73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "26c31faa1974fb8553a4efb4c4805b1cee6d8c299572529f5129ebd846b605a6",
+      "shot": {
+        "sha256": "26c31faa1974fb8553a4efb4c4805b1cee6d8c299572529f5129ebd846b605a6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6e77d7c24e33206b9141ca04743088b30932599d57d2859ebea9b107f3efaf54",
+      "shot": {
+        "sha256": "6e77d7c24e33206b9141ca04743088b30932599d57d2859ebea9b107f3efaf54",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "da49b60ee75c98c8c60a780530b8201ae5c60fde2a9abbfb344afbde2440ba47",
+      "shot": {
+        "sha256": "da49b60ee75c98c8c60a780530b8201ae5c60fde2a9abbfb344afbde2440ba47",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "41901f434d17f6860383ee872855b8a95448d47d2b98a2fbfe0e94da69b18e7a",
+      "shot": {
+        "sha256": "41901f434d17f6860383ee872855b8a95448d47d2b98a2fbfe0e94da69b18e7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "47b52f141942ee4437321a2cc736958164fae00a301da043ebf229c253043c63",
+      "shot": {
+        "sha256": "47b52f141942ee4437321a2cc736958164fae00a301da043ebf229c253043c63",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "57d7ec79ff84fc0c77098f195c4a1ba51fcd2b024ae622f189c150a217cfaed8",
+      "shot": {
+        "sha256": "57d7ec79ff84fc0c77098f195c4a1ba51fcd2b024ae622f189c150a217cfaed8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--snap-points__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cc57072d64d94ed04ce4404e5e34d35f35397fe65c2b536f8a88e266eae88d35",
+      "shot": {
+        "sha256": "cc57072d64d94ed04ce4404e5e34d35f35397fe65c2b536f8a88e266eae88d35",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--snap-points",
+        "title": "Lab/Resizable",
+        "name": "Snap Points",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "283e191ce67011d52a6acf541f6b00ef0cb3fae2697b7123fae6df1ae399136d",
+      "shot": {
+        "sha256": "283e191ce67011d52a6acf541f6b00ef0cb3fae2697b7123fae6df1ae399136d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "99913ba50350db02d65291a0336e794cb960324c2ee1fb6d663f5b0fcb1108ea",
+      "shot": {
+        "sha256": "99913ba50350db02d65291a0336e794cb960324c2ee1fb6d663f5b0fcb1108ea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7e355d2f2929c77f8c2bdc2bdb326965d5123bc2a21c9a8992525a8be5051a0d",
+      "shot": {
+        "sha256": "7e355d2f2929c77f8c2bdc2bdb326965d5123bc2a21c9a8992525a8be5051a0d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a307004535c0192717770bd519adfb38cdfe881d0f264a1a3cfac666d37e113d",
+      "shot": {
+        "sha256": "a307004535c0192717770bd519adfb38cdfe881d0f264a1a3cfac666d37e113d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "899637151f5d2471ca421b8db21d593f29f499a7ba156ca149f607d46edf42fe",
+      "shot": {
+        "sha256": "899637151f5d2471ca421b8db21d593f29f499a7ba156ca149f607d46edf42fe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "409ca36da4e609d40e52df00767b4484b63b6a6e7c64ada2dd5dee82ccfe822b",
+      "shot": {
+        "sha256": "409ca36da4e609d40e52df00767b4484b63b6a6e7c64ada2dd5dee82ccfe822b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0761da3c658f882c8c4667ad43eb1f36eb427cc33f1189ead11bf02085f3998b",
+      "shot": {
+        "sha256": "0761da3c658f882c8c4667ad43eb1f36eb427cc33f1189ead11bf02085f3998b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c4c72b1d58496f6ca0c0a22f4f86023b3d9653215d6607bac92a69393e5370cb",
+      "shot": {
+        "sha256": "c4c72b1d58496f6ca0c0a22f4f86023b3d9653215d6607bac92a69393e5370cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1f5fa56b25ac489cb277c7a1060e2ccd4444845f5604fa885e031be6513be19e",
+      "shot": {
+        "sha256": "1f5fa56b25ac489cb277c7a1060e2ccd4444845f5604fa885e031be6513be19e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "461c4bca4ecf19c046d2328791733ae1ef689a3370c82c7b62fea310a0a6db6e",
+      "shot": {
+        "sha256": "461c4bca4ecf19c046d2328791733ae1ef689a3370c82c7b62fea310a0a6db6e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "595f44b594f2eb8dc55e80c4a6edb90e7bcde5b1acca5a4eef3516fa42c41b05",
+      "shot": {
+        "sha256": "595f44b594f2eb8dc55e80c4a6edb90e7bcde5b1acca5a4eef3516fa42c41b05",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cb4f91cc0fbf8bf8aae43030482aff86e5ead650758e03b5e0b0ed1da3c35ebc",
+      "shot": {
+        "sha256": "cb4f91cc0fbf8bf8aae43030482aff86e5ead650758e03b5e0b0ed1da3c35ebc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "11a0128f21ce662e36d1bd9168239196a9c3de5587d46cc0893f1824002728d7",
+      "shot": {
+        "sha256": "11a0128f21ce662e36d1bd9168239196a9c3de5587d46cc0893f1824002728d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--hidden-pill__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "afc587144a44e9accb7c2dbfd46306e65829c09e88389aecce8568f5aae4c07b",
+      "shot": {
+        "sha256": "afc587144a44e9accb7c2dbfd46306e65829c09e88389aecce8568f5aae4c07b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--hidden-pill",
+        "title": "Lab/Resizable",
+        "name": "Hidden Pill",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "01559c85fd2845ce316464574b8ae4acf6a65a89e94e0cb5487712381a5aace8",
+      "shot": {
+        "sha256": "01559c85fd2845ce316464574b8ae4acf6a65a89e94e0cb5487712381a5aace8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "95faa794a9cbb2c44acb3e29c2a4cbe04c2ab261def546898c7bec210ebdd753",
+      "shot": {
+        "sha256": "95faa794a9cbb2c44acb3e29c2a4cbe04c2ab261def546898c7bec210ebdd753",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cff9c6cd543dc2267879dd1603dab43d8bf5af05105db5d90d86d31fc0b2294e",
+      "shot": {
+        "sha256": "cff9c6cd543dc2267879dd1603dab43d8bf5af05105db5d90d86d31fc0b2294e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f3ba3ef4d50bae5f5c286a60028d247bb7e13044fbb7caaa4f4355369637cfcf",
+      "shot": {
+        "sha256": "f3ba3ef4d50bae5f5c286a60028d247bb7e13044fbb7caaa4f4355369637cfcf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2d8048480020d1383fb5cf241f9c87bc914650fc6394605476d0eb5b8e8cc916",
+      "shot": {
+        "sha256": "2d8048480020d1383fb5cf241f9c87bc914650fc6394605476d0eb5b8e8cc916",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9afc6925bd840a3141943805ef0e5e5f06b844150406adec83549059feb765c9",
+      "shot": {
+        "sha256": "9afc6925bd840a3141943805ef0e5e5f06b844150406adec83549059feb765c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e1e754dd740b7990da370297c1de0caf6752cda94f07145cc4e90f236a365398",
+      "shot": {
+        "sha256": "e1e754dd740b7990da370297c1de0caf6752cda94f07145cc4e90f236a365398",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8319134d2f99da3dffc6b8b2ab85a721f56a56a13d6533fdab73afc9d41116f4",
+      "shot": {
+        "sha256": "8319134d2f99da3dffc6b8b2ab85a721f56a56a13d6533fdab73afc9d41116f4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f29e2aec4d4056507c9b5cef787ec418994042a96cf576041743704d43aa431f",
+      "shot": {
+        "sha256": "f29e2aec4d4056507c9b5cef787ec418994042a96cf576041743704d43aa431f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "149665469bbeee73ba407abe4c5246d36837322669482d8aab24906c38a2541a",
+      "shot": {
+        "sha256": "149665469bbeee73ba407abe4c5246d36837322669482d8aab24906c38a2541a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "041a98bd3fedc321b2753b7823ae9df8940a2829930d87a59d855f27cbc13130",
+      "shot": {
+        "sha256": "041a98bd3fedc321b2753b7823ae9df8940a2829930d87a59d855f27cbc13130",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8b4301a63b8acd20a19d8c8532521b4b1d61bd02430ac7c179f4ce5f7179681c",
+      "shot": {
+        "sha256": "8b4301a63b8acd20a19d8c8532521b4b1d61bd02430ac7c179f4ce5f7179681c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3245e88aeba5d96ebd003ea50c4da1aee721579bedf1d770a4ee6cf0c17b26c1",
+      "shot": {
+        "sha256": "3245e88aeba5d96ebd003ea50c4da1aee721579bedf1d770a4ee6cf0c17b26c1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--disabled__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "97c0ef61454820a905db527cd1af000257c4a06a5235c462385ad1bd64dac0c5",
+      "shot": {
+        "sha256": "97c0ef61454820a905db527cd1af000257c4a06a5235c462385ad1bd64dac0c5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--disabled",
+        "title": "Lab/Resizable",
+        "name": "Disabled",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "95bc052935dd8d4ca5d9bff21eef410ca3dd73685e2c858b76a39fb2124b529a",
+      "shot": {
+        "sha256": "95bc052935dd8d4ca5d9bff21eef410ca3dd73685e2c858b76a39fb2124b529a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "55d71bed4aa7cdb02ba68f0947bde18988ab5f03e8a507150eeaff3b0b102630",
+      "shot": {
+        "sha256": "55d71bed4aa7cdb02ba68f0947bde18988ab5f03e8a507150eeaff3b0b102630",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "01504fec6753aca1291fdace90061d7fcf0c6764ed93cfcfc2200a1cdd6acc92",
+      "shot": {
+        "sha256": "01504fec6753aca1291fdace90061d7fcf0c6764ed93cfcfc2200a1cdd6acc92",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "24763380210d2372cb41a6b66f49b52f61dbc6e141da22015f84558adfcee3e6",
+      "shot": {
+        "sha256": "24763380210d2372cb41a6b66f49b52f61dbc6e141da22015f84558adfcee3e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fa2c85bd2f1dc97eae226c80702665f1a55b924688ef044190aa7a15e78ecf66",
+      "shot": {
+        "sha256": "fa2c85bd2f1dc97eae226c80702665f1a55b924688ef044190aa7a15e78ecf66",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c4a6d1ee603b880af7817f8fb26eb4c300681c4b3d80f95eba01fe8f8145a2f7",
+      "shot": {
+        "sha256": "c4a6d1ee603b880af7817f8fb26eb4c300681c4b3d80f95eba01fe8f8145a2f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "524a9a2df287440db66ad89b153689a7cb6f5e10a7245f10b5e37299cbc14868",
+      "shot": {
+        "sha256": "524a9a2df287440db66ad89b153689a7cb6f5e10a7245f10b5e37299cbc14868",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d9f171d53cc25fe24373b8c3fe2f415a75e85906a09b83d994fb1dfb17034aa6",
+      "shot": {
+        "sha256": "d9f171d53cc25fe24373b8c3fe2f415a75e85906a09b83d994fb1dfb17034aa6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "14dfcf97aac35d3a8eefcaebb7471f16d02008a61147bf4000037031c731b384",
+      "shot": {
+        "sha256": "14dfcf97aac35d3a8eefcaebb7471f16d02008a61147bf4000037031c731b384",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a16fb16e2b0ab6f13b0133bb93b286690c526ac06ee1c79d0fb672d3dcbf2bea",
+      "shot": {
+        "sha256": "a16fb16e2b0ab6f13b0133bb93b286690c526ac06ee1c79d0fb672d3dcbf2bea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e07497566ef0feab2017574ef7f0e527e5e7f57b856f0d4b4f0e9c7677fd39a2",
+      "shot": {
+        "sha256": "e07497566ef0feab2017574ef7f0e527e5e7f57b856f0d4b4f0e9c7677fd39a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a9953ca23757a2bc4f8842e25e328f57f38c38c0de008259c4f98dd157133eea",
+      "shot": {
+        "sha256": "a9953ca23757a2bc4f8842e25e328f57f38c38c0de008259c4f98dd157133eea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8a4e6f3ffeefe077ba6fea0f8f91c0bf8361ed4c83074b9495ba2c9d542c4f61",
+      "shot": {
+        "sha256": "8a4e6f3ffeefe077ba6fea0f8f91c0bf8361ed4c83074b9495ba2c9d542c4f61",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-layout__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1c3df98c6100d2445159693237fe9e1e4efd73b9a8f9e069d6b089c0e56913f7",
+      "shot": {
+        "sha256": "1c3df98c6100d2445159693237fe9e1e4efd73b9a8f9e069d6b089c0e56913f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-layout",
+        "title": "Lab/Resizable",
+        "name": "With Layout",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e80503368606b08cd3dfe97748c04796c61efa34fb052a7eff59d6689d0bd61f",
+      "shot": {
+        "sha256": "e80503368606b08cd3dfe97748c04796c61efa34fb052a7eff59d6689d0bd61f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b0e7205317467f768a603a28b5b64e0eceda2209b1d67e632942d0bdc9e7951d",
+      "shot": {
+        "sha256": "b0e7205317467f768a603a28b5b64e0eceda2209b1d67e632942d0bdc9e7951d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "01290c920935c9284bcb3af19e7a808d93d6bf7c2919ce029c2d21eb7923bebc",
+      "shot": {
+        "sha256": "01290c920935c9284bcb3af19e7a808d93d6bf7c2919ce029c2d21eb7923bebc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7add3780e50e0979e186ef54b1eba9a51a7a9f13d7c0badf7d8e046cb1415eea",
+      "shot": {
+        "sha256": "7add3780e50e0979e186ef54b1eba9a51a7a9f13d7c0badf7d8e046cb1415eea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cb82147003fe1c62e669881ae1dcdaf3483c3bb8e1e736c0e454ce83021f90e4",
+      "shot": {
+        "sha256": "cb82147003fe1c62e669881ae1dcdaf3483c3bb8e1e736c0e454ce83021f90e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b91c4728d40b0679b3a29f27424b26602461e5a7842392d5fc43f6bd89c6c79d",
+      "shot": {
+        "sha256": "b91c4728d40b0679b3a29f27424b26602461e5a7842392d5fc43f6bd89c6c79d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4cd91827996bccfb1928e155b13038f749df4be7285e9e51f32996ec1dd1c023",
+      "shot": {
+        "sha256": "4cd91827996bccfb1928e155b13038f749df4be7285e9e51f32996ec1dd1c023",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "187eabf658fe179e52d8f5825b2fe3f0f2206f735327bd0fe1495cf3d2452b4d",
+      "shot": {
+        "sha256": "187eabf658fe179e52d8f5825b2fe3f0f2206f735327bd0fe1495cf3d2452b4d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7d122f1ef48f0d02e38b8eb11fbd0234df4dab08c97fc45e5f7d3072383dba0c",
+      "shot": {
+        "sha256": "7d122f1ef48f0d02e38b8eb11fbd0234df4dab08c97fc45e5f7d3072383dba0c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48890da1ed7474559e71ebad3f47eba4cd6d3a6a604c7f8a23aa178fd53a635c",
+      "shot": {
+        "sha256": "48890da1ed7474559e71ebad3f47eba4cd6d3a6a604c7f8a23aa178fd53a635c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "98faf0a734919228795a0805f5f78da14420e14a5de4cffad9180c156105cd43",
+      "shot": {
+        "sha256": "98faf0a734919228795a0805f5f78da14420e14a5de4cffad9180c156105cd43",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2e955920c344d963a8ef72a9b915cba1094d11976da18a19ca0c123ad1c0cf2c",
+      "shot": {
+        "sha256": "2e955920c344d963a8ef72a9b915cba1094d11976da18a19ca0c123ad1c0cf2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1ece05670dad51bd32e17410bfab3f078364f5b115f8cdf8006303408c2fd621",
+      "shot": {
+        "sha256": "1ece05670dad51bd32e17410bfab3f078364f5b115f8cdf8006303408c2fd621",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-app-shell__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48318565e9d97b887fbd90badfa9bc63fa05fe4b41baacfdc69dc02089413ecd",
+      "shot": {
+        "sha256": "48318565e9d97b887fbd90badfa9bc63fa05fe4b41baacfdc69dc02089413ecd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-app-shell",
+        "title": "Lab/Resizable",
+        "name": "With App Shell",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9cbb922da78a068cb75b297f726bba416c82838e8eb3ef840f8b5b9e7ca9a44b",
+      "shot": {
+        "sha256": "9cbb922da78a068cb75b297f726bba416c82838e8eb3ef840f8b5b9e7ca9a44b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1609ac2d300a66bc68f3ff62954ff4b918555660212f582de1ceb1dd26f2da2a",
+      "shot": {
+        "sha256": "1609ac2d300a66bc68f3ff62954ff4b918555660212f582de1ceb1dd26f2da2a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "efda3093d0cdbf92ab2b279ce1644fc2e1aac702ccdd4cb77a6bc3e8c7d38a16",
+      "shot": {
+        "sha256": "efda3093d0cdbf92ab2b279ce1644fc2e1aac702ccdd4cb77a6bc3e8c7d38a16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70c8a2840a713c7f0f6248b2781dca6b01581ba6cda6701be6df79e2a67f8214",
+      "shot": {
+        "sha256": "70c8a2840a713c7f0f6248b2781dca6b01581ba6cda6701be6df79e2a67f8214",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2e75d8986217c0184fee2ab78209e61577b3288605facff53fd91c287dfcac94",
+      "shot": {
+        "sha256": "2e75d8986217c0184fee2ab78209e61577b3288605facff53fd91c287dfcac94",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a17591e32d1bb33467ed5aa0d46999b1a345a3eaaee95d53876bbc4f135a3ff3",
+      "shot": {
+        "sha256": "a17591e32d1bb33467ed5aa0d46999b1a345a3eaaee95d53876bbc4f135a3ff3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70f71efb043cc7bd087547eed3d032c6c36cb13a27ae9b3dccf175fc6e8628cf",
+      "shot": {
+        "sha256": "70f71efb043cc7bd087547eed3d032c6c36cb13a27ae9b3dccf175fc6e8628cf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "980c1d138b44fd38355e84549b1138d31e8018562ad6fa84eb25c4c164dc8ee4",
+      "shot": {
+        "sha256": "980c1d138b44fd38355e84549b1138d31e8018562ad6fa84eb25c4c164dc8ee4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "015e2ba6fc59af21ffacd46a6973b593d3975ea8a277d4a635a168419e5dacf5",
+      "shot": {
+        "sha256": "015e2ba6fc59af21ffacd46a6973b593d3975ea8a277d4a635a168419e5dacf5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b56190ca79853b30ece56bb345879ddf7654d1b24908c90bb8fcd5e3b7058675",
+      "shot": {
+        "sha256": "b56190ca79853b30ece56bb345879ddf7654d1b24908c90bb8fcd5e3b7058675",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cbb6c5708a58536088bbcd195e8f7d5551e41c8f45ecc7b2b3e509ee43458f17",
+      "shot": {
+        "sha256": "cbb6c5708a58536088bbcd195e8f7d5551e41c8f45ecc7b2b3e509ee43458f17",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "798b06df1173e86cbb0ba9ed3b542ccabd10de4e7ca7fcf3808075854954b37d",
+      "shot": {
+        "sha256": "798b06df1173e86cbb0ba9ed3b542ccabd10de4e7ca7fcf3808075854954b37d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "45f66c2d9a138616f6bf476dd6ed63dd62e3003a5a1b347c6920d564c45ccf58",
+      "shot": {
+        "sha256": "45f66c2d9a138616f6bf476dd6ed63dd62e3003a5a1b347c6920d564c45ccf58",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "lab-resizable--with-embedded-frame__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ab9dab5d80070d79b0179eadd0073f2108bc16b8b76c857d4be821c1915f9759",
+      "shot": {
+        "sha256": "ab9dab5d80070d79b0179eadd0073f2108bc16b8b76c857d4be821c1915f9759",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--with-embedded-frame",
+        "title": "Lab/Resizable",
+        "name": "With Embedded Frame",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Expected ResizeHandle pointer-capture coverage.",
+    "commentId": 5472035590,
+    "at": "2026-08-30T23:55:10.484Z"
+  }
+}

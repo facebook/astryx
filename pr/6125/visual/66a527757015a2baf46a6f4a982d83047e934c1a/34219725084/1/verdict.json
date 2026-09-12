@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-08T11:36:28.976Z",
+  "context": {
+    "sha": "66a527757015a2baf46a6f4a982d83047e934c1a",
+    "runId": "34219725084",
+    "runAttempt": "1",
+    "headSha": "66a527757015a2baf46a6f4a982d83047e934c1a",
+    "baseSha": "a8b08f399c192ffe2d7d3c2245d109cee1d20232",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Switch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Switch/Switch.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-08T04:08:03.775Z",
+    "sha": "409248619ffb6a26ca4899e4b7dcdf18007206ea",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

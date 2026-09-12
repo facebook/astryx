@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-12T22:36:10.751Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "0cb0e331f4c231e2ed6e35197866c76f4233d0e9",
+    "headSha": "0cb0e331f4c231e2ed6e35197866c76f4233d0e9",
+    "baseSha": "32ef5231d7343773c9cbc2cb5cbb6a4e6eddba4f",
+    "runId": "34719223773",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "ScrollableArea"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/ScrollableArea/ScrollableArea.tsx",
+        "packages/core/src/ScrollableArea/index.ts",
+        "packages/core/src/hooks/index.ts",
+        "packages/core/src/hooks/scrollGeometry.ts",
+        "packages/core/src/hooks/scrollOwnerRegistry.ts",
+        "packages/core/src/hooks/useScrollableArea.ts",
+        "packages/core/src/index.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 386,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "ScrollableArea"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

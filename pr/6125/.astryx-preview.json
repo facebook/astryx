@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6125,
+    "headSha": "66a527757015a2baf46a6f4a982d83047e934c1a",
+    "headRef": "fix/switch-busy-live-region-announcement",
+    "headRepository": "Geervan/astryx",
+    "headRepositoryId": "1290281208"
+  },
+  "sourceRun": {
+    "id": 34219725084,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6125/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6125/sandbox/",
+      "indexSha256": "09b530413c5c5e683496b40912618fbffd6e6f72dfd434ab4f98f5c1aa36e003"
+    }
+  }
+}

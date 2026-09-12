@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-08T15:07:09.623Z",
+  "context": {
+    "sha": "8aa012c09b3bc5b30d3b6fbe4e15ecc7449d3456",
+    "runId": "34240108372",
+    "runAttempt": "1",
+    "headSha": "8aa012c09b3bc5b30d3b6fbe4e15ecc7449d3456",
+    "baseSha": "592d0807462f8bc426f2f92d937784bf28311232",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "SelectableCard"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/SelectableCard/SelectableCard.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-08T04:08:03.775Z",
+    "sha": "409248619ffb6a26ca4899e4b7dcdf18007206ea",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

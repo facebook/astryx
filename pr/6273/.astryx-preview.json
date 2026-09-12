@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6273,
+    "headSha": "d6926cf61e148644757d274d900e1a25f6003cb5",
+    "headRef": "fix/isolated-pnpm-installs",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34712771921,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6273/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6273/sandbox/",
+      "indexSha256": "f8ca3c9dae1d5e3ec1abc5111675c9ba8b91968d5c5d2b5ed4cb5de087680b81"
+    }
+  }
+}

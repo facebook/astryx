@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6196,
+    "headSha": "d9184419f96fec42bb8faff5f9157be3ccaa79bd",
+    "headRef": "codex/fix-sidenav-overflow",
+    "headRepository": "harjothkhara/astryx",
+    "headRepositoryId": "1294195986"
+  },
+  "sourceRun": {
+    "id": 34423345648,
+    "attempt": 1,
+    "conclusion": "cancelled"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6196/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6196/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

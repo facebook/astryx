@@ -1,0 +1,14 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{F as t,I as n,O as r}from"./ime-ByhR7fBS.js";import{P as i,t as a}from"./utils-5hOvTTOG.js";import{t as o}from"./jsx-runtime-DqZldVDK.js";function s(e){return e==null||e.length===0?null:e.length===1?`${e[0]} is typing…`:e.length===2?`${e[0]} and ${e[1]} are typing…`:`${e[0]} and ${e.length-1} others are typing…`}function c({names:e,xstyle:t,className:a,style:o,"data-testid":c,ref:d}){let f=s(e);return(0,l.jsxs)(`div`,{ref:d,role:`status`,"aria-live":`polite`,"data-testid":c,...i(r(`chat-typing-indicator`),n(u.root,t),a,o),children:[(0,l.jsxs)(`span`,{"aria-hidden":`true`,className:`astryx3nfvp2 astryx6s0dn4 astryx1lsbc85`,children:[(0,l.jsx)(`span`,{className:`astryx1ftt334 astryx1ycjhwn astryxjspbzw astryx1q5y3ey astryx701w4k astryxxprybm astryxa4qsjk astryx4hg4is astryx1aquc0h`}),(0,l.jsx)(`span`,{className:`astryx1ftt334 astryx1ycjhwn astryxjspbzw astryx1q5y3ey astryx701w4k astryxxprybm astryxa4qsjk astryx4hg4is astryx1aquc0h astryx1jksiw5`}),(0,l.jsx)(`span`,{className:`astryx1ftt334 astryx1ycjhwn astryxjspbzw astryx1q5y3ey astryx701w4k astryxxprybm astryxa4qsjk astryx4hg4is astryx1aquc0h astryxtmkasn`})]}),f!=null&&(0,l.jsx)(`span`,{className:`astryx9ynric astryx141an7d astryxv1l7n4`,children:f})]})}var l,u,d=e((()=>{t(),a(),l=o(),u={root:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kOIVth:`astryx1txdalj`,kAzted:`astryxisnujt`,$$css:!0}},c.displayName=`ChatTypingIndicator`,c.__docgenInfo={description:`Animated three-dot typing hint with a name-aware label.
+
+The dots bounce with staggered delays (disabled under
+prefers-reduced-motion) and the label is announced politely to
+screen readers via role="status".
+
+@example
+\`\`\`
+<ChatTypingIndicator names={['Ana']} />
+<ChatTypingIndicator names={['Ana', 'Ben', 'Casey']} />
+\`\`\``,methods:[],displayName:`ChatTypingIndicator`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:`Ref forwarded to the root element`},names:{required:!1,tsType:{name:`Array`,elements:[{name:`string`}],raw:`string[]`},description:`Names of people currently typing. Drives the label:
+one name → "Ana is typing…", two → "Ana and Ben are typing…",
+more → "Ana and 2 others are typing…". When omitted or empty,
+only the animated dots render.`}},composes:[`Omit`]}}));export{d as n,c as t};

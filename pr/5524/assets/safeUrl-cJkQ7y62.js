@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";function t(e){let t=e.replace(/[\x00-\x1f\x7f]/g,``).trim().toLowerCase();return!(t.startsWith(`javascript:`)||t.startsWith(`vbscript:`)||t.startsWith(`data:text/html`))}var n=e((()=>{}));export{t as n,n as t};

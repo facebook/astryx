@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{n as t,r as n}from"./InteractiveRoleContext-DtotSF-S.js";function r({href:e,onClick:t,isDisabled:r=!1}){let i=n();return e!=null&&!r?`link`:t==null?i??`inert`:`button`}var i=e((()=>{t()}));export{r as n,i as t};

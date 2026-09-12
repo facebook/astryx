@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6282,
+    "headSha": "7bdbf5f42cf4817c8c0e8ac703f1e8ab187d4956",
+    "headRef": "night-watch-component-audit/ChartArea/2026-09-12",
+    "headRepository": "cixzhang/astryx",
+    "headRepositoryId": "1324298265"
+  },
+  "sourceRun": {
+    "id": 34711950988,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6282/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6282/sandbox/",
+      "indexSha256": "ec92ac293c40a6c8e58ad5c4fd59133026b06e42be4a943a868559e16be239a8"
+    }
+  }
+}

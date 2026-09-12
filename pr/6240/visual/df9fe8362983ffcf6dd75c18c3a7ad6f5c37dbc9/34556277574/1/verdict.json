@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-11T03:26:07.232Z",
+  "context": {
+    "sha": "df9fe8362983ffcf6dd75c18c3a7ad6f5c37dbc9",
+    "runId": "34556277574",
+    "runAttempt": "1",
+    "headSha": "df9fe8362983ffcf6dd75c18c3a7ad6f5c37dbc9",
+    "baseSha": "814553ef98299d991830e491ffc69d780aa87df9",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Dialog"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Dialog/DialogHeader.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-09T13:21:32.655Z",
+    "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6220,
+    "headSha": "fbd9738771c02c58383b824a12420c9fb092799e",
+    "headRef": "fix/chat-typing-indicator-i18n",
+    "headRepository": "Kyujenius/astryx",
+    "headRepositoryId": "1352594776"
+  },
+  "sourceRun": {
+    "id": 34503369041,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6220/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6220/sandbox/",
+      "indexSha256": "5fe106a9a266dd57ac579640872d0b2094a08099ce84fd9808c12f366a602256"
+    }
+  }
+}

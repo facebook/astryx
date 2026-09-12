@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6073,
+  "headSha": "4e74537e14586d0a36f16f39cf7bd9dedf971704",
+  "testedSha": "4e74537e14586d0a36f16f39cf7bd9dedf971704",
+  "baseSha": "7eb2a17478a82e10bdf73bc685e3a150d3ab9d10",
+  "run": {
+    "id": 34251560150,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-08T16:51:54.327Z",
+    "context": {
+      "sha": "4e74537e14586d0a36f16f39cf7bd9dedf971704",
+      "runId": "34251560150",
+      "runAttempt": "1",
+      "headSha": "4e74537e14586d0a36f16f39cf7bd9dedf971704",
+      "baseSha": "7eb2a17478a82e10bdf73bc685e3a150d3ab9d10",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Layer"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Layer/layerStack.ts",
+          "packages/core/src/Layer/useLayerDismissal.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": [
+          "@astryxdesign/lab"
+        ]
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-08T04:08:03.775Z",
+      "sha": "409248619ffb6a26ca4899e4b7dcdf18007206ea",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

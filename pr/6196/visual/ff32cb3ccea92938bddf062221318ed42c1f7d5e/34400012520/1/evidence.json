@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6196,
+  "headSha": "ff32cb3ccea92938bddf062221318ed42c1f7d5e",
+  "testedSha": "ff32cb3ccea92938bddf062221318ed42c1f7d5e",
+  "baseSha": "54ecd59ea7149f9e24105572ea53761db797cece",
+  "run": {
+    "id": 34400012520,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-09T21:03:44.891Z",
+    "context": {
+      "sha": "ff32cb3ccea92938bddf062221318ed42c1f7d5e",
+      "runId": "34400012520",
+      "runAttempt": "1",
+      "headSha": "ff32cb3ccea92938bddf062221318ed42c1f7d5e",
+      "baseSha": "54ecd59ea7149f9e24105572ea53761db797cece",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "SideNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/SideNav/SideNav.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-09T13:21:32.655Z",
+      "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

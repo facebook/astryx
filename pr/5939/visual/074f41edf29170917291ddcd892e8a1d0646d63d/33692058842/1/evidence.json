@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5939,
+  "headSha": "074f41edf29170917291ddcd892e8a1d0646d63d",
+  "testedSha": "074f41edf29170917291ddcd892e8a1d0646d63d",
+  "baseSha": "b1f1d68746edc2e0d84eccc6598748606a7c5efb",
+  "run": {
+    "id": 33692058842,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-02T23:19:31.500Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 4332 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "074f41edf29170917291ddcd892e8a1d0646d63d",
+      "headSha": "074f41edf29170917291ddcd892e8a1d0646d63d",
+      "baseSha": "b1f1d68746edc2e0d84eccc6598748606a7c5efb",
+      "runId": "33692058842",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "Breadcrumbs",
+          "Stepper"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Breadcrumbs/BreadcrumbItem.tsx",
+          "packages/core/src/Stepper/Stepper.tsx",
+          "packages/core/src/utils/devWarning.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 4332,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "Breadcrumbs",
+      "Stepper"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

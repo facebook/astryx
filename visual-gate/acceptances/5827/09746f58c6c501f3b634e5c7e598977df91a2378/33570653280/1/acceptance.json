@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5827,
+  "headSha": "09746f58c6c501f3b634e5c7e598977df91a2378",
+  "testedSha": "09746f58c6c501f3b634e5c7e598977df91a2378",
+  "baseSha": "917db9ef1392ce87030b6893c327661c3c3e775a",
+  "run": {
+    "id": 33570653280,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "0bf4b8d6168656032cdcf16068f1379cbb9a2c2b",
+    "manifestDigest": "02617d723aa104d6ca97224c954c6bba68d82cffab5863fe6e5038cbcf174262"
+  },
+  "keys": [
+    {
+      "key": "core-spinner--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "43a9cc8a31c12176db6ee15f4ad157936df73fa2805455b96db59fc3bb4b15ec",
+      "shot": {
+        "sha256": "43a9cc8a31c12176db6ee15f4ad157936df73fa2805455b96db59fc3bb4b15ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "72577cb55eba7f5aef30820424051731086d99c730fd3e70f90984e5c8a7c0c3",
+      "shot": {
+        "sha256": "72577cb55eba7f5aef30820424051731086d99c730fd3e70f90984e5c8a7c0c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "08a57c4d7fe677be49daffc87f155b095431e7d8db5dea23718e440b74e91cb1",
+      "shot": {
+        "sha256": "08a57c4d7fe677be49daffc87f155b095431e7d8db5dea23718e440b74e91cb1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0868fd91aab59d547751ae5eb5427fe433b7fde1f3035ca1ff04d68cfb9ac78d",
+      "shot": {
+        "sha256": "0868fd91aab59d547751ae5eb5427fe433b7fde1f3035ca1ff04d68cfb9ac78d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d686cf79f514179e9759e0effaf9ff41d31b387998c538047150d458d653bb20",
+      "shot": {
+        "sha256": "d686cf79f514179e9759e0effaf9ff41d31b387998c538047150d458d653bb20",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a43e6393c9d62b2ab9cb69dd0fae2dc414feafd9f70e15659f011a267f47386a",
+      "shot": {
+        "sha256": "a43e6393c9d62b2ab9cb69dd0fae2dc414feafd9f70e15659f011a267f47386a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "82ecb59efa1538f9d3812797d6593d482e9266927ef30b0e8e3332adb2d99f26",
+      "shot": {
+        "sha256": "82ecb59efa1538f9d3812797d6593d482e9266927ef30b0e8e3332adb2d99f26",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f33d7e4e1aa99b1167ed7bcfa0343959d80ab8ede215002d406d3673f3b3c255",
+      "shot": {
+        "sha256": "f33d7e4e1aa99b1167ed7bcfa0343959d80ab8ede215002d406d3673f3b3c255",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02de4797ae3bdda436d1c12c88c799604ca3202e4bab27d8a54b7dd8ca061b7b",
+      "shot": {
+        "sha256": "02de4797ae3bdda436d1c12c88c799604ca3202e4bab27d8a54b7dd8ca061b7b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e731c647ccdb72ad4c82df5375e9c232290d036bc76df9fad185097231814b4",
+      "shot": {
+        "sha256": "4e731c647ccdb72ad4c82df5375e9c232290d036bc76df9fad185097231814b4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "63aa7483b1b19d2c81ad35426c9233c2ff2d367a3640a9a44f4b505c4f80062b",
+      "shot": {
+        "sha256": "63aa7483b1b19d2c81ad35426c9233c2ff2d367a3640a9a44f4b505c4f80062b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-spinner--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6b054e8ac2320fda39f619be54a7b28cda284b863dc67b5c39538e3702bf0550",
+      "shot": {
+        "sha256": "6b054e8ac2320fda39f619be54a7b28cda284b863dc67b5c39538e3702bf0550",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-spinner--default",
+        "title": "Core/Spinner",
+        "name": "Default",
+        "component": "Spinner",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Spinner appears to be correct",
+    "commentId": 5502586060,
+    "at": "2026-09-02T00:46:52.733Z"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6000,
+    "headSha": "7e427422c789427d1e26c1302579bef324840725",
+    "headRef": "ak-5941-tokenizer-transition-action",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 34182633491,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6000/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6000/sandbox/",
+      "indexSha256": "557b829448f454c2b2d1f82c54e65a11aea2e4d21d9ba9f26efeeca101835ac8"
+    }
+  }
+}

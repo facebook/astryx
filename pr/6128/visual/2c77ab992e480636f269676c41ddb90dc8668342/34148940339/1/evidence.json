@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6128,
+  "headSha": "2c77ab992e480636f269676c41ddb90dc8668342",
+  "testedSha": "2c77ab992e480636f269676c41ddb90dc8668342",
+  "baseSha": "a8b08f399c192ffe2d7d3c2245d109cee1d20232",
+  "run": {
+    "id": 34148940339,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-07T18:03:09.635Z",
+    "context": {
+      "sha": "2c77ab992e480636f269676c41ddb90dc8668342",
+      "runId": "34148940339",
+      "runAttempt": "1",
+      "headSha": "2c77ab992e480636f269676c41ddb90dc8668342",
+      "baseSha": "a8b08f399c192ffe2d7d3c2245d109cee1d20232",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Chat"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Chat/ChatComposerInput.tsx",
+          "packages/core/src/Chat/useTriggerMenu.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-05T07:37:37.596Z",
+      "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";function t(e,t){if(e!==`_blank`)return{target:e,rel:t};let r=t?.split(/\s+/).filter(Boolean)??[];for(let e of n)r.includes(e)||r.push(e);return{target:e,rel:r.join(` `)}}var n,r=e((()=>{n=[`noopener`,`noreferrer`]}));export{r as n,t};

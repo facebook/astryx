@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6086,
+    "headSha": "2d2fd0db736f0d5c64567dbe7374691984175d25",
+    "headRef": "feat/text-input-text-size",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 34017855656,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6086/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6086/sandbox/",
+      "indexSha256": "4c55943101f11bc222fe188150e8bca2946aeb8f56d23cc04c29b2f3ba44761b"
+    }
+  }
+}

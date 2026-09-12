@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5623,
+  "headSha": "6486b1ee8979ef194a245dccd6ee9860a4ccca56",
+  "testedSha": "6486b1ee8979ef194a245dccd6ee9860a4ccca56",
+  "baseSha": "63a0bcd741bdfc7225a64d4305f52179fca9cac5",
+  "run": {
+    "id": 33941839698,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-05T03:51:20.612Z",
+    "context": {
+      "sha": "6486b1ee8979ef194a245dccd6ee9860a4ccca56",
+      "runId": "33941839698",
+      "runAttempt": "1",
+      "headSha": "6486b1ee8979ef194a245dccd6ee9860a4ccca56",
+      "baseSha": "63a0bcd741bdfc7225a64d4305f52179fca9cac5",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "PowerSearch"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/PowerSearch/PowerSearch.tsx",
+          "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+          "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+          "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+          "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+          "packages/core/src/PowerSearch/types.ts",
+          "packages/core/src/PowerSearch/usePowerSearchSource.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

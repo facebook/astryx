@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5993,
+  "headSha": "a23c765f9f698e3a96e6f41c15a3451eb81069f2",
+  "testedSha": "a23c765f9f698e3a96e6f41c15a3451eb81069f2",
+  "baseSha": "e074389e9b01ce7ac5196f2bb1fbc96950a7a52a",
+  "run": {
+    "id": 34183876887,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "0784bb6cd9ddb4da7c62c25e211ece2f8a318273",
+    "manifestDigest": "064ac83593244c66a8fce7ccdb5a65bd22fc8e94dcf975fd2172b611466137eb"
+  },
+  "keys": [
+    {
+      "key": "core-collapsible--single-mode__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "ceb6d736f6edd011fee42ea70ebc0cb48357947dfc0aaea8da4ea01320b93324",
+      "afterSha256": "9ad2502490bff8e2d680cd80ed7f769a600f1cd40dcfd99e25feebd5fa798a85",
+      "shot": {
+        "sha256": "9ad2502490bff8e2d680cd80ed7f769a600f1cd40dcfd99e25feebd5fa798a85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "9fee231ab835a6a3241476cfd4187acd8ed04fb7e6426b3f153218a25d30752c",
+      "afterSha256": "5ed56f8496720e03e13484079345f063c150de4aabf5e9c565a87793bc74a50c",
+      "shot": {
+        "sha256": "5ed56f8496720e03e13484079345f063c150de4aabf5e9c565a87793bc74a50c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "The leading chevrons match the current Collapsible contract: start precedes the label, mirrors inward in RTL, and points down when expanded; end remains the unchanged default.",
+    "commentId": 5578893096,
+    "at": "2026-09-08T03:55:19.172Z"
+  }
+}

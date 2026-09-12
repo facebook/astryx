@@ -1,0 +1,1567 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-05T13:21:39.484Z",
+  "context": {
+    "sha": "0ccad5b5e6283e23743ce24ff3349aab201712aa",
+    "runId": "33967711674",
+    "runAttempt": "1",
+    "headSha": null,
+    "baseSha": null,
+    "ref": "refs/heads/main",
+    "releasePlan": {
+      "version": 1,
+      "lane": "stable-release",
+      "authority": "report-removals",
+      "keys": [
+        "core-alertdialog--delete__neutral-dark",
+        "core-alertdialog--delete__neutral-light",
+        "core-alertdialog--delete__probe-dark",
+        "core-alertdialog--delete__probe-light",
+        "core-appshell--full-featured__probe-dark",
+        "core-appshell--full-featured__probe-light",
+        "core-appshell--playground__neutral-dark",
+        "core-appshell--playground__neutral-light",
+        "core-appshell--with-mobile-nav__probe-dark",
+        "core-appshell--with-mobile-nav__probe-light",
+        "core-aspectratio--default__neutral-dark",
+        "core-aspectratio--default__neutral-light",
+        "core-aspectratio--with-placeholder-skeleton__probe-dark",
+        "core-aspectratio--with-placeholder-skeleton__probe-light",
+        "core-avatar--default__neutral-dark",
+        "core-avatar--default__neutral-light",
+        "core-avatar--with-status__probe-dark",
+        "core-avatar--with-status__probe-light",
+        "core-avatargroup--default__neutral-dark",
+        "core-avatargroup--default__neutral-light",
+        "core-avatargroup--with-overflow__probe-dark",
+        "core-avatargroup--with-overflow__probe-light",
+        "core-avatargroup--with-status-dots__probe-dark",
+        "core-avatargroup--with-status-dots__probe-light",
+        "core-badge--default__neutral-dark",
+        "core-badge--default__neutral-light",
+        "core-banner--collapsible-content-expanded__probe-dark",
+        "core-banner--collapsible-content-expanded__probe-light",
+        "core-banner--info__neutral-dark",
+        "core-banner--info__neutral-light",
+        "core-blockquote--default__neutral-dark",
+        "core-blockquote--default__neutral-light",
+        "core-bottomsheet--showcase__neutral-dark",
+        "core-bottomsheet--showcase__neutral-light",
+        "core-breadcrumbs--custom-separator__neutral-dark",
+        "core-breadcrumbs--custom-separator__neutral-light",
+        "core-breadcrumbs--default__neutral-dark",
+        "core-breadcrumbs--default__neutral-light",
+        "core-breadcrumbs--menu-crumb__probe-dark",
+        "core-breadcrumbs--menu-crumb__probe-light",
+        "core-button--primary__neutral-dark",
+        "core-button--primary__neutral-light",
+        "core-buttongroup--horizontal__neutral-dark",
+        "core-buttongroup--horizontal__neutral-light",
+        "core-buttongroup--horizontal__probe-dark",
+        "core-buttongroup--horizontal__probe-light",
+        "core-calendar--default__neutral-dark",
+        "core-calendar--default__neutral-light",
+        "core-card--default__neutral-dark",
+        "core-card--default__neutral-light",
+        "core-card--theme-added-variant__probe-dark",
+        "core-card--theme-added-variant__probe-light",
+        "core-carousel--default__neutral-dark",
+        "core-carousel--default__neutral-light",
+        "core-carousel--default__probe-dark",
+        "core-carousel--default__probe-light",
+        "core-center--default__neutral-dark",
+        "core-center--default__neutral-light",
+        "core-center--default__probe-dark",
+        "core-center--default__probe-light",
+        "core-chat--custom-content__probe-dark",
+        "core-chat--custom-content__probe-light",
+        "core-chat--default__neutral-dark",
+        "core-chat--default__neutral-light",
+        "core-chatautoscroll--scroll-behavior-comparison__neutral-dark",
+        "core-chatautoscroll--scroll-behavior-comparison__neutral-light",
+        "core-chatcomposer--with-attachments__probe-dark",
+        "core-chatcomposer--with-attachments__probe-light",
+        "core-chatdictation--idle__probe-dark",
+        "core-chatdictation--idle__probe-light",
+        "core-chatlayout--full-ai-chat__probe-dark",
+        "core-chatlayout--full-ai-chat__probe-light",
+        "core-chatlayout--with-empty-state__probe-dark",
+        "core-chatlayout--with-empty-state__probe-light",
+        "core-checkboxinput--default__neutral-dark",
+        "core-checkboxinput--default__neutral-light",
+        "core-checkboxlist--default__neutral-dark",
+        "core-checkboxlist--default__neutral-light",
+        "core-citation--label__neutral-dark",
+        "core-citation--label__neutral-light",
+        "core-citation--label__probe-dark",
+        "core-citation--label__probe-light",
+        "core-clickablecard--navigation__neutral-dark",
+        "core-clickablecard--navigation__neutral-light",
+        "core-code--default__neutral-dark",
+        "core-code--default__neutral-light",
+        "core-collapsible--dividers__probe-dark",
+        "core-collapsible--dividers__probe-light",
+        "core-collapsible--single-mode__neutral-dark",
+        "core-collapsible--single-mode__neutral-light",
+        "core-commandpalette--default__neutral-dark",
+        "core-commandpalette--default__neutral-light",
+        "core-commandpalette--default__probe-dark",
+        "core-commandpalette--default__probe-light",
+        "core-commandpalette--themed-group-heading__probe-dark",
+        "core-commandpalette--themed-group-heading__probe-light",
+        "core-complexselector--fruit-ripeness-grid__neutral-dark",
+        "core-complexselector--fruit-ripeness-grid__neutral-light",
+        "core-complexselector--tree-list-with-search__probe-dark",
+        "core-complexselector--tree-list-with-search__probe-light",
+        "core-contextmenu--default__neutral-dark",
+        "core-contextmenu--default__neutral-light",
+        "core-contextmenu--with-sections__probe-dark",
+        "core-contextmenu--with-sections__probe-light",
+        "core-contextmenu--with-selectable-items__probe-dark",
+        "core-contextmenu--with-selectable-items__probe-light",
+        "core-control-size-comparison--all-sizes__neutral-dark",
+        "core-control-size-comparison--all-sizes__neutral-light",
+        "core-control-size-comparison--all-sizes__probe-dark",
+        "core-control-size-comparison--all-sizes__probe-light",
+        "core-dateinput--clearable__probe-dark",
+        "core-dateinput--clearable__probe-light",
+        "core-dateinput--default__neutral-dark",
+        "core-dateinput--default__neutral-light",
+        "core-daterangeinput--default__neutral-dark",
+        "core-daterangeinput--default__neutral-light",
+        "core-daterangeinput--with-warning-status__probe-dark",
+        "core-daterangeinput--with-warning-status__probe-light",
+        "core-datetimeinput--default__neutral-dark",
+        "core-datetimeinput--default__neutral-light",
+        "core-datetimeinput--with-error-status__probe-dark",
+        "core-datetimeinput--with-error-status__probe-light",
+        "core-dialog--default__neutral-dark",
+        "core-dialog--default__neutral-light",
+        "core-divider--default__neutral-dark",
+        "core-divider--default__neutral-light",
+        "core-dropdownmenu--default__neutral-dark",
+        "core-dropdownmenu--default__neutral-light",
+        "core-dropdownmenu--submenu__probe-dark",
+        "core-dropdownmenu--submenu__probe-light",
+        "core-emptystate--default__neutral-dark",
+        "core-emptystate--default__neutral-light",
+        "core-field--default__neutral-dark",
+        "core-field--default__neutral-light",
+        "core-fileinput--default__neutral-dark",
+        "core-fileinput--default__neutral-light",
+        "core-fileinput--default__probe-dark",
+        "core-fileinput--default__probe-light",
+        "core-formlayout--vertical__neutral-dark",
+        "core-formlayout--vertical__neutral-light",
+        "core-grid--default__neutral-dark",
+        "core-grid--default__neutral-light",
+        "core-grid--with-grid-span__probe-dark",
+        "core-grid--with-grid-span__probe-light",
+        "core-gridmasonry--masonry-gallery__neutral-dark",
+        "core-gridmasonry--masonry-gallery__neutral-light",
+        "core-heading--level-1__neutral-dark",
+        "core-heading--level-1__neutral-light",
+        "core-hooks-useclipboard--copy-icon-button__neutral-dark",
+        "core-hooks-useclipboard--copy-icon-button__neutral-light",
+        "core-hooks-usecontainerreveal--reveal__neutral-dark",
+        "core-hooks-usecontainerreveal--reveal__neutral-light",
+        "core-hooks-usekeyboardhint--default__neutral-dark",
+        "core-hooks-usekeyboardhint--default__neutral-light",
+        "core-hooks-uselinkify--ur-ls__neutral-dark",
+        "core-hooks-uselinkify--ur-ls__neutral-light",
+        "core-hooks-useresizable--horizontal__neutral-dark",
+        "core-hooks-useresizable--horizontal__neutral-light",
+        "core-hooks-usestreamingtext--natural__neutral-dark",
+        "core-hooks-usestreamingtext--natural__neutral-light",
+        "core-hovercard--default__neutral-dark",
+        "core-hovercard--default__neutral-light",
+        "core-icon--default__neutral-dark",
+        "core-icon--default__neutral-light",
+        "core-icon-size-theming--built-in-component-icons__probe-dark",
+        "core-icon-size-theming--built-in-component-icons__probe-light",
+        "core-icon-size-theming--size-scale__neutral-dark",
+        "core-icon-size-theming--size-scale__neutral-light",
+        "core-iconbutton--default__neutral-dark",
+        "core-iconbutton--default__neutral-light",
+        "core-indicator--all-states__neutral-dark",
+        "core-indicator--all-states__neutral-light",
+        "core-inputgroup--with-prefix__neutral-dark",
+        "core-inputgroup--with-prefix__neutral-light",
+        "core-inputgroup--with-typeahead__probe-dark",
+        "core-inputgroup--with-typeahead__probe-light",
+        "core-item--default__neutral-dark",
+        "core-item--default__neutral-light",
+        "core-kbd--default__neutral-dark",
+        "core-kbd--default__neutral-light",
+        "core-layer--context-mode__neutral-dark",
+        "core-layer--context-mode__neutral-light",
+        "core-layer-dismissal--modal-in-modal__neutral-dark",
+        "core-layer-dismissal--modal-in-modal__neutral-light",
+        "core-layer-dismissal--pinned-hover-card-in-modal__probe-dark",
+        "core-layer-dismissal--pinned-hover-card-in-modal__probe-light",
+        "core-layer-dismissal--required-modal-with-lightbox__probe-dark",
+        "core-layer-dismissal--required-modal-with-lightbox__probe-light",
+        "core-lightbox--default__neutral-dark",
+        "core-lightbox--default__neutral-light",
+        "core-link--default__neutral-dark",
+        "core-link--default__neutral-light",
+        "core-list--basic__neutral-dark",
+        "core-list--basic__neutral-light",
+        "core-markdown--default__neutral-dark",
+        "core-markdown--default__neutral-light",
+        "core-markdown--default__probe-dark",
+        "core-markdown--default__probe-light",
+        "core-markdown--with-images__probe-dark",
+        "core-markdown--with-images__probe-light",
+        "core-metadatalist--basic__neutral-dark",
+        "core-metadatalist--basic__neutral-light",
+        "core-metadatalist--basic__probe-dark",
+        "core-metadatalist--basic__probe-light",
+        "core-mobilenav--default__neutral-dark",
+        "core-mobilenav--default__neutral-light",
+        "core-moremenu--bottom-sheet-presentation__probe-dark",
+        "core-moremenu--bottom-sheet-presentation__probe-light",
+        "core-moremenu--default__neutral-dark",
+        "core-moremenu--default__neutral-light",
+        "core-multiselector--clearable__probe-dark",
+        "core-multiselector--clearable__probe-light",
+        "core-multiselector--default__neutral-dark",
+        "core-multiselector--default__neutral-light",
+        "core-multiselector--empty-states__probe-dark",
+        "core-multiselector--empty-states__probe-light",
+        "core-multiselector--sections__probe-dark",
+        "core-multiselector--sections__probe-light",
+        "core-navicon--default__neutral-dark",
+        "core-navicon--default__neutral-light",
+        "core-navmenu--default__neutral-dark",
+        "core-navmenu--default__neutral-light",
+        "core-navmenu--default__probe-dark",
+        "core-navmenu--default__probe-light",
+        "core-numberinput--default__neutral-dark",
+        "core-numberinput--default__neutral-light",
+        "core-outline--basic__neutral-dark",
+        "core-outline--basic__neutral-light",
+        "core-outline--basic__probe-dark",
+        "core-outline--basic__probe-light",
+        "core-overflowlist--default__neutral-dark",
+        "core-overflowlist--default__neutral-light",
+        "core-overflowlist--default__probe-dark",
+        "core-overflowlist--default__probe-light",
+        "core-overlay--gallery-grid__probe-dark",
+        "core-overlay--gallery-grid__probe-light",
+        "core-overlay--hover-on-image__neutral-dark",
+        "core-overlay--hover-on-image__neutral-light",
+        "core-pagination--all-variants__probe-dark",
+        "core-pagination--all-variants__probe-light",
+        "core-pagination--default__neutral-dark",
+        "core-pagination--default__neutral-light",
+        "core-popover--default__neutral-dark",
+        "core-popover--default__neutral-light",
+        "core-popover--link-trigger__probe-dark",
+        "core-popover--link-trigger__probe-light",
+        "core-powersearch--default__neutral-dark",
+        "core-powersearch--default__neutral-light",
+        "core-powersearch--issue-tracker__probe-dark",
+        "core-powersearch--issue-tracker__probe-light",
+        "core-powersearchwithtable--default__neutral-dark",
+        "core-powersearchwithtable--default__neutral-light",
+        "core-progressbar--default__neutral-dark",
+        "core-progressbar--default__neutral-light",
+        "core-progressbar--with-target-mark__probe-dark",
+        "core-progressbar--with-target-mark__probe-light",
+        "core-radiolist--default__neutral-dark",
+        "core-radiolist--default__neutral-light",
+        "core-resizable--horizontal-split__neutral-dark",
+        "core-resizable--horizontal-split__neutral-light",
+        "core-section--default__neutral-dark",
+        "core-section--default__neutral-light",
+        "core-segmentedcontrol--default__neutral-dark",
+        "core-segmentedcontrol--default__neutral-light",
+        "core-segmentedcontrol--default__probe-dark",
+        "core-segmentedcontrol--default__probe-light",
+        "core-selectablecard--single-select__neutral-dark",
+        "core-selectablecard--single-select__neutral-light",
+        "core-selector--clearable__probe-dark",
+        "core-selector--clearable__probe-light",
+        "core-selector--default__neutral-dark",
+        "core-selector--default__neutral-light",
+        "core-selector--empty-states__probe-dark",
+        "core-selector--empty-states__probe-light",
+        "core-selector--searchable-with-sections__probe-dark",
+        "core-selector--searchable-with-sections__probe-light",
+        "core-sidenav--default__neutral-dark",
+        "core-sidenav--default__neutral-light",
+        "core-sidenav-collapse-ownership--acceptance__probe-dark",
+        "core-sidenav-collapse-ownership--acceptance__probe-light",
+        "core-skeleton--default__neutral-dark",
+        "core-skeleton--default__neutral-light",
+        "core-slider--default__neutral-dark",
+        "core-slider--default__neutral-light",
+        "core-slider--default__probe-dark",
+        "core-slider--default__probe-light",
+        "core-spinner--default__neutral-dark",
+        "core-spinner--default__neutral-light",
+        "core-stack--default__neutral-dark",
+        "core-stack--default__neutral-light",
+        "core-statusdot--default__neutral-dark",
+        "core-statusdot--default__neutral-light",
+        "core-stepper--default__neutral-dark",
+        "core-stepper--default__neutral-light",
+        "core-stepper--default__probe-dark",
+        "core-stepper--default__probe-light",
+        "core-stepper--step-advance__probe-dark",
+        "core-stepper--step-advance__probe-light",
+        "core-switch--default__neutral-dark",
+        "core-switch--default__neutral-light",
+        "core-table--default__neutral-dark",
+        "core-table--default__neutral-light",
+        "core-tablecolumnresize--default__neutral-dark",
+        "core-tablecolumnresize--default__neutral-light",
+        "core-tablecolumnsettings--basic-column-toggle__neutral-dark",
+        "core-tablecolumnsettings--basic-column-toggle__neutral-light",
+        "core-tablecolumnsettings--basic-column-toggle__probe-dark",
+        "core-tablecolumnsettings--basic-column-toggle__probe-light",
+        "core-tablefiltering--text-filter__neutral-dark",
+        "core-tablefiltering--text-filter__neutral-light",
+        "core-tablegroupedrows--default__neutral-dark",
+        "core-tablegroupedrows--default__neutral-light",
+        "core-tablepagination--default__neutral-dark",
+        "core-tablepagination--default__neutral-light",
+        "core-tablerowexpansion--detail-panel__neutral-dark",
+        "core-tablerowexpansion--detail-panel__neutral-light",
+        "core-tablerowindex--default__neutral-dark",
+        "core-tablerowindex--default__neutral-light",
+        "core-tablerowstatus--default__neutral-dark",
+        "core-tablerowstatus--default__neutral-light",
+        "core-tableselection--default__neutral-dark",
+        "core-tableselection--default__neutral-light",
+        "core-tablesortable--single-sort__neutral-dark",
+        "core-tablesortable--single-sort__neutral-light",
+        "core-tablestickycolumns--pin-start__neutral-dark",
+        "core-tablestickycolumns--pin-start__neutral-light",
+        "core-tabletree--default__neutral-dark",
+        "core-tabletree--default__neutral-light",
+        "core-tablist--default__neutral-dark",
+        "core-tablist--default__neutral-light",
+        "core-tablist--full-bleed-geometry__probe-dark",
+        "core-tablist--full-bleed-geometry__probe-light",
+        "core-tablist--overflow__probe-dark",
+        "core-tablist--overflow__probe-light",
+        "core-textarea--default__neutral-dark",
+        "core-textarea--default__neutral-light",
+        "core-textarea--vertical-form-alignment__probe-dark",
+        "core-textarea--vertical-form-alignment__probe-light",
+        "core-textinput--default__neutral-dark",
+        "core-textinput--default__neutral-light",
+        "core-themes-codetheme--one-dark-pro__neutral-dark",
+        "core-themes-codetheme--one-dark-pro__neutral-light",
+        "core-themes-mediatheme--on-dark__neutral-dark",
+        "core-themes-mediatheme--on-dark__neutral-light",
+        "core-themes-mediatheme-auto--flat-surface-theme__neutral-dark",
+        "core-themes-mediatheme-auto--flat-surface-theme__neutral-light",
+        "core-themes-mediatheme-auto--toast-variants__probe-dark",
+        "core-themes-mediatheme-auto--toast-variants__probe-light",
+        "core-themes-theme--bar-chart__neutral-dark",
+        "core-themes-theme--bar-chart__neutral-light",
+        "core-thumbnail--default__neutral-dark",
+        "core-thumbnail--default__neutral-light",
+        "core-timeinput--default__neutral-dark",
+        "core-timeinput--default__neutral-light",
+        "core-timestamp--default__neutral-dark",
+        "core-timestamp--default__neutral-light",
+        "core-toast--default__neutral-dark",
+        "core-toast--default__neutral-light",
+        "core-togglebutton--group-single__probe-dark",
+        "core-togglebutton--group-single__probe-light",
+        "core-togglebutton--standalone__neutral-dark",
+        "core-togglebutton--standalone__neutral-light",
+        "core-token--default__neutral-dark",
+        "core-token--default__neutral-light",
+        "core-tokenizer--default__neutral-dark",
+        "core-tokenizer--default__neutral-light",
+        "core-toolbar--default__neutral-dark",
+        "core-toolbar--default__neutral-light",
+        "core-tooltip--default__neutral-dark",
+        "core-tooltip--default__neutral-light",
+        "core-topnav--default__neutral-dark",
+        "core-topnav--default__neutral-light",
+        "core-topnavmenu--default__probe-dark",
+        "core-topnavmenu--default__probe-light",
+        "core-topnavmenu--mega-menu__probe-dark",
+        "core-topnavmenu--mega-menu__probe-light",
+        "core-treelist--basic__neutral-dark",
+        "core-treelist--basic__neutral-light",
+        "core-typeahead--default__neutral-dark",
+        "core-typeahead--default__neutral-light",
+        "core-visuallyhidden--default__neutral-dark",
+        "core-visuallyhidden--default__neutral-light"
+      ],
+      "digest": "5ab014e09a3d61f33ec46c22a8981ef5e85649eb9bbeb061d85019f64f5119e4"
+    },
+    "tiers": [
+      "surface",
+      "probe"
+    ],
+    "baselineExists": true,
+    "components": [],
+    "baselineAccounting": {
+      "total": 380,
+      "plannedCurrentStable": 374,
+      "policyExcluded": 6,
+      "intentionallyExcluded": 0,
+      "preservedLegacy": 0,
+      "unclassified": 0
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-05T07:37:37.596Z",
+    "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 382,
+    "unchanged": 366,
+    "changed": 8,
+    "added": 8,
+    "removed": 6,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-inputgroup--with-typeahead__probe-light",
+      "diffPixels": 11012,
+      "diffRatio": 0.014002,
+      "sizeChanged": false,
+      "storyId": "core-inputgroup--with-typeahead",
+      "title": "Core/InputGroup",
+      "name": "With Typeahead",
+      "component": "InputGroup",
+      "theme": "probe",
+      "mode": "light",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-inputgroup--with-typeahead__probe-dark",
+      "diffPixels": 9189,
+      "diffRatio": 0.011684,
+      "sizeChanged": false,
+      "storyId": "core-inputgroup--with-typeahead",
+      "title": "Core/InputGroup",
+      "name": "With Typeahead",
+      "component": "InputGroup",
+      "theme": "probe",
+      "mode": "dark",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__probe-light",
+      "diffPixels": 6245,
+      "diffRatio": 0.007941,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--tree-list-with-search",
+      "title": "Core/ComplexSelector",
+      "name": "Tree list with search",
+      "component": "ComplexSelector",
+      "theme": "probe",
+      "mode": "light",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-textarea--vertical-form-alignment__probe-light",
+      "diffPixels": 5634,
+      "diffRatio": 0.007164,
+      "sizeChanged": false,
+      "storyId": "core-textarea--vertical-form-alignment",
+      "title": "Core/TextArea",
+      "name": "Vertical Form Alignment",
+      "component": "TextArea",
+      "theme": "probe",
+      "mode": "light",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-complexselector--tree-list-with-search__probe-dark",
+      "diffPixels": 5602,
+      "diffRatio": 0.007123,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--tree-list-with-search",
+      "title": "Core/ComplexSelector",
+      "name": "Tree list with search",
+      "component": "ComplexSelector",
+      "theme": "probe",
+      "mode": "dark",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-textarea--vertical-form-alignment__probe-dark",
+      "diffPixels": 5047,
+      "diffRatio": 0.006418,
+      "sizeChanged": false,
+      "storyId": "core-textarea--vertical-form-alignment",
+      "title": "Core/TextArea",
+      "name": "Vertical Form Alignment",
+      "component": "TextArea",
+      "theme": "probe",
+      "mode": "dark",
+      "reasons": [
+        "probe"
+      ]
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+      "diffPixels": 3993,
+      "diffRatio": 0.005077,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--fruit-ripeness-grid",
+      "title": "Core/ComplexSelector",
+      "name": "Fruit ripeness selector",
+      "component": "ComplexSelector",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "surface"
+      ]
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+      "diffPixels": 3844,
+      "diffRatio": 0.004888,
+      "sizeChanged": false,
+      "storyId": "core-complexselector--fruit-ripeness-grid",
+      "title": "Core/ComplexSelector",
+      "name": "Fruit ripeness selector",
+      "component": "ComplexSelector",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "surface"
+      ]
+    }
+  ],
+  "added": [
+    "core-resizable--horizontal-split__neutral-dark",
+    "core-resizable--horizontal-split__neutral-light",
+    "core-stepper--default__probe-dark",
+    "core-stepper--default__probe-light",
+    "core-stepper--step-advance__probe-dark",
+    "core-stepper--step-advance__probe-light",
+    "core-tablist--full-bleed-geometry__probe-dark",
+    "core-tablist--full-bleed-geometry__probe-light"
+  ],
+  "removed": [
+    "core-stack--stack-item-fill-size__probe-dark",
+    "core-stack--stack-item-fill-size__probe-light",
+    "core-stepper--content-slot-alignment__probe-dark",
+    "core-stepper--content-slot-alignment__probe-light",
+    "core-tablist--with-menu__probe-dark",
+    "core-tablist--with-menu__probe-light"
+  ],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "butter",
+        "key": "top-nav-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:info"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:muted"
+      },
+      {
+        "theme": "butter",
+        "key": "progressbar-fill",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "progressbar-fill",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "progressbar-fill",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "field-status",
+        "selector": "type:success"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "textarea",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "textarea",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "textarea",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:error"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "neutral",
+        "key": "statusdot",
+        "selector": "variant:accent"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "size:sm"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "size:lg"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:accent"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "progressbar",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "progressbar",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "progressbar",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "progressbar-fill",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "stone",
+        "key": "progressbar-fill",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "progressbar-fill",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "field-status",
+        "selector": "type:success"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "textarea",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "textarea",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "textarea",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:error"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "y2k",
+        "key": "top-nav-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:error"
+      }
+    ],
+    "undeclaredTargets": [
+      "default-marker"
+    ],
+    "uncoveredTargets": [
+      "command-palette-item",
+      "date-time-input-time-listbox",
+      "date-time-input-time-option",
+      "table-footer",
+      "timestamp-copy-button",
+      "typeahead-empty-state"
+    ]
+  }
+}

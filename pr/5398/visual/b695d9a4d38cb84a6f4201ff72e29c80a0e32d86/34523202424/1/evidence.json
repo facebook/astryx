@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5398,
+  "headSha": "b695d9a4d38cb84a6f4201ff72e29c80a0e32d86",
+  "testedSha": "b695d9a4d38cb84a6f4201ff72e29c80a0e32d86",
+  "baseSha": "cac1b8f98be0324cb15d12bf84aedb04edf10ff9",
+  "run": {
+    "id": 34523202424,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-10T20:34:54.539Z",
+    "context": {
+      "sha": "b695d9a4d38cb84a6f4201ff72e29c80a0e32d86",
+      "runId": "34523202424",
+      "runAttempt": "1",
+      "headSha": "b695d9a4d38cb84a6f4201ff72e29c80a0e32d86",
+      "baseSha": "cac1b8f98be0324cb15d12bf84aedb04edf10ff9",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Layer",
+          "Tooltip"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Layer/__tests__/anchorReadiness.chromium.spec.ts",
+          "packages/core/src/Layer/useLayer.tsx",
+          "packages/core/src/Tooltip/useTooltip.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-09T13:21:32.655Z",
+      "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 4,
+      "unchanged": 4,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

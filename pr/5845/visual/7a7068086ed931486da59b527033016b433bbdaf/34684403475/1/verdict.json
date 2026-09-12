@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-12T10:08:27.156Z",
+  "context": {
+    "sha": "7a7068086ed931486da59b527033016b433bbdaf",
+    "runId": "34684403475",
+    "runAttempt": "1",
+    "headSha": "7a7068086ed931486da59b527033016b433bbdaf",
+    "baseSha": "47ba5526fa93f2bbcb7c0c26ab0a49d86cf37825",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Spinner"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Spinner/Spinner.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

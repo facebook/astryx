@@ -1,0 +1,13 @@
+{
+  "tc-7": {
+    "baseline": "previews/tc-7/baseline.html",
+    "html": "previews/tc-7/html.html"
+  },
+  "ty-9": {
+    "baseline": "previews/ty-9/baseline.html",
+    "html": "previews/ty-9/html.html"
+  },
+  "ps-1": {
+    "html": "previews/ps-1/html.html"
+  }
+}

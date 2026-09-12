@@ -1,0 +1,14 @@
+{
+  "list-input-pr": {
+    "astryx": {
+      "desktop": {
+        "light": "list-input-pr-astryx-desktop-light.png",
+        "dark": "list-input-pr-astryx-desktop-dark.png"
+      },
+      "mobile": {
+        "light": "list-input-pr-astryx-mobile-light.png",
+        "dark": "list-input-pr-astryx-mobile-dark.png"
+      }
+    }
+  }
+}

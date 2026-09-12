@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5531,
+    "headSha": "5dd9e886b0748f296404cb1e79bd72856aa9caaf",
+    "headRef": "fix/cli-no-project-code-gate",
+    "headRepository": "bhamodi/astryx",
+    "headRepositoryId": "1292807085"
+  },
+  "sourceRun": {
+    "id": 33444891577,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5531/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5531/sandbox/",
+      "indexSha256": "86793d537a92159775a4f1d4a0d6025e5fc2036995bdcbc6899f7ea092181658"
+    }
+  }
+}

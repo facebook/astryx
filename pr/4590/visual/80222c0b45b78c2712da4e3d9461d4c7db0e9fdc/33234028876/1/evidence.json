@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 4590,
+  "headSha": "80222c0b45b78c2712da4e3d9461d4c7db0e9fdc",
+  "testedSha": "80222c0b45b78c2712da4e3d9461d4c7db0e9fdc",
+  "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+  "run": {
+    "id": 33234028876,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-08-29T04:52:10.416Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 1964 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "80222c0b45b78c2712da4e3d9461d4c7db0e9fdc",
+      "headSha": "80222c0b45b78c2712da4e3d9461d4c7db0e9fdc",
+      "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+      "runId": "33234028876",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "Item",
+          "List"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Item/Item.tsx",
+          "packages/core/src/List/List.tsx",
+          "packages/core/src/List/ListContext.tsx",
+          "packages/core/src/List/ListItem.tsx",
+          "packages/core/src/theme/derivedVarRegistry.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 1964,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "Item",
+      "List"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

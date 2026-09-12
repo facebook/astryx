@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5845,
+    "headSha": "7a7068086ed931486da59b527033016b433bbdaf",
+    "headRef": "feat/spinner-arc-fraction-var",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 34684403475,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5845/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5845/sandbox/",
+      "indexSha256": "73f34477b44d2aba056f142d103117bfc27adaf552c9ad2ae56785521d5a9f10"
+    }
+  }
+}

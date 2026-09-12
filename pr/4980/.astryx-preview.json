@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4980,
+    "headSha": "8c5d680c8f258170c53db02bd7eac79fd9d976f9",
+    "headRef": "fix/codemod-discovery-skip-non-codemods-4975",
+    "headRepository": "abu-abdullah22/astryx",
+    "headRepositoryId": "1322800118"
+  },
+  "sourceRun": {
+    "id": 31684958078,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4980/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/4980/sandbox/",
+      "indexSha256": null
+    }
+  }
+}
