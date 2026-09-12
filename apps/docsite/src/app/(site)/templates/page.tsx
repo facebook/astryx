@@ -26,6 +26,7 @@ import {templateMetadata as templates} from '../../../generated/templateMetadata
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildTemplatePlaygroundHref} from '../../../components/playgroundLink';
 import {buildTemplatePreviewHref} from '../../../components/templatePreviewUrl';
+import {sortTemplatesByTitle} from '../../../components/templateGalleryOrder';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
 import {layout} from '../../../layout.stylex';
@@ -177,13 +178,13 @@ function TemplatesGallery() {
     return ['All', ...present];
   }, [items]);
 
-  const filteredItems = useMemo(
-    () =>
+  const filteredItems = useMemo(() => {
+    const visibleItems =
       activeCategory === 'All'
         ? items
-        : items.filter(i => groupOf(i.category) === activeCategory),
-    [items, activeCategory],
-  );
+        : items.filter(i => groupOf(i.category) === activeCategory);
+    return sortTemplatesByTitle(visibleItems);
+  }, [items, activeCategory]);
 
   // Flattened display-order list backing the preview dialog's prev/next
   // navigation, plus a slug -> index lookup for opening at a given card.
