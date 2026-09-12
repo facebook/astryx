@@ -740,3 +740,145 @@ describe('themeBuild() — extends', () => {
     ).rejects.toThrow(/extends/);
   });
 });
+
+// =============================================================================
+// Theme name → valid JS identifier contract (deterministic from theme.name)
+// =============================================================================
+
+describe('themeBuild() — theme name identifier sanitization', () => {
+  /**
+   * Write a theme source with a given theme name and return the generated JS
+   * and declarations. The identifier is derived only from theme.name.
+   */
+  async function buildNamed(themeName) {
+    const themeFile = path.join(
+      tmpDir,
+      `src-${themeName.replace(/[^a-z0-9]/gi, '')}.mjs`,
+    );
+    // Use a default export so no source export name is available — the
+    // identifier must come purely from toIdentifier(themeName) + 'Theme'.
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: '${themeName}', tokens: { '--color-bg': '#000' } };\n`,
+    );
+    await themeBuild(path.basename(themeFile), {}, {cwd: tmpDir});
+    const js = fs.readFileSync(path.join(tmpDir, `${themeName}.js`), 'utf8');
+    const dts = fs.readFileSync(path.join(tmpDir, `${themeName}.d.ts`), 'utf8');
+    return {js, dts};
+  }
+
+  // -- Core bug: hyphen followed by digit -----------------------------------
+
+  it('chaos-07 → chaos07Theme (the motivating bug)', async () => {
+    const {js, dts} = await buildNamed('chaos-07');
+    expect(js).toContain('export const chaos07Theme = {');
+    expect(js).not.toMatch(/export const chaos-07/);
+    expect(dts).toContain('export declare const chaos07Theme: DefinedTheme;');
+    // Must parse as valid JS
+    expect(() => new Function(js.replace(/^export /gm, ''))).not.toThrow();
+  });
+
+  // -- Dot separator --------------------------------------------------------
+
+  it('brand.v2 → brandV2Theme', async () => {
+    const {js, dts} = await buildNamed('brand.v2');
+    expect(js).toContain('export const brandV2Theme = {');
+    expect(dts).toContain('export declare const brandV2Theme: DefinedTheme;');
+  });
+
+  it('ui.dark.3 → uiDark3Theme', async () => {
+    const {js, dts} = await buildNamed('ui.dark.3');
+    expect(js).toContain('export const uiDark3Theme = {');
+    expect(dts).toContain('export declare const uiDark3Theme: DefinedTheme;');
+  });
+
+  // -- Underscore preserved (already valid) ---------------------------------
+
+  it('my_theme → my_themeTheme (underscore preserved)', async () => {
+    const {js, dts} = await buildNamed('my_theme');
+    expect(js).toContain('export const my_themeTheme = {');
+    expect(dts).toContain('export declare const my_themeTheme: DefinedTheme;');
+  });
+
+  // -- Mixed separators -----------------------------------------------------
+
+  it('neo_wave-2.x → neo_wave2XTheme (underscore kept, others camelCased)', async () => {
+    const {js, dts} = await buildNamed('neo_wave-2.x');
+    expect(js).toContain('export const neo_wave2XTheme = {');
+    expect(dts).toContain(
+      'export declare const neo_wave2XTheme: DefinedTheme;',
+    );
+  });
+
+  // -- Multiple and consecutive separators ----------------------------------
+
+  it('a-1-b → a1BTheme', async () => {
+    const {js, dts} = await buildNamed('a-1-b');
+    expect(js).toContain('export const a1BTheme = {');
+    expect(dts).toContain('export declare const a1BTheme: DefinedTheme;');
+  });
+
+  it('my--theme → myThemeTheme (consecutive hyphens)', async () => {
+    const {js, dts} = await buildNamed('my--theme');
+    expect(js).toContain('export const myThemeTheme = {');
+    expect(dts).toContain('export declare const myThemeTheme: DefinedTheme;');
+  });
+
+  it('trailing- → trailingTheme (trailing separator stripped)', async () => {
+    const {js, dts} = await buildNamed('trailing-');
+    expect(js).toContain('export const trailingTheme = {');
+    expect(dts).toContain('export declare const trailingTheme: DefinedTheme;');
+  });
+
+  it('neon-green-42 → neonGreen42Theme', async () => {
+    const {js, dts} = await buildNamed('neon-green-42');
+    expect(js).toContain('export const neonGreen42Theme = {');
+    expect(dts).toContain(
+      'export declare const neonGreen42Theme: DefinedTheme;',
+    );
+  });
+
+  // -- JS and d.ts agree on every case --------------------------------------
+
+  it('JS, d.ts, and install example agree', async () => {
+    const {js, dts} = await buildNamed('dark-v2');
+    const jsMatch = js.match(/export const (\w+) = \{/);
+    const dtsMatch = dts.match(/export declare const (\w+): DefinedTheme;/);
+    expect(jsMatch?.[1]).toBe('darkV2Theme');
+    expect(dtsMatch?.[1]).toBe('darkV2Theme');
+    // Import example in JSDoc
+    expect(js).toContain("import { darkV2Theme } from './dark-v2'");
+  });
+
+  // -- Check mode -----------------------------------------------------------
+
+  it('check mode agrees with the deterministic identifier', async () => {
+    await buildNamed('wave-99');
+    // Source file was written by buildNamed; re-run in check mode
+    const checkResult = await themeBuild(
+      path.basename(
+        fs.readdirSync(tmpDir).find(f => f.startsWith('src-wave99')),
+      ),
+      {check: true},
+      {cwd: tmpDir},
+    );
+    expect(checkResult?.data.upToDate).toBe(true);
+  });
+
+  // -- Reserved words are safe via the Theme suffix -------------------------
+
+  it('reserved word "for" → forTheme (safe)', async () => {
+    const {js, dts} = await buildNamed('for');
+    expect(js).toContain('export const forTheme = {');
+    expect(dts).toContain('export declare const forTheme: DefinedTheme;');
+    expect(() => new Function(js.replace(/^export /gm, ''))).not.toThrow();
+  });
+
+  // -- Simple name (no separators) is unchanged -----------------------------
+
+  it('ocean → oceanTheme (no-op sanitization)', async () => {
+    const {js, dts} = await buildNamed('ocean');
+    expect(js).toContain('export const oceanTheme = {');
+    expect(dts).toContain('export declare const oceanTheme: DefinedTheme;');
+  });
+});
