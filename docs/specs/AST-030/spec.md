@@ -34,6 +34,9 @@ the broad lane.
 ## Non-goals
 
 - Rewrite every CI job or specialize every package lane in one change.
+- Add a test-specific or build-specific lane for work already owned by an
+  existing surface.
+- Apply changed-surface routing to post-merge `main` CI.
 - Remove required check names, branch protection, merge-queue coverage, or
   exact-head owner approval.
 - Infer safety from file extensions, directory names, or the absence of a known
@@ -74,11 +77,11 @@ the broad lane.
   classifier dependency, failed classifier, empty or incomplete file list,
   ambiguous rename, unknown path, or merge-group event without a trusted PR path
   set MUST select the broad lane. No fallback may grant a specialized lane.
-- **FR5 — Mixed scope keeps every owner.** A change touching multiple surfaces
-  MUST run the union of their checks. The first implementation MAY specialize
-  only the exact singleton sets `{knowledge}`, `{docsite}`, and `{node-tooling}`;
-  every other set uses the broad lane. A specification beside runtime code does
-  not hide the runtime surface.
+- **FR5 — Mixed scope keeps every owner.** A change touching multiple classified
+  surfaces MUST run the union of their checks. It MUST NOT run test lanes for
+  untouched surfaces. Broad CI is reserved for a set containing
+  `shared-or-unknown` or a fail-closed condition from FR3–FR4. A specification
+  beside runtime code does not hide the runtime surface.
 - **FR6 — Node-tooling admission is explicit.** A Node program may enter
   `node-tooling` only when dependency analysis proves that package runtime,
   component UI, theme/build output, Storybook/visual evidence, and browser
@@ -106,11 +109,30 @@ the broad lane.
   unknown paths; shared infrastructure; rename history; incomplete input; and
   public source in every component-bearing package. Removing any fail-closed edge
   MUST make a test fail.
-- **FR10 — Migration is incremental.** Each additional specialized surface MUST
-  land independently with its positive path rules, dependency evidence, check
-  ownership, mixed-scope tests, and required-check projection. Broad routing
-  remains the default between slices; the migration MUST NOT require one
-  repository-wide classifier rewrite.
+- **FR10 — New surfaces follow one admission convention.** A new surface MUST be
+  admitted by an owner-approved amendment to this record before implementation.
+  The amendment MUST name its positive path ownership, dependency boundary,
+  test commands, exactly one dedicated test lane, build commands and exactly
+  one dedicated build lane when a build applies, mixed-scope behavior, required-
+  check projection, and mutation-sensitive routing tests. A new suite, feature,
+  component, theme family, or test type is not a new surface by itself.
+- **FR11 — Each surface owns one test and applicable build lane.** A surface MAY
+  define multiple test or build commands, but exactly one dedicated test lane
+  and, when applicable, exactly one dedicated build lane MUST dispatch them. A
+  pull request MUST run only the test and build lanes for its classified surface
+  set, or broad CI when FR3–FR5 require it. New coverage inside an existing
+  surface MUST join those lanes and MUST NOT add a workflow, job, lane, or check
+  of its own.
+- **FR12 — Visual regression has one shared Storybook lane.** Every
+  visual-regression test from every surface MUST use the existing Storybook
+  framework and the single shared visual-regression lane. A new or existing
+  surface, component, package, theme family, or visual suite MUST register its
+  cases there and MUST NOT add another visual-regression workflow, job, lane, or
+  check.
+- **FR13 — Post-merge `main` CI stays broad.** Changed-surface routing applies to
+  pull requests, not pushes to `main`. Every `main` push MUST continue to run the
+  complete post-merge test and applicable build gates before deployment. A
+  narrow pull-request lane MUST NOT narrow verification of the integrated branch.
 
 ### Platform support
 
@@ -129,9 +151,12 @@ build, browser, and application checks. This accepted record changes no workflow
 by itself.
 
 Implementation begins by expressing those existing paths as positive singleton
-surface sets and adding the narrow `node-tooling` singleton from FR8. Package,
-theme/build, and Storybook/visual surfaces stay on broad CI until separately
-proven and tested.
+surface sets and adding the narrow `node-tooling` singleton from FR8. Existing
+package, theme/build, and Storybook/visual surfaces remain on broad CI until
+their dedicated lanes exist. New surfaces may add lanes only through FR10. New
+coverage joins its current surface lanes; visual regression remains in the
+existing Storybook framework and PR lane. Post-merge `main` CI remains broad and
+continues to gate deployment with complete test and applicable build coverage.
 
 ## Verification
 
@@ -142,7 +167,10 @@ proven and tested.
 | FR5      | mixed-surface table tests                                                | spec+component; module spec+Table plugin; tooling+component; docsite+shared                              | one surface hides another surface's checks                                                                                                                                         |
 | FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
 | FR9      | mutation-sensitive classifier and workflow fixtures                      | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | one atomic PR and matrix review per added lane                           | tooling first; later package/theme/visual slices                                                         | a big-bang rewrite changes several ownership boundaries without isolated proof                                                                                                     |
+| FR10     | surface-admission and routing contract tests                             | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
+| FR11     | surface test/build-command and workflow contract tests                   | Core; CLI; theme-family tests; mixed Core+CLI                                                            | a second test/build lane is added for one surface, existing-surface coverage creates CI, or an unrelated surface lane runs                                                         |
+| FR12     | Storybook visual-plan and workflow contract tests                        | component, package, story, and theme-family visual cases                                                 | visual coverage bypasses the existing Storybook framework or creates a separate workflow, job, lane, or check                                                                      |
+| FR13     | post-merge workflow contract tests                                       | every push to `main`; narrow PR followed by merge                                                        | changed-surface classification skips a complete test or applicable build gate on the integrated branch                                                                             |
 
 ## Decision log
 
@@ -182,6 +210,36 @@ build work does not observe that change.
 Rejected: admitting all of `scripts/`, all JavaScript files, or every Node test by
 pattern. Those sets contain generators and build/release inputs with different
 owners.
+
+### DEC-4 — CI grows only at a surface boundary
+
+**Reference:** `spec:AST-030/DEC-4`
+**Decider:** `cixzhang`, `2026-09-12`
+
+Each surface may expose the test and build commands it needs, but pull-request CI
+has one dedicated test lane and, when applicable, one dedicated build lane for
+that surface. Existing-surface coverage joins those lanes. A genuinely new
+surface may add its lanes only after the complete FR10 admission contract is
+approved. Visual regression is the exception to per-surface lanes: every surface
+registers its cases with the one shared Storybook-backed visual-regression lane,
+which MUST NOT be duplicated.
+
+Rejected: per-suite, per-component, per-feature, per-theme-family, or separate
+visual-regression workflows, jobs, lanes, or checks, and implicit expansion under
+an undefined “additional specialized surface” exception.
+
+### DEC-5 — Main verifies the integrated repository broadly
+
+**Reference:** `spec:AST-030/DEC-5`
+**Decider:** `cixzhang`, `2026-09-12`
+
+Surface routing reduces pull-request latency. After merge, every `main` push runs
+complete post-merge test and applicable build gates before deployment so the
+integrated repository, generated artifacts, and downstream sites are verified as
+a whole.
+
+Rejected: reusing the pull request's changed-surface set to skip post-merge
+`main` checks.
 
 ## Open questions
 
