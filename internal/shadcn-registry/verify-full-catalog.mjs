@@ -6,8 +6,9 @@
  * @description Installs every generated Astryx registry item through the pinned
  *   ShadCN client in TypeScript and JavaScript modes, verifies exact written
  *   bytes and dependencies, then compiles every installed source file against
- *   the current Astryx package exports.
- * @input A generated canary registry under apps/docsite/public/shadcn.
+ *   current local exports or the exact published packages named by production.
+ * @input A generated preview or hidden production registry under
+ *   apps/docsite/public/shadcn.
  * @output A clean-consumer proof for every canonical item and alias route.
  * @position Required CI contract for the public ShadCN compatibility surface.
  */
@@ -48,6 +49,8 @@ const docsiteRequire = createRequire(
 const SHADCN_BIN = docsiteRequire.resolve('shadcn');
 const TYPESCRIPT_BIN = docsiteRequire.resolve('typescript/bin/tsc');
 const KEEP_TEMP = process.env.ASTRYX_KEEP_SHADCN_MATRIX === '1';
+const USE_PUBLISHED_PACKAGES =
+  process.env.ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES === '1';
 const MAX_COMMAND_OUTPUT = 16 * 1024 * 1024;
 const COPIED_KINDS = new Set(['showcase', 'example', 'block', 'page']);
 
@@ -394,6 +397,15 @@ function writeConsumer(project, items, packageDirs, {tsx}) {
       const name = packageName(spec);
       dependencyNames.add(name);
       if (!name.startsWith('@astryxdesign/')) return spec;
+      if (USE_PUBLISHED_PACKAGES) {
+        const version = spec.slice(name.length + 1);
+        if (!/^\d+\.\d+\.\d+$/.test(version)) {
+          fail(
+            `${item.name} production dependency ${spec} is not an exact release`,
+          );
+        }
+        return spec;
+      }
       const directory = packageDirs.get(name);
       if (directory == null) {
         fail(`${item.name} depends on unresolved workspace package ${name}`);
@@ -592,7 +604,7 @@ async function compileSources(project, sources) {
 async function main() {
   const startedAt = Date.now();
   const catalog = loadCatalog();
-  const packageDirs = localPackageDirs();
+  const packageDirs = USE_PUBLISHED_PACKAGES ? null : localPackageDirs();
   const results = [];
 
   for (const tsx of [true, false]) {
