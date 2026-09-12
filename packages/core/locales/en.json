@@ -935,6 +935,10 @@
     "defaultMessage": "Loading",
     "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
   },
+  "@astryx.spinner.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
+  },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is collapsed. `{label}` is the drawer's visible name — example: `Expand Attachments`. Pairs with `collapse`."

@@ -4,7 +4,7 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, StyleX, SVG rendering
+ * @input Uses React, i18n (useTranslator), StyleX, SVG rendering
  * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
@@ -22,6 +22,7 @@ import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -484,6 +485,7 @@ export function Spinner({
   const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
   const labelId = useId();
+  const t = useTranslator();
 
   // When a visible string label renders (and no explicit aria-label is set),
   // name the status element from the visible Text via aria-labelledby instead
@@ -492,9 +494,13 @@ export function Spinner({
   const namedByVisibleLabel =
     hasLabel && typeof label === 'string' && ariaLabel == null;
 
-  // Resolve accessible name: explicit aria-label > string label > "Loading"
+  // Resolve accessible name: explicit aria-label > string label > the
+  // localized default. The fallback is AT-facing text, so it goes through the
+  // translation runtime like visible text does.
   const resolvedAriaLabel =
-    ariaLabel ?? (typeof label === 'string' ? label : undefined) ?? 'Loading';
+    ariaLabel ??
+    (typeof label === 'string' ? label : undefined) ??
+    t('@astryx.spinner.loading');
 
   const spinner = (
     <span

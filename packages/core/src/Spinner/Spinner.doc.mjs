@@ -30,7 +30,7 @@ export const docs = {
       name: 'aria-label',
       type: 'string',
       description:
-        'Accessible name for screen readers. Defaults to label (if string) or "Loading".',
+        'Accessible name for screen readers. Defaults to label (if string) or a translated "Loading" from the i18n catalog.',
       default: "'Loading'",
     },
     {
@@ -87,7 +87,7 @@ export const docsZh = {
     {
       name: 'aria-label',
       type: 'string',
-      description: '屏幕阅读器的无障碍名称。默认为 label（如果是字符串）或 "Loading"。',
+      description: '屏幕阅读器的无障碍名称。默认为 label（如果是字符串）或来自 i18n 词条的已翻译 "Loading"。',
       default: "'Loading'",
     },
     {
@@ -136,7 +136,8 @@ export const docsDense = {
     size: 'Spinner size: ring diameter (10px, 14px, 18px, 28px).',
     shade: 'Color shade for light or dark backgrounds.',
     label: 'Visible content below spinner. String auto-sets aria-label.',
-    'aria-label': 'A11y name for screen readers. Defaults to label or "Loading".',
+    'aria-label':
+      'A11y name for screen readers. Defaults to label or a translated "Loading".',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -70,6 +71,34 @@ describe('Spinner', () => {
     const spinner = screen.getByTestId('spinner');
     expect(spinner).toBeInTheDocument();
     expect(spinner).toHaveAttribute('data-shade', 'inherit');
+  });
+
+  it('localizes the default assistive label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Chargement',
+    );
+  });
+
+  it('keeps an explicit aria-label over the localized default', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner aria-label="Veuillez patienter" data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Veuillez patienter',
+    );
   });
 
   it('does not duplicate a visible string label as aria-label', () => {
