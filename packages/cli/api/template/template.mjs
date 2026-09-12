@@ -15,7 +15,13 @@
  *   ./list, ./show, ./skeleton, ./copy, ./cdn and shared discovery in foundation/discovery.
  */
 
-import {discoverAll, pkgOf} from '../../foundation/discovery/template-adapter.mjs';
+import {
+  discoverAll,
+  discoverAllResolved,
+  discoverAllUnresolved,
+  pkgOf,
+  templateLookupIds,
+} from '../../foundation/discovery/template-adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {templateList} from './list/list.mjs';
@@ -88,18 +94,48 @@ export async function template(name, options = {}) {
     });
   }
 
-  const templates = await discoverAll(cwd);
+  const templates =
+    packageFilter === '@astryxdesign/core'
+      ? await discoverAllUnresolved(cwd)
+      : packageFilter
+        ? await discoverAllResolved(cwd)
+        : await discoverAll(cwd);
 
   if (list || (!name && !skeleton)) {
     return templateList(templates, {type, package: packageFilter});
   }
 
-  // Resolve `name` to a single template. The same id can appear across types
-  // and/or packages (e.g. a core "hero" page and an integration "hero"
-  // block); narrow with --type / --package.
-  let candidates = templates.filter(t => t.dirName === name);
-  if (type) candidates = candidates.filter(t => t.type === type);
-  if (packageFilter) candidates = candidates.filter(t => pkgOf(t) === packageFilter);
+  // Resolve `name` to a single template. Without an explicit package, an active
+  // integration replacement owns the Core id it names. Package-qualified lookup
+  // stays exact, which keeps the original addressable as
+  // `--package @astryxdesign/core`.
+  let pool = templates;
+  if (type) pool = pool.filter(t => t.type === type);
+  if (packageFilter) pool = pool.filter(t => pkgOf(t) === packageFilter);
+  const replacements = packageFilter
+    ? []
+    : pool.filter(t => t.replaces === name);
+  let candidates = packageFilter
+    ? pool.filter(t => t.dirName === (name ?? ''))
+    : replacements.length > 0
+      ? replacements
+      : pool.filter(t => templateLookupIds(t).includes(name ?? ''));
+
+  // A rejected same-id declaration must not displace Core for the bare command,
+  // but a different-kind integration template remains reachable with --type.
+  if (!packageFilter && !type && candidates.length > 1) {
+    const core = candidates.filter(t => pkgOf(t) === '@astryxdesign/core');
+    const rejected = candidates.filter(t => pkgOf(t) !== '@astryxdesign/core');
+    if (
+      core.length === 1 &&
+      rejected.length === candidates.length - 1 &&
+      rejected.every(
+        t => t.replacementRejected && t.replacementTarget === (name ?? ''),
+      )
+    ) {
+      candidates = core;
+    }
+  }
 
   if (name && candidates.length === 0) {
     throw new AstryxError(

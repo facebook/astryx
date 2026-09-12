@@ -205,6 +205,7 @@ describe('compareIdentities', () => {
     themes: [],
     components: [],
     templates: [],
+    templateReplacements: [],
     codemods: [],
     docs: [],
     agentDocsAppend: [],
@@ -262,6 +263,26 @@ describe('compareIdentities', () => {
     const issues = compareIdentities(local, packed);
     expect(issues).toHaveLength(1);
     expect(issues[0].message).toContain('dash');
+  });
+
+  it('errors when a packed template replacement target differs', () => {
+    const local = {
+      ...base(),
+      templateReplacements: [
+        {template: 'acme-shell', target: 'shell-side-nav'},
+      ],
+    };
+    const packed = {
+      ...base(),
+      templateReplacements: [{template: 'acme-shell', target: 'shell-top-nav'}],
+    };
+
+    expect(compareIdentities(local, packed)).toEqual([
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('acme-shell'),
+      }),
+    ]);
   });
 
   it('errors when a codemod is missing from packed', () => {

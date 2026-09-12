@@ -27,13 +27,16 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
  * the package's package.json; the `components`/`templates`/`codemods`/`docs`/
- * `themes` roots are absolute paths resolved from the manifest. The `__`-prefixed fields
- * are internal bookkeeping used by Doctor integration validation and Project.
+ * `themes` roots are absolute paths resolved from the manifest, while
+ * `templateReplacements` maps integration ids to Core ids. The `__`-prefixed
+ * fields are internal bookkeeping used by Doctor integration validation and
+ * Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
+ * @property {Record<string, string>} [templateReplacements]
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {string} [themes]
@@ -323,6 +326,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     version: pkg.version,
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
+    templateReplacements: manifest.templateReplacements,
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
     themes: resolveRoot(manifest.themes),
@@ -424,6 +428,7 @@ export async function loadIntegrations(
       version: pkg.version,
       components: resolveRoot(manifest.components),
       templates: resolveRoot(manifest.templates),
+      templateReplacements: manifest.templateReplacements,
       codemods: resolveRoot(manifest.codemods),
       docs: resolveRoot(manifest.docs),
       themes: resolveRoot(manifest.themes),

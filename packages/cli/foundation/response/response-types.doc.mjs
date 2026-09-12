@@ -61,7 +61,7 @@ export const doc = {
     {
       value: 'docs.list',
       description:
-        'All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.',
+        'All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.',
     },
     {
       value: 'docs.detail',
@@ -153,7 +153,7 @@ export const doc = {
     {
       value: 'template.list',
       description:
-        'Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.',
+        'The effective discovered TemplateListEntry[] for pages and blocks. A winning replacement entry includes optional `replaces`, naming the Core id omitted from the default list.',
     },
     {
       value: 'template.show',
@@ -281,7 +281,7 @@ export const doc = {
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+        'The integration identity, issues, and conflicts as {severity: info | warning, relationship: replaces | accidental, replaces?, command}.',
     },
     {
       value: 'integration.component-conflicts',
@@ -291,7 +291,7 @@ export const doc = {
     {
       value: 'integration.doc-conflicts',
       description:
-        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
+        'The integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
 
     // layout (XLE/XLO)

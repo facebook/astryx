@@ -130,6 +130,22 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'multiple_manifests')).toHaveLength(1);
   });
 
+  it('rejects template replacements without a templates root', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {templateReplacements: {'acme-app-shell': 'shell-side-nav'}};\n`,
+    });
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_template_replacement')).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('no available templates root'),
+      }),
+    ]);
+  });
+
   it('returns found:false (guidance) when no manifest is present', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     fs.mkdirSync(pkgDir, {recursive: true});
@@ -154,7 +170,7 @@ describe('validate-integration API', () => {
     fs.mkdirSync(componentsDir);
     fs.writeFileSync(
       path.join(componentsDir, 'Widget.doc.mjs'),
-      `export default {name: 'Widget'};\n`,
+      `export default {name: 'Widget', props: []};\n`,
     );
     fs.writeFileSync(
       path.join(componentsDir, 'Widget.tsx'),
@@ -417,7 +433,7 @@ describe('validate-integration API', () => {
     fs.mkdirSync(cDir, {recursive: true});
     fs.writeFileSync(
       path.join(cDir, 'Widget.doc.mjs'),
-      `export default { name: 'Widget' };\n`,
+      `export default { type: 'component', name: 'Widget', props: [] };\n`,
     );
     fs.writeFileSync(
       path.join(cDir, 'Widget.tsx'),
@@ -439,7 +455,7 @@ describe('validate-integration API', () => {
     // Doc with no sibling Widget.tsx.
     fs.writeFileSync(
       path.join(cDir, 'Widget.doc.mjs'),
-      `export default { name: 'Widget' };\n`,
+      `export default { type: 'component', name: 'Widget', props: [] };\n`,
     );
 
     const result = await validateLocalIntegration(pkgDir);

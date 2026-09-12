@@ -31,6 +31,8 @@ function writeIntegration({
   id,
   name = 'Integration template',
   missingRoot = false,
+  replacements,
+  type = 'page',
 }) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
@@ -38,14 +40,14 @@ function writeIntegration({
   );
   fs.writeFileSync(
     path.join(tmpDir, 'astryx.integration.mjs'),
-    `export default {templates: '${missingRoot ? './missing' : './templates'}'};\n`,
+    `export default {templates: '${missingRoot ? './missing' : './templates'}'${replacements == null ? '' : `, templateReplacements: ${JSON.stringify(replacements)}`}};\n`,
   );
   if (missingRoot || id == null) return;
   const stem = path.join(tmpDir, 'templates', id);
   fs.mkdirSync(path.dirname(stem), {recursive: true});
   fs.writeFileSync(
     `${stem}.template.mjs`,
-    `export default {type: 'page', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
+    `export default {type: '${type}', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
   );
   fs.writeFileSync(
     `${stem}.tsx`,
@@ -124,7 +126,12 @@ describe('doctor integration — command', () => {
       return true;
     });
 
-    await createProgram().parseAsync(['node', 'astryx', 'doctor', 'integration']);
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+    ]);
 
     const output = writes.join('');
     expect(output).toContain('validate [package]');
@@ -136,7 +143,9 @@ describe('doctor integration — command', () => {
 
   it('explains the optional package argument in every leaf help', () => {
     const program = createProgram();
-    const doctor = program.commands.find(command => command.name() === 'doctor');
+    const doctor = program.commands.find(
+      command => command.name() === 'doctor',
+    );
     const integration = doctor?.commands.find(
       command => command.name() === 'integration',
     );
@@ -152,7 +161,10 @@ describe('doctor integration — command', () => {
   });
 
   it('templates explains how to check an installed package when no local manifest exists', async () => {
-    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({name: 'plain'}));
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'plain'}),
+    );
     process.chdir(tmpDir);
 
     await createProgram().parseAsync([
@@ -239,6 +251,97 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('templates reports an intentional replacement and the Core-original command', async () => {
+    const core = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(core).toBeDefined();
+    writeIntegration({
+      id: 'acme-app-shell',
+      type: core.type,
+      replacements: {'acme-app-shell': core.dirName},
+    });
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'templates',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual([]);
+    expect(parsed.data.conflicts).toEqual([
+      expect.objectContaining({
+        id: 'acme-app-shell',
+        relationship: 'replaces',
+        replaces: core.dirName,
+        severity: 'info',
+      }),
+    ]);
+    expect(parsed.data.conflicts[0].command).toContain(
+      `--package @astryxdesign/core`,
+    );
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('templates exits 1 for a missing replacement target', async () => {
+    writeIntegration({
+      id: 'acme-app-shell',
+      replacements: {'acme-app-shell': 'missing-core-shell'},
+    });
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'templates',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          severity: 'error',
+        }),
+      ]),
+    );
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('templates rejects replacement declarations when no templates root exists', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {templateReplacements: {'ghost-shell': 'shell-side-nav'}};\n`,
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'templates',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain('[fail]');
+    expect(output).toContain('no available templates root');
+    expect(output).not.toContain('[ok]');
+    expect(process.exitCode).toBe(1);
+  });
+
   it('templates exits 1 when structural errors prevent a trustworthy check', async () => {
     writeIntegration({missingRoot: true});
     process.chdir(tmpDir);
@@ -278,9 +381,7 @@ describe('doctor integration — command', () => {
     const output = logCalls.join('\n');
     expect(output).toContain('[warn]');
     expect(output).toContain(core.name);
-    expect(output).toContain(
-      `component ${core.name} --package @acme/widgets`,
-    );
+    expect(output).toContain(`component ${core.name} --package @acme/widgets`);
     expect(process.exitCode).toBeUndefined();
   });
 

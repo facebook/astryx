@@ -12,7 +12,7 @@
  */
 
 import {formatZodError} from '../_shared/errors.mjs';
-import {integrationSchema} from './schema.mjs';
+import {assertSafeIntegrationKeys, integrationSchema} from './schema.mjs';
 
 /** @typedef {import('./type').AstryxIntegration} AstryxIntegration */
 
@@ -28,6 +28,7 @@ import {integrationSchema} from './schema.mjs';
  * @returns {AstryxIntegration}
  */
 export function parseIntegration(input, label = 'astryx.integration') {
+  assertSafeIntegrationKeys(input, label);
   const result = integrationSchema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));

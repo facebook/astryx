@@ -15,7 +15,7 @@ import {
   CORE_PACKAGE,
   discoverComponents,
   discoverExternalComponentsGrouped,
-  discoverIntegrationComponents,
+  discoverValidIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
 } from '../../../foundation/discovery/component-discovery.mjs';
@@ -162,7 +162,8 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
   const seenIntegration = new Set();
   for (const integration of loadedIntegrations) {
     seenIntegration.add(integration.name);
-    const owned = discoverIntegrationComponents(integration);
+    const {components: owned} =
+      await discoverValidIntegrationComponents(integration);
     // Group integration components by their doc `group`, falling back to the
     // package name. Keys are package-qualified so they never collide with
     // core groups or each other.

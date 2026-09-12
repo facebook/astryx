@@ -544,7 +544,7 @@ class Emitter {
       const flags = hint.flags.length > 0 ? ` (+${hint.flags.join(' +')})` : '';
       const arg = hint.arg ? `:${hint.arg}` : '';
       return [
-        `${pad}{/* TODO(xle): content block '${hint.block.name}'${flags}${arg} — scaffold it with: astryx template ${hint.block.name} */}`,
+        `${pad}{/* TODO(xle): content block '${hint.block.name}'${flags}${arg} — scaffold it with: astryx template ${hint.block.name} --type block */}`,
       ];
     }
     this.todos.push(`unresolved hint {${hint.name}}`);

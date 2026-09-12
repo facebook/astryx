@@ -15,6 +15,7 @@
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
+ * @property {Record<string, string>} [templateReplacements]
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {string} [issuesUrl]
