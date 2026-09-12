@@ -9,7 +9,8 @@
  *
  * Configures Monaco's TypeScript service with real Astryx type definitions loaded
  * from a pre-built JSON bundle (generated at build time), so the editor offers
- * accurate autocomplete and diagnostics for @astryxdesign/core, React, StyleX, and icons.
+ * accurate autocomplete and diagnostics for @astryxdesign/core, React, StyleX,
+ * icons, and Recharts.
  *
  * Also registers Prettier (see ./formatCode) as the document formatter, which is
  * what powers both the "Format code" toolbar button and Monaco's built-in
@@ -150,6 +151,11 @@ export function configureMonaco(
           content,
           `file:///node_modules/@heroicons/react/${variant}/index.d.ts`,
         );
+      }
+
+      const rechartsFiles = packages.recharts ?? {};
+      for (const [fileName, content] of Object.entries(rechartsFiles)) {
+        ts.addExtraLib(content, `file:///node_modules/recharts/${fileName}`);
       }
 
       const coreFiles = packages['@astryxdesign/core'] ?? {};
