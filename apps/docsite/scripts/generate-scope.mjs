@@ -216,6 +216,14 @@ lines.push('');
 lines.push("import * as Hooks from '@astryxdesign/core/hooks';");
 lines.push('');
 
+// ── Charts ─────────────────────────────────────────────────────────────
+// Every dashboard template draws with Recharts. Without this the import
+// resolves to the runner's placeholder proxy, and each chart renders as null
+// with no error — the legends and axis labels around it still paint, so the
+// preview looks merely empty rather than broken.
+lines.push("import * as Recharts from 'recharts';");
+lines.push('');
+
 // ── Icon libraries ─────────────────────────────────────────────────────
 lines.push("import * as LucideIcons from 'lucide-react';");
 lines.push('// Heroicons kept available in the playground scope alongside Lucide');
@@ -293,6 +301,9 @@ lines.push(`  '@astryxdesign/core': {
 ${spreads}
   },`);
 
+// Recharts
+lines.push('  recharts: Recharts,');
+
 // Lucide icons + Heroicons
 lines.push("  'lucide-react': LucideIcons,");
 for (const h of HEROICON_VARIANTS) {
@@ -315,3 +326,4 @@ console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
 console.log(`  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`);
+console.log('  recharts');
