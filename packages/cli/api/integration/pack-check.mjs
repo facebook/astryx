@@ -353,13 +353,21 @@ function resolveConsumerSpecifiers(specifiers, scratchBase) {
  */
 async function validatePackedComponentExports(integration, scratchBase) {
   const records = discoverIntegrationComponents(integration);
+  /** @type {Issue[]} */
+  const issues = [];
   /** @type {Array<{name: string, specifier: string}>} */
   const components = [];
   for (const record of records) {
     let docs;
     try {
       docs = await loadComponentDoc(record.docPath);
-    } catch {
+    } catch (err) {
+      issues.push(
+        error(
+          'component_doc_unloadable',
+          `Component "${record.name}" doc at "${record.docPath}" could not be loaded: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
       continue;
     }
     const specifier =
@@ -380,8 +388,6 @@ async function validatePackedComponentExports(integration, scratchBase) {
     components.map(component => component.specifier),
     scratchBase,
   );
-  /** @type {Issue[]} */
-  const issues = [];
   for (const {name, specifier} of components) {
     const result = resolved.get(specifier);
     if (!result?.url || result.error) {
