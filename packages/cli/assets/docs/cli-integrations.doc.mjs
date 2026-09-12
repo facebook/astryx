@@ -20,7 +20,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The authoring CLI owns the integration file. The first `astryx integration add` creates `astryx.integration.mjs`; each later add declares its root only after writing a valid contribution behind it. Identity (name and version) still comes from package.json. For the consumer side, run `npx astryx docs getting-started`.',
+          text: 'The authoring CLI owns the integration file. The first `astryx integration add` creates `astryx.integration.mjs`; each later add declares its root only after writing a valid contribution behind it. Identity (name and version) still comes from package.json. For the consumer side, run `astryx docs getting-started`.',
         },
         {
           type: 'prose',
@@ -48,7 +48,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Do not start by hand-editing a manifest. Add the contribution you mean to ship; Astryx creates the manifest, writes every required file, preserves an existing custom root, and updates an existing package.json files allowlist without creating one.',
+          text: 'Do not start by hand-editing a manifest. Add the contribution you mean to ship; Astryx creates the manifest, writes every required file, preserves an existing custom root, and updates an existing package.json files allowlist without creating one. Always run these commands from the locally installed CLI in the package (e.g. `node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs` or `pnpm astryx`), not `npx @astryxdesign/cli` — npx may resolve a stale registry version whose integration scaffolding does not match the installed one.',
         },
         {
           type: 'code',
@@ -80,17 +80,17 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'A useful theme package usually ships more than colors. Start with the source theme, then add the guides its consumers need. Each command writes a complete contribution and keeps the package manifest in sync.',
+          text: 'A useful theme package usually ships more than colors. Start with the source theme, author the palette request at `themes/ocean/palette.config.json`, then add the guides its consumers need. The `integration add` commands keep the package manifest in sync; add palette outputs to the theme catalog after generation.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'In the provider package',
-          code: 'astryx integration add theme ocean\nastryx theme palette generate palette.config.json --out themes/ocean/tokens/ocean.palette.ts\nastryx integration add doc brand-theme\nastryx integration add doc theme-migration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx integration pack --check\nnpm pack',
+          code: 'astryx integration add theme ocean\nastryx theme palette generate themes/ocean/palette.config.json --out themes/ocean/tokens/ocean.palette.ts\nastryx integration add doc brand-theme\nastryx integration add doc theme-migration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx integration pack --check\nnpm pack',
         },
         {
           type: 'prose',
-          text: 'Edit the generated theme and guide files before publishing. Palette generation writes an importable TypeScript candidate and a reproducibility receipt; import the candidate from the theme and list both nested files in that theme catalog entry. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source file or files allowlist entry fails before a consumer sees it.',
+          text: "Edit the generated theme and guide files before publishing. The shown palette command writes `themes/ocean/tokens/ocean.palette.ts` and its sibling `themes/ocean/tokens/ocean.palette.receipt.json`. The TypeScript candidate directly exports `black`, `white`, and `palette`; import what the theme uses from `./tokens/ocean.palette`. Keep the request at `themes/ocean/palette.config.json`, and list the theme source, request, candidate, and receipt in the catalog entry's `files` array. Add any optional wrapper, refs, icon, or preview modules only when you author them, and list each one too. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source file or files allowlist entry fails before a consumer sees it.",
         },
         {
           type: 'code',
@@ -101,6 +101,25 @@ export const docs = {
         {
           type: 'prose',
           text: 'The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies every file listed by the selected catalog entry, including nested token modules, and refuses to overwrite existing project files.',
+        },
+      ],
+    },
+    {
+      title: 'Contribution Kinds at a Glance',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Each contribution kind uses a different metadata suffix, type stamp, and discovery rule. The table below prevents the most common first-time authoring mistake — using the wrong file or export convention.',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: "Kind        Metadata suffix            type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.{ts,mjs,js}       'component'    Name.tsx (same stem)\nTemplate    Name.template.{ts,mjs,js}  'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.{ts,mjs,js}      'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       manifest.json entry         —             <slug>/<entry>.ts",
+        },
+        {
+          type: 'prose',
+          text: 'The `type` stamp is how new docs should be authored — it routes parsing to the correct schema at the load boundary. Legacy docs without a stamp still load via shape-sniffing for backward compatibility, but unstamped docs rely on heuristics (presence of `props`, `params`, etc.) and may parse under the wrong schema if the shape is ambiguous. Always stamp new integration contributions.',
         },
       ],
     },
@@ -129,7 +148,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`.',
+          text: "Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`. The doc file must default-export an object with `type: 'component'` — not `'generic'` (that is for reference docs) and not `'page'`/`'block'` (those are for templates).",
         },
         {
           type: 'prose',
@@ -138,7 +157,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n};",
+          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n} satisfies import('@astryxdesign/cli/authoring').ComponentDoc;",
         },
       ],
     },
@@ -148,7 +167,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.",
+          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) as its default export in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`. Do not use the `.doc.{ts,mjs,js}` suffix — that is for component docs and reference docs.",
         },
         {
           type: 'prose',
@@ -161,7 +180,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The CLI needs both files at consume time. `integration add` includes the templates root when package.json already has a files allowlist. It never creates an exports map, because doing that can make previously-open deep imports private; when a map already exists, it adds the generated source subpath without replacing author-owned entries. `integration pack --check` proves the source and metadata survive the tarball and verifies every component through the public import its metadata advertises.',
+          text: 'The CLI needs both files at consume time. `integration add` includes the templates root when package.json already has a files allowlist. It never creates an exports map, because doing that can make previously-open deep imports private; when a map already exists, it adds the generated source subpath without replacing author-owned entries. Use consumer-safe extensionless subpaths in the exports map (e.g. `"./templates/AcmeDashboard"` instead of `"./templates/AcmeDashboard.tsx"`), so consumers import without knowing the file extension. `integration pack --check` proves the source and metadata survive the tarball and verifies every component through the public import its metadata advertises.',
         },
       ],
     },
@@ -171,7 +190,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Point the integration file's `docs` field at a directory of reference docs and every `{topic}.doc.{ts,mjs,js}` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object stamped `type: 'generic'`, the same shape core's own topics use.",
+          text: "Point the integration file's `docs` field at a directory of reference docs and every `{topic}.doc.{ts,mjs,js}` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object with `type: 'generic'` as its default export — not `'component'` (that is for component docs with a same-stem source file). This is the same shape core's own topics use.",
         },
         {
           type: 'code',
@@ -215,16 +234,33 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'themes/\n  manifest.json\n  ocean/\n    oceanTheme.ts',
+          code: 'themes/\n  manifest.json\n  ocean/\n    oceanTheme.ts\n    palette.config.json\n    tokens/\n      ocean.palette.ts\n      ocean.palette.receipt.json',
         },
         {
           type: 'prose',
-          text: "The root catalog uses the same entry contract as Astryx's bundled themes: `slug`, `displayName`, `description`, `maintained`, `entry`, `exportName`, and `files`. `entry` and every file are relative to `themes/<slug>/`; `exportName` identifies a named runtime export in the entry source. Astryx parses that source without executing it, requires every local static import and re-export to name a file in `files`, and rejects missing or type-only exports.",
+          text: 'The root catalog `manifest.json` must be `{ "version": 1, "themes": [...] }`. Each entry in the `themes` array requires every field shown below — omitting any one is a hard validation error:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`slug` — lowercase kebab-case starting with a letter (e.g. `"ocean"`). Must be unique within the catalog.',
+            '`displayName` — human-readable label (e.g. `"Ocean"`).',
+            '`description` — string description of the theme.',
+            '`maintained` — boolean indicating active maintenance.',
+            '`entry` — source file relative to `themes/<slug>/` (e.g. `"oceanTheme.ts"`).',
+            '`exportName` — a valid JS identifier naming the runtime export in the entry file (e.g. `"oceanTheme"`). Astryx parses the source without executing it and rejects missing or type-only exports.',
+            '`files` — non-empty array of filenames relative to `themes/<slug>/`. Must include the entry file and every local static import the entry source uses. Astryx validates that every listed file exists on disk and that every local import in the entry names a file in this list.',
+          ],
         },
         {
           type: 'code',
           lang: 'json',
-          code: '{\n  "version": 1,\n  "themes": [{\n    "slug": "ocean",\n    "displayName": "Ocean",\n    "description": "Ocean theme.",\n    "maintained": true,\n    "entry": "oceanTheme.ts",\n    "exportName": "oceanTheme",\n    "files": ["oceanTheme.ts"]\n  }]\n}',
+          code: '{\n  "version": 1,\n  "themes": [{\n    "slug": "ocean",\n    "displayName": "Ocean",\n    "description": "Ocean theme with OKLCH palettes.",\n    "maintained": true,\n    "entry": "oceanTheme.ts",\n    "exportName": "oceanTheme",\n    "files": [\n      "oceanTheme.ts",\n      "palette.config.json",\n      "tokens/ocean.palette.ts",\n      "tokens/ocean.palette.receipt.json"\n    ]\n  }]\n}',
+        },
+        {
+          type: 'prose',
+          text: 'The generated candidate is already importable: it exports `black`, `white`, `palette`, and a default palette value. Import it directly from `./tokens/ocean.palette`. A wrapper or palette-refs module is optional application code, not generator output; list it only if you create it.',
         },
         {
           type: 'prose',
@@ -268,9 +304,31 @@ export const docs = {
           text: "Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file's `codemods` field at your codemods root, and author each one as a plain object stamped with `type: 'code'` (transforms source files) or `type: 'config'` (rewrites the consumer's `astryx.config`).",
         },
         {
+          type: 'prose',
+          text: 'The codemods root uses a version-folder-first layout. Each folder name is an exact semver string (no `v` prefix) matching the version the codemod migrates TO. Each module under it is a kebab-case `.ts`, `.mjs`, or `.js` file whose default export is the codemod envelope:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: 'codemods/\n  0.2.0/\n    rename-widget-prop.ts\n  0.3.0/\n    update-theme-import.ts\n    config/rename-integration.ts',
+        },
+        {
+          type: 'prose',
+          text: 'Codemod ids (the extension-less relative path under the version folder, e.g. `rename-widget-prop`, `config/rename-integration`) must be unique within a package across all versions. A duplicate id across versions is a hard error.',
+        },
+        {
           type: 'code',
           lang: 'typescript',
-          code: "// codemods/v2-rename-prop.ts\nexport default {\n  type: 'code',\n  // title, description, transform, ...\n};",
+          code: "// codemods/0.2.0/rename-widget-prop.ts\nexport default {\n  type: 'code',\n  title: 'Rename AcmeWidget oldProp to newProp',\n  description: 'Updates JSX props in consumer source files.',\n  transform(file, api) {\n    // jscodeshift transform\n    return file.source;\n  },\n};",
+        },
+        {
+          type: 'prose',
+          text: "`astryx upgrade` is dry-run by default — it previews which codemods would run and what files would change, without writing anything. Pass `--apply` to write the changes. There is no `--dry-run` flag; omitting `--apply` is the dry run. The `--integration` flag resolves each value beneath the project's `node_modules` (for example, `--integration @acme/widgets`). Absolute paths and `.` or `..` segments are rejected; other slash-separated values remain beneath `node_modules`.",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: '# Preview what would change (dry-run, the default)\nastryx upgrade --from 0.1.0\n\n# Apply the migration\nastryx upgrade --from 0.1.0 --apply',
         },
         {
           type: 'prose',
