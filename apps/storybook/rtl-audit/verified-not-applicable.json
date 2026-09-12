@@ -102,6 +102,10 @@
     }
   },
   {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and an invisible role-bearing control placed in the top padding band with `top`/`insetInline`. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
+  },
+  {
     "component": "core/AspectRatio",
     "reason": "AspectRatio only establishes a symmetric aspect-ratio box and sizes its single child to fill that box. It has no inline-axis placement, ordering, directional glyph, scrolling, dragging, overlay, or keyboard behavior."
   },
