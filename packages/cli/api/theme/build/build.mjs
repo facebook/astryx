@@ -201,15 +201,36 @@ function normalizeForCompare(content) {
 
 /**
  * Convert a theme name to a valid JS identifier.
- * e.g. 'default-minimal' → 'defaultMinimal', 'ocean' → 'ocean'
+ *
+ * Deterministic sanitization rule — only transforms characters that are invalid
+ * in JS identifiers (`-` and `.`); underscores are already valid and preserved:
+ * 1. Replace every run of invalid separators (`-`, `.`) followed by an
+ *    alphanumeric or underscore character with that character uppercased.
+ * 2. Strip any remaining invalid separators (leading or trailing).
+ * 3. If the result starts with a digit, prefix with `_`.
+ * 4. If the result is empty, return `_`.
+ *
+ * Examples:
+ *   'ocean'            → 'ocean'
+ *   'default-minimal'  → 'defaultMinimal'
+ *   'chaos-07'         → 'chaos07'
+ *   'a-1-b'            → 'a1B'
+ *   'my--theme'        → 'myTheme'
+ *   'brand.v2'         → 'brandV2'
+ *   'my_theme'         → 'my_theme'    (underscore preserved)
+ *   'neo_wave-2.x'     → 'neo_wave2X'
+ *
  * @param {string} name
  * @returns {string}
  */
 function toIdentifier(name) {
-  return name.replace(
-    /-([a-z])/g,
-    (/** @type {string} */ _, /** @type {string} */ c) => c.toUpperCase(),
-  );
+  const id = name
+    .replace(
+      /[-.]+([a-zA-Z0-9_])/g,
+      (/** @type {string} */ _, /** @type {string} */ c) => c.toUpperCase(),
+    )
+    .replace(/[-.]+/g, '');
+  return /^\d/.test(id) ? `_${id}` : id || '_';
 }
 
 /**
