@@ -651,9 +651,10 @@ function recover(root, artifactKey, manifestPath) {
           throwIfNoEntry: false,
         });
         if (
-          !previousStat?.isDirectory() ||
-          previousStat.isSymbolicLink() ||
-          fs.readdirSync(previousDirectory).length !== 0
+          previousStat !== undefined &&
+          (!previousStat.isDirectory() ||
+            previousStat.isSymbolicLink() ||
+            fs.readdirSync(previousDirectory).length !== 0)
         ) {
           throw new Error(
             `Prior family generation has no valid ownership manifest at ${journal.prev.target}.`,
@@ -781,7 +782,7 @@ export function recoverFamilyOutput(input) {
 /**
  * Publish one complete immutable generation and atomically select it.
  *
- * @param {{root: string, artifactKey: string, generationId: string, files: Map<string, string | Buffer>, manifestPath: string, hooks?: {afterWrite?: (path: string) => void, afterStage?: () => void, afterValidate?: () => void, afterJournal?: () => void, afterPointer?: () => void, duringCleanup?: () => void}}} input
+ * @param {{root: string, artifactKey: string, generationId: string, files: Map<string, string | Buffer>, manifestPath: string, hooks?: {afterWrite?: (path: string) => void, afterStage?: () => void, afterValidate?: () => void, afterJournal?: () => void, afterPointer?: () => void, duringCleanup?: () => void, afterCleanup?: () => void}}} input
  */
 export function publishFamilyGeneration(input) {
   const {
@@ -888,6 +889,7 @@ export function publishFamilyGeneration(input) {
       hooks.duringCleanup,
       new Set(previous ? [previous.target] : []),
     );
+    hooks.afterCleanup?.();
     removeJournal(root);
   } finally {
     release();
@@ -952,14 +954,17 @@ export function checkFamilyGeneration(input) {
     for (const relative of priorOwned) checked.add(relative);
 
     for (const [relative, content] of files) {
-      const file = path.join(
-        root,
-        ...current.target.split('/'),
-        ...relative.split('/'),
-      );
-      if (!fs.existsSync(file)) {
-        stale.push({path: relative, reason: 'missing'});
-      } else if (!fs.readFileSync(file).equals(bytes(content))) {
+      let file;
+      try {
+        file = assertRegularOwnedFile(prior.generationDir, relative);
+      } catch (error) {
+        stale.push({
+          path: relative,
+          reason: errorCode(error) === 'ENOENT' ? 'missing' : 'outdated',
+        });
+        continue;
+      }
+      if (!fs.readFileSync(file).equals(bytes(content))) {
         stale.push({path: relative, reason: 'outdated'});
       }
     }

@@ -229,6 +229,93 @@ describe('family generation transaction', () => {
     expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
   });
 
+  it('recovers repeatedly after a post-cleanup crash, then passes --check and a later publish', () => {
+    const first = generation('family', 'gen-first', 'red');
+    publishFamilyGeneration({root, artifactKey: 'family', ...first});
+    const second = generation('family', 'gen-second', 'blue');
+
+    expect(() =>
+      publishFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        ...second,
+        hooks: {
+          afterCleanup: () => {
+            throw new Error('fault after cleanup');
+          },
+        },
+      }),
+    ).toThrow(/fault after cleanup/);
+    expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+      'generations/gen-second',
+    );
+    expect(fs.existsSync(path.join(root, 'generations', 'gen-first'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(true);
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      expect(() =>
+        recoverFamilyOutput({
+          root,
+          artifactKey: 'family',
+          manifestPath: second.manifestPath,
+        }),
+      ).not.toThrow();
+    }
+    expect(fs.existsSync(path.join(root, '.journal.json'))).toBe(false);
+
+    const checked = checkFamilyGeneration({
+      root,
+      artifactKey: 'family',
+      expectedGeneration: second,
+    });
+    expect(checked.upToDate).toBe(true);
+
+    const third = generation('family', 'gen-third', 'green');
+    expect(() =>
+      publishFamilyGeneration({root, artifactKey: 'family', ...third}),
+    ).not.toThrow();
+    expect(fs.readlinkSync(path.join(root, 'current'))).toBe(
+      'generations/gen-third',
+    );
+  });
+
+  it.each(['external', 'internal'])(
+    'rejects a %s matching-byte symlink during --check',
+    location => {
+      const expected = generation('family', 'gen-first', 'red');
+      publishFamilyGeneration({root, artifactKey: 'family', ...expected});
+      const relative = 'family.css';
+      const content = expected.files.get(relative);
+      if (content === undefined) throw new Error(`Missing ${relative}.`);
+      const generationDir = path.join(
+        root,
+        'generations',
+        expected.generationId,
+      );
+      const owned = path.join(generationDir, relative);
+      const target =
+        location === 'external'
+          ? path.join(root, 'matching.css')
+          : path.join(generationDir, 'matching.css');
+      fs.writeFileSync(target, content);
+      fs.rmSync(owned);
+      fs.symlinkSync(location === 'external' ? target : 'matching.css', owned);
+
+      const checked = checkFamilyGeneration({
+        root,
+        artifactKey: 'family',
+        expectedGeneration: expected,
+      });
+      expect(checked.upToDate).toBe(false);
+      expect(checked.stale).toContainEqual({
+        path: relative,
+        reason: 'outdated',
+      });
+    },
+  );
+
   it('reports missing, outdated, and formerly owned extra files without publishing', () => {
     const first = generation('family', 'gen-first', 'red', {
       'receipts/old-member.json': '{}\n',
