@@ -29,20 +29,17 @@ import {themeProps} from '../utils/themeProps';
 // =============================================================================
 
 /**
- * Fraction of the ring the moving arc covers. The canvas ring this replaces
- * swept 135deg, not the 270deg its constant's comment claimed.
+ * Default fraction of the ring the moving arc covers. The canvas ring this
+ * replaces swept 135deg, not the 270deg its constant's comment claimed.
+ *
+ * Themeable via `--spinner-arc-fraction`, declared alongside the other public
+ * vars in `sizeStyles` below. Only the inline `strokeDasharray` attribute
+ * (the pre-stylesheet render — see its own comment) still reads this
+ * constant directly; the CSS side composes the dash from the live var.
  */
 const ARC_FRACTION = 0.375;
 
-/**
- * The dash pattern, per unit of diameter: one arc, then the gap that closes
- * the circle. The circumference is `pi x diameter`, so multiplying the
- * resolved diameter by these two constants gives exactly the lengths the
- * default render has always used, and scales them with a themed diameter.
- */
 const PI = 3.141592653589793;
-const ARC_DASH = PI * ARC_FRACTION;
-const ARC_GAP = PI * (1 - ARC_FRACTION);
 
 const SIZES = {
   sm: {diameter: 10, border: 2},
@@ -322,10 +319,16 @@ const styles = stylex.create({
   // of the circle — 87.398 against the 87.965 of pi x 28 — which shortens the
   // default arc by 0.64% and moves the cap by half a pixel. Composing the
   // lengths keeps the default byte-identical to what it drew before.
+  //
+  // The fraction itself also rides a public var (`--spinner-arc-fraction`),
+  // unregistered like the other three color/geometry public vars — it is
+  // read as a bare `<number>` multiplier here, never summed with a unitless
+  // `0` the way the registered length pair guards against, so it needs no
+  // registration.
   arc: {
     stroke: 'var(--spinner-color)',
     transform: 'rotate(-90deg)',
-    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
+    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${PI} * var(--spinner-arc-fraction)) calc(var(${RESOLVED_DIAMETER}) * ${PI} * (1 - var(--spinner-arc-fraction)))`,
   },
   track: {stroke: 'var(--spinner-track-color)'},
 });
@@ -348,22 +351,30 @@ const styles = stylex.create({
 // cost of its own — with nothing declaring the var,
 // `theme-var-reachability.js` cannot find an element to check, so a documented
 // var reads as unreachable.
+// Arc fraction is not itself size-dependent, but it declares alongside the
+// two vars that are, on the same per-size condition (`!hasLabel` gate at the
+// call site) — it needs a home on whichever element carries the theme
+// target, and this is the object already wired to be there.
 const sizeStyles = stylex.create({
   sm: {
     '--spinner-diameter': `${SIZES.sm.diameter}px`,
     '--spinner-stroke-width': `${SIZES.sm.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   md: {
     '--spinner-diameter': `${SIZES.md.diameter}px`,
     '--spinner-stroke-width': `${SIZES.md.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   lg: {
     '--spinner-diameter': `${SIZES.lg.diameter}px`,
     '--spinner-stroke-width': `${SIZES.lg.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   xl: {
     '--spinner-diameter': `${SIZES.xl.diameter}px`,
     '--spinner-stroke-width': `${SIZES.xl.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
 });
 

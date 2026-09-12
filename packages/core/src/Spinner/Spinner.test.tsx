@@ -204,6 +204,14 @@ describe('Spinner', () => {
         '.astryx-spinner {\n    --spinner-color: var(--color-brand);',
       );
     });
+
+    it('scopes a themed arc fraction to that size variant (#5819)', () => {
+      expect(
+        cssFor({spinner: {'size:xl': {'--spinner-arc-fraction': '0.75'}}}),
+      ).toContain(
+        '.astryx-spinner[data-size="xl"] {\n    --spinner-arc-fraction: 0.75;',
+      );
+    });
   });
 });
 
