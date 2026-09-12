@@ -380,8 +380,12 @@ async function validatePackedComponentExports(integration, scratchBase) {
     components.map(component => component.specifier),
     scratchBase,
   );
-  /** @type {Issue[]} */
-  const issues = [];
+  const issues = validateSpecifierExtensions(
+    components.map(({name, specifier}) => ({
+      label: `Component "${name}"`,
+      specifier,
+    })),
+  );
   for (const {name, specifier} of components) {
     const result = resolved.get(specifier);
     if (!result?.url || result.error) {
@@ -421,19 +425,27 @@ async function validatePackedComponentExports(integration, scratchBase) {
  */
 async function validatePackedTemplateExports(integration, scratchBase) {
   const {templates} = await discoverIntegrationTemplatesForOne(integration);
-  const entries = templates.map(template => ({
-    id: template.dirName,
-    specifier: `${integration.name}/${path
+  const entries = templates.map(template => {
+    const relPath = path
       .relative(integration.__packageDir, template.filePath)
       .split(path.sep)
-      .join('/')}`,
-  }));
+      .join('/');
+    const extensionless = relPath.replace(/\.tsx?$/u, '');
+    return {
+      id: template.dirName,
+      specifier: `${integration.name}/${extensionless}`,
+    };
+  });
   const resolved = resolveConsumerSpecifiers(
     entries.map(entry => entry.specifier),
     scratchBase,
   );
-  /** @type {Issue[]} */
-  const issues = [];
+  const issues = validateSpecifierExtensions(
+    entries.map(({id, specifier}) => ({
+      label: `Template "${id}"`,
+      specifier,
+    })),
+  );
   for (const {id, specifier} of entries) {
     const result = resolved.get(specifier);
     if (!result?.url || result.error) {
@@ -456,6 +468,32 @@ async function validatePackedTemplateExports(integration, scratchBase) {
         error(
           'template_export_missing',
           `Template "${id}" public import "${specifier}" does not have a default export.`,
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+const TS_EXTENSION_RE = /\.tsx?$/u;
+
+/**
+ * Reject specifiers that end in a TypeScript extension — they fail under
+ * default `moduleResolution` with TS5097/TS2307 unless the consumer enables
+ * `allowImportingTsExtensions`.
+ *
+ * @param {Array<{label: string, specifier: string}>} entries
+ * @returns {Issue[]}
+ */
+function validateSpecifierExtensions(entries) {
+  /** @type {Issue[]} */
+  const issues = [];
+  for (const {label, specifier} of entries) {
+    if (TS_EXTENSION_RE.test(specifier)) {
+      issues.push(
+        error(
+          'typescript_extension_in_specifier',
+          `${label} advertises import "${specifier}", which ends in a TypeScript extension. A consumer with default moduleResolution will reject it (TS5097). Use an extensionless specifier mapped through the package exports.`,
         ),
       );
     }
