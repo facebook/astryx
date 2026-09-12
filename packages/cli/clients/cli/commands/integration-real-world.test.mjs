@@ -3,7 +3,7 @@
 /**
  * @file Real package-boundary coverage for integration authoring. Authors a
  * provider through the CLI, packs it, installs the tarball into a separate
- * no-config consumer, then exercises the contributed docs and source theme.
+ * no-config consumer, then exercises packed docs, codemods, and source themes.
  */
 
 import {afterEach, describe, expect, it} from 'vitest';
@@ -13,6 +13,15 @@ import {spawnSync} from 'node:child_process';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
 let rootDir;
+const CLI_BIN = path.join(
+  process.cwd(),
+  'packages',
+  'cli',
+  'clients',
+  'cli',
+  'bin',
+  'astryx.mjs',
+);
 
 function parseEnvelope(stdout) {
   return JSON.parse(stdout.trim());
@@ -20,6 +29,17 @@ function parseEnvelope(stdout) {
 
 function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function runCliProcess(args, cwd) {
+  const result = spawnSync(process.execPath, [CLI_BIN, ...args], {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 60_000,
+    env: process.env,
+  });
+  if (result.error) throw result.error;
+  return result;
 }
 
 function runNpm(args, cwd) {
@@ -50,13 +70,19 @@ afterEach(() => {
 });
 
 describe('integration authoring across a real npm package boundary', () => {
-  it('authors, packs, installs, discovers, copies, and builds a theme with guides', async () => {
+  it('authors, packs, installs, upgrades, and builds contributed source', async () => {
     rootDir = fs.mkdtempSync(
       path.join(process.cwd(), '.astryx-theme-provider-consumer-'),
     );
     const providerDir = path.join(rootDir, 'provider');
     const consumerDir = path.join(rootDir, 'consumer');
     const packDir = path.join(rootDir, 'packed');
+    const coreVersion = JSON.parse(
+      fs.readFileSync(
+        path.join(process.cwd(), 'packages', 'core', 'package.json'),
+        'utf-8',
+      ),
+    ).version;
     fs.mkdirSync(providerDir);
     fs.mkdirSync(consumerDir);
     fs.mkdirSync(packDir);
@@ -87,6 +113,42 @@ describe('integration authoring across a real npm package boundary', () => {
         data: {kind, name, written: true, dryRun: false},
       });
     }
+
+    const codemodName = 'packed-proof';
+    const codemodAdded = await runCli(
+      [
+        'integration',
+        'add',
+        'codemod',
+        codemodName,
+        '--to',
+        coreVersion,
+        '--json',
+      ],
+      providerDir,
+    );
+    expect(codemodAdded.status, codemodAdded.stderr).toBe(0);
+    expect(parseEnvelope(codemodAdded.stdout)).toMatchObject({
+      type: 'integration.add',
+      data: {kind: 'codemod', name: codemodName, written: true},
+    });
+    const providerCodemod = path.join(
+      providerDir,
+      'codemods',
+      coreVersion,
+      `${codemodName}.mjs`,
+    );
+    fs.writeFileSync(
+      providerCodemod,
+      `export default {
+  type: 'code',
+  title: 'Packed proof',
+  transform(file) {
+    return file.source.replace(/old-token/g, 'new-token');
+  },
+};
+`,
+    );
 
     const themeDir = path.join(providerDir, 'themes', 'ocean');
     const paletteConfig = path.join(providerDir, 'palette.config.json');
@@ -155,6 +217,7 @@ export const oceanTheme = defineTheme({
       'themes',
       'astryx.integration.mjs',
       'docs',
+      'codemods',
     ]);
 
     const checked = await runCli(
@@ -172,6 +235,7 @@ export const oceanTheme = defineTheme({
           local: {
             themes: [{slug: 'ocean', exportName: 'oceanTheme'}],
             docs: ['brand-theme', 'theme-migration'],
+            codemods: [{version: coreVersion, id: codemodName}],
           },
         },
       },
@@ -265,6 +329,38 @@ export const oceanTheme = defineTheme({
       path.join(process.cwd(), 'packages', 'core'),
       coreLink,
       process.platform === 'win32' ? 'junction' : 'dir',
+    );
+
+    const consumerSource = path.join(consumerDir, 'src', 'index.ts');
+    fs.mkdirSync(path.dirname(consumerSource), {recursive: true});
+    fs.writeFileSync(consumerSource, "export const value = 'old-token';\n");
+    const dryRun = await runCli(
+      [
+        'upgrade',
+        '--from',
+        '0.0.0',
+        '--integration',
+        '@acme/brand-integration',
+        '--path',
+        'src',
+        '--json',
+      ],
+      consumerDir,
+    );
+    expect(dryRun.status, `${dryRun.stdout}\n${dryRun.stderr}`).toBe(0);
+    const dryRunReceipt = parseEnvelope(dryRun.stdout);
+    expect(dryRunReceipt).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        to: coreVersion,
+        integrations: expect.arrayContaining(['@acme/brand-integration']),
+        filesChanged: 1,
+        transformsApplied: 1,
+      },
+    });
+    expect(dryRunReceipt.data.codemods).toBeGreaterThan(0);
+    expect(fs.readFileSync(consumerSource, 'utf-8')).toBe(
+      "export const value = 'old-token';\n",
     );
 
     fs.rmSync(providerDir, {recursive: true, force: true});
@@ -439,6 +535,64 @@ export const oceanTheme = defineTheme({
     );
     expect(overwritten.status, overwritten.stderr).toBe(0);
     expect(parseEnvelope(overwritten.stdout).type).toBe('theme.add');
+
+    const installedCodemod = path.join(
+      installedDir,
+      'codemods',
+      coreVersion,
+      `${codemodName}.mjs`,
+    );
+    const validCodemod = fs.readFileSync(installedCodemod, 'utf-8');
+    fs.writeFileSync(installedCodemod, "export default {not: 'a codemod'};\n");
+    const invalidCodemod = runCliProcess(
+      [
+        'doctor',
+        'integration',
+        'validate',
+        '@acme/brand-integration',
+        '--json',
+      ],
+      consumerDir,
+    );
+    expect(invalidCodemod.status).toBe(1);
+    const invalidCodemodEnvelope = parseEnvelope(invalidCodemod.stdout);
+    expect(invalidCodemodEnvelope).toMatchObject({
+      type: 'integration.validate',
+      data: {
+        name: '@acme/brand-integration',
+        issues: expect.arrayContaining([
+          expect.objectContaining({code: 'invalid_codemod', severity: 'error'}),
+        ]),
+      },
+    });
+
+    fs.rmSync(path.join(installedDir, 'codemods'), {
+      recursive: true,
+      force: true,
+    });
+    const missingCodemods = runCliProcess(
+      [
+        'doctor',
+        'integration',
+        'validate',
+        '@acme/brand-integration',
+        '--json',
+      ],
+      consumerDir,
+    );
+    expect(missingCodemods.status).toBe(1);
+    const missingCodemodsEnvelope = parseEnvelope(missingCodemods.stdout);
+    expect(missingCodemodsEnvelope).toMatchObject({
+      type: 'integration.validate',
+      data: {
+        name: '@acme/brand-integration',
+        issues: expect.arrayContaining([
+          expect.objectContaining({code: 'missing_root', severity: 'error'}),
+        ]),
+      },
+    });
+    fs.mkdirSync(path.dirname(installedCodemod), {recursive: true});
+    fs.writeFileSync(installedCodemod, validCodemod);
 
     fs.rmSync(
       path.join(installedDir, 'themes', 'ocean', 'tokens', 'ocean.palette.ts'),
