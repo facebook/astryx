@@ -782,10 +782,8 @@ jobs:
       - name: Install Playwright
         run: npx playwright install chromium
 
-      # The guard imports the plugin's build artifact, the same one a consumer
-      # installs.
-      - name: Build the Vite plugin
-        run: pnpm -F @astryxdesign/build build
+      - name: Build the Vite plugin and Core theme compiler
+        run: pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build
 
       - name: Run theme layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js

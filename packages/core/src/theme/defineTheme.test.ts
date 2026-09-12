@@ -1156,6 +1156,16 @@ describe('container padding mapping', () => {
 });
 
 describe('defineTheme extends', () => {
+  it('retains the exact resolved parent for family graph discovery', () => {
+    const base = defineTheme({name: 'base'});
+    const child = defineTheme({name: 'child', extends: base});
+    const grandchild = defineTheme({name: 'grandchild', extends: child});
+
+    expect(base.__extends).toBeUndefined();
+    expect(child.__extends).toBe(base);
+    expect(grandchild.__extends).toBe(child);
+  });
+
   it('inherits enrollment, allows exact replacement, and owns new child names', () => {
     const inherited = '--astryx-theme-base-theme-color-status-fill';
     const childOwned = '--child-surface-raised';

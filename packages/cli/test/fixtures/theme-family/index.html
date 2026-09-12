@@ -1,0 +1,45 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ocean theme family</title>
+    <style id="unrelated-before">
+      @layer astryx-theme {
+        .astryx-button[data-variant='primary'] {
+          background-color: rgb(255 0 255);
+        }
+      }
+    </style>
+    <link id="family-css" rel="stylesheet" href="./ocean-family.css" />
+  </head>
+  <body>
+    <main data-switch-root data-astryx-theme="ocean">
+      <h1 id="prose">Ocean</h1>
+      <span id="scheme-probe" style="color: var(--color-accent)">Scheme</span>
+      <button
+        id="active-button"
+        class="astryx-button"
+        data-variant="primary"
+        data-family-switcher>
+        Switch family member
+      </button>
+      <button id="hover-button" class="astryx-button">Hover state</button>
+      <div data-astryx-media="dark">
+        <button id="media-button" class="astryx-button">Media surface</button>
+      </div>
+      <section id="nested" data-astryx-theme="ocean-calm">
+        <button class="astryx-button" data-variant="primary">Calm</button>
+        <section id="deep" data-astryx-theme="ocean-calm-deep">
+          <button class="astryx-button" data-variant="primary">Deep</button>
+        </section>
+      </section>
+    </main>
+    <section id="sibling" data-astryx-theme="ocean-midnight">
+      <button class="astryx-button" data-variant="primary">Midnight</button>
+    </section>
+    <script type="module" src="./main.mjs"></script>
+  </body>
+</html>

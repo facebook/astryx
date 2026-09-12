@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file theme build API — compile a defineTheme file to CSS + JS + .d.ts.
+ * @file theme build API — compile standalone themes or one selected family.
  *
- * `themeBuild(file, options, ctx)` is the programmatic surface behind
- * `astryx theme build`. It reads a theme file that uses defineTheme() and, via
+ * `themeBuild` and `themeBuildFamily` share the same loader, compiler,
+ * serializers, check, and writer. They read defineTheme() sources and, via
  * @astryxdesign/core's shared generator (the SINGLE source of truth so the
  * build emits the exact CSS the `<Theme>` runtime does), writes:
  * - A CSS file with token overrides and component styles
@@ -39,7 +39,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {isBuiltin} from 'node:module';
+import {fileURLToPath, pathToFileURL} from 'node:url';
+import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
@@ -58,6 +60,7 @@ import {
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
+import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -197,6 +200,52 @@ function normalizeForCompare(content) {
       return !t.startsWith('Command:');
     })
     .join('\n');
+}
+
+/** @param {Array<{dest: string, content: string}>} writes @param {string} cwd @returns {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+function staleBuildOutputs(writes, cwd) {
+  /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+  const stale = [];
+  for (const write of writes) {
+    const rel = path.relative(cwd, write.dest);
+    if (!fs.existsSync(write.dest)) {
+      stale.push({path: rel, reason: 'missing'});
+      continue;
+    }
+    const onDisk = fs.readFileSync(write.dest, 'utf8');
+    if (normalizeForCompare(onDisk) !== normalizeForCompare(write.content)) {
+      stale.push({path: rel, reason: 'outdated'});
+    }
+  }
+  return stale;
+}
+
+/** @param {Array<{dest: string, content: string}>} writes */
+function writeBuildOutputs(writes) {
+  if (writes.length === 0) return;
+  fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
+  /** @type {Array<{tmp: string, dest: string}>} */
+  const staged = [];
+  try {
+    for (const write of writes) {
+      const tmp = `${write.dest}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, write.content);
+      staged.push({tmp, dest: write.dest});
+    }
+    for (const stagedWrite of staged) {
+      fs.renameSync(stagedWrite.tmp, stagedWrite.dest);
+    }
+  } catch (error) {
+    for (const stagedWrite of staged) {
+      try {
+        fs.rmSync(stagedWrite.tmp, {force: true});
+      } catch {
+        // Best effort: the command still fails and never reports success.
+      }
+    }
+    const message = `Failed to write theme outputs: ${/** @type {Error} */ (error).message}`;
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_WRITE_FAILED);
+  }
 }
 
 /**
@@ -1136,7 +1185,85 @@ const THEME_MODULE_EXTENSIONS = [
   '.js',
   '.json',
 ];
-
+// prettier-ignore
+const registryGraphError = (/** @type {string} */ message) => new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+// prettier-ignore
+function parseRegistryModule(/** @type {string} */ source, /** @type {string} */ filePath) {
+  try { return parse(source, {sourceType: 'unambiguous', plugins: ['typescript', 'jsx', 'decorators-legacy', 'importAttributes']}); }
+  catch (error) { throw registryGraphError(`Cannot inspect registry module ${filePath}: ${error instanceof Error ? error.message : String(error)}`); }
+}
+// prettier-ignore
+function moduleDependencies(/** @type {string} */ source, /** @type {string} */ filePath, strict = true) {
+  const ast = parseRegistryModule(source, filePath);
+  /** @type {Array<{specifier: string, commonJs: boolean, imports: string[]}>} */ const found = [];
+  /** @param {any} node */ const literal = node => typeof node?.value === 'string' ? node.value : node?.type === 'TemplateLiteral' && node.expressions.length === 0 ? node.quasis[0]?.value?.cooked : null;
+  /** @param {any} node */ const visit = node => {
+    if (!node || typeof node !== 'object') return;
+    if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.importKind !== 'type' && typeof node.source?.value === 'string') {
+      const specifiers = /** @type {any[]} */ (node.specifiers);
+      const imports = node.type === 'ImportDeclaration' ? specifiers.filter(item => item.importKind !== 'type' && item.type !== 'ImportNamespaceSpecifier').map(item => item.type === 'ImportDefaultSpecifier' ? 'default' : item.imported?.name ?? item.imported?.value) : node.type === 'ExportNamedDeclaration' ? specifiers.filter(item => item.exportKind !== 'type' && item.type === 'ExportSpecifier').map(item => item.local?.name ?? item.local?.value) : [];
+      found.push({specifier: node.source.value, commonJs: false, imports});
+    }
+    const dependency = node.type === 'ImportExpression' ? node.source : node.type === 'CallExpression' && (node.callee?.type === 'Import' || node.callee?.name === 'require') ? node.arguments?.[0] : null;
+    if (dependency) { const specifier = literal(dependency); if (specifier == null) { if (strict) throw registryGraphError(`Registry module ${filePath} has a non-static dependency.`); } else found.push({specifier, commonJs: node.callee?.name === 'require', imports: []}); }
+    for (const value of Object.values(node)) if (Array.isArray(value)) value.forEach(child => child?.type && visit(child)); else if (value?.type) visit(value);
+  };
+  visit(ast); return found;
+}
+// prettier-ignore
+function resolveRegistryModule(/** @type {string} */ specifier, /** @type {string} */ parentPath, commonJs = false) {
+  if (isBuiltin(specifier) || specifier.startsWith('node:')) return null;
+  let resolved;
+  try {
+    const resolver = createJiti(parentPath, {extensions: THEME_MODULE_EXTENSIONS});
+    if (commonJs) resolved = resolver.resolve(specifier);
+    else if (specifier.startsWith('.')) resolved = fileURLToPath(new URL(specifier, pathToFileURL(parentPath)));
+    else if (path.isAbsolute(specifier)) resolved = specifier;
+    else { const url = resolver.esmResolve(specifier); resolved = url.startsWith('file:') ? fileURLToPath(url) : url; }
+  } catch (error) { throw registryGraphError(`Cannot resolve registry import "${specifier}" from ${parentPath}: ${error instanceof Error ? error.message : String(error)}`); }
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) throw registryGraphError(`Cannot resolve registry import "${specifier}" from ${parentPath}.`);
+  return fs.realpathSync(resolved);
+}
+/** @returns {boolean | null} */
+// prettier-ignore
+function hasNamedExport(/** @type {string} */ file, /** @type {string} */ name, seen = new Set()) {
+  const key = `${file}\0${name}`; if (seen.has(key)) return false; seen.add(key);
+  const ast = parseRegistryModule(fs.readFileSync(file, 'utf8'), file); let esm = false; let unknown = false;
+  for (const node of /** @type {any[]} */ (ast.program.body)) {
+    if (node.type === 'ExportDefaultDeclaration') { esm = true; if (name === 'default') return true; }
+    if (node.type === 'ExportNamedDeclaration') {
+      esm = true; const declaration = /** @type {any} */ (node.declaration);
+      if ((declaration?.id?.name === name) || (declaration?.type === 'VariableDeclaration' && declaration.declarations.some((/** @type {any} */ item) => item.id?.name === name))) return true;
+      for (const specifier of /** @type {any[]} */ (node.specifiers)) if ((specifier.exported?.name ?? specifier.exported?.value) === name) {
+        if (!node.source || specifier.type === 'ExportNamespaceSpecifier') return true;
+        const target = resolveRegistryModule(node.source.value, file); return target ? hasNamedExport(target, specifier.local?.name ?? specifier.local?.value, seen) : false;
+      }
+    }
+    if (node.type === 'ExportAllDeclaration') { esm = true; const target = resolveRegistryModule(node.source.value, file); const status = target ? hasNamedExport(target, name, seen) : false; if (status === true) return true; if (status === null) unknown = true; }
+  }
+  return esm ? unknown ? null : false : null;
+}
+// prettier-ignore
+async function validateRegistryGraphs(/** @type {Array<{specifier: string, exportName: string}>} */ registries, /** @type {string} */ aggregatePath) {
+  /** @type {Array<{specifier: string, parent: string, commonJs: boolean, imports: string[], root?: {exportName: string}}>} */ const pending = registries.map(root => ({specifier: root.specifier, parent: aggregatePath, commonJs: false, imports: [root.exportName], root}));
+  /** @type {Array<{file: string, exportName: string}>} */ const runtimeChecks = []; const seen = new Set();
+  while (pending.length > 0) {
+    const current = pending.pop(); if (!current) break; const {specifier, parent, commonJs, imports, root} = current;
+    if (/\.css(?:$|[?#])/i.test(specifier)) throw registryGraphError(`Theme family registry graph imports CSS: ${specifier}`);
+    const file = resolveRegistryModule(specifier, parent, commonJs); if (!file) continue;
+    if (/\.css$/i.test(file)) throw registryGraphError(`Theme family registry graph imports CSS: ${file}`);
+    const external = file.split(path.sep).includes('node_modules');
+    for (const name of imports) if (external) runtimeChecks.push({file, exportName: name}); else { const named = hasNamedExport(file, name); if (named === false) throw registryGraphError(`Family registry ${file} does not export "${name}".`); if (named === null) runtimeChecks.push({file, exportName: name}); }
+    if (root) runtimeChecks.push({file, exportName: root.exportName});
+    if (seen.has(file)) continue; seen.add(file);
+    if (/\.[cm]?[jt]sx?$/i.test(file)) for (const edge of moduleDependencies(fs.readFileSync(file, 'utf8'), file, !external)) pending.push({...edge, parent: file});
+  }
+  for (const [index, root] of runtimeChecks.entries()) {
+    let exports; try { exports = await import(`${pathToFileURL(root.file).href}?astryx-family-check=${Date.now()}-${index}`); }
+    catch (error) { throw registryGraphError(`Cannot import family registry ${root.file}: ${error instanceof Error ? error.message : String(error)}`); }
+    if (!(root.exportName in exports)) throw registryGraphError(`Family registry ${root.file} does not export "${root.exportName}".`);
+  }
+}
 /**
  * Errors that mean "the synchronous loader cannot evaluate this module", as
  * opposed to "this module is broken". Only the former may fall back to the
@@ -1185,13 +1312,16 @@ function isSyncLoaderLimitation(error) {
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function importThemeModule(filePath, interception) {
-  const jiti = createJiti(import.meta.url, {
-    moduleCache: false,
-    jsx: true,
-    extensions: THEME_MODULE_EXTENSIONS,
-    ...(interception ? {virtualModules: interception.modules} : {}),
-  });
+// prettier-ignore
+async function importThemeModule(filePath, interception, /** @type {any} */ loader = undefined) {
+  const jiti =
+    loader ??
+    createJiti(import.meta.url, {
+      moduleCache: false,
+      jsx: true,
+      extensions: THEME_MODULE_EXTENSIONS,
+      ...(interception ? {virtualModules: interception.modules} : {}),
+    });
 
   /** @type {any} */
   let mod;
@@ -1261,9 +1391,10 @@ function isThemeObject(value) {
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function extractThemeDefinition(filePath, interception) {
+// prettier-ignore
+async function extractThemeDefinition(filePath, interception, /** @type {any} */ loader = undefined) {
   try {
-    return await importThemeModule(filePath, interception);
+    return await importThemeModule(filePath, interception, loader);
   } catch (jitiError) {
     try {
       return {
@@ -1331,26 +1462,45 @@ function extractThemeDefinitionLegacy(filePath) {
  * @param {string} filePath
  * @returns {{exportName: string, importPath: string} | null}
  */
-function extractIconInfo(filePath) {
+function extractRegistryInfo(filePath, field = 'icons', familyMode = false) {
   const content = fs.readFileSync(filePath, 'utf8');
-
-  // Find the icons field in defineTheme
-  const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-  if (!iconsMatch) return null;
-
-  const varName = /** @type {string} */ (iconsMatch[1]);
-
-  // Find the import for that variable
-  const importRegex = new RegExp(
-    `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
+  if (!familyMode) {
+    const fieldMatch = content.match(
+      new RegExp(`${field}:\\s*([a-zA-Z_][a-zA-Z0-9_]*)`),
+    );
+    if (!fieldMatch) return null;
+    const varName = fieldMatch[1];
+    const match = content.match(
+      new RegExp(
+        `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
+      ),
+    );
+    return match ? {exportName: varName, importPath: match[1]} : null;
+  }
+  const defineIndex = content.indexOf('defineTheme(');
+  if (defineIndex < 0) return null;
+  const themeSource = content.slice(defineIndex);
+  const explicit = themeSource.match(
+    new RegExp(`${field}:\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=[,}])`),
   );
-  const importMatch = content.match(importRegex);
-  if (!importMatch) return null;
-
-  return {
-    exportName: varName,
-    importPath: /** @type {string} */ (importMatch[1]),
-  };
+  const shorthand = themeSource.match(
+    new RegExp(`[,{]\\s*(${field})\\s*(?=[,}])`),
+  );
+  const varName = explicit?.[1] ?? shorthand?.[1];
+  if (!varName) return null;
+  for (const match of content.matchAll(
+    /import\s*{([^}]*)}\s*from\s*['"]([^'"]+)['"]/g,
+  )) {
+    for (const specifier of match[1].split(',')) {
+      const [exportName, localName = exportName] = specifier
+        .trim()
+        .split(/\s+as\s+/);
+      if (localName === varName) {
+        return {exportName, importPath: match[2]};
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -1376,9 +1526,20 @@ function extractIconInfo(filePath) {
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
  * @param {string} [iconsSpecifier] - Overrides the scraped icon import specifier.
+ * @param {{themeBinding?: string, iconBinding?: string, iconsExpression?: string, indicatorsExpression?: string, artifactBaseName?: string, exportIcons?: boolean}} [moduleOptions]
  * @returns {string}
  */
-function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
+function generateBuiltModule(
+  themeDef,
+  iconInfo,
+  iconsSpecifier,
+  moduleOptions = {},
+) {
+  const themeBinding =
+    moduleOptions.themeBinding ?? `${toIdentifier(themeDef.name)}Theme`;
+  const iconBinding = moduleOptions.iconBinding ?? iconInfo?.exportName;
+  const artifactBaseName = moduleOptions.artifactBaseName ?? themeDef.name;
+  const exportIcons = moduleOptions.exportIcons ?? true;
   // Preserve the historical generated bytes when no override is supplied.
   // User-provided specifiers need string-literal encoding so quotes and
   // backslashes cannot produce invalid JavaScript.
@@ -1387,10 +1548,18 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
       ? `'${iconInfo?.importPath}'`
       : JSON.stringify(iconsSpecifier);
   const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} } from ${renderedSpecifier};\n`
+    ? `import { ${iconInfo.exportName}${iconBinding === iconInfo.exportName ? '' : ` as ${iconBinding}`} } from ${renderedSpecifier};\n`
     : '';
-  const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
-  const iconReExport = iconInfo ? `\nexport { ${iconInfo.exportName} };\n` : '';
+  const iconsExpression =
+    moduleOptions.iconsExpression ?? (iconInfo ? iconBinding : undefined);
+  const iconsField = iconsExpression ? `  icons: ${iconsExpression},` : '';
+  const indicatorsField = moduleOptions.indicatorsExpression
+    ? `\n  indicators: ${moduleOptions.indicatorsExpression},`
+    : '';
+  const iconReExport =
+    iconInfo && exportIcons
+      ? `\nexport { ${iconBinding}${iconBinding === iconInfo.exportName ? '' : ` as ${iconInfo.exportName}`} };\n`
+      : '';
 
   // Resolve token values — tuples become light-dark() strings
   /** @type {Record<string, unknown>} */
@@ -1453,14 +1622,14 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
- *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';
- *   import './${themeDef.name}.css';
+ *   import { ${themeBinding} } from './${artifactBaseName}';
+ *   import './${artifactBaseName}.css';
  */
-export const ${toIdentifier(themeDef.name)}Theme = {
+export const ${themeBinding} = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${inheritableFields}${iconsField}
+${inheritableFields}${iconsField}${indicatorsField}
 };
 ${iconReExport}`;
 }
@@ -1470,14 +1639,23 @@ ${iconReExport}`;
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
  * @param {string | null} variantsFileName
+ * @param {{themeBinding?: string, includeIconExport?: boolean, includeThemeImport?: boolean}} [typeOptions]
  * @returns {string}
  */
-function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
-  const iconType = iconInfo
-    ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
+function generateBuiltTypes(
+  themeDef,
+  iconInfo,
+  variantsFileName,
+  typeOptions = {},
+) {
+  const themeBinding =
+    typeOptions.themeBinding ?? `${toIdentifier(themeDef.name)}Theme`;
+  const iconType =
+    iconInfo && (typeOptions.includeIconExport ?? true)
+      ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
 `
-    : '';
+      : '';
   // Pull in the generated custom-variant augmentations so that importing the
   // theme's types also loads the module augmentations (otherwise the
   // `.variants.d.ts` is emitted but never referenced, and the custom variants
@@ -1486,9 +1664,11 @@ export declare const ${iconInfo.exportName}: IconRegistry;
     ? `/// <reference path="./${variantsFileName}" />
 `
     : '';
-  return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
-${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
-`;
+  const themeImport =
+    (typeOptions.includeThemeImport ?? true)
+      ? `import type { DefinedTheme } from '@astryxdesign/core/theme';\n`
+      : '';
+  return `${variantsRef}${themeImport}${iconType}export declare const ${themeBinding}: DefinedTheme;\n`;
 }
 
 // =============================================================================
@@ -1832,15 +2012,15 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
  *   specifier scraped from the theme source is emitted unchanged.
  * @param {{cwd?: string}} [ctx]
- * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>}
+ * @returns {Promise<any>}
  */
-export async function themeBuild(
+async function themeBuildInternal(
   file,
   options = {},
   {cwd = process.cwd()} = {},
@@ -1862,16 +2042,22 @@ export async function themeBuild(
   // resolving, so the raw input captured here is the only remaining witness
   // to what the author wrote. Costs no extra execution — the theme is loaded
   // once either way — and a core that CAN compile them needs none of it.
-  const interception = _generateAdaptationCSS
-    ? undefined
-    : interceptCore(_coreThemeModule, _coreRootModule);
+  const interception =
+    options.__familyInterception ??
+    (_generateAdaptationCSS
+      ? undefined
+      : interceptCore(_coreThemeModule, _coreRootModule));
 
   // Extract theme definition
   let themeDef;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
   try {
-    const loaded = await extractThemeDefinition(filePath, interception);
+    const loaded = await extractThemeDefinition(
+      filePath,
+      interception,
+      options.__familyLoader,
+    );
     themeDef = loaded.theme;
     loadDegradation = loaded.degraded;
   } catch (e) {
@@ -1988,6 +2174,7 @@ export async function themeBuild(
 
   let css;
   let resolvedTheme;
+  let cssPlan;
   {
     // jiti returns an already-resolved theme; a plain object literal (or the
     // legacy eval path) returns raw defineTheme input, which still has to go
@@ -2131,8 +2318,9 @@ export async function themeBuild(
     }
     // Media-surface rules come last so onDark/onLight win over matching
     // adaptations on the same resolved leaf.
+    let onMediaCss = '';
     if (_generateOnMediaCSS) {
-      const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+      onMediaCss = _generateOnMediaCSS(resolvedTheme);
       if (onMediaCss) {
         cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
       }
@@ -2161,6 +2349,15 @@ export async function themeBuild(
         `@layer astryx-base {\n${baseCss}\n}`,
       );
     }
+    cssPlan = {
+      base: baseCss,
+      prose,
+      component,
+      adaptation: adaptationCss.component,
+      adaptationProse: adaptationCss.prose,
+      onMedia: onMediaCss,
+      colorScheme: colorSchemeDecl.trimEnd(),
+    };
     css = cssParts.join('\n\n') + '\n';
   }
 
@@ -2204,7 +2401,14 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
-  const iconInfo = extractIconInfo(filePath);
+  const iconInfo = extractRegistryInfo(
+    filePath,
+    'icons',
+    options.__prepareFamily,
+  );
+  const indicatorInfo = options.__prepareFamily
+    ? extractRegistryInfo(filePath, 'indicators', true)
+    : null;
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -2237,10 +2441,33 @@ export async function themeBuild(
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
-  // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
-  // each into place. If any stage step fails we clean up partials and
-  // exit; if a rename fails mid-way we still have the originals (or
-  // nothing) — never a half-built output set.
+  const unloadedFonts = [
+    ...new Set([
+      ...collectUnloadedFonts(resolvedTheme),
+      ...adaptationRuleValues(resolvedTheme).flatMap(
+        (/** @type {any} */ value) => collectUnloadedFonts(value),
+      ),
+    ]),
+  ];
+
+  if (options.__prepareFamily) {
+    return {
+      filePath,
+      sourceRelative: sourceRelative.split(path.sep).join('/'),
+      theme: displayTheme,
+      sourceTheme: themeDef,
+      iconInfo,
+      indicatorInfo,
+      variantDecl,
+      css: cssPlan,
+      versions,
+      tokenCount,
+      componentCount,
+      warnings: warningMessages,
+      unloadedFonts,
+    };
+  }
+
   const writes = [
     {dest: outPath, content: cssContent},
     {dest: jsPath, content: jsContent},
@@ -2255,19 +2482,7 @@ export async function themeBuild(
   // volatile @generated `Command:` line is ignored. Returns a
   // receipt listing stale/missing outputs so callers (CI) can fail on drift.
   if (options.check) {
-    /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
-    const stale = [];
-    for (const w of writes) {
-      const rel = path.relative(cwd, w.dest);
-      if (!fs.existsSync(w.dest)) {
-        stale.push({path: rel, reason: 'missing'});
-        continue;
-      }
-      const onDisk = fs.readFileSync(w.dest, 'utf8');
-      if (normalizeForCompare(onDisk) !== normalizeForCompare(w.content)) {
-        stale.push({path: rel, reason: 'outdated'});
-      }
-    }
+    const stale = staleBuildOutputs(writes, cwd);
     const upToDate = stale.length === 0;
     if (upToDate) {
       logger.log(`\n✓ Theme outputs are up to date with ${sourceRelative}.`);
@@ -2293,30 +2508,7 @@ export async function themeBuild(
     };
   }
 
-  fs.mkdirSync(outDir, {recursive: true});
-  /** @type {Array<{tmp: string, dest: string}>} */
-  const staged = [];
-  try {
-    for (const w of writes) {
-      const tmp = `${w.dest}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, w.content);
-      staged.push({tmp, dest: w.dest});
-    }
-    for (const s of staged) {
-      fs.renameSync(s.tmp, s.dest);
-    }
-  } catch (err) {
-    // Roll back any temp files we managed to create.
-    for (const s of staged) {
-      try {
-        fs.rmSync(s.tmp, {force: true});
-      } catch {
-        /* best-effort */
-      }
-    }
-    const msg = `Failed to write theme outputs: ${/** @type {Error} */ (err).message}`;
-    throw new AstryxError(msg, undefined, ERROR_CODES.ERR_WRITE_FAILED);
-  }
+  writeBuildOutputs(writes);
 
   logger.log(`\n✓ ${path.relative(cwd, outPath)}`);
   logger.log(
@@ -2369,14 +2561,6 @@ Or with a <link> tag:
   // permanently in violation of its own "compiles with no warnings" guard).
   // Adaptation rules are resolved theme writes in their own right, so a family
   // named only inside one needs the same notice as one named at the root.
-  const unloadedFonts = [
-    ...new Set([
-      ...collectUnloadedFonts(resolvedTheme),
-      ...adaptationRuleValues(resolvedTheme).flatMap(
-        (/** @type {any} */ value) => collectUnloadedFonts(value),
-      ),
-    ]),
-  ];
   for (const family of unloadedFonts) {
     const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);
@@ -2403,6 +2587,289 @@ Or with a <link> tag:
       },
       warnings: warningMessages,
       notices: noticeMessages,
+    },
+  };
+}
+
+/** @param {string} file @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] @param {{cwd?: string}} [ctx] @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>} */
+export async function themeBuild(file, options = {}, ctx = {}) {
+  return /** @type {any} */ (themeBuildInternal(file, options, ctx));
+}
+/** @param {string} name */
+// prettier-ignore
+function familyThemeBinding(name) {
+  const words = name.split(/[^A-Za-z0-9_$]+/).filter(Boolean);
+  let identifier = words.map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)).join('');
+  if (!/^[A-Za-z_$]/.test(identifier)) identifier = `_${identifier}`;
+  return `${identifier || '_'}Theme`;
+}
+/** @param {any[]} members */
+// prettier-ignore
+function allocateFamilyBindings(members) {
+  const used = new Map();
+  return new Map(members.map(member => { const base = familyThemeBinding(member.theme.name), count = used.get(base) ?? 0; used.set(base, count + 1); return [member.theme.name, count === 0 ? base : `${base}${count + 1}`]; }));
+}
+/** Rebase a scraped relative registry import to the aggregate module. @param {any} info @param {string} filePath @param {string} outDir @param {string | undefined} override */
+// prettier-ignore
+function familyRegistryInput(info, filePath, outDir, override) {
+  if (!info || override !== undefined) return {info, specifier: override};
+  const source = info.importPath;
+  if (!source.startsWith('./') && !source.startsWith('../')) return {info, specifier: undefined};
+  const absolute = path.resolve(path.dirname(filePath), source);
+  let specifier = path.relative(outDir, absolute).split(path.sep).join('/');
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) specifier = `./${specifier}`;
+  return {info, specifier};
+}
+/** @param {string[]} files @param {{familyKey: string, check?: boolean, iconsSpecifier?: string}} options @param {{cwd?: string}} [ctx] */
+export async function themeBuildFamily(
+  files,
+  options,
+  {cwd = process.cwd()} = {},
+) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options?.familyKey ?? '')) {
+    throw new AstryxError(
+      'Family key must be an exact lower-kebab filename stem (for example, ocean-family).',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  try {
+    sanitizeName(options.familyKey, {label: 'family key'});
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Invalid family key.';
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+  }
+  const familyInterception = _generateAdaptationCSS
+    ? undefined
+    : interceptCore(_coreThemeModule, _coreRootModule);
+  // prettier-ignore
+  const familyLoader = createJiti(import.meta.url, {moduleCache: true, jsx: true, extensions: THEME_MODULE_EXTENSIONS, ...(familyInterception ? {virtualModules: familyInterception.modules} : {})});
+  /** @type {any[]} */
+  const prepared = [];
+  for (const file of files) {
+    // prettier-ignore
+    const member = await themeBuildInternal(file, {iconsSpecifier: options.iconsSpecifier, __prepareFamily: true, __familyLoader: familyLoader, __familyInterception: familyInterception}, {cwd});
+    if (!member || member.type) {
+      throw new AstryxError(
+        `Theme family member "${file}" did not produce a complete build plan.`,
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+    prepared.push(member);
+  }
+  let members;
+  try {
+    members = resolveThemeFamily(prepared);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Invalid selected theme family.';
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+  }
+  for (const member of members) {
+    for (const [field, info] of [
+      ['icons', member.iconInfo],
+      ['indicators', member.indicatorInfo],
+    ]) {
+      const value = member.theme[field];
+      const inherited = member.theme.__extends?.[field];
+      if (
+        value &&
+        Object.keys(value).length > 0 &&
+        value !== inherited &&
+        !info
+      ) {
+        throw new AstryxError(
+          `Theme "${member.theme.name}" must supply ${field} through a named import for family output.`,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
+    }
+  }
+  const baseName = options.familyKey;
+  if (members.some(member => member.theme.name === baseName)) {
+    throw new AstryxError(
+      `Family key "${baseName}" collides with a selected theme's standalone outputs. Choose a distinct filename stem.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const root = members[0];
+  const outDir = path.dirname(root.filePath);
+  const outPath = path.join(outDir, `${baseName}.css`);
+  const jsPath = path.join(outDir, `${baseName}.js`);
+  const dtsPath = path.join(outDir, `${baseName}.d.ts`);
+  const sources = new Set(
+    members.flatMap(member =>
+      [path.resolve(member.filePath), fs.realpathSync(member.filePath)].map(
+        value => value.toLowerCase(),
+      ),
+    ),
+  );
+  const collision = [outPath, jsPath, dtsPath].find(output => {
+    const candidates = [path.resolve(output)];
+    if (fs.existsSync(output)) candidates.push(fs.realpathSync(output));
+    return candidates.some(value => sources.has(value.toLowerCase()));
+  });
+  if (collision) {
+    throw new AstryxError(
+      `Family output ${path.relative(cwd, collision)} collides with a selected source file.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const sourceRelative = members
+    .map(member => member.sourceRelative)
+    .join(', ');
+  const buildCommand = `${getCliInvocation()} theme build --family ${members
+    .map(member => member.sourceRelative)
+    .join(' ')} --family-key ${baseName}`;
+  const bindings = allocateFamilyBindings(members);
+  const css = generateFamilyCSS(members);
+  /** @type {Array<{specifier: string, exportName: string}>} */
+  const registryImports = [];
+  const js = members
+    .map(member => {
+      const themeBinding = bindings.get(member.theme.name);
+      const parentBinding = member.parentName
+        ? bindings.get(member.parentName)
+        : null;
+      // prettier-ignore
+      const icon = familyRegistryInput(member.iconInfo, member.filePath, outDir, options.iconsSpecifier);
+      // prettier-ignore
+      const indicator = familyRegistryInput(member.indicatorInfo, member.filePath, outDir, undefined);
+      // prettier-ignore
+      for (const registry of [icon, indicator]) if (registry.info) registryImports.push({specifier: registry.specifier ?? registry.info.importPath, exportName: registry.info.exportName});
+      const ownIcons = icon.info ? `${themeBinding}Icons` : null;
+      const inheritedIcons = parentBinding ? `${parentBinding}.icons` : null;
+      const ownIndicators = indicator.info ? `${themeBinding}Indicators` : null;
+      const inheritedIndicators = parentBinding
+        ? `${parentBinding}.indicators`
+        : null;
+      /** @param {string | null} own @param {string | null} inherited */
+      const expression = (own, inherited) =>
+        own && inherited
+          ? `{...${inherited}, ...${own}}`
+          : (own ?? inherited ?? undefined);
+      const indicatorImport = indicator.info
+        ? `import { ${indicator.info.exportName} as ${ownIndicators} } from ${JSON.stringify(indicator.specifier ?? indicator.info.importPath)};\n`
+        : '';
+      return (
+        indicatorImport +
+        generateBuiltModule(member.theme, icon.info, icon.specifier, {
+          themeBinding,
+          iconBinding: ownIcons ?? undefined,
+          iconsExpression: expression(ownIcons, inheritedIcons),
+          indicatorsExpression: expression(ownIndicators, inheritedIndicators),
+          artifactBaseName: baseName,
+          exportIcons: false,
+        })
+      );
+    })
+    .join('\n');
+  await validateRegistryGraphs(registryImports, jsPath);
+  const declarations = members
+    .map((member, index) =>
+      generateBuiltTypes(member.theme, member.iconInfo, null, {
+        themeBinding: bindings.get(member.theme.name),
+        includeIconExport: false,
+        includeThemeImport: index === 0,
+      }),
+    )
+    .join('');
+  const augmentations = [
+    ...new Set(members.map(member => member.variantDecl).filter(Boolean)),
+  ].join('\n');
+  const writes = [
+    {
+      dest: outPath,
+      content:
+        generatedHeader(sourceRelative, 'css', buildCommand, root.versions) +
+        css,
+    },
+    {
+      dest: jsPath,
+      content:
+        generatedHeader(sourceRelative, 'js', buildCommand, root.versions) + js,
+    },
+    {
+      dest: dtsPath,
+      content:
+        generatedHeader(sourceRelative, 'ts', buildCommand, root.versions) +
+        declarations +
+        (augmentations ? `\n${augmentations}` : ''),
+    },
+  ];
+  const outputs = {
+    css: path.relative(cwd, outPath),
+    js: path.relative(cwd, jsPath),
+    dts: path.relative(cwd, dtsPath),
+  };
+  if (options.check) {
+    const stale = staleBuildOutputs(writes, cwd);
+    const upToDate = stale.length === 0;
+    if (upToDate) {
+      logger.log(
+        `\n✓ Theme family outputs are up to date with ${sourceRelative}.`,
+      );
+    } else {
+      logger.error(
+        `\n✗ ${stale.length} theme family output(s) are out of date:`,
+      );
+      for (const entry of stale) {
+        logger.error(
+          `  ${entry.reason === 'missing' ? 'missing' : 'stale'}: ${entry.path}`,
+        );
+      }
+      logger.error(`\n  Rebuild with: ${buildCommand}`);
+    }
+    return {
+      type: 'theme.build.check',
+      data: {
+        name: baseName,
+        upToDate,
+        stale,
+        checked: writes.map(write => path.relative(cwd, write.dest)),
+      },
+    };
+  }
+  writeBuildOutputs(writes);
+  for (const output of Object.values(outputs)) logger.log(`✓ ${output}`);
+  const themeBindings = members.map(member => bindings.get(member.theme.name));
+  const relOutDir = path.relative(cwd, outDir) || '.';
+  const jsImport = importSpecifier(relOutDir, baseName);
+  const cssImport = `${jsImport}.css`;
+  logger.log(`
+Load the family CSS once, then select any member by theme identity:
+  import { ${themeBindings.join(', ')} } from '${jsImport}';
+  import '${cssImport}';
+Or load the same stylesheet natively:
+  <link rel="stylesheet" href="${cssImport}" />
+`);
+  const warnings = [...new Set(members.flatMap(member => member.warnings))];
+  const unloadedFonts = [
+    ...new Set(members.flatMap(member => member.unloadedFonts)),
+  ];
+  const notices = unloadedFonts.map(
+    family =>
+      `Font "${family}" is named by this theme family but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`,
+  );
+  for (const notice of notices) logger.log(`  note: ${notice}`);
+  return {
+    type: 'theme.build',
+    data: {
+      name: baseName,
+      tokenCount: members.reduce((sum, member) => sum + member.tokenCount, 0),
+      componentCount: members.reduce(
+        (sum, member) => sum + member.componentCount,
+        0,
+      ),
+      sizeKB: parseFloat((Buffer.byteLength(css) / 1024).toFixed(1)),
+      outputs,
+      warnings,
+      notices,
     },
   };
 }

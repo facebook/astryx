@@ -14,19 +14,32 @@ export const doc = {
   name: 'theme build',
   displayName: 'astryx theme build',
   namespace: 'cli',
-  summary: 'Compile one or more defineTheme files to CSS + JS',
+  summary: 'Compile standalone themes or one keyed theme family',
   description:
-    'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
-    'files and compiles them in one process, in argument order, stopping at the first ' +
-    'failure; an app with several themes does not need a shell loop. With --check it writes ' +
-    'nothing and instead reports whether the committed outputs have drifted from source. ' +
-    'When a separate build step emits the icon registry, --icons-specifier declares the ' +
-    'fully specified module path that the generated JS should import.',
+    'Compiles defineTheme() sources through the same theme pipeline into scoped CSS, ' +
+    'standard ESM, and type declarations. Ordinary mode writes one complete set per ' +
+    'theme. --family combines one selected extension tree into the three files named by ' +
+    'the required --family-key, ready for one CSS load and identity-only switching. ' +
+    'With --check it writes nothing and reports source drift. --icons-specifier keeps ' +
+    'its existing generated-module behavior.',
   fn: 'themeBuild',
   args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
-    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path (single theme only)'},
+    {
+      flag: '--family',
+      description:
+        'Build the selected extension family into one keyed CSS, JS, and declaration set',
+    },
+    {
+      flag: '--family-key <key>',
+      description:
+        'Lower-kebab filename stem required with --family; must differ from every member name',
+    },
+    {
+      flag: '-o, --out <path>',
+      param: 'options.out',
+      description: 'Output CSS file path (single theme only)',
+    },
     {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
@@ -35,7 +48,8 @@ export const doc = {
     },
     {
       flag: '-w, --watch',
-      description: 'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
+      description:
+        'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
     },
     {
       flag: '-c, --check',
@@ -48,6 +62,10 @@ export const doc = {
     {
       label: 'Build to a CSS file',
       cli: 'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
+    },
+    {
+      label: 'Build one related family for attribute-only switching',
+      cli: 'astryx theme build --family ./themes/ocean.mjs ./themes/ocean-calm.mjs --family-key ocean-family',
     },
     {
       label: 'Build every theme in a directory',

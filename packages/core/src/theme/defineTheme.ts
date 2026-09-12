@@ -430,6 +430,8 @@ export interface DefinedTheme {
   icons?: ThemeIconOverrides;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
+  /** The exact resolved base retained for build-time family graph discovery. @internal */
+  __extends?: DefinedTheme;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -612,6 +614,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
 
   const theme: ResolvedDefinedTheme = {
     name: input.name,
+    __extends: base,
     tokens,
     ...(localTokenContract
       ? {
