@@ -16,7 +16,7 @@ import {describe, expect, it} from 'vitest';
 const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPTS_DIR, '../..');
 const SCRIPT = path.join(SCRIPTS_DIR, 'accessibility-audit.js');
-let nextPort = 64300;
+let nextPort = 40000 + (process.pid % 10000);
 
 const BROWSER_MOCK = String.raw`
 const Module = require('node:module');
@@ -88,7 +88,7 @@ Module._load = function(request, parent, isMain) {
 };
 `;
 
-function runFixture(scenario, indexContent) {
+function runFixture(scenario, indexContent, components = 'core/Button') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
   const output = path.join(dir, 'report.json');
@@ -108,7 +108,7 @@ function runFixture(scenario, indexContent) {
         '--output',
         output,
         '--components',
-        'core/Button',
+        components,
         '--port',
         String(port),
       ],
@@ -144,12 +144,42 @@ const VALID_INDEX = JSON.stringify({
   },
 });
 
+const PATTERN_INDEX = JSON.stringify({
+  entries: {
+    'a11y-button-pattern--clickable-card-disabled': {
+      id: 'a11y-button-pattern--clickable-card-disabled',
+      title: 'a11y/Button pattern',
+      name: 'Clickable Card Disabled',
+      type: 'story',
+    },
+  },
+});
+
 describe.sequential('accessibility-audit CLI readiness', () => {
   it('waits through a delayed valid Storybook root and writes audited evidence', () => {
     const result = runFixture('delayed', VALID_INDEX);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('✓ Audited: Button / Fixture');
     expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
+  it('routes a11y contract fixtures to canonical owners and legacy aliases', () => {
+    const result = runFixture(
+      'delayed',
+      PATTERN_INDEX,
+      'core/ClickableCard',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.ownerStoryRoutes).toEqual({
+      'core/ClickableCard': [
+        'a11y-button-pattern--clickable-card-disabled',
+      ],
+    });
+    expect(result.report.legacyBaselineAliases).toEqual({
+      'ClickableCard::Disabled': [
+        'core/ClickableCard::a11y-button-pattern--clickable-card-disabled',
+      ],
+    });
   });
 
   it('fails a redirect without writing a report', () => {

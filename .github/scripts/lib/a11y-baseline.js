@@ -159,22 +159,48 @@ function baselineKeySet(baseline) {
   );
 }
 
+function canonicalPackage(canonicalStoryKey) {
+  const owner = canonicalStoryKey.split('::')[0];
+  return owner.includes('/') ? owner.split('/')[0] : null;
+}
+
+function hasOnePackage(owners) {
+  const packages = new Set(owners.map(canonicalPackage).filter(Boolean));
+  return packages.size === 1;
+}
+
 function auditedScope(report) {
   if (Array.isArray(report?.auditedStories)) {
     const canonicalStoryKeys = new Set(
       report.auditedStories.map(entry => storyKey(entry.owner, entry.storyId)),
     );
-    const legacyStoryKeys = new Set(
-      Object.entries(report.legacyStoryOwners || {})
-        .filter(
-          ([, owners]) =>
-            Array.isArray(owners) &&
-            owners.length > 0 &&
-            owners.every(ownerStory => canonicalStoryKeys.has(ownerStory)),
-        )
-        .map(([legacyStory]) => legacyStory),
-    );
-    return {canonicalStoryKeys, legacyStoryKeys, components: null};
+    const exactLegacyStoryKeys = Object.entries(report.legacyStoryOwners || {})
+      .filter(
+        ([, owners]) =>
+          Array.isArray(owners) &&
+          owners.length === 1 &&
+          canonicalStoryKeys.has(owners[0]),
+      )
+      .map(([legacyStory]) => legacyStory);
+    const migratedLegacyStoryKeys = Object.entries(
+      report.legacyBaselineAliases || {},
+    )
+      .filter(
+        ([, owners]) =>
+          Array.isArray(owners) &&
+          owners.length > 0 &&
+          hasOnePackage(owners) &&
+          owners.every(ownerStory => canonicalStoryKeys.has(ownerStory)),
+      )
+      .map(([legacyStory]) => legacyStory);
+    return {
+      canonicalStoryKeys,
+      legacyStoryKeys: new Set([
+        ...exactLegacyStoryKeys,
+        ...migratedLegacyStoryKeys,
+      ]),
+      components: null,
+    };
   }
   if (Array.isArray(report?.auditedStoryKeys)) {
     return {
@@ -201,18 +227,38 @@ function baselineKeyWasAudited(key, scope) {
   return scope.components.has(key.split('::')[0]);
 }
 
-function safeLegacyAlias(occurrence, report) {
-  if (!occurrence.legacyKey || occurrence.legacyKey === occurrence.key) {
-    return occurrence.legacyKey;
+function safeLegacyAliases(occurrence, report) {
+  const aliases = new Set();
+  if (!occurrence.legacyKey) return aliases;
+  if (occurrence.legacyKey === occurrence.key) {
+    aliases.add(occurrence.legacyKey);
+    return aliases;
   }
+
   const legacyStory = occurrence.legacyKey.split('::').slice(0, 2).join('::');
   const canonicalStory = occurrence.key.split('::').slice(0, 2).join('::');
-  const owners = report?.legacyStoryOwners?.[legacyStory];
-  return Array.isArray(owners) &&
-    owners.length === 1 &&
-    owners[0] === canonicalStory
-    ? occurrence.legacyKey
-    : null;
+  const exactOwners = report?.legacyStoryOwners?.[legacyStory];
+  if (
+    Array.isArray(exactOwners) &&
+    exactOwners.length === 1 &&
+    exactOwners[0] === canonicalStory
+  ) {
+    aliases.add(occurrence.legacyKey);
+  }
+
+  for (const [migratedLegacyStory, owners] of Object.entries(
+    report?.legacyBaselineAliases || {},
+  )) {
+    if (
+      Array.isArray(owners) &&
+      owners.includes(canonicalStory) &&
+      hasOnePackage(owners) &&
+      canonicalPackage(canonicalStory) === canonicalPackage(owners[0])
+    ) {
+      aliases.add(`${migratedLegacyStory}::${occurrence.ruleId}`);
+    }
+  }
+  return aliases;
 }
 
 /**
@@ -276,9 +322,12 @@ function diffAgainstBaseline(report, baseline) {
   const newViolations = [];
   for (const occurrence of current) {
     currentKeys.add(occurrence.key);
-    const legacyAlias = safeLegacyAlias(occurrence, report);
-    if (legacyAlias) currentKeys.add(legacyAlias);
-    if (!known.has(occurrence.key) && !known.has(legacyAlias)) {
+    const legacyAliases = safeLegacyAliases(occurrence, report);
+    for (const alias of legacyAliases) currentKeys.add(alias);
+    if (
+      !known.has(occurrence.key) &&
+      ![...legacyAliases].some(alias => known.has(alias))
+    ) {
       newViolations.push(occurrence);
     }
   }

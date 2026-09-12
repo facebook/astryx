@@ -78,6 +78,7 @@ function makeRoutedReport({
   story,
   violations = [],
   legacyStoryOwners,
+  legacyBaselineAliases,
 }) {
   const canonicalStoryKey = `${owner}::${storyId}`;
   const legacyStoryKey = `${component}::${story}`;
@@ -89,6 +90,7 @@ function makeRoutedReport({
     legacyStoryOwners: legacyStoryOwners ?? {
       [legacyStoryKey]: [canonicalStoryKey],
     },
+    legacyBaselineAliases: legacyBaselineAliases ?? {},
     components: {
       [component]: {
         storiesAudited: 1,
@@ -97,6 +99,42 @@ function makeRoutedReport({
           violations.length > 0 ? [{story, storyId, violations}] : [],
       },
     },
+    summary: {},
+  };
+}
+
+function makeMultiRoutedReport(rows, {legacyBaselineAliases = {}} = {}) {
+  const components = {};
+  const auditedStories = [];
+  const legacyStoryOwners = {};
+  for (const row of rows) {
+    const canonicalStoryKey = `${row.owner}::${row.storyId}`;
+    const legacyStoryKey = `${row.component}::${row.story}`;
+    auditedStories.push({
+      owner: row.owner,
+      storyId: row.storyId,
+      legacyStoryKey,
+    });
+    legacyStoryOwners[legacyStoryKey] ??= [];
+    legacyStoryOwners[legacyStoryKey].push(canonicalStoryKey);
+    components[row.component] ??= {storiesAudited: 0, violations: [], storyDetails: []};
+    components[row.component].storiesAudited += 1;
+    if (row.ruleId) {
+      components[row.component].storyDetails.push({
+        story: row.story,
+        storyId: row.storyId,
+        violations: [axeViolation(row.ruleId)],
+      });
+    }
+  }
+  return {
+    auditedStories,
+    auditedStoryKeys: auditedStories.map(({owner, storyId}) =>
+      `${owner}::${storyId}`,
+    ),
+    legacyStoryOwners,
+    legacyBaselineAliases,
+    components,
     summary: {},
   };
 }
@@ -295,6 +333,125 @@ describe('diffAgainstBaseline', () => {
     ]);
     expect(collisionDiff.unchecked).toEqual([legacyKey]);
   });
+
+  it('keeps Core and Charts Tooltip distinct in a full audit', () => {
+    const rows = [
+      {
+        owner: 'core/Tooltip',
+        storyId: 'core-tooltip--default',
+        component: 'Tooltip',
+        story: 'Default',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'charts/ChartTooltip',
+        storyId: 'charts-chrome-tooltip--default',
+        component: 'Tooltip',
+        story: 'Default',
+        ruleId: 'color-contrast',
+      },
+    ];
+    const report = makeMultiRoutedReport(rows);
+    const legacyKey = 'Tooltip::Default::color-contrast';
+    const diff = diffAgainstBaseline(report, {
+      version: 1,
+      entries: [{key: legacyKey}],
+    });
+
+    expect(diff.newViolations.map(violation => violation.key).sort()).toEqual(
+      rows
+        .map(row => `${row.owner}::${row.storyId}::${row.ruleId}`)
+        .sort(),
+    );
+    expect(diff.resolved).toEqual([]);
+    expect(diff.unchecked).toEqual([legacyKey]);
+  });
+
+  it('migrates proven same-package contract fixtures without new or resolved churn', () => {
+    const rows = [
+      {
+        owner: 'core/ClickableCard',
+        storyId: 'a11y-button-pattern--clickable-card-disabled',
+        component: 'Button pattern',
+        story: 'Clickable Card Disabled',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/CheckboxListItem',
+        storyId:
+          'a11y-checkbox-pattern--list-item-group-disabled-with-message',
+        component: 'Checkbox pattern',
+        story: 'List Item Group Disabled With Message',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/SelectableCard',
+        storyId: 'a11y-checkbox-pattern--card-disabled',
+        component: 'Checkbox pattern',
+        story: 'Card Disabled',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/RadioList',
+        storyId:
+          'a11y-radio-group-pattern--radio-list-group-disabled-with-message',
+        component: 'Radio group pattern',
+        story: 'Radio List Group Disabled With Message',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/RadioListItem',
+        storyId:
+          'a11y-radio-group-pattern--radio-list-option-group-disabled',
+        component: 'Radio group pattern',
+        story: 'Radio List Option Group Disabled',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/RadioListItem',
+        storyId:
+          'a11y-radio-group-pattern--radio-list-option-disabled-with-message',
+        component: 'Radio group pattern',
+        story: 'Radio List Option Disabled With Message',
+        ruleId: 'color-contrast',
+      },
+    ];
+    const legacyBaselineAliases = {
+      'ClickableCard::Disabled': [
+        'core/ClickableCard::a11y-button-pattern--clickable-card-disabled',
+      ],
+      'CheckboxList::Disabled With Message': [
+        'core/CheckboxListItem::a11y-checkbox-pattern--list-item-group-disabled-with-message',
+      ],
+      'SelectableCard::Disabled': [
+        'core/SelectableCard::a11y-checkbox-pattern--card-disabled',
+      ],
+      'RadioList::Disabled': [
+        'core/RadioListItem::a11y-radio-group-pattern--radio-list-option-group-disabled',
+      ],
+      'RadioList::Disabled With Message': [
+        'core/RadioList::a11y-radio-group-pattern--radio-list-group-disabled-with-message',
+        'core/RadioListItem::a11y-radio-group-pattern--radio-list-option-disabled-with-message',
+      ],
+    };
+    const report = makeMultiRoutedReport(rows, {legacyBaselineAliases});
+    const legacyKeys = Object.keys(legacyBaselineAliases).map(key => ({
+      key: `${key}::color-contrast`,
+    }));
+    const diff = diffAgainstBaseline(report, {version: 1, entries: legacyKeys});
+
+    expect(diff.newViolations).toEqual([]);
+    expect(diff.resolved).toEqual([]);
+    expect(diff.matched).toBe(6);
+    const migrated = buildBaseline(report, {
+      existing: {version: 1, entries: legacyKeys},
+    }).entries.map(entry => entry.key);
+    expect(migrated).toEqual(
+      rows
+        .map(row => `${row.owner}::${row.storyId}::${row.ruleId}`)
+        .sort(),
+    );
+  });
 });
 
 describe('buildBaseline', () => {
@@ -361,6 +518,82 @@ describe('buildBaseline', () => {
     );
     expect(baseline.entries.map(entry => entry.key)).toContain(
       'RichTextEditor::Default::aria-input-field-name',
+    );
+  });
+
+  it('migrates a full five-package baseline without false churn', () => {
+    const rows = [
+      {
+        owner: 'core/Button',
+        storyId: 'core-button--default',
+        component: 'Button',
+        story: 'Default',
+        ruleId: 'button-name',
+      },
+      {
+        owner: 'lab/CodeEditor',
+        storyId: 'lab-codeeditor--python-editor',
+        component: 'CodeEditor',
+        story: 'Python Editor',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'charts/ChartLegend',
+        storyId: 'charts-chrome-legend--default',
+        component: 'Legend',
+        story: 'Default',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'richtext/RichTextEditorToolbar',
+        storyId: 'lab-richtexteditor--with-toolbar',
+        component: 'RichTextEditor',
+        story: 'With Toolbar',
+        ruleId: 'aria-input-field-name',
+      },
+      {
+        owner: 'vega/VegaChart',
+        storyId: 'vega-vegachart--default',
+        component: 'VegaChart',
+        story: 'Default',
+        ruleId: 'color-contrast',
+      },
+      {
+        owner: 'core/Card',
+        storyId: 'core-card--resolved',
+        component: 'Card',
+        story: 'Resolved',
+      },
+    ];
+    const report = makeMultiRoutedReport(rows);
+    const unchangedLegacyKeys = rows
+      .filter(row => row.ruleId)
+      .map(row => `${row.component}::${row.story}::${row.ruleId}`);
+    const resolvedKey = 'Card::Resolved::color-contrast';
+    const uncheckedKey = 'Dialog::Unaudited::aria-dialog-name';
+    const existing = {
+      version: 1,
+      entries: [...unchangedLegacyKeys, resolvedKey, uncheckedKey].map(key => ({
+        key,
+      })),
+    };
+
+    const diff = diffAgainstBaseline(report, existing);
+    expect(diff.newViolations).toEqual([]);
+    expect(diff.resolved).toEqual([resolvedKey]);
+    expect(diff.unchecked).toEqual([uncheckedKey]);
+    expect(diff.matched).toBe(5);
+
+    const migrated = buildBaseline(report, {existing}).entries.map(
+      entry => entry.key,
+    );
+    expect(migrated).toEqual(
+      [
+        ...rows
+          .filter(row => row.ruleId)
+          .map(row => `${row.owner}::${row.storyId}::${row.ruleId}`),
+        uncheckedKey,
+      ].sort(),
     );
   });
 

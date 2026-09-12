@@ -35,6 +35,10 @@ const {
   storyKey,
 } = require('./lib/a11y-baseline');
 const {waitForStoryReadiness} = require('./lib/a11y-story-readiness');
+const {
+  legacyBaselineStoryKeys,
+  ownerForA11yStory,
+} = require('./lib/a11y-story-identity');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -188,7 +192,10 @@ async function routedStoryIds(stories, componentFilters) {
       })),
     targets,
     publicComponentsByPackage,
-  });
+  }).map(route => ({
+    ...route,
+    component: ownerForA11yStory(route.id) ?? route.component,
+  }));
   const selectedRoutes = componentRoutesForFilters(routes, componentFilters);
   const ownerStoryRoutes = {};
   for (const route of selectedRoutes) {
@@ -433,12 +440,27 @@ async function runAccessibilityAudit() {
     }
   }
 
+  const legacyBaselineAliases = {};
+  for (const auditedStory of auditedStories) {
+    for (const legacyStory of legacyBaselineStoryKeys(auditedStory.storyId)) {
+      legacyBaselineAliases[legacyStory] ??= [];
+      const canonicalStory = storyKey(
+        auditedStory.owner,
+        auditedStory.storyId,
+      );
+      if (!legacyBaselineAliases[legacyStory].includes(canonicalStory)) {
+        legacyBaselineAliases[legacyStory].push(canonicalStory);
+      }
+    }
+  }
+
   const report = {
     ownerStoryRoutes: routed.ownerStoryRoutes,
     ownerStoryKeys,
     auditedStories,
     auditedStoryKeys,
     legacyStoryOwners,
+    legacyBaselineAliases,
     components: componentResults,
     summary: {
       componentsAudited: Object.keys(componentResults).length,
