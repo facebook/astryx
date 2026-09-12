@@ -13,12 +13,17 @@ packages:
   # own exact dependencies and lockfiles and are copied to sandboxes before use.
   - '!internal/vibe-tests/fixtures/**'
 
-# Migrated from .npmrc: pnpm 11 reads these hoisting/linker settings from
-# pnpm-workspace.yaml, not .npmrc. Keeps the flat, Yarn-1-style node_modules
-# layout that build tools (and some phantom test imports) rely on.
-nodeLinker: hoisted
-shamefullyHoist: true
+# Use pnpm's isolated linker so workspaces cannot rely on dependencies exposed
+# only by sibling hoisting. Shared repository build and test tools remain root
+# development dependencies, and package content stays in pnpm's shared store.
+nodeLinker: isolated
 linkWorkspacePackages: true
+
+# Node tests mock the built Core package by its public specifier. Keep that one
+# workspace package at the root without flattening the rest of the dependency
+# graph or declaring Core as an app dependency.
+publicHoistPattern:
+  - '@astryxdesign/core'
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:

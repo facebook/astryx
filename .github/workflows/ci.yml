@@ -273,6 +273,10 @@ jobs:
     needs: [check-scope]
     if: ${{ always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     permissions:
       contents: read
     steps:
@@ -292,7 +296,7 @@ jobs:
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
-      - run: pnpm vitest run --project node
+      - run: pnpm vitest run --project node --shard=${{ matrix.shard }}/2
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
   # Public registry contract. Generation proves schema, dependency, route-lock,
@@ -555,6 +559,12 @@ jobs:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
+    # Next/Babel follows the isolated workspace symlink graph while compiling
+    # hundreds of generated template entries. Keep this one build on pnpm's
+    # hoisted compatibility layout; every other CI job validates isolation.
+    env:
+      PNPM_CONFIG_NODE_LINKER: hoisted
+      PNPM_CONFIG_SHAMEFULLY_HOIST: 'true'
     permissions:
       contents: read
     outputs:

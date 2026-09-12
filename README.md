@@ -135,6 +135,11 @@ corepack enable
 pnpm install
 ```
 
+The workspace uses pnpm's isolated linker. Shared build and test tools are
+root development dependencies; package-specific dependencies stay with the
+workspace that uses them. pnpm reuses package content from its shared store, so
+parallel checkouts remain independent without copying one flat dependency tree.
+
 If `corepack` is missing, install pnpm directly or install Corepack manually;
 see the troubleshooting notes in
 [CONTRIBUTING.md](CONTRIBUTING.md#troubleshooting).
