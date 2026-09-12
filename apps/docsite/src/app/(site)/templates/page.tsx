@@ -2,14 +2,14 @@
 
 /**
  * @file Templates gallery index.
- * @input Uses generated template metadata, URL preview state, and live template thumbnails.
- * @output Renders the filterable gallery and query-synced preview dialog.
+ * @input Uses generated template metadata, URL preview state, live thumbnails, and a lazy preview dialog.
+ * @output Renders the filterable gallery and loads the query-synced preview dialog on first open.
  * @position Public `/templates` docsite route.
  */
 
 'use client';
 
-import {Suspense, useCallback, useEffect, useMemo, useState} from 'react';
+import {Suspense, lazy, useCallback, useEffect, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
@@ -25,10 +25,16 @@ import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {templateMetadata as templates} from '../../../generated/templateMetadataRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildTemplatePlaygroundHref} from '../../../components/playgroundLink';
-import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
+import {buildTemplatePreviewHref} from '../../../components/templatePreviewUrl';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
 import {layout} from '../../../layout.stylex';
+
+const LazyTemplatePreviewDialog = lazy(() =>
+  import('../../../components/TemplatePreviewDialog').then(module => ({
+    default: module.TemplatePreviewDialog,
+  })),
+);
 
 const CARD_STYLE: CSSProperties & {'--color-overlay': string} = {
   '--color-overlay':
@@ -115,13 +121,21 @@ function TemplatePreviewURLSync({
   onSlugChange,
 }: TemplatePreviewURLSyncProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const previewSlug = searchParams.get('preview');
   const openSlug =
     previewSlug != null && indexBySlug.has(previewSlug) ? previewSlug : null;
 
   useEffect(() => {
     onSlugChange(openSlug);
-  }, [onSlugChange, openSlug]);
+    if (previewSlug != null && openSlug == null) {
+      router.replace(
+        buildTemplatePreviewHref(pathname, searchParams.toString(), null),
+        {scroll: false},
+      );
+    }
+  }, [onSlugChange, openSlug, pathname, previewSlug, router, searchParams]);
 
   return null;
 }
@@ -192,21 +206,27 @@ function TemplatesGallery() {
   const router = useRouter();
   const pathname = usePathname();
   const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [hasLoadedPreview, setHasLoadedPreview] = useState(false);
+  const handlePreviewSlugChange = useCallback((slug: string | null) => {
+    if (slug !== null) {
+      setHasLoadedPreview(true);
+    }
+    setOpenSlug(slug);
+  }, []);
   const openIndex =
     openSlug != null ? (indexBySlug.get(openSlug) ?? null) : null;
 
   const setOpenIndex = useCallback(
     (index: number | null) => {
       const nextSlug = index !== null ? (flatItems[index]?.slug ?? null) : null;
-      setOpenSlug(nextSlug);
-      const params = new URLSearchParams(window.location.search);
       if (nextSlug !== null) {
-        params.set('preview', nextSlug);
-      } else {
-        params.delete('preview');
+        setHasLoadedPreview(true);
       }
-      const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
+      setOpenSlug(nextSlug);
+      router.replace(
+        buildTemplatePreviewHref(pathname, window.location.search, nextSlug),
+        {scroll: false},
+      );
     },
     [flatItems, router, pathname],
   );
@@ -321,22 +341,26 @@ function TemplatesGallery() {
       <Suspense fallback={null}>
         <TemplatePreviewURLSync
           indexBySlug={indexBySlug}
-          onSlugChange={setOpenSlug}
+          onSlugChange={handlePreviewSlugChange}
         />
       </Suspense>
 
-      <TemplatePreviewDialog
-        items={flatItems}
-        index={openIndex ?? 0}
-        isOpen={openIndex !== null}
-        onOpenChange={open => {
-          if (!open) {
-            setOpenIndex(null);
-          }
-        }}
-        onIndexChange={setOpenIndex}
-        variant={isMobile ? 'fullscreen' : undefined}
-      />
+      {hasLoadedPreview ? (
+        <Suspense fallback={null}>
+          <LazyTemplatePreviewDialog
+            items={flatItems}
+            index={openIndex ?? 0}
+            isOpen={openIndex !== null}
+            onOpenChange={open => {
+              if (!open) {
+                setOpenIndex(null);
+              }
+            }}
+            onIndexChange={setOpenIndex}
+            variant={isMobile ? 'fullscreen' : undefined}
+          />
+        </Suspense>
+      ) : null}
     </Section>
   );
 }
