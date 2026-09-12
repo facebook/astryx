@@ -3,11 +3,11 @@ schema_version: 1
 template_version: 1
 kind: architecture
 id: architecture:cli-surface
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-13
 owners: [josephfarina]
 applies_to: [packages/cli]
 verified_by:
@@ -144,14 +144,20 @@ test, applicable text, and consumer-documentation projections.
 - **INV16 — Authoring preserves package policy and local source wins while it is
   being edited.** Writers never create `files` or `exports`; when either field
   already exists, they add only the required manifest, root, or public subpath
-  and preserve every author-owned entry. The integration beside the current
-  package.json replaces the same installed package in place, preserving its
-  configured order while making working bytes authoritative.
+  and preserve every author-owned entry. Generated component and template export
+  keys are extensionless public subpaths even when they target authored `.ts` or
+  `.tsx` source. The integration beside the current package.json replaces the
+  same installed package in place, preserving its configured order while making
+  working bytes authoritative.
 - **INV17 — Pack verification examines the artifact consumers receive.**
   `integration pack --check` runs the package lifecycle through `npm pack`,
   compares the required file inventory with the actual tarball, extracts that
-  tarball into a scratch consumer, reruns contribution discovery, and verifies
-  advertised component and template imports through Node's package resolver.
+  tarball into a scratch consumer, and reruns contribution discovery. It rejects
+  advertised component imports ending in `.ts` or `.tsx`, resolves every exact
+  advertised component and inferred template import through Node's package
+  resolver, and fails when the packed artifact has no usable public export. This
+  contract does not require project-local TypeScript or promise validation under
+  TypeScript's Node16 or bundler resolution modes.
 - **INV18 — Integration diagnostics are read-only and package-specific.** Doctor
   validation reports malformed or unreachable roots and contribution conflicts
   without rewriting the package. Everyday discovery skips a broken integration
@@ -178,9 +184,10 @@ updated in the same pull request when it moves an invariant:
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`;
-- changing an integration writer's receipt, no-clobber/rollback behavior, or
-  package.json mutation policy;
-- changing what `integration pack --check` executes or proves about the tarball;
+- changing an integration writer's receipt, no-clobber/rollback behavior,
+  package.json mutation policy, or public subpath spelling;
+- changing what `integration pack --check` executes, resolves, or proves about
+  the tarball;
 - changing local, configured, or autolinked integration precedence;
 - changing the integration theme catalog or consumer copy contract.
 
