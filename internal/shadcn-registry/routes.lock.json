@@ -792,6 +792,11 @@
       "aliases": []
     },
     {
+      "name": "component-scrollable-area",
+      "path": "components/scrollable-area",
+      "aliases": []
+    },
+    {
       "name": "component-section",
       "path": "components/section",
       "aliases": []
@@ -3683,6 +3688,11 @@
     {
       "name": "hook-use-scroll-overflow",
       "path": "hooks/use-scroll-overflow",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-scrollable-area",
+      "path": "hooks/use-scrollable-area",
       "aliases": []
     },
     {

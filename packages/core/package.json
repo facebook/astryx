@@ -434,6 +434,11 @@
       "types": "./dist/Resizable/index.d.ts",
       "default": "./dist/Resizable/index.js"
     },
+    "./ScrollableArea": {
+      "source": "./src/ScrollableArea/index.ts",
+      "types": "./dist/ScrollableArea/index.d.ts",
+      "default": "./dist/ScrollableArea/index.js"
+    },
     "./Section": {
       "source": "./src/Section/index.ts",
       "types": "./dist/Section/index.d.ts",

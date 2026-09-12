@@ -121,6 +121,17 @@
     }
   },
   {
+    "component": "ScrollableArea",
+    "storyId": "core-scrollablearea--rtl-behavior-probe",
+    "dims": [
+      "D3"
+    ],
+    "selectors": {
+      "scroller": "[data-rtl-scroll-probe]",
+      "nextButton": "[data-rtl-scroll-button]"
+    }
+  },
+  {
     "component": "Chat",
     "storyId": "core-chat--mixed-content",
     "dims": ["D2"],

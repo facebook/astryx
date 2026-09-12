@@ -10,7 +10,8 @@ approved_by: cixzhang
 approved_at: 2026-09-11
 phase: accepted
 owners: [cixzhang]
-affects_architecture: [architecture:public-component-api]
+affects_architecture:
+  [architecture:container-padding, architecture:public-component-api]
 affects_families: [family:layout-regions, family:layout-primitives]
 affects_contributing: []
 affects_consumer_docs:
@@ -165,6 +166,18 @@ the behavior.
   separate public ScrollableArea component merely to participate. An arbitrary
   external wrapper cannot satisfy Table's internal ownership contract unless Table
   explicitly accepts and coordinates that owner.
+- **FR20 — The reference component integrates container geometry.** ScrollableArea
+  MUST publish the actual logical padding of its content box, using zero when no
+  padding is requested. Its viewport MAY consume inherited padding only through an
+  explicit full-bleed option; scrollability alone MUST NOT escape a parent container.
+- **FR21 — Fitting scroll intent does not imply Sticky containment.** A participating
+  viewport whose requested axes have no excess geometry MUST use `clip` on both
+  physical axes. This prevents pre-measure paint overflow without creating a CSS
+  scroll container, so native Sticky descendants can resolve to an outer effective
+  owner. The viewport MUST switch to its requested `auto`/`hidden` pair when content
+  exceeds the viewport, before the axis becomes an effective owner. A public
+  `stickyContainment="always"` option MAY preserve that boundary while fitting, but
+  containment MUST be explicit rather than an incidental result of scroll intent.
 
 ### Delivery requirements
 
@@ -213,10 +226,11 @@ interface ScrollAxisState {
 interface UseScrollableAreaOptions {
   axis: ScrollAxis;
   keyboardAccess: KeyboardAccess;
-  scrollChaining?: 'allow' | 'contain';
+  overscroll?: 'allow' | 'contain';
+  stickyContainment?: 'whenScrollable' | 'always';
 }
 
-type ElementProps<E extends HTMLElement> = React.HTMLAttributes<E> &
+type ElementProps<E extends HTMLElement> = BaseProps<E> &
   React.RefAttributes<E>;
 
 interface UseScrollableAreaResult {
@@ -235,11 +249,12 @@ interface UseScrollableAreaResult {
 
 Each prop getter receives the adopter's already-resolved element props and public
 ref, composes them with the hook's behavior through the shared prop/ref utilities,
-and returns one safe spread object. `getViewportProps` adds behavior-owned keyboard,
-ARIA, event, data-state, overscroll, and registration behavior without choosing the
-viewport's layout or paint. `getContentProps` composes content observation with an
-existing content ref and props. Neither a loose prop bag nor a separate callback ref
-makes spread order part of the contract.
+and returns one safe spread object. `getViewportProps` consumes caller `xstyle` and
+adds behavior-owned fitting clip, axis-specific active overflow, explicit Sticky
+containment, keyboard, ARIA, event, data-state, overscroll, and registration behavior
+without choosing viewport sizing or scrollbar presentation. `getContentProps`
+composes content observation with an existing content ref and props. Neither a loose
+prop bag nor a separate callback ref makes spread order part of the contract.
 
 Native scrollbar width, color, and gutter remain CSS on the viewport rather than
 hook options. Optional custom presenters and scroll shadows consume the same
@@ -342,16 +357,18 @@ Representative public evidence:
 
 ## Verification
 
-| Contract         | Verification                                               | Representative states                                                                                                                                                    | Mutation or failure expectation                                                                                                     |
-| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR4          | Unit geometry and computed-style tests plus browser matrix | inline, block, both; fitting, exact fit, >1px overflow; scroll-capable and non-scrollable computed values; horizontal, vertical, and sideways writing modes; LTR and RTL | A declaration or excess geometry alone becomes an owner, an effective axis is missed, or physical direction leaks into the contract |
-| FR5–FR9          | Observer lifecycle and integration tests                   | viewport resize, content resize, async resource, hidden/show, reconnect, classic scrollbar                                                                               | State remains stale, reports fitting while unmeasurable, loops, or publishes redundant updates                                      |
-| FR10, FR11, FR18 | Real-browser nested Sticky matrix                          | arbitrary flow position; each logical edge; orthogonal and same-axis owners; inactive inner candidate                                                                    | Sticky binds to a non-effective or cross-axis owner, cannot appear mid-flow, or stacks against the wrong boundary                   |
-| FR12, FR13       | Keyboard and accessibility-tree tests                      | no overflow, overflow, focusable descendants, named viewport, overflow removed while focused                                                                             | Content is unreachable, a fitting area adds an unexplained stop, naming is absent, or focus moves on resize                         |
-| FR14             | Wheel/touch/keyboard chaining browser tests                | fitting child, active child, each edge, contain and chain                                                                                                                | A fitting child creates a dead wheel zone or explicit containment leaks to an inactive axis                                         |
-| FR15, FR16       | Native/custom presentation and forced-colors tests         | overlay/classic, thin/default, stable gutter, hidden/replacement, custom thumb                                                                                           | Presentation creates a second owner, masks state, loses platform fallback, or changes scrolling mechanics                           |
-| FR17             | Type/API tests and browser fixtures                        | requested inline, block, both; attempted visible opposite axis                                                                                                           | Public API admits a CSS combination the platform computes to different semantics                                                    |
-| FR19             | Table browser integration                                  | inline-only, bounded both-axis, sticky columns, sticky headers, intersection cell                                                                                        | Table plugins observe different owners or an external wrapper silently breaks sticky/accessibility behavior                         |
+| Contract         | Verification                                               | Representative states                                                                                                                                                    | Mutation or failure expectation                                                                                                      |
+| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1–FR4          | Unit geometry and computed-style tests plus browser matrix | inline, block, both; fitting, exact fit, >1px overflow; scroll-capable and non-scrollable computed values; horizontal, vertical, and sideways writing modes; LTR and RTL | A declaration or excess geometry alone becomes an owner, an effective axis is missed, or physical direction leaks into the contract  |
+| FR5–FR9          | Observer lifecycle and integration tests                   | viewport resize, content resize, async resource, hidden/show, reconnect, classic scrollbar                                                                               | State remains stale, reports fitting while unmeasurable, loops, or publishes redundant updates                                       |
+| FR10, FR11, FR18 | Real-browser nested Sticky matrix                          | arbitrary flow position; each logical edge; orthogonal and same-axis owners; inactive inner candidate                                                                    | Sticky binds to a non-effective or cross-axis owner, cannot appear mid-flow, or stacks against the wrong boundary                    |
+| FR12, FR13       | Keyboard and accessibility-tree tests                      | no overflow, overflow, focusable descendants, named viewport, overflow removed while focused                                                                             | Content is unreachable, a fitting area adds an unexplained stop, naming is absent, or focus moves on resize                          |
+| FR14             | Wheel/touch/keyboard chaining browser tests                | fitting child, active child, each edge, contain and chain                                                                                                                | A fitting child creates a dead wheel zone or explicit containment leaks to an inactive axis                                          |
+| FR15, FR16       | Native/custom presentation and forced-colors tests         | overlay/classic, thin/default, stable gutter, hidden/replacement, custom thumb                                                                                           | Presentation creates a second owner, masks state, loses platform fallback, or changes scrolling mechanics                            |
+| FR17             | Type/API tests and browser fixtures                        | requested inline, block, both; attempted visible opposite axis                                                                                                           | Public API admits a CSS combination the platform computes to different semantics                                                     |
+| FR19             | Table browser integration                                  | inline-only, bounded both-axis, sticky columns, sticky headers, intersection cell                                                                                        | Table plugins observe different owners or an external wrapper silently breaks sticky/accessibility behavior                          |
+| FR20             | ScrollableArea component and container-padding tests       | zero/default padding, uniform/edge overrides, nested bleed consumer, contained and full-bleed viewport                                                                   | Content publishes stale inset, a nested bleed child compensates incorrectly, or scrolling escapes its parent without explicit intent |
+| FR21             | Real-browser fitting/overflowing Sticky transition         | fitting default, fitting `always`, content growth, content shrink, outer block Sticky owner                                                                              | A fitting default viewport silently captures Sticky, explicit containment is lost, or overflow growth fails to activate scrolling    |
 
 ## Decision log
 
@@ -373,6 +390,40 @@ complete default when they do want the system to own the required structure.
 Rejected: making `ScrollableArea` the only entry point, because that would require
 extra wrappers and turn a behavior component into the owner of component-specific
 structure.
+
+### DEC-2 — ScrollableArea is an explicit container-padding participant
+
+**Reference:** `spec:AST-025/DEC-2`
+**Decider:** `cixzhang`, `2026-09-11`
+
+The reference component publishes its content box's logical padding, zero by
+default, so nested bleed consumers receive the geometry actually applied.
+Viewport bleed remains explicit rather than a side effect of becoming scrollable.
+This aligns ScrollableArea with the shared container system without making the
+behavior hook own padding or layout.
+
+Rejected: automatic parent-padding escape, because adding scrolling must not
+silently widen a container's visual boundary.
+
+### DEC-3 — Fitting scroll intent does not silently contain Sticky
+
+**Reference:** `spec:AST-025/DEC-3`
+**Decider:** `cixzhang`, `2026-09-12`
+
+The shared hook applies `clip` on both physical axes until requested content
+exceeds its geometry. This avoids pre-measure paint overflow without creating a CSS
+scroll container, so a fitting area does not silently intercept native Sticky from
+an outer owner. Geometry-only overflow state activates the writing-mode-resolved
+`auto`/`hidden` pair before effective ownership is measured.
+
+`stickyContainment="always"` is the explicit opt-in for consumers that deliberately
+want the fitting viewport to remain a Sticky boundary. Its camelCase enum follows
+the public API conventions.
+
+Rejected: retaining `auto`/`hidden` for every requested viewport, because scroll
+intent alone would change Sticky behavior even when no scrolling can occur.
+Rejected: no overflow declaration while fitting, because content could flash before
+the first geometry measurement.
 
 ## Open questions
 
