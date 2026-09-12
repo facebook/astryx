@@ -39,6 +39,7 @@ verified_by:
 deciding_specs:
   [
     spec:AST-006/DEC-1,
+    spec:AST-006/DEC-2,
     spec:AST-006/DEC-3,
     spec:AST-006/DEC-4,
     spec:AST-006/DEC-6,
@@ -47,8 +48,6 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
     spec:AST-017/DEC-1,
-    spec:AST-034/DEC-1,
-    spec:AST-034/DEC-4,
   ]
 ---
 
@@ -79,9 +78,7 @@ source configuration independently.
 
 `defineTheme` resolves that input into a flat `DefinedTheme`. An extended theme
 contains the resolved values it inherits, so its normalized representation is
-complete. A standalone build does not need the base stylesheet. The accepted family
-contract may share compiled declarations only within one keyed family output set; it
-does not change normalized authoring semantics.
+complete. A standalone build does not need the base stylesheet.
 
 Normalization follows one precedence order:
 
@@ -107,9 +104,7 @@ style key, and CSS property rather than replacing the entire inherited target.
 - **INV3 — Extension is semantically flattened.** `extends` accepts a real
   `DefinedTheme` and carries forward its resolved tokens, local-token owner and
   lineage metadata, component rules, media surfaces, adaptations and axes, icons,
-  and indicators. The normalized child is complete. Family packaging may factor
-  physical output only after preserving that complete member semantics in the one
-  keyed family set.
+  and indicators. The normalized child is complete.
 - **INV4 — Invalid bases fail loudly.** An undefined, namespace, or plain object
   passed to `extends` cannot produce a plausible partial theme.
 - **INV5 — Explicit tokens override generated scales.** Generated values provide
@@ -219,24 +214,21 @@ public surface belongs to
 
 ## Deciding specs
 
-AST-006 decisions 1, 3, 4, and 6 establish the shipped theme-local authoring
-shape, enrollment, inheritance, shared validation, and value contract. AST-034
-DEC-4 supersedes all of AST-006 DEC-2 and only DEC-4's reserved-prefix
-classification and validation clauses; explicit enrollment, shared runtime/static
-validation, exact lineage, collision and cycle checks, and legacy unenrolled behavior
-remain. AST-012 decisions 1–4 establish the fixed width map, named closed conditions,
+AST-006 decisions 1–4 and 6 establish the shipped theme-local authoring shape,
+enrollment, exact-name preservation, inheritance, shared validation, and value contract.
+Its 2026-09-12 amendment makes key validity and ownership prefix-independent while
+retaining exact owner metadata, lineage, collisions, cycles, and legacy unenrolled
+behavior. AST-012 decisions 1–4 establish the fixed width map, named closed conditions,
 ordered rule cascade, and source/built adaptation metadata parity. AST-017 decision 1
-owns released compatibility classification and migration. AST-034 DEC-1 establishes
-that family packaging projects complete normalized members without changing authoring
-identity or semantics.
+owns released compatibility classification and migration.
 
-`spec:AST-034` is current authority. It supersedes all of AST-006 decision 2 and
-only the reserved-prefix clauses of decision 4 with exact, prefix-independent owner
-and lineage validation. It also projects each complete normalized member into one
-caller-keyed family artifact set owned by `architecture:theme-compilation`, without
-adding per-member artifacts or changing authoring semantics. The artifact key controls
-filenames only; it does not change theme identity, local-token ownership, or CSS
-custom-property names. The implementation remains unshipped.
+## Known conformance and verification gaps
+
+Prefix-independent `localTokens` key acceptance is accepted but unshipped. The current
+validator still requires the original theme-derived prefix and uses that prefix to
+classify local references. Until the implementation lands, INV8's prefix-independent
+clauses are current authority but not enforcement. Existing explicit enrollment,
+owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
 ## Verification
 
@@ -246,7 +238,7 @@ custom-property names. The implementation remains unshipped.
 | INV3, INV4               | extension and invalid-base tests                                                                        | Child themes require a base stylesheet or silently accept a non-theme base                                                |
 | INV6                     | component merge tests across base/generated/explicit rules                                              | Restating one property drops inherited component styles                                                                   |
 | INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                | A child loses inherited surface customization or surface precedence changes                                               |
-| INV8                     | Shipping gate: AST-034 runtime/static validator and source/built inheritance tests                      | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
+| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                     | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
 | INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
 | INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
 | INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |

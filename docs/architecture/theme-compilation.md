@@ -31,13 +31,10 @@ verified_by:
   ]
 deciding_specs:
   [
+    spec:AST-006/DEC-2,
     spec:AST-006/DEC-4,
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
-    spec:AST-034/DEC-1,
-    spec:AST-034/DEC-2,
-    spec:AST-034/DEC-3,
-    spec:AST-034/DEC-4,
   ]
 ---
 
@@ -131,12 +128,6 @@ Platform-specific details stay inside that compiler.
   adaptation blocks remain separate in authored order, and media-surface overrides
   emit last. Duplicate conditions and later root-restoring writes are preserved
   exactly; runtime and static output use the same blocks.
-- **INV13 — Accepted family packaging is one keyed native set.** Family compilation
-  starts from one complete plan per selected member, then emits exactly one keyed CSS
-  containing all members, one CSS-free ESM exporting all complete members, one
-  matching declaration, one manifest, and receipts. Shared CSS uses zero-specificity
-  declarations and member deltas use `:scope`. The artifact key changes filenames
-  only. Per-member family artifacts and runtime manifest assembly are prohibited.
 
 This record does not own:
 
@@ -196,11 +187,6 @@ This record does not own:
 - Adding a platform compiler names the shared concepts it supports and tests
   that they keep the same meaning. Unsupported concepts fail clearly instead of
   disappearing.
-- A family-packaging change follows `spec:AST-034`: it preserves complete member
-  plans across separate CSS, ESM, type, and receipt tracks; emits only the exact keyed
-  set; verifies zero-delta members and collision-safe bindings; and keeps manifest
-  ownership, transactional publication, cleanup, and check behavior out of consumer
-  runtime assembly.
 - Build packaging may change without changing compiled theme behavior.
 
 ## Owning code
@@ -227,24 +213,12 @@ This record does not own:
 
 ## Deciding specs
 
-AST-006 DEC-4 continues to establish atomic shared validation for enrolled themes;
-AST-034 DEC-4 supersedes AST-006 DEC-2 and only DEC-4's reserved-prefix clauses with
-exact prefix-independent ownership. AST-012 decisions 3 and 4 establish ordered
-adaptation blocks and source/built metadata parity. AST-034 decisions 1–3 establish
-the keyed family artifact set, complete-plan-before-factoring rule, and
-manifest-owned transactional generation. The system owner separately selected one
-definition with platform-specific outputs and the guaranteed, best-effort,
-public-semantic, and private implementation tiers.
-
-`spec:AST-034` is current authority. It requires one native
-`<artifactKey>.css` containing all selected members, one separate standard
-`<artifactKey>.js` with all complete member exports, one `<artifactKey>.d.ts`, and one
-`<artifactKey>.manifest.json` plus receipts. The caller-supplied key changes only the
-coordinated filename stem. Complete plans precede factoring; shared CSS has zero
-specificity; bindings are collision-safe; and the manifest owns transactional
-generation, cleanup, and check behavior. Per-member family artifacts are prohibited.
-The implementation remains unshipped, so the current standalone build remains the
-only implemented path until conformance lands.
+AST-006 decisions 2 and 4, as amended on 2026-09-12, establish
+prefix-independent local-token names and atomic shared validation for enrolled themes.
+AST-012 decisions 3 and 4 establish ordered adaptation blocks and source/built metadata
+parity. The system owner separately selected one definition with platform-specific
+outputs and the guaranteed, best-effort, public-semantic, and private implementation
+tiers.
 
 ## Verification
 
@@ -258,15 +232,16 @@ only implemented path until conformance lands.
 | INV9, INV10      | Platform compiler tests when another compiler ships                | CSS details enter shared authoring, or shared theme intent silently disappears                  |
 | INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures    | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure  |
 | INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures       | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges        |
-| INV13            | AST-034 implementation suite plus real-browser and type checks     | Keyed output is incomplete, emits per-member files, conflates tracks, or needs runtime assembly |
 | Built themes     | Theme and CLI build tests                                          | Runtime recompiles a built theme, or built output omits canonical rules                         |
 
 ## Known conformance and verification gaps
 
-The accepted AST-034 family-build contract is unshipped. The current CLI has no
-family artifact set or `--family-key`; implementation must satisfy the spec's complete
-structural, browser, type, transaction, cleanup, and check gates before this invariant
-is treated as enforced.
+Prefix-independent `localTokens` key acceptance is accepted but unshipped. The current
+compiler still requires the original theme-derived prefix and uses that prefix to
+classify local references. Until implementation lands, INV11's prefix-independent
+clauses are current authority but not enforcement; exact-name emission and the existing
+enrollment, owner, lineage, collision, cycle, and legacy-unenrolled behavior remain
+shipped.
 
 The remaining invariants above describe the approved current contract. The following
 shipped behavior does not yet conform and must not be treated as enforcement:
