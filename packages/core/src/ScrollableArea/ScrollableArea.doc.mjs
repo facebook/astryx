@@ -38,7 +38,9 @@ export const docs = {
     },
   },
   theming: {
-    targets: [{className: 'astryx-scrollable-area'}],
+    targets: [
+      {className: 'astryx-scrollable-area', visualProps: ['axis']},
+    ],
   },
 };
 
