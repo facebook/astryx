@@ -22,7 +22,7 @@ import {Grid} from '@astryxdesign/core/Grid';
 import {Button} from '@astryxdesign/core/Button';
 import {Overlay} from '@astryxdesign/core/Overlay';
 import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
-import {templates} from '../../../generated/templateRegistry';
+import {templateMetadata as templates} from '../../../generated/templateMetadataRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildTemplatePlaygroundHref} from '../../../components/playgroundLink';
 import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';

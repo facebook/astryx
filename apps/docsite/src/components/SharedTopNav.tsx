@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -20,13 +20,12 @@ import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
-import {SearchPalette} from './SearchPalette';
-import {components} from '../generated/componentRegistry';
-import {packages} from '../generated/packageRegistry';
-import {docTopics} from '../generated/docsRegistry';
-import {templates} from '../generated/templateRegistry';
 import {useThemeMode} from '../app/providers';
 import {trackSearch, trackClickCta} from '../lib/analytics';
+
+const LazySearchPalette = lazy(() =>
+  import('./SearchPalette').then(module => ({default: module.SearchPalette})),
+);
 
 const GitHubIcon = ({
   width = 20,
@@ -291,14 +290,11 @@ export function SharedTopNav() {
           </HStack>
         }
       />
-      <SearchPalette
-        isOpen={isSearchOpen}
-        onOpenChange={setIsSearchOpen}
-        components={components}
-        packages={packages}
-        docTopics={docTopics}
-        templates={templates}
-      />
+      {isSearchOpen && (
+        <Suspense fallback={null}>
+          <LazySearchPalette isOpen onOpenChange={setIsSearchOpen} />
+        </Suspense>
+      )}
       {!isMobileNavEnabled && (
         <MobileNav
           isOpen={isMenuOpen}
