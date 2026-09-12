@@ -115,7 +115,7 @@ describe('formatFull theming override keys', () => {
       description: 'A table.',
       theming: {
         targets: [
-          {className: 'astryx-base-table'},
+          {className: 'astryx-table-header'},
           {className: 'astryx-table-cell'},
         ],
       },
@@ -123,11 +123,42 @@ describe('formatFull theming override keys', () => {
     const out = formatFull(docs);
 
     // Correct keys: class name minus the astryx- prefix.
-    expect(out).toContain("'base-table': {");
+    expect(out).toContain("'table-header': {");
     expect(out).toContain("'table-cell': {");
     // The verbatim DOM class names must not be advertised as override keys.
-    expect(out).not.toContain("'astryx-base-table': {");
+    expect(out).not.toContain("'astryx-table-header': {");
     expect(out).not.toContain("'astryx-table-cell': {");
+  });
+});
+
+describe('deprecated theming target guidance', () => {
+  const docs = {
+    name: 'Example',
+    description: 'An example.',
+    theming: {
+      targets: [
+        {className: 'astryx-old-target', deprecatedFor: 'new-target'},
+        {className: 'astryx-new-target'},
+      ],
+    },
+  };
+
+  it('names the canonical replacement in full component docs', () => {
+    expect(formatFull(docs)).toContain(
+      '`astryx-old-target` _(deprecated; use `new-target`)_',
+    );
+  });
+
+  it('excludes deprecated targets from copyable defineTheme examples', () => {
+    const out = formatFull(docs);
+    expect(out).not.toContain("'old-target': {");
+    expect(out).toContain("'new-target': {");
+  });
+
+  it('keeps the replacement in brief agent guidance', () => {
+    expect(formatBrief(docs, 'Example')).toContain(
+      'astryx-old-target deprecated→new-target',
+    );
   });
 });
 

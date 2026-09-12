@@ -38,7 +38,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: '`theme list` + `theme add <slug>` to start from a shipped theme, or defineTheme from scratch. only override tokens that differ.',
+          text: '`theme list` + `theme add <slug>` to start from a bundled or installed integration theme; use `--package` for a shared slug. Or defineTheme from scratch. only override tokens that differ.',
         },
         null,
         {

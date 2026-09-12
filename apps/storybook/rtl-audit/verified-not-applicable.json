@@ -53,8 +53,32 @@
     "reason": "BottomSheetSwitcher owns no direction-sensitive visual or interaction. Its shared dialog spans both axes symmetrically; sheet handoff, close, swipe, and alignment motion use only the block axis; and it owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each child BottomSheet retains its own independently verified logical layout."
   },
   {
-    "component": "unknown/ChartTooltip",
+    "component": "charts/ChartAxis",
+    "reason": "ChartAxis renders Cartesian data coordinates on physical top, right, bottom, or left plot edges. Tick lines, labels, and value order stay tied to the data scale rather than reading direction; it owns no directional glyph, logical overlay, scroll, drag, or horizontal keyboard behavior."
+  },
+  {
+    "component": "charts/ChartGrid",
+    "reason": "ChartGrid renders direction-neutral horizontal and vertical Cartesian guide lines inside the plot. It owns no text, directional glyph, inline-axis ordering, overlay placement, scroll, drag, or keyboard behavior."
+  },
+  {
+    "component": "charts/ChartSwatch",
+    "reason": "ChartSwatch is a centered square, line, or dot sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
+  },
+  {
+    "component": "charts/ChartTooltip",
     "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
+  },
+  {
+    "component": "richtext/RichTextEditorAutoLinkPlugin",
+    "reason": "RichTextEditorAutoLinkPlugin renders no visual or interactive DOM of its own. It transforms typed URL and email text into native-direction links inside the editor and owns no directional glyph, layout, placement, order, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "richtext/RichTextView",
+    "reason": "RichTextView renders serialized content in normal browser text flow. Content and nested bidi runs retain their authored direction through Lexical and the platform; the wrapper owns no directional glyph, physical inline placement, reordering, horizontal scroll action, drag, overlay, or keyboard behavior."
+  },
+  {
+    "component": "vega/VegaChart",
+    "reason": "VegaChart renders a caller-owned Vega or Vega-Lite data-space specification. Axes, marks, scales, pointer signals, and physical chart coordinates intentionally remain defined by that specification rather than document direction; the React wrapper owns no directional glyph, logical control order, overlay placement, or horizontal keyboard behavior."
   },
   {
     "component": "unknown/ThreeD",
@@ -144,5 +168,21 @@
   {
     "component": "core/Dialog",
     "reason": "Dialog uses logical inline offsets, logical container spacing, and direction-aware safe-area fallbacks. Its native modal lifecycle, focus entry and return, backdrop, and close glyph are direction-neutral; the directional entry translation follows the invoker's physical viewport position rather than reading direction. Dialog owns no left/right glyph swap, inline reordering, directional scroll or drag action, or horizontal keyboard behavior for the RTL audit to compare."
+  },
+  {
+    "component": "core/HoverCard",
+    "reason": "HoverCard delegates anchor geometry and logical placement to Layer and renders a direction-neutral preview surface. It owns no directional glyph, side-specific content order, horizontal scroll or drag behavior, or directional keyboard interaction."
+  },
+  {
+    "component": "core/Indicator",
+    "reason": "Indicator renders centered checkbox, radio, check, and indeterminate marks. Their geometry and state transitions are intrinsic and direction-neutral; the component has no inline-axis placement, content ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/NavIcon",
+    "reason": "NavIcon is a centered circular container for caller-owned artwork. The container has symmetric geometry and no inline-axis placement, order, transform, scroll, drag, overlay, or keyboard behavior; directional meaning belongs to the supplied icon."
+  },
+  {
+    "component": "core/StatusDot",
+    "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
   }
 ]

@@ -108,3 +108,5 @@ export {
 export {saysInOrder, spokenWords} from './spoken';
 
 export {BUTTON_PATTERN, type ButtonStateFacts} from './patterns/button';
+
+export {TABS_PATTERN, type TabsStateFacts} from './patterns/tabs';

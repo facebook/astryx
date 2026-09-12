@@ -2346,10 +2346,11 @@ describe('DateTimeInput', () => {
     });
 
     it('leaves both leading glyphs byte-identical to a plain secondary/sm icon by default', () => {
-      // The targets are purely additive: the stable target class and its
-      // reflected state add nothing to the render until a theme targets them.
-      // Guard that by diffing each glyph's StyleX classes against a standalone
-      // secondary/sm icon, excluding only the additive target/state classes.
+      // The targets are purely additive: the stable target class, reflected
+      // state, and released bare-state compatibility class add nothing to the
+      // render until a theme or consumer stylesheet targets them. Guard that by
+      // diffing each glyph's StyleX classes against a standalone secondary/sm
+      // icon, excluding only those additive theme metadata classes.
       const {container} = render(
         <DateTimeInput label="Meeting" onChange={() => {}} />,
       );
@@ -2368,6 +2369,7 @@ describe('DateTimeInput', () => {
       const themeTargetClasses = new Set([
         'astryx-date-time-input-toggle-icon',
         'astryx-date-time-input-clock-icon',
+        'collapsed',
         'expanded',
       ]);
       const styleClasses = (el: HTMLElement) =>

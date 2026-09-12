@@ -28,6 +28,9 @@ describe('parseIntegration (load boundary)', () => {
       components: './src',
     });
     expect(parseIntegration({docs: './docs'})).toEqual({docs: './docs'});
+    expect(parseIntegration({themes: './themes'})).toEqual({
+      themes: './themes',
+    });
     expect(() =>
       parseIntegration({components: './c', issuesUrl: 'https://example.com/i'}),
     ).not.toThrow();
@@ -38,12 +41,14 @@ describe('parseIntegration (load boundary)', () => {
     // integration is published once and installed against many CLI versions.
     // Rejecting the manifest took the whole package's contributions down with
     // it, silently, on every older consumer (#5119).
-    expect(parseIntegration({components: './src', futureRoot: './future'})).toEqual({
+    expect(
+      parseIntegration({components: './src', futureRoot: './future'}),
+    ).toEqual({
       components: './src',
     });
-    expect(unknownIntegrationKeys({components: './src', futureRoot: './future'})).toEqual([
-      'futureRoot',
-    ]);
+    expect(
+      unknownIntegrationKeys({components: './src', futureRoot: './future'}),
+    ).toEqual(['futureRoot']);
     expect(unknownIntegrationKeys({components: './src'})).toEqual([]);
     // Not a manifest at all — nothing to report, and the parser owns the error.
     expect(unknownIntegrationKeys(null)).toEqual([]);

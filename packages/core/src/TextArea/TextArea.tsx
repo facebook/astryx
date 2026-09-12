@@ -571,8 +571,8 @@ export function TextArea({
               disabled: isDisabled ? 'disabled' : null,
               readonly: isReadOnly ? 'readonly' : null,
             },
-            // `textarea` ran the compound name together; themes styling it
-            // keep working until the next major.
+            // `textarea` ran the compound name together; keep it emitted so
+            // existing themes continue to work.
             {legacyNames: ['textarea']},
           ),
           stylex.props(

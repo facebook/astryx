@@ -628,8 +628,8 @@ describe('DateRangeInput icon theme targets', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // defineTheme — a button-level target could not reach the icon's own
-    // color/size. The original per-component name rides along for a
-    // deprecation window.
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = iconIn(getButton('Clear Range'));
     expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-range-input-clear-icon');

@@ -142,6 +142,17 @@ Every record is either:
   record requires a distinct fact boundary and an explicit explanation of why no
   existing owner can contain it. Open pull requests coordinate overlapping work;
   they remain non-authoritative evidence.
+- **INV14 — Current authority is claim-scoped.** `authority: current` approves the
+  explicit claims inside a record's stated ownership boundary. It does not promise
+  that every behavior of the named component, module, family, or code path has been
+  specified. Review MUST NOT expand one narrow decision into adjacent uncontracted
+  behavior unless the pull request's exact delta depends on that behavior.
+- **INV15 — Review contracts toward one landing-ready intent.** Authors identify one
+  primary intent and reviewers classify each observable delta separately. A
+  separable delta that violates current authority or requires a new human decision
+  is removed or split before review asks the primary change to carry new authority.
+  A specification is the path for an intentional durable decision, not the default
+  remedy for unrelated scope discovered during review.
 
 ## Writing specifications and contracts
 
@@ -162,6 +173,8 @@ Then write the contract:
 
 - Use familiar words and short, direct sentences.
 - State each rule once, beside the conditions and exceptions that control it.
+- Contract only the semantic slice being decided. Name adjacent behavior as a
+  non-goal or uncontracted gap; do not fill it merely to make the record `current`.
 - Use readable tables for branches or state matrices when they improve scanning.
   Never remove contract content merely to shorten a record.
 
@@ -242,7 +255,8 @@ Before any component, module, family, design, theme, or architecture record beco
 1. The record names the code surface that can affect it and the checks that
    verify it.
 2. A pull request touching that surface triggers a focused contract review.
-3. The review records one of five results:
+3. Review starts from the pull request's declared primary intent and classifies
+   each public delta independently as one of five results:
    - `preserves`: the exact delta restores or retains current authority without
      adding public API or behavior beyond it;
    - `settled`: an existing current human decision covers the exact delta and is
@@ -253,14 +267,25 @@ Before any component, module, family, design, theme, or architecture record beco
    - `out-of-scope`: another component, module, family, system, or product owns it.
 4. `preserves` and `settled` enter normal correctness review. They are eligible
    for approval only when the implementation and evidence also pass.
-5. `violates` receives request-changes. The implementation conforms to current
-   authority, or an owner-approved current spec update lands before acceptance.
-6. `novel-human` enters a private human hold. No contributor-facing verdict or
-   approval is published until the owning record contains the exact decision and
-   becomes current.
+5. `violates` receives request-changes with the smallest conforming remedy:
+   change or remove the violating delta. Review does not recommend a specification
+   merely to rescue contradictory implementation; an owner may separately choose
+   to propose a policy change.
+6. A separable `novel-human` tagalong is removed or split from the primary intent.
+   Review may request that contraction without deciding the tagalong's semantics,
+   then continue reviewing the remaining change. A `novel-human` delta enters a
+   private human hold only when it is the primary intent, is inseparable from it,
+   or the author or owner explicitly chooses to pursue it.
 7. A bug fix is `preserves` only when it restores existing current authority
-   without changing public API or public behavior beyond that contract.
-8. Audit freshness is computed from the same code and test relationship, so a
+   without changing public API or public behavior beyond that contract. Any
+   separable API, visual, layout, or interaction tagalong follows step 5 or 6
+   rather than making the restoration wait for a broader specification.
+8. A visual correction may be `preserves` or `settled` when current component,
+   family, design, theme, or objective accessibility authority covers its exact
+   outcome. Real rendered evidence must prove the affected state and representative
+   unchanged states. A new visual representation remains `novel-human`; calling it
+   an improvement does not settle it.
+9. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
 
 Audit-storage migration is a separate contract change. It requires a versioned
@@ -269,12 +294,34 @@ named source of truth during transition, sandbox-reader cutover, and rollback
 evidence. Repository-local per-component files are not a migration plan by
 themselves.
 
+### Contract before escalation
+
+Review and build should converge on the smallest ideal change that can land:
+
+1. State the pull request's primary intent and partition its observable deltas.
+2. Apply current authority to each delta. Existing design and objective standards
+   can settle a visual correction even when a component record does not enumerate
+   its exact paint.
+3. For a contradiction, conform or remove it. Do not propose changing the
+   specification unless changing policy is itself an intentional, separately
+   reviewable goal.
+4. For an unsettled but separable delta, remove or split it. Continue the primary
+   change without asking the contributor to solve adjacent system design.
+5. Escalate only a surviving, intentional `novel-human` delta. Record only the
+   exact decision needed for that delta; adjacent module behavior may stay
+   uncontracted.
+
+The actionable review result names the acceptance criteria for that landing-ready
+contraction. It does not merely report that authority is missing.
+
 ### Recording a new human decision
 
-1. A contributor explains the intended behavior in normal pull-request language
-   and responds to review. They do not need to know the repository's spec system.
-2. A reviewer or agent identifies any `novel-human` question. The contributor
-   does not invent the answer.
+1. A contributor explains the intended behavior and primary intent in normal
+   pull-request language and responds to review. They do not need to know the
+   repository's spec system.
+2. A reviewer or agent applies the contraction path above. Only a surviving,
+   intentional `novel-human` question proceeds; the contributor does not invent
+   the answer or specify unrelated adjacent behavior.
 3. An authorized owner answers in the pull-request review.
 4. A maintainer or agent records that ruling in the canonical owning record.
    - Prefer a commit in the same pull request when maintainers can update the
@@ -319,10 +366,15 @@ Examples:
   Result: `settled`; cite that `DEC` and continue to normal correctness review.
 - A package-exported context changes a required function parameter while its
   current contract preserves the earlier operation shape. Result: `violates`;
-  request changes or land an owner-approved compatibility decision first.
-- Selector removes empty indicator space, but no current decision says whether
-  option labels must stay aligned. Result: `novel-human`; hold privately while the
-  owner decides and records the alignment contract.
+  request the smallest conforming change. A new compatibility policy is a separate
+  proposal, not the default repair.
+- A scroll-overflow fix also introduces a new hover disclosure. The overflow
+  restoration proceeds under its current layout authority. If disclosure lacks
+  authority, remove or split that separable visual tagalong; do not require the bug
+  fix to specify the whole interaction module.
+- Selector removes empty indicator space as its primary intent, but no current
+  decision says whether option labels must stay aligned. Result: `novel-human`;
+  hold privately while the owner decides the exact alignment contract.
 - A product requests a one-off width prop for a family-owned input layout rule.
   Result: `out-of-scope`; route the change to the family contract rather than
   creating a component-specific API.
@@ -409,6 +461,34 @@ different title, and open work may already be changing the same owner before it
 lands. Open pull requests coordinate work and provide evidence; they do not become
 authority.
 
+### DEC-4 — Contraction precedes new authority
+
+**Reference:** `architecture:knowledge-contracts/DEC-4`
+**Decider:** `cixzhang`, `2026-09-11`
+
+When an otherwise reviewable change carries a separable contradiction or unsettled
+decision, remove or split that delta and keep the primary intent moving. Recommend
+a specification only when the surviving delta is intentionally pursued as durable
+behavior, not because review discovered adjacent incompleteness.
+
+Rejected: turning every uncontracted tagalong into a specification project, because
+that makes a narrow repair absorb unrelated design work and leaves the contributor
+without a landing-ready path.
+
+### DEC-5 — Current approval is claim-scoped
+
+**Reference:** `architecture:knowledge-contracts/DEC-5`
+**Decider:** `cixzhang`, `2026-09-11`
+
+A current record authorizes only its explicit claims within its stated ownership
+boundary. It may deliberately leave adjacent behavior uncontracted. Reviewers do
+not treat `current` as certification that a whole component or public module is
+fully specified, and do not demand unrelated coverage before applying a narrow
+approved decision.
+
+Rejected: requiring a narrow visual or behavior decision to contract every API,
+composition, accessibility, and implementation fact of the named module.
+
 ## Verification
 
 | Invariant                         | Evidence                                                    | Failure signal                                                                                                                                              |
@@ -419,6 +499,7 @@ authority.
 | INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                          |
 | INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                    |
 | INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority |
+| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures            | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy |
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,

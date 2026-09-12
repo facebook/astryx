@@ -19,7 +19,7 @@ references: [architecture:<surface>, design:<surface>, spec:AST-000/DEC-0]
 
 ## Intent
 
-<!-- Why this public semantic module exists and the component-local job it owns. Private implementation helpers do not need records. Consumer usage belongs in the module's .doc.mjs. -->
+<!-- Why this public semantic module exists and the component-local job it owns. Private implementation helpers do not need records. Consumer usage belongs in the module's .doc.mjs. A current module record may contract one named semantic slice; state that boundary and leave adjacent behavior uncontracted rather than filling it for completeness. -->
 
 ## Compatibility and migration
 

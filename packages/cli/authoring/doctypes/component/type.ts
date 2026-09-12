@@ -45,6 +45,8 @@ export interface ComponentBaseDoc {
    *  regex derivation. Backfill with
    *  `apps/docsite/scripts/backfill-display-name.mjs`. */
   displayName: string;
+  /** Exact consumer import specifier for integration-owned components. */
+  import?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).

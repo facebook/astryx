@@ -1113,4 +1113,3 @@ describe('TextInput clear button focus behavior', () => {
     rafSpy.mockRestore();
   });
 });
-

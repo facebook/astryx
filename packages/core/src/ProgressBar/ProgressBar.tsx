@@ -482,8 +482,8 @@ export function ProgressBar({
         themeProps(
           'progress-bar',
           {variant},
-          // `progressbar` ran the compound name together; themes styling it
-          // keep working until the next major.
+          // `progressbar` ran the compound name together; keep it emitted so
+          // existing themes continue to work.
           {legacyNames: ['progressbar']},
         ),
         stylex.props(styles.container, xstyle),

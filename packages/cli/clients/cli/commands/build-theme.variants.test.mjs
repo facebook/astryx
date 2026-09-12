@@ -143,22 +143,25 @@ describe('theme build custom-variant augmentations', () => {
       path.join(tmpDir, 'variants-theme.css'),
       'utf-8',
     );
-    const mainTypeIndex = css.indexOf(
-      '.astryx-heading[data-type="hero"]',
-    );
+    const mainTypeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
     const mainTypeWeightIndex = css.indexOf('font-weight: 300;', mainTypeIndex);
-    const mainWeightIndex = css.indexOf(
-      '.astryx-heading[data-weight="bold"]',
+    const mainWeightIndex = css.indexOf('.astryx-heading[data-weight="bold"]');
+    const mainWeightValueIndex = css.indexOf(
+      'font-weight: 900;',
+      mainWeightIndex,
     );
-    const mainWeightValueIndex = css.indexOf('font-weight: 900;', mainWeightIndex);
-    const mediaTypeIndex = css.lastIndexOf(
-      '.astryx-heading[data-type="hero"]',
+    const mediaTypeIndex = css.lastIndexOf('.astryx-heading[data-type="hero"]');
+    const mediaTypeWeightIndex = css.indexOf(
+      'font-weight: 350;',
+      mediaTypeIndex,
     );
-    const mediaTypeWeightIndex = css.indexOf('font-weight: 350;', mediaTypeIndex);
     const mediaWeightIndex = css.lastIndexOf(
       '.astryx-heading[data-weight="bold"]',
     );
-    const mediaWeightValueIndex = css.indexOf('font-weight: 800;', mediaWeightIndex);
+    const mediaWeightValueIndex = css.indexOf(
+      'font-weight: 800;',
+      mediaWeightIndex,
+    );
     expect(mainTypeWeightIndex).toBeGreaterThan(mainTypeIndex);
     expect(mainWeightValueIndex).toBeGreaterThan(mainWeightIndex);
     expect(mediaTypeWeightIndex).toBeGreaterThan(mediaTypeIndex);
@@ -342,9 +345,9 @@ describe('theme build custom-variant augmentations', () => {
           divider: { 'variant:customDivider': { borderColor: 'currentColor' } },
           'field-status': { 'variant:customFieldStatus': { color: 'currentColor' } },
           pagination: { 'variant:customPagination': { color: 'currentColor' } },
-          progressbar: { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
+          'progress-bar': { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
           section: { 'variant:customSection': { backgroundColor: 'transparent' } },
-          statusdot: { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
+          'status-dot': { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
           heading: { 'type:customHeading': { fontSize: '3rem' } },
           text: { 'color:customTextColor': { color: 'currentColor' } },
           token: { 'color:customTokenColor': { backgroundColor: 'transparent' } },

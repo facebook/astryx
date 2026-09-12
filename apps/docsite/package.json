@@ -40,6 +40,7 @@
     "prettier": "catalog:",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "recharts": "^3.9.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

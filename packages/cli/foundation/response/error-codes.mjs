@@ -55,7 +55,10 @@
  *   | 'ERR_UNKNOWN_TEMPLATE'
  *   | 'ERR_AMBIGUOUS_TEMPLATE'
  *   | 'ERR_AMBIGUOUS_COMPONENT'
+ *   | 'ERR_AMBIGUOUS_THEME'
  *   | 'ERR_UNKNOWN_THEME'
+ *   | 'ERR_INTEGRATION_ROOT_CONFLICT'
+ *   | 'ERR_INTEGRATION_EXPORT_CONFLICT'
  *   | 'ERR_UNKNOWN_PACKAGE'
  *   | 'ERR_UNKNOWN_AGENT'
  *   | 'ERR_UNKNOWN_FEATURE'
@@ -140,8 +143,14 @@ export const ERROR_CODES = Object.freeze({
   ERR_AMBIGUOUS_TEMPLATE: 'ERR_AMBIGUOUS_TEMPLATE',
   /** A component name is owned by more than one package (narrow with --package). */
   ERR_AMBIGUOUS_COMPONENT: 'ERR_AMBIGUOUS_COMPONENT',
+  /** A theme slug is owned by more than one package (narrow with --package). */
+  ERR_AMBIGUOUS_THEME: 'ERR_AMBIGUOUS_THEME',
   /** No theme matched the requested slug (theme add). */
   ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
+  /** An integration root already points somewhere other than the requested path. */
+  ERR_INTEGRATION_ROOT_CONFLICT: 'ERR_INTEGRATION_ROOT_CONFLICT',
+  /** A package export already maps a generated contribution subpath elsewhere. */
+  ERR_INTEGRATION_EXPORT_CONFLICT: 'ERR_INTEGRATION_EXPORT_CONFLICT',
   /** No package matched the requested name (discover). */
   ERR_UNKNOWN_PACKAGE: 'ERR_UNKNOWN_PACKAGE',
   /** An unrecognized `--agent` value was passed to agent-docs/init. */
@@ -176,7 +185,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_WRITE_FAILED: 'ERR_WRITE_FAILED',
 
   // ── Theme build ──────────────────────────────────────────────────
-  /** A theme definition was missing a required property (e.g. `name`). */
+  /** A theme definition or contributed theme catalog is invalid. */
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',

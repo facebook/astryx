@@ -35,9 +35,11 @@ import {emit, section, text, list, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
-import {themeList} from '../../../api/theme/list/list.mjs';
+import {themeListAvailable} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
 import {
   serializePaletteCandidate,
@@ -55,7 +57,7 @@ import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
 import {doc as themePaletteGroup} from './theme-palette.doc.mjs';
 import {doc as themePaletteGenerateCommand} from './theme-palette-generate.doc.mjs';
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
-import {doc as themeListFn} from '../../../api/theme/themeList.doc.mjs';
+import {doc as themeListFn} from '../../../api/theme/themeListAvailable.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
@@ -181,14 +183,28 @@ async function runThemeBuildWatch(entries, options) {
 }
 
 /**
- * Emit the bundled themes as a bulleted list plus the `theme add` usage hint —
- * the human projection of a `theme.list` envelope. Shared by `theme list` and
- * the list affordance of `theme add` (bare `theme add` / `--list`).
+ * Print the standard integration issue nudge without changing command results.
+ * @param {boolean} json
+ */
+async function warnOnThemeIntegrationIssues(json) {
+  try {
+    const project = await Project.load(process.cwd());
+    await project.themes();
+    await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+  } catch {
+    // Never let the nudge break the command.
+  }
+}
+
+/**
+ * Emit available themes as a bulleted list plus the `theme add` usage hint —
+ * the human projection of a `theme.list` envelope. Each row names its owner so
+ * duplicate slugs are distinguishable.
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeList(themes) {
   if (themes.length === 0) {
-    emit(text('No themes are bundled with this CLI build.'));
+    emit(text('No themes are available in this project.'));
     return;
   }
   const run = getCliInvocation();
@@ -196,7 +212,8 @@ function printThemeList(themes) {
     section('Themes'),
     list(
       themes.map(t => {
-        const head = t.maintained ? `${t.slug} (maintained)` : t.slug;
+        const status = t.maintained ? 'maintained' : 'example';
+        const head = `${t.slug} (${status}, ${t.package})`;
         return t.description ? [head, t.description] : head;
       }),
     ),
@@ -215,7 +232,9 @@ function printThemeList(themes) {
  */
 function formatTargetsTable(targets) {
   const rows = targets.map(t => ({
-    key: t.key,
+    key: t.deprecatedFor
+      ? `${t.key} [deprecated; use ${t.deprecatedFor}]`
+      : t.key,
     component: t.component,
     props: t.props.join(', ') || '-',
     states: t.states.join(', ') || '-',
@@ -299,10 +318,13 @@ export function registerTheme(program) {
           name: command.name(),
           reason: 'available subcommand',
         }));
-        return cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
-          suggestions,
-          code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
-        });
+        return cliError(
+          `unknown subcommand 'theme palette ${String(extras[0])}'`,
+          {
+            suggestions,
+            code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+          },
+        );
       }
       palette.help();
       return NO_RESULT_SET;
@@ -518,12 +540,15 @@ export function registerTheme(program) {
 
   defineCommand(theme, themeListCommand, {
     fn: themeListFn,
-    action: async () => {
+    action: async (/** @type {{package?: string}} */ options) => {
       const json = program.opts().json || false;
       /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse} */
       let result;
       try {
-        result = themeList();
+        result = await themeListAvailable({
+          cwd: process.cwd(),
+          package: options.package,
+        });
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
@@ -533,6 +558,7 @@ export function registerTheme(program) {
         });
       }
 
+      await warnOnThemeIntegrationIssues(json);
       const answered = resultSet({
         count: result.data.length,
         resultKind: 'theme',
@@ -552,7 +578,7 @@ export function registerTheme(program) {
     action: async (
       /** @type {string | undefined} */ slug,
       /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean}} */ options,
+      /** @type {{list?: boolean, overwrite?: boolean, package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
 
@@ -565,11 +591,12 @@ export function registerTheme(program) {
       try {
         result =
           options.list || !slug
-            ? themeList()
+            ? await themeListAvailable({cwd: process.cwd(), package: options.package})
             : await themeAdd(slug, {
                 targetPath,
                 overwrite: options.overwrite,
                 cwd: process.cwd(),
+                package: options.package,
               });
       } catch (e) {
         const err =
@@ -580,7 +607,8 @@ export function registerTheme(program) {
         });
       }
 
-      // `--list` (or no slug) browses the bundled themes; naming one copies it
+      await warnOnThemeIntegrationIssues(json);
+      // `--list` (or no slug) browses all available themes; naming one copies it
       // into the project, which is an effect with nothing to count.
       const answered =
         result.type === 'theme.list'
@@ -598,13 +626,20 @@ export function registerTheme(program) {
       }
 
       // theme.add — print where files landed + how to use the theme.
-      const {displayName, outputDir, entry, exportName, files} = result.data;
+      const {
+        displayName,
+        outputDir,
+        entry,
+        exportName,
+        files,
+        package: owner,
+      } = result.data;
       const entryModule = importSpecifier(
         outputDir,
         entry.replace(/\.tsx?$/, ''),
       );
       emit(
-        text(`[ok] Added ${displayName} theme to ${outputDir}/`),
+        text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
         list(files.map(f => `${outputDir}/${f}`)),
         text(
           'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',

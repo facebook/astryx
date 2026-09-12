@@ -24,6 +24,7 @@ import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
+import {TEMPLATE_COMPONENTS} from '../components/templateComponents';
 import {exampleRegistry} from '../generated/exampleRegistry';
 import {normalizeComponentCategory} from '../lib/componentCategories';
 
@@ -988,6 +989,27 @@ describe('templateRegistry', () => {
     const slugs = templates.map(t => t.slug);
     expect(slugs).toContain('dashboard');
     expect(slugs).toContain('settings');
+  });
+
+  it('surfaces all dashboard templates with live previews', () => {
+    const dashboards = templates.filter(template =>
+      template.category.startsWith('Dashboard'),
+    );
+
+    expect(dashboards.map(template => template.slug).sort()).toEqual([
+      'dashboard',
+      'dashboard-alert-rail',
+      'dashboard-cohort-funnel',
+      'dashboard-comparison',
+      'dashboard-composition',
+      'dashboard-progress',
+      'dashboard-scorecard',
+    ]);
+    for (const template of dashboards) {
+      expect(template.isReady).toBe(true);
+      expect(template.isHiddenFromOverview).toBe(false);
+      expect(TEMPLATE_COMPONENTS[template.slug]).toBeDefined();
+    }
   });
 
   it('no duplicate template slugs', () => {

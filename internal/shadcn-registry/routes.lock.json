@@ -1412,6 +1412,11 @@
       "aliases": []
     },
     {
+      "name": "example-chart-trend-comparison",
+      "path": "examples/chart/trend-comparison",
+      "aliases": []
+    },
+    {
       "name": "example-chat-composer-drawer-attachments",
       "path": "examples/chat-composer-drawer/attachments",
       "aliases": []
