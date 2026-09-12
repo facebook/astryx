@@ -4,7 +4,7 @@
 
 /**
  * @file ChatTypingIndicator.tsx
- * @input Uses React, StyleX (keyframes), theme tokens
+ * @input Uses React, i18n (useTranslator/useLocale), StyleX (keyframes), theme tokens
  * @output Exports ChatTypingIndicator component and ChatTypingIndicatorProps
  * @position Animated "X is typing…" hint above a chat composer
  *
@@ -19,6 +19,7 @@
  * - /apps/storybook/stories/ChatAdditions.stories.tsx (examples)
  */
 
+import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -31,6 +32,8 @@ import {
 import type {BaseProps} from '@astryxdesign/core';
 import {mergeProps} from '@astryxdesign/core/utils';
 import {themeProps} from '@astryxdesign/core/utils';
+import {useLocale, useTranslator} from '@astryxdesign/core/i18n';
+import type {TranslatorFn} from '@astryxdesign/core/i18n';
 
 export interface ChatTypingIndicatorProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -94,17 +97,36 @@ const styles = stylex.create({
   },
 });
 
-function typingLabel(names: string[] | undefined): string | null {
+/**
+ * Builds the status sentence for the people currently typing.
+ *
+ * Every phrase comes from the translation catalog, and the names themselves are
+ * joined by `Intl.ListFormat` for the active locale rather than an English
+ * "and". Three or more people collapse to the first name plus a translated
+ * overflow phrase, which is then joined the same way — so the conjunction, the
+ * separator, and their order all follow the locale instead of this file.
+ */
+function typingLabel(
+  names: string[] | undefined,
+  t: TranslatorFn,
+  listFormat: Intl.ListFormat,
+): string | null {
   if (names == null || names.length === 0) {
     return null;
   }
   if (names.length === 1) {
-    return `${names[0]} is typing…`;
+    return t('@astryx.chatTypingIndicator.one', {name: names[0]});
   }
-  if (names.length === 2) {
-    return `${names[0]} and ${names[1]} are typing…`;
-  }
-  return `${names[0]} and ${names.length - 1} others are typing…`;
+  const parts =
+    names.length === 2
+      ? [names[0], names[1]]
+      : [
+          names[0],
+          t('@astryx.chatTypingIndicator.others', {count: names.length - 1}),
+        ];
+  return t('@astryx.chatTypingIndicator.many', {
+    names: listFormat.format(parts),
+  });
 }
 
 // =============================================================================
@@ -132,7 +154,13 @@ export function ChatTypingIndicator({
   'data-testid': testId,
   ref,
 }: ChatTypingIndicatorProps) {
-  const label = typingLabel(names);
+  const t = useTranslator();
+  const locale = useLocale();
+  const listFormat = useMemo(
+    () => new Intl.ListFormat(locale, {style: 'long', type: 'conjunction'}),
+    [locale],
+  );
+  const label = typingLabel(names, t, listFormat);
   return (
     <div
       ref={ref}

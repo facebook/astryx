@@ -447,6 +447,18 @@
     "defaultMessage": "Next",
     "description": "Screen-reader-only label on the right-arrow button in a Lightbox (navigates to next media item). Pairs with `lightbox.previous`."
   },
+  "@astryx.chatTypingIndicator.one": {
+    "defaultMessage": "{name} is typing…",
+    "description": "Politely announced status naming the single person currently typing in a chat. `name` is a display name supplied by the app. Present-progressive form; the trailing ellipsis is the single … character."
+  },
+  "@astryx.chatTypingIndicator.many": {
+    "defaultMessage": "{names} are typing…",
+    "description": "Politely announced status when more than one person is typing in a chat. `names` is already joined for the locale by Intl.ListFormat, so translations must not add their own conjunction — place `{names}` where the joined list belongs."
+  },
+  "@astryx.chatTypingIndicator.others": {
+    "defaultMessage": "{count, number} {count, plural, one {other} other {others}}",
+    "description": "Overflow element for the chat typing status when three or more people type: the first name is shown and the rest collapse into this phrase, which is then joined to the name by Intl.ListFormat. Renders as the last list item, e.g. \"Ana and 2 others\"."
+  },
   "@astryx.listInput.emptyTitle": {
     "defaultMessage": "No {itemName}s yet",
     "description": "EmptyState title shown inside a lab ListInput when its collection has no records. `{itemName}` is the consumer's singular noun for one record (e.g. \"guest\"); the source appends a literal \"s\" to pluralize it, which only works for regular English plurals. If your language cannot pluralize an interpolated noun this way, rephrase around `{itemName}` instead (e.g. \"No {itemName} added yet\")."
