@@ -31,6 +31,7 @@ import {
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -385,6 +386,81 @@ describe('Switch', () => {
         document.querySelector('[data-astryx-live-region="assertive"]'),
       ).toHaveTextContent('Failed to save setting');
     });
+  });
+
+  it('announces loading state through useAnnounce when busy', async () => {
+    const {container, rerender} = render(
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
+    );
+    // Does not introduce a permanent live region DOM element per switch
+    expect(
+      container.querySelector('[role="status"][aria-live="polite"]'),
+    ).toBeNull();
+
+    rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
+  });
+
+  it('localizes the loading announcement through the i18n catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.switch.loading': 'Chargement'}}}>
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isLoading
+        />
+      </InternationalizationProvider>,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Chargement');
+    });
+  });
+
+  it('announces loading state while async changeAction is pending', async () => {
+    let resolveAction!: () => void;
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    fireEvent.click(switchEl);
+
+    expect(changeAction).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
+
+    resolveAction();
   });
 
   it('calls onFocus and onBlur callbacks', async () => {
