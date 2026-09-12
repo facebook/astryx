@@ -114,8 +114,23 @@ export const doc = {
         'A component name is owned by more than one package (narrow with --package).',
     },
     {
+      value: 'ERR_AMBIGUOUS_THEME',
+      description:
+        'A theme slug is owned by more than one package (narrow with --package).',
+    },
+    {
       value: 'ERR_UNKNOWN_THEME',
       description: 'No theme matched the requested slug (theme add).',
+    },
+    {
+      value: 'ERR_INTEGRATION_ROOT_CONFLICT',
+      description:
+        'An integration manifest already declares a different path for the requested contribution root.',
+    },
+    {
+      value: 'ERR_INTEGRATION_EXPORT_CONFLICT',
+      description:
+        'A package export already maps a generated contribution subpath to a different target.',
     },
     {
       value: 'ERR_UNKNOWN_PACKAGE',
@@ -189,7 +204,7 @@ export const doc = {
     {
       value: 'ERR_THEME_INVALID',
       description:
-        'A theme definition was missing a required property (e.g. `name`).',
+        'A theme definition or contributed theme catalog is invalid.',
     },
     {
       value: 'ERR_THEME_LOAD',

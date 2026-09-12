@@ -19,8 +19,8 @@ export const doc = {
     'Validates exactly ONE integration at a time: the local package rooted at ' +
     'cwd (no `pkg`), or an installed package resolved from cwd/node_modules ' +
     '(`pkg` given). It loads and schema-checks the manifest, verifies each ' +
-    'declared contribution root exists, and runs the codemod/template/component ' +
-    'validators, returning every finding as an AstryxIntegrationIssue. A missing ' +
+    'declared contribution root exists, and runs the codemod/template/component/' +
+    'docs/theme validators, returning every finding as an AstryxIntegrationIssue. A missing ' +
     'local manifest is guidance (name null, no issues), not an error, so callers ' +
     'can stay exit-0 in a non-integration directory.',
   importPath: '@astryxdesign/cli/api',

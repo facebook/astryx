@@ -361,7 +361,7 @@ export async function checkConfig(ctx) {
  *
  * The CLI autolinks an installed dependency that ships an
  * `astryx.integration.*` manifest, so a project can be getting components,
- * templates, docs and codemods from a package nothing in the project mentions.
+ * templates, themes, docs and codemods from a package nothing in the project mentions.
  * Two questions follow, and this line is the answer to both:
  *
  *   - "Why can the CLI see this?" — asked by an author who greps the project
@@ -417,7 +417,7 @@ export function checkImplicitIntegrations(ctx) {
       integration.__spec && integration.__spec !== integration.name
         ? ` (declared as "${integration.__spec}")`
         : '';
-    const roots = ['components', 'templates', 'docs', 'codemods'].filter(
+    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
       root => integration[/** @type {'components'} */ (root)],
     );
     const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';

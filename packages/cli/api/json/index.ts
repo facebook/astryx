@@ -22,6 +22,7 @@ export type * from '../hook/hook.type.mjs';
 export type * from '../search/search.type.mjs';
 export type * from '../build/build.type.mjs';
 export type * from '../swizzle/swizzle.type.mjs';
+export type * from '../gap-report/gap-report.type.mjs';
 export type * from '../upgrade/upgrade.type.mjs';
 export type * from '../init/init.type.mjs';
 export type * from '../doctor/doctor.type.mjs';

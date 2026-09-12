@@ -13,7 +13,7 @@
  * did that. Optional contributions such as `agentDocs` carry their own error
  * marker so a bad contribution is reported without withdrawing valid roots.
  * What is re-checked is the on-disk contributions (roots +
- * codemods/templates/components), because those regress independently of the
+ * codemods/templates/components/docs/themes), because those regress independently of the
  * manifest: a deleted directory, a template that lost its source file.
  *
  * @input a loaded-integration-shaped object (absolute contribution roots + identity)
@@ -22,10 +22,14 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {isValidSemver} from '../env/semver.mjs';
+import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
 import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
+import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -77,12 +81,18 @@ function checkUnknownKeys(integration, issues) {
 /**
  * Verify each declared contribution root exists on disk. A declared-but-missing
  * root is a `missing_root` error.
- * @param {{components?: string, templates?: string, codemods?: string, docs?: string}} resolved
+ * @param {{components?: string, templates?: string, codemods?: string, docs?: string, themes?: string}} resolved
  *   absolute resolved roots (undefined when not declared)
  * @param {Issue[]} issues
  */
 function checkRoots(resolved, issues) {
-  const kinds = /** @type {const} */ (['components', 'templates', 'codemods', 'docs']);
+  const kinds = /** @type {const} */ ([
+    'components',
+    'templates',
+    'codemods',
+    'docs',
+    'themes',
+  ]);
   for (const kind of kinds) {
     const root = resolved[kind];
     if (root == null) continue;
@@ -106,10 +116,42 @@ function checkRoots(resolved, issues) {
  */
 async function checkCodemods(integration, issues) {
   if (!integration.codemods || !fs.existsSync(integration.codemods)) return;
+  for (const entry of fs.readdirSync(integration.codemods, {
+    withFileTypes: true,
+  })) {
+    if (
+      entry.isFile() &&
+      /\.(?:ts|mjs|js)$/u.test(entry.name) &&
+      !/\.(?:test|spec|fixture)\.(?:ts|mjs|js)$/u.test(entry.name)
+    ) {
+      issues.push(
+        issueWarning(
+          'codemod_outside_version',
+          `Codemod file "${path.join(integration.codemods, entry.name)}" is outside a version folder, so upgrade will never load it.`,
+        ),
+      );
+    }
+    if (
+      entry.isDirectory() &&
+      !['node_modules', '.git', '__tests__', '__fixtures__'].includes(
+        entry.name,
+      ) &&
+      !isValidSemver(entry.name)
+    ) {
+      issues.push(
+        issueError(
+          'invalid_codemod_version',
+          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0.`,
+        ),
+      );
+    }
+  }
   try {
     await discoverIntegrationCodemods([integration]);
   } catch (err) {
-    issues.push(issueError('invalid_codemod', /** @type {any} */ (err).message));
+    issues.push(
+      issueError('invalid_codemod', /** @type {any} */ (err).message),
+    );
   }
 }
 
@@ -127,7 +169,9 @@ async function checkTemplates(integration, issues) {
       issues.push(issueError('invalid_template', e.message));
     }
   } catch (err) {
-    issues.push(issueError('invalid_template', /** @type {any} */ (err).message));
+    issues.push(
+      issueError('invalid_template', /** @type {any} */ (err).message),
+    );
   }
 }
 
@@ -159,8 +203,21 @@ async function checkComponents(integration, issues) {
         );
       }
     }
+    for (const name of findSourceOnlyCandidates(
+      integration.components,
+      records.map(record => record.name),
+    )) {
+      issues.push(
+        issueWarning(
+          'source_without_component_doc',
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it.`,
+        ),
+      );
+    }
   } catch (err) {
-    issues.push(issueError('invalid_component', /** @type {any} */ (err).message));
+    issues.push(
+      issueError('invalid_component', /** @type {any} */ (err).message),
+    );
   }
 }
 
@@ -190,6 +247,22 @@ async function checkDocs(integration, issues) {
 }
 
 /**
+ * Validate the integration's source-theme catalog. The same discovery function
+ * powers Project and theme list/add, so validation cannot accept a shape that
+ * consumers later fail to use.
+ * @param {LoadedIntegration} integration
+ * @param {Issue[]} issues
+ */
+async function checkThemes(integration, issues) {
+  if (!integration.themes || !fs.existsSync(integration.themes)) return;
+  try {
+    await discoverIntegrationThemes(integration);
+  } catch (err) {
+    issues.push(issueError('invalid_theme', /** @type {any} */ (err).message));
+  }
+}
+
+/**
  * Run every contribution validator against a loaded-integration-shaped object.
  * @param {LoadedIntegration} integration
  * @param {Issue[]} issues
@@ -199,6 +272,7 @@ async function runContributionChecks(integration, issues) {
   await checkTemplates(integration, issues);
   await checkComponents(integration, issues);
   await checkDocs(integration, issues);
+  await checkThemes(integration, issues);
 }
 
 /**
@@ -232,6 +306,7 @@ export async function validateLoadedIntegration(loaded) {
       templates: loaded.templates,
       codemods: loaded.codemods,
       docs: loaded.docs,
+      themes: loaded.themes,
     },
     issues,
   );

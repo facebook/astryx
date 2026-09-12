@@ -137,18 +137,38 @@ function App() {
       ],
     },
     {
+      title: 'Using a Theme from an Integration',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Install the integration as a direct dependency and Astryx discovers its source themes and guide topics without an `astryx.config` file. Install Core too because the copied source imports `defineTheme` from `@astryxdesign/core/theme`.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Install, inspect, copy, and build',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'The copy is editable project source, not a reference back into node_modules. Every file named by the theme catalog comes with it, including nested token or palette modules. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+        },
+      ],
+    },
+    {
       title: 'Creating a Custom Theme',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Browse, then copy a theme in as editable source',
-          code: 'astryx theme list\nastryx theme add stone',
+          code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes',
         },
         {
           type: 'prose',

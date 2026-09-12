@@ -66,6 +66,7 @@ export const RESPONSE_TYPES = {
   search: ['search'],
   build: ['build.help', 'build.kit'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
+  'gap-report': ['gap-report.categories', 'gap-report.file'],
   template: [
     'template.list',
     'template.show',
@@ -80,6 +81,8 @@ export const RESPONSE_TYPES = {
   'theme template': ['theme.template'],
   'theme targets': ['theme.targets'],
   'theme palette generate': ['theme.palette.generate'],
+  'integration add': ['integration.add'],
+  'integration pack': ['integration.pack-check'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
@@ -110,6 +113,10 @@ const EXAMPLES = {
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
+  'gap-report': [
+    'astryx gap-report --list-categories',
+    "astryx gap-report Button --category docs_gap --reason 'Missing keyboard example'",
+  ],
   template: [
     'astryx template --json',
     'astryx template dashboard ./src/app',
@@ -134,6 +141,11 @@ const EXAMPLES = {
     'astryx theme palette generate palette.config.json',
     'astryx theme palette generate palette.config.json --out ocean.palette.json',
   ],
+  'integration add': [
+    'astryx integration add component AcmeWidget',
+    'astryx integration add doc deploying --dry-run --json',
+  ],
+  'integration pack': ['astryx integration pack --check --json'],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],

@@ -47,6 +47,12 @@ export const doc = {
         'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
     },
     {
+      name: 'import',
+      type: 'string',
+      description:
+        'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
+    },
+    {
       name: 'keywords',
       type: 'string[]',
       description:

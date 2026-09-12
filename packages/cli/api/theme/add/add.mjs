@@ -1,18 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx theme add` leaf — copies a bundled theme's source
- * (`templates/themes/<slug>/`) into the consumer's project so they own it,
- * without needing the theme package. Which theme is resolved by ../_adapter.mjs;
+ * @file `astryx theme add` leaf — copies an available theme's source from the
+ * CLI bundle or an installed integration into the consumer's project so they own it.
  * this leaf owns the copy I/O + path-safety and returns a `theme.add` receipt.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {
+  assertWithin,
+  PathSafetyError,
+} from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {THEMES_DIR, listThemes, findTheme} from '../_adapter.mjs';
+import {listAvailableThemes, findTheme} from '../_adapter.mjs';
 // Scaffolded files must not carry our repo boilerplate into a consumer's tree.
 import {stripCopyrightHeader} from '../../../foundation/text/copyright-header.mjs';
 
@@ -32,25 +34,33 @@ function defaultTargetDir(slug) {
  * file (without `overwrite`), a missing bundled file, or a write failure.
  *
  * @param {string} slug
- * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
+ * @param {{targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}} [options]
  * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
  */
 export async function themeAdd(slug, options = {}) {
-  const {targetPath, overwrite = false, cwd = process.cwd()} = options;
+  const {
+    targetPath,
+    overwrite = false,
+    cwd = process.cwd(),
+    package: packageName,
+  } = options;
 
-  const match = findTheme(slug);
+  const match = await findTheme(slug, {cwd, package: packageName});
   if (!match) {
+    const available = await listAvailableThemes(cwd);
     throw new AstryxError(
-      `Unknown theme "${slug}"`,
-      listThemes().map(t => ({
-        name: t.slug,
-        reason: t.maintained ? 'maintained theme' : 'example theme',
+      `Unknown theme "${slug}"${packageName ? ` in package "${packageName}"` : ''}`,
+      available.map(theme => ({
+        name: `${theme.slug} --package ${theme.package}`,
+        reason: theme.bundled
+          ? 'bundled theme'
+          : `provided by ${theme.package}`,
       })),
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );
   }
 
-  const themeSrcDir = path.join(THEMES_DIR, match.slug);
+  const themeSrcDir = match.sourceDir;
 
   // Path-safe destination; reject traversal outside cwd.
   const rawTarget = targetPath || defaultTargetDir(match.slug);
@@ -68,11 +78,25 @@ export async function themeAdd(slug, options = {}) {
     throw err;
   }
 
-  const writes = match.files.map(name => ({
-    name,
-    src: path.join(themeSrcDir, name),
-    dest: path.join(resolvedDir, name),
-  }));
+  let writes;
+  try {
+    writes = match.files.map(name => ({
+      name,
+      src: path.join(themeSrcDir, name),
+      dest: assertWithin(name, resolvedDir, {
+        label: `theme destination for ${name}`,
+      }),
+    }));
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
+    throw err;
+  }
   for (const w of writes) {
     if (!fs.existsSync(w.src)) {
       throw new AstryxError(
@@ -106,10 +130,14 @@ export async function themeAdd(slug, options = {}) {
   try {
     fs.mkdirSync(resolvedDir, {recursive: true});
     for (const w of writes) {
-      const tmp = `${w.dest}.${process.pid}.tmp`;
+      const dest = assertWithin(w.name, resolvedDir, {
+        label: `theme destination for ${w.name}`,
+      });
+      fs.mkdirSync(path.dirname(dest), {recursive: true});
+      const tmp = `${dest}.${process.pid}.tmp`;
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
       fs.writeFileSync(tmp, contents);
-      staged.push({tmp, dest: w.dest});
+      staged.push({tmp, dest});
     }
     for (const s of staged) {
       fs.renameSync(s.tmp, s.dest);
@@ -121,6 +149,13 @@ export async function themeAdd(slug, options = {}) {
       } catch {
         /* best-effort */
       }
+    }
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
     }
     throw new AstryxError(
       `Failed to write theme files: ${/** @type {any} */ (err).message}`,
@@ -136,6 +171,7 @@ export async function themeAdd(slug, options = {}) {
       slug: match.slug,
       displayName: match.displayName,
       maintained: match.maintained,
+      package: match.package,
       outputDir: relDir,
       entry: match.entry,
       exportName: match.exportName,
