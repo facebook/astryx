@@ -170,16 +170,9 @@ export const BUTTON_BINDING_STATES = [
     binding: 'Button',
     summary:
       'a button waiting on the action it started: the action is unavailable, and it is meant to stay focusable so the user can see that and interrupt it',
-    // `focusable: true` is the declaration, and the component does not deliver
-    // it — see the known-failure records. Declaring what the component does
-    // instead would make the expectations that catch it not-applicable, which
-    // is how a contract quietly stops noticing a defect.
     facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--button-loading',
-    declaredNotDelivered: [
-      {fact: 'focusable', owned: 'button.focus.reachable-and-escapable'},
-    ],
   },
 
   // ---- IconButton ---------------------------------------------------------
@@ -207,9 +200,6 @@ export const BUTTON_BINDING_STATES = [
     facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--icon-button-loading',
-    declaredNotDelivered: [
-      {fact: 'focusable', owned: 'button.focus.reachable-and-escapable'},
-    ],
   },
 
   // ---- ClickableCard ------------------------------------------------------
