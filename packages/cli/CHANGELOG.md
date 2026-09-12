@@ -1,5 +1,43 @@
 # @xds/cli
 
+# 0.6.1
+
+#### New Features
+
+- Load an installed integration even when no `astryx.config` names it (#6202)
+  A package the project declares as a dependency, and that ships a root `astryx.integration.*` manifest, is now loaded on sight — no config entry required. A scaffold that adds the dependency and writes no config used to leave the integration invisible: its components, templates, docs and codemods all reported as missing, which is indistinguishable from not having installed it at all.
+
+  Only DECLARED dependencies are probed — `dependencies`, `devDependencies` and `optionalDependencies` — and only by key. `node_modules` is never walked, so a transitive dependency of a dependency cannot contribute; and because the value is never parsed, a dependency that is not a semver range (`npm:` aliases, `workspace:`, `file:`, `link:`, `catalog:`) resolves like any other. Identity comes from the resolved package's own `name`, so an aliased dependency reports the package it actually is, and two dependency keys naming one package load it once.
+
+  An explicit `astryx.config` entry keeps its precedence and its position, and a dependency whose manifest fails to load is dropped quietly rather than reported as the consuming project's problem.
+
+  `astryx doctor` gains an `implicit-integrations` line naming each integration linked this way, the package.json field that declared it, and what it contributes — so an author can answer "why can the CLI see this?" without reading the CLI's source, and an unused-dependency check has something to read that says the dependency is load-bearing. The line is always informational, so the doctor CI gate is unaffected.
+- Replace executable gap-report writers with composable handlers.
+  Gap reports now fan out to every configured handler — project config first, then each loaded integration in config order — instead of selecting one writer. Each handler gets its own report copy and an abort signal under a 30 s budget. A failed handler cannot stop later handlers, and the aggregate receipt shows every outcome.
+
+  Public types: `GapReportHandler` replaces `GapReportWriter`; the handler receives a normalized `GapReport` event and returns a strict `GapReportHandlerReceipt`. Project config gains a `gapReport` field; the integration named export uses the same type.
+- Add integration authoring and packed-package verification. `astryx integration add <kind> <name>` and the per-kind `integrationAddComponent`, `integrationAddDoc`, `integrationAddTemplate`, `integrationAddCodemod`, `integrationAddAgentDoc`, and `integrationAddTheme` APIs write complete contributions. Existing component, docs, template, and theme commands see the package being authored without publishing it first. `astryx integration pack --check` proves the same contributions survive the npm tarball and that packed components remain available through their public imports. Doctor now names source-only components, unreachable metadata, codemods outside a version folder, and invalid version folders.
+- Add upgrade receipts and safe three-way reconciliation for ShadCN-copied compositions.
+- Let integration packages contribute source themes
+  An integration can declare a themes root using the same bundle shape as Astryx's built-in themes. Installed themes now appear in `theme list`, and `theme add` can copy one by owner.
+
+#### Fixes
+
+- Center: preserve component-owned axis reflection and correct the horizontal-centering example.
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration.
+- `component` and `search` now report the same import specifier for an integration component, resolved once in `foundation/discovery/component-discovery.mjs`. `search` previously returned the bare package name, which does not resolve for a package whose components are exported behind subpaths.
+- Make generated ShadCN compositions match the exact bytes written by the stock client, include package peer dependencies, and require full-catalog install/build coverage in CI.
+- Keep copied integration theme files inside the target project.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @josephfarina
+
+---
+
 # 0.6.0
 
 #### Breaking Changes
