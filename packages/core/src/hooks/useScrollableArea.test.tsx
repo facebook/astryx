@@ -269,6 +269,30 @@ describe('useScrollableArea', () => {
     expect(viewport.style.overscrollBehaviorY).toBe('auto');
   });
 
+  it('preserves caller overscroll behavior on axes outside the requested intent', () => {
+    function InlineOnly() {
+      const area = useScrollableArea({
+        axis: 'inline',
+        keyboardAccess: {owner: 'content'},
+        scrollChaining: 'contain',
+      });
+      return (
+        <div
+          data-testid="inline-only"
+          {...area.getViewportProps({
+            style: {overflowX: 'auto', overscrollBehaviorY: 'none'},
+          })}>
+          <div {...area.getContentProps()}>Content</div>
+        </div>
+      );
+    }
+
+    render(<InlineOnly />);
+    const viewport = screen.getByTestId('inline-only');
+    expect(viewport.style.overscrollBehaviorX).toBe('auto');
+    expect(viewport.style.overscrollBehaviorY).toBe('none');
+  });
+
   it('removes a lost tab stop without moving current focus', () => {
     render(<Fixture />);
     const viewport = screen.getByTestId('viewport');

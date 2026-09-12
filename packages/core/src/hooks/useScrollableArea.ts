@@ -306,12 +306,16 @@ export function useScrollableArea({
       const inlinePhysical = mapping.inline;
       const blockPhysical = mapping.block;
 
-      behaviorStyle[
-        inlinePhysical === 'x' ? 'overscrollBehaviorX' : 'overscrollBehaviorY'
-      ] = containInline ? 'contain' : 'auto';
-      behaviorStyle[
-        blockPhysical === 'x' ? 'overscrollBehaviorX' : 'overscrollBehaviorY'
-      ] = containBlock ? 'contain' : 'auto';
+      if (axisIsRequested(axis, 'inline')) {
+        behaviorStyle[
+          inlinePhysical === 'x' ? 'overscrollBehaviorX' : 'overscrollBehaviorY'
+        ] = containInline ? 'contain' : 'auto';
+      }
+      if (axisIsRequested(axis, 'block')) {
+        behaviorStyle[
+          blockPhysical === 'x' ? 'overscrollBehaviorX' : 'overscrollBehaviorY'
+        ] = containBlock ? 'contain' : 'auto';
+      }
 
       const keyboardProps =
         keyboardAccess.owner === 'viewport'
