@@ -4,8 +4,9 @@
 /**
  * @file verify-full-catalog.mjs
  * @description Installs every generated Astryx registry item through the pinned
- *   ShadCN client, verifies exact written bytes and dependencies, then compiles
- *   every installed source file against the current Astryx package exports.
+ *   ShadCN client in TypeScript and JavaScript modes, verifies exact written
+ *   bytes and dependencies, then compiles every installed source file against
+ *   the current Astryx package exports.
  * @input A generated canary registry under apps/docsite/public/shadcn.
  * @output A clean-consumer proof for every canonical item and alias route.
  * @position Required CI contract for the public ShadCN compatibility surface.
@@ -20,7 +21,16 @@ import {fileURLToPath} from 'node:url';
 
 import {build} from 'esbuild';
 
-import {parseRegistryReceipt} from '../../packages/cli/authoring/shadcn/receipt.mjs';
+import {
+  createShadcnPrecompiledDeclaration,
+  shadcnJavaScriptTarget,
+  shadcnPrecompiledDeclarationTarget,
+  transformShadcnJavaScriptSource,
+} from '../../packages/cli/authoring/shadcn/source-variants.mjs';
+import {
+  parseRegistryReceipt,
+  registryContentHash,
+} from '../../packages/cli/authoring/shadcn/receipt.mjs';
 import {expandWorkspaceDirs} from '../../scripts/lib/workspace-globs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +46,7 @@ const docsiteRequire = createRequire(
   path.join(REPO_ROOT, 'apps', 'docsite', 'package.json'),
 );
 const SHADCN_BIN = docsiteRequire.resolve('shadcn');
+const TYPESCRIPT_BIN = docsiteRequire.resolve('typescript/bin/tsc');
 const KEEP_TEMP = process.env.ASTRYX_KEEP_SHADCN_MATRIX === '1';
 const MAX_COMMAND_OUTPUT = 16 * 1024 * 1024;
 const COPIED_KINDS = new Set(['showcase', 'example', 'block', 'page']);
@@ -88,21 +99,50 @@ function localPackageDirs() {
 
 function verifyItemFileShape(item) {
   const receipts = item.files.filter(
-    file => file.type === 'registry:file' && file.target.includes('/.astryx/'),
+    file =>
+      file.type === 'registry:file' &&
+      file.target.includes('/.astryx/') &&
+      file.target.endsWith('.json'),
   );
-  const sources = item.files.filter(file => !receipts.includes(file));
+  const declarations = item.files.filter(
+    file =>
+      file.type === 'registry:file' && file.target.endsWith('.astryx.d.mts'),
+  );
+  const sources = item.files.filter(
+    file => !receipts.includes(file) && !declarations.includes(file),
+  );
   const kind = item.astryx?.kind;
 
   if (COPIED_KINDS.has(kind)) {
+    const precompiled = item.astryx?.precompiledStylex === true;
     if (
       sources.length !== 1 ||
       receipts.length !== 1 ||
-      item.files.length !== 2
+      declarations.length !== (precompiled ? 1 : 0) ||
+      item.files.length !== (precompiled ? 3 : 2)
     ) {
-      fail(`${item.name} must contain exactly one source and one receipt`);
+      fail(
+        `${item.name} must contain one source, one receipt, and a declaration only for precompiled JavaScript`,
+      );
     }
     const source = sources[0];
     const receiptFile = receipts[0];
+    if (precompiled) {
+      if (!/\.jsx?$/.test(source.target)) {
+        fail(`${item.name} precompiled source must be JavaScript`);
+      }
+      const declaration = declarations[0];
+      if (
+        declaration.target !==
+          shadcnPrecompiledDeclarationTarget(source.target) ||
+        declaration.content !==
+          createShadcnPrecompiledDeclaration(source.target)
+      ) {
+        fail(`${item.name} has an invalid precompiled-source declaration`);
+      }
+    } else if (!/\.tsx?$/.test(source.target)) {
+      fail(`${item.name} canonical copied source must remain TypeScript`);
+    }
     const expectedReceiptTarget = path.posix.join(
       path.posix.dirname(source.target),
       '.astryx',
@@ -122,12 +162,48 @@ function verifyItemFileShape(item) {
       receipt.item.name !== item.name ||
       receipt.item.path !== item.astryx.path ||
       receipt.item.kind !== kind ||
-      receipt.files.length !== 1 ||
+      receipt.files.length !== (precompiled ? 2 : 1) ||
       receipt.files[0].registryPath !== source.path ||
       receipt.files[0].registryTarget !== source.target ||
       receipt.files[0].content !== source.content
     ) {
       fail(`${item.name} receipt does not describe its installed source`);
+    }
+    if (precompiled) {
+      const declaration = declarations[0];
+      const declarationReceipt = receipt.files[1];
+      if (
+        declarationReceipt.id !== 'types' ||
+        declarationReceipt.registryPath !== declaration.path ||
+        declarationReceipt.registryTarget !== declaration.target ||
+        declarationReceipt.content !== declaration.content ||
+        declarationReceipt.variants?.length !== 0
+      ) {
+        fail(
+          `${item.name} receipt does not describe its TypeScript declaration`,
+        );
+      }
+    }
+    if (receipt.schemaVersion !== 2) {
+      fail(`${item.name} receipt is not schema version 2`);
+    }
+    const expectedJavaScriptTarget = shadcnJavaScriptTarget(source.target);
+    const javascript = receipt.files[0].variants.find(
+      variant => variant.format === 'javascript',
+    );
+    if (expectedJavaScriptTarget === source.target) {
+      if (receipt.files[0].variants.length !== 0) {
+        fail(
+          `${item.name} JavaScript source must not duplicate itself as a variant`,
+        );
+      }
+    } else if (
+      receipt.files[0].variants.length !== 1 ||
+      javascript?.registryTarget !== expectedJavaScriptTarget ||
+      javascript?.content !== transformShadcnJavaScriptSource(source.content) ||
+      javascript?.sha256 !== registryContentHash(javascript?.content ?? '')
+    ) {
+      fail(`${item.name} receipt lacks its exact JavaScript install variant`);
     }
     return;
   }
@@ -136,6 +212,7 @@ function verifyItemFileShape(item) {
     (kind === 'component' || kind === 'hook') &&
     sources.length === 1 &&
     receipts.length === 0 &&
+    declarations.length === 0 &&
     item.files.length === 1
   ) {
     return;
@@ -231,7 +308,7 @@ function loadCatalog() {
   return {items, routeCount: routes.size, targetCount: targets.size};
 }
 
-function writeConsumer(project, items, packageDirs) {
+function writeConsumer(project, items, packageDirs, {tsx}) {
   const rootManifest = readJSON(path.join(REPO_ROOT, 'package.json'));
   const itemDirectory = path.join(project, 'items');
   fs.mkdirSync(path.join(project, 'src'), {recursive: true});
@@ -246,6 +323,8 @@ function writeConsumer(project, items, packageDirs) {
         version: '0.0.0',
         packageManager: rootManifest.packageManager,
         dependencies: {
+          '@types/react': rootManifest.devDependencies['@types/react'],
+          '@types/react-dom': rootManifest.devDependencies['@types/react-dom'],
           react: rootManifest.devDependencies.react,
           'react-dom': rootManifest.devDependencies['react-dom'],
         },
@@ -265,7 +344,6 @@ function writeConsumer(project, items, packageDirs) {
     `${JSON.stringify(
       {
         compilerOptions: {
-          baseUrl: '.',
           jsx: 'react-jsx',
           module: 'ESNext',
           moduleResolution: 'Bundler',
@@ -285,7 +363,7 @@ function writeConsumer(project, items, packageDirs) {
         $schema: 'https://ui.shadcn.com/schema.json',
         style: 'nova',
         rsc: false,
-        tsx: true,
+        tsx,
         tailwind: {
           config: '',
           css: 'src/index.css',
@@ -359,28 +437,44 @@ function runShadcn(project, itemPaths) {
   }
 }
 
-function verifyInstall(project, items, dependencyNames) {
+function expectedInstalledFile(file, tsx) {
+  if (tsx) return {target: file.target, content: file.content};
+  const target = shadcnJavaScriptTarget(file.target);
+  return {
+    target,
+    content:
+      target === file.target
+        ? file.content
+        : transformShadcnJavaScriptSource(file.content),
+  };
+}
+
+function verifyInstall(project, items, dependencyNames, {tsx}) {
   const sources = [];
   let installedFiles = 0;
 
   for (const item of items) {
     for (const file of item.files) {
+      const expected = expectedInstalledFile(file, tsx);
       const installed = resolveInside(
         path.join(project, 'src'),
-        file.target,
+        expected.target,
         `${item.name} installed target`,
       );
       if (!fs.existsSync(installed)) {
-        fail(`${item.name} did not install ${file.target}`);
+        fail(`${item.name} did not install ${expected.target}`);
       }
       const actual = fs.readFileSync(installed, 'utf8');
-      if (actual !== file.content) {
+      if (actual !== expected.content) {
         fail(
-          `${item.name} installed different bytes at ${file.target}; generated content must match stock ShadCN output`,
+          `${item.name} installed different ${tsx ? 'TypeScript' : 'JavaScript'} bytes at ${expected.target}`,
         );
       }
       installedFiles += 1;
-      if (!file.target.includes('/.astryx/')) {
+      if (
+        /\.[cm]?[jt]sx?$/.test(expected.target) &&
+        !/\.d\.[cm]?ts$/.test(expected.target)
+      ) {
         sources.push(installed);
       }
     }
@@ -410,6 +504,76 @@ function verifyInstall(project, items, dependencyNames) {
   return {installedFiles, sources};
 }
 
+function verifyPrecompiledTypeDeclarations(project, items) {
+  const precompiled = items.filter(
+    item => item.astryx?.precompiledStylex === true,
+  );
+  if (precompiled.length === 0) return;
+
+  const imports = [];
+  const identifiers = [];
+  const declarationFiles = [];
+  for (const [index, item] of precompiled.entries()) {
+    const source = item.files.find(file => /\.jsx?$/.test(file.target));
+    const declaration = item.files.find(file =>
+      file.target.endsWith('.astryx.d.mts'),
+    );
+    if (source == null || declaration == null) {
+      fail(`${item.name} is missing its precompiled source or declaration`);
+    }
+    const identifier = `Composition${index}`;
+    const specifier = `./${source.target.replace(/\.jsx?$/, '')}`;
+    imports.push(`import ${identifier} from ${JSON.stringify(specifier)};`);
+    identifiers.push(identifier);
+    declarationFiles.push(`src/${declaration.target}`);
+  }
+
+  const harness = 'src/__astryx-precompiled-typecheck.ts';
+  fs.writeFileSync(
+    path.join(project, harness),
+    `${imports.join('\n')}\n\nconst compositions: Array<import('react').ComponentType> = [${identifiers.join(', ')}];\nvoid compositions;\n`,
+  );
+  const configPath = path.join(project, 'tsconfig.precompiled.json');
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(
+      {
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          module: 'ESNext',
+          moduleResolution: 'Bundler',
+          skipLibCheck: true,
+          target: 'ES2022',
+        },
+        files: [harness, ...declarationFiles],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const result = spawnSync(
+    process.execPath,
+    [TYPESCRIPT_BIN, '--project', configPath],
+    {
+      cwd: project,
+      encoding: 'utf8',
+      maxBuffer: MAX_COMMAND_OUTPUT,
+      timeout: 2 * 60_000,
+    },
+  );
+  if (result.error != null) {
+    fail(
+      `could not type-check precompiled declarations: ${result.error.message}`,
+    );
+  }
+  if (result.status !== 0) {
+    process.stderr.write(result.stdout ?? '');
+    process.stderr.write(result.stderr ?? '');
+    fail(`precompiled declaration type-check exited ${result.status}`);
+  }
+}
+
 async function compileSources(project, sources) {
   await build({
     absWorkingDir: project,
@@ -429,36 +593,44 @@ async function main() {
   const startedAt = Date.now();
   const catalog = loadCatalog();
   const packageDirs = localPackageDirs();
-  const project = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'astryx-shadcn-registry-ci-'),
-  );
+  const results = [];
 
-  try {
-    const {dependencyNames, itemPaths} = writeConsumer(
-      project,
-      catalog.items,
-      packageDirs,
+  for (const tsx of [true, false]) {
+    const mode = tsx ? 'TypeScript' : 'JavaScript';
+    const project = fs.mkdtempSync(
+      path.join(os.tmpdir(), `astryx-shadcn-registry-${tsx ? 'tsx' : 'jsx'}-`),
     );
-    runShadcn(project, itemPaths);
-    const {installedFiles, sources} = verifyInstall(
-      project,
-      catalog.items,
-      dependencyNames,
-    );
-    await compileSources(project, sources);
-
-    const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
-    console.log(
-      `Verified ${catalog.items.length} items, ${catalog.routeCount} routes, ` +
-        `${installedFiles} installed files, and ${sources.length} compiled sources in ${seconds}s.`,
-    );
-  } finally {
-    if (KEEP_TEMP) {
-      console.log(`Kept clean consumer at ${project}`);
-    } else {
-      fs.rmSync(project, {recursive: true, force: true});
+    try {
+      const {dependencyNames, itemPaths} = writeConsumer(
+        project,
+        catalog.items,
+        packageDirs,
+        {tsx},
+      );
+      runShadcn(project, itemPaths);
+      const {installedFiles, sources} = verifyInstall(
+        project,
+        catalog.items,
+        dependencyNames,
+        {tsx},
+      );
+      if (tsx) verifyPrecompiledTypeDeclarations(project, catalog.items);
+      await compileSources(project, sources);
+      results.push({mode, installedFiles, sources: sources.length});
+    } finally {
+      if (KEEP_TEMP) {
+        console.log(`Kept ${mode} consumer at ${project}`);
+      } else {
+        fs.rmSync(project, {recursive: true, force: true});
+      }
     }
   }
+
+  const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+  console.log(
+    `Verified ${catalog.items.length} items and ${catalog.routeCount} routes in ` +
+      `${results.map(result => `${result.mode}: ${result.installedFiles} files, ${result.sources} compiled sources`).join('; ')} (${seconds}s).`,
+  );
 }
 
 main().catch(error => {

@@ -12,6 +12,13 @@ import * as path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {mergeDiff3} from 'node-diff3';
 import {
+  createShadcnPrecompiledDeclaration,
+  shadcnJavaScriptTarget,
+  shadcnPrecompiledDeclarationTarget,
+  shadcnJavaScriptSourcesEquivalent,
+  transformShadcnJavaScriptSource,
+} from '../../../authoring/shadcn/source-variants.mjs';
+import {
   PUBLIC_SHADCN_REGISTRY_ORIGIN,
   parseRegistryReceipt,
   parseRegistryUpgradeItem,
@@ -202,6 +209,55 @@ function sourceVersionMatches(sourceVersion, expectedVersion) {
 }
 
 /**
+ * Flatten the canonical receipt file and each format-specific install variant.
+ * Version 1 receipts did not carry variants; derive the stock-ShadCN JavaScript
+ * form so early canary installs can repair themselves on their first upgrade.
+ * @param {ReturnType<typeof parseRegistryReceipt>} receipt
+ * @param {any} file
+ */
+function receiptFileCandidates(receipt, file) {
+  const canonical = {...file, format: 'typescript'};
+  /** @type {Array<{format: 'javascript', target: string, registryTarget: string, sha256: string, content: string}>} */
+  let variants = receipt.schemaVersion === 2 ? file.variants : [];
+  if (receipt.schemaVersion === 1) {
+    const target = shadcnJavaScriptTarget(file.target);
+    const registryTarget = shadcnJavaScriptTarget(file.registryTarget);
+    if (target !== file.target || registryTarget !== file.registryTarget) {
+      try {
+        const content = transformShadcnJavaScriptSource(file.content);
+        variants = [
+          {
+            format: 'javascript',
+            target,
+            registryTarget,
+            sha256: registryContentHash(content),
+            content,
+          },
+        ];
+      } catch {
+        // A version 1 receipt may describe a non-code file. Its canonical form
+        // remains valid; it simply has no derivable JavaScript variant.
+      }
+    }
+  }
+  return [
+    canonical,
+    ...variants.map(variant => ({
+      ...variant,
+      id: file.id,
+      registryPath: file.registryPath,
+    })),
+  ];
+}
+
+/** @param {ReturnType<typeof parseRegistryReceipt>} receipt @param {any} file @param {string} format */
+function receiptFileForFormat(receipt, file, format) {
+  return receiptFileCandidates(receipt, file).find(
+    candidate => candidate.format === format,
+  );
+}
+
+/**
  * @param {string} itemPath
  * @param {{fetchImpl: typeof fetch, registryOrigin: string, expectedVersion?: string}} options
  */
@@ -288,6 +344,38 @@ async function fetchLatestReceipt(
     );
   }
 
+  const primaryFile = receipt.files.find(file => file.id === 'primary');
+  const typesFile = receipt.files.find(file => file.id === 'types');
+  const typesVariants =
+    receipt.schemaVersion === 2
+      ? receipt.files.find(file => file.id === 'types')?.variants
+      : undefined;
+  if (typesFile) {
+    let expectedTypesTarget;
+    let expectedTypesContent;
+    try {
+      expectedTypesTarget = shadcnPrecompiledDeclarationTarget(
+        primaryFile?.registryTarget ?? '',
+      );
+      expectedTypesContent = createShadcnPrecompiledDeclaration(
+        primaryFile?.registryTarget ?? '',
+      );
+    } catch {
+      expectedTypesTarget = null;
+      expectedTypesContent = null;
+    }
+    if (
+      primaryFile == null ||
+      typesFile.registryTarget !== expectedTypesTarget ||
+      typesFile.content !== expectedTypesContent ||
+      typesVariants?.length !== 0
+    ) {
+      throw new Error(
+        `Registry item ${url} has an invalid TypeScript declaration`,
+      );
+    }
+  }
+
   for (const file of receipt.files) {
     const source = parsed.files.find(
       candidate => candidate.path === file.registryPath,
@@ -305,6 +393,19 @@ async function fetchLatestReceipt(
       throw new Error(
         `Registry item ${url} receipt has a corrupt hash for ${file.registryPath}`,
       );
+    }
+    for (const variant of receiptFileCandidates(receipt, file).slice(1)) {
+      if (
+        variant.target !== shadcnJavaScriptTarget(file.target) ||
+        variant.registryTarget !==
+          shadcnJavaScriptTarget(file.registryTarget) ||
+        variant.content !== transformShadcnJavaScriptSource(file.content) ||
+        registryContentHash(variant.content) !== variant.sha256
+      ) {
+        throw new Error(
+          `Registry item ${url} has an invalid ${variant.format} variant for ${file.registryPath}`,
+        );
+      }
     }
   }
   return receipt;
@@ -341,28 +442,39 @@ function loadInstalledReceipt(receiptPath, root) {
   }
 
   const files = receipt.files.map(file => {
-    if (registryContentHash(file.content) !== file.sha256) {
-      throw new Error(
-        `Invalid receipt ${relativePath(receiptPath, root)}: stored hash does not match ${file.registryPath}`,
-      );
-    }
-    let sourcePath;
-    try {
-      sourcePath = assertWithin(
-        path.resolve(path.dirname(receiptPath), file.target),
-        root,
-        {allowAbsolute: true, label: 'registry composition source'},
-      );
-    } catch (error) {
-      if (error instanceof PathSafetyError) {
+    const candidates = receiptFileCandidates(receipt, file).map(candidate => {
+      if (registryContentHash(candidate.content) !== candidate.sha256) {
         throw new Error(
-          `Invalid receipt ${relativePath(receiptPath, root)}: ${error.message}`,
-          {cause: error},
+          `Invalid receipt ${relativePath(receiptPath, root)}: stored hash does not match ${file.registryPath} (${candidate.format})`,
         );
       }
-      throw error;
+      let sourcePath;
+      try {
+        sourcePath = assertWithin(
+          path.resolve(path.dirname(receiptPath), candidate.target),
+          root,
+          {allowAbsolute: true, label: 'registry composition source'},
+        );
+      } catch (error) {
+        if (error instanceof PathSafetyError) {
+          throw new Error(
+            `Invalid receipt ${relativePath(receiptPath, root)}: ${error.message}`,
+            {cause: error},
+          );
+        }
+        throw error;
+      }
+      return {...candidate, sourcePath};
+    });
+    const existing = candidates.filter(candidate =>
+      fs.existsSync(candidate.sourcePath),
+    );
+    if (existing.length > 1) {
+      throw new Error(
+        `Invalid receipt ${relativePath(receiptPath, root)}: multiple install variants exist for ${file.registryPath}`,
+      );
     }
-    return {...file, sourcePath};
+    return existing[0] ?? candidates[0];
   });
 
   return {receipt, files, receiptText};
@@ -422,7 +534,19 @@ async function planReceipt(receiptPath, root, options) {
   }
   const oldIds = oldReceipt.files.map(file => file.id).sort();
   const newIds = newReceipt.files.map(file => file.id).sort();
-  if (JSON.stringify(oldIds) !== JSON.stringify(newIds)) {
+  const removedIds = oldIds.filter(id => !newIds.includes(id));
+  const addedIds = newIds.filter(id => !oldIds.includes(id));
+  const addsOnlyGeneratedTypes =
+    removedIds.length === 0 &&
+    addedIds.length === 1 &&
+    addedIds[0] === 'types' &&
+    oldReceipt.files.some(
+      file => file.id === 'primary' && /\.jsx?$/.test(file.registryTarget),
+    );
+  if (
+    JSON.stringify(oldIds) !== JSON.stringify(newIds) &&
+    !addsOnlyGeneratedTypes
+  ) {
     return {
       receiptPath,
       item: oldReceipt.item.name,
@@ -436,15 +560,98 @@ async function planReceipt(receiptPath, root, options) {
   }
 
   const plannedFiles = [];
+  if (addsOnlyGeneratedTypes) {
+    const newReceiptFile = newReceipt.files.find(file => file.id === 'types');
+    const newFile = newReceiptFile
+      ? receiptFileCandidates(newReceipt, newReceiptFile)[0]
+      : null;
+    if (newFile) {
+      let sourcePath;
+      try {
+        sourcePath = assertWithin(
+          path.resolve(path.dirname(receiptPath), newFile.target),
+          root,
+          {allowAbsolute: true, label: 'registry composition declaration'},
+        );
+      } catch (error) {
+        return {
+          receiptPath,
+          item: oldReceipt.item.name,
+          itemPath: oldReceipt.item.path,
+          action: 'invalid',
+          message: error instanceof Error ? error.message : String(error),
+          files: [],
+          oldReceiptText,
+        };
+      }
+      const displayPath = relativePath(sourcePath, root);
+      try {
+        if (!fs.existsSync(sourcePath)) {
+          plannedFiles.push({
+            id: newFile.id,
+            path: displayPath,
+            sourcePath,
+            action: 'create',
+            content: newFile.content,
+          });
+        } else if (fs.lstatSync(sourcePath).isSymbolicLink()) {
+          plannedFiles.push({
+            id: newFile.id,
+            path: displayPath,
+            sourcePath,
+            action: 'invalid',
+            message:
+              'Generated declaration is a symbolic link; it will not be replaced',
+          });
+        } else {
+          const current = fs.readFileSync(sourcePath, 'utf8');
+          const currentHash = registryContentHash(current);
+          plannedFiles.push({
+            id: newFile.id,
+            path: displayPath,
+            sourcePath,
+            currentContent: current,
+            action: currentHash === newFile.sha256 ? 'current' : 'conflict',
+            message:
+              currentHash === newFile.sha256
+                ? undefined
+                : 'Generated declaration already exists with different content',
+          });
+        }
+      } catch (error) {
+        plannedFiles.push({
+          id: newFile.id,
+          path: displayPath,
+          sourcePath,
+          action: 'invalid',
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
   for (const oldFile of oldFiles) {
-    const newFile = newReceipt.files.find(file => file.id === oldFile.id);
+    const newReceiptFile = newReceipt.files.find(
+      file => file.id === oldFile.id,
+    );
+    const newFile = newReceiptFile
+      ? receiptFileForFormat(newReceipt, newReceiptFile, oldFile.format)
+      : null;
     const displayPath = relativePath(oldFile.sourcePath, root);
-    if (!newFile) {
+    if (!newReceiptFile) {
       plannedFiles.push({
         id: oldFile.id,
         path: displayPath,
         action: 'target-changed',
         message: `Latest item removed source id ${oldFile.id}`,
+      });
+      continue;
+    }
+    if (!newFile) {
+      plannedFiles.push({
+        id: oldFile.id,
+        path: displayPath,
+        action: 'target-changed',
+        message: `Latest item removed the ${oldFile.format} install variant`,
       });
       continue;
     }
@@ -501,6 +708,10 @@ async function planReceipt(receiptPath, root, options) {
     const currentHash = registryContentHash(currentCanonical);
     const oldHash = registryContentHash(oldCanonical);
     const newHash = registryContentHash(newCanonical);
+    const currentMatchesOld =
+      currentHash === oldHash ||
+      (/\.jsx?$/.test(oldFile.target) &&
+        shadcnJavaScriptSourcesEquivalent(currentCanonical, oldCanonical));
     if (oldHash === newHash) {
       plannedFiles.push({
         id: oldFile.id,
@@ -508,11 +719,11 @@ async function planReceipt(receiptPath, root, options) {
         sourcePath: oldFile.sourcePath,
         currentContent: current,
         conflictPath,
-        action: currentHash === oldHash ? 'current' : 'user-modified',
+        action: currentMatchesOld ? 'current' : 'user-modified',
       });
       continue;
     }
-    if (currentHash === oldHash) {
+    if (currentMatchesOld) {
       plannedFiles.push({
         id: oldFile.id,
         path: displayPath,
@@ -563,7 +774,9 @@ async function planReceipt(receiptPath, root, options) {
     action = 'conflict';
   } else if (plannedFiles.some(file => file.action === 'merge')) {
     action = 'merge';
-  } else if (plannedFiles.some(file => file.action === 'update')) {
+  } else if (
+    plannedFiles.some(file => ['update', 'create'].includes(file.action))
+  ) {
     action = 'update';
   } else if (
     plannedFiles.some(file => file.action === 'receipt-only') ||
@@ -635,6 +848,7 @@ function emptySummary(apply) {
 /** @param {string} action @param {boolean} apply */
 function publicAction(action, apply) {
   if (action === 'update') return apply ? 'updated' : 'would-update';
+  if (action === 'create') return apply ? 'created' : 'would-create';
   if (action === 'merge') return apply ? 'merged' : 'would-merge';
   if (action === 'receipt-only') {
     return apply ? 'receipt-refreshed' : 'would-refresh-receipt';
@@ -675,6 +889,9 @@ function applyPlan(plan) {
     throw new Error('Receipt changed while the upgrade was running');
   }
   for (const file of plan.files) {
+    if (file.action === 'create' && fs.existsSync(file.sourcePath)) {
+      throw new Error(`${file.path} appeared while the upgrade was running`);
+    }
     if (
       file.sourcePath &&
       file.currentContent != null &&
@@ -699,20 +916,37 @@ function applyPlan(plan) {
 
   const writable = plan.files.filter(
     /** @param {any} file */
-    file => ['update', 'merge'].includes(file.action),
+    file => ['update', 'merge', 'create'].includes(file.action),
   );
-  const originals = writable.map(
-    /** @param {any} file */
-    file => ({
-      path: file.sourcePath,
-      content: fs.readFileSync(file.sourcePath, 'utf8'),
-    }),
-  );
+  const originals = writable
+    .filter(
+      /** @param {any} file */
+      file => file.action !== 'create',
+    )
+    .map(
+      /** @param {any} file */
+      file => ({
+        path: file.sourcePath,
+        content: fs.readFileSync(file.sourcePath, 'utf8'),
+      }),
+    );
+  /** @type {string[]} */
+  const created = [];
   const oldReceiptText = fs.readFileSync(plan.receiptPath, 'utf8');
   try {
-    for (const file of writable) atomicWrite(file.sourcePath, file.content);
+    for (const file of writable) {
+      atomicWrite(file.sourcePath, file.content);
+      if (file.action === 'create') created.push(file.sourcePath);
+    }
     atomicWrite(plan.receiptPath, serializeRegistryReceipt(plan.newReceipt));
   } catch (error) {
+    for (const createdPath of created) {
+      try {
+        fs.rmSync(createdPath, {force: true});
+      } catch {
+        // Preserve the first failure.
+      }
+    }
     for (const original of originals) {
       try {
         atomicWrite(original.path, original.content);
@@ -804,7 +1038,10 @@ export async function reconcileRegistryCompositions(
       applyPlan(plan);
       if (['update', 'merge'].includes(plan.action)) {
         for (const file of plan.files) {
-          if (file.sourcePath && ['update', 'merge'].includes(file.action)) {
+          if (
+            file.sourcePath &&
+            ['update', 'merge', 'create'].includes(file.action)
+          ) {
             writtenFiles.push(file.sourcePath);
           }
         }

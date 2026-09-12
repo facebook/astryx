@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Replace executable gap-report writers with composable handlers.
+[feat] Replace executable gap-report writers with composable handlers. (#6200)
 
 Gap reports now fan out to every configured handler — project config first,
 then each loaded integration in config order — instead of selecting one

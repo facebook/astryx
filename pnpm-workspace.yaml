@@ -47,11 +47,20 @@ catalog:
 # Moved from package.json's "pnpm" field: pnpm 11 no longer reads
 # pnpm.overrides / pnpm.onlyBuiltDependencies from package.json.
 
-# Every entry is a LIVE security floor, annotated with the dependent that pins
-# the vulnerable version and the condition for deleting it. To re-verify one:
-# drop the line, run `pnpm install --lockfile-only`, then `pnpm audit`. Entries
-# the graph now reaches on its own get pruned — no alignment or dedup forces.
+# Compatibility pins and security floors that must not float independently.
 overrides:
+  # Receipt JavaScript bytes mirror shadcn 4.19.0's transform. Keep its floating
+  # parser/printer aligned with the exact runtime pins in packages/cli.
+  'shadcn@4.19.0>@babel/core': 7.29.7
+  'shadcn@4.19.0>@babel/parser': 7.29.8
+  'shadcn@4.19.0>@babel/plugin-transform-typescript': 7.29.7
+  'shadcn@4.19.0>recast': 0.23.21
+
+  # Every entry below is a LIVE security floor, annotated with the dependent that
+  # pins the vulnerable version and the condition for deleting it. To re-verify
+  # one: drop the line, run `pnpm install --lockfile-only`, then `pnpm audit`.
+  # Entries the graph now reaches on its own get pruned — no alignment or dedup
+  # forces.
   # next@15 pins postcss 8.4.31. Drop when Next raises its postcss dep.
   postcss: ^8.5.23
   # monaco-editor@0.55 pins dompurify 3.2.7. Drop when it catches up.
