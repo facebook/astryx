@@ -989,6 +989,18 @@ describe('SideNav resizable', () => {
     ).toBeInTheDocument();
   });
 
+  it('clips the resize handle overlay hit area to its own container (#6177)', () => {
+    // ResizeHandle's overlay mode positions its (deliberately oversized) hit
+    // area with a transform offset that can extend a fraction of a pixel
+    // past the nav's own width. The immediate wrapper around the handle
+    // must clip that bleed itself, since it sits directly inside the
+    // AppShell's scrollable LayoutPanel and would otherwise turn into a
+    // visible horizontal scrollbar there.
+    render(<SideNav resizable>Content</SideNav>);
+    const handle = screen.getByTestId('astryx-sidenav-resize-handle');
+    expect(getComputedStyle(handle.parentElement!).overflow).toBe('clip');
+  });
+
   it('does not render drag handle without resizable', () => {
     render(<SideNav>Content</SideNav>);
     expect(
