@@ -28,15 +28,16 @@ const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.
 const corePkg = JSON.parse(readFileSync(CORE_PKG, 'utf-8'));
 const exportKeys = Object.keys(corePkg.exports ?? {});
 
-const SKIP = /\.(css|stylex)$|\/utils$|^\.\/theme|^\.\/hooks|^\.\/utils|^\.\/syntax|^\.\/docs|^\.\/groups|^\.$|^\.\/reset/;
+const SKIP =
+  /\.(css|stylex)$|\/utils$|^\.\/theme|^\.\/hooks|^\.\/utils|^\.\/syntax|^\.\/docs|^\.\/groups|^\.$|^\.\/reset/;
 
 const components = exportKeys
-  .filter((k) => {
+  .filter(k => {
     if (SKIP.test(k)) return false;
     const name = k.replace('./', '');
     return /^[A-Z]/.test(name);
   })
-  .map((k) => k.replace('./', ''));
+  .map(k => k.replace('./', ''));
 
 // Themes — add new themes here as they become available
 const SCOPE_THEMES = [
@@ -55,12 +56,13 @@ const HEROICON_VARIANTS = [
   {path: '24/solid', alias: 'Heroicons24Solid'},
 ];
 
-
 // Build output — matches the structure of the previously committed scope.ts
 const lines = [HEADER, ''];
 
 // ── React ──────────────────────────────────────────────────────────────
-lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';");
+lines.push(
+  "import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';",
+);
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
@@ -207,7 +209,9 @@ lines.push('');
 lines.push("import {Theme} from '@astryxdesign/core/theme';");
 lines.push("import type {DefinedTheme} from '@astryxdesign/core/theme';");
 lines.push("import {createElement, type ComponentProps} from 'react';");
-lines.push("import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';");
+lines.push(
+  "import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';",
+);
 lines.push('');
 
 // ── Hooks ──────────────────────────────────────────────────────────────
@@ -216,19 +220,16 @@ lines.push('');
 lines.push("import * as Hooks from '@astryxdesign/core/hooks';");
 lines.push('');
 
-// ── Charts ─────────────────────────────────────────────────────────────
-// Every dashboard template draws with Recharts. Without this the import
-// resolves to the runner's placeholder proxy, and each chart renders as null
-// with no error — the legends and axis labels around it still paint, so the
-// preview looks merely empty rather than broken.
-lines.push("import * as Recharts from 'recharts';");
-lines.push('');
-
-// ── Icon libraries ─────────────────────────────────────────────────────
+// ── Icon and chart libraries ───────────────────────────────────────────
 lines.push("import * as LucideIcons from 'lucide-react';");
-lines.push('// Heroicons kept available in the playground scope alongside Lucide');
-lines.push("// so template / example code that still imports from");
-lines.push("// '@heroicons/react/*' continues to render. New docsite code authors");
+lines.push("import * as Recharts from 'recharts';");
+lines.push(
+  '// Heroicons kept available in the playground scope alongside Lucide',
+);
+lines.push('// so template / example code that still imports from');
+lines.push(
+  "// '@heroicons/react/*' continues to render. New docsite code authors",
+);
 lines.push('// against Lucide; these entries are purely for backwards compat.');
 for (const h of HEROICON_VARIANTS) {
   lines.push(`import * as ${h.alias} from '@heroicons/react/${h.path}';`);
@@ -237,7 +238,7 @@ lines.push('');
 
 // ── ControlledTheme wrapper ─────────────────────────────────────────
 const themeEntries = SCOPE_THEMES.map(
-  (t) => `  ${t.name.replace('Theme', '').toLowerCase()}: ${t.name},`,
+  t => `  ${t.name.replace('Theme', '').toLowerCase()}: ${t.name},`,
 ).join('\n');
 
 lines.push(`const SCOPE_THEMES: Record<string, DefinedTheme> = {
@@ -273,7 +274,10 @@ lines.push(`  react: {
 
 // stylex
 lines.push("  '@stylexjs/stylex': {default: stylexMock, ...stylexMock},");
-lines.push("  stylex: {default: stylexMock, ...stylexMock},");
+lines.push('  stylex: {default: stylexMock, ...stylexMock},');
+
+// Recharts comes before Astryx so Astryx components win global name collisions.
+lines.push('  recharts: Recharts,');
 
 // themes
 for (const t of SCOPE_THEMES) {
@@ -296,13 +300,10 @@ for (const name of components) {
 }
 
 // Barrel export — all components spread
-const spreads = components.map((n) => `    ...${n},`).join('\n');
+const spreads = components.map(n => `    ...${n},`).join('\n');
 lines.push(`  '@astryxdesign/core': {
 ${spreads}
   },`);
-
-// Recharts
-lines.push('  recharts: Recharts,');
 
 // Lucide icons + Heroicons
 lines.push("  'lucide-react': LucideIcons,");
@@ -325,5 +326,7 @@ writeFileSync(OUT, lines.join('\n'));
 console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
-console.log(`  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`);
+console.log(
+  `  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`,
+);
 console.log('  recharts');

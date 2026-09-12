@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
- * Generates a JSON bundle of all @astryxdesign/core .d.ts files for the playground's
- * Monaco editor. Output: public/playground-types.json
+ * Generates a JSON bundle of @astryxdesign/core, React, StyleX, icon, and
+ * Recharts declarations for the playground's Monaco editor.
+ * Output: public/playground-types.json
  *
  * Structure: { "@astryxdesign/core": { "Button/index.d.ts": "...", ... } }
  *
@@ -12,7 +12,14 @@
  * Also runs as part of the prebuild/predev scripts.
  */
 
-import {readdirSync, readFileSync, statSync, writeFileSync, existsSync, mkdirSync} from 'node:fs';
+import {
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+} from 'node:fs';
 import {join, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -41,7 +48,9 @@ function collectDts(dir, base = dir) {
 console.log(`Scanning ${distDir} for .d.ts files...`);
 
 if (!existsSync(distDir)) {
-  console.log('dist/ not found — skipping playground types generation (run pnpm build first)');
+  console.log(
+    'dist/ not found — skipping playground types generation (run pnpm build first)',
+  );
   // Write an empty placeholder so the app doesn't 404
   writeFileSync(join(outDir, 'playground-types.json'), '{}');
   process.exit(0);
@@ -151,7 +160,14 @@ declare module '@stylexjs/stylex' {
 // index.d.ts so the set stays accurate (e.g. 16/solid ships fewer icons).
 function buildHeroiconTypes() {
   const variants = ['16/solid', '20/solid', '24/outline', '24/solid'];
-  const heroRoot = join(root, '..', '..', 'node_modules', '@heroicons', 'react');
+  const heroRoot = join(
+    root,
+    '..',
+    '..',
+    'node_modules',
+    '@heroicons',
+    'react',
+  );
   const iconType =
     'React.ComponentType<React.SVGProps<SVGSVGElement> & ' +
     '{title?: string; titleId?: string}>';
@@ -162,9 +178,9 @@ function buildHeroiconTypes() {
     if (!existsSync(indexPath)) continue;
 
     const src = readFileSync(indexPath, 'utf-8');
-    const names = [
-      ...src.matchAll(/export \{ default as (\w+) \}/g),
-    ].map(m => m[1]);
+    const names = [...src.matchAll(/export \{ default as (\w+) \}/g)].map(
+      m => m[1],
+    );
     if (names.length === 0) continue;
 
     const exports = names.map(n => `  export const ${n}: HeroIcon;`).join('\n');
@@ -177,9 +193,48 @@ function buildHeroiconTypes() {
   return files;
 }
 
+function buildRechartsTypes() {
+  const indexPath = join(
+    root,
+    '..',
+    '..',
+    'node_modules',
+    'recharts',
+    'types',
+    'index.d.ts',
+  );
+  if (!existsSync(indexPath)) return {};
+
+  const source = readFileSync(indexPath, 'utf-8');
+  const names = new Set();
+  for (const match of source.matchAll(/^export \{([^}]+)\} from/gm)) {
+    for (const binding of match[1].split(',')) {
+      const name = binding
+        .trim()
+        .split(/\s+as\s+/)
+        .pop();
+      if (/^[A-Za-z_$][\w$]*$/.test(name)) names.add(name);
+    }
+  }
+
+  return {
+    'index.d.ts':
+      `declare module 'recharts' {\n` +
+      [...names]
+        .sort()
+        .map(name => `  export const ${name}: any;`)
+        .join('\n') +
+      '\n}',
+  };
+}
+
 const heroiconTypes = buildHeroiconTypes();
+const rechartsTypes = buildRechartsTypes();
 console.log(
   `Generated heroicon types: ${Object.keys(heroiconTypes).length} variants`,
+);
+console.log(
+  `Generated Recharts types: ${Object.keys(rechartsTypes).length} declaration file`,
 );
 
 const output = {
@@ -187,8 +242,11 @@ const output = {
   react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
   '@heroicons/react': heroiconTypes,
+  recharts: rechartsTypes,
 };
 
 const json = JSON.stringify(output);
 writeFileSync(join(outDir, 'playground-types.json'), json);
-console.log(`Generated playground-types.json: ${fileCount} Astryx type files, ${(json.length / 1024).toFixed(0)}KB`);
+console.log(
+  `Generated playground-types.json: ${fileCount} Astryx type files, ${(json.length / 1024).toFixed(0)}KB`,
+);
