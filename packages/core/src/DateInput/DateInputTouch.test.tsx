@@ -3,7 +3,7 @@
 /**
  * @file DateInputTouch.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput and its helpers
- * @output Behavior coverage for the responsive date picker
+ * @output Responsive date-picker behavior, including boundary navigation focus
  * @position Test file for /packages/core/src/DateInput/
  *
  * What jsdom can and cannot see here matters, and the split is deliberate:
@@ -662,6 +662,31 @@ describe('DateInput — field parity', () => {
 // ---------------------------------------------------------------------------
 
 describe('DateInput — calendar surface', () => {
+  it.each([
+    ['Previous month', '2026-02-01', '2026-03-31', 'February 2026'],
+    ['Next month', '2026-03-01', '2026-04-30', 'April 2026'],
+  ])(
+    'hands %s focus to the title when the arrow reaches its boundary',
+    (name, min, max, month) => {
+      renderAndOpen(
+        <Controlled
+          initial="2026-03-21"
+          min={min as ISODateString}
+          max={max as ISODateString}
+        />,
+      );
+      const arrow = screen.getByRole('button', {name});
+      arrow.focus();
+      fireEvent.click(arrow);
+      expect(arrow).toBeDisabled();
+      const title = document.querySelector('[data-title="month-year"]');
+      expect(title).toHaveTextContent(month);
+      expect(title).toHaveFocus();
+      fireEvent.click(title!);
+      expect(title).toHaveAttribute('aria-expanded', 'true');
+    },
+  );
+
   it('opens on the selected month', () => {
     renderAndOpen();
     expect(pane('March 2026')).toBeInTheDocument();

@@ -23,7 +23,7 @@ const anatomy = [
     name: 'Previous/next buttons',
     required: true,
     description:
-      'Button controls that move backward or forward through the pages.',
+      'Button controls that move backward or forward through the pages. When a keyboard-focused navigation control reaches a boundary, focus moves to the available opposite control; if neither direction is available, it remains on the Pagination landmark.',
   },
   {
     name: 'Page number button',

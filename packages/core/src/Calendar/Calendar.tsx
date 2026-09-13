@@ -4,7 +4,7 @@
 
 /**
  * @file Calendar.tsx
- * @input Uses React useState, useMemo, useCallback, hooks
+ * @input Uses React, calendar hooks and committed navigation focus recovery
  * @output Exports Calendar component and related types
  * @position Core implementation; forwards DOM ref and exposes navigation via
  *   handleRef
@@ -30,7 +30,8 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import {useAnnounce, useGridFocus} from '../hooks';
+import {useAnnounce, useGridFocus, useMergedRefs} from '../hooks';
+import {useDisabledFocusRecovery} from '../hooks/useDisabledFocusRecovery';
 import {
   useCalendarDays,
   useCalendarConstraints,
@@ -228,6 +229,10 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
   const locale = useLocale();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const mergedRef = useMergedRefs(ref, rootRef);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
   const {
     handleRef,
     mode = 'single',
@@ -387,6 +392,26 @@ export function Calendar({ref, ...props}: CalendarProps) {
     );
   }, [max, baseMonth, numberOfMonths]);
 
+  // Reuse the day grid's existing roving tab stop if changed bounds leave
+  // neither header arrow available. Grid keyboard navigation keeps its owner.
+  const gridReceiver = () =>
+    rootRef.current?.querySelector<HTMLElement>(
+      '[role="grid"] button[tabindex="0"]',
+    ) ?? null;
+  const previousFocus = useDisabledFocusRecovery(
+    !canNavigatePrevious,
+    previousRef,
+    () =>
+      nextRef.current != null && !nextRef.current.disabled
+        ? nextRef.current
+        : gridReceiver(),
+  );
+  const nextFocus = useDisabledFocusRecovery(!canNavigateNext, nextRef, () =>
+    previousRef.current != null && !previousRef.current.disabled
+      ? previousRef.current
+      : gridReceiver(),
+  );
+
   // Navigation handlers
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
@@ -509,7 +534,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
 
   return (
     <div
-      ref={ref}
+      ref={mergedRef}
       {...rest}
       {...mergeProps(
         themeProps('calendar', {mode}),
@@ -535,6 +560,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
               <Icon icon="chevronLeft" size="sm" color="inherit" />
             </span>
           }
+          ref={previousRef}
+          {...previousFocus}
           onClick={() => navigateMonth(-1)}
           isDisabled={!canNavigatePrevious}
           isIconOnly
@@ -556,6 +583,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
               <Icon icon="chevronRight" size="sm" color="inherit" />
             </span>
           }
+          ref={nextRef}
+          {...nextFocus}
           onClick={() => navigateMonth(1)}
           isDisabled={!canNavigateNext}
           isIconOnly
