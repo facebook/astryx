@@ -1,7 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file BottomSheet.stories.tsx
+ * @input BottomSheet, content primitives, and controlled story state
+ * @output BottomSheet examples including an open text-only keyboard audit
+ * @position Storybook coverage for BottomSheet presentation and interaction
+ */
+
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import {expect, waitFor, within} from 'storybook/test';
+import {useState, type ComponentProps} from 'react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -40,6 +48,75 @@ const meta: Meta<typeof BottomSheet> = {
 
 export default meta;
 type Story = StoryObj<typeof BottomSheet>;
+type StandaloneBottomSheetStoryProps = Extract<
+  ComponentProps<typeof BottomSheet>,
+  {sheetId?: never}
+>;
+
+/** Keep this sheet open so the accessibility audit inspects its scroll body. */
+export const TextOnly: Story = {
+  args: {
+    isOpen: true,
+    label: 'Reading details',
+    height: 'capped',
+    children: (
+      <Section>
+        <VStack gap={4}>
+          <Heading level={2}>Reading details</Heading>
+          {Array.from({length: 16}, (_, index) => (
+            <Text key={index}>
+              Paragraph {index + 1}. This sheet contains plain text. Use Tab to
+              reach the scrolling area, then Arrow Down or Page Down to read the
+              remaining content. Escape closes the sheet.
+            </Text>
+          ))}
+        </VStack>
+      </Section>
+    ),
+  },
+  render: args => {
+    const standaloneArgs = args as StandaloneBottomSheetStoryProps;
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <BottomSheet
+        {...standaloneArgs}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+      />
+    );
+  },
+  play: async ({canvasElement}) => {
+    const body = within(canvasElement).getByRole('group', {
+      name: 'Reading details',
+    });
+    await waitFor(() => {
+      expect(body).toHaveAttribute('data-scrollable-block', 'true');
+      expect(body).toHaveAttribute('tabindex', '0');
+    });
+  },
+};
+
+export const TextOnlyFitting: Story = {
+  ...TextOnly,
+  args: {
+    ...TextOnly.args,
+    label: 'Short details',
+    children: (
+      <Section>
+        <Text>This content fits without a separate keyboard scroll stop.</Text>
+      </Section>
+    ),
+  },
+  play: async ({canvasElement}) => {
+    const body = within(canvasElement).getByRole('group', {
+      name: 'Short details',
+    });
+    await waitFor(() => {
+      expect(body).not.toHaveAttribute('data-scrollable-block');
+      expect(body).not.toHaveAttribute('tabindex');
+    });
+  },
+};
 
 interface CommentFormValues {
   title: string;

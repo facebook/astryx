@@ -18,7 +18,7 @@ export const docs = {
       name: 'options',
       type: 'UseScrollableAreaOptions',
       description:
-        'Logical scroll intent, keyboard owner, overscroll policy, and fitting Sticky containment.',
+        'Logical scroll intent, fixed or automatic keyboard owner, overscroll policy, and fitting Sticky containment.',
       required: true,
     },
   ],
@@ -59,6 +59,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use contentOrViewport when existing sequential content should stay the keyboard path and the named viewport should be the fallback.',
+      },
+      {
+        guidance: true,
+        description:
           'Use content keyboard ownership when an existing focusable descendant gives keyboard users access to all overflowed content.',
       },
       {
@@ -85,7 +90,7 @@ export const docsDense = {
     'Composes logical-axis scrolling into caller-owned viewport/content elements with stable effective-axis and edge state.',
   paramDescriptions: {
     options:
-      'axis, keyboard owner, allow/contain overscroll policy, and fitting Sticky containment.',
+      'axis, fixed/automatic keyboard owner, allow/contain overscroll policy, and fitting Sticky containment.',
   },
   returnDescriptions: {
     getViewportProps:
