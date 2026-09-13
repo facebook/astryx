@@ -5,8 +5,7 @@ const anatomy = [
   {
     name: 'Document',
     required: true,
-    description:
-      'Root container for block or inline Markdown content.',
+    description: 'Root container for block or inline Markdown content.',
   },
   {
     name: 'Heading',
@@ -41,7 +40,8 @@ const anatomy = [
   {
     name: 'Table',
     required: false,
-    description: 'Scrollable table block rendered from Markdown rows and columns.',
+    description:
+      'Scrollable table block rendered from Markdown rows and columns.',
   },
   {
     name: 'Divider',
@@ -138,14 +138,14 @@ export const docs = {
       name: 'contentAlign',
       type: "'start' | 'center'",
       description:
-        "Alignment of prose content within the container when contentWidth is narrower than the available space.",
+        'Alignment of prose content within the container when contentWidth is narrower than the available space.',
       default: "'start'",
     },
     {
       name: 'inlinePlugins',
       type: 'MarkdownInlinePlugin[]',
       description:
-        'Transforms regex matches in parsed text nodes into custom inline React elements. Use for issue refs, diff refs, mentions, and other shorthand patterns. Inline code and fenced code blocks are unaffected.',
+        'Transforms regex matches in parsed text nodes into custom inline React elements. Use for prefixed identifiers, mentions, and other shorthand patterns. Inline code, fenced code blocks, and math are unaffected.',
     },
     {
       name: 'autolink',
@@ -156,7 +156,8 @@ export const docs = {
     {
       name: 'components',
       type: 'MarkdownComponents',
-      description: 'Custom React component overrides for rendered Markdown elements (code, inlineCode, link, heading, paragraph, image, blockquote, hr, citation).',
+      description:
+        'Custom React component overrides for rendered Markdown elements (code, inlineCode, math, link, heading, paragraph, image, blockquote, hr, citation). Providing math enables `$…$` inline and `$$…$$` display parsing and receives `{value, display}`; omit it when dollar text should stay literal.',
     },
     {
       name: 'xstyle',
@@ -184,7 +185,8 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @astryxdesign/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {Button} from \'@astryxdesign/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
+      children:
+        "## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @astryxdesign/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {Button} from '@astryxdesign/core/Button';\n```\n\n**Bold**, *italic*, and `inline code` all work.",
     },
   },
   theming: {
@@ -229,11 +231,36 @@ export const docs = {
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
-      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
-      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
+      {
+        guidance: true,
+        description:
+          'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use contentWidth to keep prose at a readable line length in wide layouts.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide components.math only for documents that use dollar-delimited math. The renderer owns typesetting and accessible output; Astryx passes the expression as text and never executes raw HTML.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.',
+      },
     ],
   },
   examples: [
@@ -259,23 +286,38 @@ import {Text} from '@astryxdesign/core/Text';
 `,
     },
     {
-      label: 'Inline Plugins',
+      label: 'Entity links',
       code: `
 import {Link} from '@astryxdesign/core/Link';
 
-const issuePlugins = [
+const entityPlugins = [
   {
     pattern: /\\b([A-Z][A-Z0-9]+-\\d+)\\b/g,
     render: (match, key) => (
-      <Link key={key} href={\`/issues/\${match[1]}\`}>
+      <Link key={key} href={\`/entities/\${match[1]}\`}>
         {match[0]}
       </Link>
     ),
   },
 ];
 
-<Markdown inlinePlugins={issuePlugins}>
-  {'Fixed PROJ-123. Inline code stays plain: \`PROJ-999\`.'}
+<Markdown inlinePlugins={entityPlugins}>
+  {'See DOC-2048. Inline code stays plain: \`DOC-9999\`.'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Math renderer',
+      code: `
+import {BlockMath, InlineMath} from 'react-katex';
+
+function MathExpression({value, display}) {
+  const Component = display === 'block' ? BlockMath : InlineMath;
+  return <Component math={value} />;
+}
+
+<Markdown components={{math: MathExpression}}>
+  {'Inline $x_1 + y$ and display math:\\n\\n$$\\n\\sum_i x_i\\n$$'}
 </Markdown>;
 `,
     },
@@ -315,8 +357,7 @@ export const docsZh = {
     {
       name: 'isStreaming',
       type: 'boolean',
-      description:
-        '启用流式模式，使用增量解析和淡入动画处理分块文本。',
+      description: '启用流式模式，使用增量解析和淡入动画处理分块文本。',
       default: 'false',
     },
     {
@@ -348,20 +389,26 @@ export const docsZh = {
       name: 'contentAlign',
       type: "'start' | 'center'",
       description:
-        "当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。",
+        '当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。',
       default: "'start'",
     },
     {
       name: 'inlinePlugins',
       type: 'MarkdownInlinePlugin[]',
       description:
-        '将已解析文本节点中的正则匹配转换为自定义内联 React 元素。适用于 issue 引用、diff 引用、用户提及等简写模式。内联代码和围栏代码块不受影响。',
+        '将已解析文本节点中的正则匹配转换为自定义内联 React 元素。适用于带前缀的标识符、用户提及等简写模式。内联代码、围栏代码块和数学表达式不受影响。',
     },
     {
       name: 'autolink',
       type: "'gfm'",
       description:
         "可选的裸 URL 和电子邮箱自动链接。设为 'gfm' 启用 GitHub Flavored Markdown 自动链接规则：裸 https?://、www.、<scheme:url>、<email> 以及 user@host 都会变成链接。末尾句末标点和不平衡的末尾右括号会被排除；代码块、现有链接和图片替代文本内部的匹配会被跳过。默认为关闭。",
+    },
+    {
+      name: 'components',
+      type: 'MarkdownComponents',
+      description:
+        '用于覆盖 Markdown 渲染元素的自定义 React 组件（code、inlineCode、math、link、heading、paragraph、image、blockquote、hr、citation）。提供 math 会启用 `$…$` 行内数学和 `$$…$$` 块级数学解析，并接收 `{value, display}`；不提供时美元符号保持原样。',
     },
     {
       name: 'xstyle',
@@ -372,12 +419,14 @@ export const docsZh = {
     {
       name: 'className',
       type: 'string',
-      description: '根元素的 CSS 类名。建议使用 xstyle，className 适用于非 StyleX 系统集成。',
+      description:
+        '根元素的 CSS 类名。建议使用 xstyle，className 适用于非 StyleX 系统集成。',
     },
     {
       name: 'style',
       type: 'CSSProperties',
-      description: '根元素的内联样式。建议使用 xstyle，内联样式会绕过 StyleX 优化。',
+      description:
+        '根元素的内联样式。建议使用 xstyle，内联样式会绕过 StyleX 优化。',
     },
     {
       name: 'data-testid',
@@ -443,11 +492,36 @@ export const docsZh = {
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
-      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
-      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
+      {
+        guidance: true,
+        description:
+          'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use contentWidth to keep prose at a readable line length in wide layouts.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide components.math only for documents that use dollar-delimited math. The renderer owns typesetting and accessible output; Astryx passes the expression as text and never executes raw HTML.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.',
+      },
     ],
   },
 };
@@ -460,25 +534,61 @@ export const docsDense = {
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
-      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
-      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
-      { guidance: true, description: 'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
+      {
+        guidance: true,
+        description:
+          'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use contentWidth to keep prose at a readable line length in wide layouts.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide components.math only for documents that use dollar-delimited math; the renderer owns typesetting and accessible output.',
+      },
+      {
+        guidance: true,
+        description:
+          'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.',
+      },
     ],
   },
   propDescriptions: {
     children: 'markdown string',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
-    headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
-    isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',
-    onLinkClick: '(href, event) => void|false. Return false prevents navigation.',
-    sources: 'Record<string, MarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
-    citationStyle: "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
-    contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
-    contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
-    inlinePlugins: 'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code.',
-    autolink: "'gfm'. Opt-in GFM autolinking: bare URLs (https?://, www.), <scheme:url>, <email>, user@host. Skips code, code blocks, existing links. Default: off.",
+    headingLevelStart:
+      'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
+    isStreaming:
+      'Incremental parse + fade-in for streamed chunks. Default: false.',
+    onLinkClick:
+      '(href, event) => void|false. Return false prevents navigation.',
+    sources:
+      'Record<string, MarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
+    citationStyle:
+      "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
+    contentWidth:
+      'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
+    contentAlign:
+      "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+    inlinePlugins:
+      'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
+    autolink:
+      "'gfm'. Opt-in GFM autolinking: bare URLs (https?://, www.), <scheme:url>, <email>, user@host. Skips code, code blocks, existing links. Default: off.",
+    components:
+      'MarkdownComponents. Custom renderers; math({value, display}) opts into $…$/$$…$$ parsing. Renderer owns output and accessibility.',
     xstyle: 'stylex.create() for layout (margins, sizing).',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

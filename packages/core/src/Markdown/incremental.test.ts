@@ -90,6 +90,33 @@ describe('parseMarkdownIncremental', () => {
     expect(final).toEqual(full);
   });
 
+  it('matches the full parse when math delimiters arrive across chunks', () => {
+    const text = 'Before $x_1 + *y*$ after.\n\n$$\n\\sum_i x_i\n$$\n\nDone.';
+    const state = createIncrementalState();
+    let final: BlockNode[] = [];
+    for (let end = 1; end <= text.length; end++) {
+      final = parseMarkdownIncremental(text.slice(0, end), state, {math: true});
+    }
+    expect(final).toEqual(parseMarkdown(text, {math: true}));
+  });
+
+  it('withholds an incomplete display-math block while streaming', () => {
+    const state = createIncrementalState();
+    const blocks = parseMarkdownIncremental('Intro\n\n$$\nx + y', state, {
+      math: true,
+    });
+    expect(blocks).toEqual(parseMarkdown('Intro'));
+  });
+
+  it('invalidates settled blocks when the math option changes', () => {
+    const text = 'Intro.\n\nInline $x$.';
+    const state = createIncrementalState();
+    const off = parseMarkdownIncremental(text, state);
+    const on = parseMarkdownIncremental(text, state, {math: true});
+    expect(on).toEqual(parseMarkdown(text, {math: true}));
+    expect(on).not.toEqual(off);
+  });
+
   it('handles table streaming', () => {
     const text = '| Col1 | Col2 |\n| --- | --- |\n| a | b |\n| c | d |';
     const {final} = simulateStreaming(text, 5);
@@ -333,6 +360,14 @@ describe('trimStreamingArtifacts', () => {
     expect(trimStreamingArtifacts('Hello `code`')).toBe('Hello `code`');
   });
 
+  it('withholds incomplete inline math only when math parsing is enabled', () => {
+    expect(trimStreamingArtifacts('Value $x + 1', {math: true})).toBe('Value ');
+    expect(trimStreamingArtifacts('Value $x + 1')).toBe('Value $x + 1');
+    expect(trimStreamingArtifacts('Value $x + 1$', {math: true})).toBe(
+      'Value $x + 1$',
+    );
+  });
+
   it('trims trailing unclosed strikethrough', () => {
     expect(trimStreamingArtifacts('Hello ~~')).toBe('Hello ');
     expect(trimStreamingArtifacts('Hello ~')).toBe('Hello ');
@@ -464,6 +499,8 @@ describe('streaming structural suppression', () => {
               case 'text':
               case 'code':
                 return node.content;
+              case 'math':
+                return node.value;
               case 'bold':
               case 'italic':
               case 'strikethrough':
@@ -484,6 +521,8 @@ describe('streaming structural suppression', () => {
           return fromInline(block.children);
         case 'codeblock':
           return block.content;
+        case 'math':
+          return block.value;
         case 'blockquote':
           return block.children.map(visibleText).join('\n');
         case 'list':
@@ -648,6 +687,9 @@ describe('streaming end-to-end: no raw syntax visible', () => {
         case 'codeblock':
           text += block.content;
           break;
+        case 'math':
+          text += block.value;
+          break;
         case 'blockquote':
           text += extractVisibleText(block.children);
           break;
@@ -685,6 +727,9 @@ describe('streaming end-to-end: no raw syntax visible', () => {
           break;
         case 'code':
           text += node.content;
+          break;
+        case 'math':
+          text += node.value;
           break;
         case 'bold':
         case 'italic':

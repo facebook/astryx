@@ -3,41 +3,53 @@ schema_version: 3
 template_version: 3
 kind: component
 id: component:Markdown
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-13
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [api, theming]
 verified_by:
   [
     packages/core/src/Markdown/Markdown.test.tsx,
+    packages/core/src/Markdown/parser.test.ts,
+    packages/core/src/Markdown/incremental.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
 modules: []
 families: [family:navigation-destinations]
 design_specs: []
-architecture: [architecture:component-theming-surface]
+architecture:
+  [architecture:component-theming-surface, architecture:public-component-api]
 contributing: []
-system_specs: [spec:AST-005/DEC-1, spec:AST-005/DEC-2]
+system_specs:
+  [
+    spec:AST-002/DEC-1,
+    spec:AST-002/DEC-5,
+    spec:AST-005/DEC-1,
+    spec:AST-005/DEC-2,
+  ]
 ---
 
 # Markdown component contract
 
 ## Intent
 
-Markdown renders parsed content in a Document with stable default block parts.
-This draft records the nine current Markdown targets and the custom-renderer
-boundary without changing parsing, runtime behavior, styling, targets, or public
-API.
+Markdown renders parsed content in a Document with stable default block parts and
+constrained renderer seams. In addition to the existing element overrides and
+prose-only inline plugins, a caller may opt a document into dollar-delimited math
+by supplying one typed renderer for both inline and display expressions. The
+parser exposes the same syntax only through an explicit option. Existing parsing,
+rendering, styling, and streaming behavior remain unchanged when math is absent.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Compatibility class: additive, opt-in public API; existing parser nodes, DOM,
+  styling, targets, and dollar-delimited text remain unchanged unless the caller
+  supplies `components.math` or passes `{math: true}` to a parser.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -52,33 +64,47 @@ Consumer migration instructions belong in consumer docs and release notes.
   Image block presentation and the eight current block targets documented below.
 - Applying block spacing and reflected density (plus Heading level) to those
   targets on the default render path.
+- Opt-in recognition of `$…$` inline math and `$$…$$` display math, including
+  delimiter boundaries, escape behavior, parser nodes, and streaming parity.
+- Passing each recognized expression as inert text to the caller's one math
+  renderer with an `inline` or `block` display value.
 
 **Does not own / non-goals**
 
-- Output supplied by custom `heading`, `paragraph`, `code`, `blockquote`, `hr`,
-  or `image` renderers; the custom component owns that replacement's structure
-  and styling.
-- Inline emphasis, link, inline-code, citation, or plugin output as additional
-  block anatomy.
+- Output supplied by custom renderers; each custom component owns its replacement's
+  structure, styling, and accessibility semantics.
+- Inline emphasis, link, inline-code, citation, plugin, or math-renderer output as
+  additional default block anatomy.
 - Nested anatomy or targets owned by CodeBlock, Blockquote, List, CheckboxList,
   or Table.
-- New block types, custom-renderer behavior, target names, public API, or runtime
-  behavior.
+- Executing or sanitizing a renderer's math library output, raw HTML parsing,
+  arbitrary AST plugins, or new list/table/inline-style override slots.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, renderer hooks, defaults,
-and usage remain documented in `Markdown.doc.mjs`.
+`MarkdownComponents.math` is one optional renderer with the signature
+`({value: string, display: 'inline' | 'block'}) => ReactNode`. Supplying it opts
+the component into math parsing because the caller owns both whether dollar
+syntax means math and how formulas are rendered. Direct parser callers make the
+same choice with `ParseOptions.math: true`; enabled parses add
+`{type: 'math', value: string}` to both the `InlineNode` and `BlockNode` unions.
+Exact syntax and examples remain in `Markdown.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                            | Basis                                                  | Draft review state                                     |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| FR1 | Block and inline displays render one Document root carrying the current `markdown` target. Inline display renders no block anatomy.                                                                                                            | Current source, docs, and tests                        | Verified current behavior; no new behavior decided     |
-| FR2 | On the default block render path, Heading, Paragraph, List, Code block, Blockquote, Table, Divider, and Image carry the eight current local block targets documented below.                                                                    | Current source, docs, tests, and history               | Verified current inventory and placement               |
-| FR3 | A supplied `heading`, `paragraph`, `code`, `blockquote`, `hr`, or safe-URL `image` renderer replaces the corresponding default part, so Markdown does not impose that part's local target on the replacement.                                  | Current source, docs, and history                      | Verified behavior; focused absence coverage is partial |
-| FR4 | The released Code block target is spelled `markdown-codeblock`. Although this runs together a compound name and predates the current naming rule, it is a frozen public target and this factual backfill neither renames it nor adds an alias. | Current source, docs, tests, history, and architecture | Verified compatibility constraint; no target change    |
-| FR5 | Density and Heading level remain reflected capabilities on their owning targets. Display mode, density, Heading level, streaming state, list kind, and custom-renderer selection do not become separate anatomy entries.                       | Current source, docs, tests, and architecture          | Verified current model; no new anatomy or state target |
+| ID   | Invariant                                                                                                                                                                                                                                             |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1  | Block and inline displays render one Document root carrying the current `markdown` target. Inline display renders no block anatomy.                                                                                                                   |
+| FR2  | On the default block render path, Heading, Paragraph, List, Code block, Blockquote, Table, Divider, and Image carry the eight current local block targets documented below.                                                                           |
+| FR3  | A supplied `heading`, `paragraph`, `code`, `blockquote`, `hr`, or safe-URL `image` renderer replaces the corresponding default part, so Markdown does not impose that part's local target on the replacement.                                         |
+| FR4  | The released Code block target remains `markdown-codeblock`; this compatibility anomaly is not renamed or aliased.                                                                                                                                    |
+| FR5  | Density and Heading level remain reflected capabilities on their owning targets. Display mode, streaming state, and renderer selection do not become separate anatomy entries.                                                                        |
+| FR6  | Without `components.math`, Markdown does not recognize math syntax. Without `ParseOptions.math: true`, parser entry points return the same node structure they returned before this contract.                                                         |
+| FR7  | With math enabled, `$…$` produces an inline `math` node and `$$…$$` produces a block `math` node. The renderer receives the delimiter-free source as `value` and its placement as `display`.                                                          |
+| FR8  | Inline math stays on one line, cannot have whitespace touching either delimiter, and cannot open immediately after a digit or close immediately before one. `$$` is reserved for display math. These boundaries keep paired currency amounts literal. |
+| FR9  | A backslash-escaped dollar is literal outside math and does not close math inside it. An unmatched inline or display delimiter remains literal in non-streaming output.                                                                               |
+| FR10 | Code spans and fenced code blocks are opaque to math parsing. Link destinations are opaque; link labels may contain inline math. Inline plugins run only on prose text and never inside math.                                                         |
+| FR11 | Streaming converges to the same nodes as a full parse. Incomplete inline or display math is withheld by Markdown until its closing delimiter arrives, and toggling math invalidates settled parser state.                                             |
 
 ### Allowed variation
 
@@ -91,51 +117,73 @@ and usage remain documented in `Markdown.doc.mjs`.
 - **AV4 — Nested primitives.** Astryx primitives used inside default blocks may
   change internal element shape while preserving their own public contracts and
   Markdown's outer block targets.
+- **AV5 — Math renderer.** The caller may use any renderer that accepts the raw
+  expression and display value. Its DOM, styles, typesetting engine, error UI,
+  and accessibility representation are outside Markdown's ownership.
 
 ### Representative states
 
-| State                  | Required invariant                                                                                                  | Allowed variation                                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Default block content  | Every parsed block uses its corresponding current Markdown target.                                                  | Block count, order, density, content width, and alignment. |
-| Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target. | Replacement structure and styling.                         |
-| Ordered/unordered list | List carries `markdown-list`.                                                                                       | Marker kind, start value, item count, and nested content.  |
-| Task list              | The outer List part carries `markdown-list`.                                                                        | Checked values and item content.                           |
-| Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                     | Source and alternative text.                               |
-| Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL. | Alternative text shown by the fallback.                    |
-| Inline display         | Document carries `markdown`; no block target renders.                                                               | Inline text, links, code, citations, and plugin output.    |
+| State                  | Required invariant                                                                                                  | Allowed variation                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Default block content  | Every parsed block uses its corresponding current Markdown target.                                                  | Block count, order, density, content width, and alignment.            |
+| Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target. | Replacement structure and styling.                                    |
+| Ordered/unordered list | List carries `markdown-list`.                                                                                       | Marker kind, start value, item count, and nested content.             |
+| Task list              | The outer List part carries `markdown-list`.                                                                        | Checked values and item content.                                      |
+| Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                     | Source and alternative text.                                          |
+| Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL. | Alternative text shown by the fallback.                               |
+| Inline display         | Document carries `markdown`; no block target renders.                                                               | Inline text, links, code, citations, plugins, and opt-in inline math. |
+| Math renderer absent   | Dollar-delimited source follows the released Markdown grammar and no `math` node or renderer output exists.         | Currency, unmatched delimiters, and ordinary prose.                   |
+| Math renderer present  | Complete supported delimiters are opaque to Markdown formatting and are passed to the renderer as inert text.       | Inline or block display and any renderer-owned output.                |
+| Streaming math         | Incomplete math is withheld; once complete, the streamed nodes equal the full-parse nodes.                          | Delimiters and expression text may arrive in separate chunks.         |
 
 ### Transformation and precedence order
 
-- No new parsing, sanitization, heading-level, renderer-selection, spacing, or
-  styling precedence rule is introduced.
+- Fenced and inline code claim their contents before math.
+- Complete display math claims a block before headings, tables, lists, and
+  paragraphs. Complete inline math claims its source before citations, links,
+  emphasis, autolinks, and inline plugins.
+- A custom renderer receives only the delimiter-free expression string and its
+  display value. Markdown never turns it into HTML or executes it.
+- Existing URL sanitization remains in force for links and images; math adds no
+  navigation or raw-HTML sink.
 
 ### Performance and resources
 
-- No new parsing, streaming, render, or resource requirement is introduced.
+- Math scanning is disabled unless requested.
+- Inline matching is a bounded forward scan of one line. Display matching scans
+  only from a candidate `$$` opener to its closer.
+- The incremental parser keeps completed blocks cached, treats an open display
+  expression like an open code fence, and invalidates cached nodes when the math
+  option changes.
 
 ## Accessibility contract
 
-This draft does not change or extend Markdown's existing document semantics,
-heading IDs, paragraph role, list semantics, scrollable Table wrapper, image
-alternative text, or custom-renderer responsibilities.
+The default document semantics, heading IDs, paragraph role, list semantics,
+scrollable Table wrapper, and image alternative text remain unchanged. Math has
+no Astryx-owned default output: the caller's renderer owns an accessible
+representation appropriate to its typesetting engine (for example MathML or a
+labelled `role="math"` element). Markdown adds no wrapper, ARIA attributes, or
+HTML injection around renderer output.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                               | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | -------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Document         | Contains block or inline rendered Markdown content.                              | Current source and public docs | Supporting     | FR1, FR5           |
-| Heading          | Presents one parsed heading with its resolved level and optional generated ID.   | Current source and public docs | Prominent      | FR2, FR3, FR5      |
-| Paragraph        | Presents one prose block using the default composition-safe paragraph structure. | Current source and public docs | Prominent      | FR2, FR3           |
-| List             | Presents ordered, unordered, or task-list items as one block.                    | Current source and public docs | Prominent      | FR2, FR5           |
-| Code block       | Presents fenced code and owns the outer spacing target on the default path.      | Current source and public docs | Prominent      | FR2, FR3, FR4      |
-| Blockquote       | Presents quoted block content on the default path.                               | Current source and public docs | Prominent      | FR2, FR3           |
-| Table            | Presents parsed rows and columns in a keyboard-scrollable block wrapper.         | Current source and public docs | Prominent      | FR2                |
-| Divider          | Presents a horizontal separation between blocks.                                 | Current source and public docs | Supporting     | FR2, FR3           |
-| Image            | Presents a safe block image or the fallback for a rejected image URL.            | Current source and public docs | Prominent      | FR2, FR3           |
+| Anatomy or state | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Document         | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
+| Heading          | Presents one parsed heading with its resolved level and optional generated ID.     | Current source and public docs | Prominent      | FR2, FR3, FR5      |
+| Paragraph        | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
+| List             | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
+| Code block       | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
+| Blockquote       | Presents quoted block content on the default path.                                 | Current source and public docs | Prominent      | FR2, FR3           |
+| Table            | Presents parsed rows and columns in a keyboard-scrollable block wrapper.           | Current source and public docs | Prominent      | FR2                |
+| Divider          | Presents a horizontal separation between blocks.                                   | Current source and public docs | Supporting     | FR2, FR3           |
+| Image            | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
+| Math             | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
 
-Custom renderers replace six default parts rather than becoming nested Markdown
-anatomy. Lists and Tables have no corresponding custom block renderer. The
-Document remains Markdown-owned in every display mode.
+Custom renderers replace the existing default parts rather than becoming nested
+Markdown anatomy. The opt-in math renderer is also not default anatomy and gets no
+Markdown theme target or wrapper. Lists and Tables have no corresponding custom
+block renderer. The Document remains Markdown-owned in every display mode.
 
 ### Theming anatomy
 
@@ -167,6 +215,12 @@ and this change preserves the existing spelling exactly.
 - `architecture:component-theming-surface` owns anatomy qualification, target
   mapping, target-capability state, composition boundaries, and compatibility for
   frozen targets.
+- `architecture:public-component-api` and `spec:AST-002/DEC-1` own API
+  admission. The caller knows whether dollar syntax is math and must choose the
+  renderer; Markdown cannot derive either from the source without changing the
+  meaning of existing documents.
+- `spec:AST-002/DEC-5` requires this accepted component-local contract to be
+  current with the implementation.
 - `family:navigation-destinations` owns the shared accept/block result for parsed
   links and every Astryx-owned navigation sink. `spec:AST-005/DEC-1` requires
   Markdown navigation to remain conformant with Core link plumbing.
@@ -178,22 +232,38 @@ and this change preserves the existing spelling exactly.
 
 ## Verification map
 
-| Contract            | Verification                                                                                           | Representative states                                        | Mutation or failure expectation                                                                                       | Audit section            |
-| ------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1                 | `Markdown.test.tsx` root-class, block-root, inline-root, and base-prop suites                          | Block and inline Document                                    | Removing or moving the root target fails focused root assertions or the global inventory.                             | `audit:Markdown/anatomy` |
-| FR2, FR4, FR5       | `Markdown.test.tsx` block-spacing-target, density, Heading-level, task-list, and render suites         | All eight default block types, both densities, Heading level | Removing, renaming, or moving a block target fails focused class or reflected-property assertions.                    | `audit:Markdown/theming` |
-| FR3                 | `Markdown.test.tsx` custom Heading and custom Image suites plus source and target-introduction history | Six replaceable default block parts                          | Imposing a target on a custom replacement violates the owner boundary; only Heading absence is directly pinned today. | `audit:Markdown/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                          | Canonical anatomy and all nine current targets               | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                            | `audit:Markdown/theming` |
+| Contract               | Verification                                                               | Representative states                                                 | Failure signal                                                                                |
+| ---------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| FR1–FR5                | `Markdown.test.tsx`, theme-target tests, and `scripts/check-knowledge.mjs` | Default block/inline output and all current targets                   | Existing DOM, target, spacing, or renderer behavior changes.                                  |
+| FR6–FR10               | `parser.test.ts` and `Markdown.test.tsx`                                   | Opt-out, inline/display math, escapes, currency, code, links, plugins | A delimiter is claimed without opt-in, TeX is formatted as Markdown, or opaque contexts leak. |
+| FR11                   | `incremental.test.ts` and `Markdown.test.tsx`                              | Split delimiters, incomplete display math, option toggle              | Streaming diverges from a full parse, shows partial syntax, or reuses stale nodes.            |
+| Public syntax/types    | `Markdown.test.tsx`, core typecheck, and `Markdown.doc.mjs`                | Component renderer and direct parser option                           | The supported signature is unreachable or docs drift from declarations.                       |
+| Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance               | Inert expression strings and renderer-owned semantics                 | Astryx executes math as HTML or silently claims renderer-owned accessibility.                 |
 
-Focused tests pin all nine current target names and default block placement. They
-pin target absence only for a custom Heading; custom Paragraph, Code block,
-Blockquote, Divider, and Image replacement paths currently rely on source and
-history for the same ownership rule.
+Focused tests continue to pin all nine current target names and default block
+placement. Math intentionally adds no target and no default anatomy.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, behavior, or theming decision.
+### DEC-1 — Math is an opt-in renderer contract
+
+**Reference:** `component:Markdown/DEC-1`
+**Decider:** `cixzhang`, `2026-09-13`
+
+A caller that supplies `components.math` opts the component into the constrained
+dollar-math grammar and receives every complete expression through one renderer
+with its source value and inline/block placement. Direct parser callers make the
+same choice with `math: true`.
+
+This passes API admission because otherwise identical dollar-delimited source may
+be prose or math, only the document host knows which meaning applies, and Astryx
+cannot choose a typesetting or accessibility implementation for the host. Tying
+the opt-in to the required renderer prevents an enabled-but-unrenderable state.
+The default remains exactly the released Markdown grammar.
+
+Rejected: a generic AST/plugin escape hatch, raw HTML rendering, new list/table
+slots without consumer evidence, or a separate boolean on the component that
+could enable math without a renderer.
 
 ## Open questions
 

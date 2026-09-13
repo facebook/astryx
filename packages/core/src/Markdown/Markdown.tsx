@@ -4,8 +4,8 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, parser AST types
- * @output Exports Markdown component and MarkdownProps
+ * @input Markdown string, parser AST types, optional custom renderers
+ * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
 
@@ -70,7 +70,7 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 /**
  * A plugin that transforms text patterns into custom React elements
  * inside Markdown. Applied to parsed text nodes only — code blocks,
- * inline code, and other non-prose contexts are unaffected.
+ * inline code, math, and other non-prose contexts are unaffected.
  *
  * Follows Lexical's TextMatchTransformer architecture:
  * - `pattern` for initial regex matching
@@ -102,6 +102,14 @@ export type MarkdownSource = CitationSource;
 export interface MarkdownComponents {
   code?: React.ComponentType<{code: string; language?: string}>;
   inlineCode?: React.ComponentType<{children: string}>;
+  /**
+   * Renders opt-in `$…$` and `$$…$$` math. Supplying this renderer enables
+   * math parsing; Astryx passes the raw expression and does not execute it.
+   */
+  math?: React.ComponentType<{
+    value: string;
+    display: 'inline' | 'block';
+  }>;
   citation?: React.ComponentType<{
     source: CitationSource;
     number: number;
@@ -183,7 +191,7 @@ export interface MarkdownProps extends BaseProps<HTMLElement> {
   components?: Partial<MarkdownComponents>;
   /**
    * Plugins that transform text patterns into custom React elements.
-   * Applied to text nodes after parsing — code blocks and inline code
+   * Applied to text nodes after parsing — code blocks, inline code, and math
    * are unaffected. Patterns are matched in order; first match wins
    * for overlapping ranges.
    */
@@ -483,6 +491,9 @@ function countInlineTextLength(nodes: InlineNode[]): number {
       case 'code':
         len += node.content.length;
         break;
+      case 'math':
+        len += node.value.length;
+        break;
       case 'image':
         len += node.alt.length;
         break;
@@ -516,6 +527,9 @@ function countBlockTextLength(nodes: BlockNode[]): number {
         break;
       case 'codeblock':
         len += node.content.length;
+        break;
+      case 'math':
+        len += node.value.length;
         break;
       case 'blockquote':
         len += countBlockTextLength(node.children);
@@ -847,6 +861,14 @@ function renderInline(
       );
       return codeEl;
     }
+    case 'math': {
+      const MathComp = components?.math;
+      if (MathComp == null) {
+        return wrapTextWithFade(`$${node.value}$`, cursor, index);
+      }
+      cursor.offset += node.value.length;
+      return <MathComp key={index} value={node.value} display="inline" />;
+    }
     case 'link': {
       const safeHref = sanitizeUrl(node.href);
       if (safeHref == null) {
@@ -1002,6 +1024,7 @@ function getElementSpacing(
         ? styles.spacingParagraphCompact
         : styles.spacingParagraphDefault;
     case 'codeblock':
+    case 'math':
       return compact
         ? styles.spacingCodeblockCompact
         : styles.spacingCodeblockDefault;
@@ -1212,6 +1235,18 @@ function renderBlock(
           />
         </div>
       );
+    }
+    case 'math': {
+      cursor.offset += node.value.length;
+      const MathComp = components?.math;
+      if (MathComp == null) {
+        return (
+          <div key={index} role="paragraph">
+            {`$$${node.value}$$`}
+          </div>
+        );
+      }
+      return <MathComp key={index} value={node.value} display="block" />;
     }
     case 'blockquote': {
       const BlockquoteComp = components?.blockquote;
@@ -1637,9 +1672,10 @@ export function Markdown({
     [sources],
   );
 
+  const hasMathRenderer = components?.math != null;
   const parseOptions = useMemo(
-    () => ({sourceIds, autolink}),
-    [sourceIds, autolink],
+    () => ({sourceIds, autolink, math: hasMathRenderer || undefined}),
+    [sourceIds, autolink, hasMathRenderer],
   );
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
@@ -1649,12 +1685,17 @@ export function Markdown({
   const incrementalStateRef = useRef<IncrementalState>(
     createIncrementalState(),
   );
-  // Reset incremental cache when the autolink option toggles — cached
-  // settled blocks were parsed with the previous setting.
+  // Reset incremental cache when parser-affecting component options toggle —
+  // cached settled blocks were parsed with the previous setting.
   const prevAutolinkRef = useRef(autolink);
-  if (prevAutolinkRef.current !== autolink) {
+  const prevMathRef = useRef(hasMathRenderer);
+  if (
+    prevAutolinkRef.current !== autolink ||
+    prevMathRef.current !== hasMathRenderer
+  ) {
     incrementalStateRef.current = createIncrementalState();
     prevAutolinkRef.current = autolink;
+    prevMathRef.current = hasMathRenderer;
   }
 
   const blocks = useMemo(() => {
@@ -1666,7 +1707,7 @@ export function Markdown({
         incrementalStateRef.current = createIncrementalState();
         return [];
       }
-      const input = trimStreamingArtifacts(smoothedText);
+      const input = trimStreamingArtifacts(smoothedText, parseOptions);
       return parseMarkdownIncremental(
         input,
         incrementalStateRef.current,
@@ -1701,7 +1742,9 @@ export function Markdown({
     if (display !== 'inline') {
       return [];
     }
-    const input = isStreaming ? trimStreamingArtifacts(smoothedText) : children;
+    const input = isStreaming
+      ? trimStreamingArtifacts(smoothedText, parseOptions)
+      : children;
     return parseInline(input, parseOptions);
   }, [display, smoothedText, children, isStreaming, parseOptions]);
 

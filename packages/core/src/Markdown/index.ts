@@ -29,5 +29,6 @@ export type {
   ListItemNode,
   TableCellNode,
   TableAlignment,
+  ParseOptions,
   IncrementalState as IncrementalParseState,
 } from './parser';
