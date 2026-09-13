@@ -4,7 +4,7 @@
  * @file index.ts
  * @input DialogHeroHeader.tsx
  * @output Re-exports DialogHeroHeader component and its prop types
- * @position Lab entry point for the DialogHeroHeader directory
+ * @position Canary-only Lab entry point for the DialogHeroHeader directory
  */
 
 export {DialogHeroHeader} from './DialogHeroHeader';
