@@ -7,7 +7,8 @@
  * @input Uses React, StyleX, TabListContext
  * @output Exports Tab component and TabProps type
  * @position Core tab item; renders as button or anchor in navigation with a
- *   divider-overlay selected indicator
+ *   divider-overlay selected indicator. Where the TabList speaks the tabs
+ *   pattern it is a button with role="tab".
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -35,6 +36,7 @@ import {tabScope} from './tab.markers.stylex';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -64,8 +66,20 @@ export interface TabProps extends BaseProps<HTMLButtonElement> {
   isLabelHidden?: boolean;
   /**
    * URL to navigate to. When provided, renders as an anchor element.
+   *
+   * Ignored in a TabList given an explicit `role="tablist"`: activating a tab
+   * there swaps a panel in place, so a tab that navigates would be a false
+   * statement.
    */
   href?: string;
+  /**
+   * Id of the panel this tab controls, wired up as `aria-controls` where the
+   * TabList speaks the tabs pattern. Put the same id on the panel element.
+   *
+   * Has no effect under the navigation pattern, where there is no panel to
+   * associate — a development warning says so.
+   */
+  panelId?: string;
   /**
    * Icon element shown when tab is not selected.
    */
@@ -101,7 +115,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     whiteSpace: 'nowrap',
     transitionProperty: 'color',
@@ -225,6 +242,7 @@ export function Tab({
   label,
   isLabelHidden = false,
   href,
+  panelId,
   icon,
   selectedIcon,
   endContent,
@@ -239,12 +257,43 @@ export function Tab({
   const isSelected = tabListCtx.value === value;
   const size: TabListSize = tabListCtx.size;
   const isFill = tabListCtx.layout === 'fill';
+  const isTabsPattern = tabListCtx.pattern === 'tabs';
+  const isLink = href != null && !isTabsPattern;
+  const isTabRole = isTabsPattern && !isLink;
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
   const hasVisibleLabel = !isLabelHidden && label !== '';
 
   const handleSelect = useCallback(() => {
     tabListCtx.onChange(value);
   }, [tabListCtx, value]);
+
+  useDevWarning(
+    'Tab',
+    'href is ignored in a role="tablist" TabList — a tab swaps a panel in ' +
+      'place rather than navigating. Drop the href, or drop the role for the ' +
+      'navigation pattern.',
+    isTabRole && href != null,
+  );
+
+  // A consumer who wired aria-controls by hand already said which panel this
+  // is, so panelId is the sugar, not the only way in.
+  const controls = panelId ?? restProps['aria-controls'];
+
+  useDevWarning(
+    'Tab',
+    'a tab in a role="tablist" TabList controls nothing: pass panelId with ' +
+      'the id of the panel it opens, so assistive technology can associate ' +
+      'the two.',
+    isTabRole && controls == null,
+  );
+
+  useDevWarning(
+    'Tab',
+    'panelId does nothing outside a role="tablist" TabList — the navigation ' +
+      'pattern has no panel to associate. Give the TabList role="tablist", ' +
+      'or drop the panelId.',
+    !isTabsPattern && panelId != null,
+  );
 
   const iconElement = displayIcon ? (
     <span {...stylex.props(styles.icon, iconSizeStyles[size])}>
@@ -257,7 +306,25 @@ export function Tab({
     ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
     'data-tab-value': value,
-    'aria-current': isSelected ? ('page' as const) : undefined,
+    ...(isTabRole
+      ? {
+          role: 'tab' as const,
+          'aria-selected': isSelected,
+          // Only when there is a panel to point at: an aria-controls whose
+          // target does not exist is an invalid attribute value, which is a
+          // worse state than saying nothing. The dev warning above asks for
+          // the id instead.
+          'aria-controls': controls,
+        }
+      : {
+          // Generic `true` ("the current item within a set"), not `page`: the
+          // strip switches views in place at least as often as it navigates,
+          // and claiming "current page" when no page changed is a false
+          // statement to a screen reader. Stays truthful for the `href` case
+          // too, just less specific. A tab role states this with
+          // aria-selected instead.
+          'aria-current': isSelected ? ('true' as const) : undefined,
+        }),
     // Roving tabindex: the tab strip is a single Tab stop. The selected tab is
     // the tabbable one; the rest are reachable via arrow keys (handled by
     // TabList's onKeyDown). When no tab is selected, TabList's repair effect
@@ -314,7 +381,7 @@ export function Tab({
     <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>
   ) : null;
 
-  if (href != null) {
+  if (isLink) {
     return (
       <LinkComponent
         ref={ref}

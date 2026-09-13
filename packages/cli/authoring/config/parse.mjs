@@ -11,14 +11,20 @@
 
 import {z} from 'zod';
 import {formatZodError} from '../_shared/errors.mjs';
+import {parseGapReportHandler} from '../gap-report/parse.mjs';
 
 /** @typedef {import('./type').AstryxConfig} AstryxConfig */
 /** @typedef {import('./type').PostCodemodHook} PostCodemodHook */
 /** @typedef {import('./type').XleComponent} XleComponent */
+/** @typedef {import('./type').DebugConfig} DebugConfig */
+/** @typedef {import('../debug/type').DebugEventHandler} DebugEventHandler */
+/** @typedef {import('../gap-report/type').GapReportHandler} GapReportHandler */
 
 // Typed `z.custom` so `z.infer` reproduces the real function type (not `unknown`).
 const buildCommand = /** @type {z.ZodType<PostCodemodHook['buildCommand']>} */ (
-  z.custom(value => typeof value === 'function', {message: 'Expected a function'})
+  z.custom(value => typeof value === 'function', {
+    message: 'Expected a function',
+  })
 );
 
 const postCodemodHookSchema = z
@@ -36,6 +42,30 @@ const xleComponentSchema = z
   })
   .strict();
 
+// Typed `z.custom` so `z.infer` reproduces the real handler type (not
+// `unknown`), the same way the post-codemod hook above keeps its signature.
+const debugSchema = /** @type {z.ZodType<DebugEventHandler>} */ (
+  z.custom(value => typeof value === 'function', {
+    message: 'Expected a function',
+  })
+);
+
+// Reuse the shared load-boundary parser so project and integration handlers
+// accept exactly one shape. Typed z.custom preserves the public function type.
+const gapReportHandlerSchema = /** @type {z.ZodType<GapReportHandler>} */ (
+  z.custom(
+    value => {
+      try {
+        parseGapReportHandler(value);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    {message: 'Expected a GapReportHandler {audience, handle}'},
+  )
+);
+
 const configSchema = z
   .object({
     integrations: z.array(z.string()).optional(),
@@ -44,10 +74,14 @@ const configSchema = z
       .object({postCodemod: z.array(postCodemodHookSchema).optional()})
       .strict()
       .optional(),
+    debug: debugSchema.optional(),
+    gapReport: gapReportHandlerSchema.optional(),
     experimental: z
       .object({
         xle: z
-          .object({components: z.record(z.string(), xleComponentSchema).optional()})
+          .object({
+            components: z.record(z.string(), xleComponentSchema).optional(),
+          })
           .strict()
           .optional(),
       })

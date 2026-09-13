@@ -24,12 +24,12 @@
  */
 
 import type {ReactNode} from 'react';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '../HoverCard';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
-import {useAnnounce} from '../hooks/useAnnounce';
+import {useClipboard} from '../hooks/useClipboard';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -108,7 +108,9 @@ const COPY_FEEDBACK_MS = 1500;
  * The per-row copy affordance: a compact ghost `IconButton` that writes the
  * row's value to the clipboard, flips `copy` → `check` for a moment, and
  * announces the copy to a polite live region (a swapped aria-label alone
- * isn't reliably announced). A clipboard rejection is a silent no-op.
+ * isn't reliably announced). A clipboard rejection is a silent no-op. The
+ * clipboard write, copied flag, reset timer, and announcement are owned by
+ * `useClipboard` — shared with CodeBlock's built-in copy button.
  *
  * Kept as its own component so its state/timer/effect only exist for rows that
  * actually opt into copying — read-only rows render no button and carry none
@@ -116,36 +118,14 @@ const COPY_FEEDBACK_MS = 1500;
  */
 function CopyButton({value}: {value: string}) {
   const t = useTranslator();
-  const announce = useAnnounce();
-  const [copied, setCopied] = useState(false);
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {copy, isCopied: copied} = useClipboard({
+    announce: t('@astryx.timestamp.copied'),
+    resetAfterMs: COPY_FEEDBACK_MS,
+  });
 
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current != null) {
-        clearTimeout(resetTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      announce(t('@astryx.timestamp.copied'));
-      // Restart the reset timer on every copy so a rapid re-copy isn't
-      // reverted early by the previous click's timer.
-      if (resetTimerRef.current != null) {
-        clearTimeout(resetTimerRef.current);
-      }
-      resetTimerRef.current = setTimeout(() => {
-        resetTimerRef.current = null;
-        setCopied(false);
-      }, COPY_FEEDBACK_MS);
-    } catch {
-      // Clipboard failures leave the copied state unchanged.
-    }
-  }, [value, announce, t]);
+  const handleCopy = useCallback(() => {
+    void copy(value);
+  }, [copy, value]);
 
   return (
     <IconButton
@@ -163,9 +143,7 @@ function CopyButton({value}: {value: string}) {
           ? t('@astryx.timestamp.copied')
           : t('@astryx.timestamp.copyValue', {value})
       }
-      onClick={() => {
-        void handleCopy();
-      }}
+      onClick={handleCopy}
       {...themeProps('timestamp-copy-button')}
     />
   );

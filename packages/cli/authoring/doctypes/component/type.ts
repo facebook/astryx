@@ -5,6 +5,7 @@
  */
 
 import type {
+  ComponentAccessibilityRequirement,
   ComponentAnatomyElement,
   ComponentBestPractice,
   ComponentExampleDoc,
@@ -15,6 +16,7 @@ import type {
   ComponentThemingVar,
   HookParamDoc,
   HookReturnDoc,
+  RegistryDocIdentity,
   UsageDoc,
 } from '../base/type';
 
@@ -28,8 +30,12 @@ export interface ComponentBaseDoc {
    *  `export const docs = {...}` docs omit it, and `parseDoc` falls back to
    *  shape-sniffing when it is absent. */
   type?: 'component';
-  /** Directory name without the Astryx prefix, PascalCase.
-   *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
+  /**
+   * Stable machine identity and directory name without the Astryx prefix,
+   * PascalCase (for example `Button`, `Table`, or `AppShell`). Do not change
+   * this to edit the visible label; use `displayName` for that. Registry URLs
+   * derive from this value by default.
+   */
   name: string;
   /** Human-readable display name with spaces between words, used by the
    *  docsite gallery and sidebar. Matches the import name visually (so
@@ -39,6 +45,8 @@ export interface ComponentBaseDoc {
    *  regex derivation. Backfill with
    *  `apps/docsite/scripts/backfill-display-name.mjs`. */
   displayName: string;
+  /** Exact consumer import specifier for integration-owned components. */
+  import?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
@@ -71,7 +79,8 @@ export interface ComponentBaseDoc {
    *  - `'Chat'` — conversational UI: messages, composers, layouts
    *  - `'Container'` — wrappers: cards, carousels, collapsibles
    *  - `'Content'` — display: text, icons, avatars, code blocks
-   *  - `'Data Input'` — data entry: text fields, selectors, date pickers
+   *  - `'Form Controls'` — data entry: text fields, selectors, date pickers
+   *  - `'Data Input'` — deprecated compatibility alias for `'Form Controls'`
    *  - `'Data Visualization'` — charts, graphs, 3D visualizations
    *  - `'Feedback & Status'` — progress indication: spinners, banners, badges
    *  - `'Layout'` — structural: grid, stack, dividers, app shell
@@ -84,6 +93,7 @@ export interface ComponentBaseDoc {
     | 'Chat'
     | 'Container'
     | 'Content'
+    | 'Form Controls'
     | 'Data Input'
     | 'Data Visualization'
     | 'Feedback & Status'
@@ -97,6 +107,8 @@ export interface ComponentBaseDoc {
    *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
    *  or internal primitives that shouldn't appear in the gallery. */
   isHiddenFromOverview?: boolean;
+  /** Optional stable slug override and prior aliases for registry output. */
+  registry?: RegistryDocIdentity;
   /** Theming configuration. Documents the stable selector surface rendered
    *  by this component: `xds-*` classes plus data-attribute reflections that
    *  themes can target via `@scope` selectors in `defineTheme`. */
@@ -168,6 +180,8 @@ export interface ComponentEntry {
   /** One-sentence description of what this specific component does.
    *  For sub-components, explain the role within the parent composition. */
   description: string;
+  /** Optional stable slug override and prior aliases for this entry. */
+  registry?: RegistryDocIdentity;
   /** All public props for this component. Omit for hook entries. */
   props?: ComponentPropDoc[];
   /** Hook parameters or options object fields. Use for `use*` entries. */
@@ -251,6 +265,7 @@ export interface ComponentTranslationDoc {
   usage?: {
     description?: string;
     bestPractices?: ComponentBestPractice[];
+    accessibility?: ComponentAccessibilityRequirement[];
     anatomy?: ComponentAnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */

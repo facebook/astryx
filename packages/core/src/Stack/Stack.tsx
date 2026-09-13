@@ -25,8 +25,10 @@ import {
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
 import {
-  paddingInlineStyles,
-  paddingBlockStyles,
+  paddingInlineStartStyles,
+  paddingInlineEndStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
 } from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -141,10 +143,36 @@ export interface StackProps extends BaseProps<HTMLElement> {
   paddingInline?: SpacingStep;
 
   /**
+   * Inline-start padding, using the spacing scale. Logical: the left edge in
+   * LTR, the right edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineStart?: SpacingStep;
+
+  /**
+   * Inline-end padding, using the spacing scale. Logical: the right edge in
+   * LTR, the left edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineEnd?: SpacingStep;
+
+  /**
    * Block (vertical) padding, using the spacing scale.
    * Overrides `padding` on the block axis when both are set.
    */
   paddingBlock?: SpacingStep;
+
+  /**
+   * Block-start (top) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockStart?: SpacingStep;
+
+  /**
+   * Block-end (bottom) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockEnd?: SpacingStep;
 
   /**
    * Enables scrollable overflow (`overflow: auto`) for the stack.
@@ -211,7 +239,11 @@ export function Stack({
   gap,
   padding,
   paddingInline,
+  paddingInlineStart,
+  paddingInlineEnd,
   paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
   isScrollable,
   width,
   height,
@@ -242,10 +274,14 @@ export function Stack({
       ? (resolvedVAlign as StackCrossAlignment | undefined)
       : (resolvedHAlign as StackCrossAlignment | undefined);
 
-  // Resolve padding to per-axis values: `padding` sets both axes; `paddingInline`
-  // / `paddingBlock` take precedence on their own axis when provided.
-  const resolvedPaddingInline = paddingInline ?? padding;
-  const resolvedPaddingBlock = paddingBlock ?? padding;
+  // Resolve padding to per-edge values. Most specific wins, per edge:
+  // edge prop -> axis prop -> `padding`.
+  const resolvedPaddingInlineStart =
+    paddingInlineStart ?? paddingInline ?? padding;
+  const resolvedPaddingInlineEnd = paddingInlineEnd ?? paddingInline ?? padding;
+  const resolvedPaddingBlockStart =
+    paddingBlockStart ?? paddingBlock ?? padding;
+  const resolvedPaddingBlockEnd = paddingBlockEnd ?? paddingBlock ?? padding;
 
   const stylexProps = stylex.props(
     ...stack({
@@ -255,8 +291,14 @@ export function Stack({
       gap,
       wrap,
     }),
-    resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
-    resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
+    resolvedPaddingInlineStart != null &&
+      paddingInlineStartStyles[resolvedPaddingInlineStart],
+    resolvedPaddingInlineEnd != null &&
+      paddingInlineEndStyles[resolvedPaddingInlineEnd],
+    resolvedPaddingBlockStart != null &&
+      paddingBlockStartStyles[resolvedPaddingBlockStart],
+    resolvedPaddingBlockEnd != null &&
+      paddingBlockEndStyles[resolvedPaddingBlockEnd],
     isScrollable && overflowStyles.scrollable,
     xstyle,
   );

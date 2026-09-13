@@ -13,8 +13,8 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
  *
  * Override keys are the component's stable class name with the `astryx-`
  * namespace prefix stripped — `generateThemeRules` re-adds the prefix when it
- * builds the `.astryx-*` selector. So `astryx-base-table` → key `base-table`
- * (→ `.astryx-base-table`), and `astryx-button` → key `button`.
+ * builds the `.astryx-*` selector. So `astryx-table-cell` → key `table-cell`
+ * (→ `.astryx-table-cell`), and `astryx-button` → key `button`.
  *
  * Keep the `astryx-` literal in sync with packages/core/src/naming.ts
  * (NAMESPACE / classPrefix), the same way build-theme.mjs mirrors it.
@@ -24,6 +24,15 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
  */
 function targetKey(target) {
   return target.className.replace(/^astryx-/, '');
+}
+
+/**
+ * Keep deprecated targets visible in reference tables while excluding them from
+ * snippets readers copy into newly authored themes.
+ * @param {import('@astryxdesign/cli/authoring').ComponentThemingTarget[]} targets
+ */
+function canonicalTargets(targets) {
+  return targets.filter(target => target.deprecatedFor == null);
 }
 
 /** @param {string} name @returns {string} */
@@ -72,6 +81,21 @@ function formatPropsTable(props) {
 }
 
 /**
+ * Render component-specific accessibility requirements.
+ * @param {{name: string, description: string}[] | undefined} accessibility
+ * @param {'##' | '####'} [heading]
+ * @returns {string[]}
+ */
+export function formatAccessibility(accessibility, heading = '##') {
+  if (!Array.isArray(accessibility) || accessibility.length === 0) return [];
+  return [
+    `${heading} Accessibility\n`,
+    ...accessibility.map(item => `- **${item.name}:** ${item.description}`),
+    '',
+  ];
+}
+
+/**
  * Render a sub-component block (the `### Name` sections under "## Components").
  *
  * Sub-components are sometimes declared as a bare reference, e.g.
@@ -88,6 +112,7 @@ function formatSubComponent(comp) {
   if (comp.description) {
     out.push(comp.description + '\n');
   }
+  out.push(...formatAccessibility(comp.usage?.accessibility, '####'));
   const table = formatPropsTable(comp.props);
   if (table) {
     out.push(table + '\n');
@@ -171,8 +196,11 @@ function formatTargetsTable(docs, themeData) {
     const dataAttrsStr =
       dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
 
+    const className = target.deprecatedFor
+      ? `\`${target.className}\` _(deprecated; use \`${target.deprecatedFor}\`)_`
+      : `\`${target.className}\``;
     lines.push(
-      `| \`${target.className}\` | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
+      `| ${className} | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
     );
   }
 
@@ -224,6 +252,8 @@ export function formatFull(docs, options = {}) {
     sections.push('');
   }
 
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
+
   // Single component props
   if ('props' in docs) {
     sections.push('## Props\n');
@@ -269,35 +299,37 @@ export function formatFull(docs, options = {}) {
         }
       }
 
-      // Generate defineTheme example with component selector targeting
-      const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
-      const rootTarget = docs.theming.targets[0];
-      const rootKey = targetKey(rootTarget);
-      exampleLines.push(`  '${rootKey}': {`);
-      exampleLines.push(`    base: { /* CSS properties */ },`);
-      if (rootTarget.visualProps?.length) {
-        const firstVariant = rootTarget.visualProps[0];
-        exampleLines.push(`    '${firstVariant}:value': { /* variant-specific */ },`);
-      }
-      if (rootTarget.states?.length) {
-        const firstState = rootTarget.states[0];
-        exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
-      }
-      exampleLines.push(`  },`);
-      // Show sub-element example if there are multiple targets
-      if (docs.theming.targets.length > 1) {
-        const subTarget = docs.theming.targets[1];
-        const subKey = targetKey(subTarget);
-        exampleLines.push(`  '${subKey}': {`);
+      // Generate defineTheme example with canonical component selectors only.
+      const exampleTargets = canonicalTargets(docs.theming.targets);
+      if (exampleTargets.length > 0) {
+        const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
+        const rootTarget = exampleTargets[0];
+        const rootKey = targetKey(rootTarget);
+        exampleLines.push(`  '${rootKey}': {`);
         exampleLines.push(`    base: { /* CSS properties */ },`);
-        if (subTarget.states?.length) {
-          const firstState = subTarget.states[0];
+        if (rootTarget.visualProps?.length) {
+          const firstVariant = rootTarget.visualProps[0];
+          exampleLines.push(`    '${firstVariant}:value': { /* variant-specific */ },`);
+        }
+        if (rootTarget.states?.length) {
+          const firstState = rootTarget.states[0];
           exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
         }
         exampleLines.push(`  },`);
+        if (exampleTargets.length > 1) {
+          const subTarget = exampleTargets[1];
+          const subKey = targetKey(subTarget);
+          exampleLines.push(`  '${subKey}': {`);
+          exampleLines.push(`    base: { /* CSS properties */ },`);
+          if (subTarget.states?.length) {
+            const firstState = subTarget.states[0];
+            exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
+          }
+          exampleLines.push(`  },`);
+        }
+        exampleLines.push('}\n```\n');
+        sections.push(exampleLines.join('\n'));
       }
-      exampleLines.push('}\n```\n');
-      sections.push(exampleLines.join('\n'));
     }
 
     // Legacy componentKey (for backward compatibility)
@@ -324,7 +356,8 @@ export function formatFull(docs, options = {}) {
 
       // Show derived property examples — the recommended way to theme
       if (docs.theming?.derived?.length) {
-        const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
+        const canonical = canonicalTargets(docs.theming.targets || []);
+        const varsKey = canonical.length ? targetKey(canonical[0]) : docs.theming.componentKey || '';
         const derivedExamples = docs.theming.derived
           .filter((/** @type {any} */ d) => d.vars?.length)
           .map((/** @type {any} */ d) => `      ${d.property}: '...',`)
@@ -387,6 +420,8 @@ export function formatCompact(docs, componentName, importHint) {
     }
     sections.push('');
   }
+
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
 
   // Props
   if ('props' in docs) {
@@ -544,6 +579,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map((/** @type {any} */ t) => {
       const parts = [t.className];
+      if (t.deprecatedFor) parts.push(`deprecated→${t.deprecatedFor}`);
       const dataAttrs = getTargetDataAttributes(t);
       if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);

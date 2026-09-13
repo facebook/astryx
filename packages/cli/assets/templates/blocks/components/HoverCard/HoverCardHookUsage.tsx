@@ -13,6 +13,7 @@ export default function HoverCardHookUsage() {
     placement: 'below',
     delay: 100,
     isDefaultOpen: true,
+    label: 'Alex Morgan',
   });
 
   return (
@@ -20,7 +21,9 @@ export default function HoverCardHookUsage() {
       <Button
         label="Hover profile"
         ref={hoverCard.ref}
-        aria-describedby={hoverCard.describedBy}
+        aria-haspopup="dialog"
+        aria-controls={hoverCard.isOpen ? hoverCard.id : undefined}
+        aria-expanded={hoverCard.isOpen}
       />
       {hoverCard.renderHoverCard(
         <VStack gap={1}>

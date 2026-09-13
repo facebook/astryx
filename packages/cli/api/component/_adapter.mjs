@@ -29,6 +29,7 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
   resolveImportPath,
+  resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
@@ -48,6 +49,7 @@ export {CORE_PACKAGE};
  * @property {any[]} [components]
  * @property {{description?: string}} [usage]
  * @property {any} [theming]
+ * @property {string} [import] set when the doc states its own import specifier
  */
 
 /**
@@ -66,6 +68,13 @@ export {CORE_PACKAGE};
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ */
+
+/**
+ * What ownership shaping needs from an owner. The core and legacy-external
+ * paths synthesize a bare `{package, sourcePath}` rather than resolving a full
+ * {@link ComponentOwner}, so everything past those two is optional here.
+ * @typedef {Partial<ComponentOwner> & {package: string, sourcePath: string|null}} OwnershipSubject
  */
 
 /**
@@ -357,7 +366,7 @@ export function extractProps(docs) {
  * swizzleable source file exists for the owner). Existing doc fields (name,
  * usage, props, …) are preserved.
  * @param {LoadedComponentDoc} docs
- * @param {{package: string, sourcePath: string|null}} owner
+ * @param {OwnershipSubject} owner
  * @param {string} componentName
  * @param {string} coreDir
  * @returns {import('./component.type.mjs').ComponentDetailResponse['data']}
@@ -366,13 +375,38 @@ export function withOwnership(docs, owner, componentName, coreDir) {
   const importSpec =
     owner.package === CORE_PACKAGE
       ? resolveImportPath(coreDir, componentName)
-      : `${owner.package}/${componentName}`;
+      : resolveIntegrationImportPath(owner, componentName);
   return /** @type {any} */ ({
     ...docs,
     package: owner.package,
-    import: importSpec,
+    // A doc file may state its own specifier, e.g. when one entry point exports
+    // several components. Only fall back to a resolved one when it does not.
+    import: docs.import ?? importSpec,
     sourceAvailable: owner.sourcePath != null,
   });
+}
+
+/**
+ * Resolve the specifier an integration component is imported from.
+ *
+ * Thin adapter over the shared resolver in foundation, which `search` also
+ * uses; the two surfaces have to report the same specifier for the same
+ * component.
+ *
+ * @param {OwnershipSubject} owner
+ * @param {string} componentName
+ * @returns {string}
+ */
+function resolveIntegrationImportPath(owner, componentName) {
+  return resolveIntegrationImport(
+    {
+      exportsMap: owner.integration?.__packageExports,
+      packageDir: owner.integration?.__packageDir,
+      docPath: owner.docPath,
+      packageName: owner.package,
+    },
+    componentName,
+  );
 }
 
 /**

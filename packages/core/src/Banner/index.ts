@@ -12,19 +12,6 @@
  */
 
 /**
- * Extensible status map for Banner.
- *
- * Theme packages can add custom statuses via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerStatusMap {
- *     'neutral': true;
- *   }
- * }
- * ```
- */
-/**
  * Extensible container map for Banner.
  *
  * Theme packages can add custom container types via TypeScript module augmentation:
@@ -42,6 +29,21 @@ export interface BannerContainerMap {
   section: true;
 }
 
+/**
+ * Extensible status map for Banner.
+ *
+ * Theme packages can add custom statuses via TypeScript module augmentation.
+ * A status the library does not know falls through to the base treatment: no
+ * status fill, no default glyph, and `role="status"`.
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Banner' {
+ *   interface BannerStatusMap {
+ *     'neutral': true;
+ *   }
+ * }
+ * ```
+ */
 export interface BannerStatusMap {
   info: true;
   warning: true;

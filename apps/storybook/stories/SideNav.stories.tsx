@@ -24,6 +24,7 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   CubeIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -58,9 +59,7 @@ export const Default: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
           headingHref="/"
         />
@@ -80,11 +79,7 @@ export const Default: Story = {
           href="/projects"
           endContent={<Badge label="3" />}
         />
-        <SideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          href="/analytics"
-        />
+        <SideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
         <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
       </SideNavSection>
       <SideNavSection title="Documents">
@@ -120,11 +115,7 @@ export const TitleWithoutIcon: Story = {
           selectedIcon={FolderIconSolid}
           href="/projects"
         />
-        <SideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          href="/analytics"
-        />
+        <SideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
       </SideNavSection>
     </SideNav>
   ),
@@ -140,9 +131,7 @@ export const WithHeaderMenu: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="Product Name"
           subheading="Business Account"
           menu={
@@ -178,9 +167,7 @@ export const SuiteHeader: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           superheading="Suite Name"
           superheadingHref="/suite"
           heading="Product Name"
@@ -217,9 +204,7 @@ export const NestedItems: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }>
@@ -233,10 +218,7 @@ export const NestedItems: Story = {
         <SideNavItem label="Settings" icon={Cog6ToothIcon}>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
       </SideNavSection>
     </SideNav>
@@ -253,9 +235,7 @@ export const WithFooter: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }
@@ -300,9 +280,7 @@ export const DisabledItem: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }>
@@ -334,9 +312,7 @@ export const HiddenSectionHeader: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }>
@@ -359,14 +335,12 @@ export const HiddenSectionHeader: Story = {
 // =============================================================================
 
 export const EndContent: Story = {
-  name: 'End Content (Badges & Menus)',
+  name: 'End Content (Badges)',
   render: () => (
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
           headingHref="/"
         />
@@ -378,16 +352,6 @@ export const EndContent: Story = {
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
-          endContent={
-            <MoreMenu
-              size="sm"
-              items={[
-                {label: 'Pin to top', onClick: () => {}},
-                {label: 'Rename', onClick: () => {}},
-                {label: 'Hide from sidebar', onClick: () => {}},
-              ]}
-            />
-          }
         />
         <SideNavItem
           label="Projects"
@@ -415,17 +379,7 @@ export const EndContent: Story = {
           label="Notifications"
           icon={BellIcon}
           href="/notifications"
-          endContent={
-            <Button
-              label="Settings"
-              icon={
-                <Icon icon={Cog6ToothIcon} size="sm" color="secondary" />
-              }
-              variant="ghost"
-              size="sm"
-              isIconOnly
-            />
-          }
+          endContent={<Badge label={5} />}
         />
         <SideNavItem
           label="Documents"
@@ -459,6 +413,77 @@ export const EndContent: Story = {
 };
 
 // =============================================================================
+// Row Actions
+// =============================================================================
+
+export const RowActions: Story = {
+  name: 'Row Actions (Sibling Controls)',
+  render: () => (
+    <SideNav
+      header={
+        <SideNavHeading
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+          heading="My App"
+          headingHref="/"
+        />
+      }>
+      <SideNavSection title="Projects" isHeaderHidden>
+        <SideNavItem
+          label="Project Alpha"
+          icon={FolderIcon}
+          selectedIcon={FolderIconSolid}
+          isSelected
+          href="/projects/alpha"
+          collapsible
+          actions={
+            <MoreMenu
+              label="Project Alpha actions"
+              items={[
+                {label: 'New session', onClick: () => {}},
+                {label: 'Rename project', onClick: () => {}},
+                {label: 'Archive project', onClick: () => {}},
+              ]}
+            />
+          }>
+          <SideNavItem label="Session 1" href="/projects/alpha/sessions/1" />
+          <SideNavItem label="Session 2" href="/projects/alpha/sessions/2" />
+        </SideNavItem>
+        <SideNavItem
+          label="Project Beta"
+          icon={FolderIcon}
+          href="/projects/beta"
+          collapsible={{defaultIsCollapsed: true}}
+          actions={
+            <MoreMenu
+              label="Project Beta actions"
+              items={[
+                {label: 'New session', onClick: () => {}},
+                {label: 'Rename project', onClick: () => {}},
+              ]}
+            />
+          }>
+          <SideNavItem label="Session 1" href="/projects/beta/sessions/1" />
+        </SideNavItem>
+        <SideNavItem
+          label="Notes"
+          icon={DocumentTextIcon}
+          href="/notes"
+          endContent={<Badge label={4} />}
+          actions={
+            <Button
+              label="New note"
+              icon={<Icon icon={PlusIcon} size="sm" color="secondary" />}
+              variant="ghost"
+              isIconOnly
+            />
+          }
+        />
+      </SideNavSection>
+    </SideNav>
+  ),
+};
+
+// =============================================================================
 // Header End Content
 // =============================================================================
 
@@ -468,9 +493,7 @@ export const HeaderEndContent: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
           headingHref="/"
           headerEndContent={<Badge label="3" variant="error" />}
@@ -499,9 +522,7 @@ export const HeaderEndContentWithMenu: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="Product Name"
           subheading="Business Account"
           headerEndContent={<Badge label="New" variant="info" />}
@@ -535,9 +556,7 @@ export const CollapsibleItems: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }>
@@ -545,10 +564,7 @@ export const CollapsibleItems: Story = {
         <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
         <SideNavItem
           label="Documents"
@@ -566,10 +582,7 @@ export const CollapsibleItems: Story = {
           collapsible>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
         <SideNavItem
           label="Documents"
@@ -588,10 +601,7 @@ export const CollapsibleItems: Story = {
           collapsible>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
       </SideNavSection>
     </SideNav>
@@ -609,9 +619,7 @@ export const CollapsibleSidebar: Story = {
       collapsible
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
           headingHref="/"
         />
@@ -649,21 +657,14 @@ export const CollapsibleSidebar: Story = {
           href="/projects"
           endContent={<Badge label="3" />}
         />
-        <SideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          href="/analytics"
-        />
+        <SideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
         <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
       </SideNavSection>
       <SideNavSection title="Settings">
         <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
         <SideNavItem
           label="Documents"
@@ -685,9 +686,7 @@ export const IconlessNestedItems: Story = {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="My App"
         />
       }>
@@ -702,21 +701,14 @@ export const IconlessNestedItems: Story = {
         <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <SideNavItem label="General" href="/settings/general" />
           <SideNavItem label="Security" href="/settings/security" />
-          <SideNavItem
-            label="Notifications"
-            href="/settings/notifications"
-          />
+          <SideNavItem label="Notifications" href="/settings/notifications" />
         </SideNavItem>
         <SideNavItem label="Reports" collapsible>
           <SideNavItem label="Monthly" href="/reports/monthly" />
           <SideNavItem label="Quarterly" href="/reports/quarterly" />
           <SideNavItem label="Annual" href="/reports/annual" />
         </SideNavItem>
-        <SideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          href="/analytics"
-        />
+        <SideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
       </SideNavSection>
     </SideNav>
   ),

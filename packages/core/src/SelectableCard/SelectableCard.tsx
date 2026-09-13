@@ -40,7 +40,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -48,14 +48,22 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
 // =============================================================================
 
 const styles = stylex.create({
   interactive: {
+    // Declared here, on the element that carries the `astryx-selectable-card`
+    // target, so a theme has something to override — the ring for a variant
+    // only the theme knows about reads it (see selectedUnknown).
+    '--selectable-card-ring-color': colorVars['--color-accent'],
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'box-shadow, border-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -80,13 +88,13 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -149,6 +157,14 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border-yellow'],
     '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
   },
+  // A theme-added variant paints with colours the component cannot know, so no
+  // token is guaranteed to contrast with it — an accent ring disappears against
+  // an accent fill, and an outset one is no better. The theme that supplied the
+  // fill is the only thing that can pick a ring, so it gets a lever beside it;
+  // the var defaults to the accent, keeping every built-in unchanged.
+  selectedUnknown: {
+    '--_card-ring': 'inset 0 0 0 2px var(--selectable-card-ring-color)',
+  },
 });
 
 const selectedStyleForVariant = (variant: CardVariant) => {
@@ -177,6 +193,10 @@ const selectedStyleForVariant = (variant: CardVariant) => {
       return styles.selectedTeal;
     case 'yellow':
       return styles.selectedYellow;
+    // CardVariant is open — a theme can add a variant this switch has never
+    // seen, and it still has to look selected.
+    default:
+      return styles.selectedUnknown;
   }
 };
 
@@ -343,7 +363,7 @@ export function SelectableCard({
 
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}

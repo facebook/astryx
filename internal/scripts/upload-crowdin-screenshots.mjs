@@ -643,13 +643,20 @@ const TARGETS = [
   // ==========================================================================
   {
     name: 'banner-dismissable',
-    // Banner with an × dismiss button (aria-label="Dismiss").
+    // The × button's aria-label now names its banner ("Dismiss <title>"), so
+    // this target tags dismissTitled with the string the story actually
+    // renders; the bare `banner.dismiss` survives as the button's tooltip.
     storyId: 'core-banner--dismissable',
     viewport: {width: 900, height: 200},
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.banner.dismiss', 'srOnlyReveal', undefined, 'below'),
+      t(
+        'astryx.banner.dismissTitled',
+        'srOnlyReveal',
+        'Dismiss Your session will expire soon.',
+        'below',
+      ),
     ],
   },
   {

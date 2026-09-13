@@ -16,8 +16,9 @@ export const doc = {
   summary: 'Initialize the design system in your project',
   description:
     'Non-interactive project setup (no prompts, so it behaves the same for humans, ' +
-    'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs and ' +
-    'prints getting-started guidance; features/--all add theme and page-building ' +
+    'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
+    'including guidance from configured integrations, and prints getting-started ' +
+    'guidance; features/--all add theme and page-building ' +
     'guidance and can scaffold a starter template.',
   fn: 'init',
   options: [
@@ -53,6 +54,7 @@ export const doc = {
   examples: [
     {label: 'Default setup', cli: 'astryx init'},
     {label: 'All features, no prompts', cli: 'astryx init --all'},
+    {label: 'Machine-readable receipt', cli: 'astryx init --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

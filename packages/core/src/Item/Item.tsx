@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
-import {useRef, type ReactNode} from 'react';
+import {useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,13 +27,16 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
+import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // =============================================================================
 // Types
@@ -105,6 +108,15 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * and text-overflow: ellipsis is applied.
    */
   descriptionLines?: number;
+
+  /**
+   * How the label and description sit together. `stacked` puts the description
+   * on its own line below the label; `inline` keeps both on one line, with the
+   * description ellipsizing first, so the row fits a fixed-height host.
+   *
+   * @default 'stacked'
+   */
+  layout?: 'stacked' | 'inline';
 
   /**
    * Click handler. Makes the item clickable with button semantics.
@@ -207,17 +219,13 @@ const styles = stylex.create({
     alignItems: 'flex-start',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
   },
   highlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
@@ -226,7 +234,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
   disabledContent: {
@@ -234,7 +242,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -246,7 +257,10 @@ const styles = stylex.create({
   },
   invisibleAnchor: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -263,6 +277,25 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     textAlign: 'start',
+  },
+  // `layout="inline"`: label and description share one line, so the row fits a
+  // fixed-height host such as a Selector trigger inside an InputGroup.
+  inlineContent: {
+    flexDirection: 'row',
+    // Centered, not baseline-aligned: two different font sizes on a shared
+    // baseline make a line box taller than either line, which would push a
+    // fixed-height host (a Selector trigger) a pixel off its size token.
+    alignItems: 'center',
+    columnGap: spacingVars['--spacing-1'],
+  },
+  inlineLabel: {
+    flexShrink: 0,
+  },
+  // The description yields width first, so the label — the part that identifies
+  // the item — is the last thing to ellipsize.
+  inlineDescription: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
@@ -358,6 +391,7 @@ export function Item({
   density = 'balanced',
   labelLines,
   descriptionLines,
+  layout = 'stacked',
   onClick,
   interactiveRef,
   href,
@@ -408,6 +442,15 @@ export function Item({
   // that need selection semantics pass a permitted role.
   const allowsAriaSelected = role != null && ARIA_SELECTED_ROLES.has(role);
 
+  // The description element's id, published through ItemDescriptionContext so a
+  // control Item renders in a slot can point at it with `aria-describedby`.
+  // `isRenderable` rather than `!= null` so the common empty values — `null`,
+  // `undefined`, `false`, `''` — publish no id and leave a consumer with no
+  // dangling reference. It is a shallow check: content that renders nothing
+  // only once React runs it, such as an empty fragment, still publishes an id.
+  const descriptionID = useId();
+  const hasRenderableDescription = isRenderable(description);
+
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
 
@@ -420,12 +463,16 @@ export function Item({
         ? styles.labelSingleTruncate
         : null;
 
+  // Inline rows are one line by definition, so the description always
+  // ellipsizes there — a ReactNode description cannot wrap the row open.
+  const isInline = layout === 'inline' && description != null;
+
   const descriptionTruncateStyle =
     descriptionLines != null
       ? descriptionLines === 1
         ? styles.descriptionSingleTruncate
         : styles.descriptionMultiTruncate
-      : isStringDescription
+      : isStringDescription || isInline
         ? styles.descriptionSingleTruncate
         : null;
 
@@ -434,6 +481,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
             labelLines > 1 &&
@@ -443,8 +491,10 @@ export function Item({
       </span>
       {description != null && (
         <span
+          id={hasRenderableDescription ? descriptionID : undefined}
           {...stylex.props(
             styles.description,
+            isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
               descriptionLines > 1 &&
@@ -481,6 +531,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -494,6 +545,7 @@ export function Item({
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -505,6 +557,7 @@ export function Item({
           disabled={isDisabled}
           {...stylex.props(
             styles.invisibleButton,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -513,6 +566,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -531,11 +585,11 @@ export function Item({
     </>
   );
 
+  const mergedRef = useMergedRefs(ref, containerRef);
+
   return (
     <Component
-      ref={
-        (isDelegate ? mergeRefs(ref, containerRef) : ref) as React.Ref<never>
-      }
+      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -554,6 +608,7 @@ export function Item({
           densityStyles[density],
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
+          isInteractive && interactionOverlayStyles.backgroundColor,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,
@@ -572,7 +627,10 @@ export function Item({
               ? handleContainerClick
               : undefined
       }>
-      {innerContent}
+      <ItemDescriptionContext
+        value={hasRenderableDescription ? descriptionID : null}>
+        {innerContent}
+      </ItemDescriptionContext>
     </Component>
   );
 }

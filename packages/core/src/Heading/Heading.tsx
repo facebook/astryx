@@ -25,12 +25,14 @@ import type {
   TextJustify,
   WordBreak,
   TextWrap,
+  TextWeight,
 } from '../theme/types';
 import {
   colorStyles,
   sizeByLevelStyles,
   sizeByTypeStyles,
   defaultWeightByTypeStyles,
+  weightStyles,
   displayStyles,
   justifyStyles,
   truncationStyles,
@@ -43,9 +45,11 @@ import {
 import {useTruncation} from '../Text/useTruncation';
 import {resolveStyleColor} from '../Text/Text';
 import type {LayerPlacement} from '../Layer';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import type {HeadingTypeMap} from './index';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -60,7 +64,13 @@ export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
  * Display type variants for headings. Applies display-scale sizing
  * (larger, lighter) while preserving the semantic heading element.
  */
-export type HeadingType = 'display-1' | 'display-2' | 'display-3';
+export type HeadingType = keyof HeadingTypeMap;
+
+type BuiltinHeadingType = 'display-1' | 'display-2' | 'display-3';
+
+function isBuiltinHeadingType(type: HeadingType): type is BuiltinHeadingType {
+  return type === 'display-1' || type === 'display-2' || type === 'display-3';
+}
 
 export interface HeadingProps extends Omit<
   BaseProps<HTMLHeadingElement>,
@@ -89,6 +99,13 @@ export interface HeadingProps extends Omit<
    * ```
    */
   type?: HeadingType;
+
+  /**
+   * Explicit font-weight override. The active theme controls the numeric value
+   * behind each name. When omitted, the selected visual type or heading level
+   * supplies the default.
+   */
+  weight?: TextWeight;
 
   /**
    * Accessibility level override. When set, the `aria-level` will differ
@@ -198,6 +215,7 @@ const levelToTag = {
 export function Heading({
   level,
   type,
+  weight,
   accessibilityLevel,
   color = 'primary',
   display = 'block',
@@ -230,6 +248,11 @@ export function Heading({
   // Resolve display - force block when maxLines > 0 or hasCapsize
   const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
 
+  // A custom type receives its visual treatment from theme CSS. Keep the
+  // semantic level's baseline until that CSS is available instead of indexing
+  // the closed built-in StyleX maps with an unknown name.
+  const builtinType = type && isBuiltinHeadingType(type) ? type : undefined;
+
   // Truncation detection
   const truncation = useTruncation({maxLines});
 
@@ -242,19 +265,30 @@ export function Heading({
   // Ref for the heading element (used as tooltip anchor)
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Keep the merged ref stable across rerenders.
+  const mergedRef = useMergedRefs(ref, truncation.ref, headingRef);
+
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergeRefs(ref, truncation.ref, headingRef)}
+        ref={mergedRef}
         {...mergeProps(
-          themeProps('heading', {level, color, ...(type && {type})}),
+          themeProps('heading', {
+            level,
+            color,
+            type,
+            weight,
+          }),
           stylex.props(
             colorStyles[resolveStyleColor(color)],
-            type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],
-            type && defaultWeightByTypeStyles[type],
+            builtinType
+              ? sizeByTypeStyles[builtinType]
+              : sizeByLevelStyles[level],
+            builtinType && defaultWeightByTypeStyles[builtinType],
+            weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine
@@ -277,7 +311,6 @@ export function Heading({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...ariaProps}
         {...props}>
         {children}

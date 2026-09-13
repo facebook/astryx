@@ -377,14 +377,25 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       if (state.timer != null) {
         clearTimeout(state.timer);
       }
-      state.buffer += e.key.toLowerCase();
+      // "aa" would match nothing; a repeat means "next match" (useTypeahead).
+      const char = e.key.toLowerCase();
+      const isRepeatSameChar =
+        state.buffer.length > 0 &&
+        state.buffer.split('').every(c => c === char);
+      state.buffer = isRepeatSameChar ? char : state.buffer + char;
       state.timer = setTimeout(() => {
         typeaheadRef.current.buffer = '';
       }, typeaheadResetMs) as unknown as number;
 
       const query = state.buffer;
-      const start = currentIndex < 0 ? 0 : currentIndex;
-      const ordered = [...items.slice(start + 1), ...items.slice(0, start + 1)];
+      // A longer query is refining, so the current item may still be the match.
+      const hasCurrent = currentIndex >= 0;
+      const start = hasCurrent ? currentIndex : 0;
+      const offset = hasCurrent && query.length === 1 ? 1 : 0;
+      const ordered = [
+        ...items.slice(start + offset),
+        ...items.slice(0, start + offset),
+      ];
       const match = ordered.find(
         item =>
           !itemDisabled(item) &&

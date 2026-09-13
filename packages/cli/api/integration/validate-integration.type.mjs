@@ -1,10 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Colocated types for the `validate-integration` command — source of truth
- * for its options + response. `AstryxIntegrationIssue` stays shared in
- * types/integration.d.ts (it's not command-owned). Re-exported by
- * types/validate-integration.d.ts so the public surface resolves the same names.
+ * @file Colocated types for `doctor integration validate` structure checks.
+ * `AstryxIntegrationIssue` stays shared in `foundation/integrations/issue.ts`;
+ * the generated public API surface re-exports these response types.
  */
 
 /**
@@ -17,7 +16,9 @@
  * @property {string} [components]
  * @property {string} [templates]
  * @property {string} [codemods]
+ * @property {string} [docs]
  * @property {string} [issuesUrl]
+ * @property {string[]} [__unknownKeys]
  * @property {string} __spec
  * @property {string} __packageDir
  * @property {string} __manifestFile
@@ -30,7 +31,7 @@
  */
 
 /**
- * `astryx --json validate-integration [package]`.
+ * `astryx --json doctor integration validate [package]`.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
  * @property {{name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data

@@ -21,6 +21,7 @@ import {
   useCallback,
   use,
   useOptimistic,
+  useRef,
   useTransition,
   type ChangeEvent,
   type FocusEvent,
@@ -31,12 +32,9 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  durationVars,
-  easeVars,
   typographyVars,
   typeScaleVars,
   fontWeightVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -46,11 +44,15 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
-import {checkboxScope} from './checkbox.markers.stylex';
+import {mergeProps, rtlStyles} from '../utils';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -68,128 +70,36 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
+  // Holds only the indicator, so the focus ring has one unambiguous target.
+  // `display: contents` adds no box of its own — the indicator keeps whatever
+  // layout relationship it already had with the wrapper.
+  indicatorSlot: {
+    display: 'contents',
+  },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
   inputDisabled: {
-    cursor: 'not-allowed',
-  },
-  checkbox: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-inner'],
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  checkboxFocus: {
-    outline: {
-      default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', checkboxScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', checkboxScope)]: '2px',
-    },
-  },
-  // State-dependent colors with ancestor hover behavior
-  checkboxUnchecked: {
-    // Foreground for the inherit-shade loading spinner (reads currentColor):
-    // brand accent on the light surface fill.
-    color: colorVars['--color-accent'],
-    borderColor: {
-      default: colorVars['--color-border-emphasized'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
-      },
-    },
-    backgroundColor: {
-      default: colorVars['--color-background-surface'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
-      },
-    },
-  },
-  checkboxChecked: {
-    // Foreground for the inherit-shade loading spinner (reads currentColor):
-    // on-accent color against the accent fill.
-    color: colorVars['--color-on-accent'],
-    borderColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
-      },
-    },
-    backgroundColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
-      },
-    },
-  },
-  checkboxDisabled: {
-    opacity: 0.5,
-    borderColor: {
-      default: colorVars['--color-border'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': colorVars['--color-border'],
-      },
-    },
-  },
-  checkboxDisabledUnchecked: {
-    backgroundColor: {
-      default: colorVars['--color-background-muted'],
-      [stylex.when.ancestor(':hover', checkboxScope)]: {
-        '@media (hover: hover)': colorVars['--color-background-muted'],
-      },
-    },
-  },
-  checkmark: {
-    display: 'none',
-    color: {
-      default: colorVars['--color-on-accent'],
-      // Forced colors (Windows High Contrast) does not reliably force an SVG
-      // stroke painted with currentColor, so the check stays the same white as
-      // the flattened (Canvas) box fill — a white check on a white box.
-      // CanvasText keeps it perceivable on the Canvas box, matching the
-      // indeterminate mark (WCAG 1.4.11).
-      '@media (forced-colors: active)': 'CanvasText',
-    },
-  },
-  checkmarkVisible: {
-    display: 'block',
-  },
-  indeterminateMark: {
-    display: 'none',
-    backgroundColor: {
-      default: colorVars['--color-on-accent'],
-      // Forced colors (Windows High Contrast) strips painted backgrounds,
-      // which would make the indeterminate bar invisible; CanvasText keeps it
-      // perceivable on the Canvas box fill (WCAG 1.4.11). The checkmark carries
-      // the matching CanvasText treatment on its own style.
-      '@media (forced-colors: active)': 'CanvasText',
-    },
-    borderRadius: radiusVars['--radius-full'],
-  },
-  indeterminateMarkVisible: {
-    display: 'block',
+    cursor: 'default',
   },
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -208,39 +118,6 @@ const wrapperSizeStyles = stylex.create({
   md: {
     width: 24,
     height: 24,
-  },
-});
-
-const checkboxSizeStyles = stylex.create({
-  sm: {
-    width: 20,
-    height: 20,
-  },
-  md: {
-    width: 24,
-    height: 24,
-  },
-});
-
-const checkmarkSizeStyles = stylex.create({
-  sm: {
-    width: 12,
-    height: 12,
-  },
-  md: {
-    width: 14,
-    height: 14,
-  },
-});
-
-const indeterminateSizeStyles = stylex.create({
-  sm: {
-    width: 10,
-    height: 2,
-  },
-  md: {
-    width: 12,
-    height: 2,
   },
 });
 
@@ -410,11 +287,16 @@ export function CheckboxInput({
   className,
   style,
   ref,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxInputProps) {
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -443,9 +325,17 @@ export function CheckboxInput({
     isEnabled: showsDisabledMessage,
   });
 
+  // The checkbox visual is an indicator: a theme can restyle it through the
+  // `checkbox` target or replace the component outright.
+  const CheckboxControl = useIndicator('checkbox');
+  // The ring is drawn on the indicator itself: the native input is
+  // `opacity: 0`, and only the indicator's own element can shape the outline
+  // to match it. See useIndicatorFocusRing.
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
+
   const isIndeterminate = optimisticValue === 'indeterminate';
   const isChecked = optimisticValue === true;
-  const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
   // Sync the native indeterminate DOM property (can't be set via JSX
   // attribute). On a native checkbox this is the authoritative way to expose
@@ -464,7 +354,13 @@ export function CheckboxInput({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` (CheckboxListItem points the control
+  // at its visible row description) comes first, then the input's own ids —
+  // the explicit attribute below would otherwise replace it via `...rest`.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -498,12 +394,16 @@ export function CheckboxInput({
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
-          !isDisabled && checkboxScope,
+          // Hover and focus reach the checkbox visual through this ancestor
+          // marker rather than props, so the whole row drives it.
+          !isDisabled && indicatorScope,
         )}>
-        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
+        <div
+          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...focusProps}>
           <input
             {...rest}
-            ref={mergeRefs(
+            ref={useMergedRefs(
               ref,
               indeterminateRef,
               disabledMessageTooltip.positionRef,
@@ -520,8 +420,10 @@ export function CheckboxInput({
             // still blocked by the isDisabled guard in onChange below.
             disabled={isDisabled && !isFocusableDisabled}
             aria-disabled={isFocusableDisabled ? 'true' : undefined}
+            form={isFocusableDisabled ? '' : undefined}
             readOnly={isReadOnly}
             required={isRequired}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             onChange={e => {
               if (isDisabled || isBusy || isReadOnly) {
                 return;
@@ -543,68 +445,39 @@ export function CheckboxInput({
             aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
+              rtlStyles.centerInline('-50%'),
+              styles.inputCoarse,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}
           />
-          <div
-            aria-hidden="true"
-            {...mergeProps(
-              themeProps('checkbox', {
-                size,
-                checked: isChecked
-                  ? 'checked'
-                  : isIndeterminate
-                    ? 'indeterminate'
-                    : null,
-                disabled: isDisabled ? 'disabled' : null,
-              }),
-              stylex.props(
-                styles.checkbox,
-                checkboxSizeStyles[size],
-                !isDisabled && styles.checkboxFocus,
-                isCheckedOrIndeterminate
-                  ? styles.checkboxChecked
-                  : styles.checkboxUnchecked,
-                isDisabled && styles.checkboxDisabled,
-                isDisabled &&
-                  !isCheckedOrIndeterminate &&
-                  styles.checkboxDisabledUnchecked,
-              ),
-            )}>
-            {isBusy ? (
-              <Spinner size="sm" shade="inherit" />
-            ) : (
-              <>
-                <svg
-                  viewBox="0 0 10 10"
-                  {...stylex.props(
-                    styles.checkmark,
-                    checkmarkSizeStyles[size],
-                    isChecked && styles.checkmarkVisible,
-                  )}>
-                  <path
-                    d="M8.5 2.5L4 7.5L1.5 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <div
-                  {...stylex.props(
-                    styles.indeterminateMark,
-                    indeterminateSizeStyles[size],
-                    isIndeterminate && styles.indeterminateMarkVisible,
-                  )}
-                />
-              </>
-            )}
-          </div>
+          {/*
+           * A container holding ONLY the indicator, so the focus ring has an
+           * unambiguous target whatever a theme renders. `display: contents`
+           * keeps it out of layout entirely.
+           */}
+          <span ref={indicatorRef} {...stylex.props(styles.indicatorSlot)}>
+            <CheckboxControl
+              state={
+                isIndeterminate
+                  ? 'indeterminate'
+                  : isChecked
+                    ? 'checked'
+                    : 'unchecked'
+              }
+              size={size}
+              isDisabled={isDisabled}>
+              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
+            </CheckboxControl>
+          </span>
         </div>
         <div {...stylex.props(styles.labelWrapper)}>
           <FieldLabel
+            // A checkbox's label shares a row with its control, unlike a form
+            // field's label above its input. Naming the label rather than the
+            // arrangement means a theme asks for the thing it wants, and the
+            // component that actually knows what this is says so.
+            {...themeProps('checkbox-label')}
             label={label}
             inputID={id}
             isLabelHidden={isLabelHidden}

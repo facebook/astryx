@@ -33,7 +33,7 @@ import {type ReactNode, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useChatStreamScroll} from './useChatStreamScroll';
 import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
@@ -41,6 +41,7 @@ import {ChatLayoutContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -343,7 +344,7 @@ export function ChatLayout({
     <ChatLayoutContext value={layoutContext}>
       <div
         {...rest}
-        ref={mergeRefs(ref, rootRef)}
+        ref={useMergedRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(
           themeProps('chat-layout', {density}),

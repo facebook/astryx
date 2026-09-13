@@ -160,3 +160,39 @@ export function listComponents(coreDir) {
     .map(e => e.name)
     .sort();
 }
+
+/**
+ * Does `targetPath` exist with EXACTLY this spelling?
+ *
+ * `fs.existsSync` answers through the filesystem's own case folding, so on
+ * macOS and Windows a probe for `src/button/Button.doc.mjs` succeeds against
+ * the real `src/Button/Button.doc.mjs`. Name resolvers built on that probe
+ * then resolve a component or hook the caller never named, and hand back a
+ * path spelled the way the caller typed it — a path that does not exist on
+ * Linux, where the same lookup correctly misses. Every segment below
+ * `rootDir` is checked against its parent's real directory listing.
+ *
+ * @param {string} targetPath - Path to probe; must be inside `rootDir`.
+ * @param {string} rootDir - Already-real path; it and its parents are not checked.
+ * @returns {boolean}
+ */
+export function existsCaseExact(targetPath, rootDir) {
+  if (!fs.existsSync(targetPath)) return false;
+
+  const rel = path.relative(rootDir, targetPath);
+  if (rel === '') return true;
+  if (path.isAbsolute(rel) || rel === '..' || rel.startsWith(`..${path.sep}`)) return false;
+
+  let dir = rootDir;
+  for (const segment of rel.split(path.sep)) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir);
+    } catch {
+      return false;
+    }
+    if (!entries.includes(segment)) return false;
+    dir = path.join(dir, segment);
+  }
+  return true;
+}

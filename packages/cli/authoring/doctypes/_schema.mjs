@@ -46,6 +46,7 @@ const BaseDocFields = {
   displayName: z.string().optional(),
   description: z.string().optional(),
   usage: z.unknown().optional(),
+  import: z.string().min(1).optional(),
   group: z.string().optional(),
   category: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -94,6 +95,11 @@ export const GenericDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('generic'),
+    // Declared rather than left to the passthrough: these two are read by
+    // docs discovery to resolve one topic against another, so a non-string
+    // should fail at the load boundary, not halfway through resolution.
+    replaces: z.string().optional(),
+    extends: z.string().optional(),
   })
   .passthrough();
 
@@ -134,7 +140,11 @@ export const SchemaDocKindSchema = z
     appliesTo: z.string().optional(),
     fields: z.array(SchemaFieldSchema),
     examples: z
-      .array(z.object({label: z.string().optional(), code: z.string()}).passthrough())
+      .array(
+        z
+          .object({label: z.string().optional(), code: z.string()})
+          .passthrough(),
+      )
       .optional(),
     notes: z.array(z.unknown()).optional(),
   })

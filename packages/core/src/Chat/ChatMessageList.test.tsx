@@ -62,7 +62,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('accepts gap independently from density', () => {
@@ -72,7 +72,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('applies data-testid', () => {
@@ -82,5 +82,51 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     expect(screen.getByTestId('chat-list')).toBeTruthy();
+  });
+
+  // With no scrollToTopAction the spacer is the only aria-hidden element in
+  // the list, so its presence maps 1:1 to the aria-hidden count.
+  it('renders the bottom spacer by default', () => {
+    render(
+      <ChatMessageList data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(1);
+  });
+
+  it('renders the bottom spacer when align="bottom"', () => {
+    render(
+      <ChatMessageList align="bottom" data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(1);
+  });
+
+  it('omits the spacer when align="top"', () => {
+    render(
+      <ChatMessageList align="top" data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(0);
+  });
+
+  it('still renders children when align="top"', () => {
+    render(
+      <ChatMessageList align="top">
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble>Hello</ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>,
+    );
+    expect(screen.getByText('Hello')).toBeTruthy();
   });
 });

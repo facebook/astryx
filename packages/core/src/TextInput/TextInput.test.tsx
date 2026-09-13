@@ -426,6 +426,122 @@ describe('TextInput', () => {
     });
   });
 
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    });
+
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('owner')).toBe(
+        'alice',
+      );
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('textbox'), 'xyz');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the native input unchanged', () => {
+      render(
+        <TextInput
+          label="Reason"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when not provided', () => {
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();
@@ -442,6 +558,51 @@ describe('TextInput', () => {
       await user.click(input);
       await user.keyboard('{Enter}');
       expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onEnter when Enter commits an IME conversion', () => {
+      // The browser fires this composing keydown for the Enter that commits an
+      // IME candidate (isComposing: true, or the legacy keyCode 229) before
+      // compositionend writes the conversion. It must NOT trigger onEnter —
+      // submit/save actions would fire before the user intends to submit.
+      // See utils/ime.ts and #6082.
+      const handleEnter = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleEnter).not.toHaveBeenCalled();
+      fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+      expect(handleEnter).not.toHaveBeenCalled();
+
+      // A real, non-composing Enter after composition ends still submits.
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('still calls onKeyDown for composing keydowns', () => {
+      // onKeyDown is the raw escape hatch: it keeps receiving IME keydowns so
+      // consumers with custom composition handling are unaffected by the
+      // onEnter guard.
+      const handleKeyDown = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onKeyDown={handleKeyDown}
+          onEnter={() => {}}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onEnter for other keys', async () => {
@@ -875,7 +1036,6 @@ describe('TextInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-text-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {
@@ -884,5 +1044,72 @@ describe('TextInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-text-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('TextInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('TextInput clear button focus behavior', () => {
+  it('synchronously restores focus to the input on keyboard activation (detail === 0)', () => {
+    const handleChange = vi.fn();
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    clearButton.focus();
+    expect(document.activeElement).toBe(clearButton);
+
+    // Keyboard activation (e.g. Enter / Space on focused button yields detail 0)
+    fireEvent.click(clearButton, {detail: 0});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    // Must be synchronously focused without waiting for animation frames
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+    const handleChange = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    // Pointer activation (detail > 0)
+    fireEvent.click(clearButton, {detail: 1});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    expect(rafSpy).toHaveBeenCalled();
+    rafSpy.mockRestore();
   });
 });

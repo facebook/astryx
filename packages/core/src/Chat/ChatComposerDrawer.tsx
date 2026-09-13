@@ -117,7 +117,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
   },
   toggleCollapsed: {},

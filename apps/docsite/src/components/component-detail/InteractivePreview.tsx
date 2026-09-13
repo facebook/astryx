@@ -4,6 +4,7 @@
 
 import {
   createElement,
+  Suspense,
   useMemo,
   useState,
   useCallback,
@@ -13,6 +14,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {getComponent, resolveValue} from './resolveElements';
+import {AppShellMobileContext} from '@astryxdesign/core/AppShell';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Center} from '@astryxdesign/core/Center';
@@ -22,8 +24,10 @@ import {Text} from '@astryxdesign/core/Text';
 import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
+  buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
+  getOverlayPreviewControl,
   getMissingRequiredProps,
   isOverlayPreviewClosed,
   pickPrimaryProps,
@@ -73,6 +77,24 @@ class PreviewErrorBoundary extends Component<
     }
     return this.props.children;
   }
+}
+
+// Simulated mobile AppShell for `playground.appShellMobile` components:
+// they render null unless AppShell mobile context reports an enabled mobile
+// viewport, which the default context value outside AppShell never does
+// (#4983). Holds the drawer open state so the toggle stays interactive.
+function AppShellMobilePreviewProvider({children}: {children: ReactNode}) {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const value = useMemo(
+    () =>
+      buildAppShellMobilePreviewContext(isMobileNavOpen, setIsMobileNavOpen),
+    [isMobileNavOpen],
+  );
+  return (
+    <AppShellMobileContext.Provider value={value}>
+      {children}
+    </AppShellMobileContext.Provider>
+  );
 }
 
 function toIdentifierName(name: string): string {
@@ -241,20 +263,53 @@ export function InteractivePreviewStage({
   // Sub-components that need a parent context provider declare it via
   // `playground.wrapper`; wrap the previewed component in that parent.
   const wrapper = playground?.wrapper ?? null;
+  const overlayControl = getOverlayPreviewControl(playground);
   const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
+  const [wrapperValue, setWrapperValue] = useState<unknown>(undefined);
+  const [isWrapperMenuOpen, setIsWrapperMenuOpen] = useState<
+    boolean | undefined
+  >(undefined);
+
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
       ? (resolveValue(wrapper.props) as Record<string, unknown>)
       : {};
-    // Wrapper parents require an onChange that can't be serialized; no-op it.
-    if (!('onChange' in resolved)) {
-      resolved.onChange = () => {};
-    }
-    return resolved;
-  }, [wrapper]);
+
+    const activeValue =
+      wrapperValue !== undefined ? wrapperValue : resolved.value;
+
+    return {
+      ...resolved,
+      value: activeValue,
+      onChange: (newVal: unknown) => {
+        setWrapperValue(newVal);
+        if (onPropChange && 'value' in state) {
+          onPropChange('value', newVal);
+        }
+        if (typeof resolved.onChange === 'function') {
+          resolved.onChange(newVal);
+        }
+      },
+      // A menu wrapper seeded open (`isMenuOpen`) is controlled, so bridge
+      // its open pair too: selecting still closes it and the trigger reopens
+      // it (#5888).
+      ...(typeof resolved.isMenuOpen === 'boolean' && {
+        isMenuOpen: isWrapperMenuOpen ?? resolved.isMenuOpen,
+        onOpenChange: setIsWrapperMenuOpen,
+      }),
+    };
+  }, [wrapper, wrapperValue, isWrapperMenuOpen, state, onPropChange]);
+
   const renderPreview = useCallback(
     (rendered: ReactNode): ReactNode => {
       if (wrapper && WrapperComponent) {
+        const slotProp = (wrapper as {slotProp?: string}).slotProp;
+        if (slotProp) {
+          return createElement(WrapperComponent, {
+            ...wrapperProps,
+            [slotProp]: rendered,
+          });
+        }
         return createElement(WrapperComponent, wrapperProps, rendered);
       }
       return rendered;
@@ -360,33 +415,62 @@ export function InteractivePreviewStage({
               width: '100%',
               padding: 'var(--spacing-4)',
             }}>
-            <PreviewErrorBoundary
-              resetKeys={[Component, runtimeState, WrapperComponent]}>
-              {renderPreview(createElement(Component, runtimeState))}
-              {isOverlayPreviewClosed(playground, state) && (
-                <VStack
-                  gap={2}
-                  style={{
-                    alignItems: 'center',
-                    paddingBlock: 24,
-                    paddingInline: 16,
-                    textAlign: 'center',
-                  }}>
-                  <Text type="supporting" color="secondary">
-                    Opens as a full-screen overlay — nothing renders while it is
-                    closed.
-                  </Text>
-                  {onPropChange != null && canControlOpenState && (
-                    <Button
-                      label="Open preview"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onPropChange('isOpen', true)}
-                    />
-                  )}
-                </VStack>
-              )}
-            </PreviewErrorBoundary>
+            <Suspense
+              fallback={
+                <Text type="supporting" color="secondary">
+                  Loading preview…
+                </Text>
+              }>
+              <PreviewErrorBoundary
+                resetKeys={[Component, runtimeState, WrapperComponent]}>
+                {playground?.appShellMobile === true ? (
+                  <AppShellMobilePreviewProvider>
+                    <VStack
+                      gap={2}
+                      style={{alignItems: 'center', textAlign: 'center'}}>
+                      {renderPreview(createElement(Component, runtimeState))}
+                      <Text type="supporting" color="secondary">
+                        Simulated mobile AppShell — in an app this renders only
+                        below the mobile breakpoint.
+                      </Text>
+                    </VStack>
+                  </AppShellMobilePreviewProvider>
+                ) : (
+                  renderPreview(createElement(Component, runtimeState))
+                )}
+                {isOverlayPreviewClosed(playground, state) && (
+                  <VStack
+                    gap={2}
+                    style={{
+                      alignItems: 'center',
+                      paddingBlock: 24,
+                      paddingInline: 16,
+                      textAlign: 'center',
+                    }}>
+                    <Text type="supporting" color="secondary">
+                      Opens as a full-screen overlay — nothing renders while it
+                      is closed.
+                    </Text>
+                    {onPropChange != null &&
+                      overlayControl != null &&
+                      (overlayControl.stateProp !== 'isOpen' ||
+                        canControlOpenState) && (
+                        <Button
+                          label="Open preview"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            onPropChange(
+                              overlayControl.stateProp,
+                              overlayControl.openValue,
+                            )
+                          }
+                        />
+                      )}
+                  </VStack>
+                )}
+              </PreviewErrorBoundary>
+            </Suspense>
           </Center>
         )}
       </Card>

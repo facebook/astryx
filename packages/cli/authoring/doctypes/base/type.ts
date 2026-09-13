@@ -5,6 +5,21 @@
  */
 
 /**
+ * Stable public identity for generated registry resources.
+ *
+ * The converter derives a slug from the doc's stable `name` by default. Set
+ * `slug` only when the public URL must differ from that derived value. When a
+ * published slug changes, keep prior relative paths in `aliases` so existing
+ * install commands continue to work.
+ */
+export interface RegistryDocIdentity {
+  /** Lowercase kebab-case leaf slug override. */
+  slug?: string;
+  /** Prior paths within the item's kind root, without `.json`. */
+  aliases?: string[];
+}
+
+/**
  * Documents one element in a component's anatomy breakdown.
  * Anatomy describes the visual/structural parts that make up a component
  * (e.g. a Button has: left icon, label, end content, container).
@@ -46,6 +61,114 @@ export interface ComponentBestPractice {
    *  Good: `"Convey clear action hierarchy. Each surface should only have 1 primary button."`
    *  Bad:  `"Do use clear action hierarchy."` */
   description: string;
+}
+
+/**
+ * A component-specific accessibility requirement.
+ *
+ * Keep this focused on what a consumer must preserve in the rendered result:
+ * naming, semantics, keyboard behavior, state exposure, contrast, and supported
+ * content combinations. Repository audit procedure belongs in the wiki rubric,
+ * not in this field.
+ *
+ * @example
+ * ```
+ * {name: 'Loading', description: 'Expose aria-busy and prevent duplicate activation unless the action is explicitly interruptible.'}
+ * ```
+ */
+export interface ComponentAccessibilityRequirement {
+  /** Short scannable label, e.g. `"Accessible name"` or `"Loading"`. */
+  name: string;
+  /**
+   * The accessibility contract consumers must preserve. Write at about a
+   * grade-7 reading level with short sentences, common words, and active
+   * voice. For color contrast, put the ratio in `requirement`; name the exact
+   * foreground, background, state, and any overlay in `description`; explain
+   * exceptions in plain language; and include enough detail for a human or
+   * agent to reproduce the check.
+   */
+  description: string;
+  /** Groups related requirements in the docsite Accessibility tab. */
+  category?: 'Color contrast' | 'Keyboard' | 'Semantics' | 'Content';
+  /** Relevant WCAG success criterion, e.g. `"1.4.3 Contrast (Minimum)"`. */
+  criterion?: string;
+  /** Short threshold or rule, e.g. `"4.5:1"`, `"3:1"`, or `"Exempt"`. */
+  requirement?: string;
+  /** Component states covered by this requirement. */
+  states?: string[];
+}
+
+export type ComponentAccessibilityThemeStatus = 'Pass' | 'Fail' | 'Not tested';
+
+export type ComponentAccessibilityThemeApplicability =
+  'Required' | 'Conditional' | 'Supplemental' | 'Decorative';
+
+export interface ComponentAccessibilityThemeMeasurement {
+  /** Column heading, e.g. `"Rest"` or `"Spinner"`. */
+  label: string;
+  /** Display value, e.g. `"15.13:1"`. */
+  value: string;
+  /** Optional supporting detail shown below the value, such as a worst case. */
+  detail?: string;
+  /**
+   * Whether this measurement is required for every use, required only in some
+   * contexts, shown as a supplemental cue, or decorative. Each theme declares
+   * this intent, informed by the component contract. Never infer it from the
+   * measured ratio. Non-required measurements do not determine row status.
+   */
+  applicability?: ComponentAccessibilityThemeApplicability;
+  /** Rendered foreground and background colors used for this measurement. */
+  colorPair?: {
+    foreground: string;
+    background: string;
+  };
+  /** Optional per-variant results shown from a compact details trigger. */
+  breakdown?: Array<{
+    label: string;
+    value: string;
+    detail?: string;
+    colorPair: {
+      foreground: string;
+      background: string;
+    };
+    status?: 'Pass' | 'Fail';
+  }>;
+  /** Mark a failed measurement so the docsite can emphasize it. */
+  status?: 'Pass' | 'Fail';
+}
+
+export interface ComponentAccessibilityThemeResult {
+  /** Row heading, usually a component variant. */
+  name: string;
+  /** Measurements shown between the row heading and status. */
+  measurements: ComponentAccessibilityThemeMeasurement[];
+  /** Overall result for the row. */
+  status: ComponentAccessibilityThemeStatus;
+}
+
+export interface ComponentAccessibilityThemeMode {
+  /** Theme mode covered by these results. */
+  mode: 'Light' | 'Dark';
+  /** Detailed results for the component in this mode. */
+  results: ComponentAccessibilityThemeResult[];
+}
+
+export interface ComponentAccessibilityThemeTable {
+  /** Optional heading for one complete group of measurements. */
+  title?: string;
+  /** Explains the scope of this measurement group. */
+  description?: string;
+  /** Detailed results separated by theme mode. */
+  modes: ComponentAccessibilityThemeMode[];
+}
+
+export interface ComponentAccessibilityThemeCoverage {
+  /** Display name of the audited theme. */
+  theme: string;
+  /** Complete groups of measurements for this theme and component. */
+  tables: ComponentAccessibilityThemeTable[];
+  /** Theme visuals intentionally excluded from measurement, with a reason. */
+  notMeasured?: string[];
 }
 
 /**
@@ -117,6 +240,23 @@ export interface ComponentPlaygroundConfig {
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
+  /** Override the controlled prop and open value used by an overlay preview.
+   *  Use with `overlay: true` when the component does not use `isOpen: true`
+   *  to represent its open state. */
+  overlayControl?: {
+    /** Controlled prop that determines whether the overlay is open. */
+    stateProp: string;
+    /** Value assigned to stateProp when the preview's open button is used. */
+    openValue: unknown;
+  };
+  /** The component reads AppShell mobile context and renders nothing
+   *  without it (e.g. `MobileNavToggle` returns null unless the context
+   *  reports an enabled mobile viewport — the default value outside
+   *  AppShell never does). The interactive preview provides a simulated
+   *  mobile AppShell context so the stage is not an empty box, keeps the
+   *  drawer open state interactive, and notes the simulation under the
+   *  rendered component (#4983). */
+  appShellMobile?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before
@@ -131,8 +271,10 @@ export interface ComponentPlaygroundConfig {
   wrapper?: {
     /** Parent component name as exported from `@astryxdesign/core`, e.g. `'TabList'`. */
     component: string;
-    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    /** Props for the wrapper. The previewed sub-component becomes its `children` unless slotProp is set. */
     props?: Record<string, unknown>;
+    /** Wrapper prop that receives the previewed sub-component instead of `children`. */
+    slotProp?: string;
   };
 }
 
@@ -260,6 +402,8 @@ export interface ComponentSlotElement {
  * { property: 'padding', vars: ['--_card-padding'] },
  * ```
  */
+// SYNC: apps/docsite/scripts/generate-data.mjs (interface DerivedVar) — see the
+// note on ComponentThemingTarget below.
 export interface ComponentThemingDerivedVar {
   /** The standard CSS property name (camelCase) that theme authors write.
    *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
@@ -291,6 +435,10 @@ export interface ComponentThemingDerivedVar {
  * {className: 'astryx-card'}
  * ```
  */
+// SYNC: When adding a field here, add it to the docsite's generated-registry
+// copy too — apps/docsite/scripts/generate-data.mjs (interface ThemingTarget).
+// `next build` type-checks the emitted componentRegistry.ts against that copy,
+// so a field present in a .doc.mjs but missing there fails the docsite build.
 export interface ComponentThemingTarget {
   /** The stable CSS class name rendered by the component.
    *  Always starts with `astryx-`.
@@ -298,18 +446,26 @@ export interface ComponentThemingTarget {
   className: string;
   /** Visual prop names reflected on this element.
    *  These are the props passed to `themeProps()` as the second argument.
-   *  Use these names to derive preferred data selectors: `variant` →
-   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Legacy bare
-   *  classes are still emitted for compatibility but should not be the primary
-   *  documentation surface. Omit if the component has no visual props (class
-   *  name only). */
+   *  Use these names to derive selectors: `variant` →
+   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Values are
+   *  reflected only as data attributes; the stable target class identifies the
+   *  component or part. Omit if the component has no visual props. */
   visualProps?: string[];
-  /** State names that appear on this element based on component state.
+  /** State names reflected on this element based on component state.
    *  Unlike visualProps (driven by props), these reflect runtime state
-   *  (checked, selected, today, on, expanded, etc.). Use these names to derive preferred data selectors such as
-   *  `[data-checked="checked"]`. Legacy state classes are still emitted for
-   *  compatibility. Omit if the element has no state-driven selectors. */
+   *  (checked, selected, today, on, expanded, etc.). Use these names to derive
+   *  selectors such as `[data-checked="checked"]`. Omit if the element has no
+   *  state-driven selectors. */
   states?: string[];
+  /** Set when this target has been renamed and this entry is the old name.
+   *  The component continues emitting the class through `themeProps`'s
+   *  `legacyNames`, so existing themes keep working while discovery and build
+   *  guidance prefer the replacement. The value is the canonical target key
+   *  without the `astryx-` prefix — e.g. `"checkbox-indicator"`.
+   *
+   *  A theme target is public API; deprecation alone does not authorize
+   *  removing either this metadata or runtime support. */
+  deprecatedFor?: string;
 }
 
 /**
@@ -324,7 +480,7 @@ export interface ComponentThemingTarget {
  * ```
  */
 export interface ComponentThemingVar {
-  /** CSS custom property name, e.g. '--_card-radius' or '--button-press-scale' */
+  /** CSS custom property name, e.g. '--_card-radius' or '--button-focus-offset' */
   name: string;
   /** What this var controls */
   description: string;
@@ -374,8 +530,8 @@ export interface HookReturnDoc {
 }
 
 /**
- * Component usage documentation — a concise summary, design guidance
- * best practices, and optional visual anatomy.
+ * Component usage documentation — a concise summary, design guidance,
+ * component-specific accessibility requirements, and optional visual anatomy.
  *
  * ## description
  * Exactly 2-3 short sentences:
@@ -407,6 +563,11 @@ export interface UsageDoc {
   /** 3-4 do/don't design guidance items. Usually 2 Do's then 1-2 Don'ts.
    *  Focus on how a designer would USE the component, not how it's built. */
   bestPractices?: ComponentBestPractice[];
+  /** Accessibility requirements specific to this component and its supported
+   * content combinations. Generic audit procedure stays in the wiki rubric. */
+  accessibility?: ComponentAccessibilityRequirement[];
+  /** Verified color-accessibility coverage for bundled themes. */
+  accessibilityThemeCoverage?: ComponentAccessibilityThemeCoverage[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */

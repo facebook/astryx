@@ -12,7 +12,9 @@
  * @property {string[]} features Features that were run, in order.
  * @property {string[]} docsWritten Agent-doc files written (empty if agents weren't run or install failed).
  * @property {{kind: 'path-safety' | 'install-failed', message?: string} | null} docsError Soft agent-docs failure, if any. `path-safety` also implies a non-zero exit.
- * @property {boolean} theme Whether theme guidance was emitted.
+ * @property {boolean} theme Whether the theme feature ran.
+ * @property {'created' | 'skipped' | 'failed' | null} themeTemplate Outcome of writing the annotated theme template (`skipped` = a file was already there).
+ * @property {string | null} themeTemplatePath Relative output path when `themeTemplate === 'created'`.
  * @property {'workflow' | 'created' | 'skipped' | null} template Template outcome (`workflow` is the CLI default; `created`/`skipped` are programmatic).
  * @property {string | null} templatePath Relative output path when `template === 'created'`.
  * @property {boolean} nextSteps Whether the getting-started "Next steps" were emitted (default mode).

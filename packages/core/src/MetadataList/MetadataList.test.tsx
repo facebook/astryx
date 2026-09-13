@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MetadataList} from './MetadataList';
 import {MetadataListItem} from './MetadataListItem';
@@ -221,5 +221,78 @@ describe('MetadataListItem', () => {
     expect(wrapper).toBeInTheDocument();
     expect(wrapper?.querySelector('dt')).toBeInTheDocument();
     expect(wrapper?.querySelector('dd')).toBeInTheDocument();
+  });
+});
+
+describe('MetadataListItem pass-through props', () => {
+  it('forwards pass-through props to the item element', () => {
+    render(
+      <MetadataList>
+        <MetadataListItem
+          label="Owner"
+          aria-label="Owner field"
+          id="owner"
+          data-source="crm"
+          data-testid="item">
+          Alice
+        </MetadataListItem>
+      </MetadataList>,
+    );
+    const item = screen.getByTestId('item-label');
+    expect(item).toHaveAttribute('aria-label', 'Owner field');
+    expect(item).toHaveAttribute('id', 'owner');
+    expect(item).toHaveAttribute('data-source', 'crm');
+  });
+
+  it('forwards pass-through props in the stacked layout', () => {
+    render(
+      <MetadataList orientation="horizontal">
+        <MetadataListItem label="Owner" id="owner-stacked" data-testid="item">
+          Alice
+        </MetadataListItem>
+      </MetadataList>,
+    );
+    expect(screen.getByTestId('item')).toHaveAttribute('id', 'owner-stacked');
+  });
+});
+
+describe('MetadataListItem pass-through target', () => {
+  it('lands pass-through props on the <dt> in the inline layout, where the ref also goes', () => {
+    const handleClick = vi.fn();
+    render(
+      <MetadataList>
+        <MetadataListItem
+          label="Owner"
+          onClick={handleClick}
+          data-testid="item">
+          Alice
+        </MetadataListItem>
+      </MetadataList>,
+    );
+
+    const label = screen.getByTestId('item-label');
+    expect(label.tagName).toBe('DT');
+    fireEvent.click(label);
+    expect(handleClick).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByTestId('item-value'));
+    expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it('lands them on the wrapper in the stacked layout, so both halves are covered', () => {
+    const handleClick = vi.fn();
+    render(
+      <MetadataList orientation="horizontal">
+        <MetadataListItem
+          label="Owner"
+          onClick={handleClick}
+          data-testid="item">
+          Alice
+        </MetadataListItem>
+      </MetadataList>,
+    );
+
+    fireEvent.click(screen.getByText('Alice'));
+    expect(handleClick).toHaveBeenCalledOnce();
   });
 });

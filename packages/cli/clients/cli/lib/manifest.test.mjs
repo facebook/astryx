@@ -86,6 +86,18 @@ describe('manifest: drift guards', () => {
     }
   });
 
+  it('exposes integration authoring only under doctor', () => {
+    expect(allNames.has('validate-integration')).toBe(false);
+    for (const name of [
+      'doctor integration validate',
+      'doctor integration templates',
+      'doctor integration components',
+      'doctor integration docs',
+    ]) {
+      expect(allNames.has(name), name).toBe(true);
+    }
+  });
+
   it('sorts subcommands by name (stable, agent-facing order)', () => {
     for (const entry of allEntries) {
       if (!entry.subcommands) continue;
@@ -146,8 +158,10 @@ describe('manifest: shape', () => {
     const component = allEntries.find((c) => c.name === 'component');
     expect(component.arguments.map((a) => a.name)).toContain('name');
     const themeBuild = allEntries.find((c) => c.name === 'theme build');
-    expect(themeBuild.arguments.map((a) => a.name)).toContain('file');
-    expect(themeBuild.arguments.find((a) => a.name === 'file').required).toBe(true);
+    expect(themeBuild.arguments.map((a) => a.name)).toContain('files');
+    const files = themeBuild.arguments.find((a) => a.name === 'files');
+    expect(files.required).toBe(true);
+    expect(files.variadic).toBe(true);
   });
 });
 

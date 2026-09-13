@@ -30,10 +30,10 @@
  *      tracing — so any local function named `announce` is checked. That is
  *      a deliberate simplicity tradeoff: false positives require shadowing
  *      the hook's conventional name, which the codebase does not do.
- *      Only plain string literals and template literals WITHOUT expressions
- *      are flagged; templates with interpolations, identifiers, and t(...)
- *      results are allowed (interpolated announcements are caught by the
- *      i18n sweep, not this conservative check).
+ *      The argument is walked the same way JSX attribute values are, so
+ *      literals reached through a ternary or an `||`/`??` fallback and the
+ *      literal chunks of an interpolated template are flagged too;
+ *      identifiers and t(...) results are allowed.
  *
  * Ignores:
  *   - Test files (*.test.*, __tests__/**)
@@ -58,6 +58,8 @@
  *   {key: 'contains', label: 'contains'}
  *   function Foo({label = 'Cancel'})
  *   announce('Copied');
+ *   announce(n === 0 ? 'No results' : 'Results found');
+ *   announce(`Added ${label}`);
  *
  * Options:
  *   callees: string[] — function names whose first argument is a user-facing
@@ -190,40 +192,48 @@ function shouldIgnoreFile(filename) {
  * Deliberately does NOT walk into call expressions, member accesses,
  * identifiers, JSX expressions, or arbitrary function bodies — those are
  * either already handled (t() calls) or too likely to false-positive.
+ *
+ * `opts.messageId` overrides the reported message (the call-argument surface
+ * has its own wording); `opts.allowed` is a Set of exact string values to skip.
  */
-function reportUserFacingLiteralsIn(expr, name, context, isDefault) {
+function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
   if (expr == null) return;
+  const messageId =
+    opts.messageId ?? (isDefault ? 'hardcodedDefault' : 'hardcodedString');
+  const allowed = opts.allowed;
+  // Returns true when a report was actually emitted (i.e. not allowlisted).
+  const report = (node, value) => {
+    if (allowed?.has(value)) return false;
+    context.report({
+      node,
+      messageId,
+      data: {value: JSON.stringify(value), name},
+    });
+    return true;
+  };
   switch (expr.type) {
     case 'Literal':
       if (typeof expr.value === 'string' && looksUserFacing(expr.value)) {
-        context.report({
-          node: expr,
-          messageId: isDefault ? 'hardcodedDefault' : 'hardcodedString',
-          data: {value: JSON.stringify(expr.value), name},
-        });
+        report(expr, expr.value);
       }
       return;
     case 'TemplateLiteral':
       for (const quasi of expr.quasis) {
         const raw = quasi.value?.cooked ?? quasi.value?.raw ?? '';
         if (typeof raw === 'string' && looksUserFacing(raw)) {
-          context.report({
-            node: quasi,
-            messageId: isDefault ? 'hardcodedDefault' : 'hardcodedString',
-            data: {value: JSON.stringify(raw), name},
-          });
-          return; // one report per template is enough
+          // One report per template is enough.
+          if (report(quasi, raw)) return;
         }
       }
       return;
     case 'ConditionalExpression':
-      reportUserFacingLiteralsIn(expr.consequent, name, context, isDefault);
-      reportUserFacingLiteralsIn(expr.alternate, name, context, isDefault);
+      reportUserFacingLiteralsIn(expr.consequent, name, context, isDefault, opts);
+      reportUserFacingLiteralsIn(expr.alternate, name, context, isDefault, opts);
       return;
     case 'LogicalExpression':
       // Only the right side can be a fallback/default string; the left is a
       // condition and its string identity doesn't matter for i18n.
-      reportUserFacingLiteralsIn(expr.right, name, context, isDefault);
+      reportUserFacingLiteralsIn(expr.right, name, context, isDefault, opts);
       return;
     // Anything else (CallExpression like t(...), MemberExpression,
     // Identifier, ArrowFunctionExpression body, JSXExpression, etc.) — skip.
@@ -369,10 +379,9 @@ const rule = {
 
       // 4. Call argument: `announce('Copied')`
       //    Matches by callee NAME only (no import/scope tracing) — see the
-      //    file header for the rationale and limitation. Deliberately
-      //    conservative about what counts as hardcoded: plain string
-      //    literals and expression-free template literals. Templates with
-      //    interpolations, identifiers, and t(...) calls are all allowed.
+      //    file header for the rationale and limitation. The argument goes
+      //    through the same walk as JSX attribute values, so a ternary or an
+      //    interpolated template is caught like a bare literal.
       CallExpression(node) {
         if (node.callee.type !== 'Identifier') return;
         const name = node.callee.name;
@@ -380,23 +389,9 @@ const rule = {
         const arg = node.arguments[0];
         if (arg == null) return;
 
-        let value = null;
-        if (arg.type === 'Literal' && typeof arg.value === 'string') {
-          value = arg.value;
-        } else if (
-          arg.type === 'TemplateLiteral' &&
-          arg.expressions.length === 0 &&
-          arg.quasis.length === 1
-        ) {
-          value = arg.quasis[0].value?.cooked ?? arg.quasis[0].value?.raw;
-        }
-        if (typeof value !== 'string') return;
-        if (!looksUserFacing(value)) return;
-        if (allowedCalleeStrings.has(value)) return;
-        context.report({
-          node: arg,
+        reportUserFacingLiteralsIn(arg, name, context, /*isDefault*/ false, {
           messageId: 'hardcodedCallArg',
-          data: {value: JSON.stringify(value), name},
+          allowed: allowedCalleeStrings,
         });
       },
     };

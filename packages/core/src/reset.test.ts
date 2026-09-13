@@ -57,4 +57,26 @@ describe('reset.css accessibility invariants', () => {
         .not.toMatch(/outline(?:-style|-width)?\s*:\s*(?:none|0)/);
     }
   });
+
+  /**
+   * A disabled control must not answer the pointer with an interactive
+   * cursor. The reset is the floor for any element that declares no cursor of
+   * its own — components declare theirs under the `disabled-cursor` lint
+   * rule, and the Chromium sweep measures the rendered result.
+   */
+  it('gives disabled elements the disabled cursor', () => {
+    const disabledBlocks = ruleBlocks.filter(
+      ({selector}) =>
+        selector.includes(':disabled') && !selector.includes(':not('),
+    );
+    expect(disabledBlocks.length).toBeGreaterThan(0);
+    for (const {selector, body} of disabledBlocks) {
+      expect(body, `disabled rule "${selector}"`).toMatch(/cursor:\s*default/);
+    }
+    // aria-disabled is how astryx keeps a disabled control focusable, so the
+    // reset has to cover it alongside the native state.
+    expect(
+      disabledBlocks.some(({selector}) => selector.includes('aria-disabled')),
+    ).toBe(true);
+  });
 });

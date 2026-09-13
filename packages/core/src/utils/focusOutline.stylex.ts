@@ -7,28 +7,42 @@
  * @position Internal utility for consistent keyboard focus outlines across core components
  *
  * Centralizes the standard Astryx focus outline, shown only for keyboard focus.
- * Every focusable surface drew the same 2px accent ring at 2px offset already;
- * writing it per component meant five identical definitions to keep in step.
+ * Every focusable surface drew the same 2px accent ring already; writing it per
+ * component meant dozens of identical definitions to keep in step, and they did
+ * not stay in step — offsets drifted and one ring was a border-width thick.
  *
- * These are utility styles, deliberately NOT a theme target. A shared
- * `astryx-focus-outline` class was tried and pulled: a theme can only override
- * the ring unconditionally through it (`generateThemeRules` mangles
- * `:focus-visible` into `.focus-visible` and truncates `:has(:focus-visible)`
- * at the paren), so the one thing such a target exists for — restyling a
- * STATE — is exactly what it cannot express. Making focus outlines themeable
- * is worth doing on top of this consolidation, once that is fixed.
+ * Every ring in core and lab is drawn from here, with one exception recorded in
+ * Switch: its condition is a component-scoped ancestor marker, which cannot be
+ * shared without leaking focus state between components. A component may still
+ * override the OFFSET (a ring that must sit inset, or clear of a field border);
+ * width, style and color are not restated anywhere.
+ *
+ * Every value comes from the `--focus-outline-*` tokens, which is how a theme
+ * restyles the ring: one override reaches every component at once. The
+ * `:focus-visible` condition is not themeable and stays here, so a theme can
+ * change what the ring looks like but cannot show it to pointer users.
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {focusVars} from '../theme/tokens.stylex';
 
-const FOCUS_OUTLINE_WIDTH = '2px';
-// 3px, per Design Conventions §User Interaction States: "2px --color-accent
-// outline at 3px offset". Most components had drifted to 2px; Button, Calendar,
-// Dialog and Pagination were the ones matching the spec, so the consolidation
-// takes their value rather than the majority's.
-const FOCUS_OUTLINE_OFFSET = '3px';
-const FOCUS_OUTLINE_COLOR = colorVars['--color-accent'];
+const FOCUS_OUTLINE_WIDTH = focusVars['--focus-outline-width'];
+const FOCUS_OUTLINE_STYLE = focusVars['--focus-outline-style'];
+const FOCUS_OUTLINE_COLOR = focusVars['--focus-outline-color'];
+
+const FOCUS_OUTLINE_OFFSET = focusVars['--focus-outline-offset'];
+
+/**
+ * The ring as a single `outline` value, for reading it at runtime — an
+ * assertion, or an element styled imperatively.
+ *
+ * NOT usable inside another file's `stylex.create`: StyleX resolves imported
+ * `defineVars` and nothing else, so a component whose condition
+ * {@link focusOutlineStyles} cannot express (Switch, whose ring keys off a
+ * component-scoped ancestor marker) has to compose the `focusVars` tokens
+ * itself.
+ */
+export const FOCUS_OUTLINE = `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`;
 
 /**
  * Written as longhands rather than the `outline` shorthand.
@@ -40,8 +54,43 @@ const FOCUS_OUTLINE_COLOR = colorVars['--color-accent'];
  */
 const focusOutlineLonghands = {
   outlineWidth: FOCUS_OUTLINE_WIDTH,
-  outlineStyle: 'solid',
+  outlineStyle: FOCUS_OUTLINE_STYLE,
   outlineColor: FOCUS_OUTLINE_COLOR,
+} as const;
+
+/**
+ * The standard focus ring as plain CSS values, for the one case that has to
+ * apply it imperatively: a control whose focusable input is visually hidden and
+ * whose ring must land on a *themeable indicator* beside it (see
+ * `useIndicatorFocusRing`). Everything else should use the styles above.
+ *
+ * Longhands, not the `outline` shorthand, for the same reason the styles are:
+ * a shorthand resets every longhand it covers, so a caller could not re-color
+ * the ring without restating its width and style. Split, each part is
+ * independently overridable — and every part stays a var, so a theme's
+ * `--focus-outline-*` overrides still flow through.
+ *
+ * Keys are camelCase to match `HTMLElement.style`, so this spreads straight
+ * onto an element:
+ *
+ * ```ts
+ * Object.assign(el.style, FOCUS_OUTLINE_PARTS);        // draw
+ * Object.assign(el.style, FOCUS_OUTLINE_PARTS_NONE);   // clear
+ * ```
+ */
+export const FOCUS_OUTLINE_PARTS = {
+  outlineWidth: FOCUS_OUTLINE_WIDTH,
+  outlineStyle: FOCUS_OUTLINE_STYLE,
+  outlineColor: FOCUS_OUTLINE_COLOR,
+  outlineOffset: FOCUS_OUTLINE_OFFSET,
+} as const;
+
+/** Clears {@link FOCUS_OUTLINE_PARTS}, one key per part so nothing lingers. */
+export const FOCUS_OUTLINE_PARTS_NONE = {
+  outlineWidth: '',
+  outlineStyle: '',
+  outlineColor: '',
+  outlineOffset: '',
 } as const;
 
 export const focusOutlineStyles = stylex.create({
@@ -75,10 +124,56 @@ export const focusOutlineStyles = stylex.create({
     },
     outlineOffset: {default: '0', ':has(:focus-visible)': FOCUS_OUTLINE_OFFSET},
   },
+  /**
+   * Like {@link focusOutlineStyles.focusWithin}, but only for the element's
+   * FIRST child — for a wrapper that paints the ring on behalf of one primary
+   * control while its siblings ring themselves.
+   *
+   * `focusWithin` matches any descendant, so a row holding more than one tab
+   * stop lights the whole row *on top of* the focused control's own ring: two
+   * outlines for one tab stop. Scoping to `> :first-child` keeps the ring the
+   * primary's, and leaves every sibling control ringing itself.
+   *
+   * The wrapper owns the coupling: the primary has to be its first child, and
+   * the wrapper must not be a tab stop (its own `:focus-visible` would never
+   * match). Pair it with {@link focusOutlineStyles.suppressed} on the primary.
+   */
+  focusWithinFirstChild: {
+    outlineWidth: {
+      default: '0',
+      ':has(> :first-child:focus-visible)': focusOutlineLonghands.outlineWidth,
+    },
+    outlineStyle: {
+      default: 'none',
+      ':has(> :first-child:focus-visible)': focusOutlineLonghands.outlineStyle,
+    },
+    outlineColor: {
+      default: null,
+      ':has(> :first-child:focus-visible)': focusOutlineLonghands.outlineColor,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(> :first-child:focus-visible)': FOCUS_OUTLINE_OFFSET,
+    },
+  },
+  /**
+   * Draws no ring, and keeps the UA's own off — for an element whose ring an
+   * ancestor paints.
+   *
+   * The reset is not optional. Every other style here suppresses the browser
+   * default through its `default` branch, so dropping the ring from a control
+   * drops that suppression with it, and a bare `<a>` or `<button>` goes back
+   * to the UA focus ring — painted *inside* the ancestor's.
+   */
+  suppressed: {
+    outlineWidth: '0',
+    outlineStyle: 'none',
+    outlineOffset: '0',
+  },
   publishFocusVisibleVars: {
     '--_focus-outline': {
       default: 'none',
-      ':focus-visible': `${FOCUS_OUTLINE_WIDTH} solid ${FOCUS_OUTLINE_COLOR}`,
+      ':focus-visible': FOCUS_OUTLINE,
     },
     '--_focus-outline-offset': {
       default: '0',
@@ -88,7 +183,7 @@ export const focusOutlineStyles = stylex.create({
   focusWithinOrPublished: {
     outline: {
       default: 'var(--_focus-outline, none)',
-      ':has(:focus-visible)': `${FOCUS_OUTLINE_WIDTH} solid ${FOCUS_OUTLINE_COLOR}`,
+      ':has(:focus-visible)': FOCUS_OUTLINE,
     },
     outlineOffset: {
       default: 'var(--_focus-outline-offset, 0)',
@@ -119,6 +214,10 @@ function makeFocusOutlineProps(style: StyleXPropsArg) {
 export const focusOutlineProps = {
   focusVisible: makeFocusOutlineProps(focusOutlineStyles.focusVisible),
   focusWithin: makeFocusOutlineProps(focusOutlineStyles.focusWithin),
+  focusWithinFirstChild: makeFocusOutlineProps(
+    focusOutlineStyles.focusWithinFirstChild,
+  ),
+  suppressed: makeFocusOutlineProps(focusOutlineStyles.suppressed),
   publishFocusVisibleVars: makeFocusOutlineProps(
     focusOutlineStyles.publishFocusVisibleVars,
   ),

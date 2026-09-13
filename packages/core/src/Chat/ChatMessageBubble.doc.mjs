@@ -45,6 +45,11 @@ export const docs = {
       type: "'first' | 'middle' | 'last'",
       description: 'Position within a multi-bubble group. Controls corner radius reduction on the sender side. Leave unset for standalone bubbles (full radius).',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description: 'Width of the bubble (number = pixels, string = used as-is). When set, replaces the default max(80%, 280px) width cap. Combine with variant="ghost" to let custom content (an artifact card, attachments) span the full message column.',
+    },
   ],
 };
 
@@ -59,6 +64,7 @@ export const docsZh = {
     name: '气泡上方渲染的发送者名称，与气泡文本内边距对齐。用于消息中的第一个气泡。',
     metadata: '气泡下方渲染的元数据内容，与气泡文本内边距对齐。用于消息中的最后一个气泡。',
     group: '多气泡组中的位置。控制发送者侧的圆角缩减。',
+    width: '气泡宽度（数字 = 像素，字符串 = 按原样使用）。设置后替代默认的 max(80%, 280px) 宽度上限；与 ghost 变体组合可让自定义内容占满消息列宽度。',
   },
 };
 
@@ -74,5 +80,6 @@ export const docsDense = {
     displayName: 'sender name above bubble, aligned w/ bubble padding',
     metadata: 'metadata below bubble, aligned w/ bubble padding',
     group: 'position in multi-bubble group; controls corner radius reduction',
+    width: 'bubble width (number=px, string=as-is); replaces default max(80%,280px) cap; ghost+width="100%" spans full message column',
   },
 };

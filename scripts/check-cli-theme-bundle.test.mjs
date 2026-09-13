@@ -33,6 +33,8 @@ const CLI_THEMES_OUT = path.join(
 const toIdentifier = (slug) =>
   slug.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 
+const readJSON = (file) => JSON.parse(fs.readFileSync(file, 'utf-8'));
+
 /** Theme slugs discovered the same way the generator discovers them. */
 function themeSlugs() {
   if (!fs.existsSync(THEMES_SRC_ROOT)) return [];
@@ -47,7 +49,26 @@ function themeSlugs() {
         'src',
         `${toIdentifier(slug)}Theme.ts`,
       );
-      return fs.existsSync(themeFile);
+      if (!fs.existsSync(themeFile)) return false;
+      // Private packages are not themes a user can pick — packages/themes/probe
+      // is a generated visual-gate fixture. The generator skips them, so this
+      // discovery must too, or it would demand the fixture be bundled.
+      const pkg = path.join(THEMES_SRC_ROOT, slug, 'package.json');
+      return !fs.existsSync(pkg) || readJSON(pkg).private !== true;
+    })
+    .sort();
+}
+
+/** Theme dirs that exist but must never reach the CLI tarball. */
+function privateThemeSlugs() {
+  if (!fs.existsSync(THEMES_SRC_ROOT)) return [];
+  return fs
+    .readdirSync(THEMES_SRC_ROOT, {withFileTypes: true})
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .filter((slug) => {
+      const pkg = path.join(THEMES_SRC_ROOT, slug, 'package.json');
+      return fs.existsSync(pkg) && readJSON(pkg).private === true;
     })
     .sort();
 }
@@ -89,4 +110,26 @@ describe('CLI theme bundle is in sync with source', () => {
       });
     }
   }
+
+  // These assets ship inside the CLI tarball, so a private package that
+  // happens to live in packages/themes becomes an installable theme unless
+  // the generator excludes it. The probe fixture did exactly that once.
+  for (const slug of privateThemeSlugs()) {
+    it(`${slug}: private theme package is not shipped to CLI users`, () => {
+      expect(
+        fs.existsSync(path.join(CLI_THEMES_OUT, slug)),
+        `packages/themes/${slug} is private but is bundled into the CLI — ` +
+          'it would be offered by `astryx theme add`',
+      ).toBe(false);
+    });
+  }
+
+  it('bundles exactly the discovered themes, and nothing else', () => {
+    const bundled = fs
+      .readdirSync(CLI_THEMES_OUT, {withFileTypes: true})
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+    expect(bundled).toEqual(slugs);
+  });
 });

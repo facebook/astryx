@@ -1,0 +1,322 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file ci-test-routing.test.mjs
+ *
+ * The contract between `vitest.config.ts` and the CI jobs that run it, in both
+ * workflows that run the suite.
+ *
+ * This repo has now lost test coverage to routing twice. First a suite
+ * belonged to no Vitest project, so `pnpm test` never collected it. Then the
+ * single `test` job that ran every project at once was terminated around 20
+ * minutes with no summary — `main` was already at ~19m15, so the budget was
+ * the defect, not any one test. `deploy.yml`'s push gate carried strictly more
+ * than that: the same suite plus a full build plus eight typecheck gates.
+ *
+ * Both now run the projects as parallel lanes joined by `test`. That only
+ * holds if every project has a lane in every workflow: a third project added
+ * to the config with no job to run it would be collected by nobody and fail
+ * nothing — the first failure again, one level up.
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+import {describe, expect, it} from 'vitest';
+import yaml from 'yaml';
+import componentPackages from '../../scripts/component-packages.cjs';
+
+const {COMPONENT_PACKAGE_NAMES} = componentPackages;
+
+const root = path.resolve(import.meta.dirname, '../..');
+const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+
+/** The `name:` of every project declared in the root Vitest config. */
+function declaredProjects() {
+  return [...read('vitest.config.ts').matchAll(/^\s*name:\s*'([^']+)'/gm)].map(
+    match => match[1],
+  );
+}
+
+/**
+ * The runner labels this repo is known to have.
+ *
+ * Deliberately a FIXED list, not one scraped from the workflow under test. A
+ * self-derived allowlist is vacuous: a typo'd label appears in the file, so it
+ * appears in the set, so it validates itself and the job queues forever
+ * against a runner that does not exist. Adding a genuinely new label is a
+ * deliberate edit here.
+ */
+const KNOWN_RUNNERS = new Set([
+  '2-core-ubuntu-arm',
+  '4-core-ubuntu',
+  'ubuntu-slim',
+  'ubuntu-latest',
+]);
+
+const WORKFLOWS = {
+  'ci.yml': {
+    lanes: ['test-ui', 'test-node'],
+    // A PR that only touches docs skips the suite but must still report.
+    scopeConditional: true,
+  },
+  'deploy.yml': {
+    // The push gate also owns the build + typecheck gates, which need each
+    // other and so ride one lane of their own.
+    lanes: ['test-ui', 'test-node', 'typecheck'],
+    scopeConditional: false,
+  },
+};
+
+function load(file) {
+  return yaml.parse(read(`.github/workflows/${file}`));
+}
+
+function runLines(job) {
+  return (job?.steps ?? [])
+    .map(step => step.run)
+    .filter(Boolean)
+    .join('\n');
+}
+
+describe.each(Object.entries(WORKFLOWS))(
+  '%s test routing',
+  (file, {lanes, scopeConditional}) => {
+    const workflow = load(file);
+
+    it('runs every declared Vitest project in some lane', () => {
+      const projects = declaredProjects();
+      expect(projects.length).toBeGreaterThan(0);
+
+      const commands = lanes
+        .map(lane => runLines(workflow.jobs[lane]))
+        .join('\n');
+      for (const project of projects) {
+        expect(commands, `no lane runs --project ${project}`).toContain(
+          `--project ${project}`,
+        );
+      }
+    });
+
+    it('assigns each project to exactly one lane', () => {
+      for (const project of declaredProjects()) {
+        const owners = lanes.filter(lane =>
+          runLines(workflow.jobs[lane]).includes(`--project ${project}`),
+        );
+        expect(
+          owners,
+          `--project ${project} runs in ${owners.length} lanes`,
+        ).toHaveLength(1);
+      }
+    });
+
+    it('gives no lane the whole suite', () => {
+      // A bare `pnpm test` runs every project in one job — the shape that hit
+      // the wall.
+      for (const lane of lanes) {
+        expect(
+          runLines(workflow.jobs[lane]),
+          `${lane} runs the whole suite`,
+        ).not.toMatch(/^\s*pnpm test\s*$/m);
+      }
+    });
+
+    it('keeps `test` as a job so its context still reports', () => {
+      // In ci.yml this is a required status check; in deploy.yml the `deploy`
+      // job gates the publish on `needs.test.result`. Renaming it silently
+      // breaks whichever one applies.
+      expect(workflow.jobs.test).toBeDefined();
+      expect(workflow.jobs.test.needs).toEqual(expect.arrayContaining(lanes));
+    });
+
+    it('fails the join when any lane fails', () => {
+      // `needs` alone does not fail a job whose `if` is `always()`; the join
+      // has to assert the results it waited for.
+      const join = runLines(workflow.jobs.test);
+      for (const lane of lanes) {
+        expect(join, `join does not assert ${lane}`).toContain(
+          `needs.${lane}.result }}" = "success"`,
+        );
+      }
+    });
+
+    it('runs every lane on a known runner label', () => {
+      for (const job of [...lanes, 'test']) {
+        const label = workflow.jobs[job]['runs-on'];
+        expect(
+          KNOWN_RUNNERS.has(label),
+          `${job} uses unknown runner label "${label}"`,
+        ).toBe(true);
+      }
+    });
+
+    if (scopeConditional) {
+      it('keeps the lightweight-docs skip on every lane', () => {
+        for (const lane of lanes) {
+          expect(workflow.jobs[lane].if).toContain('always()');
+          const steps = workflow.jobs[lane].steps;
+          const suite = steps.find(step => step.run?.includes('--project'));
+          expect(suite.if, `${lane} suite is unconditional`).toContain(
+            "docsite_only != 'true'",
+          );
+          expect(suite.if, `${lane} suite is unconditional`).toContain(
+            "spec_only != 'true'",
+          );
+          expect(
+            steps.some(step =>
+              step.run?.includes('refusing to skip required work'),
+            ),
+            `${lane} does not guard against an unclassified scope`,
+          ).toBe(true);
+        }
+      });
+    }
+  },
+);
+
+describe('ci.yml RTL package sharding', () => {
+  const workflow = load('ci.yml');
+  const shard = workflow.jobs['pr-rtl-shard'];
+  const join = workflow.jobs['pr-rtl'];
+
+  it('keeps specialized lanes as explicit successful no-audit classifications', () => {
+    const classification = workflow.jobs['check-components'];
+    expect(classification.if).toBe("github.event_name == 'pull_request'");
+    const commands = runLines(classification);
+    for (const lane of ['docsite_only', 'spec_only', 'tooling_only']) {
+      expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
+    }
+    expect(commands).toContain('has_components=false');
+    expect(commands).toContain('has_rtl_components=false');
+    expect(commands).toContain('has_rtl_harness=false');
+    expect(commands).toContain('force_full_component_audits=false');
+    expect(commands).toContain('has_stable_visual=false');
+  });
+
+  it('broadens both browser audits for unresolved canonical source ownership', () => {
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      '.forceFullComponentAudits // false',
+    );
+    expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
+  });
+
+  it('runs one bounded shard for every canonical component package', () => {
+    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
+    expect(shard['runs-on']).toBe('4-core-ubuntu');
+    expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
+    expect(shard['continue-on-error']).not.toBe(true);
+    const scope = shard.steps.find(
+      step => step.name === 'Resolve RTL shard scope',
+    );
+    const audit = shard.steps.find(step => step.name === 'Run RTL audit');
+    const validation = shard.steps.find(
+      step => step.name === 'Require completed RTL shard report',
+    );
+    expect(scope['continue-on-error']).not.toBe(true);
+    expect(scope.run).toContain('.github/scripts/rtl-shard-scope.mjs');
+    expect(scope.run).toContain('--manifest rtl-shard-scope.json');
+    expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
+    expect(audit['continue-on-error']).toBe(true);
+    expect(validation.if).toBe('always()');
+    expect(validation.run).toContain('steps.rtl-scope.outcome');
+    expect(validation.run).toContain(
+      'produced no explicit should_run decision',
+    );
+    expect(runLines(shard)).toContain('--packages "$PACKAGE"');
+    expect(runLines(shard)).toContain('--concurrency 4');
+    expect(runLines(shard)).toContain(
+      '.github/scripts/rtl-report-completion.mjs',
+    );
+    expect(runLines(shard)).toContain(
+      '--filter "${{ steps.rtl-scope.outputs.filter }}"',
+    );
+  });
+
+  it('keeps pr-rtl as a fail-closed join over every matrix shard', () => {
+    expect(join.needs).toEqual(
+      expect.arrayContaining(['check-components', 'pr-rtl-shard']),
+    );
+    const commands = runLines(join);
+    expect(commands).toContain('needs.check-components.result');
+    expect(commands).toContain('needs.pr-rtl-shard.result');
+    expect(commands).toContain('.github/scripts/rtl-join.mjs');
+    expect(commands).toContain('--reports-dir rtl-shard-reports');
+    expect(commands).toContain(
+      '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
+    );
+    const download = join.steps.find(
+      step => step.name === 'Download applicable RTL shard reports',
+    );
+    expect(download['continue-on-error']).toBe(true);
+    expect(download.with.pattern).toBe('rtl-audit-report-*');
+    const requireStep = join.steps.find(
+      step => step.name === 'Require every applicable RTL shard',
+    );
+    expect(requireStep.if).toBe('always()');
+  });
+
+  it('publishes a distinct scope manifest and optional report for each shard', () => {
+    const upload = shard.steps.find(step =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    expect(upload.if).toBe('always()');
+    expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
+    expect(upload.with.path).toContain('rtl-shard-scope.json');
+    expect(upload.with.path).toContain('rtl-audit-report.json');
+    expect(upload.with['if-no-files-found']).toBe('error');
+  });
+});
+
+describe('deploy.yml push gating', () => {
+  const workflow = load('deploy.yml');
+
+  it('still blocks the publish on the join and the build', () => {
+    // Splitting the gate must not let a deploy through on a red suite.
+    expect(workflow.jobs.deploy.needs).toEqual(
+      expect.arrayContaining(['test', 'build']),
+    );
+    expect(workflow.jobs.deploy.if).toContain("needs.test.result == 'success'");
+    expect(workflow.jobs.deploy.if).toContain(
+      "needs.build.result == 'success'",
+    );
+  });
+
+  it('keeps the typecheck gates behind the build they need', () => {
+    // `typecheck:strict` resolves the built @astryxdesign/* types, so the
+    // build has to precede the gates in the SAME lane.
+    const steps = workflow.jobs.typecheck.steps.map(step => step.run ?? '');
+    const build = steps.findIndex(step => step.trim() === 'pnpm build');
+    const strict = steps.findIndex(step => step.includes('typecheck:strict'));
+
+    expect(build).toBeGreaterThanOrEqual(0);
+    expect(strict).toBeGreaterThan(build);
+  });
+
+  it('keeps every typecheck gate that guarded main', () => {
+    // These exist because a typecheck error can otherwise land on main and
+    // break the `build` check on every open PR (#3197).
+    const gates = runLines(workflow.jobs.typecheck);
+    for (const gate of [
+      'scripts/verify-exports.mjs',
+      '@astryxdesign/core typecheck:docs',
+      '@astryxdesign/lab typecheck:docs',
+      '@astryxdesign/charts typecheck:docs',
+      '@astryxdesign/cli typecheck:template-docs',
+      '@astryxdesign/cli typecheck:strict',
+      '@astryxdesign/storybook typecheck',
+      '@astryxdesign/core typecheck',
+    ]) {
+      expect(gates, `lost the ${gate} gate`).toContain(gate);
+    }
+  });
+
+  it('checks out main on every push-gate lane', () => {
+    // A lane that checks out the default ref would gate the wrong commit.
+    for (const lane of ['test-ui', 'test-node', 'typecheck']) {
+      const checkout = workflow.jobs[lane].steps.find(step =>
+        step.uses?.startsWith('actions/checkout'),
+      );
+      expect(checkout?.with?.ref, `${lane} does not pin main`).toBe('main');
+    }
+  });
+});

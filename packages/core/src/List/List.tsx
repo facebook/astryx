@@ -152,6 +152,7 @@ export function List({
   style,
   'data-testid': testId,
   ref,
+  ...props
 }: ListProps) {
   const headerId = useId();
   const isOrdered = listStyle === 'decimal';
@@ -165,8 +166,14 @@ export function List({
   const listElement = (
     <Tag
       ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      // Consumer props first: everything the component sets for itself below
+      // is part of its contract and wins on conflict.
+      {...props}
       data-testid={testId}
-      aria-labelledby={header != null ? headerId : undefined}
+      // Only when this component renders the header — writing `undefined`
+      // unconditionally would erase a label a consumer pointed at their own
+      // heading.
+      {...(header != null ? {'aria-labelledby': headerId} : null)}
       {...(isOrdered && start != null && start !== 1 ? {start} : {})}
       // The base list style always sets list-style-type: none (markers are
       // custom-rendered by ListItem), and Safari/VoiceOver drops implicit

@@ -25,7 +25,12 @@ runs:
     # pnpm has to be on PATH before setup-node, otherwise `cache: pnpm` cannot
     # resolve the store path. The version comes from package.json's
     # `packageManager` field — never pin it here as well.
-    - uses: pnpm/action-setup@v6
+    #
+    # SHA-pinned like the repo's other third-party actions (crowdin,
+    # peter-evans): this composite also runs inside the npm publish jobs, so a
+    # mutable tag would let a retagged release into that context. Bump by
+    # updating the SHA to the new tag's commit.
+    - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
     # .nvmrc is the single source of truth for the Node version, shared with
     # local nvm / fnm / mise. The 24.x line also bundles npm >= 11.5.1, which

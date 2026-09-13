@@ -2,7 +2,8 @@
 
 /**
  * @file parseOutlineFromMarkdown.ts
- * @input Uses Markdown parser internals and OutlineItem type
+ * @input Uses Markdown parser internals (parseMarkdown + heading slug
+ *   helpers) and OutlineItem type
  * @output Exports parseOutlineFromMarkdown for extracting heading outlines from Markdown
  * @position Pure utility; consumed by useOutlineFromMarkdown and public exports
  *
@@ -11,52 +12,21 @@
  * - /packages/core/src/Outline/index.ts
  */
 
-import {parseMarkdown, type InlineNode} from '../Markdown/parser';
+import {
+  parseMarkdown,
+  inlineText,
+  slugify,
+  uniqueSlug,
+} from '../Markdown/parser';
 import type {OutlineItem} from './types';
-
-function inlineText(nodes: InlineNode[]): string {
-  return nodes
-    .map(node => {
-      switch (node.type) {
-        case 'text':
-        case 'code':
-          return node.content;
-        case 'bold':
-        case 'italic':
-        case 'strikethrough':
-        case 'link':
-          return inlineText(node.children);
-        case 'image':
-          return node.alt;
-        case 'citation':
-        case 'break':
-          return '';
-      }
-    })
-    .join('');
-}
-
-function slugify(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function uniqueSlug(baseSlug: string, counts: Map<string, number>): string {
-  const fallbackSlug = baseSlug || 'section';
-  const count = counts.get(fallbackSlug) ?? 0;
-  counts.set(fallbackSlug, count + 1);
-  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`;
-}
 
 /**
  * Extract heading items from a Markdown string.
  *
  * Uses Markdown's parser so fenced code blocks, tables, lists, and inline
  * formatting are interpreted consistently with rendered Markdown output.
+ * Ids come from the parser's shared slug helpers, so they always match the
+ * `id` attributes Markdown renders on its headings.
  */
 export function parseOutlineFromMarkdown(markdown: string): OutlineItem[] {
   const counts = new Map<string, number>();

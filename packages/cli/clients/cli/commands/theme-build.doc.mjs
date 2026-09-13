@@ -14,18 +14,28 @@ export const doc = {
   name: 'theme build',
   displayName: 'astryx theme build',
   namespace: 'cli',
-  summary: 'Compile a defineTheme file to CSS + JS',
+  summary: 'Compile one or more defineTheme files to CSS + JS',
   description:
     'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations: the exact CSS the <Theme> runtime emits. With --check it writes ' +
-    'nothing and instead reports whether the committed outputs have drifted from source.',
+    'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
+    'files and compiles them in one process, in argument order, stopping at the first ' +
+    'failure; an app with several themes does not need a shell loop. With --check it writes ' +
+    'nothing and instead reports whether the committed outputs have drifted from source. ' +
+    'When a separate build step emits the icon registry, --icons-specifier declares the ' +
+    'fully specified module path that the generated JS should import.',
   fn: 'themeBuild',
-  args: [{name: 'file', param: 'file', required: true}],
+  args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
-    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path'},
+    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path (single theme only)'},
+    {
+      flag: '--icons-specifier <specifier>',
+      param: 'options.iconsSpecifier',
+      description:
+        'Override the icon-registry import in the generated JS module (for example, ./icons.mjs)',
+    },
     {
       flag: '-w, --watch',
-      description: 'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
+      description: 'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
     },
     {
       flag: '-c, --check',
@@ -40,8 +50,16 @@ export const doc = {
       cli: 'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
     },
     {
+      label: 'Build every theme in a directory',
+      cli: 'astryx theme build ./src/themes/*.ts',
+    },
+    {
       label: 'Check for drift (CI)',
       cli: 'astryx theme build ./src/themes/ocean.ts --check',
+    },
+    {
+      label: 'Build against a separately compiled icon registry',
+      cli: 'astryx theme build ./src/themes/ocean.ts --icons-specifier ./icons.mjs',
     },
   ],
   exitCodes: [

@@ -59,7 +59,7 @@ describe('ChatLayout', () => {
       </ChatLayout>,
     );
     const root = screen.getByTestId('layout');
-    expect(root.className).toContain('compact');
+    expect(root).toHaveAttribute('data-density', 'compact');
 
     rerender(
       <ChatLayout
@@ -69,7 +69,7 @@ describe('ChatLayout', () => {
         <div>msg</div>
       </ChatLayout>,
     );
-    expect(root.className).toContain('spacious');
+    expect(root).toHaveAttribute('data-density', 'spacious');
   });
 
   it('defaults density to balanced', () => {
@@ -79,7 +79,7 @@ describe('ChatLayout', () => {
       </ChatLayout>,
     );
     const root = screen.getByTestId('layout');
-    expect(root.className).toContain('balanced');
+    expect(root).toHaveAttribute('data-density', 'balanced');
   });
 
   it('renders custom scrollButton slot', () => {

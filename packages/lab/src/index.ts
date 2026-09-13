@@ -45,9 +45,6 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
-// BottomSheet — mobile touch sheet on a native modal <dialog>
-export {BottomSheet, type BottomSheetProps} from './BottomSheet';
-
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {
   Tour,
@@ -243,7 +240,6 @@ export {
 
 // Chart v2 (config model) moved to its own package: @astryxdesign/charts.
 // It is no longer re-exported from @astryxdesign/lab.
-export * from './Stepper';
 export * from './CircularProgress';
 
 // ListInput — compact editor for short collections of simple records
@@ -257,31 +253,7 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
-// RichTextEditor — experimental Lexical WYSIWYG editor (RFC facebook/astryx#3899)
-// Optional peer deps: lexical + @lexical/*. Read-only rendering via RichTextView.
-export {
-  RichTextEditor,
-  type RichTextEditorProps,
-  type RichTextEditorRef,
-  type RichTextEditorStatus,
-  type RichTextEditorStatusType,
-  type RichTextEditorSize,
-  type Transformer,
-  RichTextView,
-  type RichTextViewProps,
-  sharedEditorTheme,
-  markdownToEditorStateJSON,
-  editorStateJSONToMarkdown,
-  type MarkdownSerializerOptions,
-  RichTextEditorToolbar,
-  type RichTextEditorToolbarProps,
-  RICHTEXT_ICON_KEYS,
-  RichTextEditorAutoLinkPlugin,
-  type RichTextEditorAutoLinkPluginProps,
-  DEFAULT_LINK_MATCHERS,
-  NEW_TAB_LINK_ATTRIBUTES,
-  sanitizeUrl,
-  validateUrl,
-  URL_MATCHER,
-  EMAIL_MATCHER,
-} from './RichTextEditor';
+// RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
+// into its own canary-only package, @astryxdesign/richtext, so it can be canaried
+// independently (e.g. into EPS/Nest). Import it from there:
+//   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

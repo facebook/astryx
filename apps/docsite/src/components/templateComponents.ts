@@ -34,6 +34,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/centered-hero/page'),
   ),
+  'checkout-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/checkout-wizard/page'),
+  ),
   'classic-gallery': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/classic-gallery/page'),
@@ -46,9 +50,29 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/dashboard/page'),
   ),
-  'dashboard-portfolio': lazy(
+  'dashboard-alert-rail': lazy(
     () =>
-      import('../../../../packages/cli/assets/templates/pages/dashboard-portfolio/page'),
+      import('../../../../packages/cli/assets/templates/pages/dashboard-alert-rail/page'),
+  ),
+  'dashboard-cohort-funnel': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-cohort-funnel/page'),
+  ),
+  'dashboard-comparison': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-comparison/page'),
+  ),
+  'dashboard-composition': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-composition/page'),
+  ),
+  'dashboard-progress': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-progress/page'),
+  ),
+  'dashboard-scorecard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-scorecard/page'),
   ),
   'detail-page': lazy(
     () =>
@@ -76,6 +100,22 @@ export const TEMPLATE_COMPONENTS: Record<
   'form-two-column': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/form-two-column/page'),
+  ),
+  'form-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard/page'),
+  ),
+  'form-wizard-dialog': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-dialog/page'),
+  ),
+  'form-wizard-inline': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-inline/page'),
+  ),
+  'form-wizard-vertical': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-vertical/page'),
   ),
   'gallery-hero': lazy(
     () =>
@@ -154,25 +194,21 @@ export const TEMPLATE_COMPONENTS: Record<
   table: lazy(
     () => import('../../../../packages/cli/assets/templates/pages/table/page'),
   ),
+  'table-filter': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
+  ),
   'table-grouped': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
   ),
+  'table-inbox': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-inbox/page'),
+  ),
   'table-page': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
-  ),
-  'table-page-chart': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-chart/page'),
-  ),
-  'table-page-heatmap-status': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-heatmap-status/page'),
-  ),
-  'table-page-shoe-store-heatmap': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-shoe-store-heatmap/page'),
   ),
 };
 

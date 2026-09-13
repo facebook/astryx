@@ -149,6 +149,31 @@ export const WithMinMax: Story = {
   },
 };
 
+export const MaxRangeSpan: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Reporting period',
+    maxRangeSpan: 7,
+    description: 'Pick a start date, then any end within a 7-day window',
+  },
+};
+
+export const RangeSpanBounds: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Stay',
+    minRangeSpan: 2,
+    maxRangeSpan: 30,
+    description: 'At least 2 and at most 30 days',
+  },
+};
+
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<DateRange | null>(null);
@@ -362,7 +387,7 @@ export const StatusVariantComparison: Story = {
 
 /**
  * Theme the clear and calendar-toggle glyphs precisely via `defineTheme`.
- * `components['date-range-input-clear-icon'].base` and
+ * `components['input-clear-icon'].base` and
  * `components['date-range-input-toggle-icon'].base` scope overrides to the
  * icons themselves (via the `astryx-date-range-input-*-icon` targets), so a
  * theme can recolor, hover-morph, and resize them — without a fragile
@@ -372,7 +397,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'date-range-input-icon-demo',
   components: {
-    'date-range-input-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

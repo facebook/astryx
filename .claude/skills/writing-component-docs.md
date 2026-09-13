@@ -4,6 +4,8 @@
 
 Every component directory has a `{Name}.doc.mjs` file with structured documentation. The Astryx CLI reads these files to generate agent-friendly docs, skill files, and reference material.
 
+These docs are for people **building with** Astryx, not for people building Astryx. Before adding process material — a rubric, a readiness gate, an audit checklist, lab→core criteria — read [`packages/cli/assets/docs/README.md`](../../packages/cli/assets/docs/README.md), which carries the test and the wiki page each kind goes to.
+
 ## Exports
 
 | Export      | Type                      | Purpose                          | Required?                       |
@@ -122,7 +124,7 @@ astryx --detail compact --lang dense component Button  # Compact + compressed
 
 Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `@astryxdesign/cli/authoring`.
 
-They live in `packages/cli/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
+They live in `packages/cli/assets/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
 
 Content is structured as sections with ordered content blocks:
 
@@ -131,7 +133,7 @@ Content is structured as sections with ordered content blocks:
 - `table` — data tables (not translated)
 - `list` — rules, anti-patterns, tips (translatable)
 
-To add a new reference doc: create `packages/cli/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
+To add a new reference doc: create `packages/cli/assets/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
 
 ```bash
 astryx docs                          # list topics

@@ -27,11 +27,16 @@ const meta: Meta<typeof MultiSelector> = {
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
     variant: {control: 'radio', options: ['input', 'ghost']},
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+    },
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
     },
     isDisabled: {control: 'boolean'},
+    isReadOnly: {control: 'boolean'},
     disabledMessage: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
@@ -59,6 +64,36 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select columns...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned teams',
+    options: ['Design', 'Engineering', 'Marketing'],
+    value: ['Design', 'Engineering'],
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'teams',
+    triggerDisplay: 'labels',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Teams"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 
@@ -177,6 +212,50 @@ export const Searchable: Story = {
         hasSelectAll
         placeholder="Select countries..."
       />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    const [c, setC] = useState<string[]>([]);
+    const [d, setD] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <MultiSelector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={setA}
+        />
+        <MultiSelector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={setB}
+          emptyText="No countries loaded yet"
+        />
+        <MultiSelector
+          label="Search for xyz (custom)"
+          options={['Canada', 'France', 'Japan']}
+          value={c}
+          onChange={setC}
+          hasSearch
+          emptySearchText="Nothing matches that country"
+        />
+        <MultiSelector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={setD}
+          isLoading
+        />
+      </div>
     );
   },
   decorators: [Story => <Story />],
@@ -524,8 +603,8 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['multi-selector-clear-icon'].base` scopes overrides to the
- *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ * - `components['input-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-input-clear-icon` target), so a
  *   theme can recolor it, morph its color on hover, and resize it — without a
  *   fragile descendant selector or raw CSS.
  * - `components['multi-selector-indicator-icon']` scopes overrides to the
@@ -538,7 +617,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'multi-selector-icon-demo',
   components: {
-    'multi-selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',
@@ -574,6 +653,29 @@ export const ThemedIcons: Story = {
           hasClear
         />
       </Theme>
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="end"` moves the checkbox to the trailing edge of each
+ * row. The default is `start`, where the checkbox leads the label as it does in
+ * CheckboxList.
+ */
+export const EndIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Name', 'Email']);
+    return (
+      // No hasSelectAll: its divider is an unallowed listbox child and fails
+      // the a11y audit as soon as a story opens the popup (#4994).
+      <MultiSelector
+        label="Columns"
+        options={['Name', 'Email', 'Role', 'Status']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="end"
+        isDefaultOpen
+      />
     );
   },
 };

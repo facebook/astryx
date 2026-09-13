@@ -19,7 +19,11 @@ import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
-import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {
+  installAgentDocs,
+  renderAgentDocsBlock,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -70,7 +74,7 @@ export function getNextSteps(invocation) {
  * @param {string} invocation
  * @param {import('../init.type.mjs').InitRunData} data
  */
-function applyAgents(cwd, options, invocation, data) {
+async function applyAgents(cwd, options, invocation, data) {
   // Validate --agent up front (a hard error, not a swallowed install failure).
   // ERR_UNKNOWN_AGENT was defined but never wired — a typo like `--agent claud`
   // otherwise silently fell back to writing AGENTS.md. Mirrors --features.
@@ -87,7 +91,12 @@ function applyAgents(cwd, options, invocation, data) {
         ? options.agentDocsPath
         : [options.agentDocsPath]
       : undefined;
-    const written = installAgentDocs(cwd, {agent: options.agent, paths});
+    const renderedBlock = await renderAgentDocsBlock(cwd);
+    const written = installAgentDocs(cwd, {
+      agent: options.agent,
+      paths,
+      renderedBlock,
+    });
     data.docsWritten = written;
     logger.log(`✓ AI agent docs installed → ${written.join(', ')}`);
   } catch (err) {
@@ -104,6 +113,36 @@ function applyAgents(cwd, options, invocation, data) {
     );
     data.docsError = {kind: 'install-failed'};
   }
+}
+
+/**
+ * Write the annotated theme template, via the same leaf `astryx theme template`
+ * uses — init is a convenience wrapper over the theme command, not a second
+ * implementation of it.
+ *
+ * @param {string} cwd
+ * @param {string} invocation
+ * @param {import('../init.type.mjs').InitRunData} data
+ */
+function applyTheme(cwd, invocation, data) {
+  data.theme = true;
+  try {
+    const {path: written, written: didWrite} = themeTemplate({cwd}).data;
+    data.themeTemplate = didWrite ? 'created' : 'skipped';
+    data.themeTemplatePath = didWrite ? written : null;
+    logger.log(
+      didWrite
+        ? `✓ Theme template written → ${written}`
+        : `• ${written} already exists — left as is.`,
+    );
+  } catch {
+    // Soft failure, like agent docs: the guidance below is still useful.
+    data.themeTemplate = 'failed';
+    logger.error('Could not write the theme template.');
+  }
+  logger.log(
+    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+  );
 }
 
 /**
@@ -210,18 +249,15 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       docsWritten: [],
       docsError: null,
       theme: false,
+      themeTemplate: null,
+      themeTemplatePath: null,
       template: null,
       templatePath: null,
       nextSteps: false,
     };
     for (const feature of features) {
-      if (feature === 'agents') applyAgents(cwd, options, invocation, data);
-      if (feature === 'theme') {
-        logger.log(
-          `✓ For a custom theme, run \`${invocation} theme\` (browse) or \`${invocation} theme add <slug>\` (scaffold).`,
-        );
-        data.theme = true;
-      }
+      if (feature === 'agents') await applyAgents(cwd, options, invocation, data);
+      if (feature === 'theme') applyTheme(cwd, invocation, data);
       if (feature === 'template') {
         applyTemplate(cwd, {templateName: options.templateName}, invocation, data);
       }
@@ -238,11 +274,13 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     docsWritten: [],
     docsError: null,
     theme: false,
+    themeTemplate: null,
+    themeTemplatePath: null,
     template: null,
     templatePath: null,
     nextSteps: true,
   };
-  applyAgents(cwd, options, invocation, data);
+  await applyAgents(cwd, options, invocation, data);
   logger.log('');
   logger.log(
     `  Tip: \`${invocation} init --all\` also points you to the theme and page-building workflows.`,

@@ -13,9 +13,34 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
+import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.show = vi.fn(function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -82,6 +107,29 @@ describe('MoreMenu', () => {
 
     await user.click(screen.getByRole('button', {name: 'More options'}));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('keeps the trigger visually pressed while the menu is open', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} />);
+
+    const trigger = screen.getByRole('button', {name: 'More options'});
+    expect(trigger.className).not.toContain('DropdownMenu__styles.triggerOpen');
+
+    await user.click(trigger);
+
+    expect(trigger.className).toContain('DropdownMenu__styles.triggerOpen');
+  });
+
+  it('forwards BottomSheet presentation to DropdownMenu', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} presentation="bottom-sheet" />);
+
+    await user.click(screen.getByRole('button', {name: 'More options'}));
+    await waitFor(() =>
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
+    );
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
   });
 
   it('calls onClick when item is clicked', async () => {
@@ -223,5 +271,44 @@ describe('MoreMenu', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
     ).toHaveFocus();
+  });
+
+  describe('placement and alignment', () => {
+    const positionAreaOf = (menu: HTMLElement) =>
+      menu
+        .closest('[popover]')
+        ?.getAttribute('style')
+        ?.match(/position-area:[^;]*/)?.[0];
+
+    it('resolves the same default position as DropdownMenu', () => {
+      render(
+        <>
+          <MoreMenu items={defaultItems} />
+          <DropdownMenu button={{label: 'Actions'}} items={defaultItems} />
+        </>,
+      );
+      const [moreMenu, dropdownMenu] = screen.getAllByRole('menu', {
+        hidden: true,
+      });
+
+      expect(positionAreaOf(moreMenu)).toBe(positionAreaOf(dropdownMenu));
+      expect(positionAreaOf(moreMenu)).toBe(
+        'position-area: self-block-end span-self-inline-end',
+      );
+    });
+
+    it('forwards alignment to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} alignment="end" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-end span-self-inline-start',
+      );
+    });
+
+    it('forwards placement to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} placement="above" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-start span-self-inline-end',
+      );
+    });
   });
 });

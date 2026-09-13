@@ -6,7 +6,7 @@ export const docs = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
   group: 'Checkbox',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   props: [
     {
@@ -131,7 +131,9 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
   usage: {
@@ -206,7 +208,9 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
 };

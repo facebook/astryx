@@ -15,6 +15,7 @@ import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as templateCommand} from './template.doc.mjs';
 import {doc as templateFn} from '../../../api/template/template.doc.mjs';
 
@@ -41,9 +42,31 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  *   import('../../../api/template/template.type.mjs').TemplateListResponse |
  *   import('../../../api/template/template.type.mjs').TemplateShowResponse |
  *   import('../../../api/template/template.type.mjs').TemplateSkeletonResponse |
- *   import('../../../api/template/template.type.mjs').TemplateCopyResponse
+ *   import('../../../api/template/template.type.mjs').TemplateCopyResponse |
+ *   import('../../../api/template/template.type.mjs').TemplateCdnResponse
  * )} TemplateResponse
  */
+
+/**
+ * What the run answered with. Listing and printing a template are lookups;
+ * scaffolding one into a project (or writing the CDN starter) is a file
+ * written, which is an effect with nothing to count.
+ *
+ * @param {TemplateResponse} result
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  switch (result.type) {
+    case 'template.list':
+      return resultSet({count: result.data.length, resultKind: 'template'});
+    case 'template.show':
+    case 'template.skeleton':
+      return resultSet({count: 1, resultKind: 'template', directMatch: true});
+    case 'template.copy':
+    case 'template.cdn':
+      return NO_RESULT_SET;
+  }
+}
 
 /**
  * @param {import('commander').Command} program
@@ -55,7 +78,7 @@ export function registerTemplate(program) {
       /**
        * @param {string | undefined} name
        * @param {string | undefined} targetPath
-       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean}} options
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -63,7 +86,7 @@ export function registerTemplate(program) {
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
-      // validate-integration. Best-effort; suppressed in --json mode.
+      // doctor integration validate. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(
@@ -83,7 +106,8 @@ export function registerTemplate(program) {
         name &&
         targetPath &&
         !options.list &&
-        !options.skeleton
+        !options.skeleton &&
+        !options.cdn
       ) {
         const collision = await detectTemplateCollision(name, targetPath);
         if (collision && !options.overwrite) {
@@ -91,8 +115,7 @@ export function registerTemplate(program) {
           const msg =
             `Refusing to overwrite existing file ${rel}. ` +
             `Re-run with --overwrite (or -f) to replace it.`;
-          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
-          return;
+          return cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
         }
       }
 
@@ -103,6 +126,7 @@ export function registerTemplate(program) {
           await templateApi(name, {
             list: options.list,
             skeleton: options.skeleton,
+            cdn: options.cdn,
             type: /** @type {'page' | 'block' | undefined} */ (options.type),
             package: options.package,
             targetPath,
@@ -114,11 +138,14 @@ export function registerTemplate(program) {
         // template API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       switch (result.type) {
         case 'template.list': {
@@ -147,6 +174,7 @@ export function registerTemplate(program) {
                 `${run} template <id> --skeleton        Layout reference`,
                 `${run} template --list --type block    List only blocks`,
                 `${run} template --list --package <pkg> List from one package`,
+                `${run} template --cdn                 CDN starter page, no build step`,
               ].join('\n'),
             ),
           );
@@ -179,7 +207,25 @@ export function registerTemplate(program) {
           );
           break;
         }
+
+        case 'template.cdn': {
+          if (!result.data.written) {
+            emit(
+              text(`[skip] ${result.data.path} already exists — left as is.`),
+              text('Pass --overwrite to replace it with a fresh copy.'),
+            );
+            break;
+          }
+          emit(
+            text(`[ok] Wrote ${result.data.path}`),
+            text(
+              `Open it in a browser — no bundler, no install, no build step. Every CDN URL is pinned to ${result.data.version}, and the annotations mark the parts that are load-bearing.`,
+            ),
+          );
+          break;
+        }
       }
+      return answered;
     },
   });
 }
