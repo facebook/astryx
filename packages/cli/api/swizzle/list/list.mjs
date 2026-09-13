@@ -3,19 +3,47 @@
 /**
  * @file swizzle.list leaf — the swizzlable component names.
  *
- * Projects the shared core resolution (api/swizzle/_adapter.mjs) into the
- * `swizzle.list` envelope. It does no filesystem work of its own beyond that
- * shared seam. All human prose / usage hints live in the CLI renderer.
+ * Projects the replacement-aware project catalog into the `swizzle.list`
+ * envelope. All human prose / usage hints live in the CLI renderer.
  */
 
+import {Project} from '../../../foundation/config/project.mjs';
+import {CORE_PACKAGE} from '../../../foundation/discovery/component-discovery.mjs';
 import {resolveCore} from '../_adapter.mjs';
 
 /**
- * List swizzlable components discoverable from `cwd`'s @astryxdesign/core.
+ * List swizzlable components from Core and configured integrations. A declared
+ * replacement occupies its Core target's unqualified slot.
  * @param {string} [cwd]
- * @returns {import('../swizzle.type.mjs').SwizzleListResponse}
+ * @returns {Promise<import('../swizzle.type.mjs').SwizzleListResponse>}
  */
-export function swizzleList(cwd = process.cwd()) {
+export async function swizzleList(cwd = process.cwd()) {
   const {components} = resolveCore(cwd);
-  return {type: 'swizzle.list', data: components};
+  try {
+    const project = await Project.load(cwd);
+    const catalog = await project.componentCatalog();
+    const records = await project.components();
+    const listed = components.flatMap(name => {
+      const selected = catalog.resolve(name);
+      if (selected && selected.package !== CORE_PACKAGE) {
+        return selected?.sourcePath ? [selected.name] : [];
+      }
+      return [name];
+    });
+    for (const record of records) {
+      if (
+        record.package !== CORE_PACKAGE &&
+        record.sourcePath &&
+        !listed.includes(record.name)
+      ) {
+        listed.push(record.name);
+      }
+    }
+    return {
+      type: 'swizzle.list',
+      data: [...new Set(listed)],
+    };
+  } catch {
+    return {type: 'swizzle.list', data: components};
+  }
 }

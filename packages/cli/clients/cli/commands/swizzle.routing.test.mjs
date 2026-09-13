@@ -19,7 +19,7 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 
 /**
  * Build a fake @astryxdesign/core under <project>/node_modules with a single
- * swizzleable Button component (bare `Button.tsx`, no doc).
+ * swizzleable Button component (bare `Button.tsx` plus its component doc).
  */
 function buildFakeCore(project) {
   const core = path.join(project, 'node_modules', '@astryxdesign', 'core');
@@ -39,6 +39,10 @@ function buildFakeCore(project) {
     ].join('\n'),
   );
   fs.writeFileSync(
+    path.join(buttonDir, 'Button.doc.mjs'),
+    `export const docs = {name: 'Button', usage: {description: 'Core button.'}, props: []};\n`,
+  );
+  fs.writeFileSync(
     path.join(buttonDir, 'helper.ts'),
     `export const helper = 1;\n`,
   );
@@ -52,16 +56,27 @@ function buildFakeCore(project) {
  * project root listing the integration.
  *
  * @param {string} project
- * @param {{issuesUrl?: string|null, componentName?: string}} [opts]
+ * @param {{issuesUrl?: string|null, componentName?: string, authoredName?: string, replaces?: string, packageName?: string, writeConfig?: boolean, withSource?: boolean}} [opts]
  */
-function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} = {}) {
-  const intDir = path.join(project, 'node_modules', '@test', 'meta');
+function buildIntegration(
+  project,
+  {
+    issuesUrl,
+    componentName = 'MetaAppShell',
+    authoredName = componentName,
+    replaces,
+    packageName = '@test/meta',
+    writeConfig = true,
+    withSource = true,
+  } = {},
+) {
+  const intDir = path.join(project, 'node_modules', ...packageName.split('/'));
   const compRoot = path.join(intDir, 'components');
   const compDir = path.join(compRoot, componentName);
   fs.mkdirSync(compDir, {recursive: true});
   fs.writeFileSync(
     path.join(intDir, 'package.json'),
-    JSON.stringify({name: '@test/meta', version: '1.2.3'}),
+    JSON.stringify({name: packageName, version: '1.2.3'}),
   );
   const manifest = {components: './components'};
   if (issuesUrl) manifest.issuesUrl = issuesUrl;
@@ -69,31 +84,36 @@ function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} =
     path.join(intDir, 'astryx.integration.mjs'),
     `export default ${JSON.stringify(manifest)};\n`,
   );
-  fs.writeFileSync(
-    path.join(compDir, `${componentName}.tsx`),
-    [
-      `import x from '../utils/foo';`,
-      `import {sib} from './sibling';`,
-      `export function ${componentName}() { return x; }`,
-      '',
-    ].join('\n'),
-  );
-  fs.writeFileSync(
-    path.join(compDir, 'sibling.ts'),
-    `export const sib = 1;\n`,
-  );
+  if (withSource) {
+    fs.writeFileSync(
+      path.join(compDir, `${componentName}.tsx`),
+      [
+        `import x from '../utils/foo';`,
+        `import {sib} from './sibling';`,
+        `export function ${componentName}() { return x; }`,
+        '',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'sibling.ts'),
+      `export const sib = 1;\n`,
+    );
+    fs.writeFileSync(
+      path.join(compDir, `${componentName}.test.tsx`),
+      `it('noop', () => {});\n`,
+    );
+  }
+  const replacement = replaces == null ? '' : `, replaces: ${JSON.stringify(replaces)}`;
   fs.writeFileSync(
     path.join(compDir, `${componentName}.doc.mjs`),
-    `export const docs = {name: '${componentName}', usage: {description: 'x'}};\n`,
+    `export const docs = {name: '${authoredName}', displayName: '${authoredName}'${replacement}, usage: {description: 'x'}, props: []};\n`,
   );
-  fs.writeFileSync(
-    path.join(compDir, `${componentName}.test.tsx`),
-    `it('noop', () => {});\n`,
-  );
-  fs.writeFileSync(
-    path.join(project, 'astryx.config.mjs'),
-    `export default {integrations: ['@test/meta']};\n`,
-  );
+  if (writeConfig) {
+    fs.writeFileSync(
+      path.join(project, 'astryx.config.mjs'),
+      `export default {integrations: [${JSON.stringify(packageName)}]};\n`,
+    );
+  }
   return {intDir, compDir};
 }
 
@@ -176,6 +196,159 @@ describe('swizzle — integration-owned components', () => {
     const out = fs.readFileSync(path.join(outDir, 'MetaAppShell.tsx'), 'utf-8');
     expect(out).toContain(`from '@test/meta/utils'`);
     expect(out).toContain(`from './sibling'`);
+  });
+
+  it('uses a declared replacement for unqualified swizzle selection', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {componentName: 'MetaButton', replaces: 'Button'});
+
+    const result = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
+
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data).toMatchObject({component: 'MetaButton', package: '@test/meta'});
+    expect(fs.existsSync(path.join(project, 'components', 'astryx', 'MetaButton', 'MetaButton.tsx'))).toBe(true);
+  });
+
+  it('lists the active replacement instead of the replaced Core component', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {componentName: 'MetaButton', replaces: 'Button'});
+
+    const result = await runCli(['--json', 'swizzle'], project);
+
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data).toContain('MetaButton');
+    expect(env.data).not.toContain('Button');
+  });
+
+  it('rejects an unsafe authored replacement name before building the destination', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {
+      componentName: 'SafeReplacement',
+      authoredName: '../escape',
+      replaces: 'Button',
+    });
+
+    const result = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
+
+    expect(result.code).not.toBe(0);
+    expect(JSON.parse(result.stdout).code).toBe('ERR_PATH_TRAVERSAL');
+    expect(fs.existsSync(path.join(project, 'components', 'escape'))).toBe(false);
+  });
+
+  it('does not advertise a docs-only active replacement as swizzlable', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {
+      componentName: 'MetaButton',
+      replaces: 'Button',
+      withSource: false,
+    });
+
+    const listed = await runCli(['--json', 'swizzle'], project);
+    expect(listed.code).toBe(0);
+    const listEnvelope = JSON.parse(listed.stdout);
+    expect(listEnvelope.data).not.toContain('MetaButton');
+    expect(listEnvelope.data).not.toContain('Button');
+
+    const copied = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(copied.code).not.toBe(0);
+    expect(JSON.parse(copied.stdout).code).toBe('ERR_NO_SOURCE');
+  });
+
+  it('package scope prefers a native same-name component over a replacement alias', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {
+      componentName: 'MetaButton',
+      replaces: 'Button',
+      packageName: '@test/meta',
+      writeConfig: false,
+    });
+    buildIntegration(project, {
+      componentName: 'Button',
+      packageName: '@test/meta',
+      writeConfig: false,
+    });
+    fs.writeFileSync(
+      path.join(project, 'astryx.config.mjs'),
+      `export default {integrations: ['@test/meta']};\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'swizzle', 'Button', '--package', '@test/meta', '-f'],
+      project,
+    );
+
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data).toMatchObject({component: 'Button', package: '@test/meta'});
+    expect(
+      fs.existsSync(
+        path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
+      ),
+    ).toBe(true);
+  });
+
+  it('lists losing replacements by their own names', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {
+      componentName: 'MetaButton',
+      replaces: 'Button',
+      packageName: '@test/meta',
+      writeConfig: false,
+    });
+    buildIntegration(project, {
+      componentName: 'PartnerButton',
+      replaces: 'Button',
+      packageName: '@test/partner',
+      writeConfig: false,
+    });
+    fs.writeFileSync(
+      path.join(project, 'astryx.config.mjs'),
+      `export default {integrations: ['@test/meta', '@test/partner']};\n`,
+    );
+
+    const result = await runCli(['--json', 'swizzle'], project);
+
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data).toContain('PartnerButton');
+    expect(env.data).toContain('MetaButton');
+    expect(env.data).not.toContain('Button');
+  });
+
+  it('surfaces project-wide replacement warnings outside JSON mode', async () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {
+      componentName: 'MetaButton',
+      replaces: 'Button',
+      packageName: '@test/meta',
+      writeConfig: false,
+    });
+    buildIntegration(project, {
+      componentName: 'PartnerButton',
+      replaces: 'Button',
+      packageName: '@test/partner',
+      writeConfig: false,
+    });
+    fs.writeFileSync(
+      path.join(project, 'astryx.config.mjs'),
+      `export default {integrations: ['@test/meta', '@test/partner']};\n`,
+    );
+
+    const result = await runCli(['swizzle'], project);
+
+    expect(result.code).toBe(0);
+    expect(result.stderr).toContain(
+      'Warning: @test/partner has 1 integration issue(s). Run: astryx doctor',
+    );
   });
 
   it('omits the feedback note when the integration ships no issuesUrl', async () => {
@@ -278,12 +451,20 @@ function buildStyleXCore(project) {
       '',
     ].join('\n'),
   );
+  fs.writeFileSync(
+    path.join(styledDir, 'Styled.doc.mjs'),
+    `export const docs = {name: 'Styled', usage: {description: 'Styled.'}, props: []};\n`,
+  );
   // Plain component (no StyleX).
   const plainDir = path.join(core, 'src', 'Plain');
   fs.mkdirSync(plainDir, {recursive: true});
   fs.writeFileSync(
     path.join(plainDir, 'Plain.tsx'),
     `export const Plain = () => null;\n`,
+  );
+  fs.writeFileSync(
+    path.join(plainDir, 'Plain.doc.mjs'),
+    `export const docs = {name: 'Plain', usage: {description: 'Plain.'}, props: []};\n`,
   );
   return core;
 }

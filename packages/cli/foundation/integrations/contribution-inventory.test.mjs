@@ -4,6 +4,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  collectIdentities,
   computeRequiredFiles,
   compareIdentities,
   findSourceOnlyCandidates,
@@ -197,6 +198,28 @@ describe('computeRequiredFiles', () => {
       loaded({themes: path.join(tmpDir, 'nonexistent')}),
     );
     expect(inv.roots[0].files).toEqual([]);
+  });
+});
+
+describe('collectIdentities', () => {
+  it('uses the authored component name instead of the doc filename', async () => {
+    const root = path.join(tmpDir, 'components');
+    fs.mkdirSync(root, {recursive: true});
+    fs.writeFileSync(
+      path.join(root, 'Filename.doc.mjs'),
+      "export const docs = {name: 'AuthoredName', usage: {description: 'Authored.'}, props: []};\n",
+    );
+    fs.writeFileSync(
+      path.join(root, 'Filename.tsx'),
+      'export function AuthoredName() { return null; }\n',
+    );
+
+    const {identities, errors} = await collectIdentities(
+      loaded({components: root}),
+    );
+
+    expect(errors).toEqual([]);
+    expect(identities.components).toEqual(['AuthoredName']);
   });
 });
 

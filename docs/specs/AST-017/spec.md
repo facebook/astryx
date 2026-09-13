@@ -14,7 +14,7 @@ affects_architecture:
   [architecture:public-component-api, architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:release-process, contributing:templates]
-affects_consumer_docs: [release-process, templates]
+affects_consumer_docs: [release-process, templates, cli-integrations]
 ---
 
 # Published compatibility and breaking-change classification system spec
@@ -123,6 +123,38 @@ preserves the released contract.
   when old consumers continue unchanged, but it remains a public schema update and
   does not bypass current-authority review or documentation.
 
+- **FR14 — Integration component replacement is one deterministic public relationship.**
+  A component doc may declare `replaces` with a Core ComponentDoc name from the main
+  catalog or a documented subcomponent that resolves through component detail; a
+  standalone HookDoc is not a valid target. When
+  active, that integration component owns both the Core target name and its own name
+  for unqualified component listing, detail, search, swizzle, and gap-report target
+  routing. Explicit
+  package selection still reaches every owner, including the original through
+  `--package @astryxdesign/core`. Among explicitly configured integrations replacing
+  one target, the later config entry wins the target alias with a warning and every
+  losing replacement remains available under its own name and package scope; any
+  explicit replacement outranks an autolinked one. Inside one package, an exact
+  component name wins over another component's replacement alias. Duplicate authored
+  component names, multiple declarations for one target inside a package, a missing
+  target, an invalid value, a non-ComponentDoc declaration, or naming the replacement
+  after a different Core component are errors.
+  Without the field, ownership behavior is unchanged. When replacement metadata is
+  published through the legacy-compatible `export const docs` form with a same-stem
+  source file, older CLIs ignore the additive field and continue loading the component
+  under its own name. This does not promise package preservation for docs-only
+  components on CLIs that predate FR15.
+
+- **FR15 — Component metadata remains useful without implementation source.**
+  An integration component doc is a valid list, detail, and search contribution when
+  its same-stem source file is absent. The component reports
+  `sourceAvailable: false`; source and swizzle requests fail with their existing
+  no-source error at use time, and swizzle list omits an active docs-only replacement
+  together with the Core target that it makes unreachable. Validation must not withdraw otherwise valid component
+  metadata only because the package intentionally ships docs without source. This is a
+  current-CLI contract; version 0.6.0 may still list and search a docs-only component,
+  but its integration Doctor rejects the missing source.
+
 ### Platform support
 
 - Supported feature/engine floor: every published Astryx package and stable CLI
@@ -154,15 +186,20 @@ schema, not the individual entries currently present in the template catalog.
 Nested entry fields are public schema even when optional; their type, tests, text
 projection where present, and consumer schema documentation move together.
 
+Integration component replacement now follows one contract across every component
+reader. The replacement owns the target alias and its own name for unqualified
+selection; package qualification preserves access to the original and other owners.
+Explicit configuration controls precedence, while autolinking remains additive.
+
 ## Verification
 
-| Contract | Verification                                                                                                                     | Representative states                                                                         | Mutation or failure expectation                                                                                                                |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                               |
-| FR4–FR6  | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                              |
-| FR7–FR8  | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                    | Category and bump diverge, or a breaking release gives no usable migration path                                                                |
-| FR9–FR13 | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection |
-| FR12     | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                      |
+| Contract | Verification                                                                                                                | Representative states                                                                                                | Mutation or failure expectation                                                                                                             |
+| -------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | PR compatibility statement plus latest stable package inspection                                                            | released export, behavior, CLI command; unreleased and private surface                                               | A change is labeled from diff size or possibility alone, or a released contract change is missed                                            |
+| FR4–FR6  | Old-usage type/runtime/CLI regression test                                                                                  | alias retained, deprecation warning, broad rewrite, low-adoption caller                                              | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                           |
+| FR7–FR8  | `pnpm check:changesets` plus migration review                                                                               | breaking and patch Changesets; codemoddable and non-codemoddable migration                                           | Category and bump diverge, or a breaking release gives no usable migration path                                                             |
+| FR9–FR15 | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and catalog resolution tests | slug rename, metadata edit, source rebuild, optional field addition, component replacement, source-optional component, command or schema change | Catalog data is frozen as API, replacement surfaces disagree, explicit Core access is lost, docs-only metadata disappears, or a response field lacks a complete projection |
+| FR12     | Minimum and representative supported-version tests plus manifest and release-note review                                    | retained range, narrowed range, adapter, coordinated upgrade                                                         | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                   |
 
 ## Decision log
 
@@ -233,6 +270,54 @@ current-authority and documentation requirements.
 Rejected: documenting only the outer envelope, relying on implementation typedefs
 as consumer documentation, or treating a response-entry field as mutable catalog
 data merely because the value it carries may evolve.
+
+### DEC-5 — Integration component replacement owns one effective identity
+
+**Reference:** `spec:AST-017/DEC-5`
+**Decider:** `josephfarina`, `2026-09-12`
+
+Let a ComponentDoc name one canonical Core component in `replaces`. The selected
+integration component answers to both that target and its own name across component
+list/detail, search, swizzle, and gap-report target routing. Keep every owner reachable through package
+qualification, including the Core original through `--package @astryxdesign/core`.
+
+Resolve multiple packages deterministically: later entries in explicit
+`astryx.config` order win the target alias with a warning, losing replacements keep
+their own-name and package-qualified routes, and an explicit replacement always
+outranks an autolinked one. A native integration owner whose own name matches the
+replaced Core target remains listed and package-addressable, with a warning that its
+unqualified name is shadowed. Inside one package, an exact component name wins over
+another component's replacement alias for package-scoped lookup, while Doctor warns
+that the active replacement shadows that native name for unqualified lookup. A
+same-name overlap with any documented Core component — including a subcomponent
+without a top-level catalog slot — remains ambiguous for component detail and
+gap-report routing and requires package qualification. Resolution-only Core
+subcomponents do not become new list/search entries merely because an integration
+collides with them. Fail closed on duplicate authored component names, a non-component
+declaration, missing target, invalid value, a replacement named after a different Core
+component, or two components in one package replacing the same target. When metadata is absent, keep package-aware
+ownership unchanged. An older CLI that does not understand the field must still load
+the component under its own name when the package uses the legacy-compatible
+`export const docs` form and ships the same-stem source; stamped default exports and
+docs-only package preservation require a CLI that supports them.
+
+Rejected: silent same-name shadowing, withdrawing the Core owner, letting dependency
+scan order override explicit configuration, or implementing separate precedence rules
+for component, search, and swizzle surfaces.
+
+### DEC-6 — Component metadata is independent of source availability
+
+**Reference:** `spec:AST-017/DEC-6`
+**Decider:** `josephfarina`, `2026-09-12`
+
+Accept an integration ComponentDoc without a same-stem source file. Keep it in list,
+detail, and search results and report `sourceAvailable: false`; only source and swizzle
+operations require implementation source and return their existing no-source error when
+it is absent. This preserves documentation-only packages and keeps metadata validation
+separate from source distribution policy.
+
+Rejected: treating a missing source file as an invalid component and withdrawing its
+documentation from every consumer surface.
 
 ## Open questions
 

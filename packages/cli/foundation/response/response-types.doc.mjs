@@ -31,7 +31,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
+        'The component catalog grouped by category: `detail` (`names` | `compact` | `full`) and `components`. Names entries are `{name, package, import?, replaces?}`; compact entries are `{name, description, import}`; full entries are ComponentDoc plus additive optional ownership metadata. Permissive legacy docs are normalized to that ComponentDoc contract, including MultiComponentDoc bare references and hook-shaped entries.',
     },
     {
       value: 'component.detail',
@@ -130,7 +130,7 @@ export const doc = {
     {
       value: 'swizzle.list',
       description:
-        "The names of swizzlable components discoverable from cwd's @astryxdesign/core.",
+        'Safe swizzle copy-unit names discoverable from cwd: Core component directories plus source-backed integration components. An active replacement occupies its Core target slot; nested symbols that would copy an entire parent directory are not advertised separately, and a docs-only active replacement omits both its own name and the now-unreachable Core target.',
     },
     {
       value: 'swizzle.copy',
@@ -259,7 +259,7 @@ export const doc = {
     {
       value: 'doctor',
       description:
-        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
+        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, a fix when not passing, and optional structured integration `issues`) plus a `summary` of counts per status.',
     },
 
     // integration authoring
@@ -286,7 +286,7 @@ export const doc = {
     {
       value: 'integration.component-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        "The integration identity and `issues`, plus an additive optional `replacements` array shaped as `{name, relationship: 'replaces', target, integrationPackage, message, command}`. The existing `conflicts` array remains warning-only and can add optional `relationship: 'accidental'` and `target`. Missing, ambiguous, or invalid replacement declarations appear as error-severity issues.",
     },
     {
       value: 'integration.doc-conflicts',

@@ -45,11 +45,11 @@ import {
   setEventHandler as setDebugEventHandler,
   setIntegrationEventHandlers as setDebugIntegrationEventHandlers,
 } from '../debug/index.mjs';
+import {CORE_PACKAGE} from '../discovery/component-discovery.mjs';
 import {
-  CORE_PACKAGE,
-  discoverOwnedComponents,
-  discoverIntegrationComponents,
-} from '../discovery/component-discovery.mjs';
+  ComponentCatalog,
+  discoverIntegrationComponentContributions,
+} from '../discovery/component-catalog.mjs';
 import {findCoreDir} from '../fs/paths.mjs';
 import {
   discoverAll as discoverTemplates,
@@ -489,41 +489,28 @@ export class Project {
   }
 
   /**
-   * Core + integration component ownership records. Wraps
-   * discoverOwnedComponents for core and discoverIntegrationComponents (via
-   * discoverOwnedComponents) for integrations, but applies the skip+warn
-   * policy per integration: a broken integration's components are skipped and
-   * its issues collected, never thrown. Memoized per instance.
-   *
-   * @returns {Promise<Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>>}
+   * Core + integration components resolved into one replacement-aware catalog.
+   * Broken integrations contribute no components; explicit package selection
+   * still reaches every valid owner. Memoized per instance.
+   * @returns {Promise<ComponentCatalog>}
    */
-  async components() {
-    return this.#memo('components', async () => {
+  async componentCatalog() {
+    const result = await this.#memo('componentCatalog', async () => {
       const coreDir = findCoreDir(this.#cwd);
-      /** @type {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>} */
-      const records = [];
+      const catalog = coreDir ? ComponentCatalog.fromCore(coreDir) : new ComponentCatalog([]);
 
-      // Core records (no integrations) — never integration-broken.
-      if (coreDir) {
-        try {
-          records.push(...discoverOwnedComponents(coreDir, []));
-        } catch {
-          // Core discovery failure is not an integration issue; surface
-          // nothing here (core problems show up via doctor/other paths).
-        }
-      }
-
-      // Each integration in isolation so one broken integration is skipped.
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
         if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
-          // discoverOwnedComponents owns the core+integration record shape;
-          // here we add only this integration's records (core is handled
-          // above) so a single broken integration can be skipped in isolation.
-          for (const rec of discoverIntegrationComponents(integration)) {
-            records.push(rec);
+          const {records, errors} = await discoverIntegrationComponentContributions(integration);
+          for (const error of errors) {
+            this.#pushIssue(pkg, {code: 'invalid_component', severity: 'error', message: error.message});
+          }
+          if (errors.length > 0) continue;
+          for (const issue of await catalog.addIntegration(records)) {
+            this.#pushIssue(pkg, issue);
           }
         } catch (err) {
           this.#pushIssue(pkg, {
@@ -533,9 +520,20 @@ export class Project {
           });
         }
       }
-
-      return records;
+      return {catalog, issues: this.#issues.map(issue => ({...issue}))};
     });
+    for (const issue of result.issues) this.#pushIssue(issue.package, issue);
+    return result.catalog;
+  }
+
+  /**
+   * Effective unqualified component discovery records. A replacement occupies
+   * its Core target's slot; {@link componentCatalog} retains every owner.
+   * @returns {Promise<Array<{name: string, package: string, group: string|null, category?: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined, replaces?: string}>>}
+   */
+  async components() {
+    const catalog = await this.componentCatalog();
+    return this.#memo('components', async () => catalog.entries());
   }
 
   /**
@@ -760,6 +758,11 @@ export class Project {
    * @returns {Promise<ProjectIntegrationIssue[]>}
    */
   async issues() {
+    // Missing or ambiguous replacement targets exist only after the project-wide
+    // component catalog is assembled. Cross-package doc relationships likewise
+    // exist only after the project-wide docs catalog is materialized.
+    await this.componentCatalog();
+    await this.docs();
     for (const integration of this.#loadedIntegrations) {
       await this.#collectIssues(integration);
     }

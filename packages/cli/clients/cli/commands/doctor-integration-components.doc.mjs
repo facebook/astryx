@@ -8,11 +8,13 @@ export const doc = {
   name: 'doctor integration components',
   displayName: 'astryx doctor integration components',
   namespace: 'cli',
-  summary: 'Warn when integration component names conflict with Core',
+  summary: 'Validate integration component overlap and replacement declarations',
   description:
     'Compares one local or installed integration with Core component names. A ' +
-    'conflict is allowed and exits successfully, but the report recommends ' +
-    'renaming and gives the exact --package command for an intentional overlap.',
+    'valid `replaces` declaration makes the integration component the unqualified ' +
+    'default and reports as information. Missing targets, duplicate declarations, ' +
+    'and invalid values fail; undeclared same-name overlaps remain warnings and ' +
+    'require an explicit package selection.',
   fn: 'integrationComponentConflicts',
   args: [
     {

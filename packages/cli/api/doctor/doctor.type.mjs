@@ -13,12 +13,21 @@
  */
 
 /**
+ * @typedef {object} DoctorIntegrationIssue
+ * @property {string} package
+ * @property {string} code
+ * @property {'warning'|'error'} severity
+ * @property {string} message
+ */
+
+/**
  * A single diagnostic check result.
  * @typedef {object} DoctorCheck
  * @property {string} id - Stable machine-readable id (e.g. 'node-version').
  * @property {string} label - Human-readable check name.
  * @property {DoctorStatus} status
  * @property {string} message - One-line result summary.
+ * @property {DoctorIntegrationIssue[]} [issues] - Structured project integration issues when this check reports them.
  * @property {string} [fix] - Actionable remediation, present when status is not 'pass'.
  */
 

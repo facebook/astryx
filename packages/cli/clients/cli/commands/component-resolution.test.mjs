@@ -30,6 +30,15 @@ describe('component() sub-component scoping', () => {
     expect(propNames).not.toContain('language');
   });
 
+  it('component("Code") resolves when explicitly scoped to Core', async () => {
+    const result = await component('Code', {
+      ...CWD,
+      package: '@astryxdesign/core',
+    });
+    expect(result.data.name).not.toBe('CodeBlock');
+    expect(result.data.package).toBe('@astryxdesign/core');
+  });
+
   it('component("HStack") returns HStack, not Stack', async () => {
     const result = await component('HStack', CWD);
     expect(result.data.name).not.toBe('Stack');

@@ -17,7 +17,7 @@ import {AstryxError} from '../error.mjs';
 import {
   CORE_PACKAGE,
   requireCoreDir,
-  loadIntegrationsSafely,
+  loadComponentCatalogSafely,
   resolveOwners,
   classifyScope,
   assertUnambiguousOwners,
@@ -114,8 +114,9 @@ export async function component(name, options = {}) {
   // Ownership-aware resolution: who provides `dirName` across core + every
   // loaded integration. The scoped/ambiguity/fuzzy resolution below all read
   // this set (built once, in the adapter).
-  const loadedIntegrations = await loadIntegrationsSafely(cwd);
-  const owners = resolveOwners(coreDir, dirName, loadedIntegrations);
+  const {catalog, loadedIntegrations} = await loadComponentCatalogSafely(cwd, coreDir);
+  const owners = resolveOwners(catalog, dirName, coreDir);
+  const selectedOwner = catalog.resolve(dirName);
 
   // ── Scoped to a specific package (--package) ───────────────────
   // Searches that package first — critical for names that exist in both core
@@ -126,8 +127,8 @@ export async function component(name, options = {}) {
     if (scoped.kind === 'core' || scoped.kind === 'integration') {
       const owner = scoped.owner;
       if (source) {
-        return componentDetailSource(dirName, owner.sourcePath, {
-          name,
+        return componentDetailSource(owner.name, owner.sourcePath, {
+          name: owner.name,
           notFoundInPackage: scoped.kind === 'integration' ? packageScope : null,
         });
       }
@@ -139,15 +140,15 @@ export async function component(name, options = {}) {
       // a showcase, so skip discovery entirely.
       if (showcase) {
         return scoped.kind === 'core'
-          ? componentDetailShowcase(dirName, {cwd, name})
-          : componentDetailShowcase(dirName, {cwd, name, resolve: false});
+          ? componentDetailShowcase(owner.name, {cwd, name})
+          : componentDetailShowcase(owner.name, {cwd, name, resolve: false});
       }
       if (blocks) {
-        return componentDetailBlocks(dirName);
+        return componentDetailBlocks(owner.name);
       }
       const docs = await loadComponentDoc(owner.docPath, docOpts);
       if (props) return componentDetailProps(docs);
-      return componentDetail(docs, owner, dirName, coreDir);
+      return componentDetail(docs, owner, owner.name, coreDir);
     }
 
     // Legacy `pkg.astryx.docs` external package.
@@ -163,22 +164,25 @@ export async function component(name, options = {}) {
     throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
   }
 
-  // ── Ambiguity: owned by MORE THAN ONE package, no --package ─────
-  assertUnambiguousOwners(owners, dirName);
+  // ── Ambiguity: owned by MORE THAN ONE package with no replacement ──
+  if (!selectedOwner || selectedOwner.replaces == null) {
+    assertUnambiguousOwners(owners, dirName);
+  }
 
-  // ── Single non-core owner (an integration provides it, core does not) ──
-  if (owners.length === 1 && owners[0].package !== CORE_PACKAGE) {
-    const owner = owners[0];
+  // ── Active or single non-core owner ─────────────────────────────
+  if (selectedOwner && selectedOwner.package !== CORE_PACKAGE) {
+    const owner = selectedOwner;
     if (source) {
-      return componentDetailSource(dirName, owner.sourcePath, {name});
+      return componentDetailSource(owner.name, owner.sourcePath, {name});
     }
     if (showcase) {
       // Integration components don't carry showcases — fail without scanning.
-      return componentDetailShowcase(dirName, {cwd, name, resolve: false});
+      return componentDetailShowcase(owner.name, {cwd, name, resolve: false});
     }
-    const docs = await loadComponentDoc(owner.docPath, docOpts);
+    if (blocks) return componentDetailBlocks(owner.name);
+    const docs = await loadComponentDoc(/** @type {string} */ (owner.docPath), docOpts);
     if (props) return componentDetailProps(docs);
-    return componentDetail(docs, owner, dirName, coreDir);
+    return componentDetail(docs, owner, owner.name, coreDir);
   }
 
   // ── No-scope core path ─────────────────────────────────────────

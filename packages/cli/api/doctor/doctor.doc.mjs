@@ -17,7 +17,8 @@ export const doc = {
     'Runs a series of side-effect-free diagnostics: Node version, ' +
     '@astryxdesign/core install and version alignment with the CLI, installed ' +
     'themes and wiring, astryx.config validity, integrations linked from ' +
-    'package.json without a config entry, agent docs, core peer ' +
+    'package.json without a config entry, project-wide integration contribution ' +
+    'issues (with every structured issue preserved), agent docs, core peer ' +
     'dependencies, and the detected package manager, and returns a structured ' +
     'report. It only reads (never installs, writes, or mutates), so it is safe ' +
     'as a CI gate and for agents to invoke.',
@@ -35,7 +36,7 @@ export const doc = {
     {
       type: 'doctor',
       description:
-        'The diagnostic report: `data.checks`, each with a stable id, label, `status` (`pass` | `warn` | `fail` | `info`), a one-line message, and a `fix` when the status is not `pass`; plus `data.summary` with counts per status.',
+        'The diagnostic report: `data.checks`, each with a stable id, label, `status` (`pass` | `warn` | `fail` | `info`), a one-line message, a `fix` when the status is not `pass`, and optional structured integration `issues`; plus `data.summary` with counts per status.',
     },
   ],
   examples: [

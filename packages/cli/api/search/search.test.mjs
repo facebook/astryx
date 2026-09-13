@@ -30,6 +30,8 @@ import {
   tokenizeQuery,
   SEARCH_DOMAINS,
 } from './search.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {component} from '../component/component.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -188,18 +190,42 @@ describe('search leaf — integration components', () => {
    * resolves without needing the real package) plus an installed
    * `@acme/widgets` integration that contributes one component.
    */
-  function makeConsumerWithIntegrationComponent() {
+  function makeConsumerWithIntegrationComponent({
+    replacement = false,
+    colliding = false,
+    permissiveLegacy = false,
+    secondReplacement = false,
+  } = {}) {
     const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-search-it-'));
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({name: 'consumer'}));
     fs.writeFileSync(
       path.join(dir, 'astryx.config.mjs'),
-      `export default { integrations: ['@acme/widgets'] };\n`,
+      `export default { integrations: [${secondReplacement ? "'@acme/widgets', '@acme/other'" : "'@acme/widgets'"}] };\n`,
     );
 
     // Stub core: just needs to exist with an (empty) src/ so discoverComponents
     // doesn't throw. Its own component list is irrelevant to this test.
     const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
-    fs.mkdirSync(path.join(coreDir, 'src'), {recursive: true});
+    const coreComponentDir = path.join(coreDir, 'src', 'SideNav');
+    fs.mkdirSync(coreComponentDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreComponentDir, 'SideNav.tsx'),
+      'export function SideNav() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(coreComponentDir, 'SideNav.doc.mjs'),
+      `export const docs = {name: 'SideNav', usage: {description: 'Core navigation.'}, props: []};\n`,
+    );
+    const appShellDir = path.join(coreDir, 'src', 'AppShell');
+    fs.mkdirSync(appShellDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(appShellDir, 'AppShell.tsx'),
+      'export function AppShell() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(appShellDir, 'AppShell.doc.mjs'),
+      `export const docs = {name: 'AppShell', keywords: ['sidenav'], usage: {description: 'App shell.'}, props: []};\n`,
+    );
 
     const widgetsDir = path.join(dir, 'node_modules', '@acme', 'widgets');
     fs.mkdirSync(path.join(widgetsDir, 'components'), {recursive: true});
@@ -211,14 +237,55 @@ describe('search leaf — integration components', () => {
       path.join(widgetsDir, 'astryx.integration.mjs'),
       `export default { components: './components' };\n`,
     );
-    fs.writeFileSync(
-      path.join(widgetsDir, 'components', 'FancyGizmo.doc.mjs'),
-      `export const docs = {
-        name: 'FancyGizmo',
+    const componentName = colliding
+      ? 'AppShell'
+      : replacement
+        ? 'AcmeSideNav'
+        : 'FancyGizmo';
+    const replaces = replacement || colliding ? "replaces: 'SideNav'," : '';
+    const docSource = permissiveLegacy
+      ? `export const docs = {
+        keywords: ['legacy-magic-keyword'],
+        description: 'Legacy-only searchable description.',
+      };\n`
+      : `export const docs = {
+        name: '${componentName}',
+        displayName: '${componentName}',
+        ${replaces}
+        category: 'SideNav',
         keywords: ['gizmo', 'widget'],
         usage: {description: 'A fancy gizmo widget.'},
-      };\n`,
+        props: [],
+      };\n`;
+    fs.writeFileSync(
+      path.join(widgetsDir, 'components', `${componentName}.doc.mjs`),
+      docSource,
     );
+    fs.writeFileSync(
+      path.join(widgetsDir, 'components', `${componentName}.tsx`),
+      `export function ${componentName}() { return null; }\n`,
+    );
+
+    if (secondReplacement) {
+      const otherDir = path.join(dir, 'node_modules', '@acme', 'other');
+      fs.mkdirSync(path.join(otherDir, 'components'), {recursive: true});
+      fs.writeFileSync(
+        path.join(otherDir, 'package.json'),
+        JSON.stringify({name: '@acme/other', version: '1.0.0'}),
+      );
+      fs.writeFileSync(
+        path.join(otherDir, 'astryx.integration.mjs'),
+        `export default { components: './components' };\n`,
+      );
+      fs.writeFileSync(
+        path.join(otherDir, 'components', 'PartnerSideNav.doc.mjs'),
+        `export const docs = {name: 'PartnerSideNav', displayName: 'Partner Side Nav', replaces: 'SideNav', category: 'SideNav', usage: {description: 'Partner navigation.'}, props: []};\n`,
+      );
+      fs.writeFileSync(
+        path.join(otherDir, 'components', 'PartnerSideNav.tsx'),
+        `export function PartnerSideNav() { return null; }\n`,
+      );
+    }
 
     return dir;
   }
@@ -228,6 +295,103 @@ describe('search leaf — integration components', () => {
     try {
       const r = await search('gizmo', {cwd: dir, type: 'component'});
       expect(r.data.results.some(x => x.name === 'FancyGizmo')).toBe(true);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('indexes the active replacement under the Core name', async () => {
+    const dir = makeConsumerWithIntegrationComponent({replacement: true});
+    try {
+      const result = await search('SideNav', {cwd: dir, type: 'component'});
+      expect(result.data.results[0]).toMatchObject({
+        name: 'AcmeSideNav',
+        import: '@acme/widgets',
+      });
+      expect(result.data.results.some(item => item.name === 'SideNav')).toBe(false);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('keeps one reachable Core result when a replacement name collides with Core', async () => {
+    const dir = makeConsumerWithIntegrationComponent({colliding: true});
+    try {
+      const ownName = await search('AppShell', {cwd: dir, type: 'component'});
+      const appShellHits = ownName.data.results.filter(item => item.name === 'AppShell');
+      expect(appShellHits).toHaveLength(1);
+      expect(appShellHits[0].import).toContain('@astryxdesign/core');
+
+      const target = await search('SideNav', {cwd: dir, type: 'component'});
+      expect(target.data.results[0]).toMatchObject({name: 'SideNav'});
+      expect(target.data.results[0].import).toContain('@astryxdesign/core');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('keeps metadata from permissive legacy component docs', async () => {
+    const dir = makeConsumerWithIntegrationComponent({permissiveLegacy: true});
+    try {
+      const result = await search('legacy-magic-keyword', {
+        cwd: dir,
+        type: 'component',
+      });
+      expect(result.data.results[0]).toMatchObject({
+        name: 'FancyGizmo',
+        description: 'Legacy-only searchable description.',
+      });
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('indexes a losing replacement under its own name and the winner under the target', async () => {
+    const dir = makeConsumerWithIntegrationComponent({
+      replacement: true,
+      secondReplacement: true,
+    });
+    try {
+      const project = await Project.load(dir);
+      expect((await project.components()).map(item => item.name)).toEqual(
+        expect.arrayContaining(['PartnerSideNav', 'AcmeSideNav']),
+      );
+      expect(await project.issues()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            package: '@acme/other',
+            code: 'ambiguous_component_replacement',
+            severity: 'warning',
+          }),
+        ]),
+      );
+
+      for (const detail of ['brief', 'compact', 'full']) {
+        const listed = await component(undefined, {
+          cwd: dir,
+          list: true,
+          category: 'SideNav',
+          detail,
+        });
+        const names = Object.values(listed.data.components)
+          .flat()
+          .map(item => item.name);
+        expect(names).toEqual(
+          expect.arrayContaining(['PartnerSideNav', 'AcmeSideNav']),
+        );
+      }
+
+      const target = await search('SideNav', {cwd: dir, type: 'component'});
+      expect(target.data.results[0]).toMatchObject({name: 'PartnerSideNav'});
+
+      const loser = await search('AcmeSideNav', {
+        cwd: dir,
+        type: 'component',
+      });
+      expect(loser.data.results[0]).toMatchObject({
+        name: 'AcmeSideNav',
+        import: '@acme/widgets',
+      });
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
     }

@@ -14,6 +14,11 @@ import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, list, text, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {
+  warnOnIntegrationIssues,
+  warnOnProjectIssues,
+} from '../../../foundation/integrations/integration-warnings.mjs';
 import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as swizzleCommand} from './swizzle.doc.mjs';
@@ -29,6 +34,14 @@ export function registerSwizzle(program) {
     action: async (/** @type {string | undefined} */ component, /** @type {{output: string, package?: string, list?: boolean, overwrite?: boolean}} */ options) => {
       const json = program.opts().json || false;
       const run = getCliInvocation();
+
+      try {
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnProjectIssues(project, {json});
+      } catch {
+        // Never let the nudge break the command.
+      }
 
       /** @type {import('../../../api/swizzle/swizzle.type.mjs').SwizzleListResponse | import('../../../api/swizzle/swizzle.type.mjs').SwizzleCopyResponse} */
       let result;

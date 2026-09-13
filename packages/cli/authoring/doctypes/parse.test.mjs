@@ -24,9 +24,20 @@ const goodComponent = {
   name: 'Widget',
   displayName: 'Widget',
   description: 'A small widget.',
+  usage: {description: 'Use the widget.'},
   props: [
-    {name: 'label', type: 'string', description: 'Visible label.', required: true},
-    {name: 'size', type: "'sm' | 'md'", description: 'Control size.', default: "'md'"},
+    {
+      name: 'label',
+      type: 'string',
+      description: 'Visible label.',
+      required: true,
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: 'Control size.',
+      default: "'md'",
+    },
   ],
 };
 
@@ -35,7 +46,9 @@ const goodFunction = {
   name: 'useThing',
   displayName: 'useThing',
   description: 'A thing hook.',
-  params: [{name: 'input', type: 'string', description: 'The input.', required: true}],
+  params: [
+    {name: 'input', type: 'string', description: 'The input.', required: true},
+  ],
   returns: [{name: 'value', type: 'string', description: 'The result.'}],
 };
 
@@ -59,6 +72,65 @@ function reason(value, label = 'doc') {
 describe('per-kind parsers (stamped format)', () => {
   it('parseComponent accepts a valid component doc', () => {
     expect(() => parseComponent(goodComponent)).not.toThrow();
+  });
+
+  it('parseComponent accepts a Core replacement declaration', () => {
+    const parsed = parseComponent({...goodComponent, replaces: 'SideNav'});
+    expect(parsed.replaces).toBe('SideNav');
+  });
+
+  it('parseComponent accepts stamped multi-component replacements and import metadata', () => {
+    const parsed = parseComponent({
+      type: 'component',
+      name: 'Navigation',
+      displayName: 'Navigation',
+      replaces: 'SideNav',
+      import: '@acme/widgets/Navigation',
+      usage: {description: 'Navigation components.'},
+      components: [],
+    });
+    expect(parsed.replaces).toBe('SideNav');
+    expect(parsed.import).toBe('@acme/widgets/Navigation');
+    expect(parsed.components).toEqual([]);
+  });
+
+  it('parseComponent rejects malformed stamped multi-component entries', () => {
+    expect(() =>
+      parseComponent({
+        type: 'component',
+        name: 'Navigation',
+        displayName: 'Navigation',
+        usage: {description: 'Navigation components.'},
+        components: [null],
+      }),
+    ).toThrow(/components/);
+    expect(() =>
+      parseComponent({
+        type: 'component',
+        name: 'Navigation',
+        displayName: 'Navigation',
+        usage: {description: 'Navigation components.'},
+        components: [{name: 'NavItem', description: 'Missing display name.'}],
+      }),
+    ).toThrow(/components\.0/);
+  });
+
+  it('parseComponent requires stamped displayName and usage', () => {
+    expect(() =>
+      parseComponent({...goodComponent, displayName: undefined}),
+    ).toThrow(/displayName/);
+    expect(() => parseComponent({...goodComponent, usage: undefined})).toThrow(
+      /usage/,
+    );
+  });
+
+  it('parseComponent rejects an invalid replacement declaration', () => {
+    expect(() => parseComponent({...goodComponent, replaces: 42})).toThrow(
+      /replaces/,
+    );
+    expect(() => parseComponent({...goodComponent, replaces: '   '})).toThrow(
+      /replaces/,
+    );
   });
 
   it('parseComponent rejects a missing name with a readable message', () => {
@@ -238,6 +310,25 @@ describe('loadComponentDoc (end-to-end load boundary)', () => {
     fs.rmSync(tmpDir, {recursive: true, force: true});
   });
 
+  it('loads a named TypeScript doc inside node_modules', async () => {
+    const packageDir = path.join(
+      tmpDir,
+      'node_modules',
+      '@acme',
+      'widgets',
+    );
+    fs.mkdirSync(packageDir, {recursive: true});
+    const file = path.join(packageDir, 'Widget.doc.ts');
+    fs.writeFileSync(
+      file,
+      "export const docs = {name: 'Widget', displayName: 'Widget', usage: {description: 'Widget.'}, props: []};\n",
+    );
+
+    const docs = await loadComponentDoc(file);
+
+    expect(docs).toMatchObject({name: 'Widget', displayName: 'Widget'});
+  });
+
   it('loads a stamped component .doc.mjs default export', async () => {
     const file = path.join(tmpDir, 'Widget.doc.mjs');
     fs.writeFileSync(
@@ -248,6 +339,7 @@ describe('loadComponentDoc (end-to-end load boundary)', () => {
         "  name: 'Widget',",
         "  displayName: 'Widget',",
         "  description: 'A small widget.',",
+        "  usage: {description: 'Use the widget.'},",
         '  props: [',
         "    {name: 'label', type: 'string', description: 'Visible label.', required: true},",
         '  ],',

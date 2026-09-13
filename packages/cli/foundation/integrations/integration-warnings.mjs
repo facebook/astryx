@@ -22,6 +22,41 @@
 import {validateLoadedIntegration} from './validate-contributions.mjs';
 
 /**
+ * Print one compact warning per package from an already-collected Project issue
+ * set. This includes project-wide findings (for example replacement precedence)
+ * that validating each integration in isolation cannot see.
+ * @param {{issues(): Promise<Array<{package: string, code: string, severity: string, message: string}>>}} project
+ * @param {{json?: boolean}} [options]
+ * @returns {Promise<void>}
+ */
+export async function warnOnProjectIssues(project, {json = false} = {}) {
+  try {
+    if (json) return;
+    const issues = await project.issues();
+    const counts = new Map();
+    for (const issue of issues) {
+      if (
+        ![
+          'missing_component_replacement',
+          'ambiguous_component_replacement',
+          'ambiguous_component_name',
+        ].includes(issue.code)
+      ) {
+        continue;
+      }
+      counts.set(issue.package, (counts.get(issue.package) ?? 0) + 1);
+    }
+    for (const [pkg, count] of counts) {
+      console.error(
+        `Warning: ${pkg} has ${count} integration issue(s). Run: astryx doctor`,
+      );
+    }
+  } catch {
+    // Never throw, never change the exit code.
+  }
+}
+
+/**
  * For each configured (already-loaded) integration, compute its issues using
  * the shared integration validators and, if any exist, print exactly
  * ONE line per integration to stderr:

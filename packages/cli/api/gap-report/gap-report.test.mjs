@@ -53,6 +53,7 @@ function addCoreComponent(component = 'Button') {
  * @param {'internal'|'public'} [opts.audience]
  * @param {string} [opts.issuesUrl]
  * @param {string} [opts.component]
+ * @param {string} [opts.replaces]
  * @param {boolean} [opts.handler] whether to export a gapReport handler
  * @param {string} [opts.handleBody] JS code for the handle function body
  * @param {string} [opts.malformedExport] raw JS to export instead of a proper handler
@@ -62,6 +63,7 @@ function addIntegration({
   audience = 'public',
   issuesUrl,
   component,
+  replaces,
   handler = true,
   handleBody = "return {status: 'filed', message: 'Handled by ' + " +
     JSON.stringify(name) +
@@ -81,9 +83,12 @@ function addIntegration({
     manifest.components = './components';
     const components = path.join(dir, 'components');
     fs.mkdirSync(components, {recursive: true});
+    const replacement = replaces == null
+      ? ''
+      : `, replaces: ${JSON.stringify(replaces)}`;
     fs.writeFileSync(
       path.join(components, `${component}.doc.mjs`),
-      `export default {name: ${JSON.stringify(component)}, usage: {description: 'Fixture'}, props: []};\n`,
+      `export default {name: ${JSON.stringify(component)}, displayName: ${JSON.stringify(component)}${replacement}, usage: {description: 'Fixture'}, props: []};\n`,
     );
     fs.writeFileSync(
       path.join(components, `${component}.tsx`),
@@ -933,6 +938,30 @@ describe('gapReport target selection', () => {
 
     expect(result.data.package).toBe('@test/owner');
     expect(result.data.deliveries[0].message).toBe('@test/owner');
+  });
+
+  it('routes a Core alias to the active replacement owner', async () => {
+    addCoreComponent('SideNav');
+    addIntegration({
+      name: '@test/navigation',
+      component: 'AcmeSideNav',
+      replaces: 'SideNav',
+      issuesUrl: 'https://github.com/acme/navigation/issues',
+      audience: 'internal',
+      handleBody: 'return {status: \'filed\', message: report.target.package};',
+    });
+    configure(['@test/navigation']);
+
+    const result = await gapReport('SideNav', {
+      ...reportOptions,
+      cwd: projectDir,
+    });
+
+    expect(result.data).toMatchObject({
+      package: '@test/navigation',
+      issuesUrl: 'https://github.com/acme/navigation/issues',
+    });
+    expect(result.data.deliveries[0].message).toBe('@test/navigation');
   });
 
   it('uses explicit package', async () => {

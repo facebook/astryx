@@ -40,6 +40,8 @@ const _require = createRequire(import.meta.url);
  * @property {string} label - Human-readable check name.
  * @property {DoctorStatus} status
  * @property {string} message - One-line result summary.
+ * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>} [issues]
+ *   Structured integration issues when this check summarizes Project.issues().
  * @property {string} [fix] - Actionable remediation, present when not 'pass'.
  *
  * @typedef {object} DoctorReport
@@ -55,6 +57,9 @@ const _require = createRequire(import.meta.url);
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
  *   Every integration the project loaded, or null when the project could not be
  *   read at all.
+ * @property {Array<import('../../foundation/integrations/issue').AstryxIntegrationIssue & {package: string}>|null} [integrationIssues]
+ *   Project-wide integration issues, including cross-package catalog findings, or
+ *   null when the project could not be read.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -441,6 +446,50 @@ export function checkImplicitIntegrations(ctx) {
 }
 
 /**
+ * Report every issue collected by Project, including cross-package catalog
+ * findings that package-local Doctor leaves cannot observe.
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkIntegrationIssues(ctx) {
+  const issues = ctx.integrationIssues;
+  if (issues == null) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+  if (issues.length === 0) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'pass',
+      message: 'No integration contribution issues found.',
+    };
+  }
+  const errors = issues.filter(issue => issue.severity === 'error').length;
+  const preview = issues
+    .map(issue => `${issue.package}: ${issue.message}`)
+    .join('; ');
+  return {
+    id: 'integration-issues',
+    label: 'Integration contributions',
+    status: errors > 0 ? 'fail' : 'warn',
+    message: `${issues.length} integration issue(s): ${preview}`,
+    issues: issues.map(issue => ({
+      package: issue.package,
+      code: issue.code,
+      severity: issue.severity,
+      message: issue.message,
+    })),
+    fix:
+      'Review integration package metadata and the order in astryx.config, then re-run astryx doctor.',
+  };
+}
+
+/**
  * Check 7 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
@@ -649,6 +698,7 @@ export const SYNC_CHECKS = [
   checkVersionAlignment,
   checkThemes,
   checkImplicitIntegrations,
+  checkIntegrationIssues,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -680,11 +730,14 @@ export async function runChecks(options = {}) {
   let configTheme = null;
   /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
   let integrations = null;
+  /** @type {Array<import('../../foundation/integrations/issue').AstryxIntegrationIssue & {package: string}>|null} */
+  let integrationIssues = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
+    integrationIssues = await project.issues();
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -697,6 +750,7 @@ export async function runChecks(options = {}) {
     configPath,
     configTheme,
     integrations,
+    integrationIssues,
     configError,
   };
 

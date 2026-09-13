@@ -5,7 +5,11 @@
  * `../_schema.mjs`; consumers call `parseComponent` or use `parseDoc`.
  */
 
-import {ComponentDocKindSchema} from '../_schema.mjs';
+import {
+  StampedMultiComponentDocSchema,
+  StampedSingleComponentDocSchema,
+  StampedSubComponentDocSchema,
+} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
 /** @typedef {import('../types').ComponentDoc} ComponentDoc */
@@ -18,7 +22,17 @@ import {formatZodError} from '../../_shared/errors.mjs';
  * @returns {ComponentDoc}
  */
 export function parseComponent(input, label = 'component doc') {
-  const result = ComponentDocKindSchema.safeParse(input);
+  const record =
+    input && typeof input === 'object'
+      ? /** @type {Record<string, unknown>} */ (input)
+      : null;
+  const schema =
+    record && 'subComponentOf' in record
+      ? StampedSubComponentDocSchema
+      : record && 'components' in record
+        ? StampedMultiComponentDocSchema
+        : StampedSingleComponentDocSchema;
+  const result = schema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }

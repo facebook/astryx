@@ -429,7 +429,7 @@ describe('validate-integration API', () => {
     expect(summarizeIssues(result.issues).errors).toBe(0);
   });
 
-  it('flags a component doc missing its same-stem source as invalid_component', async () => {
+  it('allows a docs-only component without a same-stem source', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
       manifest: `export default { components: './components' };\n`,
@@ -443,7 +443,8 @@ describe('validate-integration API', () => {
     );
 
     const result = await validateLocalIntegration(pkgDir);
-    expect(byCode(result.issues, 'invalid_component')).toHaveLength(1);
+    expect(byCode(result.issues, 'invalid_component')).toHaveLength(0);
+    expect(summarizeIssues(result.issues).errors).toBe(0);
   });
 
   it('degrades a path-unsafe package spec (..) into a diagnostic instead of crashing', async () => {

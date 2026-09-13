@@ -9,12 +9,13 @@
  * distinguish intentional ownership from an accidental same-name shadow.
  */
 
+import {Project} from '../../foundation/config/project.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
-  discoverIntegrationComponents,
-  discoverOwnedComponents,
-} from '../../foundation/discovery/component-discovery.mjs';
+  ComponentCatalog,
+  discoverIntegrationComponentContributions,
+} from '../../foundation/discovery/component-catalog.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -148,7 +149,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   if (!resolved.integration?.components || name == null) {
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {name, version, replacements: [], conflicts: [], issues},
     };
   }
 
@@ -162,32 +163,110 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     });
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {name, version, replacements: [], conflicts: [], issues},
     };
   }
 
-  const coreNames = new Set(
-    discoverOwnedComponents(coreDir, [])
-      .filter(record => record.package === '@astryxdesign/core')
-      .map(record => record.name),
-  );
+  const {records, errors} =
+    await discoverIntegrationComponentContributions(resolved.integration);
+  addErrors(issues, errors, 'invalid_component');
+  if (errors.length > 0) {
+    return {
+      type: 'integration.component-conflicts',
+      data: {name, version, replacements: [], conflicts: [], issues},
+    };
+  }
+
+  const catalog = ComponentCatalog.fromCore(coreDir);
+  const catalogIssues = await catalog.addIntegration(records);
+  for (const issue of catalogIssues) {
+    if (!issues.some(existing => existing.code === issue.code && existing.message === issue.message)) {
+      issues.push(issue);
+    }
+  }
+  if (catalogIssues.some(issue => issue.severity === 'error')) {
+    return {
+      type: 'integration.component-conflicts',
+      data: {name, version, replacements: [], conflicts: [], issues},
+    };
+  }
+
+  /** @type {ComponentCatalog|null} */
+  let projectCatalog = null;
+  try {
+    const project = await Project.load(cwd);
+    if (
+      project.loadedIntegrations.some(
+        integration => integration.name === name || integration.__spec === name,
+      )
+    ) {
+      projectCatalog = await project.componentCatalog();
+    }
+  } catch {
+    // A local or unconfigured package is checked against Core in isolation.
+  }
+
+  /** @type {Map<string, number>} */
+  const replacementCounts = new Map();
+  for (const component of records) {
+    if (component.replaces == null) continue;
+    const key = component.replaces.toLowerCase();
+    replacementCounts.set(key, (replacementCounts.get(key) ?? 0) + 1);
+  }
+
   const run = getCliInvocation(cwd);
-  const conflicts = discoverIntegrationComponents(resolved.integration)
-    .filter(component => coreNames.has(component.name))
-    .map(component => ({
+  /** @type {import('./authoring-checks.type.mjs').IntegrationComponentReplacement[]} */
+  const replacements = [];
+  /** @type {import('./authoring-checks.type.mjs').IntegrationComponentConflict[]} */
+  const conflicts = [];
+  for (const component of records) {
+    const sameNameCore = catalog.core(component.name)?.name;
+    const target =
+      component.replaces == null
+        ? undefined
+        : catalog.core(component.replaces)?.name;
+    const active =
+      target == null ||
+      projectCatalog == null ||
+      (projectCatalog.resolve(target)?.package === name &&
+        projectCatalog.resolve(target)?.name === component.name);
+    if (
+      target != null &&
+      replacementCounts.get(target.toLowerCase()) === 1 &&
+      active
+    ) {
+      replacements.push({
+        name: component.name,
+        relationship: 'replaces',
+        target,
+        integrationPackage: name,
+        message: `Intentional replacement: "${component.name}" replaces the Core component "${target}" for unqualified discovery and selection.`,
+        command: `${run} component ${shellArg(target)} --package @astryxdesign/core`,
+      });
+    }
+    if (sameNameCore == null || target === sameNameCore) continue;
+    const targetAlreadyReplaced =
+      (replacementCounts.get(sameNameCore.toLowerCase()) ?? 0) > 0;
+    conflicts.push({
       name: component.name,
-      severity: /** @type {const} */ ('warning'),
+      severity: 'warning',
+      relationship: 'accidental',
+      target: sameNameCore,
       integrationPackage: name,
-      message:
-        `Component "${component.name}" conflicts with Core. Consider renaming the integration component. ` +
-        'If you keep it, always select it with --package.',
+      message: targetAlreadyReplaced
+        ? `Component "${component.name}" conflicts with Core and its unqualified name is shadowed by another replacement in this package. Keep using the package-qualified name or rename this component; a second replacement declaration for "${sameNameCore}" is invalid.`
+        : `Component "${component.name}" conflicts with Core. Consider renaming the integration component or declaring ` +
+          `\`replaces: '${sameNameCore}'\` if it should become the project default. ` +
+          'Without a replacement declaration, callers must select a package.',
       command: `${run} component ${shellArg(component.name)} --package ${shellArg(name)}`,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }
+  replacements.sort((a, b) => a.name.localeCompare(b.name));
+  conflicts.sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     type: 'integration.component-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {name, version, replacements, conflicts, issues},
   };
 }
 

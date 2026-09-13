@@ -92,6 +92,16 @@ describe('swizzle() API', () => {
     expect(r.type).toBe('swizzle.list');
     expect(Array.isArray(r.data)).toBe(true);
     expect(r.data).toContain('Button');
+    expect(r.data).toContain('Heading');
+    expect(r.data).not.toContain('DropdownMenuItem');
+  });
+
+  it('nested Core symbols are not swizzle copy units', async () => {
+    await expect(
+      swizzle('ChatMessage', {cwd: process.cwd()}),
+    ).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_COMPONENT',
+    });
   });
 
   it('--list → swizzle.list even with a component arg', async () => {

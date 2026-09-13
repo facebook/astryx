@@ -204,7 +204,7 @@ describe('integrationAdd component', () => {
 
   // ── MUTATION TESTS: same-stem pair ──────────────────────────────
 
-  it('mutation: doc alone (no .tsx) causes a validate-contributions error', async () => {
+  it('mutation: doc alone remains a valid docs-only component', async () => {
     setup();
     await integrationAdd('component', 'MyWidget', {cwd: tmpDir});
     // Remove the .tsx — keep the doc
@@ -213,7 +213,7 @@ describe('integrationAdd component', () => {
     const componentErrors = validation.issues.filter(
       i => i.code === 'invalid_component',
     );
-    expect(componentErrors.length).toBeGreaterThan(0);
+    expect(componentErrors).toEqual([]);
   });
 
   it('mutation: source alone (no .doc) is invisible to discovery', async () => {

@@ -129,16 +129,38 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`.',
+          text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file; a same-stem `.tsx` source is optional. The authored `name` is the CLI identity and must be unique inside the package. The file and optional source share a stem, for example `AcmeCarousel.tsx` beside `AcmeCarousel.doc.ts`. Docs-only components remain available to list, detail, and search; source and swizzle commands require the source file. MultiComponentDoc full-list output supports both bare `{name}` references and hook-shaped entries without `props`.',
         },
         {
           type: 'prose',
-          text: 'Component names are package-aware. If an integration name matches Core, unqualified lookup fails closed instead of choosing one. Run `astryx doctor integration components <package>` before publishing: it recommends renaming and prints the exact `--package` command when the overlap is intentional.',
+          text: "Component names are package-aware. `replaces` takes a Core ComponentDoc `name` shown by `astryx component --list` or resolved by `astryx component <Name>` for a documented subcomponent (for example `SideNav` or `Heading`), not its display label, import path, or a standalone HookDoc name. When the integration is active, unqualified component list/detail, search, swizzle, and gap-report target routing use the replacement; the replacement's own name also resolves. `--package @astryxdesign/core` still selects the original Core component.",
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          code: "// AcmeSideNav.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */\nexport const docs = {\n  name: 'AcmeSideNav',\n  displayName: 'Acme Side Nav',\n  replaces: 'SideNav',\n  import: '@acme/astryx-widgets/Navigation',\n  usage: {description: 'Product navigation for Acme apps.'},\n  props: [],\n};",
+        },
+        {
+          type: 'prose',
+          text: 'The optional `import` value is the exact public specifier consumers use. Omit it when the package exports map and doc path identify the entry point; set it when one entry point exports several documented components or inference cannot name the public path.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'astryx component SideNav                                      # AcmeSideNav\nastryx component AcmeSideNav                                  # same replacement\nastryx component SideNav --package @astryxdesign/core        # original Core SideNav\nastryx search SideNav --type component\nastryx swizzle SideNav',
+        },
+        {
+          type: 'prose',
+          text: 'A replacement in explicit `astryx.config` takes precedence over an autolinked dependency. When several explicitly configured integrations replace one target, the later package in `integrations` wins the target alias and Doctor reports a warning naming both; each losing replacement remains discoverable under its own name and through `--package`. A native integration component whose own name is the replaced Core target stays visible in lists and by package, and Doctor warns that the active replacement shadows its unqualified name. Inside one package, an exact component name wins over another component’s replacement alias for package-scoped lookup, while Doctor still warns about the unqualified shadow. Two components replacing one target is an error, as is a duplicate authored component name, a missing Core target, a non-string/empty declaration, putting `replaces` on a non-component doc, or naming the replacement after a different Core component. Any such structural error withdraws that package’s complete component contribution instead of applying a partial catalog.',
+        },
+        {
+          type: 'prose',
+          text: 'Without `replaces`, the integration component keeps only its own identity; a same-name overlap with Core — including a documented subcomponent such as `Heading` or `Code` — remains ambiguous for component detail and gap-report routing and requires `--package`. Resolution-only Core subcomponents do not appear as new list/search entries merely because an integration collides with them. For compatibility with CLI versions that predate stamped ComponentDoc defaults, publish replacement metadata through the legacy-compatible `export const docs` form above and ship its same-stem source. Those CLIs ignore the unknown `replaces` field and continue loading that source-backed component under its own name. Source-optional component support is newer and inconsistent on older CLIs: version 0.6.0 can show a docs-only component in list and search results, but its integration Doctor still rejects the missing source. Consumers of docs-only packages should upgrade instead of relying on old-CLI validation behavior.',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n};",
+          code: "// AcmeCarousel.doc.ts\nimport type {ComponentDoc} from '@astryxdesign/cli/authoring';\n\nexport const docs = {\n  name: 'AcmeCarousel',\n  displayName: 'Acme Carousel',\n  usage: {description: 'A carousel that cycles through slides.'},\n  props: [],\n} satisfies ComponentDoc;",
         },
       ],
     },

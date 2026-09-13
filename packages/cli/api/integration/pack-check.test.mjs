@@ -173,7 +173,7 @@ describe('integrationPackCheck', () => {
     fs.mkdirSync(path.join(tmpDir, 'components'));
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeWidget.doc.mjs'),
-      "export default {type: 'component', name: 'AcmeWidget', description: 'Widget.', props: []};\n",
+      "export default {type: 'component', name: 'AcmeWidget', displayName: 'Acme Widget', description: 'Widget.', usage: {description: 'Widget.'}, props: []};\n",
     );
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeWidget.tsx'),

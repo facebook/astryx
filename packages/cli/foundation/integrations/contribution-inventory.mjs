@@ -253,8 +253,14 @@ export async function collectIdentities(loaded) {
       const records = discoverIntegrationComponents(loaded) ?? [];
       for (const record of records) {
         try {
-          await loadComponentDoc(record.docPath);
-          identities.components.push(record.name);
+          const docs = /** @type {{name?: unknown}} */ (
+            await loadComponentDoc(record.docPath)
+          );
+          const authoredName =
+            typeof docs?.name === 'string' && docs.name.trim() !== ''
+              ? docs.name.trim()
+              : record.name;
+          identities.components.push(authoredName);
         } catch (err) {
           errors.push({
             kind: 'components',
