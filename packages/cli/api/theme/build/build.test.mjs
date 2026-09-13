@@ -8,7 +8,8 @@
  * end-to-end; these assert the API contract you get calling `themeBuild()` in
  * code: the typed `theme.build` receipt (with files actually written to disk),
  * that it honors the `cwd` option, stays SILENT under the default noopLogger,
- * and returns `null` when there is nothing to build.
+ * returns `null` when there is nothing to build, and rejects unsupported icon
+ * registries without creating or changing outputs in build and check modes.
  *
  * `themeBuild` compiles via @astryxdesign/core's generator, so it needs a built
  * core — the `node` project's globalSetup (vitest.global-setup.node.mjs) builds
@@ -517,6 +518,194 @@ describe('themeBuild() — the shipped theme template', () => {
     expect(fs.existsSync(path.join(tmpDir, 'my-theme.variants.d.ts'))).toBe(
       true,
     );
+  });
+});
+
+describe('themeBuild() — icon registry detection', () => {
+  /**
+   * The emitted icon import statement, or null. Reads the statement rather
+   * than the whole file: the `@generated` header quotes a usage example, so a
+   * substring search over the file would match comment text too.
+   */
+  function iconImportLine(generated) {
+    const match = generated.match(/^import .*$/m);
+    return match ? match[0] : null;
+  }
+
+  it('emits the import, icons key and re-export for a registry that arrives via an import', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'icons.mjs'),
+      'export const liveIcons = {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'live.mjs'),
+      `import {liveIcons} from './icons';\n` +
+        `export default {name: 'live', icons: liveIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('live.mjs', {}, {cwd: tmpDir});
+
+    const generated = fs.readFileSync(path.join(tmpDir, 'live.js'), 'utf8');
+    expect(iconImportLine(generated)).toBe(
+      "import { liveIcons } from './icons';",
+    );
+    expect(generated).toContain('icons: liveIcons,');
+    expect(generated).toContain('export { liveIcons };');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('does not re-emit an import that only appears inside a comment (#5058)', async () => {
+    // The reported repro: the registry was inlined into the theme source, and
+    // a doc comment kept the old import line for context. The comment's
+    // specifier was scraped and emitted as live code in the built module,
+    // pointing at a file that no longer exists.
+    fs.writeFileSync(
+      path.join(tmpDir, 'commented.mjs'),
+      `/**\n` +
+        ` * The scaffold put this in a sibling icons file, so the built module\n` +
+        ` * carried \`import { ghostIcons } from './icons'\` — which Node\n` +
+        ` * cannot resolve.\n` +
+        ` */\n` +
+        `const ghostIcons = {};\n` +
+        `export default {name: 'commented', icons: ghostIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    await expect(
+      themeBuild('commented.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({
+      code: 'ERR_THEME_INVALID',
+      message: expect.stringContaining('icons: ghostIcons'),
+    });
+    expect(fs.readdirSync(tmpDir)).toEqual(['commented.mjs']);
+  });
+
+  it('scrapes the live import even when a comment quotes a stale one', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'icons.mjs'),
+      'export const realIcons = {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'both.mjs'),
+      `// was: import { realIcons } from './old-icons';\n` +
+        `import {realIcons} from './icons';\n` +
+        `export default {name: 'both', icons: realIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('both.mjs', {}, {cwd: tmpDir});
+
+    // The comment comes first in the source, so the old scan matched it first
+    // and emitted `./old-icons` — the live import must win.
+    const generated = fs.readFileSync(path.join(tmpDir, 'both.js'), 'utf8');
+    expect(iconImportLine(generated)).toBe(
+      "import { realIcons } from './icons';",
+    );
+    expect(generated).not.toContain('old-icons');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('ignores a commented-out icons: field entirely', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'nofield.mjs'),
+      `// icons: retiredIcons,\n` +
+        `export default {name: 'nofield', tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('nofield.mjs', {}, {cwd: tmpDir});
+
+    const generated = fs.readFileSync(path.join(tmpDir, 'nofield.js'), 'utf8');
+    expect(iconImportLine(generated)).toBeNull();
+    expect(generated).not.toContain('icons:');
+    // No icons field means nothing was dropped — no warning either.
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  describe.each([false, true])('unsupported registries (check: %s)', check => {
+    it('rejects before the generator can return no CSS', async () => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'inline.mjs'),
+        `const inlineIcons = {chevron: 'stub'};\n` +
+          `export default {name: 'inline', icons: inlineIcons, tokens: {}};\n`,
+      );
+
+      await mockGenerateThemeRulesSplit.withImplementation(
+        () => ({component: [], prose: []}),
+        async () => {
+          await mockGenerateOnMediaCSS.withImplementation(
+            () => '',
+            async () => {
+              await expect(
+                themeBuild('inline.mjs', {check}, {cwd: tmpDir}),
+              ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
+            },
+          );
+        },
+      );
+      expect(mockGenerateThemeRulesSplit).not.toHaveBeenCalled();
+      expect(fs.readdirSync(tmpDir)).toEqual(['inline.mjs']);
+    });
+
+    it.each([
+      ['local binding', 'icons: inlineIcons'],
+      ['object literal', "icons: {chevron: 'stub'}"],
+      ['shorthand', 'icons'],
+    ])('rejects a %s without creating output files', async (_label, field) => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'inline.mjs'),
+        `const inlineIcons = {chevron: 'stub'};\n` +
+          `const icons = inlineIcons;\n` +
+          `export default {name: 'inline', ${field}, tokens: {'--color-bg': '#fff'}};\n`,
+      );
+
+      await expect(
+        themeBuild(
+          'inline.mjs',
+          {check, out: 'dist/inline.css'},
+          {cwd: tmpDir},
+        ),
+      ).rejects.toMatchObject({
+        code: 'ERR_THEME_INVALID',
+        message: expect.stringContaining(
+          'Move the registry to its own module and import it',
+        ),
+      });
+      expect(fs.readdirSync(tmpDir)).toEqual(['inline.mjs']);
+    });
+
+    it('rejects even when committed output already matches the missing-icons result', async () => {
+      const themeFile = path.join(tmpDir, 'inline.mjs');
+      const withoutIcons =
+        `export default {name: 'inline', tokens: {'--color-bg': '#fff'}, ` +
+        `components: {button: {'variant:custom': {color: 'red'}}}};\n`;
+      fs.writeFileSync(themeFile, withoutIcons);
+      const built = await themeBuild('inline.mjs', {}, {cwd: tmpDir});
+      expect(built?.data.outputs.variantsDts).toBe('inline.variants.d.ts');
+      const outputs = Object.values(built.data.outputs);
+      const before = outputs.map(file =>
+        fs.readFileSync(path.join(tmpDir, file), 'utf8'),
+      );
+      // This source used to emit exactly the same output as the icon-free
+      // theme, so --check passed after the incomplete artifacts were committed.
+      fs.writeFileSync(
+        themeFile,
+        `const inlineIcons = {chevron: 'stub'};\n` +
+          withoutIcons.replace(
+            "name: 'inline',",
+            "name: 'inline', icons: inlineIcons,",
+          ),
+      );
+      const filesBefore = fs.readdirSync(tmpDir).sort();
+
+      await expect(
+        themeBuild('inline.mjs', {check}, {cwd: tmpDir}),
+      ).rejects.toMatchObject({
+        code: 'ERR_THEME_INVALID',
+        message: expect.stringContaining('icons: inlineIcons'),
+      });
+      expect(
+        outputs.map(file => fs.readFileSync(path.join(tmpDir, file), 'utf8')),
+      ).toEqual(before);
+      expect(fs.readdirSync(tmpDir).sort()).toEqual(filesBefore);
+    });
   });
 });
 
