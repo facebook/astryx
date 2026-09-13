@@ -17,6 +17,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import {createRequire} from 'node:module';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -52,21 +53,12 @@ const DOCSITE_ROOT = path.resolve(
   '../../apps/docsite',
 );
 
-/**
- * The `shadcn` bin, found from the package that declares it. Only a hoisted
- * node_modules puts a workspace package's own bin at the repo root.
- */
-function shadcnBin() {
-  let dir = DOCSITE_ROOT;
-  for (let i = 0; i < 6; i++) {
-    const candidate = path.join(dir, 'node_modules', '.bin', 'shadcn');
-    if (existsSync(candidate)) return candidate;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error(`shadcn bin not found above ${DOCSITE_ROOT}`);
-}
+// shadcn is a docsite dependency and its bin is the package entry, so resolving
+// it from docsite gives the script to run — no assumption about where the
+// installer put the package, and no dependence on NODE_PATH.
+const SHADCN_ENTRY = createRequire(
+  path.join(DOCSITE_ROOT, 'package.json'),
+).resolve('shadcn');
 
 const packages = [
   {name: '@astryxdesign/cli', version: '0.6.0'},
@@ -447,8 +439,8 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        shadcnBin(),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -540,8 +532,8 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        shadcnBin(),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -621,8 +613,8 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'block.json');
       writeFileSync(itemPath, JSON.stringify(oldItem));
       await execFileAsync(
-        shadcnBin(),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
       await new Promise((resolve, reject) => {
@@ -770,8 +762,8 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'page.json');
       writeFileSync(itemPath, JSON.stringify(page));
       await execFileAsync(
-        shadcnBin(),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -847,8 +839,8 @@ describe('buildShadcnRegistry', () => {
       writeConsumerProject(project);
 
       await execFileAsync(
-        shadcnBin(),
-        ['add', `${origin}/shadcn/examples/parent.json`, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', `${origin}/shadcn/examples/parent.json`, '--yes'],
         {
           cwd: project,
           timeout: 30_000,
