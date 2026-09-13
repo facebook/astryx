@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4328,
+    "headSha": "451b7b3af83bc40e7ab825e5281e91a0cec60255",
+    "headRef": "feat/codeblock-diff-markers-and-language",
+    "headRepository": "ejc3/astryx",
+    "headRepositoryId": "1311970351"
+  },
+  "sourceRun": {
+    "id": 31766558053,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4328/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/4328/sandbox/",
+      "indexSha256": null
+    }
+  }
+}
