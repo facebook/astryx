@@ -100,6 +100,56 @@ describe('parseMarkdownIncremental', () => {
     expect(final).toEqual(parseMarkdown(text, {math: true}));
   });
 
+  describe.each([
+    ['list', '- $$\n  x + y\n  $$'],
+    ['blockquote', '> $$\n> x + y\n> $$'],
+  ] as const)('nested display math in a %s', (_label, text) => {
+    it.each([false, true])(
+      'withholds the incomplete container (sourceRanges=%s)',
+      sourceRanges => {
+        const closingDelimiter = text.lastIndexOf('$$');
+        const state = createIncrementalState();
+        expect(
+          parseMarkdownIncremental(text.slice(0, closingDelimiter), state, {
+            math: true,
+            sourceRanges,
+          }),
+        ).toEqual([]);
+      },
+    );
+
+    it.each([false, true])(
+      'matches the full parse at every stream split (sourceRanges=%s)',
+      sourceRanges => {
+        const options = {math: true as const, sourceRanges};
+        const full = parseMarkdown(text, options);
+
+        // One long-lived state sees every character boundary in order.
+        const characterState = createIncrementalState();
+        let characterResult = parseMarkdownIncremental(
+          '',
+          characterState,
+          options,
+        );
+        for (let end = 1; end <= text.length; end++) {
+          characterResult = parseMarkdownIncremental(
+            text.slice(0, end),
+            characterState,
+            options,
+          );
+        }
+        expect(characterResult).toEqual(full);
+
+        // Every possible two-chunk split converges to the same complete tree.
+        for (let split = 0; split <= text.length; split++) {
+          const state = createIncrementalState();
+          parseMarkdownIncremental(text.slice(0, split), state, options);
+          expect(parseMarkdownIncremental(text, state, options)).toEqual(full);
+        }
+      },
+    );
+  });
+
   it('withholds an incomplete display-math block while streaming', () => {
     const state = createIncrementalState();
     const blocks = parseMarkdownIncremental('Intro\n\n$$\nx + y', state, {

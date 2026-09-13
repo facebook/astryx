@@ -185,11 +185,61 @@ function normalizeLinkLabel(label: string): string {
   return label.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+type DisplayMathContainer = {
+  quoteDepth: number;
+  listBaseIndent: number | null;
+};
+
 type DisplayMathMatch = {
   value: string;
   nextIndex: number;
   endLine: number;
 };
+
+function stripBlockquoteMarkers(line: string): {
+  content: string;
+  quoteDepth: number;
+} {
+  let content = line;
+  let quoteDepth = 0;
+  while (true) {
+    const marker = /^ {0,3}> ?/.exec(content);
+    if (marker == null) {
+      return {content, quoteDepth};
+    }
+    content = content.slice(marker[0].length);
+    quoteDepth++;
+  }
+}
+
+/**
+ * Recognize a standalone display-math marker at the current container boundary.
+ * A list opener carries its base indent so an indented continuation marker can
+ * close it; blockquotes must keep the same quote depth.
+ */
+function displayMathContainer(line: string): DisplayMathContainer | null {
+  const {content, quoteDepth} = stripBlockquoteMarkers(line);
+  const listMarker = /^( {0,9})(?:[-*+]|\d+[.)]) +(.*)$/.exec(content);
+  if (listMarker != null && listMarker[2].trim() === '$$') {
+    return {quoteDepth, listBaseIndent: listMarker[1].length};
+  }
+  return content.trim() === '$$' ? {quoteDepth, listBaseIndent: null} : null;
+}
+
+function closesDisplayMath(
+  line: string,
+  container: DisplayMathContainer,
+): boolean {
+  const {content, quoteDepth} = stripBlockquoteMarkers(line);
+  if (quoteDepth !== container.quoteDepth || content.trim() !== '$$') {
+    return false;
+  }
+  if (container.listBaseIndent == null) {
+    return true;
+  }
+  const continuationIndent = content.length - content.trimStart().length;
+  return continuationIndent > container.listBaseIndent;
+}
 
 /** Match a complete `$$…$$` display-math block without consuming partial input. */
 function matchDisplayMathBlock(
@@ -1856,7 +1906,7 @@ function findSettledBoundary(
 } {
   let inFence = false;
   let fenceMarker = '';
-  let inMath = false;
+  let mathContainer: DisplayMathContainer | null = null;
   let lastBoundary = -1;
   let boundaryBeforeFence = -1;
   let boundaryBeforeMath = -1;
@@ -1877,19 +1927,24 @@ function findSettledBoundary(
       continue;
     }
 
-    if (inMath) {
-      if (line.trim() === '$$') {
-        inMath = false;
+    if (mathContainer != null) {
+      if (closesDisplayMath(line, mathContainer)) {
+        mathContainer = null;
       }
       continue;
     }
 
-    // A standalone `$$` opens display math. Same-line `$$…$$` is complete and
-    // never changes boundary state.
-    if (math && line.trim() === '$$') {
-      inMath = true;
-      boundaryBeforeMath = lastBoundary;
-      continue;
+    // A complete same-line `$$…$$` expression never changes boundary state.
+    // A standalone marker may belong to the top level, a blockquote, or one
+    // list item; remember that container so its continuation marker closes the
+    // same expression instead of opening a new one.
+    if (math) {
+      const container = displayMathContainer(line);
+      if (container != null) {
+        mathContainer = container;
+        boundaryBeforeMath = lastBoundary;
+        continue;
+      }
     }
 
     const fenceMatch = line.match(/^(`{3,}|~{3,})/);
@@ -1908,11 +1963,11 @@ function findSettledBoundary(
   return {
     boundary: inFence
       ? boundaryBeforeFence
-      : inMath
+      : mathContainer != null
         ? boundaryBeforeMath
         : lastBoundary,
     openFence: inFence,
-    openMath: inMath,
+    openMath: mathContainer != null,
   };
 }
 
@@ -2136,12 +2191,49 @@ export function trimStreamingArtifacts(
  */
 function trimOpenDisplayMath(text: string): string {
   const lines = text.split('\n');
-  for (let index = lines.length - 1; index >= 0; index--) {
-    if (lines[index].trim() === '$$') {
-      return lines.slice(0, index).join('\n').trimEnd();
+  let inFence = false;
+  let fenceMarker = '';
+  let mathContainer: DisplayMathContainer | null = null;
+  let mathStartLine = -1;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    if (inFence) {
+      const fence = line.match(/^(`{3,}|~{3,})/);
+      if (
+        fence != null &&
+        fence[1].startsWith(fenceMarker[0]) &&
+        fence[1].length >= fenceMarker.length
+      ) {
+        inFence = false;
+        fenceMarker = '';
+      }
+      continue;
+    }
+    if (mathContainer != null) {
+      if (closesDisplayMath(line, mathContainer)) {
+        mathContainer = null;
+        mathStartLine = -1;
+      }
+      continue;
+    }
+
+    const fence = line.match(/^(`{3,}|~{3,})/);
+    if (fence != null) {
+      inFence = true;
+      fenceMarker = fence[1];
+      continue;
+    }
+    const container = displayMathContainer(line);
+    if (container != null) {
+      mathContainer = container;
+      mathStartLine = index;
     }
   }
-  return text;
+
+  return mathContainer != null && mathStartLine >= 0
+    ? lines.slice(0, mathStartLine).join('\n').trimEnd()
+    : text;
 }
 
 function trimUnsettledStructural(text: string): string {
