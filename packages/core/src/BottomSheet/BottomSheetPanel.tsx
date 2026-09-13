@@ -4,14 +4,14 @@
 
 /**
  * @file BottomSheetPanel.tsx
- * @input Uses React, StyleX, theme tokens, useSheetGestures
- * @output Internal BottomSheetPanel surface and motion-state types
+ * @input Uses React, StyleX, theme tokens, sheet gestures, shared scroll behavior, and the host label
+ * @output Internal BottomSheetPanel with a keyboard-reachable scrolling body and motion-state types
  * @position Shared presentation layer for standalone and switcher BottomSheets
  *
  * This component owns everything intrinsic to a sheet surface: height budgets,
  * drag and snap gestures, the handle and scrolling body, motion styles, and
- * transition completion. It deliberately does not own a dialog, focus, inert
- * state, or switcher registration; those belong to the hosting controller.
+ * transition completion. It owns the body's keyboard access; dialog focus
+ * entry/return, inert state, and switcher registration belong to the host.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
@@ -33,17 +33,20 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {
   borderVars,
   colorVars,
   durationVars,
   easeVars,
+  focusVars,
   radiusVars,
   shadowVars,
   sizeVars,
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {
   isValidSnapPoint,
@@ -52,6 +55,7 @@ import {
 } from './snapOffsets';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
+import {useSheetFocusableContent} from './useSheetFocusableContent';
 
 const HEIGHT_BUDGETS = {
   hug: '92dvh',
@@ -211,9 +215,11 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     boxSizing: 'border-box',
-    overflowY: 'auto',
-    overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    outlineOffset: {
+      default: 0,
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
     // The scrolling area paints the surface itself, covering the sheet's whole
     // inner box. Without it the sheet's edge is not uniform: a theme that packs
     // an inset ring into --shadow-high (the bundled themes all add one in dark
@@ -228,6 +234,15 @@ const styles = stylex.create({
     // in a 24px band, so it occupies only 10-14px from the edge -- inside the
     // space a content wrapper's own top padding already provides.
     paddingBlockEnd: 0,
+  },
+  content: {
+    // Preserve the body's block formatting (including margin/float isolation)
+    // and its definite percentage-height basis. min-content lets this real
+    // observed box grow with async content beyond a fixed-height viewport.
+    display: 'flow-root',
+    boxSizing: 'border-box',
+    height: '100%',
+    minHeight: 'min-content',
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
@@ -265,6 +280,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
+  /** Existing host name, reused for the keyboard scrolling group. */
+  label: string;
   children: ReactNode;
   snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
   isSwipeDismissAllowed?: boolean;
@@ -391,6 +408,7 @@ export function BottomSheetPanel({
   ref,
   state,
   height,
+  label,
   children,
   snapPoints,
   className,
@@ -488,6 +506,23 @@ export function BottomSheetPanel({
     onDismiss,
     snapHeights,
     onScrimOpacity,
+  });
+
+  const hasFocusableContent = useSheetFocusableContent(
+    bodyElementRef,
+    isInteractive,
+  );
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    // The previous overflow-y:auto also computed overflow-x:auto. Keep wide
+    // content reachable instead of clipping that existing inline scroll path.
+    axis: 'both',
+    keyboardAccess: hasFocusableContent
+      ? {owner: 'content'}
+      : {owner: 'viewport', label},
+    overscroll: 'contain',
+    // The sheet body deliberately remains the boundary for sheet-local sticky
+    // content while fitting, as it was before shared scroll adoption.
+    stickyContainment: 'always',
   });
 
   const setElement = useCallback(
@@ -656,17 +691,26 @@ export function BottomSheetPanel({
         <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
-        {...mergeProps(
-          stylex.props(
-            styles.body,
-            height === 'tall' && styles.tallKeyboardBody,
+        {...getViewportProps<HTMLDivElement>({
+          ...bodyProps,
+          role: 'group',
+          'aria-label': label,
+          // Removing a newly unnecessary stop must not blur a focused body.
+          tabIndex: hasFocusableContent ? -1 : undefined,
+          ...mergeProps(
+            stylex.props(
+              focusOutlineStyles.focusVisible,
+              styles.body,
+              height === 'tall' && styles.tallKeyboardBody,
+            ),
+            scrollPreservationInset > 0
+              ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
+              : {},
           ),
-          scrollPreservationInset > 0
-            ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
-            : {},
-        )}
-        {...bodyProps}>
-        {children}
+        })}>
+        <div {...getContentProps<HTMLDivElement>(stylex.props(styles.content))}>
+          {children}
+        </div>
       </div>
     </div>
   );
