@@ -14,19 +14,35 @@
 // Types
 // ---------------------------------------------------------------------------
 
+/** Nodes returned by default and legacy parser calls. */
 export type InlineNode =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNode[]}
   | {type: 'italic'; children: InlineNode[]}
   | {type: 'strikethrough'; children: InlineNode[]}
   | {type: 'code'; content: string}
-  | {type: 'math'; value: string}
   | {type: 'link'; href: string; children: InlineNode[]}
   | {type: 'image'; src: string; alt: string}
   | {type: 'citation'; sourceId: string}
   | {type: 'break'};
 
-export type BlockNode = BlockNodeKind & {
+/** The additional inline node returned only when parsing with `math: true`. */
+export type MathInlineNode = {type: 'math'; value: string};
+
+/** Nodes returned by an explicitly math-enabled inline parse. */
+export type InlineNodeWithMath =
+  | {type: 'text'; content: string}
+  | {type: 'bold'; children: InlineNodeWithMath[]}
+  | {type: 'italic'; children: InlineNodeWithMath[]}
+  | {type: 'strikethrough'; children: InlineNodeWithMath[]}
+  | {type: 'code'; content: string}
+  | MathInlineNode
+  | {type: 'link'; href: string; children: InlineNodeWithMath[]}
+  | {type: 'image'; src: string; alt: string}
+  | {type: 'citation'; sourceId: string}
+  | {type: 'break'};
+
+type BlockMetadata = {
   /**
    * Where this block came from in the source, when parsed with the
    * `sourceRanges` option. Top-level blocks only.
@@ -34,11 +50,10 @@ export type BlockNode = BlockNodeKind & {
   range?: SourceRange;
 };
 
-type BlockNodeKind =
+type LegacyBlockNodeKind =
   | {type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; children: InlineNode[]}
   | {type: 'paragraph'; children: InlineNode[]}
   | {type: 'codeblock'; language: string; content: string}
-  | {type: 'math'; value: string}
   | {type: 'blockquote'; children: BlockNode[]}
   | {
       type: 'list';
@@ -58,6 +73,43 @@ type BlockNodeKind =
   | {type: 'hr'}
   | {type: 'image'; src: string; alt: string};
 
+/** Blocks returned by default and legacy parser calls. */
+export type BlockNode = LegacyBlockNodeKind & BlockMetadata;
+
+/** The additional block returned only when parsing with `math: true`. */
+export type MathBlockNode = {type: 'math'; value: string} & BlockMetadata;
+
+type MathEnabledBlockNodeKind =
+  | {
+      type: 'heading';
+      level: 1 | 2 | 3 | 4 | 5 | 6;
+      children: InlineNodeWithMath[];
+    }
+  | {type: 'paragraph'; children: InlineNodeWithMath[]}
+  | {type: 'codeblock'; language: string; content: string}
+  | MathBlockNode
+  | {type: 'blockquote'; children: BlockNodeWithMath[]}
+  | {
+      type: 'list';
+      ordered: boolean;
+      start?: number;
+      /** Ordered-list marker delimiter ('.' or ')'). Undefined for bullets. */
+      delimiter?: '.' | ')';
+      loose?: boolean;
+      items: ListItemNodeWithMath[];
+    }
+  | {
+      type: 'table';
+      headers: TableCellNodeWithMath[];
+      alignments: TableAlignment[];
+      rows: TableCellNodeWithMath[][];
+    }
+  | {type: 'hr'}
+  | {type: 'image'; src: string; alt: string};
+
+/** Blocks returned by an explicitly math-enabled block parse. */
+export type BlockNodeWithMath = MathEnabledBlockNodeKind & BlockMetadata;
+
 /**
  * Where a block sits in the source string handed to `parseMarkdown`:
  * `source.slice(start, end)` is the block, and `end` excludes the block's
@@ -70,7 +122,12 @@ type BlockNodeKind =
 export type SourceRange = {readonly start: number; readonly end: number};
 
 export type ListItemNode = {checked?: boolean; children: BlockNode[]};
+type ListItemNodeWithMath = {
+  checked?: boolean;
+  children: BlockNodeWithMath[];
+};
 export type TableCellNode = {children: InlineNode[]};
+type TableCellNodeWithMath = {children: InlineNodeWithMath[]};
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
 // ---------------------------------------------------------------------------
@@ -103,6 +160,8 @@ export type ParseOptions = {
   /**
    * Parse `$…$` inline math and `$$…$$` display math into `math` nodes.
    * Disabled by default so dollar-delimited text keeps its existing meaning.
+   * A literal `true` selects the `InlineNodeWithMath` / `BlockNodeWithMath`
+   * overloads; default, legacy-set, and `false` calls keep the legacy unions.
    */
   math?: boolean;
   /**
@@ -116,6 +175,12 @@ export type ParseOptions = {
    */
   sourceRanges?: boolean;
 };
+
+/** Options that preserve the legacy node unions. */
+type LegacyParseOptions = ParseOptions & {math?: false | undefined};
+
+/** Options that explicitly include math nodes in parser results. */
+export type MathParseOptions = ParseOptions & {math: true};
 
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
@@ -425,7 +490,7 @@ function matchReferenceLink(
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
-): {node: InlineNode; end: number} | null {
+): {node: InlineNodeWithMath; end: number} | null {
   const textClose = text.indexOf(']', start + 1);
   if (textClose === -1) {
     return null;
@@ -470,7 +535,7 @@ function matchReferenceImage(
   text: string,
   start: number,
   linkDefs: ReadonlyMap<string, string>,
-): {node: InlineNode; end: number} | null {
+): {node: InlineNodeWithMath; end: number} | null {
   const altClose = text.indexOf(']', start + 2);
   if (altClose === -1) {
     return null;
@@ -665,11 +730,22 @@ export function parseInline(
   text: string,
   sourceIds?: ReadonlySet<string>,
 ): InlineNode[];
-export function parseInline(text: string, options: ParseOptions): InlineNode[];
+export function parseInline(
+  text: string,
+  options: MathParseOptions,
+): InlineNodeWithMath[];
+export function parseInline(
+  text: string,
+  options: LegacyParseOptions,
+): InlineNode[];
+export function parseInline(
+  text: string,
+  options: ParseOptions,
+): InlineNodeWithMath[];
 export function parseInline(
   text: string,
   arg?: ReadonlySet<string> | ParseOptions,
-): InlineNode[] {
+): InlineNodeWithMath[] {
   return parseInlineEntry(text, resolveOptions(arg));
 }
 
@@ -680,15 +756,21 @@ export function parseInline(
  * wrapper and call `parseInlineImpl` directly so the transform runs only on
  * the outermost block's inline tree — letting `transformAutolinks` decide
  * which subtrees to descend into (text, bold, italic, strikethrough) and
- * which to skip (link, code, image, citation, break).
+ * which to skip (link, code, math, image, citation, break).
  */
-function parseInlineEntry(text: string, opts: ResolvedOptions): InlineNode[] {
+function parseInlineEntry(
+  text: string,
+  opts: ResolvedOptions,
+): InlineNodeWithMath[] {
   const nodes = parseInlineImpl(text, opts);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
 
-function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
-  const nodes: InlineNode[] = [];
+function parseInlineImpl(
+  text: string,
+  opts: ResolvedOptions,
+): InlineNodeWithMath[] {
+  const nodes: InlineNodeWithMath[] = [];
   let i = 0;
 
   while (i < text.length) {
@@ -1176,12 +1258,12 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
  * Split a text-node `content` string into a sequence of text + link nodes
  * based on autolink matches.
  */
-function splitTextOnAutolinks(content: string): InlineNode[] {
+function splitTextOnAutolinks(content: string): InlineNodeWithMath[] {
   const matches = scanAutolinksInText(content);
   if (matches.length === 0) {
     return [{type: 'text', content}];
   }
-  const out: InlineNode[] = [];
+  const out: InlineNodeWithMath[] = [];
   let cursor = 0;
   for (const m of matches) {
     if (m.start > cursor) {
@@ -1208,8 +1290,8 @@ function splitTextOnAutolinks(content: string): InlineNode[] {
  * `image` alt text, `citation`, or `break`. Runs only on the outermost
  * block's inline tree (see `parseInlineEntry`).
  */
-function transformAutolinks(nodes: InlineNode[]): InlineNode[] {
-  const out: InlineNode[] = [];
+function transformAutolinks(nodes: InlineNodeWithMath[]): InlineNodeWithMath[] {
+  const out: InlineNodeWithMath[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
       const split = splitTextOnAutolinks(node.content);
@@ -1383,8 +1465,8 @@ function parseTable(
   lines: string[],
   lineIndex: number,
   opts: ResolvedOptions,
-): {node: BlockNode; nextIndex: number} {
-  const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
+): {node: BlockNodeWithMath; nextIndex: number} {
+  const headers: TableCellNodeWithMath[] = splitTableRow(lines[lineIndex]).map(
     cell => ({children: parseInlineEntry(cell, opts)}),
   );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
@@ -1401,7 +1483,7 @@ function parseTable(
             : null;
     },
   );
-  const rows: TableCellNode[][] = [];
+  const rows: TableCellNodeWithMath[][] = [];
   let rowIndex = lineIndex + 2;
   while (
     rowIndex < lines.length &&
@@ -1426,8 +1508,8 @@ function parseList(
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
-): {node: BlockNode; nextIndex: number} {
-  const items: ListItemNode[] = [];
+): {node: BlockNodeWithMath; nextIndex: number} {
+  const items: ListItemNodeWithMath[] = [];
   const baseIndent = getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
   // (CommonMark 5.2). Capture which one this list starts with so its items
@@ -1522,19 +1604,27 @@ export function parseMarkdown(
 ): BlockNode[];
 export function parseMarkdown(
   input: string,
-  options: ParseOptions,
+  options: MathParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdown(
+  input: string,
+  options: LegacyParseOptions,
 ): BlockNode[];
 export function parseMarkdown(
   input: string,
+  options: ParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdown(
+  input: string,
   arg?: ReadonlySet<string> | ParseOptions,
-): BlockNode[] {
+): BlockNodeWithMath[] {
   return parseMarkdownImpl(input, resolveOptions(arg));
 }
 
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
-): BlockNode[] {
+): BlockNodeWithMath[] {
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
@@ -1555,7 +1645,7 @@ function parseMarkdownImpl(
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
   const lines = cleaned.split('\n');
-  const blocks: BlockNode[] = [];
+  const blocks: BlockNodeWithMath[] = [];
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
@@ -1566,7 +1656,7 @@ function parseMarkdownImpl(
     ? []
     : null;
   let blockStartLine = 0;
-  const pushBlock = (node: BlockNode, endLine?: number) => {
+  const pushBlock = (node: BlockNodeWithMath, endLine?: number) => {
     blocks.push(node);
     blockStartLines?.push(blockStartLine);
     blockEndLines?.push(endLine);
@@ -1735,7 +1825,7 @@ function parseMarkdownImpl(
  * `lineMap` says which input line each surviving line came from.
  */
 function stampSourceRanges(
-  blocks: BlockNode[],
+  blocks: BlockNodeWithMath[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
@@ -1780,10 +1870,13 @@ function stampSourceRanges(
 // Incremental parsing
 // ---------------------------------------------------------------------------
 
-export interface IncrementalState {
+type IncrementalBlockNode<MathEnabled extends boolean> =
+  MathEnabled extends true ? BlockNodeWithMath : BlockNode;
+
+export interface IncrementalState<MathEnabled extends boolean = false> {
   prevInput: string;
   settledText: string;
-  settledBlocks: BlockNode[];
+  settledBlocks: IncrementalBlockNode<MathEnabled>[];
   settledUpTo: number;
   /**
    * The `autolink` option the cached `settledBlocks` were parsed with.
@@ -1833,9 +1926,14 @@ type IncrementalCache = {
   work: IncrementalWork;
 };
 
-const incrementalCaches = new WeakMap<IncrementalState, IncrementalCache>();
+const incrementalCaches = new WeakMap<
+  IncrementalState<boolean>,
+  IncrementalCache
+>();
 
-function makeIncrementalCache(state: IncrementalState): IncrementalCache {
+function makeIncrementalCache(
+  state: IncrementalState<boolean>,
+): IncrementalCache {
   const {defs} = extractLinkDefinitions(state.settledText, state.math);
   const cache: IncrementalCache = {
     settledEnd: state.settledText.length,
@@ -1854,8 +1952,10 @@ function makeIncrementalCache(state: IncrementalState): IncrementalCache {
   return cache;
 }
 
-export function createIncrementalState(): IncrementalState {
-  const state: IncrementalState = {
+export function createIncrementalState<
+  MathEnabled extends boolean = false,
+>(): IncrementalState<MathEnabled> {
+  const state: IncrementalState<MathEnabled> = {
     prevInput: '',
     settledText: '',
     settledBlocks: [],
@@ -1870,7 +1970,7 @@ export function createIncrementalState(): IncrementalState {
  * @internal Exported from this module for performance regression tests only.
  */
 export function getIncrementalParseWork(
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
 ): IncrementalWork {
   return (
     incrementalCaches.get(state)?.work ?? {
@@ -2313,9 +2413,9 @@ function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
  * lists even though the full-text parser joins them per CommonMark §5.3.
  */
 function mergeSettledBlocks(
-  prev: BlockNode[],
-  delta: BlockNode[],
-): BlockNode[] {
+  prev: BlockNodeWithMath[],
+  delta: BlockNodeWithMath[],
+): BlockNodeWithMath[] {
   if (prev.length === 0 || delta.length === 0) {
     return [...prev, ...delta];
   }
@@ -2327,7 +2427,7 @@ function mergeSettledBlocks(
     prevLast.ordered === deltaFirst.ordered &&
     prevLast.delimiter === deltaFirst.delimiter
   ) {
-    const merged: BlockNode = {
+    const merged: BlockNodeWithMath = {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
@@ -2346,7 +2446,10 @@ function mergeSettledBlocks(
 }
 
 /** Append a newly-settled slice without copying the already-settled prefix. */
-function appendSettledBlocks(prev: BlockNode[], delta: BlockNode[]): void {
+function appendSettledBlocks(
+  prev: BlockNodeWithMath[],
+  delta: BlockNodeWithMath[],
+): void {
   if (delta.length === 0) {
     return;
   }
@@ -2398,7 +2501,7 @@ function sameUnsettledDefinitions(
 }
 
 function resetIncrementalCache(
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
   cache: IncrementalCache,
 ): void {
   state.prevInput = '';
@@ -2433,19 +2536,29 @@ function resetIncrementalCache(
  */
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
   sourceIds?: ReadonlySet<string>,
 ): BlockNode[];
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
-  options: ParseOptions,
+  state: IncrementalState<boolean>,
+  options: MathParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState<boolean>,
+  options: LegacyParseOptions,
 ): BlockNode[];
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
+  options: ParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState<boolean>,
   arg?: ReadonlySet<string> | ParseOptions,
-): BlockNode[] {
+): BlockNodeWithMath[] {
   const opts = resolveOptions(arg);
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
   let reparseSettled = false;
@@ -2619,7 +2732,7 @@ export function parseMarkdownIncremental(
 // resolve to a rendered heading by construction.
 
 /** Flatten inline nodes into their plain text content. */
-export function inlineText(nodes: InlineNode[]): string {
+export function inlineText(nodes: ReadonlyArray<InlineNodeWithMath>): string {
   return nodes
     .map(node => {
       switch (node.type) {

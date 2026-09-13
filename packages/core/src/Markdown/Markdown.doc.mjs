@@ -254,6 +254,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'For direct parsing, pass math: true and handle InlineNodeWithMath or BlockNodeWithMath. Calls without math keep the legacy InlineNode and BlockNode unions.',
+      },
+      {
+        guidance: true,
+        description:
           'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
       },
       {
@@ -515,6 +520,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'For direct parsing, pass math: true and handle InlineNodeWithMath or BlockNodeWithMath. Calls without math keep the legacy InlineNode and BlockNode unions.',
+      },
+      {
+        guidance: true,
+        description:
           'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
       },
       {
@@ -553,6 +563,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Provide components.math only for documents that use dollar-delimited math; the renderer owns typesetting and accessible output.',
+      },
+      {
+        guidance: true,
+        description:
+          'Direct parser calls with math: true return the explicit WithMath node unions; default calls keep the legacy unions.',
       },
       {
         guidance: true,

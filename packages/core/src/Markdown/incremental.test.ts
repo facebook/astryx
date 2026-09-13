@@ -8,7 +8,12 @@ import {
   getIncrementalParseWork,
   trimStreamingArtifacts,
 } from './parser';
-import type {BlockNode, InlineNode} from './parser';
+import type {
+  BlockNode,
+  BlockNodeWithMath,
+  InlineNode,
+  InlineNodeWithMath,
+} from './parser';
 
 function simulateStreaming(fullText: string, chunkSize = 10) {
   const state = createIncrementalState();
@@ -93,7 +98,7 @@ describe('parseMarkdownIncremental', () => {
   it('matches the full parse when math delimiters arrive across chunks', () => {
     const text = 'Before $x_1 + *y*$ after.\n\n$$\n\\sum_i x_i\n$$\n\nDone.';
     const state = createIncrementalState();
-    let final: BlockNode[] = [];
+    let final: BlockNodeWithMath[] = [];
     for (let end = 1; end <= text.length; end++) {
       final = parseMarkdownIncremental(text.slice(0, end), state, {math: true});
     }
@@ -542,8 +547,8 @@ describe('streaming structural suppression', () => {
     });
 
     /** The text a reader would see for one block. */
-    function visibleText(block: BlockNode): string {
-      const fromInline = (nodes: InlineNode[]): string =>
+    function visibleText(block: BlockNodeWithMath): string {
+      const fromInline = (nodes: InlineNodeWithMath[]): string =>
         nodes
           .map(node => {
             switch (node.type) {
@@ -727,7 +732,7 @@ describe('streaming end-to-end: no raw syntax visible', () => {
    * Helper: extract all visible text from a block tree.
    * Returns the text that would be rendered to the user, without markdown syntax.
    */
-  function extractVisibleText(blocks: BlockNode[]): string {
+  function extractVisibleText(blocks: BlockNodeWithMath[]): string {
     let text = '';
     for (const block of blocks) {
       switch (block.type) {
@@ -769,7 +774,7 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     return text;
   }
 
-  function extractInlineText(nodes: InlineNode[]): string {
+  function extractInlineText(nodes: InlineNodeWithMath[]): string {
     let text = '';
     for (const node of nodes) {
       switch (node.type) {
@@ -803,11 +808,11 @@ describe('streaming end-to-end: no raw syntax visible', () => {
   }
 
   function streamCharByChar(fullText: string): {
-    snapshots: BlockNode[][];
+    snapshots: BlockNodeWithMath[][];
     visibleTexts: string[];
   } {
     const state = createIncrementalState();
-    const snapshots: BlockNode[][] = [];
+    const snapshots: BlockNodeWithMath[][] = [];
     const visibleTexts: string[] = [];
     for (let i = 1; i <= fullText.length; i++) {
       const trimmed = trimStreamingArtifacts(fullText.slice(0, i));

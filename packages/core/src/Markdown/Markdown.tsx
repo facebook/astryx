@@ -57,7 +57,11 @@ import {
   slugify,
   uniqueSlug,
 } from './parser';
-import type {BlockNode, InlineNode, IncrementalState} from './parser';
+import type {
+  BlockNodeWithMath,
+  InlineNodeWithMath,
+  IncrementalState,
+} from './parser';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -481,7 +485,7 @@ interface StreamingCursor {
  * Count the total text characters in inline nodes without rendering.
  * Used to advance the cursor past a block that will be faded as a whole unit.
  */
-function countInlineTextLength(nodes: InlineNode[]): number {
+function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -517,7 +521,7 @@ function countInlineTextLength(nodes: InlineNode[]): number {
 /**
  * Count total text characters in a block node tree.
  */
-function countBlockTextLength(nodes: BlockNode[]): number {
+function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -762,7 +766,7 @@ function getCitationNumber(ctx: CitationContext, sourceId: string): number {
 }
 
 function renderInline(
-  node: InlineNode,
+  node: InlineNodeWithMath,
   index: number,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -1006,7 +1010,7 @@ function renderInline(
 // ---------------------------------------------------------------------------
 
 function getElementSpacing(
-  node: BlockNode,
+  node: BlockNodeWithMath,
   density: 'default' | 'compact',
 ): StyleXStyles {
   const compact = density === 'compact';
@@ -1052,8 +1056,8 @@ function getElementSpacing(
  * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
  */
 function computeTableColumnMinWidths(node: {
-  headers: {children: InlineNode[]}[];
-  rows: {children: InlineNode[]}[][];
+  headers: {children: InlineNodeWithMath[]}[];
+  rows: {children: InlineNodeWithMath[]}[][];
 }): number[] {
   return node.headers.map((h, colIdx) => {
     let maxLen = countInlineTextLength(h.children);
@@ -1070,7 +1074,7 @@ function computeTableColumnMinWidths(node: {
 }
 
 function renderBlock(
-  node: BlockNode,
+  node: BlockNodeWithMath,
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
@@ -1084,7 +1088,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<BlockNode, string>,
+  headingIdMap?: ReadonlyMap<BlockNodeWithMath, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1682,8 +1686,8 @@ export function Markdown({
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useStreamingText(children, isStreaming);
 
-  const incrementalStateRef = useRef<IncrementalState>(
-    createIncrementalState(),
+  const incrementalStateRef = useRef<IncrementalState<boolean>>(
+    createIncrementalState<boolean>(),
   );
   // Reset incremental cache when parser-affecting component options toggle —
   // cached settled blocks were parsed with the previous setting.
@@ -1727,7 +1731,7 @@ export function Markdown({
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<BlockNode, string>();
+    const map = new Map<BlockNodeWithMath, string>();
     const counts = new Map<string, number>();
     for (const block of blocks) {
       if (block.type === 'heading') {
@@ -1762,8 +1766,8 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<BlockNode[]>([]);
-  const prevInlineNodesRef = useRef<InlineNode[]>([]);
+  const prevBlocksRef = useRef<BlockNodeWithMath[]>([]);
+  const prevInlineNodesRef = useRef<InlineNodeWithMath[]>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
