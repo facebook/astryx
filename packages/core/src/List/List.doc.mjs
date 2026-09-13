@@ -42,6 +42,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isFullBleed',
+      type: 'boolean',
+      description:
+        "Align item content flush with the padded container edge by cancelling the smaller of each item's built-in horizontal inset and the container's published inline padding. The margin reads the same variable the items derive their inline padding from, so it tracks density and theme padding overrides automatically without pulling rows outside zero-padding or full-bleed surfaces. Use when the list sits under a section heading so row text lines up with the heading text.",
+      default: 'false',
+    },
+    {
       name: 'header',
       type: 'ReactNode',
       description: 'Header content, associated with the list via aria-labelledby.',

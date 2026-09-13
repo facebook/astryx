@@ -59,6 +59,20 @@ export interface ListProps extends BaseProps<
   hasDividers?: boolean;
 
   /**
+   * Lets list item content reach the padded container's content edge by
+   * cancelling as much of the items' built-in horizontal inset as the
+   * container has padding available.
+   * Use when the list sits under full-bleed sibling content such as a
+   * section heading, so row text lines up optically with the heading text.
+   * The cancelling margin reads the same variable the items derive their
+   * inline padding from, so it tracks density and theme padding overrides
+   * automatically. Hover and selection backgrounds still extend past the
+   * text by the inset.
+   * @default false
+   */
+  isFullBleed?: boolean;
+
+  /**
    * Header content rendered above the list.
    * Semantically associated via aria-labelledby.
    */
@@ -128,6 +142,10 @@ const dynamicStyles = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
+ * Set `isFullBleed` when the list sits under full-bleed content such as a
+ * section heading; it cancels the items' built-in inline inset so row text
+ * aligns flush with the container edge.
+ *
  * @example
  * ```
  * <List>
@@ -144,6 +162,7 @@ export function List({
   children,
   density = 'balanced',
   hasDividers = false,
+  isFullBleed = false,
   header,
   listStyle = 'none',
   start,
@@ -159,8 +178,8 @@ export function List({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, listStyle}),
-    [density, hasDividers, listStyle],
+    () => ({density, hasDividers, listStyle, isFullBleed}),
+    [density, hasDividers, listStyle, isFullBleed],
   );
 
   const listElement = (

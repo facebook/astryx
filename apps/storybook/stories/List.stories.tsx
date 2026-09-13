@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -31,6 +31,12 @@ const meta: Meta<typeof List> = {
     hasDividers: {
       control: 'boolean',
       description: 'Whether to show dividers between items',
+    },
+    isFullBleed: {
+      control: 'boolean',
+      description:
+        "Cancel each item's inset up to the padded container edge so row " +
+        'text aligns with full-bleed siblings',
     },
     listStyle: {
       control: 'select',
@@ -110,6 +116,55 @@ export const Spacious: Story = {
       />
     </List>
   ),
+};
+
+const fullBleedContainerStyle: CSSProperties & {
+  '--container-padding-inline-start': string;
+  '--container-padding-inline-end': string;
+} = {
+  paddingInline: 16,
+  '--container-padding-inline-start': '16px',
+  '--container-padding-inline-end': '16px',
+};
+
+export const FullBleed: Story = {
+  render: args => (
+    <div style={fullBleedContainerStyle}>
+      <Text type="label" size="lg">
+        Order items
+      </Text>
+      <List isFullBleed {...args}>
+        <ListItem
+          label="Solstice Mug"
+          description="Ceramic, 12 oz"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Meridian Notebook"
+          description="Dot grid, A5"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Field Pen"
+          description="0.5 mm, black ink"
+          onClick={() => {}}
+        />
+      </List>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "isFullBleed cancels the smaller of each item's horizontal inset " +
+          'and its container padding so row text aligns with full-bleed ' +
+          'siblings like the heading above. The cancelling margin reads the ' +
+          'same variable the items derive their inline padding from, so it ' +
+          'tracks density and theme padding overrides automatically while ' +
+          'zero-padding containers stay unchanged.',
+      },
+    },
+  },
 };
 
 export const Interactive: Story = {

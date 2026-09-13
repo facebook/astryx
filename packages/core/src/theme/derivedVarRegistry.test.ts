@@ -223,6 +223,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hover-card',
+  Item: 'item',
   NumberInput: 'number-input',
   Popover: 'popover',
   ProgressBar: 'progress-bar-mark',
@@ -319,6 +320,12 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--spinner-stroke-width',
   '--spinner-color',
   '--spinner-track-color',
+  // Set by a PARENT component (e.g. the destructive dropdown/context menu
+  // item) to recolor the two text lines it renders. A single standard `color`
+  // property cannot map onto both lines, and the root color is not what they
+  // control — a theme reaches them by setting the vars directly.
+  '--_item-label-color',
+  '--_item-description-color',
 ]);
 
 // ---------------------------------------------------------------------------
