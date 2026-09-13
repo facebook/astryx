@@ -3,6 +3,8 @@
 /**
  * @file FunctionDoc for `swizzle()` / `astryx swizzle`. Colocated with the API
  * function it documents; the shape source of truth stays in `swizzle.type.mjs`.
+ * Documents recursive core copying, flat integration copying, and destination
+ * symlink rejection.
  * @position packages/cli/api/swizzle — function documentation
  */
 
@@ -18,7 +20,9 @@ export const doc = {
     'It copies from the locally resolved @astryxdesign/core (or the owning integration) ' +
     'package source, rewriting imports that escape the component directory to the owner ' +
     "package's subpaths and flagging whether any copied file uses StyleX. With no name " +
-    '(or list) it returns the swizzlable component names instead.',
+    '(or list) it returns the swizzlable component names instead. Core component ' +
+    'directories include nested source files; integration source directories retain ' +
+    'their flat copy behavior. Destination symlinks are rejected before any writes.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'swizzle(component?: string, options?: SwizzleOptions): Promise<SwizzleListResponse | SwizzleCopyResponse>',
@@ -70,7 +74,7 @@ export const doc = {
     {
       type: 'swizzle.copy',
       description:
-        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer-feedback note.',
+        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file paths (relative to the output directory, nested subdirectories included), whether any file uses StyleX, and an optional maintainer-feedback note.',
     },
   ],
   throws: [
@@ -80,7 +84,7 @@ export const doc = {
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the component name contains a path separator or traversal, or output resolves outside cwd',
+      when: 'the component name contains a path separator or traversal, output resolves outside cwd, or any destination path segment below cwd is a symlink',
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
