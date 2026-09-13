@@ -639,11 +639,6 @@
       "types": "./dist/Calendar/utils.d.ts",
       "default": "./dist/Calendar/utils.js"
     },
-    "./Dialog/DialogContext": {
-      "source": "./src/Dialog/DialogContext.ts",
-      "types": "./dist/Dialog/DialogContext.d.ts",
-      "default": "./dist/Dialog/DialogContext.js"
-    },
     "./Markdown/utils": {
       "source": "./src/Markdown/utils.ts",
       "types": "./dist/Markdown/utils.d.ts",
@@ -678,6 +673,11 @@
       "source": "./src/Markdown/remark.ts",
       "types": "./dist/Markdown/remark.d.ts",
       "default": "./dist/Markdown/remark.js"
+    },
+    "./Dialog/DialogContext": {
+      "source": "./src/Dialog/DialogContext.ts",
+      "types": "./dist/Dialog/DialogContext.d.ts",
+      "default": "./dist/Dialog/DialogContext.js"
     }
   },
   "files": [
