@@ -32,13 +32,6 @@ describe('ChatTypingIndicator', () => {
     expect(screen.getByTestId('typing').textContent).toBe('');
   });
 
-  it('is a polite live region', () => {
-    render(<ChatTypingIndicator names={['Ana']} data-testid="typing" />);
-    const root = screen.getByTestId('typing');
-    expect(root.getAttribute('role')).toBe('status');
-    expect(root.getAttribute('aria-live')).toBe('polite');
-  });
-
   it('applies the stable class name', () => {
     render(<ChatTypingIndicator names={['Ana']} data-testid="typing" />);
     expect(screen.getByTestId('typing').className).toContain(

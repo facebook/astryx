@@ -105,21 +105,23 @@ export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
    * Accepts a plain string or a ReactNode for rich content. Links and buttons
    * in the label keep their own behavior; only non-interactive row clicks
    * delegate to the radio. The radio points at the rendered label for its
-   * accessible name, so a rich label still names it from its own text — pass
-   * `aria-label` when that text is absent or too noisy to announce.
+   * accessible name, so a rich label still names it from its own text. Pass
+   * `aria-label` when that text is absent. When visible text is present, the
+   * override must retain every visible word so speech-input users can say what
+   * they see.
    */
   label: ReactNode;
   /**
    * Plain-text accessible name for the radio, applied to the control rather
-   * than the row. It replaces the name the label would otherwise supply — a
-   * plain string label included — so reach for it when a rich label's own
-   * text is absent or reads badly, not as a routine addition.
+   * than the row. It replaces the name the label would otherwise supply. Use
+   * it when a rich label has no visible text; otherwise the value must retain
+   * every visible word.
    *
    * @example
    * ```
    * <RadioListItem
    *   label={<span>Pro plan <Badge label="Recommended" /></span>}
-   *   aria-label="Pro plan"
+   *   aria-label="Pro plan Recommended option"
    *   value="pro"
    * />
    * ```

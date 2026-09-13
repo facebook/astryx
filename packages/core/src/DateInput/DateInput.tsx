@@ -619,10 +619,21 @@ function PointerDateField({
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    inputRef.current?.focus();
-  }, [fireChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [fireChange],
+  );
 
   // Handle date selection from calendar
   const handleDateSelect = useCallback(

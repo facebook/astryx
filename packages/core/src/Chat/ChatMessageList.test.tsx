@@ -62,7 +62,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('accepts gap independently from density', () => {
@@ -72,7 +72,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('applies data-testid', () => {

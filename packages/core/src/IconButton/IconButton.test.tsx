@@ -15,12 +15,18 @@ import userEvent from '@testing-library/user-event';
 import {IconButton} from './IconButton';
 
 describe('IconButton', () => {
-  it('renders as an icon-only button with aria-label', () => {
+  // Retained, narrowed: the shared button-pattern contract proves the role and
+  // the computed accessible name in a real engine. What stays is IconButton's
+  // own mapping — it always routes `label` to `aria-label`, and renders the
+  // icon it was given.
+  it('maps label to aria-label and renders the icon', () => {
     render(
       <IconButton label="Settings" icon={<span data-testid="icon">⚙</span>} />,
     );
-    const button = screen.getByRole('button', {name: 'Settings'});
-    expect(button).toHaveAttribute('aria-label', 'Settings');
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-label',
+      'Settings',
+    );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 

@@ -993,9 +993,24 @@ export function Selector<T extends SelectorOptionType>(
     announce('');
   }, [announce]);
 
+  const handleLayerShow = useCallback(() => {
+    if (hasSearch) {
+      requestAnimationFrame(() => {
+        const input = searchRef.current;
+        if (input) {
+          input.focus();
+          // When typing seeded the query, place the caret after it so the user
+          // keeps typing where they left off.
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      });
+    }
+  }, [hasSearch]);
+
   const surface = useSelectorPresentation({
     presentation,
     onHide: handleLayerHide,
+    onShow: handleLayerShow,
     triggerRef,
     popoverOptions: {
       hasLightDismiss: true,
@@ -1175,7 +1190,6 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
-    wasJustDismissed: surface.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1184,20 +1198,7 @@ export function Selector<T extends SelectorOptionType>(
     isDisabled: isDisabled || isEffectivelyReadOnly,
     isOpen: surface.isOpen,
     hasSearch,
-    onOpen: useCallback(() => {
-      surface.show();
-      if (hasSearch) {
-        requestAnimationFrame(() => {
-          const input = searchRef.current;
-          if (input) {
-            input.focus();
-            // When typing seeded the query, place the caret after it so the
-            // user keeps typing where they left off.
-            input.setSelectionRange(input.value.length, input.value.length);
-          }
-        });
-      }
-    }, [surface, hasSearch]),
+    onOpen: useCallback(() => surface.show(), [surface]),
     onClose: surface.hide,
     onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
@@ -1246,18 +1247,7 @@ export function Selector<T extends SelectorOptionType>(
     [isDisabled, isEffectivelyReadOnly, hasSearch, typeahead, onKeyDown],
   );
 
-  // Keep the highlighted option visible during keyboard navigation. The
-  // listbox is a fixed-height scroll container, so without this the virtual
-  // cursor walks off-screen once navigation passes the visible window. Mirrors
-  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
-  useEffect(() => {
-    if (!surface.isOpen || highlightedIndex < 0) {
-      return;
-    }
-    document
-      .getElementById(getItemId(highlightedIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [surface.isOpen, highlightedIndex, getItemId]);
+  // Highlight scrolling (and its hover/keyboard split) lives in useCombobox.
 
   // Handle clear button click
   const handleClear = useCallback(

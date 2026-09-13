@@ -203,8 +203,8 @@ export function StatusDot({
         themeProps(
           'status-dot',
           {variant},
-          // `statusdot` ran the compound name together; themes styling it keep
-          // working until the next major.
+          // `statusdot` ran the compound name together; keep it emitted so
+          // existing themes continue to work.
           {legacyNames: ['statusdot']},
         ),
         stylex.props(

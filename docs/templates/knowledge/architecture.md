@@ -22,6 +22,8 @@ deciding_specs: [spec:AST-000/DEC-0]
 
 ## Boundaries and invariants
 
+<!-- Architecture records own internal responsibility, seams, and mechanisms needed to satisfy deciding specs. They MUST NOT broaden the observable product contract beyond those current decisions. -->
+
 - **INV1 — `<invariant>`.** `<What MUST remain true in the shipped system.>`
 
 ## Change coupling
@@ -34,7 +36,7 @@ deciding_specs: [spec:AST-000/DEC-0]
 
 ## Deciding specs
 
-- `spec:AST-000/DEC-0` — `<decision>`
+- `spec:AST-000/DEC-0` — `<observable behavior decision; architecture records never treat implementation evidence as product authority>`
 
 ## Verification
 

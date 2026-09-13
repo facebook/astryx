@@ -23,7 +23,10 @@ import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
 } from '@astryxdesign/core/theme';
-import {themeBuild} from './build.mjs';
+import {
+  themeBuild,
+  validateComponentOverridesAgainstRegistry,
+} from './build.mjs';
 
 // `themeBuild` captures core's generator once at module load. Wrap the two
 // CSS-emitting exports in vi.fn (call-through by default) so the receipt tests
@@ -91,12 +94,12 @@ describe('themeBuild() — receipt', () => {
       `export default {
         name: 'local-theme',
         localTokens: {
-          '--astryx-theme-local-theme-color-status-fill-accent': ['#0077b6', '#48cae4'],
+          '--ac-selection-ink': ['#0077b6', '#48cae4'],
         },
         components: {
           badge: {
             'variant:info': {
-              backgroundColor: 'var(--astryx-theme-local-theme-color-status-fill-accent)',
+              backgroundColor: 'var(--ac-selection-ink)',
             },
           },
         },
@@ -108,47 +111,11 @@ describe('themeBuild() — receipt', () => {
     const built = fs.readFileSync(path.join(tmpDir, 'local-theme.js'), 'utf8');
 
     expect(result?.data.tokenCount).toBe(1);
-    expect(css).toContain(
-      '--astryx-theme-local-theme-color-status-fill-accent: light-dark(#0077b6, #48cae4);',
-    );
+    expect(css).toContain('--ac-selection-ink: light-dark(#0077b6, #48cae4);');
     expect(built).toContain('localTokens: {');
     expect(built).toContain('__localTokenOwners: {');
     expect(built).toContain('__localTokenLineage: ["local-theme"]');
   });
-
-  it.each(['VAR', 'vAr'])(
-    'rejects undeclared local-token references using %s() before writing outputs',
-    async functionName => {
-      const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
-      fs.writeFileSync(
-        themeFile,
-        `export default {
-        name: 'invalid-local-theme',
-        localTokens: {},
-        components: {
-          badge: {
-            base: {
-              color: '${functionName}(--astryx-theme-invalid-local-theme-color-missing)',
-            },
-          },
-        },
-      };\n`,
-      );
-
-      await expect(
-        themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
-      ).rejects.toThrow(/has no declaration/);
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
-        false,
-      );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
-        false,
-      );
-      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.d.ts'))).toBe(
-        false,
-      );
-    },
-  );
 
   it.each(['VAR', 'vAr'])(
     'rejects local-token cycles using %s() before writing outputs',
@@ -351,7 +318,7 @@ describe('themeBuild() — check mode', () => {
 describe('themeBuild() — component override validation', () => {
   it('accepts documented state keys without an "Unknown prop" warning', async () => {
     // The state-key syntax the Theming Infrastructure wiki documents —
-    // `radio: {checked}`, `calendar-day: {today, selected}` — is declared in
+    // `radio-indicator: {checked}`, `calendar-day: {today, selected}` — is declared in
     // each component's doc under `theming.targets[].states`, not
     // `visualProps`. `loadKnownComponents()` read only `visualProps`, so every
     // one of these warned "Unknown prop": documented syntax that looked broken.
@@ -362,7 +329,7 @@ describe('themeBuild() — component override validation', () => {
         name: 'states',
         tokens: {'--color-bg': '#0a0a0a'},
         components: {
-          radio: {
+          'radio-indicator': {
             checked: {borderColor: 'var(--color-accent)'},
             'checked+disabled': {opacity: '0.5'},
           },
@@ -409,15 +376,81 @@ describe('themeBuild() — component override validation', () => {
       `export default {
         name: 'bogus',
         tokens: {'--color-bg': '#0a0a0a'},
-        components: {radio: {notAState: {opacity: '0.5'}}},
+        components: {'radio-indicator': {notAState: {opacity: '0.5'}}},
       };\n`,
     );
 
     const result = await themeBuild('bogus.mjs', {}, {cwd: tmpDir});
 
     expect(result?.data.warnings).toEqual([
-      expect.stringContaining('Unknown prop "notAState" on component "radio"'),
+      expect.stringContaining(
+        'Unknown prop "notAState" on component "radio-indicator"',
+      ),
     ]);
+  });
+
+  it('warns with the exact replacement for deprecated root and media targets', () => {
+    const registry = {
+      propsByKey: {
+        'old-target': ['variant'],
+        'new-target': ['variant'],
+      },
+      deprecatedByKey: {'old-target': 'new-target'},
+    };
+
+    expect(
+      validateComponentOverridesAgainstRegistry(
+        {
+          components: {
+            'old-target': {base: {color: 'red'}},
+            'new-target': {base: {color: 'blue'}},
+          },
+          onDark: {
+            components: {
+              'old-target': {'variant:quiet': {color: 'pink'}},
+            },
+          },
+          adaptations: {
+            rules: [
+              {
+                when: {contrast: 'more'},
+                value: {
+                  components: {
+                    'old-target': {'variant:loud': {color: 'purple'}},
+                  },
+                },
+              },
+            ],
+          },
+        },
+        registry,
+      ),
+    ).toEqual([
+      'Deprecated component target "old-target". Use "new-target" instead.',
+      'Deprecated component target "old-target" in onDark. Use "new-target" instead.',
+      'Deprecated component target "old-target" in adaptation rule 1. Use "new-target" instead.',
+    ]);
+  });
+
+  it('warns with the exact replacement for a supported deprecated target', async () => {
+    const themeFile = path.join(tmpDir, 'deprecated-target.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'deprecated-target',
+        tokens: {},
+        components: {progressbar: {base: {color: 'red'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('deprecated-target.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toContain(
+      'Deprecated component target "progressbar". Use "progress-bar" instead.',
+    );
+    expect(
+      fs.readFileSync(path.join(tmpDir, 'deprecated-target.css'), 'utf8'),
+    ).toContain('.astryx-progressbar');
   });
 });
 

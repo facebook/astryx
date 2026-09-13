@@ -1316,7 +1316,7 @@ describe('TabList ARIA pattern — role="tablist"', () => {
     return vi.spyOn(console, 'warn').mockImplementation(() => {});
   }
 
-  it('speaks the tabs pattern: a labelled tablist of tabs with aria-selected', () => {
+  it('does not mix navigation semantics into explicit Tabs', () => {
     render(
       <TabList value="b" onChange={() => {}} role="tablist" aria-label="Views">
         <Tab value="a" label="Alpha" panelId="panel-a" />
@@ -1324,14 +1324,10 @@ describe('TabList ARIA pattern — role="tablist"', () => {
       </TabList>,
     );
 
-    const tablist = screen.getByRole('tablist', {name: 'Views'});
-    const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(2);
-    expect(tabs.every(tab => tablist.contains(tab))).toBe(true);
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
-    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
-    expect(tabs[1]).toHaveAttribute('aria-controls', 'panel-b');
-    expect(tabs[1]).not.toHaveAttribute('aria-current');
+    expect(screen.queryByRole('navigation')).toBeNull();
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(tab).not.toHaveAttribute('aria-current');
+    }
   });
 
   it('lets the consumer name the tablist from another element', () => {

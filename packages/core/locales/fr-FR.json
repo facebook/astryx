@@ -35,6 +35,10 @@
     "defaultMessage": "Aller à la page",
     "description": "Aria label for the editable page/row number box in the input pagination variant. No number — the box holds the value itself."
   },
+  "@astryx.pagination.pageLabel": {
+    "defaultMessage": "Page",
+    "description": "Visible label before the editable box in the input pagination variant. Example: \"Page [ 1 ] / 10\"."
+  },
   "@astryx.pagination.pageIndicators": {
     "defaultMessage": "Indicateurs de page",
     "description": "Aria label for the dots-variant page-indicator group."

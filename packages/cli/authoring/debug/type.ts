@@ -15,10 +15,20 @@
  */
 
 /**
- * Version of the recorded shape. A literal on purpose: when this becomes
- * `1 | 2`, code that switches on it stops compiling until it handles both.
+ * Version of the recorded shape. A literal union on purpose: code that
+ * switches on it stops compiling until it handles every version.
+ *
+ * - `1` — the original shape. `env.agentSessionId` carried the RAW session id.
+ * - `2` — `env.agentSessionId` is always null; `env.agentSessionIdHash` is the
+ *   join key, and the environment snapshot is scrubbed like every other
+ *   recorded value.
+ * - `3` — every command reports its result. `output.resultKind` gained `none`
+ *   (a command whose work is an effect) and a null now means the run never
+ *   reached an answer, where before it meant "nothing was surfaced" — so a v1
+ *   or v2 null and a v3 null are not the same fact and must not be counted
+ *   together.
  */
-export type DebugSchemaVersion = 1;
+export type DebugSchemaVersion = 1 | 2 | 3;
 
 /**
  * How an invocation ended.
@@ -41,9 +51,25 @@ export type DebugOutcome =
 export type DebugOptionSource =
   'cli' | 'default' | 'env' | 'config' | 'implied';
 
-/** The kind of content represented by a command's result set. */
+/**
+ * The kind of content represented by a command's result set.
+ *
+ * `mixed` is a set spanning several kinds. `none` is the other thing entirely:
+ * the command answered with an EFFECT — it built, wrote, upgraded, validated,
+ * or diagnosed something — and has no set to count. Reading it as "found
+ * nothing" would be wrong; `emptyResult` is where that lives.
+ */
 export type DebugResultKind =
-  'component' | 'template' | 'doc' | 'hook' | 'mixed';
+  | 'component'
+  | 'hook'
+  | 'doc'
+  | 'template'
+  | 'theme'
+  | 'integration'
+  | 'migration'
+  | 'command'
+  | 'mixed'
+  | 'none';
 
 /** What initiated the CLI invocation, based only on positive evidence. */
 export type DebugInvocationSource = 'human' | 'ai' | 'automation' | 'unknown';
@@ -71,13 +97,36 @@ export interface DebugEventOutput {
   handled: boolean;
   /** Whether the run ended by printing help rather than doing work. */
   helpDisplayed: boolean;
-  /** Number of matches before presentation-only grouping or caps. */
+  /**
+   * How many results the command MATCHED, counted before any `--limit`, score
+   * floor, or presentation grouping was applied. A command that answers with a
+   * bounded slice still reports the size of the set it sliced, so a capped
+   * answer and an exactly-cap-sized one are distinguishable. Null when the
+   * command has no result set — `resultKind` says which case that is.
+   */
   resultCount: number | null;
-  /** Whether the command's underlying match set was empty. */
+  /** Whether the command's underlying match set was empty. Null when it has none. */
   emptyResult: boolean | null;
-  /** One surfaced result kind, `mixed`, or null when none was surfaced. */
+  /**
+   * What this run answered with: one result kind, `mixed`, or `none` for a
+   * command whose work is an effect rather than a lookup.
+   *
+   * `none` says nothing about SUCCESS — a command that failed on its way to an
+   * effect still reports it. Read `outcome` for that; filter to `ok` before
+   * treating a run as an effect that happened.
+   *
+   * Null means the run never reported one. On a completed run that is a bug in
+   * the CLI, not a property of the command — every command declares its result
+   * shape as its return type, and the recorder stamps it centrally. Expect null
+   * only where a run ended before its command could answer: a parse error, a
+   * rejected `--json`, `--help`, or a failure.
+   */
   resultKind: DebugResultKind | null;
-  /** Whether the command found a confident direct match, when it defines one. */
+  /**
+   * Whether the command resolved the exact thing that was asked for, rather
+   * than listing or suggesting. Null for the commands that define no such
+   * notion (a bare list has nothing to match).
+   */
   directMatch: boolean | null;
   /**
    * Everything the command printed to stdout — the answer the user actually
@@ -96,9 +145,23 @@ export interface DebugEventOutput {
 }
 
 /**
- * Machine, runtime, and invocation-attribution facts. There is no hostname,
- * username, or network identity. Agent session values come only from explicit
- * environment signals supplied by the invoking tool.
+ * Machine, runtime, and invocation-attribution facts.
+ *
+ * ## Privacy contract
+ *
+ * A recorded run may be forwarded anywhere the project's handler chooses, so
+ * this snapshot is bounded by three rules:
+ *
+ * 1. **No identity.** No hostname, username, network identity, or raw agent
+ *    session id. Runs are joined on `agentSessionIdHash`, never on a value
+ *    that identifies who made them.
+ * 2. **Attribution needs positive evidence.** Agent fields come only from
+ *    explicit public environment signals the invoking tool set, never from
+ *    guessing at the shell.
+ * 3. **Free text is scrubbed.** Anything the environment supplied as text
+ *    (`agent`, `agentIdentity`) goes through the same content rules as argv.
+ *    The rest is derived from a fixed vocabulary this CLI controls and is kept
+ *    verbatim, which is what makes it worth recording.
  */
 export interface DebugEventEnv {
   cliVersion: string | null;
@@ -114,18 +177,22 @@ export interface DebugEventEnv {
   agent: string | null;
   /**
    * Coding-agent identity from `ASTRYX_AGENT_ID`, `AGENT`,
-   * `ASTRYX_AGENT_METADATA`, or a known public agent signal.
+   * `ASTRYX_AGENT_METADATA`, or a known public agent signal. Scrubbed.
    */
   agentIdentity: string | null;
   /**
-   * Opaque session identifier from `ASTRYX_AGENT_SESSION_ID`,
-   * `AGENT_SESSION_ID`, or `ASTRYX_AGENT_METADATA`. It is included verbatim so
-   * a handler can choose the raw value or the hash below.
+   * ALWAYS NULL from schema version 2 onward — a raw session id is a stable
+   * identifier for the person running the CLI, and nothing here needs one.
+   * Join runs on `agentSessionIdHash` instead. Only schema-v1 records carry a
+   * value, and the field is kept so those parse against one shape.
    */
   agentSessionId: string | null;
-  /** SHA-256 of `agentSessionId`, for joins that do not need the raw value. */
+  /**
+   * SHA-256 of the session id supplied by the environment. The join key for
+   * "these runs were one session", and the only form of it that is recorded.
+   */
   agentSessionIdHash: string | null;
-  /** Public environment signal that supplied `agentSessionId`. */
+  /** Which public environment signal supplied the session id. */
   agentSessionIdSource: string | null;
   /** Whether a human, AI agent, or automation invoked the CLI. */
   invocationSource: DebugInvocationSource;
@@ -195,8 +262,11 @@ export interface DebugEvent {
   project: DebugEventProject;
 
   /**
-   * Whether the scrubbing pass ran. When false, values are verbatim — treat
-   * such a log as sensitive.
+   * Whether the scrubbing pass ran over this record. True on every event a
+   * handler receives: it is set only on the sealed copy, after argv, args,
+   * options, captured output, the error, and the environment snapshot have all
+   * been through it. When false, values are verbatim — treat such a log as
+   * sensitive.
    */
   redacted: boolean;
 }

@@ -20,6 +20,7 @@ import {emit, section, text, record, records, code} from '../formatters/index.mj
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as blogCommand} from './blog.doc.mjs';
 import {doc as blogFn} from '../../../api/blog/blog.doc.mjs';
 
@@ -37,16 +38,24 @@ export function registerBlog(program) {
         result = await blogApi(slug);
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
+
+      // A post is a doc: the feed lists them, a slug resolves one.
+      const answered =
+        result.type === 'blog.list'
+          ? resultSet({
+              count: result.data.posts.length,
+              resultKind: 'doc',
+            })
+          : resultSet({count: 1, resultKind: 'doc', directMatch: true});
 
       if (program.opts().json) {
         jsonOut(result);
-        return;
+        return answered;
       }
 
       if (result.type === 'blog.list') {
@@ -56,7 +65,7 @@ export function registerBlog(program) {
             section('Astryx blog', `feed: ${feedUrl}`),
             text('No posts found in the feed.'),
           );
-          return;
+          return answered;
         }
         // One record per post — fields mirror the JSON post shape; empty
         // fields (type/textUrl) are skipped by record().
@@ -70,6 +79,7 @@ export function registerBlog(program) {
         // (code() so article typography/spacing isn't ASCII-normalized).
         emit(record({feed: result.data.feedUrl}), code(result.data.text));
       }
+      return answered;
     },
   });
 }

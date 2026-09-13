@@ -52,6 +52,9 @@ const _require = createRequire(import.meta.url);
  * @property {string|null} coreDir - Resolved core package directory, or null.
  * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
+ *   Every integration the project loaded, or null when the project could not be
+ *   read at all.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -354,7 +357,91 @@ export async function checkConfig(ctx) {
 }
 
 /**
- * Check 6 — agent docs exist and contain the Astryx section markers.
+ * Check 6 — integrations that are loaded without an astryx.config entry.
+ *
+ * The CLI autolinks an installed dependency that ships an
+ * `astryx.integration.*` manifest, so a project can be getting components,
+ * templates, themes, docs and codemods from a package nothing in the project mentions.
+ * Two questions follow, and this line is the answer to both:
+ *
+ *   - "Why can the CLI see this?" — asked by an author who greps the project
+ *     for the package name and finds nothing. Reading our source should not be
+ *     part of that answer.
+ *   - "Can I delete this dependency?" — asked by an unused-dependency sweep,
+ *     which decides by looking for source imports. In exactly this population
+ *     there are none: the manifest is the whole link. Naming the dependency
+ *     here marks it load-bearing.
+ *
+ * Always informational. Doctor is a CI gate, and a project that acquired an
+ * integration correctly has done nothing to warn about — the point is to say
+ * what is loaded, never to push anyone into writing a config entry.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkImplicitIntegrations(ctx) {
+  const id = 'implicit-integrations';
+  const label = 'Implicitly linked integrations';
+
+  if (ctx.integrations == null) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+
+  const implicit = ctx.integrations.filter(
+    integration => integration.__autolinked,
+  );
+
+  if (implicit.length === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message:
+        ctx.integrations.length > 0
+          ? 'None — every loaded integration is named in astryx.config.'
+          : 'None — no installed dependency ships an astryx.integration.* manifest.',
+    };
+  }
+
+  const described = implicit.map(integration => {
+    const version = integration.version ? `@${integration.version}` : '';
+    // An npm alias installs a package under a different key. The package's own
+    // name is its identity; the KEY is what package.json says and what a
+    // dependency sweep reads, so when they differ both have to be here.
+    const alias =
+      integration.__spec && integration.__spec !== integration.name
+        ? ` (declared as "${integration.__spec}")`
+        : '';
+    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
+      root => integration[/** @type {'components'} */ (root)],
+    );
+    const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
+    return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}`;
+  });
+
+  const plural = implicit.length === 1 ? '' : 's';
+  return {
+    id,
+    label,
+    status: 'info',
+    message:
+      `${implicit.length} integration${plural} loaded from installed ` +
+      `dependencies with no astryx.config entry: ${described.join('; ')}.`,
+    fix:
+      'Nothing to fix. Keep these dependencies installed. The CLI links them ' +
+      'from package.json, so an unused-dependency check that looks only for ' +
+      'source imports will report them as unused. Add them to `integrations` ' +
+      'in astryx.config.* to make the link explicit.',
+  };
+}
+
+/**
+ * Check 7 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -408,7 +495,7 @@ export function checkAgentDocs(ctx) {
 }
 
 /**
- * Check 7 — @astryxdesign/core peer dependencies are satisfied by installed packages.
+ * Check 8 — @astryxdesign/core peer dependencies are satisfied by installed packages.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -495,15 +582,24 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 8 — report the detected package manager, and FAIL when several
- * lockfiles tie with nothing project-owned to break them. That tie is the one
- * case where every command the CLI prints can be silently wrong, so it is the
- * one case worth surfacing rather than guessing past.
+ * Check 9 — report the detected package manager, and say so when the project's
+ * own declaration disagrees with what is on disk.
+ *
+ * Two states are worth surfacing rather than guessing past, because in both the
+ * commands the CLI prints can be silently wrong for the project:
+ *
+ * - FAIL: several lockfiles tie with nothing project-owned to break them.
+ * - WARN: a `packageManager` field is declared and a lockfile it contradicts
+ *   sits beside it. Astryx follows the declaration, so its own output is right;
+ *   the warning is that a tool which follows the lockfile will install with
+ *   something else, and that used to be reported as a healthy setup.
+ *
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkPackageManager(ctx) {
-  const {pm, ambiguous, dir, candidates} = explainPackageManager(ctx.cwd);
+  const {pm, ambiguous, dir, candidates, declared, strayLockfiles} =
+    explainPackageManager(ctx.cwd);
 
   if (ambiguous) {
     return {
@@ -515,13 +611,29 @@ export function checkPackageManager(ctx) {
     };
   }
 
+  if (declared && strayLockfiles.length > 0) {
+    const files = strayLockfiles.map(lock => lock.file).join(' and ');
+    const owners = [...new Set(strayLockfiles.map(lock => lock.pm))].join(
+      ' and ',
+    );
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'warn',
+      message: `This project declares \`packageManager: ${declared}\` in ${dir}/package.json, but ${files} also sits there. Astryx follows the declaration and prints ${pm} commands; anything that follows the lockfile instead will use ${owners}.`,
+      fix: `Delete ${files} from ${dir} and reinstall with ${declared}, or change the \`packageManager\` field if ${owners} is what this project actually uses.`,
+    };
+  }
+
   return {
     id: 'package-manager',
     label: 'Package manager',
     status: 'info',
     message:
       pm !== 'npx'
-        ? `Detected package manager: ${pm}.`
+        ? declared
+          ? `Detected package manager: ${pm} (declared in ${dir}/package.json).`
+          : `Detected package manager: ${pm}.`
         : 'No lockfile detected — defaulting to npm/npx.',
   };
 }
@@ -536,6 +648,7 @@ export const SYNC_CHECKS = [
   checkCoreInstalled,
   checkVersionAlignment,
   checkThemes,
+  checkImplicitIntegrations,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -562,12 +675,16 @@ export async function runChecks(options = {}) {
     configError = /** @type {Error} */ (err);
   }
 
-  // Resolve a possible theme key from config (best-effort; never throws).
+  // Resolve a possible theme key from config, and the integrations the project
+  // actually loaded (best-effort; never throws).
   let configTheme = null;
+  /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
+  let integrations = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
+    integrations = project.loadedIntegrations;
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -579,6 +696,7 @@ export async function runChecks(options = {}) {
     coreDir,
     configPath,
     configTheme,
+    integrations,
     configError,
   };
 

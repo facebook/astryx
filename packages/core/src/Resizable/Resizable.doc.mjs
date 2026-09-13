@@ -148,19 +148,6 @@ const region = useResizable({
           default: 'Infinity',
         },
         {
-          name: 'minSizePx',
-          type: 'number',
-          description: 'Deprecated pixel-only alias for minSize.',
-          default: '50',
-        },
-        {
-          name: 'maxSizePx',
-          type: 'number',
-          description:
-            'Deprecated pixel-only alias for maxSize. Explicit Infinity remains valid.',
-          default: 'Infinity',
-        },
-        {
           name: 'collapsible',
           type: 'boolean',
           description: 'Whether the region can collapse to size 0.',

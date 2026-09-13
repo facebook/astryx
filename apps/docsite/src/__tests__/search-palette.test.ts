@@ -12,7 +12,10 @@ import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {templates} from '../generated/templateRegistry';
-import {flattenComponentSidebarEntries} from '../components/componentSidebarData';
+import {
+  flattenComponentSidebarEntries,
+  getComponentSidebarData,
+} from '../components/componentSidebarData';
 import {
   buildSearchPaletteItems,
   getSearchItemKeywords,
@@ -39,7 +42,9 @@ function searchItems(query: string) {
 describe('SearchPalette data', () => {
   it('uses the sidebar entries as the command palette component set', () => {
     const componentIds = buildItems()
-      .filter(item => item.auxiliaryData.group === 'Component')
+      .filter(item =>
+        ['Component', 'Canary component'].includes(item.auxiliaryData.group),
+      )
       .map(item => item.id);
     const sidebarIds = flattenComponentSidebarEntries().map(
       entry => entry.href,
@@ -51,6 +56,70 @@ describe('SearchPalette data', () => {
     expect(componentIds).toContain('/components/DropdownMenuItem');
     expect(componentIds).toContain('/components/CommandPalette');
     expect(componentIds).toContain('/components/Table');
+  });
+
+  it('includes canary-only component packages with canary metadata', () => {
+    const entries = flattenComponentSidebarEntries();
+    const items = buildItems();
+    const canaryPackages = new Set(
+      packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name),
+    );
+    const canaryEntries = entries.filter(entry =>
+      canaryPackages.has(entry.packageName),
+    );
+
+    expect(canaryEntries.length).toBeGreaterThan(0);
+    expect(canaryEntries.every(entry => !entry.isReady)).toBe(true);
+    expect(
+      canaryEntries.every(entry => {
+        const item = items.find(item => item.id === entry.href);
+        return (
+          item?.auxiliaryData.isReady === false &&
+          item.auxiliaryData.group === 'Canary component'
+        );
+      }),
+    ).toBe(true);
+    expect(
+      entries
+        .filter(entry => !canaryPackages.has(entry.packageName))
+        .every(entry => entry.isReady),
+    ).toBe(true);
+  });
+
+  it('keeps ready families unified and groups canary components by package', () => {
+    const {componentItems, canaryCategories} = getComponentSidebarData();
+    const readyGroups = componentItems.filter(item => item.type === 'group');
+
+    expect(readyGroups.filter(group => group.label === 'Chat')).toHaveLength(1);
+    expect(
+      readyGroups
+        .find(group => group.label === 'Chat')
+        ?.entries.every(entry => entry.isReady),
+    ).toBe(true);
+
+    expect(canaryCategories.map(category => category.displayName)).toEqual([
+      'Charts',
+      'Lab',
+      'Rich Text',
+      'Vega',
+    ]);
+    const chartEntries = canaryCategories.flatMap(category =>
+      category.componentItems.flatMap(item =>
+        item.type === 'entry' || item.label !== 'Charts' ? [] : item.entries,
+      ),
+    );
+    expect(chartEntries.map(entry => entry.name)).toEqual(
+      expect.arrayContaining(['Chart', 'ChartSwatch', 'ChartBar', 'ChartLine']),
+    );
+    expect(chartEntries.every(entry => !entry.isReady)).toBe(true);
+
+    const lab = canaryCategories.find(
+      category => category.displayName === 'Lab',
+    );
+    const threeD = lab?.componentItems.find(
+      item => item.type === 'group' && item.label === '3D',
+    );
+    expect(threeD?.displayName).toBe('3D');
   });
 
   it('finds Dropdown Menu by spaced display name and PascalCase API name', () => {

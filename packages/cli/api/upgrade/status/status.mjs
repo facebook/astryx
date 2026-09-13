@@ -20,25 +20,43 @@ import {logger} from '../../logger.mjs';
 
 /**
  * `--from` is at/after the installed target (and no `--force`): nothing to run.
- * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} data
  * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
-export function statusUpToDate({from, to, agentDocs}) {
+export function statusUpToDate({from, to, agentDocs, registryCompositions}) {
   logger.log('✓ Already up to date — no codemods to run.');
   logger.log('Use --force to run codemods anyway.');
-  logger.log('Done\n');
-  return {type: 'upgrade.status', data: {status: 'up_to_date', from, to, agentDocs}};
+  logger.log(registryCompositions?.ok === false ? 'Finished with unresolved registry items\n' : 'Done\n');
+  return {
+    type: 'upgrade.status',
+    data: {
+      status: 'up_to_date',
+      from,
+      to,
+      agentDocs,
+      ...(registryCompositions ? {registryCompositions} : {}),
+    },
+  };
 }
 
 /**
  * No core or integration codemods apply to the requested version range.
- * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} data
  * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
-export function statusNoCodemods({from, to, agentDocs}) {
+export function statusNoCodemods({from, to, agentDocs, registryCompositions}) {
   logger.log('✓ No codemods available for this version range.');
-  logger.log('Done\n');
-  return {type: 'upgrade.status', data: {status: 'no_codemods', from, to, agentDocs}};
+  logger.log(registryCompositions?.ok === false ? 'Finished with unresolved registry items\n' : 'Done\n');
+  return {
+    type: 'upgrade.status',
+    data: {
+      status: 'no_codemods',
+      from,
+      to,
+      agentDocs,
+      ...(registryCompositions ? {registryCompositions} : {}),
+    },
+  };
 }
 
 /**

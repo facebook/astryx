@@ -37,6 +37,7 @@
     }
   },
   "files": [
+    "astryx.integration.mjs",
     "dist",
     "src",
     "README.md"
@@ -46,6 +47,7 @@
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
+    "typecheck:docs": "tsc --project tsconfig.docs.json",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -55,6 +57,7 @@
     "vega-lite": ">=6.0.0"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "workspace:*",
     "@types/react": "^19.2.17",
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",

@@ -98,7 +98,7 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
  * the old key still selects the element. Without this the rule would land but
  * its derived vars would not expand, and the half that travels through a var
  * (a hover card's radius, a text area's inline padding) would silently do
- * nothing. Drop these with the classes, in the next major.
+ * nothing. Keep these aliases aligned with the emitted compatibility classes.
  */
 const DEPRECATED_REGISTRY_KEYS: Record<string, string> = {
   hovercard: 'hover-card',

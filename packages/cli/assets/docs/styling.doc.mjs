@@ -273,20 +273,24 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.astryx-button`, `.astryx-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+          text: 'Astryx continues to emit deprecated bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` through the 0.7.0 removal window. Prefer the explicit reflected data attributes for new CSS, and run `astryx upgrade --apply` before 0.7.0 to parse `.css` files and rewrite selectors qualified by a known Astryx target when the 0.5.4 target/value pair has one or more known meanings. Declarations, comments, JavaScript/TypeScript strings, and unqualified classes are never rewritten. Stable base target classes (`.astryx-button`, `.astryx-card`, etc.) remain unchanged.',
         },
         {
           type: 'code',
           lang: 'css',
-          code: `/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .astryx-button.primary {
-  /* use .astryx-button[data-variant="primary"] instead */
+          code: `/* The upgrade preserves old consumer classes and adds the v0.6 prop match */
+.my-app .astryx-button:is(.primary, [data-variant="primary"]) {
+  /* primary buttons or a consumer-supplied .primary class */
 }
 
-/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .astryx-heading.level-2 {
-  /* use .astryx-heading[data-level="2"] instead */
+/* Numeric values stay literal in data attributes */
+.my-app .astryx-heading:is(.level-2, [data-level="2"]) {
+  /* level 2 headings or a consumer-supplied .level-2 class */
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'Each known old value becomes a specificity-preserving `:is(...)` union containing the original class arm plus every v0.5.4 data-attribute arm. Both arms match Astryx output during the deprecation window; the data-attribute arm continues matching after the bare compatibility classes are eligible for removal in 0.7.0. The class arm also preserves consumer-supplied `className` matches. Narrow the union later only when class provenance or prop-axis intent is known. Custom/unknown qualified classes and unqualified classes stay unchanged. Search for unqualified old values such as `.primary` or `.sm` and migrate only confirmed Astryx uses manually. Migrate selectors embedded in JavaScript or TypeScript manually with the same rules.',
         },
       ],
     },

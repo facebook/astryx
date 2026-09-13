@@ -981,9 +981,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     announce('');
   }, [announce]);
 
+  const handleLayerShow = useCallback(() => {
+    // Snapshot selection only after the surface actually opens; a same-gesture
+    // rejection must not prepare state for an opening that never happened.
+    setSelectedAtOpen(new Set(optimisticValue));
+    if (hasSearch) {
+      requestAnimationFrame(() => {
+        searchRef.current?.focus();
+      });
+    }
+  }, [hasSearch, optimisticValue]);
+
   const surface = useSelectorPresentation({
     presentation,
     onHide: handleLayerHide,
+    onShow: handleLayerShow,
     triggerRef,
     popoverOptions: {
       hasLightDismiss: true,
@@ -1217,23 +1229,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onKeyDown,
     onItemMouseEnter,
   } = useMultiCombobox({
-    wasJustDismissed: surface.wasJustDismissed,
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
     isOpen: surface.isOpen,
     hasSearch,
-    onOpen: useCallback(() => {
-      // Snapshot which items are selected at open time — sort is frozen until close
-      setSelectedAtOpen(new Set(optimisticValue));
-
-      surface.show();
-      if (hasSearch) {
-        // Focus search after popover opens
-        requestAnimationFrame(() => {
-          searchRef.current?.focus();
-        });
-      }
-    }, [surface, hasSearch, optimisticValue]),
+    onOpen: useCallback(() => surface.show(), [surface]),
     onClose: surface.hide,
     onToggle: handleNavigableToggle,
     onClear: hasClear ? clearValues : undefined,
@@ -1241,18 +1241,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     listboxId,
   });
 
-  // Keep the highlighted option visible during keyboard navigation. The
-  // listbox is a fixed-height scroll container, so without this the virtual
-  // cursor walks off-screen once navigation passes the visible window. Mirrors
-  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
-  useEffect(() => {
-    if (!surface.isOpen || highlightedIndex < 0) {
-      return;
-    }
-    document
-      .getElementById(getItemId(highlightedIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [surface.isOpen, highlightedIndex, getItemId]);
+  // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
 
   // Build trigger display content
   const selectedItems = useMemo(() => {

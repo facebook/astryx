@@ -40,14 +40,15 @@ import {
   accountBaseline,
   baselineVisualStories,
   buildPlan,
+  canonicalBaselineStories,
   createReleasePlan,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
   existingComponentBaselinePlan,
   readStoryIndex,
   readThemeCatalog,
   resolvePrVisualTotalShotLimit,
   storiesInPackages,
-  storiesInStorybookGroups,
   summarizeBaselineAccounting,
   withThemeMetadata,
 } from './lib/plan.mjs';
@@ -196,10 +197,10 @@ async function plan() {
     REPO_ROOT,
   );
   const packageStories = storiesInPackages(indexedStories, storyPackages);
-  const stories = storiesInStorybookGroups(
-    packageStories,
-    config.stableStoryGroups,
-  );
+  const stories = canonicalBaselineStories(packageStories, {
+    groups: config.stableStoryGroups,
+    packages: storyPackages,
+  });
   const {manifest: baselineManifest} = readBaseline(baselineDir);
   const componentThemes = acceptedVisualThemes(
     baselineManifest,
@@ -300,7 +301,20 @@ async function plan() {
   };
 }
 
+/** How this run describes what it planned, for a refusal a human has to act on. */
+function plannedScope() {
+  if (planFile) return 'The exact trusted plan';
+  if (components.length) return `Component scope ${components.join(', ')}`;
+  return `Tier scope ${tiers.join(', ')}`;
+}
+
 async function runCapture(shots, releasePlan = null) {
+  // An empty plan is not a clean run. Every lane that captures pixels refuses
+  // one here, on the way in, so a scope whose keys are missing from the
+  // accepted baseline cannot report the absence of evidence as evidence.
+  if (shots.length === 0) {
+    throw new Error(emptyVisualPlanMessage(plannedScope()));
+  }
   if (shots.length > config.visualPlanSafetyLimit) {
     throw new Error(
       `Visual plan has ${shots.length} shots; safety limit is ${config.visualPlanSafetyLimit}.`,
