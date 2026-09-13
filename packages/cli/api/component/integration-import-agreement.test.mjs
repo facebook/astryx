@@ -12,7 +12,8 @@
  * whose components live behind subpaths. An agent that searched and then
  * imported what it was told got a broken file.
  *
- * The two now share one resolver and one precedence rule, so the agreement is
+ * CLI text must also use that resolved import when rendering every detail level.
+ * The API surfaces share one resolver and one precedence rule, so the agreement is
  * structural. These tests pin the property rather than the implementation: ask
  * both surfaces about the same component and require the same answer, across
  * every shape a real package's `exports` takes.
@@ -27,6 +28,7 @@ import * as path from 'node:path';
 import {component} from './component.mjs';
 import {search} from '../search/search.mjs';
 import {resolveIntegrationImportPath} from '../../foundation/discovery/component-discovery.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const SLOW = 30_000;
 
@@ -123,6 +125,33 @@ afterEach(() => {
 });
 
 describe('integration component import specifiers', () => {
+  it(
+    'CLI text detail levels match the API import for an integration component',
+    async () => {
+      scaffold({exports: SUBPATH_EXPORTS, docImport: '@acme/widgets/Alias'});
+      const resolved = await component('AcmeCarousel', {cwd: tmpDir});
+      expect(resolved.data.import).toBe('@acme/widgets/Alias');
+
+      for (const detail of ['full', 'compact', 'brief']) {
+        const rendered = await runCli(
+          [
+            'component',
+            'AcmeCarousel',
+            '--package',
+            '@acme/widgets',
+            '--detail',
+            detail,
+          ],
+          tmpDir,
+        );
+        expect(rendered.code).toBe(0);
+        expect(rendered.stdout).toContain(resolved.data.import);
+        expect(rendered.stdout).not.toContain('@astryxdesign/core');
+      }
+    },
+    SLOW,
+  );
+
   it(
     'component and search report the same import for the same component',
     async () => {
