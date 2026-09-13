@@ -3,13 +3,13 @@
   "repository": "facebook/astryx",
   "pullRequest": {
     "number": 6262,
-    "headSha": "0cb0e331f4c231e2ed6e35197866c76f4233d0e9",
+    "headSha": "70b1cf4aa062793b860412308b92ad51b4ee13b0",
     "headRef": "feat/scrollable-container-system",
     "headRepository": "facebook/astryx",
     "headRepositoryId": "1131202426"
   },
   "sourceRun": {
-    "id": 34719223773,
+    "id": 34723869053,
     "attempt": 1,
     "conclusion": "success"
   },
@@ -22,7 +22,7 @@
     "sandbox": {
       "available": true,
       "path": "pr/6262/sandbox/",
-      "indexSha256": "a956044464ce3d690ab3fe83042d0943a19b34f4acbb921b0fc846e5ab0f332b"
+      "indexSha256": "8fd10790c81e88fb6b925f19967bb524a99b8b3ac303ce0bba79bb5bc2c1b84b"
     }
   }
 }
