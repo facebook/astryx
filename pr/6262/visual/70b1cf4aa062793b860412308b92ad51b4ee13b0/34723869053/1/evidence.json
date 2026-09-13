@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6262,
+  "headSha": "70b1cf4aa062793b860412308b92ad51b4ee13b0",
+  "testedSha": "70b1cf4aa062793b860412308b92ad51b4ee13b0",
+  "baseSha": "32ef5231d7343773c9cbc2cb5cbb6a4e6eddba4f",
+  "run": {
+    "id": 34723869053,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-13T00:08:22.658Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "70b1cf4aa062793b860412308b92ad51b4ee13b0",
+      "headSha": "70b1cf4aa062793b860412308b92ad51b4ee13b0",
+      "baseSha": "32ef5231d7343773c9cbc2cb5cbb6a4e6eddba4f",
+      "runId": "34723869053",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "ScrollableArea"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/ScrollableArea/ScrollableArea.tsx",
+          "packages/core/src/ScrollableArea/index.ts",
+          "packages/core/src/hooks/index.ts",
+          "packages/core/src/hooks/scrollGeometry.ts",
+          "packages/core/src/hooks/scrollOwnerRegistry.ts",
+          "packages/core/src/hooks/useScrollableArea.ts",
+          "packages/core/src/index.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 386,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "ScrollableArea"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}
