@@ -766,6 +766,97 @@ describe('knowledge validation', () => {
     expect(await validateKnowledgeRoot(fixtureRoot())).toEqual([]);
   });
 
+  it('uses the reader-first projection only in architecture, component, and module templates', () => {
+    const readerFirstTemplates = new Map([
+      [
+        'architecture.md',
+        [
+          'Governing contract',
+          'System behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+      [
+        'component-spec.md',
+        [
+          'Public contract',
+          'Behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+      [
+        'module-spec.md',
+        [
+          'Public contract',
+          'Behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+    ]);
+
+    for (const [fileName, projectionRows] of readerFirstTemplates) {
+      const content = fs.readFileSync(
+        path.join(repoRoot, 'docs/templates/knowledge', fileName),
+        'utf8',
+      );
+      expect(parseKnowledgeDocument(content).sections[0]).toBe(
+        'Contract at a glance',
+      );
+      for (const row of projectionRows) {
+        expect(
+          content
+            .split('\n')
+            .some(line => line.trimStart().startsWith(`| ${row} `)),
+        ).toBe(true);
+      }
+      expect(content).toContain(
+        'This table is a review projection; the body below is authoritative.',
+      );
+    }
+
+    for (const fileName of [
+      'design-spec.md',
+      'family-contract.md',
+      'implementation-plan.md',
+      'system-spec.md',
+      'theme-spec.md',
+    ]) {
+      const content = fs.readFileSync(
+        path.join(repoRoot, 'docs/templates/knowledge', fileName),
+        'utf8',
+      );
+      expect(parseKnowledgeDocument(content).sections).not.toContain(
+        'Contract at a glance',
+      );
+    }
+  });
+
+  it('accepts an optional reader-first projection in an older record', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Button.spec.md'),
+      componentRecord().replace(
+        '## Intent',
+        '## Contract at a glance\n\nProjection.\n\n## Intent',
+      ),
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
   it('rejects a structural template change without a schema update', async () => {
     const root = fixtureRoot();
     const template = path.join(
@@ -774,7 +865,7 @@ describe('knowledge validation', () => {
     );
     fs.appendFileSync(template, '\n## Undeclared section\n');
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template section order must exactly match the schema/,
+      /template section order must exactly match the schema plus its allowed editorial sections/,
     );
   });
 
@@ -1590,10 +1681,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '5'}),
+      componentRecord({template_version: '6'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 5 is newer than 4/,
+      /template_version 6 is newer than 5/,
     );
   });
 

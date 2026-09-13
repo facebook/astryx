@@ -199,9 +199,10 @@ Every record is either:
 
 ## Writing specifications and contracts
 
-These rules guide writing. They do not permit semantic compaction. They come from
-directional evidence and project-owner judgment; the agent benchmark did not
-measure human readability, so this is not a quantified readability claim.
+These rules preserve semantic fidelity while putting the decisions a reader needs
+first. They are authoring guidance, not a quantified claim about human readability.
+They apply prospectively to new or materially revised architecture, component, and
+module specifications; they do not require historical rewrites.
 
 Before writing:
 
@@ -212,12 +213,49 @@ Before writing:
    new record only when the fact has a distinct owner and explain that boundary in
    the pull-request summary.
 
-Then write the contract:
+Begin each component or module contract with this reader-first projection after its
+title:
+
+| Area                    | Contract                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | State the exact public API, concept, or syntax delta; write `None` when none changes.                                           |
+| Behavior                | State the observable governing behavior, including the decisive default, boundary, or precedence rule.                          |
+| End-user impact         | Name who is affected, in what state, and what improves, worsens, or remains unchanged.                                          |
+| Builder impact          | Name migration work and every new caller choice; write `None` when there is no new burden.                                      |
+| Compatibility/readiness | State default compatibility, additive/breaking status, authority and implementation state, and material evidence still pending. |
+| Review checks           | List the few concrete conditions that make an implementation or proposal rejectable under this contract.                        |
+| Governing rules         | Link the canonical owner and only the current clauses needed to justify the projection.                                         |
+
+Architecture records use the same position and footer with architecture-specific
+rows:
+
+| Area                    | Contract                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Governing contract      | Name the observable current decisions this architecture serves; write `None` when no product contract changes.                 |
+| System behavior         | State shipped system behavior, including the decisive invariant, boundary, or precedence rule.                                 |
+| End-user impact         | Name who is affected, in what state, and what improves, worsens, or remains unchanged.                                         |
+| Builder impact          | Name the implementation decisions, coordination work, or workarounds this architecture removes or adds.                        |
+| Compatibility/readiness | State compatibility effect, authority and implementation state, and material evidence still pending.                           |
+| Review checks           | List boundary violations, product-API mechanism leaks, or lost invariants/evidence distinctions that make a change rejectable. |
+| Governing rules         | Link the deciding specs and only the current clauses needed to justify the projection.                                         |
+
+The table is a review projection; the body remains authoritative. The projection
+itself does not make a record shorter. Size falls only when authors remove true
+duplication from the body without dropping contract semantics. `Review checks`
+project settled requirements and boundaries from the body; they do not invent
+policy or reopen a decision. When citing a list-item clause such as an AST-002 FR,
+use its exact visible label and canonical file link. Do not invent a fragment URL
+for a clause that has no stable heading or explicit anchor.
+
+Then write the authoritative body:
 
 - Use familiar words and short, direct sentences.
-- State each rule once, beside the conditions and exceptions that control it.
+- State each rule fully once, beside the conditions and exceptions that control it.
+  Later sections cite its ID or canonical owner instead of restating the prose.
 - Contract only the semantic slice being decided. Name adjacent behavior as a
   non-goal or uncontracted gap; do not fill it merely to make the record `current`.
+- Do not duplicate consumer prop tables, usage recipes, shared-system mechanics,
+  current audit dumps, or implementation steps. Link their canonical owners.
 - Use readable tables for branches or state matrices when they improve scanning.
   Never remove contract content merely to shorten a record.
 
@@ -234,15 +272,11 @@ rewrite. When reshaping a rule, keep its action, activating conditions,
 exceptions or non-goals, owner, and evidence state in the same row or bullet as
 the claim they limit.
 
-Aim to keep a single specification record at or below 200 lines. This is a soft
-readability ceiling, not a schema rule, validation gate, deletion target, or
-reason to migrate accepted history. Exceed it when the full contract, exact
-conditions, evidence boundaries, decisions, or required template structure need
-more room. First remove true duplication, shorten prose without changing meaning,
-use readable tables or lists, and link genuinely shared authority as INV2
-requires. If the record still exceeds 200 lines, keep the content and explain why
-in pull-request review. Do not minify tables or paragraphs to game the count;
-human scanability wins.
+Do not optimize for a line, word, byte, or percentage-reduction target. First
+remove true duplication, shorten prose without changing meaning, use readable
+tables or lists, and link genuinely shared authority as INV2 requires. Keep every
+load-bearing condition, qualifier, boundary, decision, and evidence distinction
+that remains. Human scanability and semantic fidelity win over size.
 
 ### Same rule, plainer form
 
@@ -270,8 +304,11 @@ The plain version changes the shape, not the meaning.
 - [ ] Confirm each rule's action, conditions, qualifiers, exceptions or non-goals,
       owner, authority verb, and evidence state remain explicit and adjacent to the
       claim they limit.
-- [ ] Confirm tables and lists improve scanning without hiding content; if the
-      record exceeds 200 lines, explain why it needs the extra space.
+- [ ] Confirm the projection states the public delta, behavior, end-user and builder
+      impact, compatibility/readiness, rejection checks, and governing rules without
+      replacing or contradicting the authoritative body.
+- [ ] Confirm tables and lists improve scanning without hiding content, and no
+      content was removed merely to meet a size target.
 
 ### When current records disagree
 
