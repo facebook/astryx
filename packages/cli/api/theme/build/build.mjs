@@ -2,6 +2,9 @@
 
 /**
  * @file theme build API — compile a defineTheme file to CSS + JS + .d.ts.
+ * @input A JS/TS theme module, build/check options, and the installed Core.
+ * @output Generated artifacts preserving imported and inherited icon registries.
+ * @position CLI theme compiler; icon provenance lives in icon-imports.mjs.
  *
  * `themeBuild(file, options, ctx)` is the programmatic surface behind
  * `astryx theme build`. It reads a theme file that uses defineTheme() and, via
@@ -14,9 +17,10 @@
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
  * carry override problems; `notices` carry fonts the theme names but does not
  * load (font-warning.mjs) — or `null` when the theme produced no CSS (nothing
- * to build). An icon registry that cannot be imported fails before output
- * generation, including in check mode. Errors throw AstryxError (with a stable
- * code). Human progress is emitted through the shared `logger`
+ * to build). Icon imports come from the selected theme's parsed bindings and
+ * inheritance, never from comment or string contents. A registry that cannot
+ * be preserved fails before output generation, including in check mode.
+ * Errors throw AstryxError (with a stable code). Human progress uses `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  *
@@ -59,6 +63,7 @@ import {
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
+import {resolveIconImports} from './icon-imports.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -1139,6 +1144,19 @@ const THEME_MODULE_EXTENSIONS = [
 ];
 
 /**
+ * Resolve inherited source with exactly the loader's extension precedence.
+ * This reads module locations only; icon discovery never executes a second load.
+ * @param {string} specifier
+ * @param {string} fromFile
+ * @returns {string}
+ */
+function resolveThemeModule(specifier, fromFile) {
+  return createJiti(fromFile, {extensions: THEME_MODULE_EXTENSIONS}).resolve(
+    specifier,
+  );
+}
+
+/**
  * Errors that mean "the synchronous loader cannot evaluate this module", as
  * opposed to "this module is broken". Only the former may fall back to the
  * async path: a genuine author error (a throw, a missing import, a real syntax
@@ -1184,7 +1202,7 @@ function isSyncLoaderLimitation(error) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
- * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, exportName: string, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
 async function importThemeModule(filePath, interception) {
   const jiti = createJiti(import.meta.url, {
@@ -1221,12 +1239,14 @@ async function importThemeModule(filePath, interception) {
     mod = await jiti.import(filePath, {default: true});
   }
 
-  if (isThemeObject(mod)) return {theme: mod, degraded};
+  if (isThemeObject(mod)) return {theme: mod, exportName: 'default', degraded};
 
   if (mod && typeof mod === 'object') {
-    if (isThemeObject(mod.default)) return {theme: mod.default, degraded};
-    for (const value of Object.values(mod)) {
-      if (isThemeObject(value)) return {theme: value, degraded};
+    if (isThemeObject(mod.default)) {
+      return {theme: mod.default, exportName: 'default', degraded};
+    }
+    for (const [exportName, value] of Object.entries(mod)) {
+      if (isThemeObject(value)) return {theme: value, exportName, degraded};
     }
   }
 
@@ -1260,7 +1280,7 @@ function isThemeObject(value) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
- * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, exportName?: string, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
 async function extractThemeDefinition(filePath, interception) {
   try {
@@ -1284,6 +1304,8 @@ async function extractThemeDefinition(filePath, interception) {
 /**
  * Fallback extraction via regex + eval.
  * Only works for plain object literals — can't follow imports or variables.
+ * Never erase icon references: an unresolved registry must preserve the loader
+ * error instead of turning an incomplete theme into a successful build.
  * @param {string} filePath
  * @returns {any}
  */
@@ -1305,10 +1327,6 @@ function extractThemeDefinitionLegacy(filePath) {
 
   let objStr = defineMatch[1];
   objStr = objStr.replace(/\s+as\s+const/g, '');
-  objStr = objStr.replace(
-    /icons:\s*[a-zA-Z_][a-zA-Z0-9_]*/g,
-    'icons: undefined',
-  );
 
   try {
     return eval(`(${objStr})`);
@@ -1320,117 +1338,6 @@ function extractThemeDefinitionLegacy(filePath) {
       {cause: e},
     );
   }
-}
-
-/**
- * Blank out JS/TS comments so regex scans cannot match inside them, while
- * leaving everything else — including all string and template-literal
- * contents — exactly where it was. Comment characters become spaces and
- * newlines survive, so the result lines up with the original byte for byte.
- *
- * A tiny scanner rather than a parse: it tracks just enough state to know
- * whether `//` or `/*` opens a comment — inside `'…'`, `"…"` and `` `…` ``
- * they do not. It deliberately does not model regex literals or template
- * interpolation; the scans this feeds (extractIconInfo) look for import
- * statements and an `icons:` field, neither of which lives inside those.
- * @param {string} source
- * @returns {string}
- */
-function blankComments(source) {
-  let out = '';
-  /** @type {'code' | 'single' | 'double' | 'template' | 'line' | 'block'} */
-  let state = 'code';
-  for (let i = 0; i < source.length; i++) {
-    const ch = /** @type {string} */ (source[i]);
-    const next = source[i + 1];
-    if (state === 'code') {
-      if (ch === '/' && next === '/') {
-        state = 'line';
-        out += '  ';
-        i++;
-      } else if (ch === '/' && next === '*') {
-        state = 'block';
-        out += '  ';
-        i++;
-      } else {
-        if (ch === "'") state = 'single';
-        else if (ch === '"') state = 'double';
-        else if (ch === '`') state = 'template';
-        out += ch;
-      }
-    } else if (state === 'line') {
-      if (ch === '\n') {
-        state = 'code';
-        out += ch;
-      } else {
-        out += ' ';
-      }
-    } else if (state === 'block') {
-      if (ch === '*' && next === '/') {
-        state = 'code';
-        out += '  ';
-        i++;
-      } else {
-        out += ch === '\n' ? ch : ' ';
-      }
-    } else {
-      // Inside a string or template literal: copy verbatim, honor escapes.
-      out += ch;
-      if (ch === '\\' && next !== undefined) {
-        out += next;
-        i++;
-      } else if (
-        (state === 'single' && ch === "'") ||
-        (state === 'double' && ch === '"') ||
-        (state === 'template' && ch === '`')
-      ) {
-        state = 'code';
-      }
-    }
-  }
-  return out;
-}
-
-/**
- * Extract icon import info from a theme source file.
- *
- * Looks for patterns like:
- *   import { defaultIconRegistry } from './icons';
- *   icons: defaultIconRegistry,
- *
- * The scan runs over comment-blanked source (#5058): the matched specifier is
- * re-emitted verbatim as executable code in the generated module, so a doc
- * comment that quotes an old import line — or a commented-out `icons:` field —
- * must not count as the real thing.
- *
- * Returns null when no identifier-valued `icons:` field is found; the caller
- * also checks the loaded registry for inline object/shorthand declarations.
- * Returns `{exportName, importPath: null}` when `icons:` names a binding that
- * no import backs (e.g. a registry declared inline as a local const) — the
- * caller rejects the build instead of dropping the registry from the theme.
- * @param {string} filePath
- * @returns {{exportName: string, importPath: string | null} | null}
- */
-function extractIconInfo(filePath) {
-  const content = blankComments(fs.readFileSync(filePath, 'utf8'));
-
-  // Find the icons field in defineTheme
-  const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-  if (!iconsMatch) return null;
-
-  const varName = /** @type {string} */ (iconsMatch[1]);
-
-  // Find the import for that variable
-  const importRegex = new RegExp(
-    `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
-  );
-  const importMatch = content.match(importRegex);
-  if (!importMatch) return {exportName: varName, importPath: null};
-
-  return {
-    exportName: varName,
-    importPath: /** @type {string} */ (importMatch[1]),
-  };
 }
 
 /**
@@ -1446,29 +1353,51 @@ function extractIconInfo(filePath) {
  * override it had.
  *
  * The icon registry is imported rather than inlined because it holds React
- * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
- * out of the TypeScript source, where an extensionless `./icons` is resolved by
+ * elements, which cannot be serialized. `resolveIconImports` reads actual
+ * imports from the selected theme's source, where extensionless `./icons` uses
  * the TypeScript resolver — but the artifact here is ESM JavaScript, which
  * requires a fully specified path. Only the caller knows what its own build
  * will emit and under what name, so `iconsSpecifier` lets it say. When it is
- * not given, the scraped specifier is emitted unchanged.
+ * not given, direct registry specifiers are preserved, and inherited relative
+ * imports are rebased from the base module to the theme entry's directory.
  *
  * @param {any} themeDef
- * @param {{exportName: string, importPath: string} | null} iconInfo
- * @param {string} [iconsSpecifier] - Overrides the scraped icon import specifier.
+ * @param {import('./icon-imports.mjs').IconImports | null} iconInfo
+ * @param {string} [iconsSpecifier] - Overrides the selected registry specifier.
  * @returns {string}
  */
 function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
-  // Preserve the historical generated bytes when no override is supplied.
-  // User-provided specifiers need string-literal encoding so quotes and
-  // backslashes cannot produce invalid JavaScript.
-  const renderedSpecifier =
-    iconsSpecifier === undefined
-      ? `'${iconInfo?.importPath}'`
-      : JSON.stringify(iconsSpecifier);
-  const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} } from ${renderedSpecifier};\n`
-    : '';
+  // Keep ordinary direct named imports byte-compatible, while encoding paths
+  // with quotes/escapes and retaining default, namespace, and aliased bindings.
+  const iconImport = (iconInfo?.imports ?? [])
+    .map(({importPath, importedName, localName}) => {
+      const overridden =
+        iconsSpecifier !== undefined &&
+        importPath === iconInfo?.iconsSpecifierImportPath &&
+        localName === iconInfo?.iconsSpecifierLocalName;
+      const specifier = overridden
+        ? JSON.stringify(iconsSpecifier)
+        : /['\\\r\n]/u.test(importPath)
+          ? JSON.stringify(importPath)
+          : `'${importPath}'`;
+      const imported = /^[$\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(
+        importedName,
+      )
+        ? importedName
+        : JSON.stringify(importedName);
+      const binding =
+        importedName === 'default'
+          ? localName
+          : importedName === '*'
+            ? `* as ${localName}`
+            : `{ ${imported}${importedName === localName ? '' : ` as ${localName}`} }`;
+      return `import ${binding} from ${specifier};\n`;
+    })
+    .join('');
+  const iconDeclaration =
+    iconInfo && iconInfo.expression !== iconInfo.exportName
+      ? `const ${iconInfo.exportName} = ${iconInfo.expression};\n`
+      : '';
   const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
   const iconReExport = iconInfo ? `\nexport { ${iconInfo.exportName} };\n` : '';
 
@@ -1529,7 +1458,7 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     serializeField('__adaptations', themeDef.__adaptations) +
     serializeField('__axes', themeDef.__axes ?? {}, true);
 
-  return `${iconImport}/**
+  return `${iconImport}${iconDeclaration}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
@@ -1548,7 +1477,7 @@ ${iconReExport}`;
 /**
  * Generate TypeScript declarations for a built theme module.
  * @param {any} themeDef
- * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {import('./icon-imports.mjs').IconImports | null} iconInfo
  * @param {string | null} variantsFileName
  * @returns {string}
  */
@@ -1916,7 +1845,7 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
- *   specifier scraped from the theme source is emitted unchanged.
+ *   direct registry specifiers from the theme source are emitted unchanged.
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>}
  */
@@ -1948,11 +1877,14 @@ export async function themeBuild(
 
   // Extract theme definition
   let themeDef;
+  /** The export actually selected by the loader, not the first AST match. */
+  let themeExportName;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
   try {
     const loaded = await extractThemeDefinition(filePath, interception);
     themeDef = loaded.theme;
+    themeExportName = loaded.exportName;
     loadDegradation = loaded.degraded;
   } catch (e) {
     const err = /** @type {Error} */ (e);
@@ -2004,24 +1936,19 @@ export async function themeBuild(
   // A generated module must preserve the registry through an import: it may
   // contain React elements, which cannot be serialized. Validate before CSS
   // generation so neither the no-CSS return nor --check can bypass the error.
-  const iconScan = extractIconInfo(filePath);
-  const iconInfo =
-    iconScan && iconScan.importPath != null
-      ? {exportName: iconScan.exportName, importPath: iconScan.importPath}
-      : null;
-  if (!iconInfo && (iconScan || Object.keys(themeDef.icons ?? {}).length > 0)) {
-    const registry = iconScan
-      ? `\`icons: ${iconScan.exportName}\``
-      : 'an icon registry';
-    throw new AstryxError(
-      `Theme sets ${registry} but no import for the registry was found. ` +
-        'The generated module cannot preserve inline registries because they ' +
-        'may contain React elements, which cannot be serialized. Move the ' +
-        'registry to its own module and import it into the theme file.',
-      undefined,
-      ERROR_CODES.ERR_THEME_INVALID,
-    );
-  }
+  const iconResolution = {
+    resolveModule: resolveThemeModule,
+    reservedNames: [`${toIdentifier(themeDef.name)}Theme`],
+    rawInput: 'extends' in themeDef,
+    hasIcons:
+      Object.keys(themeDef.icons ?? {}).length > 0 ||
+      Object.keys(themeDef.extends?.icons ?? {}).length > 0,
+  };
+  let iconInfo = await resolveIconImports(
+    filePath,
+    themeExportName,
+    iconResolution,
+  );
 
   // Validate component overrides
   const warnings = await validateComponentOverrides(themeDef);
@@ -2132,6 +2059,36 @@ export async function themeBuild(
       }
     } else {
       resolvedTheme = themeDef;
+    }
+
+    // Raw object exports can acquire icons only when Core resolves `extends`.
+    // Recheck an unresolved provenance result before any generator runs.
+    if (!iconInfo && Object.keys(resolvedTheme.icons ?? {}).length > 0) {
+      iconInfo = await resolveIconImports(filePath, themeExportName, {
+        ...iconResolution,
+        hasIcons: true,
+      });
+    }
+    // An opaque package base can legitimately have no icons. Its .icons
+    // reference is unnecessary; direct empty registry imports remain intact.
+    if (
+      iconInfo &&
+      iconInfo.iconsSpecifierLocalName === undefined &&
+      Object.keys(resolvedTheme.icons ?? {}).length === 0
+    ) {
+      iconInfo = null;
+    }
+    if (
+      iconInfo &&
+      options.iconsSpecifier !== undefined &&
+      iconInfo.iconsSpecifierImportPath === undefined
+    ) {
+      throw new AstryxError(
+        'The icon registry is inherited through a theme import. ' +
+          'To use --icons-specifier, import the registry directly and set icons to that binding.',
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
     }
 
     // Cores that predate adaptations can still resolve typography, color,
