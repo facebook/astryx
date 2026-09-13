@@ -2,6 +2,9 @@
 
 /**
  * @file component command — List components and print component docs
+ * @input Component API responses with resolved package ownership and imports
+ * @output Text or JSON component documentation using the resolved import
+ * @position CLI presentation layer for the component command
  *
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
