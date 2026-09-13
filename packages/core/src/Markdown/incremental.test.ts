@@ -195,6 +195,9 @@ describe('parseMarkdownIncremental', () => {
   describe.each([
     ['list', '- $$\n  x\n- next\n\nAfter'],
     ['blockquote', '> $$\n> x\n\nAfter'],
+    ['deeper blockquote', '> $$\n> > x\n> > $$'],
+    ['deeper blockquote in a list', '- > $$\n  > > x\n  > > $$'],
+    ['deeper inner quote in a quoted list', '> - $$\n>   > x\n>   > $$'],
   ] as const)('unmatched display math after a %s ends', (_label, text) => {
     it.each([false, true])(
       'returns to literal parsing (sourceRanges=%s)',

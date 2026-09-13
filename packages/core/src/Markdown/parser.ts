@@ -335,6 +335,11 @@ function displayMathLineState(
   }
 
   if (container.listBaseIndent == null) {
+    // A deeper quote starts a different container. It cannot close or continue
+    // the math expression owned by the shallower quote.
+    if (/^ {0,3}> ?/.test(outerContent)) {
+      return 'outside';
+    }
     return outerContent.trim() === '$$' ? 'close' : 'inside';
   }
 
@@ -347,7 +352,7 @@ function displayMathLineState(
     outerContent.trimStart(),
     container.innerQuoteDepth,
   );
-  if (innerContent == null) {
+  if (innerContent == null || /^ {0,3}> ?/.test(innerContent)) {
     return 'outside';
   }
   return innerContent.trim() === '$$' ? 'close' : 'inside';
@@ -782,10 +787,6 @@ export function parseInline(
   options: MathParseOptions,
 ): InlineNodeWithMath[];
 export function parseInline(text: string, options: ParseOptions): InlineNode[];
-export function parseInline(
-  text: string,
-  options: RuntimeParseOptions,
-): InlineNodeWithMath[];
 export function parseInline(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
@@ -1656,10 +1657,6 @@ export function parseMarkdown(
 ): BlockNode[];
 export function parseMarkdown(
   input: string,
-  options: RuntimeParseOptions,
-): BlockNodeWithMath[];
-export function parseMarkdown(
-  input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): BlockNodeWithMath[] {
   return parseMarkdownImpl(input, resolveOptions(arg));
@@ -1917,7 +1914,11 @@ function stampSourceRanges(
 type IncrementalBlockNode<MathEnabled extends boolean> =
   MathEnabled extends true ? BlockNodeWithMath : BlockNode;
 
+declare const incrementalStateMode: unique symbol;
+
 export interface IncrementalState<MathEnabled extends boolean = false> {
+  /** @internal Nominally couples a factory-created cache to its node union. */
+  readonly [incrementalStateMode]: MathEnabled;
   prevInput: string;
   settledText: string;
   settledBlocks: IncrementalBlockNode<MathEnabled>[];
@@ -2003,12 +2004,12 @@ function makeIncrementalCache(
 export function createIncrementalState<
   MathEnabled extends boolean = false,
 >(): IncrementalState<MathEnabled> {
-  const state: IncrementalState<MathEnabled> = {
+  const state = {
     prevInput: '',
     settledText: '',
     settledBlocks: [],
     settledUpTo: 0,
-  };
+  } as unknown as IncrementalState<MathEnabled>;
   makeIncrementalCache(state);
   return state;
 }
@@ -2055,6 +2056,7 @@ function findSettledBoundary(
   let inFence = false;
   let fenceMarker = '';
   let mathContainer: DisplayMathContainer | null = null;
+  let suppressMathUntilBoundary = false;
   let lastBoundary = -1;
   let boundaryBeforeFence = -1;
   let boundaryBeforeMath = -1;
@@ -2088,13 +2090,14 @@ function findSettledBoundary(
       // treats that unmatched opener literally, so resume ordinary boundary
       // detection on this first line outside the container.
       mathContainer = null;
+      suppressMathUntilBoundary = true;
     }
 
     // A complete same-line `$$…$$` expression never changes boundary state.
     // A standalone marker may belong to the top level, a blockquote, or one
     // list item; remember that container so its continuation marker closes the
     // same expression instead of opening a new one.
-    if (math) {
+    if (math && !suppressMathUntilBoundary) {
       const container = displayMathContainer(line);
       if (container != null) {
         mathContainer = container;
@@ -2111,8 +2114,11 @@ function findSettledBoundary(
       continue;
     }
 
-    if (line.trim() === '' && lineIndex > 0 && lineIndex < lines.length - 1) {
-      lastBoundary = lineIndex;
+    if (line.trim() === '') {
+      suppressMathUntilBoundary = false;
+      if (lineIndex > 0 && lineIndex < lines.length - 1) {
+        lastBoundary = lineIndex;
+      }
     }
   }
 
@@ -2342,6 +2348,7 @@ function trimOpenDisplayMath(text: string): string {
   let inFence = false;
   let fenceMarker = '';
   let mathContainer: DisplayMathContainer | null = null;
+  let suppressMathUntilBoundary = false;
   let mathStartLine = -1;
 
   for (let index = 0; index < lines.length; index++) {
@@ -2370,6 +2377,11 @@ function trimOpenDisplayMath(text: string): string {
       }
       mathContainer = null;
       mathStartLine = -1;
+      suppressMathUntilBoundary = true;
+    }
+
+    if (line.trim() === '') {
+      suppressMathUntilBoundary = false;
     }
 
     const fence = line.match(/^(`{3,}|~{3,})/);
@@ -2378,7 +2390,9 @@ function trimOpenDisplayMath(text: string): string {
       fenceMarker = fence[1];
       continue;
     }
-    const container = displayMathContainer(line);
+    const container = suppressMathUntilBoundary
+      ? null
+      : displayMathContainer(line);
     if (container != null) {
       mathContainer = container;
       mathStartLine = index;

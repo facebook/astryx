@@ -109,6 +109,25 @@ describe('Markdown public parser types', () => {
     expectTypeOf(legacyBlockText).returns.toBeString();
   });
 
+  it('rejects ambiguous math options and structurally forged state', () => {
+    function compileOnlyGuards() {
+      const dynamicOptions: {math: boolean} = {math: true};
+      // @ts-expect-error callers must narrow to ParseOptions or MathParseOptions
+      parseMarkdown('$$x$$', dynamicOptions);
+
+      const structuralState = {
+        prevInput: '',
+        settledText: '',
+        settledBlocks: [] as BlockNode[],
+        settledUpTo: 0,
+      };
+      // @ts-expect-error math caches must come from createIncrementalState<true>()
+      parseMarkdownIncremental('$$x$$', structuralState, {math: true});
+    }
+
+    expectTypeOf(compileOnlyGuards).toBeFunction();
+  });
+
   it('types direct and incremental math opt-ins with explicit math unions', () => {
     const inline = parseInline('$x$', {math: true});
     const direct = parseMarkdown('$$x$$', {math: true});

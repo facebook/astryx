@@ -254,7 +254,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>(); default calls and ParseOptions annotations keep the legacy unions.',
+          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>() and IncrementalParseState<true>; default calls and ParseOptions annotations keep the legacy unions.',
       },
       {
         guidance: true,
@@ -322,7 +322,7 @@ function MathExpression({value, display}) {
 }
 
 <Markdown components={{math: MathExpression}}>
-  {'Inline $x_1 + y$ and display math:\\n\\n$$\\n\\sum_i x_i\\n$$'}
+  {'Inline $x_1 + y$ and display math:\\n\\n$$\\n\\\\sum_i x_i\\n$$'}
 </Markdown>;
 `,
     },
@@ -520,7 +520,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>(); default calls and ParseOptions annotations keep the legacy unions.',
+          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>() and IncrementalParseState<true>; default calls and ParseOptions annotations keep the legacy unions.',
       },
       {
         guidance: true,
@@ -567,7 +567,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Direct math parser calls use MathParseOptions and the explicit WithMath node unions; incremental calls also use createIncrementalState<true>(). Default calls keep the legacy unions.',
+          'Direct math parser calls use MathParseOptions and the explicit WithMath node unions; incremental calls also use createIncrementalState<true>() and IncrementalParseState<true>. Default calls keep the legacy unions.',
       },
       {
         guidance: true,
