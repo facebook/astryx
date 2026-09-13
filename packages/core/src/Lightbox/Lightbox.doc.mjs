@@ -21,7 +21,7 @@ const anatomy = [
   {
     name: 'Previous button',
     required: false,
-    description: 'Gallery button that moves to the previous media item.',
+    description: 'Gallery button that moves to the previous media item. A keyboard-focused gallery button that becomes disabled hands focus to the available opposite button, or to Close when no gallery direction remains.',
   },
   {
     name: 'Next button',
