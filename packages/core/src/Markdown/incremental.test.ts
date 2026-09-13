@@ -97,7 +97,7 @@ describe('parseMarkdownIncremental', () => {
 
   it('matches the full parse when math delimiters arrive across chunks', () => {
     const text = 'Before $x_1 + *y*$ after.\n\n$$\n\\sum_i x_i\n$$\n\nDone.';
-    const state = createIncrementalState();
+    const state = createIncrementalState<true>();
     let final: BlockNodeWithMath[] = [];
     for (let end = 1; end <= text.length; end++) {
       final = parseMarkdownIncremental(text.slice(0, end), state, {math: true});
@@ -107,13 +107,16 @@ describe('parseMarkdownIncremental', () => {
 
   describe.each([
     ['list', '- $$\n  x + y\n  $$'],
+    ['task list', '- [ ] $$\n  x + y\n  $$'],
     ['blockquote', '> $$\n> x + y\n> $$'],
+    ['blockquote in a list', '- > $$\n  > x + y\n  > $$'],
+    ['CRLF list', '- $$\r\n  x + y\r\n  $$\r\n'],
   ] as const)('nested display math in a %s', (_label, text) => {
     it.each([false, true])(
       'withholds the incomplete container (sourceRanges=%s)',
       sourceRanges => {
         const closingDelimiter = text.lastIndexOf('$$');
-        const state = createIncrementalState();
+        const state = createIncrementalState<true>();
         expect(
           parseMarkdownIncremental(text.slice(0, closingDelimiter), state, {
             math: true,
@@ -130,7 +133,7 @@ describe('parseMarkdownIncremental', () => {
         const full = parseMarkdown(text, options);
 
         // One long-lived state sees every character boundary in order.
-        const characterState = createIncrementalState();
+        const characterState = createIncrementalState<true>();
         let characterResult = parseMarkdownIncremental(
           '',
           characterState,
@@ -145,31 +148,92 @@ describe('parseMarkdownIncremental', () => {
         }
         expect(characterResult).toEqual(full);
 
-        // Every possible two-chunk split converges to the same complete tree.
+        // Markdown's production streaming path trims partial syntax before it
+        // reaches the incremental parser. A terminal nested closer must survive
+        // that pass rather than being mistaken for a fresh opener.
+        const productionState = createIncrementalState<true>();
+        let productionResult = parseMarkdownIncremental(
+          '',
+          productionState,
+          options,
+        );
+        for (let end = 1; end <= text.length; end++) {
+          const prefix = trimStreamingArtifacts(text.slice(0, end), options);
+          productionResult = parseMarkdownIncremental(
+            prefix,
+            productionState,
+            options,
+          );
+        }
+        expect(productionResult).toEqual(full);
+
+        // Every possible two-chunk split converges to the same complete tree,
+        // both directly and through Markdown's production trimming pass.
         for (let split = 0; split <= text.length; split++) {
-          const state = createIncrementalState();
+          const state = createIncrementalState<true>();
           parseMarkdownIncremental(text.slice(0, split), state, options);
           expect(parseMarkdownIncremental(text, state, options)).toEqual(full);
+
+          const trimmedState = createIncrementalState<true>();
+          parseMarkdownIncremental(
+            trimStreamingArtifacts(text.slice(0, split), options),
+            trimmedState,
+            options,
+          );
+          expect(
+            parseMarkdownIncremental(
+              trimStreamingArtifacts(text, options),
+              trimmedState,
+              options,
+            ),
+          ).toEqual(full);
+        }
+      },
+    );
+  });
+
+  describe.each([
+    ['list', '- $$\n  x\n- next\n\nAfter'],
+    ['blockquote', '> $$\n> x\n\nAfter'],
+  ] as const)('unmatched display math after a %s ends', (_label, text) => {
+    it.each([false, true])(
+      'returns to literal parsing (sourceRanges=%s)',
+      sourceRanges => {
+        const options = {math: true as const, sourceRanges};
+        const full = parseMarkdown(text, options);
+        for (const trimsStreamingArtifacts of [false, true]) {
+          const state = createIncrementalState<true>();
+          let result = parseMarkdownIncremental('', state, options);
+          for (let end = 1; end <= text.length; end++) {
+            const prefix = text.slice(0, end);
+            result = parseMarkdownIncremental(
+              trimsStreamingArtifacts
+                ? trimStreamingArtifacts(prefix, options)
+                : prefix,
+              state,
+              options,
+            );
+          }
+          expect(result).toEqual(full);
         }
       },
     );
   });
 
   it('withholds an incomplete display-math block while streaming', () => {
-    const state = createIncrementalState();
+    const state = createIncrementalState<true>();
     const blocks = parseMarkdownIncremental('Intro\n\n$$\nx + y', state, {
       math: true,
     });
     expect(blocks).toEqual(parseMarkdown('Intro'));
   });
 
-  it('invalidates settled blocks when the math option changes', () => {
+  it('stores math nodes only in a math-enabled incremental state', () => {
     const text = 'Intro.\n\nInline $x$.';
-    const state = createIncrementalState();
-    const off = parseMarkdownIncremental(text, state);
-    const on = parseMarkdownIncremental(text, state, {math: true});
-    expect(on).toEqual(parseMarkdown(text, {math: true}));
-    expect(on).not.toEqual(off);
+    const state = createIncrementalState<true>();
+    const blocks = parseMarkdownIncremental(text, state, {math: true});
+    expect(blocks).toEqual(parseMarkdown(text, {math: true}));
+    expect(state.settledBlocks).toEqual(parseMarkdown('Intro.', {math: true}));
   });
 
   it('handles table streaming', () => {

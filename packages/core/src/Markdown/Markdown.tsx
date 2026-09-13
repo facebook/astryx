@@ -61,6 +61,8 @@ import type {
   BlockNodeWithMath,
   InlineNodeWithMath,
   IncrementalState,
+  MathParseOptions,
+  ParseOptions,
 } from './parser';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
@@ -1677,9 +1679,13 @@ export function Markdown({
   );
 
   const hasMathRenderer = components?.math != null;
-  const parseOptions = useMemo(
-    () => ({sourceIds, autolink, math: hasMathRenderer || undefined}),
-    [sourceIds, autolink, hasMathRenderer],
+  const legacyParseOptions = useMemo<ParseOptions>(
+    () => ({sourceIds, autolink}),
+    [sourceIds, autolink],
+  );
+  const mathParseOptions = useMemo<MathParseOptions>(
+    () => ({sourceIds, autolink, math: true}),
+    [sourceIds, autolink],
   );
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
@@ -1697,7 +1703,7 @@ export function Markdown({
     prevAutolinkRef.current !== autolink ||
     prevMathRef.current !== hasMathRenderer
   ) {
-    incrementalStateRef.current = createIncrementalState();
+    incrementalStateRef.current = createIncrementalState<boolean>();
     prevAutolinkRef.current = autolink;
     prevMathRef.current = hasMathRenderer;
   }
@@ -1708,18 +1714,35 @@ export function Markdown({
     }
     if (isStreaming) {
       if (smoothedText === '') {
-        incrementalStateRef.current = createIncrementalState();
+        incrementalStateRef.current = createIncrementalState<boolean>();
         return [];
       }
-      const input = trimStreamingArtifacts(smoothedText, parseOptions);
-      return parseMarkdownIncremental(
-        input,
-        incrementalStateRef.current,
-        parseOptions,
-      );
+      const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
+      const input = trimStreamingArtifacts(smoothedText, options);
+      return hasMathRenderer
+        ? parseMarkdownIncremental(
+            input,
+            incrementalStateRef.current as IncrementalState<true>,
+            mathParseOptions,
+          )
+        : parseMarkdownIncremental(
+            input,
+            incrementalStateRef.current as IncrementalState<false>,
+            legacyParseOptions,
+          );
     }
-    return parseMarkdown(children, parseOptions);
-  }, [display, smoothedText, children, isStreaming, parseOptions]);
+    return hasMathRenderer
+      ? parseMarkdown(children, mathParseOptions)
+      : parseMarkdown(children, legacyParseOptions);
+  }, [
+    display,
+    smoothedText,
+    children,
+    isStreaming,
+    hasMathRenderer,
+    mathParseOptions,
+    legacyParseOptions,
+  ]);
 
   // Assign each top-level heading the slug that parseOutlineFromMarkdown
   // would derive for it, so Outline hash links built from the same source
@@ -1746,11 +1769,22 @@ export function Markdown({
     if (display !== 'inline') {
       return [];
     }
+    const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
     const input = isStreaming
-      ? trimStreamingArtifacts(smoothedText, parseOptions)
+      ? trimStreamingArtifacts(smoothedText, options)
       : children;
-    return parseInline(input, parseOptions);
-  }, [display, smoothedText, children, isStreaming, parseOptions]);
+    return hasMathRenderer
+      ? parseInline(input, mathParseOptions)
+      : parseInline(input, legacyParseOptions);
+  }, [
+    display,
+    smoothedText,
+    children,
+    isStreaming,
+    hasMathRenderer,
+    mathParseOptions,
+    legacyParseOptions,
+  ]);
 
   // Track recent boundaries for stacked fade-in animation.
   // The number of spans needed = ceil(animationDuration / tickInterval).

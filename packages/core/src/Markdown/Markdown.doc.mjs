@@ -254,7 +254,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For direct parsing, pass math: true and handle InlineNodeWithMath or BlockNodeWithMath. Calls without math keep the legacy InlineNode and BlockNode unions.',
+          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>(); default calls and ParseOptions annotations keep the legacy unions.',
       },
       {
         guidance: true,
@@ -520,7 +520,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'For direct parsing, pass math: true and handle InlineNodeWithMath or BlockNodeWithMath. Calls without math keep the legacy InlineNode and BlockNode unions.',
+          'For direct parsing, use MathParseOptions and handle InlineNodeWithMath or BlockNodeWithMath. Incremental math parsing also uses createIncrementalState<true>(); default calls and ParseOptions annotations keep the legacy unions.',
       },
       {
         guidance: true,
@@ -567,7 +567,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Direct parser calls with math: true return the explicit WithMath node unions; default calls keep the legacy unions.',
+          'Direct math parser calls use MathParseOptions and the explicit WithMath node unions; incremental calls also use createIncrementalState<true>(). Default calls keep the legacy unions.',
       },
       {
         guidance: true,

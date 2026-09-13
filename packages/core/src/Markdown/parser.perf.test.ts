@@ -9,7 +9,7 @@ import {
 } from './parser';
 import type {BlockNode, ParseOptions} from './parser';
 
-type PerfParseOptions = Omit<ParseOptions, 'math'> & {math?: false};
+type PerfParseOptions = ParseOptions;
 
 function generateAIResponse(paragraphs: number): string {
   const sections: string[] = [];

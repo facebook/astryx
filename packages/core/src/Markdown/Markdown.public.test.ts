@@ -19,6 +19,7 @@ import type {
   BlockNodeWithMath,
   InlineNode,
   InlineNodeWithMath,
+  ParseOptions,
 } from './index';
 
 function assertNever(value: never): never {
@@ -84,6 +85,20 @@ describe('Markdown public parser types', () => {
     expectTypeOf(parseMarkdown('plain', {math: false})).toEqualTypeOf<
       BlockNode[]
     >();
+    const annotatedOptions: ParseOptions = {autolink: 'gfm'};
+    expectTypeOf(parseInline('plain', annotatedOptions)).toEqualTypeOf<
+      InlineNode[]
+    >();
+    expectTypeOf(parseMarkdown('plain', annotatedOptions)).toEqualTypeOf<
+      BlockNode[]
+    >();
+    expectTypeOf(
+      parseMarkdownIncremental(
+        'plain',
+        createIncrementalState(),
+        annotatedOptions,
+      ),
+    ).toEqualTypeOf<BlockNode[]>();
     expectTypeOf(
       parseMarkdownIncremental('plain', createIncrementalState()),
     ).toEqualTypeOf<BlockNode[]>();
@@ -99,9 +114,13 @@ describe('Markdown public parser types', () => {
     const direct = parseMarkdown('$$x$$', {math: true});
     const incremental = parseMarkdownIncremental(
       '$$x$$',
-      createIncrementalState(),
+      createIncrementalState<true>(),
       {math: true},
     );
+
+    // A state carries the same node contract as the parser result it caches.
+    // @ts-expect-error math parsing requires a math-enabled incremental state
+    parseMarkdownIncremental('$$x$$', createIncrementalState(), {math: true});
 
     expectTypeOf(inline).toEqualTypeOf<InlineNodeWithMath[]>();
     expectTypeOf(direct).toEqualTypeOf<BlockNodeWithMath[]>();
