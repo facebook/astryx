@@ -7,7 +7,7 @@
  * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button.
  *   Prev/next and first/last chevrons mirror under RTL via the shared rtlStyles.mirror
  *   (CSS scaleX), not a JS direction read. The input variant uses the chevronsLeft/chevronsRight
- *   (first/last) icons.
+ *   (first/last) icons. Disabled navigation hands focus to an available local control.
  * @output Exports Pagination component, PaginationProps, PaginationVariant, PaginationSize types
  * @position Core implementation; consumed by index.ts, tested by Pagination.test.tsx
  *
@@ -22,7 +22,9 @@
  *   hasFirstLast, step, siblingCount, size, isDisabled, label, data-testid, xstyle
  */
 
-import {useOptimistic, useTransition} from 'react';
+import {useOptimistic, useRef, useTransition} from 'react';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useDisabledFocusRecovery} from '../hooks/useDisabledFocusRecovery';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -383,6 +385,12 @@ export function Pagination({
   ...rest
 }: PaginationProps) {
   const [, startTransition] = useTransition();
+  const rootRef = useRef<HTMLElement>(null);
+  const mergedRef = useMergedRefs(ref, rootRef);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  const firstRef = useRef<HTMLButtonElement>(null);
+  const lastRef = useRef<HTMLButtonElement>(null);
 
   // Resolve system strings once per render. Prop overrides win.
   const t = useTranslator();
@@ -454,6 +462,35 @@ export function Pagination({
     computedTotalPages != null
       ? optimisticPage < computedTotalPages
       : (hasMore ?? false);
+
+  const previousReceiver = () =>
+    nextRef.current != null && !nextRef.current.disabled
+      ? nextRef.current
+      : rootRef.current;
+  const nextReceiver = () =>
+    previousRef.current != null && !previousRef.current.disabled
+      ? previousRef.current
+      : rootRef.current;
+  const previousFocus = useDisabledFocusRecovery(
+    isDisabled || !hasPrevious,
+    previousRef,
+    previousReceiver,
+  );
+  const nextFocus = useDisabledFocusRecovery(
+    isDisabled || !hasNext,
+    nextRef,
+    nextReceiver,
+  );
+  const firstFocus = useDisabledFocusRecovery(
+    isDisabled || !hasPrevious,
+    firstRef,
+    previousReceiver,
+  );
+  const lastFocus = useDisabledFocusRecovery(
+    isDisabled || !hasNext,
+    lastRef,
+    nextReceiver,
+  );
 
   if (totalItems != null && totalItems <= 0) {
     return null;
@@ -775,10 +812,11 @@ export function Pagination({
 
   return (
     <nav
-      ref={ref}
+      ref={mergedRef}
+      tabIndex={-1}
       {...mergeProps(
         themeProps('pagination', {variant, size}),
-        stylex.props(styles.root, xstyle),
+        focusOutlineProps.focusVisible(styles.root, xstyle),
         className,
         style,
       )}
@@ -816,6 +854,8 @@ export function Pagination({
                 xstyle={rtlStyles.mirror}
               />
             }
+            ref={firstRef}
+            {...firstFocus}
             onClick={handleFirst}
             isDisabled={isDisabled || !hasPrevious}
             isIconOnly
@@ -834,6 +874,8 @@ export function Pagination({
               xstyle={rtlStyles.mirror}
             />
           }
+          ref={previousRef}
+          {...previousFocus}
           onClick={handlePrevious}
           isDisabled={isDisabled || !hasPrevious}
           isIconOnly
@@ -853,6 +895,8 @@ export function Pagination({
               xstyle={rtlStyles.mirror}
             />
           }
+          ref={nextRef}
+          {...nextFocus}
           onClick={handleNext}
           isDisabled={isDisabled || !hasNext}
           isIconOnly
@@ -871,6 +915,8 @@ export function Pagination({
                 xstyle={rtlStyles.mirror}
               />
             }
+            ref={lastRef}
+            {...lastFocus}
             onClick={handleLast}
             isDisabled={isDisabled || !hasNext}
             isIconOnly

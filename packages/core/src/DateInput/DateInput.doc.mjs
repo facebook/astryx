@@ -255,7 +255,7 @@ export const docs = {
         name: 'Calendar popover',
         required: false,
         description:
-          'A month grid that appears when the icon is clicked or the input is focused.',
+          'A month grid that appears when the icon is clicked or the input is focused. In the touch picker, a keyboard-focused month arrow that reaches the date boundary hands focus to the month/year title.',
       },
       {
         name: 'Clear button',

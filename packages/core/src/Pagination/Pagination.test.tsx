@@ -3,7 +3,7 @@
 /**
  * @file Pagination.test.tsx
  * @input Uses vitest, @testing-library/react, Pagination component
- * @output Unit tests for Pagination component behavior
+ * @output Unit tests for Pagination behavior and boundary focus ownership
  * @position Testing; validates Pagination.tsx implementation
  *
  * SYNC: When Pagination.tsx changes, update tests to match new behavior
@@ -19,6 +19,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {Pagination, generatePageRange} from './Pagination';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
@@ -1504,5 +1505,129 @@ describe('Pagination', () => {
       expect(nav).toHaveAttribute('id', 'pager-1');
       expect(nav).toHaveAttribute('aria-describedby', 'hint');
     });
+  });
+});
+
+describe('Pagination boundary focus', () => {
+  it.each([
+    ['Go to next page', 1, 'Go to previous page'],
+    ['Go to previous page', 2, 'Go to next page'],
+    ['Go to last page', 1, 'Go to previous page'],
+    ['Go to first page', 2, 'Go to next page'],
+  ])(
+    'keeps %s activation in the component at a two-page boundary',
+    async (name, initial, receiver) => {
+      function Controlled() {
+        const [page, setPage] = useState(initial);
+        return (
+          <Pagination
+            page={page}
+            onChange={setPage}
+            totalPages={2}
+            variant="input"
+          />
+        );
+      }
+      render(<Controlled />);
+      const user = userEvent.setup();
+      const button = screen.getByRole('button', {name});
+      button.focus();
+      await user.keyboard('{Enter}');
+      expect(button).toBeDisabled();
+      expect(screen.getByRole('button', {name: receiver})).toHaveFocus();
+    },
+  );
+
+  it('uses the rendered cursor boundary after a delayed result, without requiring a total', async () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <Pagination page={2} onChange={onChange} hasMore variant="none" />,
+    );
+    const next = screen.getByRole('button', {name: 'Go to next page'});
+    next.focus();
+    await userEvent.setup().keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith(3);
+    expect(next).toHaveFocus();
+    rerender(
+      <Pagination
+        page={3}
+        onChange={onChange}
+        hasMore={false}
+        variant="none"
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Go to previous page'}),
+    ).toHaveFocus();
+  });
+
+  it('does not reclaim focus when a delayed cursor result follows a newer focus move', () => {
+    const view = (hasMore: boolean) => (
+      <>
+        <Pagination page={2} onChange={() => {}} hasMore={hasMore} />
+        <button type="button">Other action</button>
+      </>
+    );
+    const {rerender} = render(view(true));
+    screen.getByRole('button', {name: 'Go to next page'}).focus();
+    const other = screen.getByRole('button', {name: 'Other action'});
+    other.focus();
+    rerender(view(false));
+    expect(other).toHaveFocus();
+  });
+
+  it('uses the labelled root if both directions become unavailable and preserves its ref and props', () => {
+    const ref = vi.fn();
+    const view = (isDisabled: boolean) => (
+      <Pagination
+        page={2}
+        onChange={() => {}}
+        totalPages={3}
+        isDisabled={isDisabled}
+        ref={ref}
+        label="Search pages"
+        className="consumer"
+        data-owner="consumer"
+      />
+    );
+    const {rerender} = render(view(false));
+    const nav = screen.getByRole('navigation', {name: 'Search pages'});
+    screen.getByRole('button', {name: 'Go to next page'}).focus();
+    rerender(view(true));
+    expect(nav).toHaveFocus();
+    expect(nav).toHaveAttribute('tabindex', '-1');
+    expect(nav).toHaveClass('astryx-pagination', 'consumer');
+    expect(nav).toHaveAttribute('data-owner', 'consumer');
+    expect(ref).toHaveBeenCalledWith(nav);
+  });
+
+  it('keeps the accepted edge focus when a pending Action settles', async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>(resolve => {
+      finish = resolve;
+    });
+    function Controlled() {
+      const [page, setPage] = useState(1);
+      return (
+        <Pagination
+          page={page}
+          onChange={setPage}
+          totalPages={2}
+          changeAction={async () => {
+            await pending;
+          }}
+        />
+      );
+    }
+    render(<Controlled />);
+    screen.getByRole('button', {name: 'Go to next page'}).focus();
+    await userEvent.setup().keyboard('{Enter}');
+    const previous = screen.getByRole('button', {name: 'Go to previous page'});
+    expect(previous).toHaveFocus();
+    await act(async () => {
+      finish();
+      await pending;
+    });
+    expect(previous).toHaveFocus();
   });
 });
