@@ -5,7 +5,11 @@
  * @file sync-exports.js
  * @description Auto-generates the "exports" map in packages/core/package.json
  *   from the source tree. Ensures every component with src/Component/index.ts
- *   has correct export entries with source, types, and default conditions.
+ *   has correct export entries with source, types, and default conditions,
+ *   including explicitly registered supporting-module subpaths.
+ * @input Core source directories and the explicit static/subpath export lists.
+ * @output The synchronized exports map in packages/core/package.json.
+ * @position Source of truth for core package export generation and its CI gate.
  *
  * Usage:
  *   node scripts/sync-exports.js          # Update package.json in place
@@ -125,9 +129,11 @@ const UTIL_SUBPATH_DIRS = [
  * of an existing component — each one is its own opt-in module.
  *
  * `Markdown/remark` is the limited Remark compatibility adapter
- * (`module:Markdown/remark`, `spec:AST-036` FR24).
+ * (`module:Markdown/remark`, `spec:AST-036` FR24). `Dialog/DialogContext`
+ * lets composed headers outside core read the Dialog's title and inline state
+ * without widening the Dialog entry point.
  */
-const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark'];
+const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark', 'Dialog/DialogContext'];
 
 /**
  * Discover all exportable directories under src/.
