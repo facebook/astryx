@@ -4,9 +4,9 @@
 
 /**
  * @file Timestamp.tsx
- * @input Uses React, Text, provider locale, and Timestamp formatters
+ * @input Uses React, Text, lazy TimestampHoverCard, locale, and formatters
  * @output Exports Timestamp component and related types
- * @position Core implementation; renders formatted timestamps
+ * @position Core implementation; the semantic time element anchors its details card
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/formatRelativeTime.ts
@@ -375,6 +375,37 @@ export function Timestamp({
   );
 
   const timeElement = (
+    <time
+      ref={mergedTimeRef}
+      dateTime={isoString}
+      data-testid={testId}
+      {...stylex.props(styles.time)}
+      {...rest}
+      // `ariaLabelText` is '' only for an invalid date, which bails out
+      // before rendering — but keep the guard local: an empty aria-label
+      // must be omitted entirely (not rendered as aria-label="") so AT
+      // falls back to reading the visible <time> content.
+      {...(isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
+        ? {'aria-label': ariaLabelText}
+        : {})}
+      // The hover card is anchored here with focusTrigger="always", which
+      // attaches focus listeners but does not itself make the anchor
+      // focusable. A bare <time> is not focusable, so without a tab stop
+      // sighted keyboard users could never reveal the card (WCAG 1.4.13 /
+      // 2.1.1). Add the tab stop only while a card is actually attached — no
+      // gratuitous tab stops otherwise. The card carries its own
+      // dashed-underline hover indication as the affordance, so the anchor
+      // needs no separate focus outline.
+      {...(showTooltip ? {tabIndex: 0} : {})}>
+      {displayText}
+    </time>
+  );
+
+  // Keep Text outside the lazy card so HoverCard's first element child is
+  // the focusable <time>. Its popup attributes, anchor, and focus return must
+  // all use that same element. Text continues to own typography and theming.
+  // While the overlay chunk loads, the same styled timestamp stays visible.
+  return (
     <Text
       type={type}
       size={size}
@@ -382,57 +413,19 @@ export function Timestamp({
       weight={weight}
       xstyle={xstyle}
       {...timestampProps}>
-      <time
-        ref={mergedTimeRef}
-        dateTime={isoString}
-        data-testid={testId}
-        {...stylex.props(styles.time)}
-        {...rest}
-        // `ariaLabelText` is '' only for an invalid date, which bails out
-        // before rendering — but keep the guard local: an empty aria-label
-        // must be omitted entirely (not rendered as aria-label="") so AT
-        // falls back to reading the visible <time> content.
-        {...(isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
-          ? {'aria-label': ariaLabelText}
-          : {})}
-        // The hover card is anchored here with focusTrigger="always", which
-        // attaches focus listeners but does not itself make the anchor
-        // focusable. A bare <time> is not focusable, so without a tab stop
-        // sighted keyboard users could never reveal the card (WCAG 1.4.13 /
-        // 2.1.1). Add the tab stop only while a card is actually attached — no
-        // gratuitous tab stops otherwise. The card carries its own
-        // dashed-underline hover indication as the affordance, so the anchor
-        // needs no separate focus outline.
-        {...(showTooltip ? {tabIndex: 0} : {})}>
-        {displayText}
-      </time>
+      {showTooltip ? (
+        <Suspense fallback={timeElement}>
+          <LazyTimestampHoverCard
+            lines={lines}
+            label={t('@astryx.timestamp.detailsLabel')}>
+            {timeElement}
+          </LazyTimestampHoverCard>
+        </Suspense>
+      ) : (
+        timeElement
+      )}
     </Text>
   );
-
-  if (showTooltip) {
-    // One surface for every timestamp that shows one: the copyable hover card,
-    // loaded lazily so the default card-less path never bundles it. Each line
-    // becomes a labelled row with its own copy button. With no configured
-    // entries this is a single row carrying the full absolute time, itself
-    // copyable — so hovering a relative timestamp reveals the full time and
-    // lets the reader copy it. Opens on hover and on keyboard focus (the
-    // <time> tab stop above), with the dashed-underline affordance signalling
-    // it is interactive.
-    //
-    // While the chunk loads the bare <time> stays visible (the Suspense
-    // fallback), so nothing disappears — the card simply attaches once ready.
-    return (
-      <Suspense fallback={timeElement}>
-        <LazyTimestampHoverCard
-          lines={lines}
-          label={t('@astryx.timestamp.detailsLabel')}>
-          {timeElement}
-        </LazyTimestampHoverCard>
-      </Suspense>
-    );
-  }
-
-  return timeElement;
 }
 
 Timestamp.displayName = 'Timestamp';
