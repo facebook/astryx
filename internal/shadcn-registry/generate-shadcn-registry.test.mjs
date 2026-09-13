@@ -540,7 +540,7 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
+        shadcnBin(),
         ['add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
