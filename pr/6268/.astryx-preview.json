@@ -3,26 +3,26 @@
   "repository": "facebook/astryx",
   "pullRequest": {
     "number": 6268,
-    "headSha": "de9f611c3816a0a5898f451ca68c085c58bdd1fb",
+    "headSha": "7951ec56a1421724143281b24f2d68a76370f90c",
     "headRef": "theme-family-artifacts-implementation",
     "headRepository": "facebook/astryx",
     "headRepositoryId": "1131202426"
   },
   "sourceRun": {
-    "id": 34728477938,
+    "id": 34734821110,
     "attempt": 1,
-    "conclusion": "failure"
+    "conclusion": "success"
   },
   "targets": {
     "storybook": {
-      "available": false,
+      "available": true,
       "path": "pr/6268/",
-      "indexSha256": null
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
     },
     "sandbox": {
-      "available": false,
+      "available": true,
       "path": "pr/6268/sandbox/",
-      "indexSha256": null
+      "indexSha256": "8eabbc9eb92dae0c54a2c554f597a37e05df574413a79c9d2ee9536f293b9d88"
     }
   }
 }
