@@ -1,6 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+/**
+ * @file DialogHeroHeader.stories.tsx
+ * @input DialogHeroHeader and its Dialog, Layout, Heading, and media composition
+ * @output Inline visual states and an interactive modal example
+ * @position Storybook coverage for the experimental hero header
+ */
+
+import {useId, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DialogHeroHeader} from '@astryxdesign/lab';
 import {Dialog} from '@astryxdesign/core/Dialog';
@@ -14,6 +21,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
+import DialogHeroHeaderShowcase from '../../../packages/lab/blocks/DialogHeroHeaderShowcase';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -25,6 +33,7 @@ const styles = stylex.create({
 // Self-contained stand-in for a hero image / illustration. A real app would
 // pass an <img>, <video>, or illustration component sized to fill the slot.
 function HeroMedia({mode = 'dark'}: {mode?: 'dark' | 'light'}) {
+  const gradientId = useId();
   const [from, to, accent] =
     mode === 'dark'
       ? ['#1c2340', '#3b2d5e', '#8ba7ff']
@@ -34,15 +43,16 @@ function HeroMedia({mode = 'dark'}: {mode?: 'dark' | 'light'}) {
       viewBox="0 0 400 160"
       width="100%"
       height="160"
+      preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       {...stylex.props(styles.heroSvg)}>
       <defs>
-        <linearGradient id={`hero-${mode}`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={from} />
           <stop offset="100%" stopColor={to} />
         </linearGradient>
       </defs>
-      <rect width="400" height="160" fill={`url(#hero-${mode})`} />
+      <rect width="400" height="160" fill={`url(#${gradientId})`} />
       <circle cx="330" cy="40" r="52" fill={accent} opacity="0.35" />
       <circle cx="70" cy="140" r="70" fill={accent} opacity="0.25" />
       <circle cx="200" cy="80" r="34" fill={accent} opacity="0.55" />
@@ -58,6 +68,11 @@ const meta: Meta<typeof DialogHeroHeader> = {
 
 export default meta;
 type Story = StoryObj<typeof DialogHeroHeader>;
+
+/** The same block is discoverable through the Lab integration and canary docsite. */
+export const Showcase: Story = {
+  render: () => <DialogHeroHeaderShowcase />,
+};
 
 /**
  * The hero header drops into Layout's header slot exactly like DialogHeader.
@@ -165,7 +180,7 @@ export const StartContentAndTruncation: Story = {
  */
 export const HiddenTitleAndCustomHeading: Story = {
   render: () => (
-    <HStack gap={4}>
+    <HStack gap={4} wrap="wrap">
       <Dialog isOpen isInline onOpenChange={() => {}} width={320}>
         <Layout
           header={
@@ -262,4 +277,54 @@ export const Modal: Story = {
       </>
     );
   },
+};
+
+/** Optional close controls and divider follow the surrounding Layout. */
+export const WithoutCloseButton: Story = {
+  render: () => (
+    <Dialog isOpen isInline onOpenChange={() => {}}>
+      <Layout
+        defaultHasDividers
+        header={
+          <DialogHeroHeader
+            title="A new view of your workspace"
+            media={<HeroMedia />}
+          />
+        }
+        content={
+          <LayoutContent>
+            <Text type="body">
+              Close controls are supplied only when needed.
+            </Text>
+          </LayoutContent>
+        }
+      />
+    </Dialog>
+  ),
+};
+
+/** Logical positioning keeps the overlay on the trailing edge in RTL. */
+export const RightToLeft: Story = {
+  render: () => (
+    <div dir="rtl">
+      <Dialog isOpen isInline onOpenChange={() => {}} padding={8}>
+        <Layout
+          header={
+            <DialogHeroHeader
+              title="مرحبًا بك"
+              media={<HeroMedia mode="light" />}
+              mediaMode="light"
+              startContent={<Icon icon="info" size="sm" />}
+              onOpenChange={() => {}}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">جهّز مساحة عملك في ثلاث خطوات بسيطة.</Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </div>
+  ),
 };

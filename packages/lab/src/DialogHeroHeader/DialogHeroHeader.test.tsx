@@ -3,7 +3,8 @@
 /**
  * @file DialogHeroHeader.test.tsx
  * @input Uses vitest, @testing-library/react, DialogHeroHeader, core Dialog
- * @output Unit tests for DialogHeroHeader component behavior
+ * @output Tests for header rendering, modal focus ownership, accessible naming,
+ *   and close-button identity across media changes
  * @position Lab testing; validates DialogHeroHeader.tsx implementation
  *
  * SYNC: When DialogHeroHeader.tsx changes, update tests to match new behavior
@@ -75,11 +76,9 @@ describe('DialogHeroHeader', () => {
     expect(screen.getByText('start')).toBeInTheDocument();
   });
 
-  it('auto-focuses the title row when mounted', () => {
+  it('does not move page focus when rendered outside a Dialog', () => {
     render(<DialogHeroHeader title="Title" media={<div>media</div>} />);
-    const heading = screen.getByRole('heading', {level: 2});
-    expect(document.activeElement).toBe(heading.parentElement);
-    expect(document.activeElement).toHaveAttribute('tabindex', '-1');
+    expect(document.activeElement).toBe(document.body);
   });
 
   describe('close button', () => {
@@ -118,6 +117,22 @@ describe('DialogHeroHeader', () => {
   });
 
   describe('mediaMode', () => {
+    it('preserves the focused close button across media-mode changes', () => {
+      const props = {
+        title: 'Title',
+        media: <div>media</div>,
+        onOpenChange: vi.fn(),
+      };
+      const {rerender} = render(<DialogHeroHeader {...props} />);
+      const button = screen.getByRole('button', {name: /close/i});
+      button.focus();
+      for (const mediaMode of ['dark', 'light', undefined] as const) {
+        rerender(<DialogHeroHeader {...props} mediaMode={mediaMode} />);
+        expect(screen.getByRole('button', {name: /close/i})).toBe(button);
+        expect(button).toHaveFocus();
+      }
+    });
+
     it('wraps the close button in a MediaTheme surface', () => {
       const {container} = render(
         <DialogHeroHeader
@@ -181,6 +196,112 @@ describe('DialogHeroHeader', () => {
   });
 
   describe('inside Dialog', () => {
+    it('focuses the visible title only after opening and restores the invoker on close', () => {
+      const trigger = document.createElement('button');
+      document.body.append(trigger);
+      trigger.focus();
+      const focusStates: boolean[] = [];
+      const recordFocus = (event: FocusEvent) => {
+        const target = event.target as HTMLElement;
+        const dialog = target.closest('dialog');
+        if (dialog) {
+          focusStates.push(dialog.open);
+        }
+      };
+      document.addEventListener('focusin', recordFocus);
+      try {
+        const {rerender} = render(
+          <Dialog isOpen onOpenChange={() => {}}>
+            <DialogHeroHeader title="Welcome" media={<div>media</div>} />
+          </Dialog>,
+        );
+        expect(screen.getByRole('heading', {name: 'Welcome'})).toHaveFocus();
+        expect(focusStates.length).toBeGreaterThan(0);
+        expect(focusStates.every(Boolean)).toBe(true);
+        rerender(
+          <Dialog isOpen={false} onOpenChange={() => {}}>
+            {null}
+          </Dialog>,
+        );
+        expect(trigger).toHaveFocus();
+      } finally {
+        document.removeEventListener('focusin', recordFocus);
+        trigger.remove();
+      }
+    });
+
+    it('uses the title alone as the accessible name, including custom headings', () => {
+      const {rerender} = render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title="Welcome"
+            startContent={<span>New</span>}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Welcome');
+      rerender(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<Heading level={3}>Custom</Heading>}
+            startContent={<span>New</span>}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Custom');
+      expect(screen.getByRole('heading', {level: 3})).toHaveTextContent(
+        'Custom',
+      );
+    });
+
+    it('honors an explicit descendant focus request before the default title', () => {
+      render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader title="Welcome" media={<div>media</div>} />
+          <button data-autofocus>Continue</button>
+        </Dialog>,
+      );
+      expect(screen.getByRole('button', {name: 'Continue'})).toHaveFocus();
+    });
+
+    it.each(['disabled', 'hidden', 'inert'] as const)(
+      'falls back to the title when the explicit request is %s',
+      unavailable => {
+        render(
+          <Dialog isOpen onOpenChange={() => {}}>
+            <DialogHeroHeader title="Welcome" media={<div>media</div>} />
+            <div
+              hidden={unavailable === 'hidden'}
+              inert={unavailable === 'inert'}>
+              <button data-autofocus disabled={unavailable === 'disabled'}>
+                Continue
+              </button>
+            </div>
+          </Dialog>,
+        );
+        expect(screen.getByRole('heading', {name: 'Welcome'})).toHaveFocus();
+      },
+    );
+
+    it('does not request focus for a visually hidden title', () => {
+      render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title="Hidden"
+            media={<div>media</div>}
+            isTitleHidden
+            onOpenChange={() => {}}
+          />
+        </Dialog>,
+      );
+      const heading = screen.getByRole('heading', {name: 'Hidden'});
+      expect(heading).not.toHaveFocus();
+      expect(heading.parentElement).not.toHaveFocus();
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Hidden');
+    });
+
     it('names the open dialog via aria-labelledby', () => {
       render(
         <Dialog isOpen onOpenChange={() => {}}>
