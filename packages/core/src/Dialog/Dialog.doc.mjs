@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Dialog.doc.mjs
+ * @input Dialog props and the composed-header context contract
+ * @output Consumer guidance for Dialog and custom header integration
+ * @position Core component documentation consumed by the CLI and docsite
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -107,7 +114,7 @@ export const docs = {
     {name: 'useImperativeDialog'},
   ],
   usage: {
-    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
+    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.\n\nFor a custom header, import `useDialogContext` from `@astryxdesign/core/Dialog/DialogContext`. It returns `null` outside a Dialog, or `{isInline: boolean, titleId?: string}` inside one. Put `titleId` on the title element to participate in the default accessible name; exclude adjacent actions or decorative content. An explicit Dialog `aria-label` or `aria-labelledby` takes priority. Inline previews must keep page focus unchanged. The same subpath exports `DialogContext` and the `DialogContextValue` type. Dismissal remains controlled through `onOpenChange`; the context does not provide a close callback.',
     bestPractices: [
       { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
       { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
@@ -154,6 +161,7 @@ export const docsDense = {
   usage: {
     description: 'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
     bestPractices: [
+      { guidance: true, description: 'Custom headers: useDialogContext from @astryxdesign/core/Dialog/DialogContext returns null or {isInline, titleId?}; titleId belongs on the title alone. Keep inline page focus unchanged. DialogContext and DialogContextValue are exported from the same subpath; dismissal uses onOpenChange.' },
       { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when user must respond.' },
       { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
       { guidance: true, description: 'Use purpose="form" for dialogs with inputs so user can\'t accidentally lose data by clicking the backdrop.' },

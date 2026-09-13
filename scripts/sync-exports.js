@@ -5,7 +5,11 @@
  * @file sync-exports.js
  * @description Auto-generates the "exports" map in packages/core/package.json
  *   from the source tree. Ensures every component with src/Component/index.ts
- *   has correct export entries with source, types, and default conditions.
+ *   has correct export entries with source, types, and default conditions,
+ *   including explicitly registered supporting-module subpaths.
+ * @input Core source directories and the explicit static/subpath export lists.
+ * @output The synchronized exports map in packages/core/package.json.
+ * @position Source of truth for core package export generation and its CI gate.
  *
  * Usage:
  *   node scripts/sync-exports.js          # Update package.json in place
@@ -50,6 +54,11 @@ const INTERNAL_DIRS = new Set(['NavItem']);
  * These are maintained manually here as the single source of truth.
  */
 const STATIC_EXPORTS = {
+  './Dialog/DialogContext': {
+    source: './src/Dialog/DialogContext.ts',
+    types: './dist/Dialog/DialogContext.d.ts',
+    default: './dist/Dialog/DialogContext.js',
+  },
   './reset.css': {
     types: './src/reset.css.d.ts',
     default: './src/reset.css',

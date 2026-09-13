@@ -2,6 +2,9 @@
 
 /**
  * @file component command — List components and print component docs
+ * @input Component API responses with resolved package ownership and imports
+ * @output Text or JSON component documentation using the resolved import
+ * @position CLI presentation layer for the component command
  *
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
@@ -231,7 +234,7 @@ export function registerComponent(program) {
 
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          const importHint = result.data.import ?? resolveImportPath(coreDir, resolvedName);
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))

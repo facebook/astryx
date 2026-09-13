@@ -14,6 +14,8 @@
  * Fullscreen dialogs add safe-area protection to the default padding fallback
  * while preserving explicit prop/theme padding overrides, and fade in without
  * the centered-dialog translate/scale motion.
+ * Initial focus is applied after showModal; an explicit descendant request
+ * takes priority over a header's default title request.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
@@ -529,11 +531,27 @@ export function Dialog({
         dialog.showModal();
         // React's autoFocus calls .focus() during commit, before showModal()
         // makes the dialog visible, so the focus silently fails.
-        // Focus the first element with data-autofocus inside the dialog.
-        const autofocusTarget =
-          dialog.querySelector<HTMLElement>('[data-autofocus]');
-        if (autofocusTarget) {
-          autofocusTarget.focus();
+        // Explicit descendant intent takes priority over a header's default
+        // title. Keep the marker private to the focus-owning components.
+        const autofocusTargets = [
+          ...dialog.querySelectorAll<HTMLElement>(
+            '[data-autofocus]:not([data-autofocus="dialog-title"])',
+          ),
+          ...dialog.querySelectorAll<HTMLElement>(
+            '[data-autofocus="dialog-title"]',
+          ),
+        ];
+        for (const target of autofocusTargets) {
+          if (target.closest('[hidden], [inert], [aria-hidden="true"]')) {
+            continue;
+          }
+          // Disabled and CSS-hidden targets cannot receive focus in the
+          // browser. If a request cannot land, try the next eligible request
+          // and finally the title; otherwise preserve native initial focus.
+          target.focus();
+          if (document.activeElement === target) {
+            break;
+          }
         }
       }
     } else {

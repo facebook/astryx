@@ -39,6 +39,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./Dialog/DialogContext": {
+      "source": "./src/Dialog/DialogContext.ts",
+      "types": "./dist/Dialog/DialogContext.d.ts",
+      "default": "./dist/Dialog/DialogContext.js"
+    },
     "./reset.css": {
       "types": "./src/reset.css.d.ts",
       "default": "./src/reset.css"
