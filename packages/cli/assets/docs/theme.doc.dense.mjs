@@ -129,6 +129,18 @@ export const docsDense = {
       ],
     },
     {
+      section: 'Building a Theme Family',
+      title: 'Family Build',
+      content: [
+        {
+          type: 'prose',
+          text: 'theme build --family <base> <descendants...> --family-key <key> emits one keyed .css + .js + .d.ts beside the root; key must differ from every member name. load CSS once; import ESM separately; switch by theme identity only. all members download eagerly. --check compares the trio. use standalone build for one theme.',
+        },
+        null,
+        null,
+      ],
+    },
+    {
       section: 'Runtime vs Built Themes',
       title: 'Runtime vs Built',
       content: [

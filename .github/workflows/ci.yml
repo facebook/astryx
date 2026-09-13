@@ -809,6 +809,18 @@ jobs:
       - name: Run theme layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js
 
+      # AST-034's family contract is also a cascade contract: structural tests
+      # cannot prove identity switching, nested boundaries, media surfaces, or
+      # equal-specificity unrelated stylesheets in either physical order.
+      - name: Build theme-family compiler dependencies
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Generate the maintained theme-family fixture
+        run: pnpm -F @astryxdesign/sandbox generate:theme-family
+
+      - name: Run theme family cascade guard
+        run: node .github/scripts/theme-family-cascade.js
+
   # Guest token boundaries cross portals and the host light/dark cascade. This
   # requires a production browser render; source and jsdom checks cannot prove
   # which custom properties paint the portaled surfaces.

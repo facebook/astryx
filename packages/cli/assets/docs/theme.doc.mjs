@@ -577,6 +577,43 @@ import './themes/ocean.css';
       ],
     },
     {
+      title: 'Building a Theme Family',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use family mode when an app switches among one base theme and its selected descendants. The build writes one keyed CSS file containing every member, plus one keyed JavaScript module and one declaration file beside the root source.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build one family',
+          code: `astryx theme build --family \\
+  ./src/themes/ocean.mjs \\
+  ./src/themes/ocean-calm.mjs \\
+  ./src/themes/ocean-calm-deep.mjs \\
+  --family-key ocean-family`,
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Load native CSS and ESM independently',
+          code: `<link rel="stylesheet" href="./src/themes/ocean-family.css" />
+<script type="module">
+  import {oceanCalmTheme} from './src/themes/ocean-family.js';
+</script>`,
+        },
+        {
+          type: 'prose',
+          text: 'The family stylesheet eagerly downloads every selected member so first paint is complete. Switching members changes only the theme identity; it does not add, remove, or reorder stylesheets. A bundler such as Vite consumes the same CSS and ESM files.',
+        },
+        {
+          type: 'prose',
+          text: 'The family key is only the filename stem (`ocean-family.css`, `.js`, and `.d.ts`) and must differ from every selected member name. Use the ordinary standalone build when an app needs only one complete theme. Add `--check` to compare the exact keyed trio without writing.',
+        },
+      ],
+    },
+    {
       title: 'Runtime vs Built Themes',
       category: 'guide',
       content: [
