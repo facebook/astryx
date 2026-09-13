@@ -354,6 +354,11 @@ describe('parseMarkdown', () => {
     ]);
   });
 
+  it('keeps empty display delimiters literal', () => {
+    const source = '$$\n$$';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
   it('leaves unmatched display math delimiters literal', () => {
     const source = '$$\nx + y';
     expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));

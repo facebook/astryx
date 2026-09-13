@@ -361,6 +361,7 @@ describe('trimStreamingArtifacts', () => {
   });
 
   it('withholds incomplete inline math only when math parsing is enabled', () => {
+    expect(trimStreamingArtifacts('Value $', {math: true})).toBe('Value ');
     expect(trimStreamingArtifacts('Value $x + 1', {math: true})).toBe('Value ');
     expect(trimStreamingArtifacts('Value $x + 1')).toBe('Value $x + 1');
     expect(trimStreamingArtifacts('Value $x + 1$', {math: true})).toBe(

@@ -212,11 +212,14 @@ function matchDisplayMathBlock(
   }
   for (let index = lineIndex + 1; index < lines.length; index++) {
     if (lines[index].trim() === '$$') {
-      return {
-        value: lines.slice(lineIndex + 1, index).join('\n'),
-        nextIndex: index + 1,
-        endLine: index,
-      };
+      const value = lines.slice(lineIndex + 1, index).join('\n');
+      return value.trim() === ''
+        ? null
+        : {
+            value,
+            nextIndex: index + 1,
+            endLine: index,
+          };
     }
   }
   return null;
@@ -1941,6 +1944,16 @@ export function trimStreamingArtifacts(
       // streaming. If another unescaped dollar is already present but fails the
       // closing-boundary rule, keep both literal (the currency case).
       for (let index = 0; index < tail.length; index++) {
+        if (
+          tail[index] === '$' &&
+          tail[index + 1] == null &&
+          tail[index - 1] !== '$' &&
+          !/\d/.test(tail[index - 1] ?? '') &&
+          !isEscaped(tail, index)
+        ) {
+          tail = tail.slice(0, index);
+          break;
+        }
         if (!isInlineMathStart(tail, index)) {
           continue;
         }
