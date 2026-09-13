@@ -32,16 +32,15 @@ import {
   resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
 export {CORE_PACKAGE};
 
 /**
- * A loaded component doc. `loadDocs` returns the authored `.doc.mjs` shape,
- * which is either a single-component or multi-component doc; this loose view
- * captures the fields the API reads across both forms.
+ * A loaded component doc. The shared validated loader accepts stamped and legacy
+ * component docs; this loose view captures the fields the API reads across both.
  * @typedef {object} LoadedComponentDoc
  * @property {string} [name]
  * @property {string} [description]
@@ -53,9 +52,7 @@ export {CORE_PACKAGE};
  */
 
 /**
- * Options object for `loadDocs`, matching its declared parameter shape (used
- * as a cast target so `lang` (which the API may hold as `string|null`) type
- * checks against `loadDocs`'s `lang?: string`).
+ * Options object for the shared component-doc loader.
  * @typedef {{zh?: boolean, dense?: boolean, lang?: string}} LoadDocsOpts
  */
 
@@ -345,9 +342,22 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
  */
 export async function loadComponentDoc(docPath, opts = {}) {
   const {zh = false, dense = false, lang = null} = opts;
-  return /** @type {LoadedComponentDoc} */ (
-    await loadDocs(docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang}))
-  );
+  try {
+    return /** @type {LoadedComponentDoc} */ (
+      await loadValidatedComponentDoc(
+        docPath,
+        /** @type {LoadDocsOpts} */ ({zh, dense, lang}),
+      )
+    );
+  } catch (err) {
+    throw new AstryxError(
+      `Cannot load component metadata: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DOC,
+    );
+  }
 }
 
 /**

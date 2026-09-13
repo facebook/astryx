@@ -350,6 +350,7 @@ async function validateAtPackageDir(
     version: identity.version,
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
+    templateReplacements: manifest.templateReplacements,
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
     themes: resolveRoot(manifest.themes),

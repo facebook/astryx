@@ -213,11 +213,17 @@ describe('search leaf — integration components', () => {
     );
     fs.writeFileSync(
       path.join(widgetsDir, 'components', 'FancyGizmo.doc.mjs'),
-      `export const docs = {
+      `export default {
+        type: 'component',
         name: 'FancyGizmo',
         keywords: ['gizmo', 'widget'],
         usage: {description: 'A fancy gizmo widget.'},
+        props: [],
       };\n`,
+    );
+    fs.writeFileSync(
+      path.join(widgetsDir, 'components', 'FancyGizmo.tsx'),
+      `export function FancyGizmo() { return null; }\n`,
     );
 
     return dir;

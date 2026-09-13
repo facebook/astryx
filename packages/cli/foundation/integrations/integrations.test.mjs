@@ -208,6 +208,52 @@ describe('configured integrations', () => {
 });
 
 describe('local integration self-resolution', () => {
+  it('preserves template replacement declarations for local discovery', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/local', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {
+  templates: './templates',
+  templateReplacements: {'acme-app-shell': 'shell-side-nav'},
+};
+`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'templates'));
+
+    const loaded = await loadLocalIntegration(tmpDir, {fresh: true});
+
+    expect(loaded).toMatchObject({
+      name: '@acme/local',
+      templates: path.join(tmpDir, 'templates'),
+      templateReplacements: {'acme-app-shell': 'shell-side-nav'},
+      __local: true,
+    });
+  });
+
+  it('documents that an ordinary __proto__ literal vanishes before parsing', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/local', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {
+  templateReplacements: {'__proto__': 'shell-side-nav'},
+};
+`,
+    );
+
+    const loaded = await loadLocalIntegration(tmpDir, {fresh: true});
+
+    expect(loaded?.templateReplacements).toEqual({});
+    expect(Object.hasOwn(loaded?.templateReplacements ?? {}, '__proto__')).toBe(
+      false,
+    );
+  });
+
   it('preserves a valid gapReport named export', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),

@@ -17,6 +17,26 @@ export interface AstryxIntegration {
   components?: string;
   /** Relative path to the templates root (resolved to absolute). */
   templates?: string;
+  /** Maps exact integration template ids to exact Core template ids. Find Core
+   *  ids with `astryx --json template --list --package @astryxdesign/core`.
+   *  A valid replacement owns unqualified lookup and every default discovery
+   *  surface; package-qualified lookup still selects the Core original or the
+   *  integration's own id. Invalid declarations fail closed. Later explicitly
+   *  configured integrations win valid conflicts with a warning, and explicit
+   *  configuration wins over autolinking. When only autolinked packages
+   *  conflict, the dependency listed later in package.json wins with a warning.
+   *  CLIs from 0.5.3 onward ignore this key when it is unknown and preserve
+   *  understood contributions. Versions 0.5.2 and earlier reject unknown
+   *  manifest keys and drop the whole integration. Replacement selection starts in
+   *  0.7.0. `__proto__` is unsupported and reserved as a
+   *  `templateReplacements` map key. An ordinary
+   *  `{'__proto__': 'shell-side-nav'}` literal uses JavaScript's special
+   *  prototype-setter form; because the string value is neither an object nor
+   *  null, it does not change the prototype, creates no own key, and disappears
+   *  before validation. Observable own keys created with computed-property
+   *  syntax or deserialization are rejected. Template discovery otherwise
+   *  accepts that directory id. */
+  templateReplacements?: Record<string, string>;
   /** Relative path to the codemods root (resolved to absolute). */
   codemods?: string;
   /** Relative path to the reference-docs (topics) root (resolved to

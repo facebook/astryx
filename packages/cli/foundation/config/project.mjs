@@ -19,10 +19,10 @@
  *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
- *   - SKIP + WARN policy: as a discovery method runs, per-integration work is
- *     guarded so one broken integration never throws out of discovery. Any
- *     AstryxIntegrationIssue encountered is collected into a private set and
- *     that integration's contributions are skipped.
+ *   - SKIP + WARN policy: discovery records each integration issue. Other valid
+ *     contribution kinds remain available; invalid template and component files
+ *     do not hide valid siblings. A manifest load failure still withdraws the
+ *     package because its roots cannot be trusted.
  *   - `issues()` returns the deduped accumulated set, and (when called
  *     directly) fills in validation for any configured integration not yet
  *     visited by a discovery call, so it is always complete on demand.
@@ -48,11 +48,13 @@ import {
 import {
   CORE_PACKAGE,
   discoverOwnedComponents,
-  discoverIntegrationComponents,
+  discoverValidIntegrationComponents,
 } from '../discovery/component-discovery.mjs';
 import {findCoreDir} from '../fs/paths.mjs';
 import {
-  discoverAll as discoverTemplates,
+  applyTemplateReplacements,
+  effectiveTemplateDiscovery,
+  discoverAllUnresolved as discoverTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../discovery/template-adapter.mjs';
 import {
@@ -68,10 +70,7 @@ import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {
-  INVALID_AGENT_DOCS,
-  validateLoadedIntegration,
-} from '../integrations/validate-contributions.mjs';
+import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -209,6 +208,8 @@ export class Project {
    * @type {Set<string>}
    */
   #visitedIssues = new Set();
+  /** @type {Promise<Array<object>> | null} */
+  #templatesPromise = null;
 
   /**
    * @param {object} init
@@ -440,22 +441,6 @@ export class Project {
   }
 
   /**
-   * Whether this package has an error that invalidates its regular manifest
-   * contributions. Invalid `agentDocs` blocks agent-doc writes only; it must not
-   * withdraw components, templates, docs, or codemods.
-   * @param {string} pkg
-   * @returns {boolean}
-   */
-  #hasBlockingContributionIssue(pkg) {
-    return this.#issues.some(
-      issue =>
-        issue.package === pkg &&
-        issue.severity === 'error' &&
-        issue.code !== INVALID_AGENT_DOCS,
-    );
-  }
-
-  /**
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
@@ -491,9 +476,9 @@ export class Project {
   /**
    * Core + integration component ownership records. Wraps
    * discoverOwnedComponents for core and discoverIntegrationComponents (via
-   * discoverOwnedComponents) for integrations, but applies the skip+warn
-   * policy per integration: a broken integration's components are skipped and
-   * its issues collected, never thrown. Memoized per instance.
+   * discoverOwnedComponents) for integrations. Invalid component records are
+   * omitted and reported; valid component siblings and other contribution kinds
+   * remain available. Memoized per instance.
    *
    * @returns {Promise<Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>>}
    */
@@ -513,18 +498,22 @@ export class Project {
         }
       }
 
-      // Each integration in isolation so one broken integration is skipped.
+      // Each integration is discovered independently. Invalid records are
+      // omitted below without hiding valid siblings or other contribution kinds.
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
-          // discoverOwnedComponents owns the core+integration record shape;
-          // here we add only this integration's records (core is handled
-          // above) so a single broken integration can be skipped in isolation.
-          for (const rec of discoverIntegrationComponents(integration)) {
-            records.push(rec);
+          const {components, errors} =
+            await discoverValidIntegrationComponents(integration);
+          for (const error of errors) {
+            this.#pushIssue(pkg, {
+              code: 'invalid_component',
+              severity: 'error',
+              message: error.message,
+            });
           }
+          records.push(...components);
         } catch (err) {
           this.#pushIssue(pkg, {
             code: 'invalid_component',
@@ -539,17 +528,21 @@ export class Project {
   }
 
   /**
-   * Core + integration templates, type-tagged. Wraps discoverTemplates (core +
-   * external blocks) and discoverIntegrationTemplatesForOne per integration so
-   * a broken integration's templates are skipped and its issues collected.
-   * Memoized per instance.
+   * Core + integration templates, type-tagged, with valid integration
+   * replacements projected over their Core targets. Wraps raw template discovery
+   * (Core + external blocks) and discoverIntegrationTemplatesForOne per integration
+   * so unusable template files are reported and omitted while valid siblings
+   * remain available. Memoized per instance.
    *
    * @returns {Promise<Array<object>>}
    */
   async templates() {
-    return this.#memo('templates', async () => {
+    if (this.#templatesPromise) return this.#templatesPromise;
+    this.#templatesPromise = (async () => {
       /** @type {any[]} */
       const templates = [];
+      /** @type {import('../discovery/template-adapter.mjs').TemplateDiscoveryError[]} */
+      const replacementErrors = [];
 
       // Core + external-package templates (discoverTemplates internally also
       // loads integration templates via loadConfig today; we intentionally
@@ -570,20 +563,24 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        if (this.#hasBlockingContributionIssue(pkg)) continue;
+        // Template discovery already isolates invalid template files and returns
+        // every valid sibling. Do not withdraw templates because another
+        // contribution kind in this package is broken.
         try {
           const {templates: ts, errors} =
             await discoverIntegrationTemplatesForOne(integration);
           for (const e of errors) {
             this.#pushIssue(pkg, {
-              code: 'invalid_template',
-              severity: 'error',
+              code: e.code ?? 'invalid_template',
+              severity: e.severity ?? 'error',
               message: e.message,
             });
+            if (e.replacementTarget != null) replacementErrors.push(e);
           }
-          // Only contribute templates when the integration had no per-template
-          // errors (skip the whole integration's templates on any error).
-          if (errors.length === 0) templates.push(...ts);
+          // Discovery already omits each unusable template from `ts`. Keep all
+          // valid siblings, while the collected errors remain visible through
+          // issues() and replacement errors disable only their own targets.
+          templates.push(...ts);
         } catch (err) {
           this.#pushIssue(pkg, {
             code: 'invalid_template',
@@ -593,15 +590,24 @@ export class Project {
         }
       }
 
-      return templates.sort((a, b) => a.name.localeCompare(b.name));
-    });
+      const resolved = applyTemplateReplacements(templates, replacementErrors);
+      for (const error of resolved.errors) {
+        this.#pushIssue(error.package, {
+          code: error.code,
+          severity: error.severity,
+          message: error.message,
+        });
+      }
+      return effectiveTemplateDiscovery(resolved.templates);
+    })();
+    return this.#templatesPromise;
   }
 
   /**
    * Bundled source themes plus themes contributed by installed integrations.
    * Each record keeps its package owner and source directory so callers can
-   * both list and copy it without reconstructing paths. A broken integration's
-   * themes are skipped under the same issue policy as every other kind.
+   * both list and copy it without reconstructing paths. A broken theme
+   * contribution is reported without hiding the package's other valid kinds.
    *
    * @returns {Promise<import('../discovery/theme-discovery.mjs').DiscoveredTheme[]>}
    */
@@ -612,7 +618,6 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.themes) continue;
         try {
           themes.push(...(await discoverIntegrationThemes(integration)));
@@ -650,7 +655,6 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.docs) continue;
         try {
           const {records, errors} = await discoverIntegrationDocs(integration);
@@ -686,8 +690,8 @@ export class Project {
   /**
    * Core registry transforms + integration codemods for an upgrade range.
    * Wraps getTransformsBetween (core) and discoverIntegrationCodemods /
-   * selectIntegrationCodemods (integrations). A broken integration's codemods
-   * are skipped (issue collected) rather than failing the whole resolution.
+   * selectIntegrationCodemods (integrations). An invalid codemod contribution
+   * is reported and omitted without hiding other valid contribution kinds.
    * Memoized per (from, to) key.
    *
    * @param {string} fromVersion exclusive lower bound
@@ -705,7 +709,6 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.codemods) continue;
         try {
           // Validate this integration's codemods discover cleanly in
@@ -760,6 +763,10 @@ export class Project {
    * @returns {Promise<ProjectIntegrationIssue[]>}
    */
   async issues() {
+    // Template replacement validity depends on the combined Core + integration
+    // catalog. Resolve it first so issue results never depend on which discovery
+    // method the caller happened to invoke earlier.
+    await this.templates();
     for (const integration of this.#loadedIntegrations) {
       await this.#collectIssues(integration);
     }

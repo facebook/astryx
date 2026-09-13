@@ -15,8 +15,8 @@ export const doc = {
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. Points the CLI at the package's components, " +
-    'templates, codemods, doc topics, source themes, and managed agent guidance, ' +
-    'and where to file issues. Every field is optional.',
+    'templates, template replacements, codemods, doc topics, source themes, and ' +
+    'managed agent guidance, and where to file issues. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
     {
@@ -32,6 +32,13 @@ export const doc = {
       description:
         'Relative path to the templates root (resolved to absolute).',
       example: "'./src/templates'",
+    },
+    {
+      name: 'templateReplacements',
+      type: 'Record<string, string>',
+      description:
+        "Maps each exact integration template id to the exact Core template id it replaces. Find Core ids with `astryx --json template --list --package @astryxdesign/core`. Unqualified lookup selects a valid replacement; use `--package @astryxdesign/core` for the original. Invalid declarations fail closed, later explicitly configured packages win with a warning, and explicit configuration wins over autolinking. If only autolinked packages conflict, the dependency listed later in package.json wins with a warning. CLIs from 0.5.3 onward ignore this field when unknown and preserve understood contributions; Versions 0.5.2 and earlier reject unknown manifest keys and drop the integration. Replacement selection starts in 0.7.0. `__proto__` is unsupported and reserved as a `templateReplacements` map key. An ordinary `{'__proto__': 'shell-side-nav'}` literal uses JavaScript's special prototype-setter form; because the string value is neither an object nor null, it does not change the prototype, creates no own key, and disappears before validation. Observable own keys created with computed-property syntax or deserialization are rejected. Template discovery otherwise accepts that directory id.",
+      example: "{'acme-app-shell': 'shell-side-nav'}",
     },
     {
       name: 'codemods',
@@ -73,6 +80,9 @@ export const doc = {
       code: `export default {
   components: './src/components',
   templates: './src/templates',
+  templateReplacements: {
+    'acme-app-shell': 'shell-side-nav',
+  },
   codemods: './codemods',
   docs: './docs',
   themes: './themes',

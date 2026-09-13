@@ -401,7 +401,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `component.detail.source`         | One component's source file, as {component, source}.                                                                                                                                                                                                                                          |
 | `component.detail.showcase`       | One component's showcase example, as {component, aspectRatio, source}.                                                                                                                                                                                                                        |
 | `component.detail.blocks`         | One component's example blocks, as {component, showcase, examples, related} of BlockEntry.                                                                                                                                                                                                    |
-| `docs.list`                       | All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.                                                                                                                                                                                                       |
+| `docs.list`                       | All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.                                                                                                                                                                                        |
 | `docs.detail`                     | One topic's full ReferenceDoc, with token-ref blocks inlined.                                                                                                                                                                                                                                 |
 | `docs.detail.section`             | A single ReferenceSection of a topic: the first whose title contains the section query.                                                                                                                                                                                                       |
 | `blog.list`                       | The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.                                                                                                                                                      |
@@ -417,7 +417,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `swizzle.copy`                    | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                                                                                |
 | `gap-report.categories`           | The fixed gap category values and human-readable labels.                                                                                                                                                                                                                                      |
 | `gap-report.file`                 | An aggregate receipt with overall status, the selected package and issues URL, ordered per-handler deliveries, and filedCount/routedOnlyCount totals.                                                                                                                                         |
-| `template.list`                   | Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.                                                                                                                          |
+| `template.list`                   | The effective discovered TemplateListEntry[] for pages and blocks. A winning replacement entry includes optional `replaces`, naming the Core id omitted from the default list.                                                                                                                |
 | `template.show`                   | The resolved template's raw source plus its description, kind, and the component names it composes.                                                                                                                                                                                           |
 | `template.skeleton`               | A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.                                                                                                                                                                  |
 | `template.copy`                   | A scaffold receipt: template id, output directory, written file name, and file count.                                                                                                                                                                                                         |
@@ -441,9 +441,9 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `integration.add`                 | A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.                                                                                                                               |
 | `integration.pack-check`          | The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.                                                                                                                                                                             |
 | `integration.validate`            | The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning \| error, message}.                                                                                                      |
-| `integration.template-conflicts`  | The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.                                                                                                   |
+| `integration.template-conflicts`  | The integration identity, issues, and conflicts as {severity: info \| warning, relationship: replaces \| accidental, replaces?, command}.                                                                                                                                                     |
 | `integration.component-conflicts` | The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.                                                                                                |
-| `integration.doc-conflicts`       | The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.                                                                                                                         |
+| `integration.doc-conflicts`       | The integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` \| `error`) and `relationship` (`replaces` \| `extends` \| `accidental`).                                                                                                        |
 | `layout.expand`                   | The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).                                                          |
 | `layout.check`                    | The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).                                                                      |
 | `layout.grammar`                  | The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.                                                                                                                           |
@@ -604,18 +604,22 @@ version) comes from `package.json`, not the manifest.
 export default {
   components: './components',
   templates: './templates',
+  templateReplacements: {
+    'acme-app-shell': 'shell-side-nav',
+  },
   codemods: './codemods',
   issuesUrl: 'https://github.com/acme/widgets/issues',
 };
 ```
 
-| Field        | Type     | Purpose                                                                           |
-| ------------ | -------- | --------------------------------------------------------------------------------- |
-| `components` | `string` | Directory holding the package's components and their `.doc.*` files.              |
-| `templates`  | `string` | Directory holding the package's page/block templates.                             |
-| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.                       |
-| `docs`       | `string` | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
-| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point.             |
+| Field                  | Type                     | Purpose                                                                           |
+| ---------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `components`           | `string`                 | Directory holding the package's components and their `.doc.*` files.              |
+| `templates`            | `string`                 | Directory holding the package's page/block templates.                             |
+| `templateReplacements` | `Record<string, string>` | Maps integration template ids to the Core ids they replace.                       |
+| `codemods`             | `string`                 | Directory holding upgrade codemods run by `astryx upgrade`.                       |
+| `docs`                 | `string`                 | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
+| `issuesUrl`            | `string`                 | Where "report an issue" links for this package's contributions point.             |
 
 Every field is optional; declare only the roots the package ships. There is no
 factory: write a plain object, and annotate it with the `AstryxIntegration` type
@@ -631,9 +635,10 @@ wrong type fails there; a field this CLI does not know is ignored with a
 warning naming it, so a manifest written against a newer CLI still contributes
 everything this one understands.
 
-Discovery is resilient: a broken or misconfigured integration is skipped with a
-one-line warning on stderr instead of crashing the CLI, and it never corrupts a
-`--json` envelope. To inspect problems, run
+Discovery is resilient. A manifest load failure skips that package with a warning.
+An invalid contribution kind remains reportable without hiding other valid kinds,
+and invalid template or component metadata is omitted without hiding valid siblings.
+Warnings go to stderr and never corrupt a `--json` envelope. To inspect problems, run
 `astryx doctor integration validate <package>` for structure, then use `templates`,
 `components`, or `docs` under the same `astryx doctor integration` group to check
 Core identity overlaps before publishing. Bare `astryx doctor` checks overall

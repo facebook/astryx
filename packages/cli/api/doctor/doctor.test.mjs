@@ -14,6 +14,7 @@ import {fileURLToPath} from 'node:url';
 import {
   doctor,
   checkImplicitIntegrations,
+  checkIntegrationIssues,
   checkVersionAlignment,
   checkPackageManager,
 } from './doctor.mjs';
@@ -70,6 +71,27 @@ describe('doctor leaf', () => {
     expect(ids).toContain('node-version');
     expect(ids).toContain('core-installed');
   }, SLOW);
+});
+
+describe('integration issue check', () => {
+  it('surfaces cross-package replacement warnings', () => {
+    const check = checkIntegrationIssues({
+      integrationIssues: [
+        {
+          package: '@acme/later',
+          code: 'ambiguous_template_replacement',
+          severity: 'warning',
+          message: 'Later configured replacement wins.',
+        },
+      ],
+    });
+
+    expect(check).toMatchObject({
+      id: 'integration-issues',
+      status: 'warn',
+      message: expect.stringContaining('Later configured replacement wins.'),
+    });
+  });
 });
 
 describe('doctor leaf — degradation & error paths', () => {

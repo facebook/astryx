@@ -193,6 +193,7 @@ export function computeRequiredFiles(loaded) {
  * @property {{slug: string, exportName: string}[]} themes
  * @property {string[]} components
  * @property {{id: string, type: string, name: string}[]} templates
+ * @property {{template: string, target: string}[]} templateReplacements
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
@@ -205,6 +206,7 @@ export function computeRequiredFiles(loaded) {
  * @property {string} [themes]
  * @property {string} [components]
  * @property {string} [templates]
+ * @property {Record<string, string>} [templateReplacements]
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {{append?: readonly string[]}} [agentDocs]
@@ -223,6 +225,9 @@ export async function collectIdentities(loaded) {
     themes: [],
     components: [],
     templates: [],
+    templateReplacements: Object.entries(loaded.templateReplacements ?? {})
+      .map(([template, target]) => ({template, target}))
+      .sort((a, b) => a.template.localeCompare(b.template)),
     codemods: [],
     docs: [],
     agentDocsAppend: loaded.agentDocs?.append
@@ -443,6 +448,12 @@ export function compareIdentities(local, packed) {
   compareKind('Theme', local.themes, packed.themes, item => item.slug);
   compareKind('Component', local.components, packed.components, item => item);
   compareKind('Template', local.templates, packed.templates, item => item.id);
+  compareKind(
+    'Template replacement',
+    local.templateReplacements,
+    packed.templateReplacements,
+    item => item.template,
+  );
   compareKind(
     'Codemod',
     local.codemods,

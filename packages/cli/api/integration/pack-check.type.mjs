@@ -18,13 +18,27 @@
 /** @typedef {IntegrationPackCheckResponse} PackCheckResponse */
 
 /**
+ * Public contribution inventory returned by pack-check. Kept here rather than
+ * importing the runtime inventory module so the type-only `/json` surface does
+ * not pull implementation dependencies into downstream type checking.
+ * @typedef {object} PackCheckContributionIdentities
+ * @property {{slug: string, exportName: string}[]} themes
+ * @property {string[]} components
+ * @property {{id: string, type: string, name: string}[]} templates
+ * @property {{template: string, target: string}[]} templateReplacements
+ * @property {{version: string, id: string}[]} codemods
+ * @property {string[]} docs
+ * @property {string[]} agentDocsAppend
+ */
+
+/**
  * @typedef {object} PackCheckData
  * @property {string|null} name
  * @property {string|null} version
  * @property {boolean} packable — true when zero error-severity issues
  * @property {PackCheckTarball|null} tarball
  * @property {PackCheckInventory} inventory
- * @property {{local: import('../../foundation/integrations/contribution-inventory.mjs').ContributionIdentities|null, packed: import('../../foundation/integrations/contribution-inventory.mjs').ContributionIdentities|null}} contributions
+ * @property {{local: PackCheckContributionIdentities|null, packed: PackCheckContributionIdentities|null}} contributions
  * @property {import('../../foundation/integrations/issue').AstryxIntegrationIssue[]} issues
  */
 

@@ -55,6 +55,8 @@ const _require = createRequire(import.meta.url);
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
  *   Every integration the project loaded, or null when the project could not be
  *   read at all.
+ * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
+ *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -582,7 +584,43 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 9 — report the detected package manager, and say so when the project's
+ * Summarize the combined integration graph, including cross-package warnings.
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkIntegrationIssues(ctx) {
+  const issues = ctx.integrationIssues;
+  if (issues == null) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message: 'Skipped — the project integration graph could not be loaded.',
+    };
+  }
+  if (issues.length === 0) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'pass',
+      message: 'Integration contributions and cross-package relationships are valid.',
+    };
+  }
+  const errors = issues.filter(issue => issue.severity === 'error').length;
+  const details = issues
+    .map(issue => `${issue.package}: ${issue.message}`)
+    .join(' | ');
+  return {
+    id: 'integration-issues',
+    label: 'Integration contributions',
+    status: errors > 0 ? 'fail' : 'warn',
+    message: `${issues.length} integration issue(s): ${details}`,
+    fix: 'Run `astryx doctor integration` for package-specific diagnostics and resolve cross-package precedence in astryx.config.',
+  };
+}
+
+/**
+ * Check 10 — report the detected package manager, and say so when the project's
  * own declaration disagrees with what is on disk.
  *
  * Two states are worth surfacing rather than guessing past, because in both the
@@ -649,6 +687,7 @@ export const SYNC_CHECKS = [
   checkVersionAlignment,
   checkThemes,
   checkImplicitIntegrations,
+  checkIntegrationIssues,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -680,11 +719,14 @@ export async function runChecks(options = {}) {
   let configTheme = null;
   /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
   let integrations = null;
+  /** @type {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} */
+  let integrationIssues = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
+    integrationIssues = await project.issues();
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -697,6 +739,7 @@ export async function runChecks(options = {}) {
     configPath,
     configTheme,
     integrations,
+    integrationIssues,
     configError,
   };
 

@@ -37,7 +37,12 @@ afterEach(() => {
  * Build a loaded-integration-shaped object. Roots are absolute (mirrors
  * loadIntegrations' resolveRoot).
  */
-function loaded({name = '@acme/widgets', components, templates, codemods} = {}) {
+function loaded({
+  name = '@acme/widgets',
+  components,
+  templates,
+  codemods,
+} = {}) {
   return {
     name,
     version: '1.0.0',
@@ -60,6 +65,25 @@ describe('warnOnIntegrationIssues', () => {
       'Warning: @acme/widgets has 1 integration issue(s). ' +
         'Run: astryx doctor integration validate @acme/widgets',
     );
+  });
+
+  it('surfaces cross-package issues collected by Project', async () => {
+    const project = {
+      issues: async () => [
+        {
+          package: '@acme/later',
+          code: 'ambiguous_template_replacement',
+          severity: 'warning',
+          message: 'Later configured replacement wins.',
+        },
+      ],
+    };
+
+    await warnOnIntegrationIssues(project, {json: false});
+
+    expect(errLines).toEqual([
+      'Warning: @acme/later has 1 integration issue(s). Run: astryx doctor',
+    ]);
   });
 
   it('emits nothing in --json mode (keeps stdout/JSON clean)', async () => {

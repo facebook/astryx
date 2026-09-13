@@ -152,16 +152,37 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'A template id is its source-relative path with the metadata suffix removed; the display `name` is not its identity and may repeat. If an integration id matches a Core id, unqualified lookup fails closed instead of choosing one. Run `astryx doctor integration templates <package>` before publishing: it recommends renaming, but an intentional overlap is allowed when callers always pass `--package <package>`.',
+          text: "A template id is its exact source-relative path with the metadata suffix removed; the display `name` is not its identity and may repeat. Run `astryx --json template --list --package @astryxdesign/core` and copy the Core entry's `id` exactly. In `templateReplacements`, each key is the integration template's exact id and each value is the exact Core id it replaces. Generate the source/metadata pair with `integration add template`, then add this explicit replacement policy to the manifest.",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Create the integration template',
+          code: 'astryx integration add template acme-app-shell --type page',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeLandingPage.template.ts\nexport default {\n  type: 'page',\n  // name, description, preview, ...\n};",
+          label: 'Declare the replacement',
+          code: "// astryx.integration.ts\nexport default {\n  templates: './templates',\n  templateReplacements: {\n    'acme-app-shell': 'shell-side-nav',\n  },\n};\n\n// templates/acme-app-shell.template.mjs\nexport default {\n  type: 'page',\n  name: 'Acme App Shell',\n  description: 'An app shell with Acme navigation.',\n};",
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          label: 'Use product navigation in the replacement source',
+          code: "// templates/acme-app-shell.tsx\nimport {AppShell} from '@astryxdesign/core/AppShell';\nimport {Card} from '@astryxdesign/core/Card';\nimport {AcmeSideNav, AcmeTopNav} from '@acme/navigation';\n\nexport default function AcmeAppShell() {\n  return (\n    <AppShell\n      sideNav={<AcmeSideNav />}\n      topNav={<AcmeTopNav />}>\n      <Card>Product content</Card>\n    </AppShell>\n  );\n}",
         },
         {
           type: 'prose',
-          text: 'The CLI needs both files at consume time. `integration add` includes the templates root when package.json already has a files allowlist. It never creates an exports map, because doing that can make previously-open deep imports private; when a map already exists, it adds the generated source subpath without replacing author-owned entries. `integration pack --check` proves the source and metadata survive the tarball and verifies every component through the public import its metadata advertises.',
+          text: 'With that declaration, `astryx template shell-side-nav` selects `acme-app-shell`; template listing, search, build suggestions, and block-layout lookup use the same effective identity. `astryx template shell-side-nav --package @astryxdesign/core` still selects the original, and `astryx template acme-app-shell --package @acme/navigation` explicitly selects the integration template. In the `template.list` JSON response, a winning replacement entry carries `replaces` naming the Core id it supersedes, and the Core entry is omitted from the default listing. A page can replace only a Core page, and a block can replace only a Core block. Missing Core targets, type mismatches, declarations for templates the package does not provide, and more than one replacement from one package fail closed: Core stays the default and `astryx doctor integration templates <package>` reports the error. If multiple explicitly configured packages each replace the target, the package configured later wins with a warning. An explicitly configured replacement always wins over an autolinked one. If only autolinked packages conflict, the package listed later in package.json dependencies wins with a warning; add the intended package to `astryx.config` to make the choice explicit. Without `templateReplacements`, valid template selection keeps the existing package-aware ambiguity behavior; contribution failure isolation still follows the rules below.',
+        },
+        {
+          type: 'prose',
+          text: "The replacement map is part of the integration manifest rather than the strict per-template metadata object. CLIs from 0.5.3 onward ignore an unknown manifest key with a warning, preserve contributions they understand, and leave templates addressable by their own ids. Versions 0.5.2 and earlier reject unknown manifest keys and drop the entire integration. Replacement selection starts in 0.7.0. Integration authors who require replacement behavior should declare `@astryxdesign/cli >=0.7.0`; use `@astryxdesign/cli >=0.5.3` only when fallback to own-id access is acceptable. `__proto__` is unsupported and reserved as a `templateReplacements` map key. An ordinary `{'__proto__': 'shell-side-nav'}` literal uses JavaScript's special prototype-setter form; because the string value is neither an object nor null, it does not change the prototype, creates no own key, and disappears before validation. Observable own keys created with computed-property syntax or deserialization are rejected. As a template directory id it remains discoverable, but choose another kebab-case id.",
+        },
+        {
+          type: 'prose',
+          text: 'The CLI needs both files at consume time. `integration add` includes the templates root when package.json already has a files allowlist. It never creates an exports map, because doing that can make previously-open deep imports private; when a map already exists, it adds the generated source subpath without replacing author-owned entries. `integration pack --check` proves the source, metadata, and replacement map survive the tarball and verifies every component through the public import its metadata advertises.',
         },
       ],
     },
@@ -355,7 +376,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Discovery is resilient. A broken or misconfigured integration is skipped with a single non-blocking warning on stderr instead of crashing the CLI, and it never corrupts a `--json` stdout envelope. Everyday commands keep working with the remaining valid contributions.',
+          text: "Discovery is resilient. A manifest that fails to load is skipped because none of its roots are trustworthy. An error in one contribution kind is reported without hiding the integration's other valid kinds. Invalid template and component files are omitted without hiding valid siblings; other kinds keep their existing all-or-nothing behavior. Everyday commands keep working with the remaining valid contributions, warnings go to stderr, and `--json` stdout stays clean.",
         },
         {
           type: 'prose',

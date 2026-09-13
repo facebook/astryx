@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';
 import {InMemoryConfigCache} from './config-cache.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import {discoverCoreTemplates} from '../discovery/template-adapter.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -21,6 +22,9 @@ function scaffold({
   issuesUrl,
   withComponents = true,
   withTemplates = true,
+  templateId = 'hero',
+  templateType = 'block',
+  templateReplacements = null,
   withCodemods = true,
   brokenComponent = false,
   brokenCodemod = false,
@@ -50,6 +54,9 @@ function scaffold({
   const manifest = {};
   if (withComponents) manifest.components = './components';
   if (withTemplates) manifest.templates = './templates';
+  if (templateReplacements) {
+    manifest.templateReplacements = templateReplacements;
+  }
   if (withCodemods) manifest.codemods = './codemods';
   if (docs) manifest.docs = './docs';
   if (agentDocs != null) manifest.agentDocs = agentDocs;
@@ -65,7 +72,7 @@ function scaffold({
     fs.mkdirSync(compDir, {recursive: true});
     fs.writeFileSync(
       path.join(compDir, 'Widget.doc.mjs'),
-      `export const docs = { name: 'Widget', usage: {description: 'A widget'} };\n`,
+      `export const docs = { name: 'Widget', usage: {description: 'A widget'}, props: [] };\n`,
     );
     if (!brokenComponent) {
       fs.writeFileSync(
@@ -80,12 +87,12 @@ function scaffold({
     const tDir = path.join(pkgDir, 'templates');
     fs.mkdirSync(tDir, {recursive: true});
     fs.writeFileSync(
-      path.join(tDir, 'hero.doc.mjs'),
-      `export default { type: 'block', name: 'Hero', description: 'A hero' };\n`,
+      path.join(tDir, `${templateId}.doc.mjs`),
+      `export default { type: '${templateType}', name: 'Fixture template', description: 'A fixture template' };\n`,
     );
     fs.writeFileSync(
-      path.join(tDir, 'hero.tsx'),
-      `export default function Hero() { return null; }\n`,
+      path.join(tDir, `${templateId}.tsx`),
+      `export default function FixtureTemplate() { return null; }\n`,
     );
   }
 
@@ -337,6 +344,91 @@ describe('Project discovery', () => {
     expect(hero.type).toBe('block');
   });
 
+  it('templates() projects a valid integration replacement instead of its Core target', async () => {
+    const corePage = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(corePage).toBeDefined();
+    scaffold({
+      templateId: 'acme-app-shell',
+      templateType: 'page',
+      templateReplacements: {'acme-app-shell': corePage.dirName},
+    });
+    const project = await Project.load(tmpDir);
+
+    const templates = await project.templates();
+
+    expect(
+      templates.find(template => template.dirName === 'acme-app-shell'),
+    ).toMatchObject({
+      package: '@acme/widgets',
+      replaces: corePage.dirName,
+    });
+    expect(
+      templates.find(
+        template =>
+          template.dirName === corePage.dirName &&
+          template.package !== '@acme/widgets',
+      ),
+    ).toBeUndefined();
+    expect(await project.issues()).toEqual([]);
+  });
+
+  it('reports replacement issues regardless of discovery call order without hiding other contributions', async () => {
+    scaffold({
+      templateReplacements: {hero: 'missing-core-template'},
+    });
+
+    const componentsFirst = await Project.load(tmpDir);
+    expect(
+      (await componentsFirst.components()).some(
+        component => component.package === '@acme/widgets',
+      ),
+    ).toBe(true);
+    expect(await componentsFirst.issues()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          package: '@acme/widgets',
+        }),
+      ]),
+    );
+
+    const issuesFirst = await Project.load(tmpDir, {fresh: true});
+    expect(await issuesFirst.issues()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          package: '@acme/widgets',
+        }),
+      ]),
+    );
+    expect(
+      (await issuesFirst.components()).some(
+        component => component.package === '@acme/widgets',
+      ),
+    ).toBe(true);
+    const ownTemplate = (await issuesFirst.templates()).find(
+      template =>
+        template.package === '@acme/widgets' && template.dirName === 'hero',
+    );
+    expect(ownTemplate).toBeDefined();
+    expect(ownTemplate).not.toHaveProperty('replaces');
+
+    const sharedCache = new InMemoryConfigCache();
+    const warm = await Project.load(tmpDir, {cache: sharedCache});
+    await warm.templates();
+    const cached = await Project.load(tmpDir, {cache: sharedCache});
+    expect(await cached.issues()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          package: '@acme/widgets',
+        }),
+      ]),
+    );
+  });
+
   it('codemods() returns core registry groups + integration groups', async () => {
     scaffold();
     const project = await Project.load(tmpDir);
@@ -479,6 +571,53 @@ describe('Project issues (skip + warn)', () => {
     const issues = await project.issues();
     expect(issues.length).toBeGreaterThan(0);
     expect(issues.some(i => i.package === '@acme/widgets')).toBe(true);
+  });
+
+  it('keeps valid contribution kinds and siblings when others are broken', async () => {
+    const pkgDir = scaffold({brokenComponent: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'broken.template.mjs'),
+      `export default {type: 'block', name: 'Broken', description: 'Missing source'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'components', 'ValidWidget.doc.mjs'),
+      `export default {type: 'component', name: 'ValidWidget', props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'components', 'ValidWidget.tsx'),
+      `export function ValidWidget() { return null; }\n`,
+    );
+    const project = await Project.load(tmpDir);
+
+    const templates = await project.templates();
+    const components = await project.components();
+    const issues = await project.issues();
+
+    expect(
+      templates.find(
+        template =>
+          template.dirName === 'hero' && template.package === '@acme/widgets',
+      ),
+    ).toBeDefined();
+    expect(
+      components.find(
+        component =>
+          component.name === 'ValidWidget' &&
+          component.package === '@acme/widgets',
+      ),
+    ).toBeDefined();
+    expect(
+      components.find(
+        component =>
+          component.name === 'Widget' && component.package === '@acme/widgets',
+      ),
+    ).toBeUndefined();
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({code: 'invalid_component'}),
+        expect.objectContaining({code: 'invalid_template'}),
+      ]),
+    );
   });
 
   it('does not throw when an integration codemod is broken', async () => {

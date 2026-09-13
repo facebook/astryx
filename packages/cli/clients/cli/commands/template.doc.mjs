@@ -18,16 +18,22 @@ export const doc = {
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     'templates; with a name it shows the source or a layout skeleton, or scaffolds it ' +
-    'into the project at a target path. Narrow an ambiguous name with --type and/or --package. ' +
-    '--cdn writes the no-build-step CDN starter page, which ships as an asset rather than as ' +
-    'a discovered template.',
+    'into the project at a target path. A configured integration replacement is the ' +
+    'default for its Core id; use --package @astryxdesign/core for the original. ' +
+    'Narrow other ambiguous names with --type and/or --package. --cdn writes the ' +
+    'no-build-step CDN starter page, which ships as an asset rather than as a ' +
+    'discovered template.',
   fn: 'template',
   args: [
     {name: 'name', param: 'name', required: false},
     {name: 'path', param: 'options.targetPath', required: false},
   ],
   options: [
-    {flag: '--list', param: 'options.list', description: 'List available templates'},
+    {
+      flag: '--list',
+      param: 'options.list',
+      description: 'List available templates',
+    },
     {
       flag: '--type <type>',
       param: 'options.type',
@@ -37,7 +43,8 @@ export const doc = {
     {
       flag: '--package <pkg>',
       param: 'options.package',
-      description: 'Narrow to templates from a specific package',
+      description:
+        'Narrow to templates from a specific package. Use @astryxdesign/core to select an original hidden by an integration replacement.',
     },
     {
       flag: '--skeleton',
@@ -60,14 +67,28 @@ export const doc = {
   examples: [
     {label: 'List templates', cli: 'astryx template --json'},
     {
+      label: 'List exact Core ids',
+      cli: 'astryx --json template --list --package @astryxdesign/core',
+    },
+    {
       label: 'Scaffold into the app',
       cli: 'astryx template dashboard ./src/app',
     },
+    {
+      label: 'Select a replaced Core original',
+      cli: 'astryx template shell-side-nav ./src/app --package @astryxdesign/core',
+    },
     {label: 'CDN starter page', cli: 'astryx template --cdn'},
-    {label: 'CDN starter page, elsewhere', cli: 'astryx template --cdn public/demo.html'},
+    {
+      label: 'CDN starter page, elsewhere',
+      cli: 'astryx template --cdn public/demo.html',
+    },
   ],
   exitCodes: [
-    {code: 0, when: 'success, including a CDN page left untouched because it already exists'},
+    {
+      code: 0,
+      when: 'success, including a CDN page left untouched because it already exists',
+    },
     {
       code: 1,
       when: 'unknown or ambiguous template, no source, a path escape, or an existing target without --overwrite',

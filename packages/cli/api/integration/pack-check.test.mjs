@@ -310,6 +310,41 @@ describe('integrationPackCheck', () => {
     expect(result.data.packable).toBe(true);
   });
 
+  it('detects a lifecycle script that changes packed template replacements', async () => {
+    const script = [
+      "const fs=require('fs')",
+      "const p='astryx.integration.mjs'",
+      "const s=fs.readFileSync(p,'utf8')",
+      "fs.writeFileSync(p,s.replace('shell-side-nav','shell-top-nav'))",
+    ].join(';');
+    writePackage({
+      manifest:
+        "export default {templates: './templates', templateReplacements: {'acme-shell': 'shell-side-nav'}};\n",
+      files: ['astryx.integration.mjs', 'templates'],
+      themes: false,
+      scripts: {prepack: `node -e "${script}"`},
+    });
+    fs.mkdirSync(path.join(tmpDir, 'templates'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.template.mjs'),
+      "export default {type: 'page', name: 'Acme shell', description: 'Fixture.'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('acme-shell'),
+      }),
+    );
+  });
+
   it('detects a lifecycle script that changes the packed identity', async () => {
     const script = [
       "const fs=require('fs')",

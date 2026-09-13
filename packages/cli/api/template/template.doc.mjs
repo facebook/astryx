@@ -16,15 +16,27 @@ export const doc = {
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     "templates; with a name it returns that template's source, a layout skeleton, or " +
-    'scaffolds it into the project. Templates are discovered across core, external ' +
-    'packages, and integrations, so the same id can appear in more than one place; ' +
-    'narrow an ambiguous name with type and/or package. The cdn option writes the ' +
-    'annotated no-build-step CDN starter page, which ships as an asset rather than as ' +
+    'scaffolds it into the project. A configured integration may replace a Core ' +
+    'template id for unqualified discovery and lookup; package selection still ' +
+    'addresses the Core original. Other duplicate ids remain ambiguous and can be ' +
+    'narrowed by type and/or package. The cdn option writes the annotated ' +
+    'no-build-step CDN starter page, which ships as an asset rather than as ' +
     'a discovered template.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse | TemplateCdnResponse>',
-  keywords: ['template', 'scaffold', 'page', 'block', 'skeleton', 'starter', 'cdn', 'esm', 'importmap', 'no-build'],
+  keywords: [
+    'template',
+    'scaffold',
+    'page',
+    'block',
+    'skeleton',
+    'starter',
+    'cdn',
+    'esm',
+    'importmap',
+    'no-build',
+  ],
   params: [
     {
       name: 'name',
@@ -69,7 +81,7 @@ export const doc = {
       name: 'options.package',
       type: 'string',
       description:
-        'Narrow lookups to templates from a specific owning package (core templates report @astryxdesign/core).',
+        'Narrow lookups to templates from a specific owning package. Without it, a valid integration replacement is selected for the Core id; use @astryxdesign/core to select the original.',
     },
     {
       name: 'options.targetPath',
@@ -94,7 +106,7 @@ export const doc = {
     {
       type: 'template.list',
       description:
-        'Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags. Filtered by type/package when provided.',
+        'The effective templates (page + block); a valid integration replacement takes the place of its Core target and carries `replaces`. Pass `package` to list one package, including replaced Core originals.',
     },
     {
       type: 'template.show',
@@ -141,7 +153,15 @@ export const doc = {
   ],
   examples: [
     {label: 'List templates', code: 'const {data} = await template();'},
+    {
+      label: 'List exact Core ids',
+      code: "await template(undefined, {list: true, package: '@astryxdesign/core'});",
+    },
     {label: 'Show source', code: "await template('dashboard');"},
+    {
+      label: 'Select a replaced Core original',
+      code: "await template('shell-side-nav', {package: '@astryxdesign/core'});",
+    },
     {
       label: 'Layout skeleton',
       code: "await template('dashboard', {skeleton: true});",
