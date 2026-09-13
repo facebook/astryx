@@ -11,8 +11,7 @@
  * @position Lab implementation; consumed by index.ts, tested by
  *   DialogHeroHeader.test.tsx, demonstrated in Storybook
  *
- * Hero-style header for Dialog, ported from the internal XDSModalHeroHeader
- * (facebook/astryx#4182). The high-emphasis sibling of DialogHeader: a
+ * Hero-style header for Dialog. The high-emphasis sibling of DialogHeader: a
  * full-bleed media slot sits above the title, and the close button overlays
  * the media's top-trailing corner.
  *
@@ -28,11 +27,11 @@
  * composes MediaTheme under the hood so the overlay picks up inverted tokens
  * (including its focus ring) when the media is dark.
  *
- * Title handshake: mirrors DialogHeader. The title row renders with the
- * parent Dialog's published title id (via the Dialog context) so the dialog
- * names itself through aria-labelledby, and the row receives focus on mount
- * for screen reader announcement, suppressed for inline documentation
- * previews.
+ * The title alone carries Dialog's title id. A visible title declares default
+ * focus intent; Dialog applies it after opening, with explicit descendant
+ * focus requests taking priority. Hidden, inline, and standalone headers do
+ * not request focus. MediaTheme stays mounted across media-mode changes so
+ * the close button retains DOM identity and keyboard focus.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/DialogHeroHeader/DialogHeroHeader.doc.mjs (props, usage)
@@ -41,7 +40,7 @@
  * - /apps/storybook/stories/DialogHeroHeader.stories.tsx (examples)
  */
 
-import {useEffect, useRef, type ReactElement, type ReactNode} from 'react';
+import type {ReactElement, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -77,14 +76,12 @@ const styles = stylex.create({
     insetInlineEnd: spacingVars['--spacing-2'],
     zIndex: 1,
   },
-  // Title row below the media. Programmatic focus target (tabIndex={-1});
-  // outline suppressed like DialogHeader's focusable title.
+  // Title row below the media; startContent is outside the accessible label.
   titleRow: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-3'],
     marginBlockStart: spacingVars['--spacing-4'],
-    outline: 'none',
   },
   startContent: {
     display: 'flex',
@@ -94,6 +91,7 @@ const styles = stylex.create({
   // Allow the heading to shrink and truncate inside the flex row.
   titleHeading: {
     minWidth: 0,
+    outline: 'none',
   },
 });
 
@@ -112,8 +110,8 @@ export interface DialogHeroHeaderProps extends BaseProps<HTMLDivElement> {
    * (matching DialogHeader); pass a pre-styled Heading element to customize
    * the heading treatment. Provides the accessible label for the parent
    * Dialog via aria-labelledby (unless the Dialog receives an explicit
-   * aria-label/aria-labelledby) and receives focus when the dialog opens for
-   * screen reader accessibility.
+   * aria-label/aria-labelledby). The visible title is the default initial
+   * focus target after the modal opens; an explicit descendant request wins.
    */
   title: string | ReactElement;
 
@@ -173,8 +171,8 @@ export interface DialogHeroHeaderProps extends BaseProps<HTMLDivElement> {
  * a featured, marketing, or onboarding moment. The close button overlays the
  * media's top-trailing corner; set `mediaMode` so it composes MediaTheme and
  * stays legible over dark or light media. The title names the parent Dialog
- * via aria-labelledby and receives focus when a modal dialog opens (inline
- * documentation previews suppress this autofocus), exactly like DialogHeader.
+ * via aria-labelledby. The visible title supplies the default initial focus
+ * target after the modal opens; hidden titles and inline previews skip it.
  *
  * Uses LayoutHeader internally, so it drops into Layout's `header` slot the
  * same way DialogHeader does.
@@ -213,22 +211,15 @@ export function DialogHeroHeader({
   ...rest
 }: DialogHeroHeaderProps) {
   const t = useTranslator();
-  const titleRowRef = useRef<HTMLDivElement>(null);
   const dialogContext = useDialogContext();
-  const shouldAutoFocus = dialogContext?.isInline !== true;
+  const shouldAutoFocus = dialogContext?.isInline === false && !isTitleHidden;
   const titleId = dialogContext?.titleId;
-
-  // Auto-focus the title row when mounted for screen reader accessibility,
-  // mirroring DialogHeader. Inline dialogs are documentation/showcase
-  // previews, so suppress focus to avoid stealing scroll position from the
-  // surrounding page. The parent Dialog detects the title row (by `titleId`)
-  // via a callback ref to set its default aria-labelledby — no registration
-  // handshake needed here.
-  useEffect(() => {
-    if (shouldAutoFocus && titleRowRef.current) {
-      titleRowRef.current.focus();
-    }
-  }, [shouldAutoFocus]);
+  const titleProps = {
+    id: titleId,
+    tabIndex: shouldAutoFocus ? -1 : undefined,
+    // Private coordination with Dialog, which owns modal focus timing.
+    'data-autofocus': shouldAutoFocus ? 'dialog-title' : undefined,
+  };
 
   const closeButton = onOpenChange != null && (
     <Button
@@ -244,24 +235,25 @@ export function DialogHeroHeader({
     />
   );
 
-  // The row (not the heading) carries the dialog's title id and the focus
-  // target so a caller-provided Heading element participates in the
-  // aria-labelledby handshake without prop injection.
+  // Custom headings keep their own props. Their wrapper supplies the title
+  // handshake without introspection and without naming the start-content slot.
   const titleRow = (
-    <div
-      ref={titleRowRef}
-      id={titleId}
-      tabIndex={-1}
-      {...stylex.props(styles.titleRow)}>
-      {startContent && (
+    <div {...stylex.props(styles.titleRow)}>
+      {startContent != null && (
         <div {...stylex.props(styles.startContent)}>{startContent}</div>
       )}
       {typeof title === 'string' ? (
-        <Heading level={2} maxLines={maxLines} xstyle={styles.titleHeading}>
+        <Heading
+          {...titleProps}
+          level={2}
+          maxLines={maxLines}
+          xstyle={styles.titleHeading}>
           {title}
         </Heading>
       ) : (
-        title
+        <div {...titleProps} {...stylex.props(styles.titleHeading)}>
+          {title}
+        </div>
       )}
     </div>
   );
@@ -276,12 +268,9 @@ export function DialogHeroHeader({
       {...rest}>
       <div {...stylex.props(styles.mediaArea)}>
         {media}
-        {closeButton &&
-          (mediaMode != null ? (
-            <MediaTheme mode={mediaMode}>{closeButton}</MediaTheme>
-          ) : (
-            closeButton
-          ))}
+        {closeButton && (
+          <MediaTheme mode={mediaMode ?? 'off'}>{closeButton}</MediaTheme>
+        )}
       </div>
       {isTitleHidden ? (
         <VisuallyHidden as="div">{titleRow}</VisuallyHidden>
