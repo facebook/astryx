@@ -19,7 +19,12 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: []
+modules:
+  [
+    module:Markdown/createMarkdownMermaidPlugin,
+    module:Markdown/createMarkdownReferenceLinksPlugin,
+    module:Markdown/useMarkdownAnnotations,
+  ]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
