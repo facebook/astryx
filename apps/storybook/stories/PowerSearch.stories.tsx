@@ -540,6 +540,169 @@ export const WithPresetFilters: Story = {
   name: 'Pre-set Filters',
 };
 
+/**
+ * A nearly full token row keeps its empty combobox on that row instead of
+ * growing the field with a blank trailing row. Typing still restores the
+ * input's normal editing width and may wrap visibly when space is exhausted.
+ */
+export const NearFullTokenRow: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'priority',
+        operator: 'is',
+        value: {type: 'enum', value: 'p1'},
+      },
+      {
+        field: 'title',
+        operator: 'contains',
+        value: {type: 'string', value: 'aaaaaaaaaaaaaaaaaa'},
+      },
+    ]);
+    return (
+      <PowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Add more filters...',
+  },
+  name: 'Near-full Token Row',
+  play: async ({canvasElement}) => {
+    const wrapper =
+      canvasElement.querySelector<HTMLElement>('.astryx-tokenizer');
+    const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
+    const tokens = wrapper?.querySelectorAll<HTMLElement>(':scope > span');
+    const firstToken = tokens?.item(0);
+    const finalToken = tokens?.item((tokens?.length ?? 0) - 1);
+    const clearButton = wrapper?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear all"]',
+    );
+    if (!wrapper || !input || !firstToken || !finalToken || !clearButton) {
+      throw new Error('Near-full token-row fixture did not render as expected');
+    }
+    const isCoarsePointer = matchMedia('(pointer: coarse)').matches;
+    const requiresCoarsePointer =
+      new URLSearchParams(window.location.search).get('storyPlayPointer') ===
+      'coarse';
+    if (requiresCoarsePointer && !isCoarsePointer) {
+      throw new Error('Near-full token-row guard requires a coarse pointer');
+    }
+
+    await document.fonts.ready;
+    const reserveDeadline = performance.now() + 2000;
+    while (
+      wrapper.style.getPropertyValue('--_tokenizer-end-lane-reserve') === ''
+    ) {
+      if (performance.now() >= reserveDeadline) {
+        throw new Error('Clear-all lane reserve was not measured');
+      }
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => resolve()),
+      );
+    }
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const inputRect = input.getBoundingClientRect();
+    const firstTokenRect = firstToken.getBoundingClientRect();
+    const tokenRect = finalToken.getBoundingClientRect();
+    const clearRect = clearButton.getBoundingClientRect();
+    let clearHitLeft = 0;
+    let clearHitRight = 0;
+    if (isCoarsePointer) {
+      const clearHitStyle = getComputedStyle(clearButton, '::after');
+      clearHitLeft = Number.parseFloat(clearHitStyle.left);
+      clearHitRight = Number.parseFloat(clearHitStyle.right);
+      if (
+        clearHitStyle.content === 'none' ||
+        !Number.isFinite(clearHitLeft) ||
+        !Number.isFinite(clearHitRight)
+      ) {
+        throw new Error('Clear all did not expose its coarse-pointer hit area');
+      }
+    }
+    const clearHitRect = {
+      left: clearRect.left + clearHitLeft,
+      right: clearRect.right - clearHitRight,
+    };
+    if (Math.abs(firstTokenRect.top - tokenRect.top) > 0.5) {
+      throw new Error(
+        `Fixture tokens wrapped before the empty combobox check: first token top ${firstTokenRect.top.toFixed(2)}, final token top ${tokenRect.top.toFixed(2)}`,
+      );
+    }
+    if (inputRect.top >= tokenRect.bottom) {
+      throw new Error(
+        `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
+      );
+    }
+    if (inputRect.width <= 0) {
+      throw new Error('Empty combobox has no pointer hit target');
+    }
+    const overlap =
+      Math.min(inputRect.right, clearHitRect.right) -
+      Math.max(inputRect.left, clearHitRect.left);
+    if (overlap > 0) {
+      throw new Error(
+        `Empty combobox overlaps the coarse-pointer Clear all hit area by ${overlap.toFixed(2)}px`,
+      );
+    }
+    const clearHitTarget = document.elementFromPoint(
+      clearRect.left + clearRect.width / 2,
+      clearRect.top + clearRect.height / 2,
+    );
+    if (!clearHitTarget || !clearButton.contains(clearHitTarget)) {
+      throw new Error(
+        `Clear all center is hit-tested as ${clearHitTarget?.tagName ?? 'nothing'}`,
+      );
+    }
+    const tokenHitTarget = document.elementFromPoint(
+      tokenRect.left + tokenRect.width / 2,
+      tokenRect.top + tokenRect.height / 2,
+    );
+    if (!tokenHitTarget || !finalToken.contains(tokenHitTarget)) {
+      throw new Error(
+        `Final token center is hit-tested as ${tokenHitTarget?.tagName ?? 'nothing'}`,
+      );
+    }
+
+    const hitY = inputRect.top + inputRect.height / 2;
+    let inputHitTarget: Element | null = null;
+    for (let x = Math.ceil(inputRect.left); x < inputRect.right; x += 1) {
+      const candidate = document.elementFromPoint(x + 0.5, hitY);
+      if (candidate === input) {
+        inputHitTarget = candidate;
+        break;
+      }
+    }
+    if (!inputHitTarget) {
+      throw new Error('Empty combobox has no exposed pointer hit target');
+    }
+    inputHitTarget.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    if (document.activeElement !== input) {
+      throw new Error('Clicking the empty combobox did not focus it');
+    }
+  },
+};
+
+export const NearFullTokenRowRTL: Story = {
+  ...NearFullTokenRow,
+  decorators: [
+    Story => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  name: 'Near-full Token Row (RTL)',
+};
+
 export const FullFeatured: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
