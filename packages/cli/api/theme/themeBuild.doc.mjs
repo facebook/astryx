@@ -3,7 +3,10 @@
 /**
  * @file FunctionDoc for `themeBuild()` / `astryx theme build`. Colocated with
  * the API function it documents; the response-shape source of truth stays in
- * `theme.type.mjs`.
+ * `theme.type.mjs`. Documents imported/inherited icons and atomic rejection
+ * of registries that cannot be preserved in build/check modes.
+ * @input themeBuild's build/check and icon-import behavior.
+ * @output Consumer API documentation for generated theme artifacts.
  * @position packages/cli/api/theme — function documentation
  */
 
@@ -21,6 +24,12 @@ export const doc = {
     'that re-exports the built theme, and a .d.ts (plus an optional .variants.d.ts when the ' +
     'theme adds custom prop values). When another build step emits the icon registry, ' +
     '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
+    'Real registry imports are preserved, including aliases, default imports, and namespace ' +
+    'imports. Icons inherited through extends are retained, with child entries taking precedence. ' +
+    'Comment and string contents do not affect import detection. ' +
+    'An inline registry that cannot be preserved fails with ERR_THEME_INVALID before any ' +
+    'output is written, including in check mode. Move the registry to its own module and ' +
+    'import it into the theme file. ' +
     'With {check: true} it writes nothing and instead compares ' +
     'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
   importPath: '@astryxdesign/cli/api',
@@ -60,7 +69,7 @@ export const doc = {
       name: 'options.iconsSpecifier',
       type: 'string',
       description:
-        'Override the icon-registry import specifier in the generated JS module, for example ./icons.mjs. When omitted, the source specifier is preserved.',
+        'Override the selected icon-registry import specifier in the generated JS module, for example ./icons.mjs. With child and inherited registries, this changes the child registry import. When omitted, direct source specifiers are preserved; relative imports followed through a local base are rebased to the theme file. A registry inherited through a package theme must be imported directly to use this option.',
     },
     {
       name: 'ctx.cwd',
@@ -87,7 +96,10 @@ export const doc = {
       code: 'ERR_THEME_LOAD',
       when: 'the file cannot be loaded or parsed into a defineTheme() result',
     },
-    {code: 'ERR_THEME_INVALID', when: 'the resolved theme has no name'},
+    {
+      code: 'ERR_THEME_INVALID',
+      when: 'the resolved theme has no name, or its icon registry cannot be preserved through an import (also rejected in check mode)',
+    },
     {
       code: 'ERR_PATH_TRAVERSAL',
       when: 'the theme name contains a path separator or traversal marker',
