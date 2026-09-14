@@ -86,6 +86,18 @@ describe('manifest: drift guards', () => {
     }
   });
 
+  it('exposes integration authoring only under doctor', () => {
+    expect(allNames.has('validate-integration')).toBe(false);
+    for (const name of [
+      'doctor integration validate',
+      'doctor integration templates',
+      'doctor integration components',
+      'doctor integration docs',
+    ]) {
+      expect(allNames.has(name), name).toBe(true);
+    }
+  });
+
   it('sorts subcommands by name (stable, agent-facing order)', () => {
     for (const entry of allEntries) {
       if (!entry.subcommands) continue;

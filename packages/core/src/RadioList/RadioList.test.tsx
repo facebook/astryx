@@ -3,8 +3,11 @@
 /**
  * @file RadioList.test.tsx
  * @input Uses vitest, @testing-library/react, RadioList, RadioListItem
- * @output Unit tests for RadioList and RadioListItem behavior
- * @position Testing; validates RadioList.tsx and RadioListItem.tsx implementation
+ * @output Component-specific callback, form, composition, layout, and styling
+ *   tests. Shared radio-group role, name, state, focus, and interaction outcomes
+ *   live in __tests__/RadioGroup.a11y.test.tsx and its Chromium twin.
+ * @position Component-owned regression tests that do not duplicate the reusable
+ *   radio-group contract.
  *
  * SYNC: When RadioList.tsx or RadioListItem.tsx changes, update tests to match new behavior
  */
@@ -15,29 +18,6 @@ import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
-interface InjectedRule {
-  selector: string;
-  text: string;
-  media: string | null;
-}
-
-function injectedRules(): InjectedRule[] {
-  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
-    [...rules].flatMap((rule): InjectedRule[] => {
-      const {selectorText} = rule as CSSStyleRule;
-      if (typeof selectorText === 'string') {
-        return [{selector: selectorText, text: rule.cssText, media: condition}];
-      }
-      const nested = (rule as CSSGroupingRule).cssRules;
-      if (nested == null) {
-        return [];
-      }
-      const own = (rule as CSSMediaRule).media?.mediaText;
-      return walk(nested, own != null && own !== '' ? own : condition);
-    });
-
-  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
-}
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -87,29 +67,6 @@ describe('RadioList', () => {
     expect(screen.getAllByRole('radio')).toHaveLength(3);
   });
 
-  it('renders radiogroup role', () => {
-    render(
-      <RadioList label="Preference" value="" onChange={() => {}}>
-        <RadioListItem label="Option A" value="a" />
-      </RadioList>,
-    );
-    expect(screen.getByRole('radiogroup')).toBeInTheDocument();
-  });
-
-  it('selects the correct radio based on value prop', () => {
-    render(
-      <RadioList label="Preference" value="b" onChange={() => {}}>
-        <RadioListItem label="Option A" value="a" />
-        <RadioListItem label="Option B" value="b" />
-        <RadioListItem label="Option C" value="c" />
-      </RadioList>,
-    );
-    const radios = screen.getAllByRole('radio');
-    expect(radios[0]).not.toBeChecked();
-    expect(radios[1]).toBeChecked();
-    expect(radios[2]).not.toBeChecked();
-  });
-
   it('calls onChange with value string when clicking a radio', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -155,18 +112,6 @@ describe('RadioList', () => {
     expect(handleChange).toHaveBeenCalledWith('b');
   });
 
-  it('disables all radios when group isDisabled is true', () => {
-    render(
-      <RadioList label="Preference" value="" onChange={() => {}} isDisabled>
-        <RadioListItem label="Option A" value="a" />
-        <RadioListItem label="Option B" value="b" />
-      </RadioList>,
-    );
-    const radios = screen.getAllByRole('radio');
-    expect(radios[0]).toBeDisabled();
-    expect(radios[1]).toBeDisabled();
-  });
-
   it('does not call onChange when group is disabled', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -184,18 +129,6 @@ describe('RadioList', () => {
       /pointer-events/i,
     );
     expect(handleChange).not.toHaveBeenCalled();
-  });
-
-  it('disables individual item when item isDisabled is true', () => {
-    render(
-      <RadioList label="Preference" value="" onChange={() => {}}>
-        <RadioListItem label="Option A" value="a" />
-        <RadioListItem label="Option B" value="b" isDisabled />
-      </RadioList>,
-    );
-    const radios = screen.getAllByRole('radio');
-    expect(radios[0]).not.toBeDisabled();
-    expect(radios[1]).toBeDisabled();
   });
 
   it('does not call onChange when individual item is disabled', async () => {
@@ -272,22 +205,6 @@ describe('RadioList', () => {
       </RadioList>,
     );
     expect(screen.getByText('Great choice!')).toBeInTheDocument();
-  });
-
-  it('sets aria-invalid on radiogroup when status is error', () => {
-    render(
-      <RadioList
-        label="Preference"
-        value=""
-        onChange={() => {}}
-        status={{type: 'error', message: 'Required'}}>
-        <RadioListItem label="Option A" value="a" />
-      </RadioList>,
-    );
-    expect(screen.getByRole('radiogroup')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
   });
 
   it('renders startContent', () => {
@@ -421,59 +338,7 @@ describe('RadioList', () => {
     expect(screen.getAllByRole('radio')).toHaveLength(2);
   });
 
-  it('sets aria-required on radiogroup when isRequired is true', () => {
-    render(
-      <RadioList label="Preference" value="" onChange={() => {}} isRequired>
-        <RadioListItem label="Option A" value="a" />
-      </RadioList>,
-    );
-    expect(screen.getByRole('radiogroup')).toHaveAttribute(
-      'aria-required',
-      'true',
-    );
-  });
-
   describe('focus management (no-selection tab stop)', () => {
-    it('keeps focus on the selected radio when a value is selected', () => {
-      render(
-        <RadioList label="Preference" value="b" onChange={() => {}}>
-          <RadioListItem label="Option A" value="a" />
-          <RadioListItem label="Option B" value="b" />
-          <RadioListItem label="Option C" value="c" />
-        </RadioList>,
-      );
-      const selected = screen.getByLabelText('Option B');
-      // A selected value provides a deterministic native tab stop; focusing it
-      // must not be redirected elsewhere.
-      selected.focus();
-      expect(selected).toHaveFocus();
-    });
-
-    it('redirects to the first radio when focus enters an unselected group forward', () => {
-      render(
-        <>
-          <button type="button">before</button>
-          <RadioList label="Preference" value="" onChange={() => {}}>
-            <RadioListItem label="Option A" value="a" />
-            <RadioListItem label="Option B" value="b" />
-            <RadioListItem label="Option C" value="c" />
-          </RadioList>
-        </>,
-      );
-      const radios = screen.getAllByRole('radio');
-      const outside = screen.getByText('before');
-      outside.focus();
-      // Forward entry: the browser lands on a leading radio; the group keeps the
-      // first radio as the deterministic tab stop.
-      radios[0].focus();
-      expect(radios[0]).toHaveFocus();
-
-      // Landing on a middle radio from outside is normalized to the first.
-      outside.focus();
-      radios[1].focus();
-      expect(radios[0]).toHaveFocus();
-    });
-
     it('redirects to the last radio when focus enters an unselected group backward', () => {
       render(
         <>
@@ -593,39 +458,12 @@ describe('RadioList', () => {
       expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
     });
 
-    it('keeps radios focusable via aria-disabled when a reason is provided', () => {
-      renderGroup();
-      for (const radio of screen.getAllByRole('radio', h)) {
-        expect(radio).not.toBeDisabled();
-        expect(radio).toHaveAttribute('aria-disabled', 'true');
-      }
-    });
-
-    it('links the reason tooltip from the group via aria-describedby', () => {
-      renderGroup();
-      const group = screen.getByRole('radiogroup');
-      const tooltip = screen.getByRole('tooltip', h);
-      expect(group.getAttribute('aria-describedby')).toContain(tooltip.id);
-    });
-
     it('blocks selection while focusable-disabled', () => {
       const onChange = vi.fn();
       renderGroup({onChange});
       const pro = screen.getByRole('radio', {name: 'Pro', hidden: true});
       fireEvent.click(pro);
       expect(onChange).not.toHaveBeenCalled();
-    });
-
-    it('keeps radios natively disabled when disabled without a reason', () => {
-      render(
-        <RadioList label="Plan" value="free" onChange={() => {}} isDisabled>
-          <RadioListItem label="Free" value="free" />
-          <RadioListItem label="Pro" value="pro" />
-        </RadioList>,
-      );
-      for (const radio of screen.getAllByRole('radio', h)) {
-        expect(radio).toBeDisabled();
-      }
     });
   });
   describe('form participation', () => {
@@ -705,13 +543,13 @@ describe('RadioList', () => {
             label="Option A"
             value="a"
             data-testid="item-a"
-            aria-label="First option"
+            aria-label="Option A, first option"
           />
         </RadioList>,
       );
       expect(screen.getByTestId('item-a')).not.toHaveAttribute('aria-label');
       expect(
-        screen.getByRole('radio', {name: 'First option'}),
+        screen.getByRole('radio', {name: 'Option A, first option'}),
       ).toBeInTheDocument();
     });
   });
@@ -731,8 +569,7 @@ describe('RadioList', () => {
         </RadioList>,
       );
       // The radio points at its visible label, so the name is computed from
-      // the rich node's own text — unlike CheckboxListItem, whose control has
-      // a separate hidden label and needs aria-label to say anything useful.
+      // the rich node's own text.
       expect(
         screen.getByRole('radio', {name: 'Pro plan (recommended)'}),
       ).toBeInTheDocument();
@@ -747,12 +584,14 @@ describe('RadioList', () => {
                 Pro plan <em>(recommended)</em>
               </span>
             }
-            aria-label="Pro plan"
+            aria-label="Pro plan (recommended) option"
             value="pro"
           />
         </RadioList>,
       );
-      expect(screen.getByRole('radio', {name: 'Pro plan'})).toBeInTheDocument();
+      expect(
+        screen.getByRole('radio', {name: 'Pro plan (recommended) option'}),
+      ).toBeInTheDocument();
     });
 
     it('selects the option when a ReactNode label is clicked', async () => {
@@ -778,12 +617,14 @@ describe('RadioList', () => {
                 Pro plan <a href="#pricing">pricing details</a>
               </>
             }
-            aria-label="Pro plan"
+            aria-label="Pro plan pricing details"
             value="pro"
           />
         </RadioList>,
       );
-      const radio = screen.getByRole('radio', {name: 'Pro plan'});
+      const radio = screen.getByRole('radio', {
+        name: 'Pro plan pricing details',
+      });
       const link = screen.getByRole('link', {name: 'pricing details'});
       await user.tab();
       expect(radio).toHaveFocus();
@@ -844,7 +685,7 @@ describe('RadioList', () => {
       for (const testid of ['row-a', 'row-b']) {
         const row = screen.getByTestId(testid);
         expect(row).toHaveClass('astryx-radio-list-item');
-        expect(row).toHaveClass('sm');
+        expect(row).toHaveAttribute('data-size', 'sm');
         expect(row).toHaveAttribute('data-size', 'sm');
       }
     });
@@ -866,12 +707,12 @@ describe('RadioList', () => {
       const plain = screen.getByTestId('plain');
       const disabled = screen.getByTestId('disabled');
 
-      expect(selected).toHaveClass('selected');
       expect(selected).toHaveAttribute('data-selected', 'selected');
-      expect(plain).not.toHaveClass('selected');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+      expect(plain).not.toHaveAttribute('data-selected');
       expect(plain).not.toHaveAttribute('data-selected');
 
-      expect(disabled).toHaveClass('disabled');
+      expect(disabled).toHaveAttribute('data-disabled', 'disabled');
       expect(disabled).toHaveAttribute('data-disabled', 'disabled');
       expect(plain).not.toHaveAttribute('data-disabled');
     });

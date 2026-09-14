@@ -27,6 +27,18 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(HERE, '..');
 const MODULE_ID_PATTERN =
   /^module:([A-Z][A-Za-z0-9]*)\/([A-Za-z][A-Za-z0-9]*)$/;
+const READER_FIRST_TEMPLATE_KINDS = new Set([
+  'architecture',
+  'component',
+  'module',
+]);
+const CONTRACT_AT_A_GLANCE_SECTION = 'Contract at a glance';
+
+function expectedTemplateSections(kind, requiredSections) {
+  return READER_FIRST_TEMPLATE_KINDS.has(kind)
+    ? [CONTRACT_AT_A_GLANCE_SECTION, ...requiredSections]
+    : requiredSections;
+}
 
 export function parseKnowledgeDocument(content, filePath = '<document>') {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -984,11 +996,13 @@ function validateAgainstSchema(
         `${filePath}: template fields are missing from the schema: ${extraFields.join(', ')}.`,
       );
     }
-    if (
-      JSON.stringify(sections) !== JSON.stringify(kindSchema.requiredSections)
-    ) {
+    const expectedSections = expectedTemplateSections(
+      kind,
+      kindSchema.requiredSections,
+    );
+    if (JSON.stringify(sections) !== JSON.stringify(expectedSections)) {
       problems.push(
-        `${filePath}: template section order must exactly match the schema; bump the schema and migrate active records for a structural change.`,
+        `${filePath}: template section order must exactly match the schema plus its allowed editorial sections; bump the schema and migrate active records for any other structural change.`,
       );
     }
     return problems;

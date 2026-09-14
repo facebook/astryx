@@ -178,10 +178,10 @@ describe('`redacted` says what actually happened', () => {
 });
 
 describe('the schema version marks the change', () => {
-  it('delivers v2 records that validate against the published schema', () => {
+  it('delivers v3 records that validate against the published schema', () => {
     const event = collectEvent();
-    expect(event.schemaVersion).toBe(2);
-    expect(SCHEMA_VERSION).toBe(2);
+    expect(event.schemaVersion).toBe(3);
+    expect(SCHEMA_VERSION).toBe(3);
     expect(() => parseDebugEvent(event)).not.toThrow();
   });
 });

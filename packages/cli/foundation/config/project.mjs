@@ -6,7 +6,7 @@
  * `Project` is the one entry point a command uses to read everything it needs
  * about a consumer's project: the validated config surface, the configured
  * integrations, and the resolved discovery sets (components, templates,
- * codemods, docs) — plus issue routing (issuesUrl) and the accumulated
+ * codemods, docs, themes) — plus issue routing (issuesUrl) and the accumulated
  * integration issues. It replaces the old `loadConfig(cwd)` plain-object loader
  * and the per-command fan-out into the various discovery helpers.
  *
@@ -14,8 +14,9 @@
  *   - `Project.load(cwd, {cache})` is the async factory (constructors can't be
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
- *     and nothing more. Discovery is LAZY.
- *   - Discovery methods (components/templates/codemods/docs) are MEMOIZED per
+ *     plus autolink the installed ones no config names, and self-resolve the
+ *     package being authored when it carries a manifest. Discovery is LAZY.
+ *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
  *   - SKIP + WARN policy: as a discovery method runs, per-integration work is
@@ -34,7 +35,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
-import {loadIntegrations} from '../integrations/integrations.mjs';
+import {
+  loadIntegrations,
+  loadLocalIntegration,
+} from '../integrations/integrations.mjs';
+import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -54,12 +59,19 @@ import {
   DocsCatalog,
   discoverIntegrationDocs,
 } from '../discovery/docs-discovery.mjs';
+import {
+  discoverBundledThemes,
+  discoverIntegrationThemes,
+} from '../discovery/theme-discovery.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {
+  INVALID_AGENT_DOCS,
+  validateLoadedIntegration,
+} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -232,13 +244,22 @@ export class Project {
    * lazy and memoized on the returned instance.
    *
    * @param {string} [cwd]
-   * @param {{cache?: import('./config-cache.mjs').ConfigCache}} [options]
+   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(cwd = process.cwd(), {cache} = {}) {
-    const resolvedCache = cache ?? new InMemoryConfigCache();
+  static async load(cwd = process.cwd(), {cache, fresh = false} = {}) {
+    const resolvedCache = fresh
+      ? new InMemoryConfigCache()
+      : (cache ?? new InMemoryConfigCache());
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
+    // The project root: the config's directory when there is one (findConfigPath
+    // resolves the config as a sibling of the nearest package.json, so the two
+    // agree), otherwise that package.json's directory. Dependencies are declared
+    // there, and node_modules sits there.
+    const projectDir = configPath
+      ? path.dirname(configPath)
+      : (findPackageRoot(cwd) ?? cwd);
 
     /** @type {import('../../authoring/config/type').AstryxConfig} */
     let config = {integrations: []};
@@ -250,12 +271,43 @@ export class Project {
     if (configPath) {
       config = await loadModuleWithParser(configPath, parseConfig, {
         label: 'astryx.config',
+        fresh,
       });
-      const configDir = path.dirname(configPath);
       integrations = config.integrations ?? [];
       loadedIntegrations = await loadIntegrations(integrations, {
-        cwd: configDir,
+        cwd: projectDir,
+        fresh,
       });
+    }
+
+    // An installed integration the config does not name is still installed.
+    // This runs whether or not a config exists, because the projects it reaches
+    // are overwhelmingly the ones with no astryx.config at all: a scaffold adds
+    // the dependency and writes no config, and the integration then contributes
+    // nothing for want of a line nobody knew to write. Appended AFTER the
+    // configured ones so an explicit entry keeps its position and its
+    // precedence in every discovery order.
+    loadedIntegrations = [
+      ...loadedIntegrations,
+      ...(await autolinkIntegrations({
+        projectDir,
+        loaded: loadedIntegrations,
+        fresh,
+      })),
+    ];
+
+    // The package being authored is the one package that cannot install itself.
+    // When it carries a manifest, resolve its working bytes directly so every
+    // existing consumer command doubles as the author's preview. A local copy
+    // replaces the same installed package in place, preserving configured
+    // precedence while making the source being edited authoritative.
+    const localIntegration = await loadLocalIntegration(projectDir, {fresh});
+    if (localIntegration) {
+      const existing = loadedIntegrations.findIndex(
+        integration => integration.name === localIntegration.name,
+      );
+      if (existing === -1) loadedIntegrations.push(localIntegration);
+      else loadedIntegrations[existing] = localIntegration;
     }
 
     // The debug recorder resolves its settings synchronously, long before any
@@ -307,12 +359,22 @@ export class Project {
     return this.#config;
   }
 
-  /** Configured integration package names. @returns {string[]} */
+  /**
+   * Integration package names the config names. NOT the full set that is
+   * loaded — an autolinked integration is absent here by definition. For
+   * everything in play, read {@link Project.loadedIntegrations}.
+   * @returns {string[]}
+   */
   get integrations() {
     return this.#integrations;
   }
 
-  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('../integrations/integrations.mjs').LoadedIntegration[]} */
+  /**
+   * Every resolved integration (lib/integrations.mjs shape): configured first,
+   * then autolinked (`__autolinked`), with the local authoring package
+   * (`__local`) replacing the same installed package or appended last.
+   * @returns {import('../integrations/integrations.mjs').LoadedIntegration[]}
+   */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
   }
@@ -378,6 +440,22 @@ export class Project {
   }
 
   /**
+   * Whether this package has an error that invalidates its regular manifest
+   * contributions. Invalid `agentDocs` blocks agent-doc writes only; it must not
+   * withdraw components, templates, docs, or codemods.
+   * @param {string} pkg
+   * @returns {boolean}
+   */
+  #hasBlockingContributionIssue(pkg) {
+    return this.#issues.some(
+      issue =>
+        issue.package === pkg &&
+        issue.severity === 'error' &&
+        issue.code !== INVALID_AGENT_DOCS,
+    );
+  }
+
+  /**
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
@@ -439,10 +517,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           // discoverOwnedComponents owns the core+integration record shape;
           // here we add only this integration's records (core is handled
@@ -495,10 +570,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           const {templates: ts, errors} =
             await discoverIntegrationTemplatesForOne(integration);
@@ -526,6 +598,38 @@ export class Project {
   }
 
   /**
+   * Bundled source themes plus themes contributed by installed integrations.
+   * Each record keeps its package owner and source directory so callers can
+   * both list and copy it without reconstructing paths. A broken integration's
+   * themes are skipped under the same issue policy as every other kind.
+   *
+   * @returns {Promise<import('../discovery/theme-discovery.mjs').DiscoveredTheme[]>}
+   */
+  async themes() {
+    return this.#memo('themes', async () => {
+      const themes = discoverBundledThemes();
+
+      for (const integration of this.#loadedIntegrations) {
+        await this.#collectIssues(integration);
+        const pkg = this.#pkgLabel(integration);
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
+        if (!integration?.themes) continue;
+        try {
+          themes.push(...(await discoverIntegrationThemes(integration)));
+        } catch (err) {
+          this.#pushIssue(pkg, {
+            code: 'invalid_theme',
+            severity: 'error',
+            message: errorMessage(err),
+          });
+        }
+      }
+
+      return themes;
+    });
+  }
+
+  /**
    * The CLI's own doc topics plus the ones the configured integrations
    * contribute, resolved into one catalog: additions, replacements (with the
    * replaced name left as an alias), and extensions merged in configuration
@@ -546,10 +650,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.docs) continue;
         try {
           const {records, errors} = await discoverIntegrationDocs(integration);
@@ -604,10 +705,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.codemods) continue;
         try {
           // Validate this integration's codemods discover cleanly in
@@ -659,7 +757,7 @@ export class Project {
    * When called directly, also validates any configured integration not yet
    * visited by a discovery call, so the returned set is complete on demand.
    *
-   * @returns {Promise<import('../integrations/issue').AstryxIntegrationIssue[]>}
+   * @returns {Promise<ProjectIntegrationIssue[]>}
    */
   async issues() {
     for (const integration of this.#loadedIntegrations) {

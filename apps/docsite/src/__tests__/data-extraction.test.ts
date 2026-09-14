@@ -20,10 +20,15 @@ import {
 } from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {
+  templateMetadata,
+  templateMetadataCount,
+} from '../generated/templateMetadataRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
+import {TEMPLATE_COMPONENTS} from '../components/templateComponents';
 import {exampleRegistry} from '../generated/exampleRegistry';
 import {normalizeComponentCategory} from '../lib/componentCategories';
 
@@ -873,7 +878,9 @@ describe('blockRegistry', () => {
       expect(block.aspectRatio).not.toBeNaN();
       expect(Array.isArray(block.componentsUsed)).toBe(true);
       expect(block.category).toBeDefined();
-      expect(typeof block.exampleFor).toBe('string');
+      expect(
+        block.exampleFor === null || typeof block.exampleFor === 'string',
+      ).toBe(true);
     }
   });
 
@@ -912,8 +919,8 @@ describe('blockRegistry', () => {
     expect(chartShowcase?.source).toContain("from '@astryxdesign/charts'");
   });
 
-  it('every block has exampleFor set', () => {
-    const missing = blocks.filter(b => !b.exampleFor);
+  it('showcases always declare component ownership', () => {
+    const missing = blocks.filter(b => b.isShowcase && !b.exampleFor);
     expect(missing.map(b => b.dirName)).toEqual([]);
   });
 
@@ -921,10 +928,12 @@ describe('blockRegistry', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     const seen = new Map<string, string[]>();
     for (const s of showcases) {
-      if (!seen.has(s.exampleFor)) {
-        seen.set(s.exampleFor, []);
+      expect(s.exampleFor).not.toBeNull();
+      const owner = s.exampleFor!;
+      if (!seen.has(owner)) {
+        seen.set(owner, []);
       }
-      seen.get(s.exampleFor)!.push(s.dirName);
+      seen.get(owner)!.push(s.dirName);
     }
     const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);
     // Some components may legitimately have multiple showcases, but flag them
@@ -969,6 +978,17 @@ describe('templateRegistry', () => {
   it('discovers page templates', () => {
     expect(templateCount).toBeGreaterThan(10);
     expect(templates.length).toBe(templateCount);
+    expect(templateMetadataCount).toBe(templateCount);
+    expect(templateMetadata).toHaveLength(templateCount);
+  });
+
+  it('keeps source out of the metadata-only registry', () => {
+    expect(templateMetadata.map(template => template.slug)).toEqual(
+      templates.map(template => template.slug),
+    );
+    for (const template of templateMetadata) {
+      expect(template).not.toHaveProperty('source');
+    }
   });
 
   it('templates have required fields', () => {
@@ -984,6 +1004,27 @@ describe('templateRegistry', () => {
     const slugs = templates.map(t => t.slug);
     expect(slugs).toContain('dashboard');
     expect(slugs).toContain('settings');
+  });
+
+  it('surfaces all dashboard templates with live previews', () => {
+    const dashboards = templates.filter(template =>
+      template.category.startsWith('Dashboard'),
+    );
+
+    expect(dashboards.map(template => template.slug).sort()).toEqual([
+      'dashboard',
+      'dashboard-alert-rail',
+      'dashboard-cohort-funnel',
+      'dashboard-comparison',
+      'dashboard-composition',
+      'dashboard-progress',
+      'dashboard-scorecard',
+    ]);
+    for (const template of dashboards) {
+      expect(template.isReady).toBe(true);
+      expect(template.isHiddenFromOverview).toBe(false);
+      expect(TEMPLATE_COMPONENTS[template.slug]).toBeDefined();
+    }
   });
 
   it('no duplicate template slugs', () => {

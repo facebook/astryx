@@ -4,7 +4,7 @@
  * @file Shared template discovery + IO.
  *
  * Owns everything the template leaves (list/show/skeleton/copy) AND other
- * commands (component, layout, search, init, discover, validate-integration)
+ * commands (component, layout, search, init, discover, Doctor integration)
  * share: template discovery across core/external/integration sources, the
  * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
  * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The
@@ -170,7 +170,18 @@ const PLACEHOLDER_IMAGE =
  *
  * @type {Set<string>}
  */
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
+
+const IMAGE_EXTENSIONS = new Set([
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -183,7 +194,7 @@ const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
  *
  * @type {RegExp}
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.(\w+)/g;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -207,9 +218,16 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
@@ -404,16 +422,30 @@ async function discoverAllBlocks(cwd = process.cwd()) {
 }
 
 /**
+ * Discover only the templates built into @astryxdesign/core. Integration
+ * authoring checks use this narrower surface so a broken project config or a
+ * second integration cannot affect the core-collision result.
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverCoreTemplates() {
+  const [pages, blocks] = await Promise.all([
+    discoverPages(),
+    discoverBlocks(),
+  ]);
+  return [...pages, ...blocks];
+}
+
+/**
  * @param {string} [cwd]
  * @returns {Promise<DiscoveredTemplate[]>}
  */
 export async function discoverAll(cwd = process.cwd()) {
-  const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
-    discoverAllBlocks(cwd),
+  const [core, external, integration] = await Promise.all([
+    discoverCoreTemplates(),
+    discoverExternalBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
-  return [...pages, ...blocks, ...integration.templates].sort((a, b) =>
+  return [...core, ...external, ...integration.templates].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 }
@@ -524,7 +556,7 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
- * than thrown. Exposed for `validate-integration`.
+ * than thrown. Exposed for `doctor integration validate` and template authoring checks.
  *
  * @param {{name?: string, __spec?: string, templates?: string}} integration
  * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}

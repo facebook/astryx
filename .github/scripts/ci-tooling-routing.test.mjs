@@ -84,12 +84,18 @@ describe('Node-tooling CI routing', () => {
     }
   });
 
-  it('skips the UI project and component/browser owners for tooling', () => {
+  it('skips UI/browser owners but keeps an explicit component N/A reporter', () => {
     const uiSuite = ci.jobs['test-ui'].steps.find(candidate =>
       candidate.run?.includes('--project ui'),
     );
     expect(uiSuite.if).toContain(TOOLING_FALSE);
-    expect(ci.jobs['check-components'].if).toContain(TOOLING_FALSE);
+    expect(ci.jobs['check-components'].if).not.toContain(TOOLING_FALSE);
+    const componentCheck = step(
+      ci.jobs['check-components'],
+      'Check for component changes',
+    ).run;
+    expect(componentCheck).toContain('needs.check-scope.outputs.tooling_only');
+    expect(componentCheck).toContain('has_components=false');
     expect(ci.jobs['theme-layers'].if).toContain(TOOLING_FALSE);
     expect(ci.jobs['fixture-contrast'].if).toContain(TOOLING_FALSE);
   });
@@ -123,11 +129,16 @@ describe('Node-tooling CI routing', () => {
   });
 
   it('preserves the historical joins and fails them on owned-lane failure', () => {
-    expect(ci.jobs.test.needs).toEqual(['test-ui', 'test-node']);
+    expect(ci.jobs.test.needs).toEqual([
+      'test-ui',
+      'test-node',
+      'registry-contract',
+    ]);
     expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
-    const testJoin = step(ci.jobs.test, 'Assert both test lanes succeeded').run;
+    const testJoin = step(ci.jobs.test, 'Assert every test gate succeeded').run;
     expect(testJoin).toContain('needs.test-node.result');
     expect(testJoin).toContain('needs.test-ui.result');
+    expect(testJoin).toContain('needs.registry-contract.result');
     const buildJoin = step(
       ci.jobs.build,
       'Assert parallel builds succeeded',

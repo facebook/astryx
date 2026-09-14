@@ -47,7 +47,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {getInputARIA} from '../utils';
+import {getInputARIA, isImeKeyEvent} from '../utils';
 
 const styles = stylex.create({
   input: {
@@ -259,6 +259,13 @@ export interface TextInputProps extends Omit<
    * Callback fired on keydown events on the input.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the input unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
 }
 
 /**
@@ -374,10 +381,21 @@ export function TextInput({
   };
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
-    inputRef.current?.focus();
-  }, [onChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [onChange],
+  );
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -431,7 +449,12 @@ export function TextInput({
         onKeyDown={
           onEnter || onKeyDown
             ? e => {
-                if (e.key === 'Enter') {
+                // The composing keydown fires before compositionend, so without
+                // this guard pressing Enter to commit a Japanese/Chinese/Korean
+                // IME conversion would trigger onEnter (submit/save actions)
+                // before the user intends to submit. onKeyDown still receives
+                // the raw event. See utils/ime.ts (#6082).
+                if (e.key === 'Enter' && !isImeKeyEvent(e.nativeEvent)) {
                   onEnter?.();
                 }
                 onKeyDown?.(e);

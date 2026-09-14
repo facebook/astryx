@@ -17,6 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
+import {usePopover} from './usePopover';
 import type {UsePopoverReturn} from './usePopover';
 import {Dialog} from '../Dialog';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
@@ -82,6 +83,34 @@ describe('usePopover public return type', () => {
     expect(hasDismissalGuard).toBe(false);
     expect(publicToggleTakesNoOptions).toBe(true);
     expect(hasInternalFocusTarget).toBe(false);
+  });
+
+  it('emits canonical and deprecated surface targets for direct hook consumers', () => {
+    function HeadlessPopover() {
+      const popover = usePopover({dialogLabel: 'Headless popover'});
+      return (
+        <>
+          <button
+            type="button"
+            ref={popover.triggerRef}
+            onClick={() => popover.show()}
+            {...popover.triggerProps}>
+            Open headless
+          </button>
+          {popover.render(<span>Headless content</span>)}
+        </>
+      );
+    }
+
+    render(<HeadlessPopover />);
+    fireEvent.click(screen.getByRole('button', {name: 'Open headless'}));
+
+    const surface = screen.getByRole('dialog', {
+      name: 'Headless popover',
+      hidden: true,
+    });
+    expect(surface).toHaveClass('astryx-popover');
+    expect(surface).toHaveClass('astryx-popover-surface');
   });
 });
 

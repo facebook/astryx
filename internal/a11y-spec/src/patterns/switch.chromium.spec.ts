@@ -3,7 +3,7 @@
 /**
  * @file switch.chromium.spec.ts
  * @input Uses @playwright/test, ./switch (the contract), ./switch.fixtures,
- *   ../harness/chromium, ../run
+ *   ../harness/chromium, ../check
  * @output The contract's own proof in a real engine: every expectation passes
  *   against a conforming fixture and fails against each fixture that removes
  *   its outcome.
@@ -27,7 +27,7 @@ import {
   createChromiumHarness,
   holdMotionStill,
 } from '../harness/chromium';
-import {runBinding, type ExpectationResult} from '../run';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
 import {SWITCH_PATTERN} from './switch';
 import {
   CONFORMING_FIXTURES,
@@ -52,8 +52,8 @@ async function results(
   target: SwitchFixture,
   only?: readonly string[],
 ): Promise<readonly ExpectationResult[]> {
-  const run = await runBinding({
-    contract: SWITCH_PATTERN,
+  const run = await checkAccessibilitySpec({
+    spec: SWITCH_PATTERN,
     binding: 'fixture',
     state: target.id,
     facts: target.facts,

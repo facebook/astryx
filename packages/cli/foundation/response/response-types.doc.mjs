@@ -31,7 +31,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
+        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.',
     },
     {
       value: 'component.detail',
@@ -138,6 +138,17 @@ export const doc = {
         'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.',
     },
 
+    // gap reports
+    {
+      value: 'gap-report.categories',
+      description: 'The fixed gap category values and human-readable labels.',
+    },
+    {
+      value: 'gap-report.file',
+      description:
+        'An aggregate receipt with overall status, the selected package and issues URL, ordered per-handler deliveries, and filedCount/routedOnlyCount totals.',
+    },
+
     // template
     {
       value: 'template.list',
@@ -197,12 +208,12 @@ export const doc = {
     {
       value: 'theme.list',
       description:
-        'Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.',
+        'Every bundled or installed integration theme as a ThemeListEntry[]: each with slug, displayName, description, maintained flag, and owner package.',
     },
     {
       value: 'theme.add',
       description:
-        'A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
+        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
     },
     {
       value: 'theme.template',
@@ -213,6 +224,11 @@ export const doc = {
       value: 'theme.targets',
       description:
         'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
+    },
+    {
+      value: 'theme.palette.generate',
+      description:
+        'An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.',
     },
 
     // upgrade
@@ -246,11 +262,36 @@ export const doc = {
         'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
     },
 
-    // validate-integration
+    // integration authoring
+    {
+      value: 'integration.add',
+      description:
+        'A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.',
+    },
+    {
+      value: 'integration.pack-check',
+      description:
+        'The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.',
+    },
     {
       value: 'integration.validate',
       description:
         'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+    },
+    {
+      value: 'integration.template-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.component-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.doc-conflicts',
+      description:
+        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
     },
 
     // layout (XLE/XLO)

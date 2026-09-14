@@ -80,6 +80,13 @@ export const CHECKLIST_DIMENSIONS = [
     usualOwnership: 'Component or composition',
   },
   {
+    id: '1.3.5-identify-input-purpose',
+    source: 'WCAG 2.2 1.3.5 Identify Input Purpose (AA)',
+    outcome:
+      'Inputs collecting information about the user expose a programmatic purpose when the field purpose is listed by the standard.',
+    usualOwnership: 'Component and caller content',
+  },
+  {
     id: '1.4.1-use-of-color',
     source: 'WCAG 2.2 1.4.1 Use of Color (A)',
     outcome: 'Color is not the only way to convey information or state.',

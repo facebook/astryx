@@ -16,7 +16,10 @@
  * The header surfaces template metadata (name, description) on
  * the left. All controls cluster on the right of the header: a
  * copy-to-clipboard CLI scaffold command, an Open in Playground action,
- * and the close button.
+ * and the close button. The row wraps when the controls no longer fit
+ * beside the title, and the fullscreen (phone) variant stacks the commands
+ * and the primary action full width, with the close button pinned to the
+ * top-inline-end corner — the header must never widen the dialog.
  *
  * The preview sits in a padded, framed (border + radius) surface below the
  * header. The prev/next arrows are position:fixed inside the top-layer
@@ -49,6 +52,15 @@ import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildTemplatePlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
+import {CURRENT_TARGET} from '../lib/docsVersions';
+import {
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../generated/shadcnRegistry';
+import {
+  shadcnInstallCommand,
+  shadcnPageItemPath,
+} from '../lib/shadcnRegistry.mjs';
 
 export interface TemplatePreviewItem {
   slug: string;
@@ -85,6 +97,11 @@ const styles = stylex.create({
   },
   headerRow: {
     width: '100%',
+    // The header never widens the dialog: a long command or a wide action row
+    // shrinks or truncates instead. Without this the fullscreen dialog's
+    // clipped body can be scrolled sideways by focus and never scrolled back.
+    maxWidth: '100%',
+    minWidth: 0,
     position: 'relative' as const,
   },
   dialogHeader: {
@@ -97,7 +114,12 @@ const styles = stylex.create({
     insetInlineEnd: 0,
   },
   desktopHeaderMeta: {
-    flex: 1,
+    // Grow into the free space, but keep a readable floor: when the actions
+    // no longer fit beside a 240px title block the header wraps instead of
+    // squeezing the title to nothing.
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: '240px',
     minWidth: 0,
   },
   mobileHeaderMeta: {
@@ -108,10 +130,26 @@ const styles = stylex.create({
     width: '100%',
     minWidth: 0,
   },
+  // Standard (desktop) header: the action cluster shares one line with the
+  // title, so it has to be allowed to shrink — otherwise a narrow window
+  // pushes "Open in Playground" past the dialog edge.
+  actionsGroup: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  // Command rows and the primary action stack on the fullscreen (mobile)
+  // header, so each one gets the full width instead of competing for it.
+  commandStack: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   // The CLI command shrinks before the buttons do, and stays on one line.
   commandGroup: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  commandLabel: {
+    flexShrink: 0,
   },
   commandCode: {
     flexShrink: 1,
@@ -151,18 +189,20 @@ const styles = stylex.create({
   },
 });
 
+type CopiedCommand = 'astryx' | 'shadcn' | null;
+
 interface TemplatePreviewHeaderProps {
   item: TemplatePreviewItem;
   isFullscreen: boolean;
-  cmdCopied: boolean;
-  onCopyCommand: () => void;
+  copiedCommand: CopiedCommand;
+  onCopyCommand: (kind: Exclude<CopiedCommand, null>) => void;
   onClose: () => void;
 }
 
 function TemplatePreviewHeader({
   item,
   isFullscreen,
-  cmdCopied,
+  copiedCommand,
   onCopyCommand,
   onClose,
 }: TemplatePreviewHeaderProps) {
@@ -184,21 +224,65 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
-      <Code
-        xstyle={
-          styles.commandCode
-        }>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
-      <Button
-        variant="ghost"
-        isIconOnly
-        size="lg"
-        label={cmdCopied ? 'Copied!' : 'Copy install command'}
-        icon={<Icon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
-        onClick={onCopyCommand}
-        xstyle={styles.noShrink}
-      />
-    </HStack>
+    <VStack gap={1} xstyle={styles.commandStack}>
+      <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
+        <Text type="supporting" color="secondary" xstyle={styles.commandLabel}>
+          Astryx CLI
+        </Text>
+        <Code
+          xstyle={
+            styles.commandCode
+          }>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
+        <Button
+          variant="ghost"
+          isIconOnly
+          size="lg"
+          label={copiedCommand === 'astryx' ? 'Copied!' : 'Copy Astryx command'}
+          icon={
+            <Icon
+              icon={copiedCommand === 'astryx' ? 'check' : 'copy'}
+              color="inherit"
+            />
+          }
+          onClick={() => onCopyCommand('astryx')}
+          xstyle={styles.noShrink}
+        />
+      </HStack>
+      {CURRENT_TARGET === 'canary' && (
+        <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
+          <Text
+            type="supporting"
+            color="secondary"
+            xstyle={styles.commandLabel}>
+            {shadcnRegistryIsPreview ? 'shadcn preview (expires)' : 'shadcn'}
+          </Text>
+          <Code xstyle={styles.commandCode}>
+            {shadcnInstallCommand(
+              shadcnPageItemPath(item.slug),
+              shadcnRegistryOrigin,
+            )}
+          </Code>
+          <Button
+            variant="ghost"
+            isIconOnly
+            size="lg"
+            label={
+              copiedCommand === 'shadcn'
+                ? 'Copied!'
+                : 'Copy ShadCN install command'
+            }
+            icon={
+              <Icon
+                icon={copiedCommand === 'shadcn' ? 'check' : 'copy'}
+                color="inherit"
+              />
+            }
+            onClick={() => onCopyCommand('shadcn')}
+            xstyle={styles.noShrink}
+          />
+        </HStack>
+      )}
+    </VStack>
   );
 
   const playgroundButton = (
@@ -207,6 +291,7 @@ function TemplatePreviewHeader({
       variant="primary"
       size="lg"
       href={playgroundHref}
+      width={isFullscreen ? '100%' : undefined}
       onClick={() => {
         trackOpenPlayground({
           page: 'templates',
@@ -230,14 +315,19 @@ function TemplatePreviewHeader({
     />
   );
 
-  const actions = (
-    <HStack
-      gap={2}
-      vAlign="center"
-      xstyle={isFullscreen ? styles.actionsRow : undefined}>
+  // Fullscreen (mobile) stacks the actions: a phone cannot fit the command
+  // rows and the primary action on one line, and squeezing them there is what
+  // pushed the header past the viewport.
+  const actions = isFullscreen ? (
+    <VStack gap={2} xstyle={styles.actionsRow}>
       {copyButton}
       {playgroundButton}
-      {!isFullscreen && closeButton}
+    </VStack>
+  ) : (
+    <HStack gap={2} vAlign="center" xstyle={styles.actionsGroup}>
+      {copyButton}
+      {playgroundButton}
+      {closeButton}
     </HStack>
   );
 
@@ -248,7 +338,7 @@ function TemplatePreviewHeader({
       {closeButton}
     </VStack>
   ) : (
-    <HStack gap={4} vAlign="start" xstyle={styles.headerRow}>
+    <HStack gap={4} vAlign="start" wrap="wrap" xstyle={styles.headerRow}>
       {metadata}
       {actions}
     </HStack>
@@ -263,7 +353,7 @@ export function TemplatePreviewDialog({
   onIndexChange,
   variant,
 }: TemplatePreviewDialogProps) {
-  const [cmdCopied, setCmdCopied] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState<CopiedCommand>(null);
   const [isPending, startTransition] = useTransition();
   const [pendingPreviewItem, setPendingPreviewItem] =
     useState<TemplatePreviewItem | null>(null);
@@ -345,28 +435,39 @@ export function TemplatePreviewDialog({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, index, count]);
 
-  // Reset the share-copied state when switching templates.
+  // Reset copied state when switching templates.
   useEffect(() => {
-    setCmdCopied(false);
+    setCopiedCommand(null);
   }, [index]);
 
   if (!current) {
     return null;
   }
 
-  const useCommand = `npx @astryxdesign/cli template ${current.slug} ./src/app/${current.slug}`;
-  const handleCopyCmd = useCallback(() => {
-    navigator.clipboard.writeText(useCommand).then(() => {
-      setCmdCopied(true);
-      trackCopy({
-        page: 'templates',
-        target: 'cli_command',
-        item: current.slug,
-        category: current.category,
+  const astryxCommand = `npx @astryxdesign/cli template ${current.slug} ./src/app/${current.slug}`;
+  const shadcnCommand = shadcnInstallCommand(
+    shadcnPageItemPath(current.slug),
+    shadcnRegistryOrigin,
+  );
+  const handleCopyCmd = useCallback(
+    (kind: Exclude<CopiedCommand, null>) => {
+      if (kind === 'shadcn' && CURRENT_TARGET !== 'canary') {
+        return;
+      }
+      const command = kind === 'astryx' ? astryxCommand : shadcnCommand;
+      navigator.clipboard.writeText(command).then(() => {
+        setCopiedCommand(kind);
+        trackCopy({
+          page: 'templates',
+          target: kind === 'astryx' ? 'cli_command' : 'install_command',
+          item: current.slug,
+          category: current.category,
+        });
+        setTimeout(() => setCopiedCommand(null), 2000);
       });
-      setTimeout(() => setCmdCopied(false), 2000);
-    });
-  }, [useCommand, current.slug, current.category]);
+    },
+    [astryxCommand, shadcnCommand, current.slug, current.category],
+  );
 
   const isFullscreen = variant === 'fullscreen';
 
@@ -386,7 +487,7 @@ export function TemplatePreviewDialog({
             <TemplatePreviewHeader
               item={current}
               isFullscreen={isFullscreen}
-              cmdCopied={cmdCopied}
+              copiedCommand={copiedCommand}
               onCopyCommand={handleCopyCmd}
               onClose={() => onOpenChange(false)}
             />
@@ -395,11 +496,13 @@ export function TemplatePreviewDialog({
         content={
           <LayoutContent isScrollable={false} padding={0}>
             <div {...stylex.props(styles.body)} ref={hostRef}>
-              <TemplatePreviewSurface
-                key={previewCurrent.slug}
-                slug={previewCurrent.slug}
-              />
-              {isPreviewPending && (
+              {isOpen && (
+                <TemplatePreviewSurface
+                  key={deferredCurrent.slug}
+                  slug={deferredCurrent.slug}
+                />
+              )}
+              {isPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
                   <Skeleton width="100%" height="100%" />
                 </div>

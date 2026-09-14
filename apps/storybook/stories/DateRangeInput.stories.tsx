@@ -387,7 +387,7 @@ export const StatusVariantComparison: Story = {
 
 /**
  * Theme the clear and calendar-toggle glyphs precisely via `defineTheme`.
- * `components['date-range-input-clear-icon'].base` and
+ * `components['input-clear-icon'].base` and
  * `components['date-range-input-toggle-icon'].base` scope overrides to the
  * icons themselves (via the `astryx-date-range-input-*-icon` targets), so a
  * theme can recolor, hover-morph, and resize them — without a fragile
@@ -397,7 +397,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'date-range-input-icon-demo',
   components: {
-    'date-range-input-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

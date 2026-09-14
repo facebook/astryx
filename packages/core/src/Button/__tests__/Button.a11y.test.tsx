@@ -26,11 +26,10 @@ import {describe, expect, it} from 'vitest';
 import {cleanup, render, screen} from '@testing-library/react';
 import {
   BUTTON_PATTERN,
-  blockingResults,
+  checkAccessibilitySpec,
   createJsdomHarness,
-  formatFailures,
+  expectAccessibilitySpec,
   summarize,
-  runBinding,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {BUTTON_KNOWN_FAILURES} from './Button.a11y.known-failures';
@@ -56,10 +55,32 @@ function subjectFor(): Element {
   return screen.getByRole('button', {hidden: true});
 }
 
-async function runState(state: ButtonBindingRow): Promise<BindingResult> {
+async function expectState(state: ButtonBindingRow): Promise<void> {
   let activations = 0;
-  return runBinding({
-    contract: BUTTON_PATTERN,
+  await expectAccessibilitySpec({
+    spec: BUTTON_PATTERN,
+    binding: state.binding,
+    state: state.id,
+    facts: state.facts,
+    knownFailures: BUTTON_KNOWN_FAILURES,
+    render: () => {
+      activations = 0;
+      render(
+        BUTTON_STATE_RENDERS[state.id](() => {
+          activations += 1;
+        }),
+      );
+    },
+    subject: subjectFor,
+    cleanup,
+    activations: async () => activations,
+  });
+}
+
+async function checkState(state: ButtonBindingRow): Promise<BindingResult> {
+  let activations = 0;
+  return checkAccessibilitySpec({
+    spec: BUTTON_PATTERN,
     binding: state.binding,
     state: state.id,
     facts: state.facts,
@@ -85,14 +106,13 @@ describe('the shared button pattern, jsdom lane', () => {
         [`${state.binding} [${state.id}]`, state.summary, state] as const,
     ),
   )('%s — %s', async (_id, _summary, state) => {
-    const result = await runState(state);
-    expect(formatFailures(blockingResults([result]))).toBe('');
+    await expectState(state);
   });
 
   it('runs the DOM layer here and reports the higher layers as unrun', async () => {
     const results: BindingResult[] = [];
     for (const state of BUTTON_BINDING_STATES) {
-      results.push(await runState(state));
+      results.push(await checkState(state));
     }
     const report = summarize(BUTTON_PATTERN, results);
 

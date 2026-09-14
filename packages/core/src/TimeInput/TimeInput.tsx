@@ -622,13 +622,24 @@ export function TimeInput({
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    // Focusing a native time control reopens the OS picker on iOS.
-    if (!usesNativeTimePicker) {
-      inputRef.current?.focus();
-    }
-  }, [fireChange, usesNativeTimePicker]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      // Focusing a native time control reopens the OS picker on iOS.
+      if (!usesNativeTimePicker) {
+        if (!e || e.detail === 0) {
+          inputRef.current?.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            inputRef.current?.focus({preventScroll: true});
+          });
+        }
+      }
+    },
+    [fireChange, usesNativeTimePicker],
+  );
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =

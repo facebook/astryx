@@ -2,8 +2,8 @@
 
 /**
  * @file formatters.ts
- * @output Built-in, locale-aware tick/value format utilities for common data types
- * @position Utility; consumed by ChartAxis via tickFormat prop
+ * @output Built-in locale-aware tick, value, and list format utilities
+ * @position Utility; consumed by Chart and ChartAxis
  *
  * Formatters degrade gracefully: non-finite numbers (NaN/±Infinity) and
  * unparseable values are passed through as-is rather than producing garbage
@@ -62,6 +62,15 @@ const getMonthYearFormat = byLocale(
       calendar: 'gregory',
     }),
 );
+
+const getListFormat = byLocale(
+  locale => new Intl.ListFormat(locale, {style: 'long', type: 'conjunction'}),
+);
+
+/** Format labels as a conjunction list using the provider locale. */
+export function formatList(values: readonly string[], locale: Locale): string {
+  return getListFormat(locale).format(values);
+}
 
 /**
  * Compact number formatter (e.g. 1200 → "1.2K", 1500000 → "1.5M", 1e12 → "1T").

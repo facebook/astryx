@@ -3,7 +3,8 @@
 /**
  * @file parser.ts
  * @input Markdown string
- * @output Array of MarkdownNode AST nodes; heading slug helpers
+ * @output Array of MarkdownNode AST nodes, including opt-in math; heading slug
+ *   helpers
  *   (inlineText, slugify, uniqueSlug) shared by Markdown rendering and
  *   Outline's parseOutlineFromMarkdown
  * @position Core parser; consumed by Markdown.tsx and Outline
@@ -13,6 +14,7 @@
 // Types
 // ---------------------------------------------------------------------------
 
+/** Nodes returned by default and legacy parser calls. */
 export type InlineNode =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNode[]}
@@ -24,7 +26,23 @@ export type InlineNode =
   | {type: 'citation'; sourceId: string}
   | {type: 'break'};
 
-export type BlockNode = BlockNodeKind & {
+/** The additional inline node returned only when parsing with `math: true`. */
+export type MathInlineNode = {type: 'math'; value: string};
+
+/** Nodes returned by an explicitly math-enabled inline parse. */
+export type InlineNodeWithMath =
+  | {type: 'text'; content: string}
+  | {type: 'bold'; children: InlineNodeWithMath[]}
+  | {type: 'italic'; children: InlineNodeWithMath[]}
+  | {type: 'strikethrough'; children: InlineNodeWithMath[]}
+  | {type: 'code'; content: string}
+  | MathInlineNode
+  | {type: 'link'; href: string; children: InlineNodeWithMath[]}
+  | {type: 'image'; src: string; alt: string}
+  | {type: 'citation'; sourceId: string}
+  | {type: 'break'};
+
+type BlockMetadata = {
   /**
    * Where this block came from in the source, when parsed with the
    * `sourceRanges` option. Top-level blocks only.
@@ -32,7 +50,7 @@ export type BlockNode = BlockNodeKind & {
   range?: SourceRange;
 };
 
-type BlockNodeKind =
+type LegacyBlockNodeKind =
   | {type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; children: InlineNode[]}
   | {type: 'paragraph'; children: InlineNode[]}
   | {type: 'codeblock'; language: string; content: string}
@@ -55,6 +73,43 @@ type BlockNodeKind =
   | {type: 'hr'}
   | {type: 'image'; src: string; alt: string};
 
+/** Blocks returned by default and legacy parser calls. */
+export type BlockNode = LegacyBlockNodeKind & BlockMetadata;
+
+/** The additional block returned only when parsing with `math: true`. */
+export type MathBlockNode = {type: 'math'; value: string} & BlockMetadata;
+
+type MathEnabledBlockNodeKind =
+  | {
+      type: 'heading';
+      level: 1 | 2 | 3 | 4 | 5 | 6;
+      children: InlineNodeWithMath[];
+    }
+  | {type: 'paragraph'; children: InlineNodeWithMath[]}
+  | {type: 'codeblock'; language: string; content: string}
+  | MathBlockNode
+  | {type: 'blockquote'; children: BlockNodeWithMath[]}
+  | {
+      type: 'list';
+      ordered: boolean;
+      start?: number;
+      /** Ordered-list marker delimiter ('.' or ')'). Undefined for bullets. */
+      delimiter?: '.' | ')';
+      loose?: boolean;
+      items: ListItemNodeWithMath[];
+    }
+  | {
+      type: 'table';
+      headers: TableCellNodeWithMath[];
+      alignments: TableAlignment[];
+      rows: TableCellNodeWithMath[][];
+    }
+  | {type: 'hr'}
+  | {type: 'image'; src: string; alt: string};
+
+/** Blocks returned by an explicitly math-enabled block parse. */
+export type BlockNodeWithMath = MathEnabledBlockNodeKind & BlockMetadata;
+
 /**
  * Where a block sits in the source string handed to `parseMarkdown`:
  * `source.slice(start, end)` is the block, and `end` excludes the block's
@@ -67,7 +122,12 @@ type BlockNodeKind =
 export type SourceRange = {readonly start: number; readonly end: number};
 
 export type ListItemNode = {checked?: boolean; children: BlockNode[]};
+type ListItemNodeWithMath = {
+  checked?: boolean;
+  children: BlockNodeWithMath[];
+};
 export type TableCellNode = {children: InlineNode[]};
+type TableCellNodeWithMath = {children: InlineNodeWithMath[]};
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
 // ---------------------------------------------------------------------------
@@ -81,7 +141,7 @@ export type TableAlignment = 'left' | 'center' | 'right' | null;
  * `parseMarkdownIncremental` functions also accept the legacy
  * `ReadonlySet<string>` shape as the second argument.
  */
-export type ParseOptions = {
+type CommonParseOptions = {
   /** Set of citation source ids — `[id]` / `【id】` markers in this set
    *  become citation nodes instead of plain text / links. */
   sourceIds?: ReadonlySet<string>;
@@ -109,9 +169,22 @@ export type ParseOptions = {
   sourceRanges?: boolean;
 };
 
+/** Options for default and legacy parser results. */
+export type ParseOptions = CommonParseOptions & {math?: false | undefined};
+
+/**
+ * Options that explicitly parse `$…$` and `$$…$$` into math-enabled result
+ * unions. Keeping this separate prevents a legacy `ParseOptions` annotation
+ * from silently widening an exhaustive node switch.
+ */
+export type MathParseOptions = CommonParseOptions & {math: true};
+
+type RuntimeParseOptions = CommonParseOptions & {math?: boolean};
+
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
+  readonly math?: boolean;
   readonly sourceRanges?: boolean;
   /**
    * Offset of this parse's input within the document the ranges are reported
@@ -131,7 +204,7 @@ type ResolvedOptions = {
 const EMPTY_OPTS: ResolvedOptions = {sourceIds: undefined, autolink: undefined};
 
 function resolveOptions(
-  arg: ReadonlySet<string> | ParseOptions | undefined,
+  arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
 ): ResolvedOptions {
   if (arg == null) {
     return EMPTY_OPTS;
@@ -144,10 +217,11 @@ function resolveOptions(
   if (typeof (arg as {has?: unknown}).has === 'function') {
     return {sourceIds: arg as ReadonlySet<string>, autolink: undefined};
   }
-  const opts = arg as ParseOptions;
+  const opts = arg as RuntimeParseOptions;
   return {
     sourceIds: opts.sourceIds,
     autolink: opts.autolink,
+    math: opts.math === true ? true : undefined,
     sourceRanges: opts.sourceRanges,
   };
 }
@@ -173,6 +247,149 @@ const LINK_TITLE_ONLY_RE = /^ {0,3}(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\))[ \t]*$/;
 // whitespace stripped and internal whitespace runs collapsed to one space.
 function normalizeLinkLabel(label: string): string {
   return label.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+type DisplayMathContainer = {
+  outerQuoteDepth: number;
+  listBaseIndent: number | null;
+  innerQuoteDepth: number;
+};
+
+type DisplayMathMatch = {
+  value: string;
+  nextIndex: number;
+  endLine: number;
+};
+
+function stripBlockquoteMarkers(line: string): {
+  content: string;
+  quoteDepth: number;
+} {
+  let content = line.endsWith('\r') ? line.slice(0, -1) : line;
+  let quoteDepth = 0;
+  while (true) {
+    const marker = /^ {0,3}> ?/.exec(content);
+    if (marker == null) {
+      return {content, quoteDepth};
+    }
+    content = content.slice(marker[0].length);
+    quoteDepth++;
+  }
+}
+
+function stripExactBlockquoteDepth(
+  line: string,
+  quoteDepth: number,
+): string | null {
+  let content = line;
+  for (let depth = 0; depth < quoteDepth; depth++) {
+    const marker = /^ {0,3}> ?/.exec(content);
+    if (marker == null) {
+      return null;
+    }
+    content = content.slice(marker[0].length);
+  }
+  return content;
+}
+
+/**
+ * Recognize a standalone display-math marker at the current container boundary.
+ * A list opener carries its base indent so an indented continuation marker can
+ * close it; blockquotes must keep the same quote depth.
+ */
+function displayMathContainer(line: string): DisplayMathContainer | null {
+  const outer = stripBlockquoteMarkers(line);
+  const listMarker = /^( {0,9})(?:[-*+]|\d+[.)]) +(.*)$/.exec(outer.content);
+  if (listMarker != null) {
+    const taskMarker = /^\[[ xX]\] +(.*)$/.exec(listMarker[2]);
+    const inner = stripBlockquoteMarkers(taskMarker?.[1] ?? listMarker[2]);
+    return inner.content.trim() === '$$'
+      ? {
+          outerQuoteDepth: outer.quoteDepth,
+          listBaseIndent: listMarker[1].length,
+          innerQuoteDepth: inner.quoteDepth,
+        }
+      : null;
+  }
+  return outer.content.trim() === '$$'
+    ? {
+        outerQuoteDepth: outer.quoteDepth,
+        listBaseIndent: null,
+        innerQuoteDepth: 0,
+      }
+    : null;
+}
+
+type DisplayMathLineState = 'close' | 'inside' | 'outside';
+
+function displayMathLineState(
+  line: string,
+  container: DisplayMathContainer,
+): DisplayMathLineState {
+  const outerContent = stripExactBlockquoteDepth(
+    line,
+    container.outerQuoteDepth,
+  );
+  if (outerContent == null) {
+    return 'outside';
+  }
+
+  if (container.listBaseIndent == null) {
+    // A deeper quote starts a different container. It cannot close or continue
+    // the math expression owned by the shallower quote.
+    if (/^ {0,3}> ?/.test(outerContent)) {
+      return 'outside';
+    }
+    return outerContent.trim() === '$$' ? 'close' : 'inside';
+  }
+
+  const continuationIndent =
+    outerContent.length - outerContent.trimStart().length;
+  if (continuationIndent <= container.listBaseIndent) {
+    return 'outside';
+  }
+  const innerContent = stripExactBlockquoteDepth(
+    outerContent.trimStart(),
+    container.innerQuoteDepth,
+  );
+  if (innerContent == null || /^ {0,3}> ?/.test(innerContent)) {
+    return 'outside';
+  }
+  return innerContent.trim() === '$$' ? 'close' : 'inside';
+}
+
+/** Match a complete `$$…$$` display-math block without consuming partial input. */
+function matchDisplayMathBlock(
+  lines: string[],
+  lineIndex: number,
+): DisplayMathMatch | null {
+  const trimmed = lines[lineIndex].trim();
+  if (
+    trimmed.length > 4 &&
+    trimmed.startsWith('$$') &&
+    trimmed.endsWith('$$')
+  ) {
+    const value = trimmed.slice(2, -2);
+    return value.trim() === ''
+      ? null
+      : {value, nextIndex: lineIndex + 1, endLine: lineIndex};
+  }
+  if (trimmed !== '$$') {
+    return null;
+  }
+  for (let index = lineIndex + 1; index < lines.length; index++) {
+    if (lines[index].trim() === '$$') {
+      const value = lines.slice(lineIndex + 1, index).join('\n');
+      return value.trim() === ''
+        ? null
+        : {
+            value,
+            nextIndex: index + 1,
+            endLine: index,
+          };
+    }
+  }
+  return null;
 }
 
 function matchLinkDefinition(
@@ -211,7 +428,10 @@ function matchLinkDefinition(
  * where every definition is global. Separating a footer definition block with
  * a blank line — the usual form — always works.
  */
-function extractLinkDefinitions(input: string): {
+function extractLinkDefinitions(
+  input: string,
+  math = false,
+): {
   defs: ReadonlyMap<string, string>;
   cleaned: string;
   /**
@@ -239,6 +459,16 @@ function extractLinkDefinitions(input: string): {
         atBoundary = false;
       }
       continue;
+    }
+    if (math) {
+      const displayMath = matchDisplayMathBlock(lines, index);
+      if (displayMath != null) {
+        // Math is opaque Markdown content: definition-shaped TeX must not leak
+        // into the document-wide link-definition map.
+        index = displayMath.endLine;
+        atBoundary = true;
+        continue;
+      }
     }
     const fenceMatch = line.match(/^(`{3,}|~{3,})/);
     if (fenceMatch) {
@@ -312,7 +542,7 @@ function matchReferenceLink(
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
-): {node: InlineNode; end: number} | null {
+): {node: InlineNodeWithMath; end: number} | null {
   const textClose = text.indexOf(']', start + 1);
   if (textClose === -1) {
     return null;
@@ -357,7 +587,7 @@ function matchReferenceImage(
   text: string,
   start: number,
   linkDefs: ReadonlyMap<string, string>,
-): {node: InlineNode; end: number} | null {
+): {node: InlineNodeWithMath; end: number} | null {
   const altClose = text.indexOf(']', start + 2);
   if (altClose === -1) {
     return null;
@@ -410,6 +640,64 @@ function isWordChar(ch: string | undefined): boolean {
     return false;
   }
   return /\w/.test(ch);
+}
+
+/** True when the character at `index` is preceded by an odd backslash run. */
+function isEscaped(text: string, index: number): boolean {
+  let backslashes = 0;
+  for (let i = index - 1; i >= 0 && text[i] === '\\'; i--) {
+    backslashes++;
+  }
+  return backslashes % 2 === 1;
+}
+
+/**
+ * Find the closing delimiter for `$…$` math on the same line.
+ *
+ * The whitespace and numeric-edge rules mirror common dollar-math parsers:
+ * whitespace cannot hug the delimiters, a digit cannot sit immediately before
+ * the opener or after the closer, and `$$` is reserved for display math. The
+ * numeric guard prevents ordinary prose such as "$20 and $30" from becoming a
+ * formula even in a math-enabled document.
+ */
+function isInlineMathStart(text: string, index: number): boolean {
+  return (
+    text[index] === '$' &&
+    text[index - 1] !== '$' &&
+    text[index + 1] !== '$' &&
+    text[index + 1] != null &&
+    !/\s/.test(text[index + 1]) &&
+    !/\d/.test(text[index - 1] ?? '') &&
+    !isEscaped(text, index)
+  );
+}
+
+function findInlineMathEnd(text: string, start: number): number {
+  if (!isInlineMathStart(text, start)) {
+    return -1;
+  }
+
+  for (let index = start + 1; index < text.length; index++) {
+    if (text[index] === '\n') {
+      return -1;
+    }
+    if (text[index] !== '$' || isEscaped(text, index)) {
+      continue;
+    }
+    // An unescaped dollar ends this candidate: it either forms a valid closer
+    // or makes the whole span literal. Never skip over one and pair with a
+    // later dollar, which would swallow currency or another expression.
+    if (
+      text[index - 1] === '$' ||
+      text[index + 1] === '$' ||
+      /\s/.test(text[index - 1]) ||
+      /\d/.test(text[index + 1] ?? '')
+    ) {
+      return -1;
+    }
+    return index;
+  }
+  return -1;
 }
 
 // ---------------------------------------------------------------------------
@@ -494,11 +782,15 @@ export function parseInline(
   text: string,
   sourceIds?: ReadonlySet<string>,
 ): InlineNode[];
+export function parseInline(
+  text: string,
+  options: MathParseOptions,
+): InlineNodeWithMath[];
 export function parseInline(text: string, options: ParseOptions): InlineNode[];
 export function parseInline(
   text: string,
-  arg?: ReadonlySet<string> | ParseOptions,
-): InlineNode[] {
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): InlineNodeWithMath[] {
   return parseInlineEntry(text, resolveOptions(arg));
 }
 
@@ -509,15 +801,21 @@ export function parseInline(
  * wrapper and call `parseInlineImpl` directly so the transform runs only on
  * the outermost block's inline tree — letting `transformAutolinks` decide
  * which subtrees to descend into (text, bold, italic, strikethrough) and
- * which to skip (link, code, image, citation, break).
+ * which to skip (link, code, math, image, citation, break).
  */
-function parseInlineEntry(text: string, opts: ResolvedOptions): InlineNode[] {
+function parseInlineEntry(
+  text: string,
+  opts: ResolvedOptions,
+): InlineNodeWithMath[] {
   const nodes = parseInlineImpl(text, opts);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
 
-function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
-  const nodes: InlineNode[] = [];
+function parseInlineImpl(
+  text: string,
+  opts: ResolvedOptions,
+): InlineNodeWithMath[] {
+  const nodes: InlineNodeWithMath[] = [];
   let i = 0;
 
   while (i < text.length) {
@@ -536,6 +834,16 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
       if (closeIndex !== -1) {
         nodes.push({type: 'code', content: text.slice(openIndex, closeIndex)});
         i = closeIndex + tickCount;
+        continue;
+      }
+    }
+
+    // --- Inline math (opt-in; code takes precedence) ---
+    if (opts.math && text[i] === '$') {
+      const closeIndex = findInlineMathEnd(text, i);
+      if (closeIndex !== -1) {
+        nodes.push({type: 'math', value: text.slice(i + 1, closeIndex)});
+        i = closeIndex + 1;
         continue;
       }
     }
@@ -718,7 +1026,11 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
 
     // --- Plain text (with line-break detection) ---
     let end = i + 1;
-    while (end < text.length && !'*_~`[!\\\n\u3010'.includes(text[end])) {
+    while (
+      end < text.length &&
+      !'*_~`[!\\\n\u3010'.includes(text[end]) &&
+      !(opts.math && text[end] === '$')
+    ) {
       end++;
     }
 
@@ -991,12 +1303,12 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
  * Split a text-node `content` string into a sequence of text + link nodes
  * based on autolink matches.
  */
-function splitTextOnAutolinks(content: string): InlineNode[] {
+function splitTextOnAutolinks(content: string): InlineNodeWithMath[] {
   const matches = scanAutolinksInText(content);
   if (matches.length === 0) {
     return [{type: 'text', content}];
   }
-  const out: InlineNode[] = [];
+  const out: InlineNodeWithMath[] = [];
   let cursor = 0;
   for (const m of matches) {
     if (m.start > cursor) {
@@ -1023,8 +1335,8 @@ function splitTextOnAutolinks(content: string): InlineNode[] {
  * `image` alt text, `citation`, or `break`. Runs only on the outermost
  * block's inline tree (see `parseInlineEntry`).
  */
-function transformAutolinks(nodes: InlineNode[]): InlineNode[] {
-  const out: InlineNode[] = [];
+function transformAutolinks(nodes: InlineNodeWithMath[]): InlineNodeWithMath[] {
+  const out: InlineNodeWithMath[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
       const split = splitTextOnAutolinks(node.content);
@@ -1198,8 +1510,8 @@ function parseTable(
   lines: string[],
   lineIndex: number,
   opts: ResolvedOptions,
-): {node: BlockNode; nextIndex: number} {
-  const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
+): {node: BlockNodeWithMath; nextIndex: number} {
+  const headers: TableCellNodeWithMath[] = splitTableRow(lines[lineIndex]).map(
     cell => ({children: parseInlineEntry(cell, opts)}),
   );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
@@ -1216,7 +1528,7 @@ function parseTable(
             : null;
     },
   );
-  const rows: TableCellNode[][] = [];
+  const rows: TableCellNodeWithMath[][] = [];
   let rowIndex = lineIndex + 2;
   while (
     rowIndex < lines.length &&
@@ -1241,8 +1553,8 @@ function parseList(
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
-): {node: BlockNode; nextIndex: number} {
-  const items: ListItemNode[] = [];
+): {node: BlockNodeWithMath; nextIndex: number} {
+  const items: ListItemNodeWithMath[] = [];
   const baseIndent = getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
   // (CommonMark 5.2). Capture which one this list starts with so its items
@@ -1337,19 +1649,23 @@ export function parseMarkdown(
 ): BlockNode[];
 export function parseMarkdown(
   input: string,
+  options: MathParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdown(
+  input: string,
   options: ParseOptions,
 ): BlockNode[];
 export function parseMarkdown(
   input: string,
-  arg?: ReadonlySet<string> | ParseOptions,
-): BlockNode[] {
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): BlockNodeWithMath[] {
   return parseMarkdownImpl(input, resolveOptions(arg));
 }
 
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
-): BlockNode[] {
+): BlockNodeWithMath[] {
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
@@ -1357,7 +1673,7 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned, lineMap} = extractLinkDefinitions(input);
+  const {defs, cleaned, lineMap} = extractLinkDefinitions(input, baseOpts.math);
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
@@ -1370,7 +1686,7 @@ function parseMarkdownImpl(
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
   const lines = cleaned.split('\n');
-  const blocks: BlockNode[] = [];
+  const blocks: BlockNodeWithMath[] = [];
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
@@ -1381,7 +1697,7 @@ function parseMarkdownImpl(
     ? []
     : null;
   let blockStartLine = 0;
-  const pushBlock = (node: BlockNode, endLine?: number) => {
+  const pushBlock = (node: BlockNodeWithMath, endLine?: number) => {
     blocks.push(node);
     blockStartLines?.push(blockStartLine);
     blockEndLines?.push(endLine);
@@ -1416,6 +1732,19 @@ function parseMarkdownImpl(
         Math.min(index, lines.length) - 1,
       );
       continue;
+    }
+
+    // --- Display math (opt-in; fenced code takes precedence) ---
+    if (opts.math) {
+      const displayMath = matchDisplayMathBlock(lines, index);
+      if (displayMath != null) {
+        pushBlock(
+          {type: 'math', value: displayMath.value},
+          displayMath.endLine,
+        );
+        index = displayMath.nextIndex;
+        continue;
+      }
     }
 
     // --- Heading ---
@@ -1502,6 +1831,7 @@ function parseMarkdownImpl(
     while (
       index < lines.length &&
       !isBlockStart(lines[index]) &&
+      !(opts.math && matchDisplayMathBlock(lines, index) != null) &&
       lines[index].trim() !== ''
     ) {
       paraLines.push(lines[index]);
@@ -1536,7 +1866,7 @@ function parseMarkdownImpl(
  * `lineMap` says which input line each surviving line came from.
  */
 function stampSourceRanges(
-  blocks: BlockNode[],
+  blocks: BlockNodeWithMath[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
@@ -1581,10 +1911,17 @@ function stampSourceRanges(
 // Incremental parsing
 // ---------------------------------------------------------------------------
 
-export interface IncrementalState {
+type IncrementalBlockNode<MathEnabled extends boolean> =
+  MathEnabled extends true ? BlockNodeWithMath : BlockNode;
+
+declare const incrementalStateMode: unique symbol;
+
+export interface IncrementalState<MathEnabled extends boolean = false> {
+  /** @internal Nominally couples a factory-created cache to its node union. */
+  readonly [incrementalStateMode]: MathEnabled;
   prevInput: string;
   settledText: string;
-  settledBlocks: BlockNode[];
+  settledBlocks: IncrementalBlockNode<MathEnabled>[];
   settledUpTo: number;
   /**
    * The `autolink` option the cached `settledBlocks` were parsed with.
@@ -1593,6 +1930,8 @@ export interface IncrementalState {
    * with newly-arriving content.
    */
   autolink?: 'gfm';
+  /** Whether the cached settled blocks were parsed with math enabled. */
+  math?: MathEnabled;
   /**
    * The `sourceRanges` option the cached `settledBlocks` were parsed with.
    * Flipping it invalidates them the same way `autolink` does: they either
@@ -1632,10 +1971,15 @@ type IncrementalCache = {
   work: IncrementalWork;
 };
 
-const incrementalCaches = new WeakMap<IncrementalState, IncrementalCache>();
+const incrementalCaches = new WeakMap<
+  IncrementalState<boolean>,
+  IncrementalCache
+>();
 
-function makeIncrementalCache(state: IncrementalState): IncrementalCache {
-  const {defs} = extractLinkDefinitions(state.settledText);
+function makeIncrementalCache(
+  state: IncrementalState<boolean>,
+): IncrementalCache {
+  const {defs} = extractLinkDefinitions(state.settledText, state.math);
   const cache: IncrementalCache = {
     settledEnd: state.settledText.length,
     settledLinkDefs: new Map(defs),
@@ -1653,13 +1997,19 @@ function makeIncrementalCache(state: IncrementalState): IncrementalCache {
   return cache;
 }
 
-export function createIncrementalState(): IncrementalState {
-  const state: IncrementalState = {
+/**
+ * Create an incremental parser cache. Use the `<true>` type argument with
+ * `MathParseOptions` so the cache and returned nodes share the math contract.
+ */
+export function createIncrementalState<
+  MathEnabled extends boolean = false,
+>(): IncrementalState<MathEnabled> {
+  const state = {
     prevInput: '',
     settledText: '',
     settledBlocks: [],
     settledUpTo: 0,
-  };
+  } as unknown as IncrementalState<MathEnabled>;
   makeIncrementalCache(state);
   return state;
 }
@@ -1669,7 +2019,7 @@ export function createIncrementalState(): IncrementalState {
  * @internal Exported from this module for performance regression tests only.
  */
 export function getIncrementalParseWork(
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
 ): IncrementalWork {
   return (
     incrementalCaches.get(state)?.work ?? {
@@ -1695,47 +2045,91 @@ export function getIncrementalParseWork(
  * the boundary to -1 even though the content before the fence opened cannot be
  * changed by anything typed inside it.
  */
-function findSettledBoundary(lines: string[]): {
+function findSettledBoundary(
+  lines: string[],
+  math = false,
+): {
   boundary: number;
   openFence: boolean;
+  openMath: boolean;
 } {
   let inFence = false;
   let fenceMarker = '';
+  let mathContainer: DisplayMathContainer | null = null;
+  let suppressMathUntilBoundary = false;
   let lastBoundary = -1;
   let boundaryBeforeFence = -1;
+  let boundaryBeforeMath = -1;
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
 
-    // Fence open / close — match the specific marker character and length
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      if (!inFence) {
-        inFence = true;
-        fenceMarker = fenceMatch[1];
-        boundaryBeforeFence = lastBoundary;
-      } else if (
+    if (inFence) {
+      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+      if (
+        fenceMatch &&
         fenceMatch[1].startsWith(fenceMarker[0]) &&
         fenceMatch[1].length >= fenceMarker.length
       ) {
         inFence = false;
         fenceMarker = '';
       }
+      continue;
     }
 
-    if (
-      !inFence &&
-      line.trim() === '' &&
-      lineIndex > 0 &&
-      lineIndex < lines.length - 1
-    ) {
-      lastBoundary = lineIndex;
+    if (mathContainer != null) {
+      const state = displayMathLineState(line, mathContainer);
+      if (state === 'close') {
+        mathContainer = null;
+        continue;
+      }
+      if (state === 'inside') {
+        continue;
+      }
+      // The list item or blockquote ended before a closer arrived. The parser
+      // treats that unmatched opener literally, so resume ordinary boundary
+      // detection on this first line outside the container.
+      mathContainer = null;
+      suppressMathUntilBoundary = true;
+    }
+
+    // A complete same-line `$$…$$` expression never changes boundary state.
+    // A standalone marker may belong to the top level, a blockquote, or one
+    // list item; remember that container so its continuation marker closes the
+    // same expression instead of opening a new one.
+    if (math && !suppressMathUntilBoundary) {
+      const container = displayMathContainer(line);
+      if (container != null) {
+        mathContainer = container;
+        boundaryBeforeMath = lastBoundary;
+        continue;
+      }
+    }
+
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      inFence = true;
+      fenceMarker = fenceMatch[1];
+      boundaryBeforeFence = lastBoundary;
+      continue;
+    }
+
+    if (line.trim() === '') {
+      suppressMathUntilBoundary = false;
+      if (lineIndex > 0 && lineIndex < lines.length - 1) {
+        lastBoundary = lineIndex;
+      }
     }
   }
 
   return {
-    boundary: inFence ? boundaryBeforeFence : lastBoundary,
+    boundary: inFence
+      ? boundaryBeforeFence
+      : mathContainer != null
+        ? boundaryBeforeMath
+        : lastBoundary,
     openFence: inFence,
+    openMath: mathContainer != null,
   };
 }
 
@@ -1743,10 +2137,55 @@ function findSettledBoundary(lines: string[]): {
  * Strip trailing incomplete inline syntax that appears during streaming.
  * Only affects the tail of the last line — safe to apply to the full string.
  */
-export function trimStreamingArtifacts(input: string): string {
-  const lastNL = input.lastIndexOf('\n');
-  const prefix = lastNL === -1 ? '' : input.slice(0, lastNL + 1);
-  let tail = lastNL === -1 ? input : input.slice(lastNL + 1);
+export function trimStreamingArtifacts(
+  input: string,
+  options?: {math?: boolean},
+): string {
+  // First remove an incomplete display expression as one structural unit. This
+  // full-input scan distinguishes a terminal nested closer from a new opener;
+  // looking only at the final `$$` line cannot.
+  const displayTrimmed = options?.math ? trimOpenDisplayMath(input) : input;
+  const lastNL = displayTrimmed.lastIndexOf('\n');
+  const prefix = lastNL === -1 ? '' : displayTrimmed.slice(0, lastNL + 1);
+  let tail = lastNL === -1 ? displayTrimmed : displayTrimmed.slice(lastNL + 1);
+
+  if (options?.math) {
+    // Hold an unmatched inline opener so raw TeX syntax does not flash while
+    // streaming. If another unescaped dollar is already present but fails the
+    // closing-boundary rule, keep both literal (the currency case).
+    for (let index = 0; index < tail.length; index++) {
+      if (
+        tail[index] === '$' &&
+        tail[index + 1] == null &&
+        tail[index - 1] !== '$' &&
+        !/\d/.test(tail[index - 1] ?? '') &&
+        !isEscaped(tail, index)
+      ) {
+        tail = tail.slice(0, index);
+        break;
+      }
+      if (!isInlineMathStart(tail, index)) {
+        continue;
+      }
+      const close = findInlineMathEnd(tail, index);
+      if (close !== -1) {
+        index = close;
+        continue;
+      }
+      let laterDollar = -1;
+      for (let next = index + 1; next < tail.length; next++) {
+        if (tail[next] === '$' && !isEscaped(tail, next)) {
+          laterDollar = next;
+          break;
+        }
+      }
+      if (laterDollar === -1) {
+        tail = tail.slice(0, index);
+        break;
+      }
+      index = laterDollar;
+    }
+  }
 
   // Scan backwards for unclosed syntax markers — no regex to avoid ReDoS
   // Find the last unclosed [ or ![ (link/image start)
@@ -1904,6 +2343,67 @@ export function trimStreamingArtifacts(input: string): string {
  * Once a table is established (header + separator exist), new data rows
  * render immediately — no suppression.
  */
+function trimOpenDisplayMath(text: string): string {
+  const lines = text.split('\n');
+  let inFence = false;
+  let fenceMarker = '';
+  let mathContainer: DisplayMathContainer | null = null;
+  let suppressMathUntilBoundary = false;
+  let mathStartLine = -1;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    if (inFence) {
+      const fence = line.match(/^(`{3,}|~{3,})/);
+      if (
+        fence != null &&
+        fence[1].startsWith(fenceMarker[0]) &&
+        fence[1].length >= fenceMarker.length
+      ) {
+        inFence = false;
+        fenceMarker = '';
+      }
+      continue;
+    }
+    if (mathContainer != null) {
+      const state = displayMathLineState(line, mathContainer);
+      if (state === 'close') {
+        mathContainer = null;
+        mathStartLine = -1;
+        continue;
+      }
+      if (state === 'inside') {
+        continue;
+      }
+      mathContainer = null;
+      mathStartLine = -1;
+      suppressMathUntilBoundary = true;
+    }
+
+    if (line.trim() === '') {
+      suppressMathUntilBoundary = false;
+    }
+
+    const fence = line.match(/^(`{3,}|~{3,})/);
+    if (fence != null) {
+      inFence = true;
+      fenceMarker = fence[1];
+      continue;
+    }
+    const container = suppressMathUntilBoundary
+      ? null
+      : displayMathContainer(line);
+    if (container != null) {
+      mathContainer = container;
+      mathStartLine = index;
+    }
+  }
+
+  return mathContainer != null && mathStartLine >= 0
+    ? lines.slice(0, mathStartLine).join('\n').trimEnd()
+    : text;
+}
+
 function trimUnsettledStructural(text: string): string {
   const lines = text.split('\n');
 
@@ -1981,9 +2481,9 @@ function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
  * lists even though the full-text parser joins them per CommonMark §5.3.
  */
 function mergeSettledBlocks(
-  prev: BlockNode[],
-  delta: BlockNode[],
-): BlockNode[] {
+  prev: BlockNodeWithMath[],
+  delta: BlockNodeWithMath[],
+): BlockNodeWithMath[] {
   if (prev.length === 0 || delta.length === 0) {
     return [...prev, ...delta];
   }
@@ -1995,7 +2495,7 @@ function mergeSettledBlocks(
     prevLast.ordered === deltaFirst.ordered &&
     prevLast.delimiter === deltaFirst.delimiter
   ) {
-    const merged: BlockNode = {
+    const merged: BlockNodeWithMath = {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
@@ -2014,7 +2514,10 @@ function mergeSettledBlocks(
 }
 
 /** Append a newly-settled slice without copying the already-settled prefix. */
-function appendSettledBlocks(prev: BlockNode[], delta: BlockNode[]): void {
+function appendSettledBlocks(
+  prev: BlockNodeWithMath[],
+  delta: BlockNodeWithMath[],
+): void {
   if (delta.length === 0) {
     return;
   }
@@ -2066,7 +2569,7 @@ function sameUnsettledDefinitions(
 }
 
 function resetIncrementalCache(
-  state: IncrementalState,
+  state: IncrementalState<boolean>,
   cache: IncrementalCache,
 ): void {
   state.prevInput = '';
@@ -2074,6 +2577,7 @@ function resetIncrementalCache(
   state.settledBlocks = [];
   state.settledUpTo = 0;
   state.linkDefsKey = undefined;
+  state.math = undefined;
   cache.settledEnd = 0;
   cache.settledLinkDefs.clear();
   cache.tailLinkDefs = new Map();
@@ -2100,32 +2604,39 @@ function resetIncrementalCache(
  */
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
+  state: IncrementalState<false>,
   sourceIds?: ReadonlySet<string>,
 ): BlockNode[];
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
+  state: IncrementalState<true>,
+  options: MathParseOptions,
+): BlockNodeWithMath[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState<false>,
   options: ParseOptions,
 ): BlockNode[];
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState,
-  arg?: ReadonlySet<string> | ParseOptions,
-): BlockNode[] {
+  state: IncrementalState<boolean>,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): BlockNodeWithMath[] {
   const opts = resolveOptions(arg);
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
   let reparseSettled = false;
 
-  // Invalidate cache when the autolink or sourceRanges option flips — cached
+  // Invalidate cache when an option that changes parsed nodes flips — cached
   // settled blocks were parsed with the previous setting and would otherwise
   // be reused unchanged.
   if (
     state.autolink !== opts.autolink ||
+    state.math !== opts.math ||
     Boolean(state.sourceRanges) !== Boolean(opts.sourceRanges)
   ) {
     reparseSettled = true;
     state.autolink = opts.autolink;
+    state.math = opts.math;
     state.sourceRanges = opts.sourceRanges;
   }
   if (input === '') {
@@ -2147,6 +2658,7 @@ export function parseMarkdownIncremental(
   ) {
     resetIncrementalCache(state, cache);
     state.autolink = opts.autolink;
+    state.math = opts.math;
     state.sourceRanges = opts.sourceRanges;
   }
 
@@ -2156,7 +2668,10 @@ export function parseMarkdownIncremental(
   const oldSettledEnd = cache.settledEnd;
   const tailRaw = input.slice(oldSettledEnd);
   const tailLines = tailRaw.split('\n');
-  const {boundary, openFence} = findSettledBoundary(tailLines);
+  const {boundary, openFence, openMath} = findSettledBoundary(
+    tailLines,
+    opts.math,
+  );
   const settledDelta =
     boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
   const nextSettledEnd = oldSettledEnd + settledDelta.length;
@@ -2168,7 +2683,7 @@ export function parseMarkdownIncremental(
   // blocks: document-global references may precede their footer definition.
   let definitionsChanged = false;
   if (settledDelta !== '') {
-    const {defs: deltaDefs} = extractLinkDefinitions(settledDelta);
+    const {defs: deltaDefs} = extractLinkDefinitions(settledDelta, opts.math);
     for (const [label, destination] of deltaDefs) {
       if (!cache.settledLinkDefs.has(label)) {
         cache.settledLinkDefs.set(label, destination);
@@ -2178,7 +2693,10 @@ export function parseMarkdownIncremental(
       }
     }
   }
-  const {defs: tailLinkDefs} = extractLinkDefinitions(unsettledInput);
+  const {defs: tailLinkDefs} = extractLinkDefinitions(
+    unsettledInput,
+    opts.math,
+  );
   if (
     !sameUnsettledDefinitions(
       cache.tailLinkDefs,
@@ -2209,13 +2727,22 @@ export function parseMarkdownIncremental(
     cache.settledEnd = nextSettledEnd;
   }
 
-  const unsettledRaw = unsettledInput.trim();
+  const trimmedUnsettledInput = unsettledInput.trim();
+  // String#trim removes the CR that belongs to the final content line of a
+  // CRLF snapshot along with trailing blank lines. Keep that one byte so
+  // source ranges and delimiter content remain identical to a full parse.
+  const unsettledRaw =
+    trimmedUnsettledInput !== '' && /\r(?:\n[\s]*)?$/.test(unsettledInput)
+      ? `${trimmedUnsettledInput}\r`
+      : trimmedUnsettledInput;
   // Structural trimming holds back lines that look like an incomplete list or
   // table, which inside a fence is ordinary code: a TypeScript union or a `- `
   // would disappear from the code block as it streams.
   const unsettledText = openFence
     ? unsettledRaw
-    : trimUnsettledStructural(unsettledRaw);
+    : openMath
+      ? trimOpenDisplayMath(unsettledRaw)
+      : trimUnsettledStructural(unsettledRaw);
 
   let parsedSettledBlocks = 0;
   if (reparseSettled) {
@@ -2275,13 +2802,14 @@ export function parseMarkdownIncremental(
 // resolve to a rendered heading by construction.
 
 /** Flatten inline nodes into their plain text content. */
-export function inlineText(nodes: InlineNode[]): string {
+export function inlineText(nodes: ReadonlyArray<InlineNodeWithMath>): string {
   return nodes
     .map(node => {
       switch (node.type) {
         case 'text':
         case 'code':
-          return node.content;
+        case 'math':
+          return node.type === 'math' ? node.value : node.content;
         case 'bold':
         case 'italic':
         case 'strikethrough':

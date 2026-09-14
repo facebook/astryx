@@ -46,9 +46,7 @@ describe('ChatMessage', () => {
 
   it('hides avatar for system', () => {
     render(
-      <ChatMessage
-        sender="system"
-        avatar={<div data-testid="avatar">S</div>}>
+      <ChatMessage sender="system" avatar={<div data-testid="avatar">S</div>}>
         <span>Notice</span>
       </ChatMessage>,
     );
@@ -62,7 +60,7 @@ describe('ChatMessage', () => {
       </ChatMessage>,
     );
     const el = screen.getByTestId('msg');
-    expect(el.className).toContain('user');
+    expect(el).toHaveAttribute('data-sender', 'user');
   });
 
   it('sets accessible aria-labelledby with name', () => {
@@ -74,7 +72,9 @@ describe('ChatMessage', () => {
     const el = screen.getByTestId('msg');
     const labelId = el.getAttribute('aria-labelledby');
     expect(labelId).toBeTruthy();
-    expect(el.querySelector(`#${CSS.escape(labelId!)}`)?.textContent).toBe('Navi');
+    expect(el.querySelector(`#${CSS.escape(labelId!)}`)?.textContent).toBe(
+      'Navi',
+    );
   });
 
   it('sets accessible aria-label without name', () => {

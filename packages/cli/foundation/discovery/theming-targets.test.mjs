@@ -34,10 +34,62 @@ import {
   collectThemingTargets,
   collectThemingVars,
   targetsByKey,
+  targetValidationRegistry,
 } from './theming-targets.mjs';
 
 const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
 const coreSrc = path.join(coreDir, 'src');
+const repoRoot = path.resolve(coreDir, '../..');
+
+const DEPRECATED_TARGETS = {
+  'base-table': 'table',
+  checkbox: 'checkbox-indicator',
+  codeblock: 'code-block',
+  'codeblock-copy-button': 'code-block-copy-button',
+  'codeblock-header': 'code-block-header',
+  'codeblock-title': 'code-block-title',
+  'date-input-clear-icon': 'input-clear-icon',
+  'date-range-input-clear-icon': 'input-clear-icon',
+  hovercard: 'hover-card',
+  'multi-selector-clear-icon': 'input-clear-icon',
+  navicon: 'nav-icon',
+  'popover-surface': 'popover',
+  progressbar: 'progress-bar',
+  'progressbar-fill': 'progress-bar-fill',
+  'progressbar-mark': 'progress-bar-mark',
+  'progressbar-track': 'progress-bar-track',
+  radio: 'radio-indicator',
+  'radio-dot': 'radio-indicator-dot',
+  'selector-clear-icon': 'input-clear-icon',
+  statusdot: 'status-dot',
+  textarea: 'text-area',
+};
+
+/** Return the source text inside a static `components: {…}` object. */
+function componentsObjectSource(source) {
+  const match = /\bcomponents\s*:\s*\{/.exec(source);
+  if (match == null) return '';
+  const start = match.index + match[0].length - 1;
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+  for (let index = start; index < source.length; index++) {
+    const char = source[index];
+    if (quote != null) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') depth++;
+    if (char === '}' && --depth === 0) return source.slice(start + 1, index);
+  }
+  return '';
+}
 
 /** @type {Promise<import('./theming-targets.mjs').ThemingTarget[]>} */
 const enumerated = collectThemingTargets(coreSrc);
@@ -91,6 +143,93 @@ describe('collectThemingTargets', () => {
       className: 'astryx-popover-surface',
       deprecatedFor: 'popover',
     });
+  });
+
+  it('keeps every deprecated target discoverable with its exact replacement', async () => {
+    const targets = await enumerated;
+    for (const [key, deprecatedFor] of Object.entries(DEPRECATED_TARGETS)) {
+      expect(
+        targets.some(
+          target =>
+            target.key === key && target.deprecatedFor === deprecatedFor,
+        ),
+        `${key} should remain discoverable as deprecated for ${deprecatedFor}`,
+      ).toBe(true);
+    }
+  });
+
+  it('keeps maintained themes and copyable sources on canonical keys', () => {
+    const themeFiles = [
+      'packages/themes/butter/src/butterTheme.ts',
+      'packages/themes/chocolate/src/chocolateTheme.ts',
+      'packages/themes/gothic/src/gothicTheme.ts',
+      'packages/themes/matcha/src/matchaTheme.ts',
+      'packages/themes/neutral/src/neutralTheme.ts',
+      'packages/themes/stone/src/stoneTheme.ts',
+      'packages/themes/y2k/src/y2kTheme.ts',
+      'packages/cli/assets/templates/themes/butter/butterTheme.ts',
+      'packages/cli/assets/templates/themes/chocolate/chocolateTheme.ts',
+      'packages/cli/assets/templates/themes/gothic/gothicTheme.ts',
+      'packages/cli/assets/templates/themes/matcha/matchaTheme.ts',
+      'packages/cli/assets/templates/themes/neutral/neutralTheme.ts',
+      'packages/cli/assets/templates/themes/stone/stoneTheme.ts',
+      'packages/cli/assets/templates/themes/y2k/y2kTheme.ts',
+    ];
+    for (const relativePath of themeFiles) {
+      const components = componentsObjectSource(
+        fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'),
+      );
+      for (const key of Object.keys(DEPRECATED_TARGETS)) {
+        const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        expect(components, `${relativePath} still uses ${key}`).not.toMatch(
+          new RegExp(`(?:^|[,\\n]\\s*)(?:['"]${escaped}['"]|${escaped})\\s*:`),
+        );
+      }
+    }
+
+    const editorSource = fs.readFileSync(
+      path.join(
+        repoRoot,
+        'apps/docsite/src/app/playground/themeEditor/constants.ts',
+      ),
+      'utf8',
+    );
+    for (const key of Object.keys(DEPRECATED_TARGETS)) {
+      expect(editorSource, `theme editor still exposes ${key}`).not.toContain(
+        `'${key}'`,
+      );
+    }
+  });
+
+  it('keeps deprecated replacements in the validation registry', async () => {
+    const registry = targetValidationRegistry(await enumerated);
+    for (const [key, replacement] of Object.entries(DEPRECATED_TARGETS)) {
+      expect(registry.propsByKey).toHaveProperty(key);
+      expect(registry.deprecatedByKey[key]).toBe(replacement);
+    }
+  });
+
+  it('rejects conflicting canonical replacements for one deprecated key', () => {
+    expect(() =>
+      targetValidationRegistry([
+        {
+          key: 'old-target',
+          className: 'astryx-old-target',
+          component: 'One',
+          props: [],
+          states: [],
+          deprecatedFor: 'first-target',
+        },
+        {
+          key: 'old-target',
+          className: 'astryx-old-target',
+          component: 'Two',
+          props: [],
+          states: [],
+          deprecatedFor: 'second-target',
+        },
+      ]),
+    ).toThrow(/conflicting replacements/);
   });
 
   it('carries the props and states a target reflects', async () => {

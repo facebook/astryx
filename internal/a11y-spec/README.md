@@ -31,7 +31,8 @@ src/
 ├── contract.ts    Expectation, PatternContract, definePattern (the schema gate)
 ├── checklist.ts   the completeness dimensions every pattern must answer
 ├── harness.ts     the Harness/Subject seam and the evidence-layer vocabulary
-├── run.ts         runBinding — applicability, unrun layers, known failures
+├── check.ts       checkAccessibilitySpec — low-level result for reports/mutation proof
+├── expect.ts      expectAccessibilitySpec — component-facing render + subject assertion
 ├── report.ts      separate facts, and the gate over them
 ├── harness/
 │   ├── jsdom.ts       observes unit + DOM. Refuses everything above.
@@ -39,19 +40,49 @@ src/
 ├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
-    ├── switch.ts             the switch pattern
-    ├── switch.fixtures.ts    conforming + deliberately violating fixtures
-    ├── switch.jsdom.test.ts  the contract's own proof, DOM layer
-    ├── switch.chromium.spec.ts  the same proof in a real engine
-    └── button.*              the button pattern, same four files
+    ├── radio-group.*        the radio-group pattern, same four files
+    ├── checkbox.*           the checkbox pattern, same four files
+    ├── switch.*             the switch pattern, same four files
+    ├── button.*             the button pattern, same four files
+    ├── text-input.*         the native text-input pattern, same four files
+    ├── modal-dialog.*       the native modal-dialog pattern, same four files
+    ├── status-message.*     live-region and progress status mechanics
+    └── tabs.*               explicit horizontal ARIA Tabs semantics
 ```
 
 ## The patterns
 
-| Pattern  | Adopted from                                                   | Bound by                                                                 |
-| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `switch` | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) | Switch                                                                   |
-| `button` | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton |
+| Pattern          | Adopted from                                                                                 | Bound by                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `radio-group`    | [APG radio group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)                           | RadioList, SegmentedControl; role/state portions of DropdownMenu radio items     |
+| `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                           | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
+| `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                               | Switch                                                                           |
+| `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                               | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
+| `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)     | TextInput, TextArea                                                              |
+| `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
+| `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
+| `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
+
+The `radio-group` contract owns direct-group Tab entry/exit, Space, and adopted
+directional selection, including zero-selection entry. DropdownMenu radio roles
+and selection state are bound here, while its composite keyboard movement stays
+with Menu. Home and End remain component-local because the current APG radio
+pattern does not require them and no current Astryx record adopts them as shared
+behavior.
+
+The `status-message` contract is WCAG-derived rather than an APG widget
+pattern. Required expectations cover browser-exposed status/alert roles and
+channels, complete exposed text or names across every public update, preserved
+focus, and progressbar role/name/range/value transitions. ARIA22's
+container-before-update technique and the roles' overridable implicit atomic
+defaults remain advisory reliability evidence. Repetition, timing, order, and
+omission remain real assistive-technology outcomes.
+
+The `text-input` contract is native rather than APG-derived. It covers the
+role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
+keep their button contract. Password fields bind to persistent naming, state,
+focus, and editing expectations, while HTML-AAM defines no corresponding ARIA
+role and leaves their protected value representation platform-specific.
 
 The button pattern covers the ordinary command button. A toggle button carries
 `aria-pressed` and is its own pattern; anything that adopts link semantics — an
@@ -64,6 +95,11 @@ button's action leaves no trace on the button at all. A pattern like that reads
 `activations()` from the run context, and the BINDING supplies the count — a
 binding that does not makes every expectation reading it fail loudly, never
 pass quietly.
+
+Ordering-sensitive focus expectations similarly read `initialFocusEntry()`.
+The binding starts recording before its subject can receive focus and supplies
+whether the subject was already in its native modal state at the first entry;
+a missing observation is a binding fault, not a contract pass or failure.
 
 ## Evidence layers are the load-bearing idea
 
@@ -95,7 +131,8 @@ required failure is not "mostly conformant" (AST-021 FR11).
 
 ## Authoring a pattern
 
-1. Read the APG pattern and the WCAG success criteria it supports.
+1. Read the applicable WCAG criteria and versioned web standards, plus the APG
+   pattern only when a current Astryx record adopts one.
 2. Write the expectations. Each needs a stable id, a user outcome in plain
    language, exact sources, an applicability condition, an evidence layer (plus
    `alsoNeeds` for any further layer its body reads), and an enforcement class.
@@ -154,14 +191,47 @@ exactly the expectation under test instead of making the subject unfindable.
 Component-specific behaviour does not move: callbacks, form data, composition,
 and styling stay in the component's own suite (AST-021 FR5).
 
+The fast component lane uses the assertion API directly, so the test visibly names
+the accessibility specification, the component render, and its role-bearing subject:
+
+```tsx
+await expectAccessibilitySpec({
+  spec: BUTTON_PATTERN,
+  binding: state.binding,
+  state: state.id,
+  facts: state.facts,
+  render: () => render(<Button label="Save" />),
+  subject: () => screen.getByRole('button'),
+  cleanup,
+});
+```
+
+`expectAccessibilitySpec` fails the test on required failures and unexpected passes.
+Lower-level contract fixtures, Chromium bindings, report generation, and mutation
+proof use `checkAccessibilitySpec`, which returns the complete factual result without
+asserting it.
+
+Some stateful patterns ask the binding to perform named public transitions. The
+binding drives each transition through its public API; the contract then
+re-observes the current semantic subject. Transition names describe user-visible
+state changes rather than component-private implementation steps.
+
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
-layer, the user impact, a public issue, and why the migration is not the place
-to fix it. It still runs, it still fails, and it is reported as debt. A
-different message, another state, or a wider failure fails the build anyway, and
-an expectation that starts passing is reported as an unexpected pass so the
-stale record is deleted (AST-021 FR8–FR10).
+layer, the exact standards reference, the exact failure, the user impact, and why
+the migration is not the place to fix it. It still runs, it still fails, and is
+reported as debt. Operational ownership stays in the project's durable gap
+registry rather than in public source. The record matches the complete failure
+message, not a
+substring; a different message, another state, or a wider failure remains a
+`fail` rather than being absorbed by the record. Required failures gate;
+advisory failures remain report-only under AST-020 FR9. A full binding sweep
+also requires every record to match exactly one executed result, so deleted
+states and renamed expectations cannot orphan debt. An expectation that starts
+passing is reported as an unexpected pass so that exact stale record is deleted;
+the separately owned operational gap is reconciled only when no remaining record
+refers to it (AST-021 FR8–FR10).
 
 ## Running
 
@@ -169,6 +239,8 @@ stale record is deleted (AST-021 FR8–FR10).
 # jsdom lane — part of `pnpm test`
 pnpm vitest run --project node internal/a11y-spec
 pnpm vitest run --project ui packages/core/src/Switch
+pnpm vitest run --project ui packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.test.tsx
+pnpm vitest run --project ui packages/lab/src/Chat/__tests__/ChatTypingIndicator.a11y.test.tsx
 
 # Chromium lane — needs a browser and a built Storybook
 pnpm storybook:build

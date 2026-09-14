@@ -180,7 +180,7 @@ body[data-hero-dark]:not([data-nav-mode='surface'])
 /* On dark hero slides the dots render in Astryx, whose --color-accent is a
    near-black ink — invisible on the dark backdrop, so the active dot and the
    keyboard focus ring disappear. Repaint both with the light hero ink. */
-body[data-hero-dark] [data-home-page] .astryx-pagination-dot.active {
+body[data-hero-dark] [data-home-page] .astryx-pagination-dot[data-active="active"] {
   background-color: var(--hero-on-dark);
 }
 body[data-hero-dark] [data-home-page] .astryx-pagination-dot:focus-visible {

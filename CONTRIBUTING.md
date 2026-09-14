@@ -4,6 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
+- **[Pull request intents](docs/contributing/pull-requests.md)** — choose one primary intent, its evidence bar, and the matching PR template
 - **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
@@ -120,7 +121,7 @@ serves the edited source, so the story updates on save — no rebuild, no restar
 ### Running the Doc Site
 
 The doc site (`apps/docsite/`) is a Next.js app that renders the component
-documentation at https://astryx.dev. To run it locally:
+documentation at https://astryx.atmeta.com. To run it locally:
 
 ```bash
 # First time only — build the workspace packages it depends on

@@ -17,6 +17,9 @@ nested `AGENTS.md`.
   `packages/cli/assets/docs/`.
 - Contributors: read `CONTRIBUTING.md` and the relevant guidance linked from
   `docs/README.md`.
+- Pull requests: choose one primary intent and use its template under
+  `.github/PULL_REQUEST_TEMPLATE/`; read `docs/contributing/pull-requests.md`
+  before opening or reviewing a mixed change.
 - Component work: read the component's `{Name}.spec.md` when one exists, then
   any `module:*` records it lists for the public module being changed, followed by
   consumer docs, tests, and implementation.

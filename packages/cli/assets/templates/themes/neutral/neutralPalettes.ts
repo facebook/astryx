@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {black, palette, white} from './neutralPalettes.generated';
+
 /** Neutral's reviewed palette, generated from ../palette.config.json. */
-export {
-  palette as neutralPalettes,
-  palette as default,
-} from './neutralPalettes.generated';
+export const neutralPalettes = {
+  black,
+  white,
+  ...palette,
+} as const;
+
+export default neutralPalettes;

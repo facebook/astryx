@@ -89,6 +89,12 @@ function makeEvent({schemaVersion = 2, env = {}} = {}) {
 }
 
 describe('parseDebugEvent — schema versions', () => {
+  it('accepts a v3 record', () => {
+    expect(parseDebugEvent(makeEvent({schemaVersion: 3})).schemaVersion).toBe(
+      3,
+    );
+  });
+
   it('accepts a v2 record', () => {
     expect(parseDebugEvent(makeEvent()).schemaVersion).toBe(2);
   });
@@ -100,7 +106,7 @@ describe('parseDebugEvent — schema versions', () => {
   });
 
   it('rejects a version it has never emitted', () => {
-    expect(() => parseDebugEvent(makeEvent({schemaVersion: 3}))).toThrow(
+    expect(() => parseDebugEvent(makeEvent({schemaVersion: 4}))).toThrow(
       /schemaVersion/,
     );
   });

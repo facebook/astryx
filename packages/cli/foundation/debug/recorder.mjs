@@ -412,54 +412,75 @@ export function setProject(facts) {
   });
 }
 
-/** Values `resultKind` may carry — mirrors DebugResultKind. */
-const RESULT_KINDS = new Set(['component', 'template', 'doc', 'hook']);
+/**
+ * The kinds a result SET may carry — every {@link DebugResultKind} except
+ * `none`, which is the other branch of the union and never labels a set.
+ *
+ * A Record rather than a Set so the TYPE forces completeness: add a kind to the
+ * published union and this object stops compiling until it is listed here too.
+ * The vocabulary necessarily exists twice at runtime — here, and as the sealed
+ * parser's schema in authoring/debug/parse.mjs — and neither copy can be
+ * half-extended: that one is pinned to the same union by the drift-lock beside
+ * it. Without this, adding a kind everywhere it looks obvious would leave this
+ * guard silently nulling it, which is the exact failure this whole change is
+ * about.
+ *
+ * @type {Record<Exclude<import('../../authoring/debug/type').DebugResultKind, 'none'>, true>}
+ */
+const RESULT_SET_KINDS = {
+  component: true,
+  hook: true,
+  doc: true,
+  template: true,
+  theme: true,
+  integration: true,
+  migration: true,
+  command: true,
+  mixed: true,
+};
 
 /**
- * Record a stable summary of a command's result set and presentation.
+ * Stamp what the command answered with.
  *
- * `results` is only read for `resultKind`, so passing the bounded, surfaced
- * slice is correct. `resultCount` is NOT that slice's length: pass the total
- * the command matched before its limit and score floors, because a count that
- * silently reports the cap makes "matched exactly 20" and "matched 200, showed
- * 20" the same row. It falls back to `results.length` only for a command whose
- * surfaced set IS the whole match set.
+ * The ONE place these fields are written. A command declares its result as its
+ * return value — see foundation/debug/command-result.mjs — and the CommandDoc
+ * converter hands it here; nothing else reports, so nothing else can drift or
+ * forget. An unrecognized descriptor is ignored rather than half-recorded: a
+ * partial row is worse than an obviously missing one.
  *
- * @param {Array<{domain?: unknown}>} results Surfaced results used for kind.
- * @param {{directMatch?: boolean, resultCount?: number, emptyResult?: boolean}} [options]
+ * @param {import('./command-result.mjs').CommandResult} result
  */
-export function recordResultSummary(
-  results,
-  {directMatch, resultCount, emptyResult} = {},
-) {
+export function recordCommandResult(result) {
   guard(() => {
-    if (!_event || !Array.isArray(results)) return;
+    if (!_event || !result || typeof result !== 'object') return;
 
-    const kinds = new Set(
-      results
-        .map(result => result?.domain)
-        .filter(kind => typeof kind === 'string' && RESULT_KINDS.has(kind)),
-    );
-    const count =
-      typeof resultCount === 'number' &&
-      Number.isInteger(resultCount) &&
-      resultCount >= 0
-        ? resultCount
-        : results.length;
+    // An effect, not a lookup. `none` is the whole record: leaving the counts
+    // null is deliberate, and the kind is what says so.
+    if (result.kind === 'none') {
+      _event.output.resultKind = 'none';
+      return;
+    }
+    if (result.kind !== 'results') return;
+
+    // A count that is not a count records NOTHING. Falling back to 0 would
+    // publish "this run found nothing" — a confident, wrong answer — where the
+    // truth is that the descriptor was malformed.
+    const count = result.count;
+    if (!Number.isInteger(count) || count < 0) return;
 
     _event.output.resultCount = count;
     _event.output.emptyResult =
-      typeof emptyResult === 'boolean' ? emptyResult : count === 0;
-    _event.output.resultKind =
-      kinds.size === 0
-        ? null
-        : kinds.size === 1
-          ? /** @type {import('../../authoring/debug/type').DebugResultKind} */ (
-              kinds.values().next().value
-            )
-          : 'mixed';
-    if (typeof directMatch === 'boolean') {
-      _event.output.directMatch = directMatch;
+      typeof result.empty === 'boolean' ? result.empty : count === 0;
+    _event.output.resultKind = Object.hasOwn(
+      RESULT_SET_KINDS,
+      result.resultKind,
+    )
+      ? /** @type {import('../../authoring/debug/type').DebugResultKind} */ (
+          result.resultKind
+        )
+      : null;
+    if (typeof result.directMatch === 'boolean') {
+      _event.output.directMatch = result.directMatch;
     }
   });
 }
@@ -478,7 +499,13 @@ export function recordEnvelope(type) {
 /** Note that the run ended by printing help rather than doing work. */
 export function recordHelp() {
   guard(() => {
-    if (_event) _event.output.helpDisplayed = true;
+    if (!_event) return;
+    _event.output.helpDisplayed = true;
+    // Printing help is not a lookup, so it has no result set — and saying so
+    // keeps a null `resultKind` meaning the one thing it should: nobody
+    // reported. Only if the command has not already answered: help can follow
+    // real output, and that answer is the better record of the two.
+    if (_event.output.resultKind === null) _event.output.resultKind = 'none';
   });
 }
 

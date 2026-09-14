@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.5.4",
+  "version": "0.6.1",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -433,6 +433,11 @@
       "source": "./src/Resizable/index.ts",
       "types": "./dist/Resizable/index.d.ts",
       "default": "./dist/Resizable/index.js"
+    },
+    "./ScrollableArea": {
+      "source": "./src/ScrollableArea/index.ts",
+      "types": "./dist/ScrollableArea/index.d.ts",
+      "default": "./dist/ScrollableArea/index.js"
     },
     "./Section": {
       "source": "./src/Section/index.ts",

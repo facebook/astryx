@@ -2,7 +2,7 @@
 
 /**
  * @file report.ts
- * @input Uses ./run (BindingResult) and ./contract (PatternContract)
+ * @input Uses ./check (BindingResult) and ./contract (PatternContract)
  * @output `summarize` and `formatReport` — the facts a reader needs, kept as
  *   separate facts — plus `blockingResults`, the gate over them, and
  *   `formatFailures`, the reader-legible failure block bindings assert on.
@@ -15,11 +15,11 @@
  * A pattern with one required failure is not "mostly conformant", and there is
  * no number in this file that could be mistaken for saying it is.
  *
- * SYNC: When ./run.ts gains a status, add it here and to the README table.
+ * SYNC: When ./check.ts gains a status, add it here and to the README table.
  */
 
 import type {PatternContract} from './contract';
-import type {BindingResult, ExpectationResult} from './run';
+import type {BindingResult, ExpectationResult} from './check';
 
 export interface ReportCounts {
   readonly pass: number;
@@ -145,8 +145,10 @@ export function neverExercised(
  *
  * A `required` expectation that fails is a regression. An unexpected pass is a
  * stale debt record, and AST-021 FR9 requires removing it rather than counting
- * it. An `advisory` failure reports and does not gate (AST-020 FR9), and an
- * `unrun` layer gates nothing — it is a coverage fact, reported as one.
+ * it. An ordinary `advisory` failure reports without gating, including when it
+ * differs from recorded advisory debt: AST-020 FR9 says advisory expectations
+ * report only. An `unrun` layer gates nothing — it is a coverage fact, reported
+ * as one.
  */
 export function blockingResults(
   bindings: readonly BindingResult[],
@@ -185,13 +187,16 @@ export function formatReport(report: Report): string {
   for (const binding of report.bindings) {
     lines.push(`${binding.binding} [${binding.state}] via ${binding.harness}`);
     for (const result of binding.results) {
-      const suffix =
-        result.status === 'known-failure' && result.knownFailure != null
-          ? ` (${result.knownFailure.issue})`
-          : '';
+      const failureLike =
+        result.status === 'fail' ||
+        result.status === 'known-failure' ||
+        result.status === 'unexpected-pass';
       lines.push(
-        `  ${result.status.padEnd(15)} ${result.expectation} · ${result.evidenceLayer} · ${result.enforcement}${suffix}`,
+        `  ${result.status.padEnd(15)} ${failureLike ? result.description : result.expectation} · ${result.evidenceLayer} · ${result.enforcement}`,
       );
+      if (failureLike && result.detail != null) {
+        lines.push(`    ${result.detail.split('\n').join('\n    ')}`);
+      }
     }
     lines.push('');
   }

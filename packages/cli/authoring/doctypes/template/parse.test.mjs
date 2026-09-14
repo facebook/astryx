@@ -63,6 +63,51 @@ describe('parseTemplate (load boundary)', () => {
     });
   });
 
+  it('accepts a standalone block without component ownership', () => {
+    const parsed = parseTemplate({
+      type: 'block',
+      name: 'FilterToolbar',
+      description: 'Filters a data view.',
+      aspectRatio: 16 / 9,
+    });
+    expect(parsed.exampleFor).toBeUndefined();
+  });
+
+  it('requires component ownership for a showcase', () => {
+    expect(() =>
+      parseTemplate({
+        type: 'block',
+        name: 'HeroShowcase',
+        description: 'A component hero.',
+        isShowcase: true,
+      }),
+    ).toThrow(/exampleFor/);
+  });
+
+  it('accepts stable registry slug and alias metadata', () => {
+    const parsed = parseTemplate({
+      type: 'page',
+      name: 'Landing',
+      description: 'A landing page.',
+      registry: {slug: 'landing', aliases: ['old-landing']},
+    });
+    expect(parsed.registry).toEqual({
+      slug: 'landing',
+      aliases: ['old-landing'],
+    });
+  });
+
+  it('rejects invalid registry paths', () => {
+    expect(() =>
+      parseTemplate({
+        type: 'page',
+        name: 'Landing',
+        description: 'A landing page.',
+        registry: {slug: 'Landing Page'},
+      }),
+    ).toThrow(/registry/);
+  });
+
   it('rejects a missing name', () => {
     expect(reason({type: 'page', description: 'x'})).toContain('name');
   });

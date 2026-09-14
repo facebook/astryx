@@ -1927,9 +1927,9 @@ describe('step-label and step-description theme targets', () => {
     const label = container.querySelector('.astryx-step-label');
     const description = container.querySelector('.astryx-step-description');
     expect(label).toHaveAttribute('data-disabled', 'disabled');
-    expect(label).toHaveClass('disabled');
+    expect(label).toHaveAttribute('data-disabled', 'disabled');
     expect(description).not.toHaveAttribute('data-disabled');
-    expect(description).not.toHaveClass('disabled');
+    expect(description).not.toHaveAttribute('data-disabled');
 
     // A DOM attribute alone would not prove the public defineTheme path accepts
     // and emits the state. Hold both halves of the contract.
@@ -1942,7 +1942,7 @@ describe('step-label and step-description theme targets', () => {
       },
     });
     const {component: css} = generateThemeCSS(theme);
-    expect(css).toContain('.astryx-step-label.disabled');
+    expect(css).toContain('.astryx-step-label[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 

@@ -10,7 +10,11 @@ const neutralPaletteStops = [
 
 describe('neutral palette artifact', () => {
   it('keeps the approved palette structurally valid', () => {
+    expect(neutralPalettes.black).toBe('#000000');
+    expect(neutralPalettes.white).toBe('#ffffff');
     expect(Object.keys(neutralPalettes)).toEqual([
+      'black',
+      'white',
       'neutral',
       'red',
       'orange',
@@ -23,7 +27,19 @@ describe('neutral palette artifact', () => {
       'pink',
     ]);
 
-    for (const family of Object.values(neutralPalettes)) {
+    for (const familyName of [
+      'neutral',
+      'red',
+      'orange',
+      'yellow',
+      'green',
+      'teal',
+      'cyan',
+      'blue',
+      'purple',
+      'pink',
+    ] as const) {
+      const family = neutralPalettes[familyName];
       for (const stop of neutralPaletteStops) {
         expect(family.light[stop]).toMatch(/^#[0-9a-f]{6}$/i);
         expect(family.dark[stop]).toMatch(/^#[0-9a-f]{6}$/i);

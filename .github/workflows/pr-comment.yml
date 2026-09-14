@@ -75,6 +75,13 @@ jobs:
               ...context.repo,
               run: context.payload.workflow_run,
             });
+            if (identity === null) {
+              core.notice(
+                `Skipping source run ${context.payload.workflow_run.id}: no open pull request remains for this head.`,
+              );
+              core.setOutput('valid', 'false');
+              return;
+            }
             const path = require('node:path');
             const {classifyChanges} = require(path.join(
               process.env.GITHUB_WORKSPACE,

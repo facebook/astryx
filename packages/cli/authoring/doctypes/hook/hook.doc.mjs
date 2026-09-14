@@ -29,7 +29,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'.",
+        "Stable hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -38,6 +38,12 @@ export const doc = {
       description:
         "Human-readable display name. Hooks read better as the raw identifier ('useMediaQuery') than spaced, so keep the identifier verbatim.",
       required: true,
+    },
+    {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
     },
     {
       name: 'group',
