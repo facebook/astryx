@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -20,6 +20,7 @@ import {
   useId,
   useOptimistic,
   useTransition,
+  useEffect,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -46,8 +47,9 @@ import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const wrapperSizeStyles = stylex.create({
@@ -491,6 +493,7 @@ export function Switch({
   ref,
   ...rest
 }: SwitchProps) {
+  const t = useTranslator();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -502,6 +505,13 @@ export function Switch({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (isBusy) {
+      announce(t('@astryx.switch.loading'));
+    }
+  }, [announce, isBusy, t]);
 
   const isOn = optimisticValue === true;
 
@@ -614,7 +624,6 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
     </div>
   );
 

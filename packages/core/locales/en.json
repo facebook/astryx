@@ -1223,6 +1223,10 @@
     "defaultMessage": "error",
     "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
+  "@astryx.switch.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Switch is in its busy state (spinner shown, action in flight)."
+  },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
