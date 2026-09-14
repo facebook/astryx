@@ -596,7 +596,8 @@ const diagrams = defineMarkdownPlugin({
 ```
 
 FR21–FR28 govern inert input, trusted renderer scope, accessible output,
-reduced-motion behavior, and readable fallback.
+reduced-motion behavior, and readable fallback. A conforming renderer produces
+safe React/SVG elements and a text fallback.
 
 ### ANSI terminal output
 
