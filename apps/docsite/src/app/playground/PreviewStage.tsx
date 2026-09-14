@@ -106,6 +106,12 @@ interface PreviewStageProps {
   isFullscreen: boolean;
   onExitFullscreen: () => void;
   iframeRef: React.RefObject<HTMLIFrameElement | null>;
+  /**
+   * Fires on every load of the preview document — including a replaced one
+   * (previewed code reloading its own frame), which is the playground's cue
+   * to re-offer the channel (see previewChannel.ts).
+   */
+  onFrameLoad?: () => void;
   /** Disable iframe pointer events (e.g. while the panel is being resized). */
   isInteractionDisabled?: boolean;
   /** Render the iframe directly, without the preview card/device frame. */
@@ -117,6 +123,7 @@ export function PreviewStage({
   isFullscreen,
   onExitFullscreen,
   iframeRef,
+  onFrameLoad,
   isInteractionDisabled = false,
   isFullBleed = false,
 }: PreviewStageProps) {
@@ -155,8 +162,13 @@ export function PreviewStage({
         ]}>
         <iframe
           ref={iframeRef}
+          onLoad={onFrameLoad}
           src="/playground/preview"
-          sandbox="allow-scripts allow-same-origin"
+          // No allow-same-origin: the preview document gets an opaque origin,
+          // so the code it compiles and runs holds no cookies, no storage, and
+          // no reach into this page — see previewChannel.ts for how the two
+          // ends talk without a nameable origin.
+          sandbox="allow-scripts"
           title="Preview"
           {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
         />

@@ -2,45 +2,148 @@
 
 /**
  * @file previewChannel.ts
- * @input An incoming MessageEvent plus the window we expect to hear from
- * @output Whether the message may be acted on
+ * @input The preview frame's window (playground side) / an incoming
+ *   MessageEvent (preview side)
+ * @output A dedicated MessagePort pair both ends trust
  * @position Playground <-> preview iframe — the postMessage trust boundary.
  *
  * The preview iframe compiles and evaluates whatever source arrives on this
- * channel, so an unchecked `message` listener lets any window that can reach
- * the frame run code in this site's origin. `window.postMessage` is delivered
- * to every listener regardless of sender, so both ends must gate on the
- * sender's identity themselves: the origin the message came from AND the
- * window object it came from.
- *
- * The preview is always served from this site (the iframe uses a relative
- * src), so "trusted" is same-origin — no host allowlist to keep in sync with
- * production, Vercel previews, and localhost.
+ * channel, and it runs in a sandbox without `allow-same-origin`, so its
+ * document has an opaque origin: no cookies, no storage, no reach into the
+ * parent document — and no origin string that could identify either end. The
+ * trust anchor is therefore a MessagePort handshake rather than an origin
+ * check. The playground creates a MessageChannel and hands one port to the
+ * window of the iframe it created itself; the preview adopts a port only from
+ * a connect message whose sender is its own parent window (and frame-ancestors
+ * on this route pins who that parent can be). All traffic then flows over the
+ * port pair, which no third window can reach: ports are transferable
+ * capabilities, not broadcasts.
  */
 
-/** The origin both ends of the channel must be on. */
-export function trustedPreviewOrigin(): string {
-  return window.location.origin;
+/** The handshake message type. Everything after it travels over the port. */
+export const PREVIEW_CONNECT = 'astryx-preview-connect';
+
+/**
+ * Playground side: open a fresh channel to the preview frame and return the
+ * local port. The remote port travels inside the connect message. The
+ * wildcard target is required — an opaque origin cannot be named in
+ * `targetOrigin` — and carries no data: the message goes to the window of the
+ * iframe the playground itself created and whose src it controls.
+ */
+export function connectToPreview(
+  frame: Pick<Window, 'postMessage'>,
+): MessagePort {
+  const channel = new MessageChannel();
+  frame.postMessage({type: PREVIEW_CONNECT}, '*', [channel.port2]);
+  return channel.port1;
 }
 
 /**
- * True when `event` came from the window we expect, on our own origin.
+ * Playground side: the full offer lifecycle around {@link connectToPreview}.
  *
- * `expectedSource` is the counterpart window: the frame's parent (in the
- * preview) or the iframe's contentWindow (in the playground). A nullish
- * expected source means the counterpart does not exist yet, so nothing can be
- * trusted.
+ * Offers a fresh port on an interval until the preview answers
+ * `preview-ready` on one, then goes quiet. `reset()` re-arms the loop for a
+ * REPLACED preview document — previewed code reloading its own frame, or a
+ * crash — whose adopted port died with it; the new document can only adopt,
+ * never announce itself, so recovery has to come from this side.
  */
-export function isTrustedPreviewMessage(
-  event: Pick<MessageEvent, 'origin' | 'source'>,
-  expectedOrigin: string,
-  expectedSource: MessageEventSource | null | undefined,
-): boolean {
-  if (event.origin !== expectedOrigin) {
-    return false;
+export function createPreviewConnector({
+  getFrame,
+  onMessage,
+  offerIntervalMs = 300,
+}: {
+  /** The preview frame's window, when it exists. */
+  getFrame: () => Pick<Window, 'postMessage'> | null | undefined;
+  /** Receives every message that arrives on the adopted port. */
+  onMessage: (event: MessageEvent) => void;
+  offerIntervalMs?: number;
+}): {
+  start: () => void;
+  reset: () => void;
+  post: (message: unknown) => void;
+  stop: () => void;
+} {
+  let port: MessagePort | null = null;
+  let ready = false;
+  let interval: ReturnType<typeof setInterval> | null = null;
+
+  function stopOffering() {
+    if (interval != null) {
+      clearInterval(interval);
+      interval = null;
+    }
   }
-  if (expectedSource == null || event.source == null) {
-    return false;
+
+  function offer() {
+    const frame = getFrame();
+    if (!frame) {
+      return;
+    }
+    port?.close();
+    const next = connectToPreview(frame);
+    next.onmessage = event => {
+      if (
+        (event.data as {type?: unknown} | null)?.type === 'preview-ready' &&
+        port === next
+      ) {
+        ready = true;
+        stopOffering();
+      }
+      onMessage(event);
+    };
+    port = next;
   }
-  return event.source === expectedSource;
+
+  function startOffering() {
+    if (interval != null) {
+      return;
+    }
+    offer();
+    interval = setInterval(() => {
+      if (ready) {
+        stopOffering();
+        return;
+      }
+      offer();
+    }, offerIntervalMs);
+  }
+
+  return {
+    start: startOffering,
+    reset() {
+      ready = false;
+      startOffering();
+    },
+    post(message: unknown) {
+      port?.postMessage(message);
+    },
+    stop() {
+      stopOffering();
+      port?.close();
+      port = null;
+    },
+  };
+}
+
+/**
+ * Preview side: the port from a connect handshake sent by this frame's own
+ * parent, or null for anything else — other windows, self-sends, connects
+ * without a port, unrelated messages. A nullish `parentWindow` means there is
+ * no embedder, so nothing can be trusted.
+ */
+export function acceptPreviewConnect(
+  event: Pick<MessageEvent, 'data' | 'source' | 'ports'>,
+  parentWindow: MessageEventSource | null | undefined,
+): MessagePort | null {
+  const type = (event.data as {type?: unknown} | null)?.type;
+  if (type !== PREVIEW_CONNECT) {
+    return null;
+  }
+  if (parentWindow == null || event.source == null) {
+    return null;
+  }
+  if (event.source !== parentWindow) {
+    return null;
+  }
+  return event.ports[0] ?? null;
 }
