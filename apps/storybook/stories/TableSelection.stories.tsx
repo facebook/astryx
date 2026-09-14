@@ -292,3 +292,55 @@ export const WithStripedRows: Story = {
     );
   },
 };
+
+/**
+ * An opt-in bulk-actions toolbar appears above the table while rows are
+ * selected. Pass a `bulkActions` config to `useTableSelection` with the
+ * current `selectedKeys` and the action buttons. Each action receives the
+ * selected keys on click. Omit `bulkActions` for the default behavior with no
+ * toolbar.
+ */
+export const BulkActions: Story = {
+  render: () => {
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+    const {selectionConfig} = useTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
+    });
+    const selectionPlugin = useTableSelection<User>({
+      ...selectionConfig,
+      bulkActions: {
+        selectedKeys,
+        actions: [
+          {
+            label: 'Export',
+            onClick: keys => window.alert(`Export ${keys.size} rows`),
+          },
+          {
+            label: 'Delete',
+            variant: 'destructive',
+            onClick: keys => {
+              setSelectedKeys(new Set());
+              window.alert(`Deleted ${keys.size} rows`);
+            },
+          },
+        ],
+      },
+    });
+
+    return (
+      <div style={{maxWidth: 600}}>
+        <Table
+          data={users}
+          columns={columns}
+          idKey="id"
+          hasHover
+          plugins={{selection: selectionPlugin}}
+        />
+      </div>
+    );
+  },
+};
