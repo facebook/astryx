@@ -2,10 +2,13 @@
 
 /**
  * @file Theme resolution — resolve a theme from config or environment
+ * @input Configured theme module and its optional package-root /built export
+ * @output Theme name, fonts, and custom variant metadata for component docs
+ * @position CLI theme metadata resolution
  *
  * Resolution sources (in priority order):
  * 1. ASTRYX_THEME environment variable
- * 2. xds.theme field in package.json
+ * 2. astryx.theme field in package.json
  *
  * Resolution strategy for the value:
  * - Starts with `.` or `/` → file path relative to cwd
@@ -13,7 +16,9 @@
  * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
  *
  * Returns the theme object's `variants` and `fonts` if available,
- * or null if no theme is configured or found.
+ * or null if no theme is configured or found. A package root without variant
+ * metadata can use the matching theme's public /built export for that metadata.
+ * File paths and explicit package subpaths retain their selected module.
  */
 
 import * as fs from 'node:fs';
@@ -73,7 +78,11 @@ function extractTheme(mod) {
 
   // Check for any export ending in 'Theme'
   for (const key of Object.keys(mod)) {
-    if (key.endsWith('Theme') && typeof mod[key] === 'object' && mod[key]?.name) {
+    if (
+      key.endsWith('Theme') &&
+      typeof mod[key] === 'object' &&
+      mod[key]?.name
+    ) {
       return mod[key];
     }
   }
@@ -114,16 +123,20 @@ export function resolveTheme(cwd = process.cwd()) {
 
   // 2. Resolve the specifier to a module
   let mod;
+  let resolvedPackage = null;
 
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
     // File path
     mod = tryLoadModule(specifier, cwd);
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve file "${specifier}" from ${cwd}`);
+      console.warn(
+        `⚠ theme: could not resolve file "${specifier}" from ${cwd}`,
+      );
       return null;
     }
   } else if (specifier.startsWith('@')) {
     // Scoped package
+    resolvedPackage = specifier;
     mod = tryLoadModule(specifier, cwd);
     if (!mod) {
       console.warn(`⚠ theme: could not resolve package "${specifier}"`);
@@ -131,12 +144,16 @@ export function resolveTheme(cwd = process.cwd()) {
     }
   } else {
     // Convention: try @astryxdesign/theme-{name} first, then bare package
-    mod = tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
+    resolvedPackage = `@astryxdesign/theme-${specifier}`;
+    mod = tryLoadModule(resolvedPackage, cwd);
     if (!mod) {
+      resolvedPackage = specifier;
       mod = tryLoadModule(specifier, cwd);
     }
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`);
+      console.warn(
+        `⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`,
+      );
       return null;
     }
   }
@@ -144,13 +161,32 @@ export function resolveTheme(cwd = process.cwd()) {
   // 3. Extract theme data
   const theme = extractTheme(mod);
   if (!theme) {
-    console.warn(`⚠ theme: loaded "${specifier}" but could not find a theme object`);
+    console.warn(
+      `⚠ theme: loaded "${specifier}" but could not find a theme object`,
+    );
     return null;
+  }
+
+  // Published theme roots expose runtime source while /built carries metadata
+  // generated from the same custom values as the type declarations. Enrich only
+  // absent variant metadata; the selected source remains authoritative for its
+  // name, fonts, and explicit variants. Optional or unrelated built exports do
+  // not change resolution or produce a warning.
+  let variants = theme.variants || null;
+  if (
+    variants === null &&
+    resolvedPackage &&
+    /^(?:@[^/]+\/)?[^/]+$/.test(resolvedPackage)
+  ) {
+    const built = extractTheme(tryLoadModule(`${resolvedPackage}/built`, cwd));
+    if (built?.__built === true && built.name === theme.name) {
+      variants = built.variants || null;
+    }
   }
 
   return {
     name: theme.name || null,
-    variants: theme.variants || null,
+    variants,
     fonts: theme.fonts || null,
   };
 }
