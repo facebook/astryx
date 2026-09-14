@@ -1,18 +1,19 @@
 ---
 schema_version: 3
-template_version: 4
+template_version: 5
 kind: component
 id: component:InternationalizationProvider
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-05
 owners: [cixzhang, nynexman4464]
 review_triggers: [public-api, behavior, accessibility]
 verified_by:
   [
     packages/core/src/i18n/__tests__/resolve.test.ts,
+    packages/core/src/i18n/__tests__/InternationalizationProvider.test.tsx,
     packages/core/src/i18n/__tests__/useDirection.test.tsx,
     packages/core/src/i18n/__tests__/getLocaleDirection.test.ts,
     packages/core/src/i18n/__tests__/useLocale.test.tsx,
@@ -27,6 +28,20 @@ system_specs: []
 ---
 
 # InternationalizationProvider component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None. This record contracts the released `InternationalizationProvider` props (`locale`, `messages`, `overrides`, `dir`) and the `@astryxdesign/core/i18n` hooks that read them.                                                                                                               |
+| Behavior                | Astryx strings resolve override → supplied catalog → shipped English, walking exact → parent locale. Changing any provider prop updates the subtree. A nested provider replaces its parent's context. Without a provider: locale `en`, direction `ltr`, shipped English.                       |
+| End-user impact         | People using a translated locale see Astryx interface and assistive text in that locale where a translation exists and meaningful English otherwise; a missing translation never removes an accessible name or announcement.                                                                   |
+| Builder impact          | None new. Render the provider once, supply partial catalogs freely, and keep DOM `dir` aligned with the provider direction.                                                                                                                                                                    |
+| Compatibility/readiness | Released default preserved; the provider, subpath, props, and hooks are stable public API. Current on owner approval. Re-render and nested-provider behavior is covered by focused tests.                                                                                                      |
+| Review checks           | Reject reordering fallback (FR1, ORD1); hiding a key missing from English (FR2); a nested provider that merges parent context (FR8); the provider setting DOM `lang`/`dir` (FR5) or persisting locale (FR4); non-string translator results (FR7); host-locale output without a provider (FR6). |
+| Governing rules         | `architecture:internationalization` INV2–INV5, INV7, INV12, INV13.                                                                                                                                                                                                                             |
+
+This table is a review projection; the body below is authoritative.
 
 ## Intent
 
@@ -71,28 +86,28 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept   | Closed values or states        | Meaning                                                                            | Availability by variant/orientation/state | Default                                     | Owner                                    | Stability | Invalid-value behavior                                                                                                                |
-| --------- | ------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------- | ---------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Locale    | Valid BCP 47 locale string     | Selects lookup, ICU formatting, and provider-aware locale operations               | Every provider subtree                    | Required on provider; `en` without one      | `component:InternationalizationProvider` | stable    | Callers must pass a valid tag; malformed tags may throw when formatting or collating, while static key lookup may still reach English |
-| Messages  | locale → catalog map           | Adds translated or application-supplied catalogs without replacing shipped English | Every locale                              | `{}`                                        | `component:InternationalizationProvider` | stable    | Missing entries fall back through parent locales to English                                                                           |
-| Overrides | locale → sparse key/string map | Rewords individual Astryx strings before catalog lookup                            | Every locale                              | none                                        | `component:InternationalizationProvider` | stable    | `null` does not become visible content; unresolved keys continue through fallback                                                     |
-| Direction | `ltr` or `rtl`                 | Exposes the provider's semantic direction default                                  | Every provider subtree                    | derived from locale; `ltr` without provider | `component:InternationalizationProvider` | stable    | Invalid values are rejected by the type contract                                                                                      |
+| Concept   | Closed values or states        | Meaning                                                                            | Availability by variant/orientation/state | Default                                     | Owner                                    | Stability | Invalid-value behavior                                                                                                                                          |
+| --------- | ------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------- | ---------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Locale    | Valid BCP 47 locale string     | Selects lookup, ICU formatting, and provider-aware locale operations               | Every provider subtree                    | Required on provider; `en` without one      | `component:InternationalizationProvider` | stable    | Callers must pass a valid tag; malformed tags may throw when formatting or collating, while static key lookup may still reach English                           |
+| Messages  | locale → catalog map           | Adds translated or application-supplied catalogs without replacing shipped English | Every locale                              | `{}`                                        | `component:InternationalizationProvider` | stable    | Missing entries fall back through the active locale's parent chain, then to shipped English; a supplied `en` catalog is read only when that chain includes `en` |
+| Overrides | locale → sparse key/string map | Rewords individual Astryx strings before catalog lookup                            | Every locale                              | none                                        | `component:InternationalizationProvider` | stable    | `null` does not become visible content; unresolved keys continue through fallback                                                                               |
+| Direction | `ltr` or `rtl`                 | Exposes the provider's semantic direction default                                  | Every provider subtree                    | derived from locale; `ltr` without provider | `component:InternationalizationProvider` | stable    | Invalid values are rejected by the type contract                                                                                                                |
 
 Consumer prop syntax and examples remain in
 `InternationalizationProvider.doc.mjs` and `astryx docs internationalization`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                        | Basis                                              | Draft review state |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------ |
-| FR1 | The provider MUST resolve Astryx strings through exact-locale overrides, parent-locale overrides, exact/parent supplied catalogs, then shipped English.                    | RFC #3641, released resolver, tests                | settled            |
-| FR2 | A missing translated key MUST fall back silently; a key absent from English MUST warn once in development and render the key visibly.                                      | Released resolver and tests                        | settled            |
-| FR3 | Re-rendering with changed locale, messages, overrides, or direction MUST update the context value and translator used by descendants.                                      | Released provider and rerender tests               | settled            |
-| FR4 | The provider MUST NOT select, persist, or mutate application locale state.                                                                                                 | Released API ownership                             | settled            |
-| FR5 | The provider MUST NOT set DOM `lang` or `dir`. Its direction value and the application's DOM direction are separate inputs the application keeps aligned.                  | `architecture:internationalization/INV12`          | settled            |
-| FR6 | Without a provider, the public context and hooks MUST expose locale `en`, direction `ltr`, an empty supplied-catalog map, and a translator backed by shipped English.      | Released context and tests                         | settled            |
-| FR7 | The provider MUST preserve a string-returning translator suitable for visible and assistive attributes.                                                                    | Released catalog/runtime contract                  | settled            |
-| FR8 | A nested provider MUST replace locale, messages, overrides, and direction with values derived solely from the child provider's own props rather than merge parent context. | Current provider source; focused test still needed | settled            |
+| ID  | Candidate invariant                                                                                                                                                        | Basis                                       | Draft review state |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------ |
+| FR1 | The provider MUST resolve Astryx strings through exact-locale overrides, parent-locale overrides, exact/parent supplied catalogs, then shipped English.                    | RFC #3641, released resolver, tests         | settled            |
+| FR2 | A missing translated key MUST fall back silently; a key absent from English MUST warn once in development and render the key visibly.                                      | Released resolver and tests                 | settled            |
+| FR3 | Re-rendering with changed locale, messages, overrides, or direction MUST update the context value and translator used by descendants.                                      | Released provider and rerender tests        | settled            |
+| FR4 | The provider MUST NOT select, persist, or mutate application locale state.                                                                                                 | Released API ownership                      | settled            |
+| FR5 | The provider MUST NOT set DOM `lang` or `dir`. Its direction value and the application's DOM direction are separate inputs the application keeps aligned.                  | `architecture:internationalization/INV12`   | settled            |
+| FR6 | Without a provider, the public context and hooks MUST expose locale `en`, direction `ltr`, an empty supplied-catalog map, and a translator backed by shipped English.      | Released context and tests                  | settled            |
+| FR7 | The provider MUST preserve a string-returning translator suitable for visible and assistive attributes.                                                                    | Released catalog/runtime contract           | settled            |
+| FR8 | A nested provider MUST replace locale, messages, overrides, and direction with values derived solely from the child provider's own props rather than merge parent context. | Released provider and nested-provider tests | settled            |
 
 ### Allowed variation
 
@@ -173,14 +188,14 @@ Consumer prop syntax and examples remain in
 
 ## Verification map
 
-| Contract       | Verification                                                            | Representative states                                       | Mutation or failure expectation                                        | Audit section                                      |
-| -------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------- |
-| FR1, FR2, ORD1 | `resolve.test.ts`                                                       | exact, parent, English, missing source key                  | Reordering fallback or hiding a missing source key fails focused tests | `audit:InternationalizationProvider/behavior`      |
-| FR3, PR1       | provider/hook rerender tests                                            | stable inputs and locale/message/override/dir swaps         | A stale translator or needless identity churn fails hook tests         | `audit:InternationalizationProvider/performance`   |
-| FR5, ORD2      | `useDirection.test.tsx`, `getLocaleDirection.test.ts`                   | derived, explicit, invalid locale, no provider              | Setting DOM direction or ignoring explicit override fails source/tests | `audit:InternationalizationProvider/rtl`           |
-| FR6            | `useTranslator.test.tsx`, `useLocale.test.tsx`, `useDirection.test.tsx` | no provider                                                 | Host locale or missing English output fails                            | `audit:InternationalizationProvider/behavior`      |
-| FR7, AR1, AR2  | component translation tests and hardcoded-string lint                   | visible text, aria label, announcement, missing translation | Non-string output or untranslated owned text fails tests/lint          | `audit:InternationalizationProvider/accessibility` |
-| FR8            | focused nested-provider test to add before promotion                    | parent plus child provider                                  | Parent messages, overrides, or direction leaking into the child fails  | `audit:InternationalizationProvider/behavior`      |
+| Contract       | Verification                                                                            | Representative states                                       | Mutation or failure expectation                                           | Audit section                                      |
+| -------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| FR1, FR2, ORD1 | `resolve.test.ts`                                                                       | exact, parent, English, missing source key                  | Reordering fallback or hiding a missing source key fails focused tests    | `audit:InternationalizationProvider/behavior`      |
+| FR3, PR1       | `useTranslator.test.tsx`, `useLocale.test.tsx`, `InternationalizationProvider.test.tsx` | stable inputs; locale, message, override, and dir swaps     | A stale translator/direction or needless identity churn fails these tests | `audit:InternationalizationProvider/performance`   |
+| FR5, ORD2      | `useDirection.test.tsx`, `getLocaleDirection.test.ts`                                   | derived, explicit, invalid locale, no provider              | Setting DOM direction or ignoring explicit override fails source/tests    | `audit:InternationalizationProvider/rtl`           |
+| FR6            | `useTranslator.test.tsx`, `useLocale.test.tsx`, `useDirection.test.tsx`                 | no provider                                                 | Host locale or missing English output fails                               | `audit:InternationalizationProvider/behavior`      |
+| FR7, AR1, AR2  | component translation tests and hardcoded-string lint                                   | visible text, aria label, announcement, missing translation | Non-string output or untranslated owned text fails tests/lint             | `audit:InternationalizationProvider/accessibility` |
+| FR8            | `InternationalizationProvider.test.tsx`                                                 | parent plus child provider                                  | Parent messages, overrides, or direction leaking into the child fails     | `audit:InternationalizationProvider/behavior`      |
 
 ## Decision log
 
@@ -201,9 +216,12 @@ and added rich-message complexity without demonstrated Astryx need.
 
 ## Open questions
 
-- **OQ1 — Nested provider regression test.** Add focused coverage proving that
-  child locale, messages, overrides, and direction replace rather than inherit
-  parent context before promotion. (`checkable`)
+- **OQ1 — Supplied `en` as a fallback for non-Astryx keys.** Today shipped
+  English is the only cross-locale fallback and it holds Astryx keys only, so an
+  application key missing from the active locale renders as its key even when the
+  caller supplied an `en` catalog. Decide whether a supplied `en` catalog should
+  become a final fallback for every key, or whether consumer docs should stop
+  implying that it is. (`human-api`)
 - **OQ2 — Malformed locale behavior.** Decide whether a future release should
   reject invalid BCP 47 tags at the provider boundary or preserve today's
   formatter-specific throws. (`human-api`)

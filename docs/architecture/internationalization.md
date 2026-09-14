@@ -1,13 +1,13 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: architecture
 id: architecture:internationalization
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-05
 owners: [cixzhang, nynexman4464]
 applies_to:
   [
@@ -21,6 +21,7 @@ applies_to:
 verified_by:
   [
     packages/core/src/i18n/__tests__/resolve.test.ts,
+    packages/core/src/i18n/__tests__/InternationalizationProvider.test.tsx,
     packages/core/src/i18n/__tests__/useLocale.test.tsx,
     packages/core/src/i18n/__tests__/useDirection.test.tsx,
     packages/core/src/i18n/__tests__/getLocaleDirection.test.ts,
@@ -34,6 +35,20 @@ deciding_specs: []
 ---
 
 # Internationalization architecture
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Governing contract      | `component:InternationalizationProvider` owns provider behavior. No product contract changes; this record captures the released internationalization system.                                                                                                                                                                                                                                              |
+| System behavior         | Astryx-owned strings and locale-sensitive operations resolve through the provider locale: per-locale overrides, then supplied catalogs, then shipped English, each walking exact → parent locale. Without a provider the result is deterministic English. Messages are ICU MessageFormat 1 strings. `PlainDate` stays Gregorian. Rendered direction comes from the DOM, not from the provider.            |
+| End-user impact         | People using a non-English locale see Astryx interface text, formats, and sort order in that locale wherever a translation exists and English otherwise; layout and mirroring follow the document direction they are reading in.                                                                                                                                                                          |
+| Builder impact          | Render one `InternationalizationProvider` and keep DOM `dir` aligned with it. Pass the provider locale to Astryx-owned `Intl` calls. Add Astryx strings to `en.json` with a description. No separate locale packages and no second Astryx runtime.                                                                                                                                                        |
+| Compatibility/readiness | Released provider, hooks, and subpath are preserved; the contract is additive. Current on owner approval. A server/RSC translation runtime and an external-runtime adapter remain separate decisions (INV13, INV14).                                                                                                                                                                                      |
+| Review checks           | Reject a parallel or replacement runtime without a migration decision (INV2); implicit host-locale reads (INV3, INV8); non-string message output (INV7); a translation catalog that adds stale keys or changes an ICU contract (INV6); locale silently changing `PlainDate` calendar semantics (INV10); render-time provider direction driving geometry (INV11); the provider mutating DOM `dir` (INV12). |
+| Governing rules         | No deciding system spec. RFC #3641 is historical design context only.                                                                                                                                                                                                                                                                                                                                     |
+
+This table is a review projection; the body below is authoritative.
 
 ## Purpose
 
