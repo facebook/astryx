@@ -3,7 +3,8 @@
 
 /**
  * Generates a JSON bundle of @astryxdesign/core, React, StyleX, icon, and
- * Recharts declarations for the playground's Monaco editor.
+ * Recharts declarations for the playground's Monaco editor. Third-party
+ * declarations are read from the docsite's own declared dependencies.
  * Output: public/playground-types.json
  *
  * Structure: { "@astryxdesign/core": { "Button/index.d.ts": "...", ... } }
@@ -160,14 +161,7 @@ declare module '@stylexjs/stylex' {
 // index.d.ts so the set stays accurate (e.g. 16/solid ships fewer icons).
 function buildHeroiconTypes() {
   const variants = ['16/solid', '20/solid', '24/outline', '24/solid'];
-  const heroRoot = join(
-    root,
-    '..',
-    '..',
-    'node_modules',
-    '@heroicons',
-    'react',
-  );
+  const heroRoot = join(root, 'node_modules', '@heroicons', 'react');
   const iconType =
     'React.ComponentType<React.SVGProps<SVGSVGElement> & ' +
     '{title?: string; titleId?: string}>';
@@ -196,8 +190,6 @@ function buildHeroiconTypes() {
 function buildRechartsTypes() {
   const indexPath = join(
     root,
-    '..',
-    '..',
     'node_modules',
     'recharts',
     'types',

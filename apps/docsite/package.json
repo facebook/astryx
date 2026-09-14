@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.7",
     "@heroicons/react": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@monaco-editor/react": "^4.8.0-rc.3",

@@ -27,6 +27,9 @@
  * plain theme's `.js` legitimately differs between the two. That drift is
  * asserted rather than wished away — it is also why `theme build --check`
  * against outputs committed with a current core reports drift on an older one.
+ * Runtime dependencies are resolved from the CLI package first, then the
+ * workspace root, so the packed fixture models both isolated and hoisted
+ * workspace layouts.
  */
 
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
@@ -424,9 +427,14 @@ beforeAll(() => {
     path.join(cli, 'package.json'),
   );
 
-  // Its runtime dependencies, resolved from the install root like a real one.
+  // A package owns these dependencies under the isolated linker; pnpm's
+  // hoisted compatibility layout exposes them at the workspace root instead.
   for (const dep of RUNTIME_DEPS) {
-    const resolved = fs.realpathSync(path.join(REPO_ROOT, 'node_modules', dep));
+    const packageLocal = path.join(CLI_PKG, 'node_modules', dep);
+    const installed = fs.existsSync(packageLocal)
+      ? packageLocal
+      : path.join(REPO_ROOT, 'node_modules', dep);
+    const resolved = fs.realpathSync(installed);
     fs.symlinkSync(resolved, path.join(modules, dep));
   }
 
