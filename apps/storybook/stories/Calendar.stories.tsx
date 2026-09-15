@@ -264,6 +264,54 @@ export const MondayStart: Story = {
   },
 };
 
+export const MonthYearPickers: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString>('1990-06-15');
+    return (
+      <Calendar
+        mode="single"
+        hasMonthYearPickers
+        value={value}
+        onChange={val => setValue(val)}
+        focusDate="1990-06-01"
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `hasMonthYearPickers` the static caption is replaced by compact Month and Year ghost-Selector dropdowns, so a distant month — a 1990 birth date here — is two picks away instead of hundreds of arrow presses. Unbounded, the year list spans 1900–2099, widened to include the visible year. Ignored when `numberOfMonths` is 2, where the caption labels both visible months (#4941).',
+      },
+    },
+  },
+};
+
+export const MonthYearPickersWithMinMax: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return (
+      <Calendar
+        mode="single"
+        hasMonthYearPickers
+        min="2024-06-10"
+        max="2027-03-20"
+        value={value}
+        onChange={val => setValue(val)}
+        focusDate="2026-01-01"
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The pickers derive their options from `min`/`max`: the Year dropdown offers only 2024–2027, and months wholly outside the bounds are disabled — January–May in 2024 and April–December in 2027.',
+      },
+    },
+  },
+};
+
 export const RTL: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
