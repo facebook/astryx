@@ -106,7 +106,7 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
     expect(result.data.skeleton).toContain('columns={{minWidth: 200}}');
   });
 
-  it('filters out local helper components that are not imported from @astryxdesign/core', () => {
+  it('filters out local helper components declared in the same file', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-test-'));
     const pagePath = path.join(tmpDir, 'page.tsx');
     fs.writeFileSync(

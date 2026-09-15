@@ -739,24 +739,22 @@ export function extractComponents(pagePath) {
     matches.push(m[2]);
   }
 
-  const importRegex = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['"]@astryxdesign\/core/g;
-  const importedNames = new Set();
-  let importMatch;
-  while ((importMatch = importRegex.exec(src)) !== null) {
-    const imports = importMatch[1].split(',');
-    for (const imp of imports) {
-      let name = imp.trim();
-      name = name.split(/\s+as\s+/).pop().trim();
-      name = name.replace(/^type\s+/, '');
-      if (name) {
-        importedNames.add(name);
-      }
+  // Exclude names that correspond to a local declaration (function/const/class)
+  // in the same file, as they are page-local helpers, not importable components.
+  const localDeclRegex = /(?:function|class)\s+([A-Z]\w+)\b|(?:const|let)\s+([A-Z]\w+)\s*=/g;
+  const localDeclNames = new Set();
+  let declMatch;
+  while ((declMatch = localDeclRegex.exec(src)) !== null) {
+    const name = declMatch[1] || declMatch[2];
+    if (name) {
+      localDeclNames.add(name);
     }
   }
 
   return [
     ...new Set(
       matches
+        .filter(n => !localDeclNames.has(n))
         .filter(n => !['Theme', 'ThemeProvider'].includes(n))
         .filter(n => !UBIQUITOUS.has(n))
         .map(n =>
@@ -765,8 +763,7 @@ export function extractComponents(pagePath) {
             '',
           ),
         )
-        .filter(Boolean)
-        .filter(n => importedNames.has(n)),
+        .filter(Boolean),
     ),
   ].sort();
 }
