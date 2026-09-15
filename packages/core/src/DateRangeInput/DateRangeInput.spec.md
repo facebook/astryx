@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: component
 id: component:DateRangeInput
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-14
 owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
@@ -69,12 +69,12 @@ preset-list anatomy and its additive theming surface.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                      | Basis                                                     | Draft review state         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------- |
-| FR1 | DateRangeInput MUST present the controlled `value` and emit range changes without maintaining a competing selected range.                                                                | Current source, docs, and focused tests                   | Verified current behavior  |
-| FR2 | When presets are present, each preset remains an independent button in one labeled group; the applied preset reflects current state and an out-of-bounds preset reflects disabled state. | Current source, accessibility comments, and focused tests | Verified current behavior  |
-| FR3 | The preset group and each preset button expose stable theme targets; selected and disabled are states of the preset-button target rather than separate targets.                          | `architecture:component-theming-surface`; #5417 demand    | Proposed additive contract |
-| FR4 | Adding theme targets MUST NOT change the Popover, Calendar, button, focus, or selection semantics those elements already own.                                                            | Composition boundary and compatibility goal               | Proposed additive contract |
+| ID  | Candidate invariant                                                                                                                                                                      | Basis                                                     | Review state              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------- |
+| FR1 | DateRangeInput MUST present the controlled `value` and emit range changes without maintaining a competing selected range.                                                                | Current source, docs, and focused tests                   | Verified current behavior |
+| FR2 | When presets are present, each preset remains an independent button in one labeled group; the applied preset reflects current state and an out-of-bounds preset reflects disabled state. | Current source, accessibility comments, and focused tests | Verified current behavior |
+| FR3 | The preset group and each preset button expose stable theme targets; selected and disabled are states of the preset-button target rather than separate targets.                          | `architecture:component-theming-surface`; #5417 demand    | Approved additive contract |
+| FR4 | Adding theme targets MUST NOT change the Popover, Calendar, button, focus, or selection semantics those elements already own.                                                            | Composition boundary and compatibility goal               | Approved additive contract |
 
 ### Allowed variation
 
@@ -173,8 +173,16 @@ the shared `input-clear-icon` target owns the current glyph contract.
 
 ## Decision log
 
-None. This draft records current behavior and proposes additive target names for
-owner review.
+### DEC-1 — Preset group and buttons are public theme anatomy
+
+**Reference:** `component:DateRangeInput/DEC-1`
+**Decider:** cixzhang, 2026-09-14
+
+The optional preset sidebar and each quick-select button are stable,
+consumer-recognizable parts. `date-range-input-presets` belongs on the group
+that owns sidebar presentation; `date-range-input-preset` belongs on each
+button, with selected and disabled reflected as states rather than separate
+targets. The change preserves default visuals and behavior.
 
 ## Open questions
 
