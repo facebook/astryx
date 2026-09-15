@@ -7,13 +7,13 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableTreeData',
   description:
-    'Headless tree plugin for Table: renders nested rows with per-level indentation and expand/collapse chevrons in the tree column (the first column by default), and reflects hierarchy on body rows via aria-level and aria-expanded. Composable with the other Table plugins: the canonical plugin order places tree before selection, so the checkbox column lands left of the indented tree column. Feed it the treeConfig from useTableTreeState, or construct the config directly for server-driven or pre-flattened trees. When no row is expandable (flat data), every transform is a pass-through and the table renders identically to one without the plugin. Known limitation: the tree column wraps its cell content, so textOverflow="truncate" tooltips do not apply within the tree column.',
+    'Headless tree plugin for Table: renders nested rows with per-level indentation and expand/collapse chevrons in the tree column (the first column by default). When any row is expandable the table is a WAI-ARIA treegrid: role="treegrid" on the table, and every body row carries aria-level, aria-expanded (parents only), aria-posinset and aria-setsize. Keyboard, with row focus: the visible rows share one roving tab stop; ArrowUp/ArrowDown move between rows, ArrowRight expands a collapsed row or moves into its first child, ArrowLeft collapses an expanded row or moves to the parent, Home/End jump to the first/last row, and Enter/Space toggle an expandable row. Controls inside cells (the chevron, a selection checkbox, a sort header) stay in the Tab order and keep their own keys. This first version is row focus only: cell-by-cell navigation is not implemented, and a composition that needs it (editable cells, per-cell actions reached by arrow keys) is outside the supported contract. Composable with the other Table plugins: the canonical plugin order places tree before selection, so the checkbox column lands left of the indented tree column. Feed it the treeConfig from useTableTreeState, or construct the config directly for server-driven or pre-flattened trees. When no row is expandable (flat data), every transform is a pass-through and the table renders identically to one without the plugin. Known limitation: the tree column wraps its cell content, so textOverflow="truncate" tooltips do not apply within the tree column.',
   props: [
     {
       name: 'getRowMeta',
       type: '(item: T) => TableTreeRowMeta | undefined',
       description:
-        'Structural meta for a visible row: {id, level (0-based), hasChildren, isExpanded}.',
+        'Structural meta for a visible row: {id, level (0-based), hasChildren, isExpanded, posInSet?, setSize?}. posInSet (1-based) and setSize describe the row\'s sibling group as rendered and feed aria-posinset/aria-setsize; useTableTreeState supplies them, and a hand-built config may omit them (the row then carries neither attribute).',
       required: true,
     },
     {
@@ -26,7 +26,7 @@ export const docs = {
       name: 'hasExpandableRows',
       type: 'boolean',
       description:
-        'Whether any row in the dataset is expandable. When false the plugin is a no-op: no expanders, no indent, no tree ARIA.',
+        'Whether any row in the dataset is expandable. When false the plugin is a no-op: no expanders, no indent, no treegrid role, no row ARIA, no keyboard model.',
       required: true,
     },
     {
@@ -69,7 +69,7 @@ export const docs = {
       name: 'hasRowClickExpansion',
       type: 'boolean',
       description:
-        'When true, clicking anywhere on an expandable row toggles its expansion, in addition to the chevron. A pointer-only convenience: keyboard and assistive-tech users toggle via the chevron button. Clicks on interactive cell content (buttons, links, form controls) or a text selection do not toggle. Leaf rows stay inert, and it is a no-op on flat data.',
+        'When true, clicking anywhere on an expandable row toggles its expansion, in addition to the chevron. A pointer-only convenience: a keyboard user toggles a focused row with ArrowRight/ArrowLeft or Enter, and the chevron button stays the accessible control for everyone. Clicks on interactive cell content (buttons, links, form controls) or a text selection do not toggle. Leaf rows stay inert, and it is a no-op on flat data.',
       default: 'false',
     },
   ],
@@ -86,18 +86,28 @@ const tree = useTableTreeData(treeConfig);
 <Table data={visibleData} columns={columns} idKey="id" plugins={{tree}} />;`,
     },
   ],
+  usage: {
+    description:
+      'Treegrid semantics and the row-focus keyboard model switch on only when the data has expandable rows, so adopting the plugin ahead of hierarchical data changes nothing. With expandable rows the table takes one Tab stop for its rows; arrow keys do the rest.',
+    bestPractices: [
+      {guidance: true, description: 'Leave the controls inside cells (chevron, selection checkbox, sort header) as they are: they stay Tab-reachable next to the row tab stop, and their own keys are never intercepted.'},
+      {guidance: true, description: 'Query the table as role="treegrid" in tests once rows are expandable; the native table role remains only for flat data.'},
+      {guidance: false, description: 'Rely on cell-by-cell arrow navigation. This version is row focus only; a composition that needs cell navigation is outside the supported contract and should not claim it.'},
+    ],
+  },
 };
 
 export const docsDense = {
   name: 'useTableTreeData',
   displayName: 'useTableTreeData',
   description:
-    'Headless tree plugin: indent + expander chevron on the tree column (first column by default), aria-level/aria-expanded on body rows. Canonical plugin order puts tree before selection (checkbox column lands left of tree column). Consume treeConfig from useTableTreeState, or construct directly for server-driven trees. hasExpandableRows=false => full no-op (flat-data migration).',
+    'Headless tree plugin: indent + expander chevron on the tree column (first column by default). Expandable rows => WAI-ARIA treegrid: role="treegrid" on the table; body rows carry aria-level, aria-expanded (parents), aria-posinset/aria-setsize. Keyboard (row focus): rows share one roving tab stop; ArrowUp/Down move rows, ArrowRight expand/enter first child, ArrowLeft collapse/to parent, Home/End, Enter/Space toggle. In-cell controls (chevron, checkbox, sort header) stay in Tab order w/ own keys. v1 = row focus only; no cell navigation (compositions needing it unsupported). Canonical plugin order puts tree before selection (checkbox column lands left of tree column). Consume treeConfig from useTableTreeState, or construct directly for server-driven trees. hasExpandableRows=false => full no-op (flat-data migration).',
   propDescriptions: {
     getRowMeta:
-      'structural meta per visible row: {id, level (0-based), hasChildren, isExpanded}',
+      'structural meta per visible row: {id, level (0-based), hasChildren, isExpanded, posInSet?, setSize?} (posInSet 1-based + setSize => aria-posinset/aria-setsize; supplied by useTableTreeState, omit in hand-built configs => no attrs)',
     onToggleItem: 'toggle row expansion',
-    hasExpandableRows: 'false => plugin is a no-op (no expanders/indent/ARIA)',
+    hasExpandableRows:
+      'false => plugin is a no-op (no expanders/indent/treegrid role/row ARIA/keyboard model)',
     indent:
       "indent step per level: 'sm' | 'md' | 'lg' (spacing-3/4/6). Defaults to 'md'.",
     treeColumnKey: 'column carrying indent + expander. Defaults to first column.',
@@ -108,6 +118,15 @@ export const docsDense = {
     onExpandAll: 'expand every expandable row (header control)',
     onCollapseAll: 'collapse every row (header control)',
     hasRowClickExpansion:
-      'true => clicking an expandable row body toggles it (in addition to the chevron). Leaves stay inert; no-op on flat data. Defaults to false.',
+      'true => clicking an expandable row body toggles it (in addition to the chevron); keyboard: ArrowRight/ArrowLeft or Enter on the focused row. Leaves stay inert; no-op on flat data. Defaults to false.',
+  },
+  usage: {
+    description:
+      'Treegrid semantics + row-focus keyboard model switch on only w/ expandable rows (flat data unchanged). Expandable rows => one Tab stop for rows; arrows do the rest.',
+    bestPractices: [
+      {guidance: true, description: 'Leave in-cell controls (chevron, checkbox, sort header) as is: Tab-reachable next to the row stop; own keys never intercepted.'},
+      {guidance: true, description: 'Query role="treegrid" in tests once rows are expandable; native table role only for flat data.'},
+      {guidance: false, description: 'Rely on cell-by-cell arrow navigation: v1 = row focus only; compositions needing cell nav are outside the supported contract.'},
+    ],
   },
 };

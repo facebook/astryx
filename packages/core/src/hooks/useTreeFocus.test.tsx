@@ -312,3 +312,61 @@ describe('useTreeFocus activation + typeahead', () => {
     expect(screen.getByTestId('apricot')).toHaveFocus();
   });
 });
+
+// =============================================================================
+// Custom itemSelector (non-treeitem hosts, e.g. treegrid rows)
+// =============================================================================
+
+/**
+ * A treegrid whose rows are the navigable items, matched through a custom
+ * `itemSelector`. Exercises the hook's DOM contract when the focus owner is
+ * not `role="treeitem"` — the Table tree plugin composes it exactly this way.
+ */
+function RowGrid({nodes}: {nodes: Node[]}) {
+  const {treeRef, handleKeyDown} = useTreeFocus<HTMLTableElement>({
+    itemSelector: 'tr[data-tree-id]',
+  });
+  return (
+    <table ref={treeRef} role="treegrid" onKeyDown={handleKeyDown}>
+      <tbody>
+        {nodes.map(n => (
+          <tr
+            key={n.id}
+            aria-level={n.level}
+            aria-expanded={n.expanded}
+            data-tree-id={n.id}
+            tabIndex={-1}
+            data-testid={n.id}>
+            <td>{n.label}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+describe('useTreeFocus custom itemSelector', () => {
+  it('resolves the focused item through itemSelector, not role="treeitem"', () => {
+    render(<RowGrid nodes={FLAT} />);
+    const grid = screen.getByRole('treegrid');
+    screen.getByTestId('a').focus();
+
+    fireEvent.keyDown(grid, {key: 'ArrowDown'});
+    expect(screen.getByTestId('b')).toHaveFocus();
+    fireEvent.keyDown(grid, {key: 'ArrowDown'});
+    expect(screen.getByTestId('c')).toHaveFocus();
+    fireEvent.keyDown(grid, {key: 'ArrowUp'});
+    expect(screen.getByTestId('b')).toHaveFocus();
+  });
+
+  it('Home / End work from a non-treeitem focus owner', () => {
+    render(<RowGrid nodes={FLAT} />);
+    const grid = screen.getByRole('treegrid');
+    screen.getByTestId('b').focus();
+
+    fireEvent.keyDown(grid, {key: 'End'});
+    expect(screen.getByTestId('c')).toHaveFocus();
+    fireEvent.keyDown(grid, {key: 'Home'});
+    expect(screen.getByTestId('a')).toHaveFocus();
+  });
+});
