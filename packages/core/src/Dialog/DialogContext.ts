@@ -14,6 +14,8 @@ import {createContext, use} from 'react';
 export interface DialogContextValue {
   /** Whether the dialog is rendered inline for docs/showcases. */
   isInline: boolean;
+  /** Whether the dialog is currently open. */
+  isOpen: boolean;
   /**
    * Id the DialogHeader title should render with so the dialog can name
    * itself via aria-labelledby. The dialog detects the title element's
