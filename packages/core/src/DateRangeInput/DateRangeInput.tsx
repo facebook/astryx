@@ -54,6 +54,7 @@ import {
   type DayOfWeek,
   type DayOfWeekName,
 } from '../Calendar';
+import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -376,6 +377,9 @@ export interface DateRangeInputProps extends Omit<
 
   /**
    * Preset date ranges shown as quick-select options beside the calendar.
+   * A preset is disabled when either endpoint violates `min`, `max`, or
+   * `dateConstraints`, or when its span violates `minRangeSpan` or
+   * `maxRangeSpan`.
    */
   presets?: ReadonlyArray<DateRangePreset>;
 
@@ -542,6 +546,11 @@ export function DateRangeInput({
     dialogLabel: t('@astryx.dateRangeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
   });
+  const {isDateDisabled} = useCalendarConstraints({
+    min,
+    max,
+    dateConstraints,
+  });
 
   const fireChange = useCallback(
     (newValue: DateRange | null) => {
@@ -572,14 +581,6 @@ export function DateRangeInput({
   const handleRangeSelect = useCallback(
     (range: DateRange) => {
       fireChange(range);
-      popover.hide();
-    },
-    [fireChange, popover],
-  );
-
-  const handlePresetClick = useCallback(
-    (preset: DateRangePreset) => {
-      fireChange(preset.getRange());
       popover.hide();
     },
     [fireChange, popover],
@@ -720,11 +721,10 @@ export function DateRangeInput({
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
-                const isPresetDisabled = !isRangeWithinSpan(
-                  presetRange,
-                  maxRangeSpan,
-                  minRangeSpan,
-                );
+                const isPresetDisabled =
+                  !isRangeWithinSpan(presetRange, maxRangeSpan, minRangeSpan) ||
+                  isDateDisabled(plainDateFromISO(presetRange.start)) ||
+                  isDateDisabled(plainDateFromISO(presetRange.end));
                 return (
                   <button
                     key={preset.label}
@@ -736,7 +736,7 @@ export function DateRangeInput({
                     // concept that contradicted the Tab interaction) (forms-5).
                     aria-current={isActive ? 'true' : undefined}
                     disabled={isPresetDisabled}
-                    onClick={() => handlePresetClick(preset)}
+                    onClick={() => handleRangeSelect(presetRange)}
                     {...mergeProps(
                       themeProps('date-range-input-preset', {
                         selected: isActive ? 'selected' : null,

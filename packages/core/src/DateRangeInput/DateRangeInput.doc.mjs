@@ -114,7 +114,7 @@ export const docs = {
       name: 'presets',
       type: 'Array<DateRangePreset>',
       description:
-        'Preset ranges shown as quick-select options beside the calendar.',
+        'Preset ranges shown as quick-select options beside the calendar. A preset is disabled when either endpoint violates min, max, or dateConstraints, or when its span violates minRangeSpan or maxRangeSpan.',
     },
     {
       name: 'hasClear',
@@ -354,7 +354,8 @@ export const docsDense = {
       'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
     minRangeSpan:
       'min days a range must span, both endpoints counted (2 forbids a single-day range); repeated start click commits one day when allowed, otherwise cancels; default 1',
-    presets: 'preset ranges as quick-select options',
+    presets:
+      'preset ranges as quick-select options; disabled when an endpoint or span violates the corresponding constraints',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',
     size: 'trigger size',

@@ -35,8 +35,8 @@ presets beside that calendar.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive theme targets and state reflection only; runtime
-  behavior, default appearance, DOM semantics, and public props remain unchanged
+- Compatibility class: additive theme targets plus corrected preset constraint
+  enforcement; default appearance, DOM semantics, and public props remain unchanged
 - Controlled/uncontrolled behavior: unchanged; DateRangeInput remains controlled
 - Migration decision: none
 
@@ -69,12 +69,12 @@ preset-list anatomy and its additive theming surface.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                      | Basis                                                     | Review state              |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------- |
-| FR1 | DateRangeInput MUST present the controlled `value` and emit range changes without maintaining a competing selected range.                                                                | Current source, docs, and focused tests                   | Verified current behavior |
-| FR2 | When presets are present, each preset remains an independent button in one labeled group; the applied preset reflects current state and an out-of-bounds preset reflects disabled state. | Current source, accessibility comments, and focused tests | Verified current behavior |
-| FR3 | The preset group and each preset button expose stable theme targets; selected and disabled are states of the preset-button target rather than separate targets.                          | `architecture:component-theming-surface`; #5417 demand    | Approved additive contract |
-| FR4 | Adding theme targets MUST NOT change the Popover, Calendar, button, focus, or selection semantics those elements already own.                                                            | Composition boundary and compatibility goal               | Approved additive contract |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                             | Basis                                                     | Review state               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------- |
+| FR1 | DateRangeInput MUST present the controlled `value` and emit range changes without maintaining a competing selected range.                                                                                                                                                                       | Current source, docs, and focused tests                   | Verified current behavior  |
+| FR2 | When presets are present, each preset remains an independent button in one labeled group; the applied preset reflects current state and a preset whose endpoint violates `min`, `max`, or `dateConstraints`, or whose range violates `minRangeSpan` or `maxRangeSpan`, reflects disabled state. | Current source, accessibility comments, and focused tests | Verified current behavior  |
+| FR3 | The preset group and each preset button expose stable theme targets; selected and disabled are states of the preset-button target rather than separate targets.                                                                                                                                 | `architecture:component-theming-surface`; #5417 demand    | Approved additive contract |
+| FR4 | Adding theme targets MUST NOT change the Popover, Calendar, button, focus, or selection semantics those elements already own.                                                                                                                                                                   | Composition boundary and compatibility goal               | Approved additive contract |
 
 ### Allowed variation
 
@@ -87,18 +87,24 @@ preset-list anatomy and its additive theming surface.
 
 ### Representative states
 
-| State             | Required invariant                                                                    | Allowed variation       |
-| ----------------- | ------------------------------------------------------------------------------------- | ----------------------- |
-| No presets        | No preset group or preset-button target renders.                                      | Calendar configuration  |
-| Presets, no match | Every button carries the preset target with no selected state.                        | Preset count and labels |
-| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.    | Selected range          |
-| Disabled preset   | An out-of-bounds button is natively disabled and carries the target's disabled state. | Constraint source       |
+| State             | Required invariant                                                                                                                          | Allowed variation       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| No presets        | No preset group or preset-button target renders.                                                                                            | Calendar configuration  |
+| Presets, no match | Every button carries the preset target with no selected state.                                                                              | Preset count and labels |
+| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.                                                          | Selected range          |
+| Disabled preset   | A preset that violates an endpoint date constraint or a range-span constraint is natively disabled and carries the target's disabled state. | Constraint source       |
 
 ### Transformation and precedence order
 
-- **ORD1 — Preset state.** Resolve each preset's range, compare it with the
-  controlled value, evaluate span constraints, then reflect selected and disabled
-  state on the same preset-button target.
+- **ORD1 — Preset state.** Resolve each preset's range once, compare it with the
+  controlled value, evaluate `min`, `max`, and `dateConstraints` against both
+  endpoints, evaluate `minRangeSpan` and `maxRangeSpan` against the full range,
+  then reflect selected and disabled state on the same preset-button target.
+- **ORD2 — Preset activation.** An enabled preset emits the already-resolved range;
+  activation does not resolve the preset again.
+
+Endpoint constraints match Calendar selection: they apply to the preset's start
+and end, not every date between them.
 
 ### Performance and resources
 
@@ -110,8 +116,9 @@ No new performance or resource constraint is introduced.
   navigated independently by Tab.
 - **AR2 — Current state.** The applied preset remains exposed with
   `aria-current="true"`; theme state reflection is additive.
-- **AR3 — Disabled state.** A constrained preset remains natively disabled; theme
-  state reflection does not replace that behavior.
+- **AR3 — Disabled state.** A preset that violates an endpoint date constraint or
+  a range-span constraint remains natively disabled; theme state reflection does
+  not replace that behavior.
 
 ## Design relationships
 
@@ -165,11 +172,11 @@ the shared `input-clear-icon` target owns the current glyph contract.
 
 ## Verification map
 
-| Contract            | Verification                                                               | Representative states                          | Mutation or failure expectation                                             | Audit section                  |
-| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
-| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`                                                  | no match, applied preset, constrained preset   | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
-| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme | group target, selected button, disabled button | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | all documented anatomy                         | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
+| Contract            | Verification                                                               | Representative states                                                  | Mutation or failure expectation                                             | Audit section                  |
+| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
+| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`                                                  | no match, applied preset, endpoint-invalid preset, span-invalid preset | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
+| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme | group target, selected button, disabled button                         | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | all documented anatomy                                                 | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
 
 ## Decision log
 
@@ -182,7 +189,8 @@ The optional preset sidebar and each quick-select button are stable,
 consumer-recognizable parts. `date-range-input-presets` belongs on the group
 that owns sidebar presentation; `date-range-input-preset` belongs on each
 button, with selected and disabled reflected as states rather than separate
-targets. The change preserves default visuals and behavior.
+targets. The target additions preserve default visuals and button semantics;
+preset constraint enforcement follows FR2 and ORD1–ORD2.
 
 ## Open questions
 

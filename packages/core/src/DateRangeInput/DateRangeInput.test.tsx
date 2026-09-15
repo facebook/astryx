@@ -401,6 +401,89 @@ describe('DateRangeInput', () => {
       expect(inactive).not.toHaveAttribute('data-disabled');
       expect(inactive).not.toHaveAttribute('aria-current');
     });
+
+    it('disables a preset when its start is before min', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-02"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when its end is after max', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          max="2026-03-06"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when either endpoint fails dateConstraints', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          dateConstraints={[date => date.getDate() !== 7]}
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('commits an enabled preset using its already-resolved range', () => {
+      const range = {start: '2026-03-01', end: '2026-03-07'} as const;
+      const getRange = vi.fn(() => range);
+      let getRangeCallsAtChange = 0;
+      const handleChange = vi.fn(() => {
+        getRangeCallsAtChange = getRange.mock.calls.length;
+      });
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-01"
+          max="2026-03-31"
+          dateConstraints={[date => date.getDate() !== 13]}
+          minRangeSpan={2}
+          maxRangeSpan={7}
+          presets={[{label: 'Allowed range', getRange}]}
+        />,
+      );
+
+      const getRangeCallsBeforeClick = getRange.mock.calls.length;
+      const preset = getButton('Allowed range');
+      expect(preset).not.toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).toHaveBeenCalledWith(range);
+      expect(getRangeCallsAtChange).toBe(getRangeCallsBeforeClick);
+    });
   });
   describe('disabledMessage', () => {
     // jsdom does not implement the Popover API used by the tooltip, so mock
