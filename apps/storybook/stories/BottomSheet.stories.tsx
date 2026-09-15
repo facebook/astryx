@@ -3,14 +3,16 @@
 /**
  * @file BottomSheet.stories.tsx
  * @input BottomSheet, content primitives, and controlled story state
- * @output BottomSheet examples including an open text-only keyboard audit
+ * @output BottomSheet examples and native keyboard delegation browser fixtures
  * @position Storybook coverage for BottomSheet presentation and interaction
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {expect, waitFor, within} from 'storybook/test';
 import {useState, type ComponentProps} from 'react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
+import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -568,6 +570,125 @@ export const MobileKeyboard: Story = {
             <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
           </Section>
         </BottomSheet>
+      </>
+    );
+  },
+};
+
+const keyboardFixtureStyles = stylex.create({
+  nestedViewport: {overflow: 'auto', height: 100},
+  nestedContent: {height: 200},
+});
+
+/** Native content variants deliberately exercise the hook's delegation boundary. */
+export const KeyboardDelegation: Story = {
+  render: () => {
+    const [variant, setVariant] = useState('button');
+    const [isOpen, setIsOpen] = useState(true);
+    const [hasScrim, setHasScrim] = useState(false);
+    const action = <Button label="First action" onClick={() => {}} />;
+    let first;
+    switch (variant) {
+      case 'text':
+        first = <Text>Read the details below.</Text>;
+        break;
+      case 'link':
+        first = <Button label="First link" href="#reading-end" />;
+        break;
+      case 'input':
+        first = <TextInput label="First input" value="" onChange={() => {}} />;
+        break;
+      case 'nested':
+        first = (
+          <ScrollableArea label="Nested reading" height={100}>
+            {action}
+            <div {...stylex.props(keyboardFixtureStyles.nestedContent)}>
+              Nested content
+            </div>
+          </ScrollableArea>
+        );
+        break;
+      case 'native-scroll':
+        first = (
+          <div {...stylex.props(keyboardFixtureStyles.nestedViewport)}>
+            {action}
+            <div {...stylex.props(keyboardFixtureStyles.nestedContent)}>
+              Nested content
+            </div>
+          </div>
+        );
+        break;
+      case 'disabled':
+        first = <Button label="First action" isDisabled />;
+        break;
+      case 'button':
+        first = action;
+        break;
+      default:
+        first = <div role={variant}>{action}</div>;
+    }
+    return (
+      <>
+        <label>
+          Content case
+          <select
+            value={variant}
+            onChange={event => setVariant(event.target.value)}>
+            {[
+              'button',
+              'link',
+              'text',
+              'input',
+              'disabled',
+              'nested',
+              'native-scroll',
+              'radiogroup',
+              'slider',
+              'combobox',
+              'listbox',
+              'menu',
+              'grid',
+              'tree',
+              'tablist',
+              'toolbar',
+            ].map(value => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button label="Before sheet" onClick={() => setIsOpen(true)} />
+        <Button
+          label="Toggle modal"
+          onClick={() => setHasScrim(value => !value)}
+        />
+        <BottomSheet
+          key={hasScrim ? 'modal' : 'nonmodal'}
+          label="Keyboard reading"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          hasScrim={hasScrim}
+          height="capped">
+          <Section>
+            <VStack gap={4}>
+              <Heading level={2}>Keyboard reading</Heading>
+              {first}
+              {Array.from({length: 24}, (_, index) => (
+                <Text key={index}>
+                  Paragraph {index + 1}. Use Arrow or Page keys to read the full
+                  content. The sheet keeps native scrolling after keyboard
+                  entry.
+                </Text>
+              ))}
+              {variant !== 'text' && variant !== 'disabled' && (
+                <Button label="Last action" onClick={() => {}} />
+              )}
+              <Text id="reading-end">End of reading</Text>
+            </VStack>
+          </Section>
+        </BottomSheet>
+        <Button label="After sheet" onClick={() => {}} />
       </>
     );
   },

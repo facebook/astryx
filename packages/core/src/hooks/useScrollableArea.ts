@@ -4,8 +4,8 @@
 
 /**
  * @file useScrollableArea.ts
- * @input Logical scroll intent, keyboard ownership, caller-owned viewport/content props
- * @output Safe prop getters and stable per-axis effective scroll state
+ * @input Logical scroll intent, focus-time keyboard delegation, caller-owned viewport/content props
+ * @output Safe prop getters, native keyboard entry, and stable per-axis effective scroll state
  * @position Canonical behavior core for ScrollableArea and structure-owning adopters
  *
  * SYNC: When modified, update:
@@ -26,7 +26,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {attachScrollKeyboardDelegation} from './scrollKeyboardDelegation';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {mergeProps} from '../utils/mergeProps';
 import {mergeRefs} from '../utils/mergeRefs';
@@ -160,25 +160,6 @@ function withoutOwnedOverflow(
   return result;
 }
 
-function hasSequentialKeyboardContent(content: HTMLElement): boolean {
-  const candidates = content.matches(FOCUSABLE_SELECTOR)
-    ? [content, ...content.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)]
-    : [...content.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)];
-
-  return candidates.some(element => {
-    if (
-      element.tabIndex < 0 ||
-      element.matches(':disabled') ||
-      element.closest('[inert], [hidden], [aria-hidden="true"]') != null ||
-      element.getClientRects().length === 0
-    ) {
-      return false;
-    }
-    const visibility = getComputedStyle(element).visibility;
-    return visibility !== 'hidden' && visibility !== 'collapse';
-  });
-}
-
 function useStableComposedRef(
   internalRef: RefCallback<HTMLElement>,
 ): (externalRef: Ref<HTMLElement> | undefined) => RefCallback<HTMLElement> {
@@ -215,7 +196,6 @@ export function useScrollableArea({
   const [viewport, setViewport] = useState<HTMLElement | null>(null);
   const [content, setContent] = useState<HTMLElement | null>(null);
   const [measured, setMeasured] = useState<ScrollableAreaState>(INITIAL_STATE);
-  const [hasFocusableContent, setHasFocusableContent] = useState(false);
   const [overflow, setOverflow] =
     useState<LogicalOverflowGeometry>(INITIAL_OVERFLOW);
   const [mapping, setMapping] = useState<LogicalAxisMapping>(INITIAL_MAPPING);
@@ -269,9 +249,6 @@ export function useScrollableArea({
         return;
       }
 
-      const nextFocusableContent =
-        keyboardAccess.owner === 'contentOrViewport' &&
-        hasSequentialKeyboardContent(content);
       const nextOverflow = {
         inline: inlineOverflow,
         block: blockOverflow,
@@ -279,10 +256,6 @@ export function useScrollableArea({
       const nextState = {inline, block};
       stateRef.current = nextState;
       registerScrollOwner(viewport, nextState);
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- observed descendants select the existing keyboard path without moving focus
-      setHasFocusableContent(current =>
-        current === nextFocusableContent ? current : nextFocusableContent,
-      );
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- measured DOM geometry controls whether the viewport becomes a CSS scroll container
       setOverflow(current =>
         overflowEqual(current, nextOverflow) ? current : nextOverflow,
@@ -318,49 +291,29 @@ export function useScrollableArea({
     content.addEventListener('transitionend', scheduleMeasure);
     content.addEventListener('animationend', scheduleMeasure);
 
-    const observesKeyboardEligibility =
-      keyboardAccess.owner === 'contentOrViewport';
+    // Geometry invalidation is independent of keyboard eligibility. The latter
+    // is inspected only on native keyboard entry, never by these observers.
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
         : new MutationObserver(scheduleMeasure);
-    mutationObserver?.observe(
-      viewport,
-      observesKeyboardEligibility
-        ? {attributes: true}
-        : {
-            attributes: true,
-            attributeFilter: ['class', 'dir', 'hidden', 'style'],
-          },
-    );
-    mutationObserver?.observe(
-      content,
-      observesKeyboardEligibility
-        ? {
-            attributes: true,
-            characterData: true,
-            childList: true,
-            subtree: true,
-          }
-        : {
-            attributes: true,
-            attributeFilter: ['class', 'dir', 'hidden', 'style'],
-            characterData: true,
-            childList: true,
-            subtree: true,
-          },
-    );
+    mutationObserver?.observe(viewport, {
+      attributes: true,
+      attributeFilter: ['class', 'dir', 'hidden', 'style'],
+    });
+    mutationObserver?.observe(content, {
+      attributes: true,
+      attributeFilter: ['class', 'dir', 'hidden', 'style'],
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
     let ancestor = viewport.parentElement;
     while (ancestor != null) {
-      mutationObserver?.observe(
-        ancestor,
-        observesKeyboardEligibility
-          ? {attributes: true}
-          : {
-              attributes: true,
-              attributeFilter: ['class', 'dir', 'hidden', 'style'],
-            },
-      );
+      mutationObserver?.observe(ancestor, {
+        attributes: true,
+        attributeFilter: ['class', 'dir', 'hidden', 'style'],
+      });
       ancestor = ancestor.parentElement;
     }
 
@@ -387,7 +340,7 @@ export function useScrollableArea({
         window.cancelAnimationFrame(frame);
       }
     };
-  }, [axis, content, keyboardAccess.owner, viewport]);
+  }, [axis, content, viewport]);
 
   const state = useMemo<ScrollableAreaState>(
     () => ({
@@ -400,6 +353,20 @@ export function useScrollableArea({
     }),
     [axis, measured],
   );
+
+  const hasEffectiveAxis =
+    state.inline.isScrollable || state.block.isScrollable;
+  useIsomorphicLayoutEffect(() => {
+    if (
+      keyboardAccess.owner !== 'contentOrViewport' ||
+      !hasEffectiveAxis ||
+      viewport == null ||
+      content == null
+    ) {
+      return;
+    }
+    return attachScrollKeyboardDelegation(viewport, content);
+  }, [content, hasEffectiveAxis, keyboardAccess.owner, viewport]);
 
   const getViewportProps = useCallback(
     <E extends HTMLElement>(
@@ -440,9 +407,7 @@ export function useScrollableArea({
           ),
         ),
       ) as ScrollableElementProps<E>;
-      const viewportIsKeyboardOwner =
-        keyboardAccess.owner === 'viewport' ||
-        (keyboardAccess.owner === 'contentOrViewport' && !hasFocusableContent);
+      const viewportIsKeyboardOwner = keyboardAccess.owner !== 'content';
       const keepsProgrammaticFocus =
         (!viewportIsKeyboardOwner || !hasEffectiveAxis) &&
         viewport != null &&
@@ -500,7 +465,6 @@ export function useScrollableArea({
     [
       axis,
       getComposedViewportRef,
-      hasFocusableContent,
       keyboardAccess,
       mapping,
       overflow,

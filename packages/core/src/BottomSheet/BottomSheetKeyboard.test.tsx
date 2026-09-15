@@ -3,7 +3,7 @@
 /**
  * @file BottomSheetKeyboard.test.tsx
  * @input BottomSheetPanel, real shared scroll behavior, and explicit DOM geometry
- * @output Regression coverage for keyboard ownership and dynamic focus eligibility
+ * @output Regression coverage for viewport access, entry-time eligibility, and focus continuity
  * @position BottomSheet integration tests; browser stories verify native key scrolling
  */
 
@@ -91,14 +91,14 @@ describe('BottomSheet keyboard scrolling', () => {
     expect(body()).toHaveAttribute('tabindex', '0');
   });
 
-  it('keeps an existing focusable child as the keyboard path', async () => {
+  it('keeps the named viewport available alongside focusable content', async () => {
     render(
       <Fixture>
         <button type="button">Continue reading</button>
       </Fixture>,
     );
     await measure(300);
-    expect(body()).not.toHaveAttribute('tabindex');
+    expect(body()).toHaveAttribute('tabindex', '0');
     act(() => screen.getByRole('button').focus());
     expect(screen.getByRole('button')).toHaveFocus();
   });
@@ -131,7 +131,7 @@ describe('BottomSheet keyboard scrolling', () => {
     },
   );
 
-  it('updates when a nested child changes without rerendering its sheet', async () => {
+  it('does not move focus when a nested child changes', async () => {
     let setHasControl: (value: boolean) => void = () => {};
     function AsyncContent() {
       const [hasControl, update] = useState(false);
@@ -150,13 +150,13 @@ describe('BottomSheet keyboard scrolling', () => {
     await measure(300);
     act(() => body().focus());
     act(() => setHasControl(true));
-    await waitFor(() => expect(body()).toHaveAttribute('tabindex', '-1'));
+    expect(body()).toHaveAttribute('tabindex', '0');
     expect(body()).toHaveFocus();
     act(() => setHasControl(false));
     await waitFor(() => expect(body()).toHaveAttribute('tabindex', '0'));
   });
 
-  it('updates when an existing descendant becomes disabled', async () => {
+  it('retains the viewport when an existing descendant becomes disabled', async () => {
     render(
       <Fixture>
         <button type="button">Continue reading</button>
@@ -168,7 +168,7 @@ describe('BottomSheet keyboard scrolling', () => {
   });
 
   it.each(['content', 'ancestor'])(
-    'updates when %s data attributes hide the only focusable child',
+    'retains the viewport when %s data attributes change child visibility',
     async target => {
       const {container} = render(
         <Fixture>
@@ -181,7 +181,7 @@ describe('BottomSheet keyboard scrolling', () => {
         </Fixture>,
       );
       await measure(300);
-      expect(body()).not.toHaveAttribute('tabindex');
+      expect(body()).toHaveAttribute('tabindex', '0');
       const owner =
         target === 'content'
           ? screen.getByTestId('conditional-content')
@@ -189,7 +189,7 @@ describe('BottomSheet keyboard scrolling', () => {
       owner.setAttribute('data-actions', 'hidden');
       await waitFor(() => expect(body()).toHaveAttribute('tabindex', '0'));
       owner.removeAttribute('data-actions');
-      await waitFor(() => expect(body()).not.toHaveAttribute('tabindex'));
+      expect(body()).toHaveAttribute('tabindex', '0');
     },
   );
 });

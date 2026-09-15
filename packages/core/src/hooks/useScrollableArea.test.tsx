@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file useScrollableArea.test.tsx
+ * @input Shared scroll hook, mocked geometry, and observed DOM changes
+ * @output Regression coverage for measurement, composition, and stable viewport access
+ * @position DOM-level hook contract; native traversal is verified in browser tests
+ */
+
 import {act, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {useRef, type ReactNode, type Ref} from 'react';
@@ -194,7 +201,7 @@ describe('useScrollableArea', () => {
     expect(viewport.getAttribute('style')).toContain('--x-overflowY: hidden');
   });
 
-  it('prefers usable sequential content and falls back to the named viewport', () => {
+  it('keeps the named viewport available while content eligibility changes', () => {
     function AdaptiveFixture({children}: {children?: ReactNode}) {
       const area = useScrollableArea({
         axis: 'block',
@@ -236,7 +243,7 @@ describe('useScrollableArea', () => {
     );
     void act(() => content.dispatchEvent(new Event('transitionend')));
     flushFrame();
-    expect(viewport).toHaveAttribute('tabindex', '-1');
+    expect(viewport).toHaveAttribute('tabindex', '0');
     expect(viewport).toHaveFocus();
 
     rerender(<AdaptiveFixture>Plain text again</AdaptiveFixture>);
