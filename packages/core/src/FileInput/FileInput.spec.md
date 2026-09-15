@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: component
 id: component:FileInput
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-14
 owners: [cixzhang, imdreamrunner]
 review_triggers: [theming]
 verified_by:
@@ -29,7 +29,7 @@ system_specs: []
 ## Intent
 
 FileInput presents a labelled file-selection field in compact input or dropzone
-form. This draft records its current consumer anatomy and proposes separate theme
+form. This contract records its current consumer anatomy and approves separate theme
 ownership for the upload affordance that FileInput paints through Icon.
 
 ## Compatibility and migration
@@ -38,7 +38,7 @@ ownership for the upload affordance that FileInput paints through Icon.
 - Compatibility class: additive public theming target; no existing target,
   runtime default, DOM, prop, interaction, or accessibility behavior changes
 - Controlled/uncontrolled behavior: unchanged; FileInput remains controlled
-- Migration decision: pending OQ1
+- Migration decision: `component:FileInput/DEC-1`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -61,24 +61,24 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No consumer prop changes. The proposed `file-input-icon` target gives themes a
+No consumer prop changes. The `file-input-icon` target gives themes a
 same-element seam for the Upload icon and reflects the existing `mode` axis. The
 existing `file-input` target remains on the visible selection surface and keeps
 its `mode` and `status` axes.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                    | Basis                                             | Draft review state                                     |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
-| FR1 | The visible selection surface carries `file-input` and reflects the existing `mode` and resolved status.                                                                                                               | Current source, public docs, and focused tests    | Verified current behavior                              |
-| FR2 | When not loading, input mode renders an upload affordance at the small Icon size. Dropzone mode renders it at the medium Icon size only while no file is selected.                                                     | Current source and focused tests                  | Verified current behavior                              |
-| FR3 | Icon owns the rendered glyph's base size, color, and accessibility semantics; FileInput owns the affordance's mode-dependent placement and default size.                                                               | Current composition and component boundaries      | Verified current composition                           |
-| FR4 | The rendered upload affordance SHOULD carry `file-input-icon` with the existing `mode` reflected, so a theme can restyle the glyph box without structural selectors or changing every Icon that uses the same artwork. | Proposed target; OQ1 requires an owner decision   | Human theming decision; not current authority          |
-| FR5 | Adding the target MUST NOT change the default artwork, computed layout, interaction, file-selection behavior, accessible name, or decorative Icon semantics.                                                           | Compatibility policy and focused regression tests | Checkable compatibility requirement if OQ1 is accepted |
+| ID  | Candidate invariant                                                                                                                                                                                                  | Basis                                             | Review state                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------- |
+| FR1 | The visible selection surface carries `file-input` and reflects the existing `mode` and resolved status.                                                                                                             | Current source, public docs, and focused tests    | Verified current behavior       |
+| FR2 | When not loading, input mode renders an upload affordance at the small Icon size. Dropzone mode renders it at the medium Icon size only while no file is selected.                                                   | Current source and focused tests                  | Verified current behavior       |
+| FR3 | Icon owns the rendered glyph's base size, color, and accessibility semantics; FileInput owns the affordance's mode-dependent placement and default size.                                                             | Current composition and component boundaries      | Verified current composition    |
+| FR4 | The rendered upload affordance MUST carry `file-input-icon` with the existing `mode` reflected, so a theme can restyle the glyph box without structural selectors or changing every Icon that uses the same artwork. | Owner-approved target contract                    | Approved additive contract      |
+| FR5 | Adding the target MUST NOT change the default artwork, computed layout, interaction, file-selection behavior, accessible name, or decorative Icon semantics.                                                         | Compatibility policy and focused regression tests | Required compatibility behavior |
 
 ### Allowed variation
 
-- **AV1 — Theme paint.** If OQ1 is accepted, a theme may change standard visual
+- **AV1 — Theme paint.** A theme may change standard visual
   properties such as the upload glyph's size or color through
   `file-input-icon`; FileInput still owns whether and where the affordance renders.
 - **AV2 — Artwork.** Icon registry and future icon-slot decisions may change the
@@ -115,11 +115,11 @@ selection announcements remain unchanged.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                                  | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | ----------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Drop zone        | Presents the visible file-selection surface in input or dropzone form.              | Current source and public docs | Prominent      | FR1                |
-| Upload icon      | Hints at the upload action and changes default size with the selected mode.         | Current source; OQ1 for target | Supporting     | FR2, FR3, FR4      |
-| Shared feedback  | Uses Field, FieldStatus, and Spinner for labels, validation, and loading treatment. | Current shared composition     | Supporting     | FR5                |
+| Anatomy or state | Design requirement                                                                  | Representation authority                 | Hierarchy role | Component contract |
+| ---------------- | ----------------------------------------------------------------------------------- | ---------------------------------------- | -------------- | ------------------ |
+| Drop zone        | Presents the visible file-selection surface in input or dropzone form.              | Current source and public docs           | Prominent      | FR1                |
+| Upload icon      | Hints at the upload action and changes default size with the selected mode.         | Current source and owner-approved target | Supporting     | FR2, FR3, FR4      |
+| Shared feedback  | Uses Field, FieldStatus, and Spinner for labels, validation, and loading treatment. | Current shared composition               | Supporting     | FR5                |
 
 ### Theming anatomy
 
@@ -157,10 +157,9 @@ selection announcements remain unchanged.
 }
 ```
 
-The `file-input-icon` disposition records the proposed final branch state while
-OQ1 remains a human decision. Icon still owns the general `icon` target and base
-glyph semantics; FileInput's narrower target owns only this stable upload
-position and its existing mode distinction.
+The `file-input-icon` disposition records the approved target state. Icon still
+owns the general `icon` target and base glyph semantics; FileInput's narrower
+target owns only this stable upload position and its existing mode distinction.
 
 ## Family and system relationships
 
@@ -180,14 +179,19 @@ position and its existing mode distinction.
 
 ## Decision log
 
-None. OQ1 is not current authority until an authorized owner answers and this
-record is promoted to `current` on the exact reviewed head.
+### DEC-1 — Upload icon is stable FileInput theme anatomy
+
+**Reference:** `component:FileInput/DEC-1`
+**Decider:** cixzhang, 2026-09-14
+
+The upload icon is a stable, consumer-recognizable FileInput affordance whose
+mode-dependent placement and default size belong to FileInput. It receives the
+`file-input-icon` target on the same Icon element that paints the glyph, while
+Icon retains its general target and base glyph semantics.
 
 ## Open questions
 
-- **OQ1 — Does the stable Upload icon warrant `file-input-icon` as a separate
-  FileInput target with the existing `mode` axis, rather than relying only on
-  Icon's general target and structural selectors?** (`human-design`)
+None.
 
 ## Content boundary
 
