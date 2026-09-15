@@ -218,6 +218,11 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('requiredApprovalGroups(records');
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
     expect(reconciler).toContain("'.github/ENGOWNERS'");
+    expect(workflow).not.toContain('SPEC_OWNERS:');
+    expect(reconciler).not.toContain('env.SPEC_OWNERS');
+    expect(reconciler).toContain(
+      'resolveOwnerDecision({...decisionInput, owners: engineeringOwners})',
+    );
     expect(reconciler).toContain(
       '...new Set([...engineeringOwners, ...designOwners])',
     );
