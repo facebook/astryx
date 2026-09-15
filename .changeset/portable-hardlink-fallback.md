@@ -6,6 +6,6 @@
 The create-only publisher now falls back from `linkSync` to `copyFileSync` with
 `COPYFILE_EXCL` for `EPERM` and `EXDEV`, while preserving no-clobber,
 concurrent-creator safety, compare-and-swap replacements, symlink rejection,
-rollback, and temporary-file cleanup.
+rollback, and temporary-file cleanup. (#6287)
 
 @josephfarina

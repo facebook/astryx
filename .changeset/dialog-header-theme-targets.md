@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feature] DialogHeader exposes theme targets for its header gap, title/subtitle gap, and close-icon size.
+[feature] DialogHeader exposes theme targets for its header gap, title/subtitle gap, and close-icon size. (#6240)
 
 @ksying

@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Markdown: add an opt-in math renderer
+[feat] Markdown: add an opt-in math renderer (#6312)
 
 Supply `components.math` to parse `$…$` inline math and `$$…$$` display math.
 The renderer receives the delimiter-free expression as `value` and its placement
