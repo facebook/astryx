@@ -35,7 +35,7 @@ runs:
     # .nvmrc is the single source of truth for the Node version, shared with
     # local nvm / fnm / mise. The 24.x line also bundles npm >= 11.5.1, which
     # release.yml requires for OIDC trusted publishing.
-    - uses: actions/setup-node@v6
+    - uses: actions/setup-node@v7
       with:
         node-version-file: .nvmrc
         cache: pnpm
