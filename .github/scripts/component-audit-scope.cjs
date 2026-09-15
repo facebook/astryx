@@ -15,6 +15,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const {isNodeToolingPath} = require('./tooling-paths.cjs');
+
 function changedPathsFromNameStatus(input) {
   return input
     .split('\n')
@@ -39,10 +41,13 @@ function classifyComponentAuditScope(paths, componentPackages) {
     file === '.github/workflows/rtl-weekly.yml';
   // These are positively owned surfaces that neither component browser audit
   // can observe. Keep this list narrow: unmatched paths still fail closed.
+  // Admitted tooling comes from the shared registry, so this gate and the
+  // change-scope lane admit exactly the same paths.
   const isKnownNonComponentSurface = file =>
     file.startsWith('.changeset/') ||
     file.startsWith('apps/sandbox/') ||
-    file.startsWith('packages/cli/');
+    file.startsWith('packages/cli/') ||
+    isNodeToolingPath(file);
   const isSharedRoutingPolicy = file =>
     file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
     file === 'apps/storybook/rtl-audit/targets.json' ||

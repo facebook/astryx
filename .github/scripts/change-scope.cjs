@@ -5,6 +5,8 @@
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const {isComponentSpecRecordPath} = require('./knowledge-paths.cjs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {NODE_TOOLING_PATHS, isNodeToolingPath} = require('./tooling-paths.cjs');
 
 /**
  * Classifies changed paths without reading PR-controlled content.
@@ -52,14 +54,6 @@ const THEME_BUILD_PATTERNS = [
   /^packages\/core\/src\/theme\//,
 ];
 
-// Tooling admission is exact and dependency-reviewed. Do not widen this to all
-// of scripts/: that directory also owns generated public artifacts, package
-// builds, releases, and other shared infrastructure.
-const NODE_TOOLING_PATHS = new Set([
-  'scripts/score-ledger.mjs',
-  'scripts/score-ledger.test.mjs',
-]);
-
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
@@ -100,10 +94,6 @@ function isKnowledgeRecordPath(filePath) {
     isSpecRecordPath(filePath) ||
     KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
   );
-}
-
-function isNodeToolingPath(filePath) {
-  return NODE_TOOLING_PATHS.has(filePath);
 }
 
 function surfacesForPath(filePath) {

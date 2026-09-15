@@ -48,6 +48,9 @@ describe('Node-tooling CI routing', () => {
         'git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs"',
       );
       expect(source).toContain(
+        'git show "origin/${{ github.base_ref }}:.github/scripts/tooling-paths.cjs"',
+      );
+      expect(source).toContain(
         'git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs"',
       );
       expect(source).toContain('| node "$CLASSIFIER" --github-output');

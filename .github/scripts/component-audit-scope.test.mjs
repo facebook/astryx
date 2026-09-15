@@ -41,6 +41,9 @@ describe('component audit scope', () => {
     expect(workflow).toContain(
       'origin/${{ github.base_ref }}:scripts/component-packages.cjs',
     );
+    expect(workflow).toContain(
+      'origin/${{ github.base_ref }}:.github/scripts/tooling-paths.cjs',
+    );
     expect(workflow).toContain('force_full_component_audits=true');
   });
 
@@ -89,11 +92,26 @@ describe('component audit scope', () => {
     );
   });
 
+  it('does not force audits for the admitted Crowdin tooling group', () => {
+    expect(
+      classifyComponentAuditScope(
+        [
+          '.github/workflows/crowdin-upload.yml',
+          'internal/scripts/README.md',
+          'internal/scripts/lib/crowdin-strategies.mjs',
+          'internal/scripts/upload-crowdin-screenshots.mjs',
+        ],
+        COMPONENT_PACKAGES,
+      ),
+    ).toEqual(NO_COMPONENT_AUDIT_SCOPE);
+  });
+
   it('still audits a component changed beside a known non-component surface', () => {
     expect(
       classifyComponentAuditScope(
         [
           'packages/cli/api/theme/build/build.mjs',
+          'internal/scripts/upload-crowdin-screenshots.mjs',
           'packages/core/src/Button/Button.tsx',
         ],
         COMPONENT_PACKAGES,
@@ -120,6 +138,14 @@ describe('component audit scope', () => {
       ['.github/scripts/component-audit-scope.test.mjs'],
     ],
     ['trusted classifier dependency', ['.github/scripts/change-scope.cjs']],
+    ['tooling registry self-change', ['.github/scripts/tooling-paths.cjs']],
+    [
+      'unadmitted sibling of admitted tooling',
+      [
+        'internal/scripts/upload-crowdin-screenshots.mjs',
+        'internal/scripts/lib/other-strategies.mjs',
+      ],
+    ],
     ['accessibility harness', ['.github/scripts/accessibility-audit.js']],
     ['target-only route policy', ['apps/storybook/rtl-audit/targets.json']],
     [

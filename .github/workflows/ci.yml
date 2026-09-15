@@ -55,9 +55,11 @@ jobs:
           mkdir -p "$CLASSIFIER_DIR" "$REGISTRY_DIR"
           CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
           MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
+          TOOLING="$CLASSIFIER_DIR/tooling-paths.cjs"
           REGISTRY="$REGISTRY_DIR/component-packages.cjs"
           if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
             && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/tooling-paths.cjs" > "$TOOLING" 2>/dev/null \
             && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
             git diff --name-status "$MERGE_BASE"...HEAD \
               | node "$CLASSIFIER" --github-output
@@ -172,8 +174,10 @@ jobs:
           POLICY_ROOT="$RUNNER_TEMP/component-audit-scope"
           mkdir -p "$POLICY_ROOT/.github/scripts" "$POLICY_ROOT/scripts"
           SCOPE="$POLICY_ROOT/.github/scripts/component-audit-scope.cjs"
+          TOOLING="$POLICY_ROOT/.github/scripts/tooling-paths.cjs"
           REGISTRY="$POLICY_ROOT/scripts/component-packages.cjs"
           if git show "origin/${{ github.base_ref }}:.github/scripts/component-audit-scope.cjs" > "$SCOPE" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/tooling-paths.cjs" > "$TOOLING" 2>/dev/null \
             && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
             git diff --name-status "$MERGE_BASE"...HEAD \
               | node "$SCOPE" --registry "$REGISTRY" --github-output
