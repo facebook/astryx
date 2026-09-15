@@ -131,12 +131,26 @@ describe.each(Object.entries(WORKFLOWS))(
 
     it('fails the join when any lane fails', () => {
       // `needs` alone does not fail a job whose `if` is `always()`; the join
-      // has to assert the results it waited for.
-      const join = runLines(workflow.jobs.test);
-      for (const lane of lanes) {
-        expect(join, `join does not assert ${lane}`).toContain(
-          `needs.${lane}.result }}" = "success"`,
+      // has to pass every result to its fail-closed contract.
+      const join = workflow.jobs.test;
+      if (file === 'ci.yml') {
+        const contract = join.steps.find(step =>
+          step.run?.includes('.github/scripts/ci-test-join.mjs'),
         );
+        expect(contract).toBeDefined();
+        for (const lane of lanes) {
+          const key = `${lane.replaceAll('-', '_').toUpperCase()}_RESULT`;
+          expect(contract.env[key], `join does not pass ${lane}`).toContain(
+            `needs.${lane}.result`,
+          );
+        }
+      } else {
+        const commands = runLines(join);
+        for (const lane of lanes) {
+          expect(commands, `join does not assert ${lane}`).toContain(
+            `needs.${lane}.result }}" = "success"`,
+          );
+        }
       }
     });
 

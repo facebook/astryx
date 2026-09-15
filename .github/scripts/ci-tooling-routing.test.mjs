@@ -24,6 +24,8 @@ const lint = load('.github/workflows/lint.yml');
 const prComment = load('.github/workflows/pr-comment.yml');
 const TOOLING_FALSE = "needs.check-scope.outputs.tooling_only != 'true'";
 const TOOLING_TRUE = "needs.check-scope.outputs.tooling_only == 'true'";
+const BROAD_ONLY =
+  "needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'";
 
 function step(job, name) {
   return job.steps.find(candidate => candidate.name === name);
@@ -96,8 +98,38 @@ describe('Node-tooling CI routing', () => {
     ).run;
     expect(componentCheck).toContain('needs.check-scope.outputs.tooling_only');
     expect(componentCheck).toContain('has_components=false');
-    expect(ci.jobs['theme-layers'].if).toContain(TOOLING_FALSE);
+    expect(ci.jobs['test-build'].if).toBe(BROAD_ONLY);
+    expect(step(ci.jobs['test-build'], 'Build the Vite plugin').run).toBe(
+      'pnpm -F @astryxdesign/build build',
+    );
+    expect(
+      step(ci.jobs['test-build'], 'Run Build CSS-layer cascade guard').run,
+    ).toBe('node .github/scripts/theme-layer-cascade.js');
     expect(ci.jobs['fixture-contrast'].if).toContain(TOOLING_FALSE);
+    const familyCommands = new Map([
+      [
+        'Install Playwright for theme-family contract',
+        'npx playwright install chromium',
+      ],
+      [
+        'Build theme-family compiler dependencies',
+        'pnpm -F @astryxdesign/core build',
+      ],
+      [
+        'Generate the maintained theme-family fixture',
+        'pnpm -F @astryxdesign/sandbox generate:theme-family',
+      ],
+      [
+        'Run theme family cascade guard',
+        'node .github/scripts/theme-family-cascade.js',
+      ],
+    ]);
+    for (const [name, command] of familyCommands) {
+      const ownerStep = step(ci.jobs['test-node'], name);
+      expect(ownerStep.if).toBe(BROAD_ONLY);
+      expect(ownerStep.run).toBe(command);
+      expect(step(ci.jobs['test-build'], name)).toBeUndefined();
+    }
   });
 
   it('keeps required build and docsite contexts green without their heavy work', () => {
@@ -130,15 +162,26 @@ describe('Node-tooling CI routing', () => {
 
   it('preserves the historical joins and fails them on owned-lane failure', () => {
     expect(ci.jobs.test.needs).toEqual([
+      'check-scope',
       'test-ui',
       'test-node',
+      'test-build',
       'registry-contract',
     ]);
     expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
-    const testJoin = step(ci.jobs.test, 'Assert every test gate succeeded').run;
-    expect(testJoin).toContain('needs.test-node.result');
-    expect(testJoin).toContain('needs.test-ui.result');
-    expect(testJoin).toContain('needs.registry-contract.result');
+    const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
+    expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
+    expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
+    expect(testJoin.env).toMatchObject({
+      CHECK_SCOPE_RESULT: '${{ needs.check-scope.result }}',
+      DOCSITE_ONLY: '${{ needs.check-scope.outputs.docsite_only }}',
+      SPEC_ONLY: '${{ needs.check-scope.outputs.spec_only }}',
+      TOOLING_ONLY: '${{ needs.check-scope.outputs.tooling_only }}',
+      TEST_UI_RESULT: '${{ needs.test-ui.result }}',
+      TEST_NODE_RESULT: '${{ needs.test-node.result }}',
+      TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
+      REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
+    });
     const buildJoin = step(
       ci.jobs.build,
       'Assert parallel builds succeeded',
