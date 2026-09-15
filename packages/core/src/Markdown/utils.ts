@@ -2,9 +2,34 @@
 
 /**
  * @file utils.ts
- * @output Server-safe re-exports of pure Markdown parser functions
+ * @output Server-safe Markdown parser and plugin-protocol exports
  * @position Subpath entry point: `@astryxdesign/core/Markdown/utils`
  */
+
+export {createMarkdownPlugin} from './plugins';
+export type {
+  MarkdownPluginData,
+  MarkdownExtensionNode,
+  MarkdownTokenizerInput,
+  MarkdownTokenizeResult,
+  MarkdownSyntaxContribution,
+  MarkdownSyntaxCapability,
+  MarkdownTextContribution,
+  MarkdownFenceMode,
+  MarkdownFenceInput,
+  MarkdownFenceResult,
+  MarkdownFenceContribution,
+  MarkdownDecorationAppearance,
+  MarkdownDecorationTone,
+  MarkdownDecoration,
+  MarkdownExtensionRenderers,
+  MarkdownSyntaxPluginDefinition,
+  MarkdownPresentationPluginDefinition,
+  MarkdownPluginDefinition,
+  MarkdownPluginEntry,
+  MarkdownNodeOf,
+  MarkdownExtensionsOf,
+} from './plugins';
 
 export {
   parseMarkdown,
@@ -26,5 +51,7 @@ export type {
   TableAlignment,
   ParseOptions,
   MathParseOptions,
+  IncrementalParseOptions,
+  IncrementalMathParseOptions,
   IncrementalState,
 } from './parser';

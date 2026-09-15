@@ -4,7 +4,7 @@
 
 /**
  * @file useOutlineFromMarkdown.ts
- * @input Uses React, parseOutlineFromMarkdown
+ * @input Uses React, Markdown parse options, parseOutlineFromMarkdown
  * @output Exports useOutlineFromMarkdown hook
  * @position Hook utility; consumed by applications and Outline examples
  *
@@ -15,9 +15,19 @@
 
 import {useMemo} from 'react';
 import {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
+import type {MathParseOptions, ParseOptions} from '../Markdown/parser';
+import type {MarkdownPluginEntry} from '../Markdown/plugins';
 import type {OutlineItem} from './types';
 
 /** Extract a stable outline from a Markdown string. */
-export function useOutlineFromMarkdown(markdown: string): OutlineItem[] {
-  return useMemo(() => parseOutlineFromMarkdown(markdown), [markdown]);
+export function useOutlineFromMarkdown(
+  markdown: string,
+  options?:
+    | ParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+    | MathParseOptions<ReadonlyArray<MarkdownPluginEntry>>,
+): OutlineItem[] {
+  return useMemo(
+    () => parseOutlineFromMarkdown(markdown, options),
+    [markdown, options],
+  );
 }

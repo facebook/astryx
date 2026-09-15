@@ -4,14 +4,13 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, parser AST types, optional custom renderers
+ * @input Markdown string, parser AST types, optional custom renderers and plugins
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {useMemo, useRef} from 'react';
+import {Component, Fragment, useMemo, useRef} from 'react';
 import type React from 'react';
-import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -63,11 +62,33 @@ import type {
   IncrementalState,
   MathParseOptions,
   ParseOptions,
+  SourceRange,
 } from './parser';
+import {
+  getMarkdownFenceMetadata,
+  getStableMarkdownSyntaxEntries,
+  prepareMarkdownPlugins,
+  reportMarkdownPluginFailure,
+  warnForUnstableMarkdownPluginList,
+} from './plugins';
+import type {
+  MarkdownDecoration,
+  MarkdownExtensionNode,
+  MarkdownPluginData,
+  MarkdownPluginEntry,
+  PreparedMarkdownPlugins,
+  PreparedTextContribution,
+  PreparedTextDispatch,
+} from './plugins';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
+type RuntimeExtensionNode =
+  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'inline'>
+  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>;
+type RenderInlineNode = InlineNodeWithMath<RuntimeExtensionNode>;
+type RenderBlockNode = BlockNodeWithMath<RuntimeExtensionNode>;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -195,6 +216,8 @@ export interface MarkdownProps extends BaseProps<HTMLElement> {
    */
   contentAlign?: 'start' | 'center';
   components?: Partial<MarkdownComponents>;
+  /** Ordered, opt-in Markdown extensions created by createMarkdownPlugin(). */
+  plugins?: ReadonlyArray<MarkdownPluginEntry>;
   /**
    * Plugins that transform text patterns into custom React elements.
    * Applied to text nodes after parsing — code blocks, inline code, and math
@@ -273,6 +296,16 @@ const styles = stylex.create({
     color: 'inherit',
     lineHeight: 'inherit',
     fontSize: 'inherit',
+  },
+  pluginDecoration: {
+    borderRadius: radiusVars['--radius-element'],
+    paddingInline: spacingVars['--spacing-1'],
+  },
+  pluginDecorationHighlight: {
+    backgroundColor: colorVars['--color-background-muted'],
+  },
+  pluginDecorationUnderline: {
+    boxShadow: `inset 0 -2px ${colorVars['--color-border-emphasized']}`,
   },
   // Headings
   headingBase: {
@@ -487,7 +520,7 @@ interface StreamingCursor {
  * Count the total text characters in inline nodes without rendering.
  * Used to advance the cursor past a block that will be faded as a whole unit.
  */
-function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
+function countInlineTextLength(nodes: RenderInlineNode[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -515,6 +548,9 @@ function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
       case 'citation':
         len += 1;
         break;
+      case 'extension':
+        len += node.source.length;
+        break;
     }
   }
   return len;
@@ -523,7 +559,7 @@ function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
 /**
  * Count total text characters in a block node tree.
  */
-function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
+function countBlockTextLength(nodes: RenderBlockNode[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -559,6 +595,9 @@ function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
         break;
       case 'image':
         len += node.alt.length;
+        break;
+      case 'extension':
+        len += node.source.length;
         break;
     }
   }
@@ -701,6 +740,169 @@ function applyInlinePlugins(
   return segments;
 }
 
+const EMPTY_TEXT_CONTRIBUTIONS: ReadonlyArray<PreparedTextContribution> = [];
+
+function activeTextContributions(
+  text: string,
+  dispatch: PreparedTextDispatch,
+): ReadonlyArray<PreparedTextContribution> {
+  let active: PreparedTextContribution[] | undefined =
+    dispatch.unguarded.length > 0 ? [...dispatch.unguarded] : undefined;
+  for (const guard of dispatch.guards) {
+    guard.pattern.lastIndex = 0;
+    if (guard.pattern.test(text)) {
+      active ??= [];
+      active.push(...guard.contributions);
+    }
+  }
+  if (active == null) {
+    return EMPTY_TEXT_CONTRIBUTIONS;
+  }
+  if (active.length > 1) {
+    active.sort((a, b) => a.order - b.order);
+  }
+  return active;
+}
+
+/** @internal Exported for deterministic performance regression tests. */
+export function applyTextContributions(
+  text: string,
+  dispatch: PreparedTextDispatch,
+): InlinePluginSegment[] {
+  interface RawMatch {
+    start: number;
+    end: number;
+    match: RegExpMatchArray;
+    prepared: PreparedTextContribution;
+  }
+
+  const active = activeTextContributions(text, dispatch);
+  if (active.length === 0) {
+    return [{type: 'text', content: text}];
+  }
+
+  const allMatches: RawMatch[] = [];
+  for (const prepared of active) {
+    const contribution = prepared.contribution;
+    contribution.pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = contribution.pattern.exec(text)) != null) {
+      if (match[0].length === 0) {
+        reportMarkdownPluginFailure(
+          prepared.pluginName,
+          'text',
+          new Error('text patterns must advance'),
+        );
+        break;
+      }
+      let end = match.index + match[0].length;
+      try {
+        const computed = contribution.getEndIndex?.(text, match);
+        if (computed === false) {
+          continue;
+        }
+        if (computed != null) {
+          end = computed;
+        }
+      } catch (error) {
+        reportMarkdownPluginFailure(prepared.pluginName, 'text', error);
+        continue;
+      }
+      if (end <= match.index || end > text.length) {
+        reportMarkdownPluginFailure(
+          prepared.pluginName,
+          'text',
+          new Error('text match end is outside the available text'),
+        );
+        continue;
+      }
+      allMatches.push({
+        start: match.index,
+        end,
+        match,
+        prepared,
+      });
+    }
+  }
+
+  if (allMatches.length === 0) {
+    return [{type: 'text', content: text}];
+  }
+
+  allMatches.sort((a, b) => a.start - b.start);
+  const segments: InlinePluginSegment[] = [];
+  let cursor = 0;
+  let resolvedIndex = 0;
+  for (const match of allMatches) {
+    if (match.start < cursor) {
+      continue;
+    }
+    if (match.start > cursor) {
+      segments.push({type: 'text', content: text.slice(cursor, match.start)});
+    }
+    try {
+      const element = match.prepared.contribution.render(
+        match.match,
+        `plugin-${match.prepared.pluginName}-${resolvedIndex}`,
+      );
+      if (element == null || typeof element === 'boolean') {
+        segments.push({
+          type: 'text',
+          content: text.slice(match.start, match.end),
+        });
+      } else {
+        segments.push({
+          type: 'plugin',
+          element,
+          matchLength: match.end - match.start,
+        });
+      }
+    } catch (error) {
+      reportMarkdownPluginFailure(match.prepared.pluginName, 'text', error);
+      segments.push({
+        type: 'text',
+        content: text.slice(match.start, match.end),
+      });
+    }
+    cursor = match.end;
+    resolvedIndex++;
+  }
+  if (cursor < text.length) {
+    segments.push({type: 'text', content: text.slice(cursor)});
+  }
+  return segments;
+}
+
+interface MarkdownPluginBoundaryProps {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+  pluginName: string;
+  capability: string;
+}
+
+class MarkdownPluginBoundary extends Component<
+  MarkdownPluginBoundaryProps,
+  {failed: boolean}
+> {
+  state = {failed: false};
+
+  static getDerivedStateFromError(): {failed: boolean} {
+    return {failed: true};
+  }
+
+  componentDidCatch(error: unknown): void {
+    reportMarkdownPluginFailure(
+      this.props.pluginName,
+      this.props.capability,
+      error,
+    );
+  }
+
+  render(): React.ReactNode {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Inline renderer
 // ---------------------------------------------------------------------------
@@ -768,7 +970,7 @@ function getCitationNumber(ctx: CitationContext, sourceId: string): number {
 }
 
 function renderInline(
-  node: InlineNodeWithMath,
+  node: RenderInlineNode,
   index: number,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -776,32 +978,54 @@ function renderInline(
   linkComponent: LinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<MarkdownComponents>,
+  preparedPlugins?: PreparedMarkdownPlugins,
+  allowTextContributions = true,
 ): SyncReactNode {
   switch (node.type) {
     case 'text': {
-      if (inlinePlugins && inlinePlugins.length > 0) {
-        const segments = applyInlinePlugins(node.content, inlinePlugins);
-        // If no plugin matched, fall through to the normal path
-        // O(1) guard: applyInlinePlugins returns a single text segment when
-        // nothing matched — skip the plugin path entirely in that case.
-        if (!(segments.length === 1 && segments[0].type === 'text')) {
-          const result: React.ReactNode[] = [];
-          for (let i = 0; i < segments.length; i++) {
-            const seg = segments[i];
-            if (seg.type === 'text') {
-              result.push(
-                wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`),
-              );
-            } else {
-              // Plugin segment — advance cursor by matchLength
-              cursor.offset += seg.matchLength;
-              result.push(
-                <Fragment key={`plugin-${index}-${i}`}>{seg.element}</Fragment>,
-              );
-            }
+      const textDispatch = allowTextContributions
+        ? preparedPlugins?.text
+        : undefined;
+      const textSegments =
+        textDispatch != null && textDispatch.contributions.length > 0
+          ? applyTextContributions(node.content, textDispatch)
+          : ([
+              {type: 'text', content: node.content},
+            ] satisfies InlinePluginSegment[]);
+      const segments =
+        inlinePlugins != null && inlinePlugins.length > 0
+          ? textSegments.flatMap(segment =>
+              segment.type === 'plugin'
+                ? [segment]
+                : applyInlinePlugins(segment.content, inlinePlugins),
+            )
+          : textSegments;
+      if (segments.some(segment => segment.type === 'plugin')) {
+        const result: React.ReactNode[] = [];
+        for (
+          let segmentIndex = 0;
+          segmentIndex < segments.length;
+          segmentIndex++
+        ) {
+          const segment = segments[segmentIndex];
+          if (segment.type === 'text') {
+            result.push(
+              wrapTextWithFade(
+                segment.content,
+                cursor,
+                `${index}-seg-${segmentIndex}`,
+              ),
+            );
+          } else {
+            cursor.offset += segment.matchLength;
+            result.push(
+              <Fragment key={`plugin-${index}-${segmentIndex}`}>
+                {segment.element}
+              </Fragment>,
+            );
           }
-          return <Fragment key={index}>{result}</Fragment>;
         }
+        return <Fragment key={index}>{result}</Fragment>;
       }
       return wrapTextWithFade(node.content, cursor, index);
     }
@@ -818,6 +1042,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </strong>
@@ -835,6 +1060,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </em>
@@ -852,6 +1078,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </del>
@@ -891,6 +1118,8 @@ function renderInline(
                 linkComponent,
                 inlinePlugins,
                 components,
+                preparedPlugins,
+                false,
               ),
             )}
           </span>
@@ -910,6 +1139,8 @@ function renderInline(
                 linkComponent,
                 inlinePlugins,
                 components,
+                preparedPlugins,
+                false,
               ),
             )}
           </LinkComp>
@@ -948,6 +1179,8 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
+              false,
             ),
           )}
         </LinkTag>
@@ -1004,6 +1237,27 @@ function renderInline(
 
       return chip;
     }
+    case 'extension': {
+      cursor.offset += node.source.length;
+      const Renderer = preparedPlugins?.renderers.get(node.plugin)?.[node.name];
+      if (Renderer == null) {
+        reportMarkdownPluginFailure(
+          node.plugin,
+          'renderer',
+          new Error(`No renderer for extension node "${node.name}"`),
+        );
+        return node.source;
+      }
+      return (
+        <MarkdownPluginBoundary
+          key={index}
+          pluginName={node.plugin}
+          capability="renderer"
+          fallback={node.source}>
+          <Renderer node={node as never} />
+        </MarkdownPluginBoundary>
+      );
+    }
   }
 }
 
@@ -1012,7 +1266,7 @@ function renderInline(
 // ---------------------------------------------------------------------------
 
 function getElementSpacing(
-  node: BlockNodeWithMath,
+  node: RenderBlockNode,
   density: 'default' | 'compact',
 ): StyleXStyles {
   const compact = density === 'compact';
@@ -1046,6 +1300,10 @@ function getElementSpacing(
       return compact ? styles.spacingHrCompact : styles.spacingHrDefault;
     case 'image':
       return compact ? styles.spacingImageCompact : styles.spacingImageDefault;
+    case 'extension':
+      return compact
+        ? styles.spacingParagraphCompact
+        : styles.spacingParagraphDefault;
   }
 }
 
@@ -1058,8 +1316,8 @@ function getElementSpacing(
  * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
  */
 function computeTableColumnMinWidths(node: {
-  headers: {children: InlineNodeWithMath[]}[];
-  rows: {children: InlineNodeWithMath[]}[][];
+  headers: {children: RenderInlineNode[]}[];
+  rows: {children: RenderInlineNode[]}[][];
 }): number[] {
   return node.headers.map((h, colIdx) => {
     let maxLen = countInlineTextLength(h.children);
@@ -1076,7 +1334,7 @@ function computeTableColumnMinWidths(node: {
 }
 
 function renderBlock(
-  node: BlockNodeWithMath,
+  node: RenderBlockNode,
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
@@ -1089,8 +1347,9 @@ function renderBlock(
   linkComponent: LinkComponentType = 'a',
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
+  preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<BlockNodeWithMath, string>,
+  headingIdMap?: ReadonlyMap<RenderBlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1115,6 +1374,7 @@ function renderBlock(
           linkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
         ),
       );
       // Only top-level headings get an id: the map is built from the same
@@ -1166,6 +1426,7 @@ function renderBlock(
           linkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
         ),
       );
       const ParagraphComp = components?.paragraph;
@@ -1204,7 +1465,7 @@ function renderBlock(
       );
     }
     case 'codeblock': {
-      // Track codeblock content in cursor for accurate character counting
+      // Track codeblock content in cursor for accurate character counting.
       cursor.offset += node.content.length;
       const CodeBlockComp = components?.code;
       if (CodeBlockComp) {
@@ -1216,7 +1477,7 @@ function renderBlock(
           />
         );
       }
-      return (
+      const fallback = (
         <div
           key={index}
           {...mergeProps(
@@ -1241,6 +1502,53 @@ function renderBlock(
           />
         </div>
       );
+      const metadata = getMarkdownFenceMetadata(node);
+      const claimants = preparedPlugins?.fencesByLanguage.get(
+        node.language.toLowerCase(),
+      );
+      if (claimants == null || metadata?.closed === false) {
+        return fallback;
+      }
+      for (const claimant of claimants) {
+        try {
+          const result = claimant.contribution.render({
+            source: node.content,
+            language: node.language.toLowerCase(),
+            meta: metadata?.meta,
+            range: node.range,
+            isFinal: metadata?.isFinal ?? true,
+            mode: claimant.contribution.mode ?? 'interactive',
+            fallback,
+          });
+          if (result.status === 'decline') {
+            continue;
+          }
+          if (result.status === 'fallback') {
+            return fallback;
+          }
+          if (result.status === 'enhance') {
+            return (
+              <MarkdownPluginBoundary
+                key={index}
+                pluginName={claimant.pluginName}
+                capability="fence"
+                fallback={fallback}>
+                {result.content}
+              </MarkdownPluginBoundary>
+            );
+          }
+          reportMarkdownPluginFailure(
+            claimant.pluginName,
+            'fence',
+            new Error('invalid fence result'),
+          );
+          return fallback;
+        } catch (error) {
+          reportMarkdownPluginFailure(claimant.pluginName, 'fence', error);
+          return fallback;
+        }
+      }
+      return fallback;
     }
     case 'math': {
       cursor.offset += node.value.length;
@@ -1272,6 +1580,7 @@ function renderBlock(
             linkComponent,
             inlinePlugins,
             components,
+            preparedPlugins,
             t,
           ),
         );
@@ -1307,6 +1616,7 @@ function renderBlock(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
               t,
             ),
           )}
@@ -1361,6 +1671,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </>
@@ -1381,6 +1692,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                         t,
                       ),
                     )}
@@ -1443,6 +1755,7 @@ function renderBlock(
                       linkComponent,
                       inlinePlugins,
                       components,
+                      preparedPlugins,
                     ),
                   )}
                 </>
@@ -1463,6 +1776,7 @@ function renderBlock(
                       linkComponent,
                       inlinePlugins,
                       components,
+                      preparedPlugins,
                       t,
                     ),
                   )}
@@ -1531,6 +1845,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </TableHeaderCell>
@@ -1557,6 +1872,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </TableCell>
@@ -1631,7 +1947,174 @@ function renderBlock(
         </div>
       );
     }
+    case 'extension': {
+      cursor.offset += node.source.length;
+      const Renderer = preparedPlugins?.renderers.get(node.plugin)?.[node.name];
+      if (Renderer == null) {
+        reportMarkdownPluginFailure(
+          node.plugin,
+          'renderer',
+          new Error(`No renderer for extension node "${node.name}"`),
+        );
+        return (
+          <div key={index} role="paragraph">
+            {node.source}
+          </div>
+        );
+      }
+      return (
+        <MarkdownPluginBoundary
+          key={index}
+          pluginName={node.plugin}
+          capability="renderer"
+          fallback={<div role="paragraph">{node.source}</div>}>
+          <Renderer node={node as never} />
+        </MarkdownPluginBoundary>
+      );
+    }
   }
+}
+
+function parseDecorationSegments(
+  source: string,
+  sourceIds: ReadonlySet<string> | undefined,
+  autolink: 'gfm' | undefined,
+  math: boolean,
+): RenderBlockNode[] {
+  return math
+    ? parseMarkdown(source, {
+        sourceIds,
+        autolink,
+        math: true,
+        sourceRanges: true,
+      })
+    : parseMarkdown(source, {sourceIds, autolink, sourceRanges: true});
+}
+
+function offsetRange(range: SourceRange, offset: number): SourceRange {
+  return {start: range.start + offset, end: range.end + offset};
+}
+
+/**
+ * Segment source for decorations without changing or reparsing the plugin AST.
+ * Block extensions are already atomic in `blocks`; their exact authored source
+ * splits the ordinary-Markdown regions that can be segmented without invoking
+ * plugin tokenizers again.
+ */
+function createDecorationRangeMap(
+  source: string,
+  blocks: ReadonlyArray<RenderBlockNode>,
+  sourceIds: ReadonlySet<string> | undefined,
+  autolink: 'gfm' | undefined,
+  math: boolean,
+): ReadonlyMap<RenderBlockNode, SourceRange> | undefined {
+  const baseline = parseDecorationSegments(source, sourceIds, autolink, math);
+  const extensionBlocks = blocks.filter(
+    (block): block is Extract<RenderBlockNode, {type: 'extension'}> =>
+      block.type === 'extension' && block.display === 'block',
+  );
+
+  let segments: SourceRange[];
+  if (extensionBlocks.length === 0) {
+    segments = baseline.flatMap(block =>
+      block.range == null ? [] : [block.range],
+    );
+  } else {
+    const paragraphRanges = baseline.flatMap(block =>
+      block.type === 'paragraph' && block.range != null ? [block.range] : [],
+    );
+    const extensionRanges: SourceRange[] = [];
+    let searchFrom = 0;
+    for (const block of extensionBlocks) {
+      let start = source.indexOf(block.source, searchFrom);
+      while (
+        start >= 0 &&
+        !paragraphRanges.some(
+          range =>
+            start >= range.start && start + block.source.length <= range.end,
+        )
+      ) {
+        start = source.indexOf(block.source, start + 1);
+      }
+      if (start < 0) {
+        return undefined;
+      }
+      const range = {start, end: start + block.source.length};
+      extensionRanges.push(range);
+      searchFrom = range.end;
+    }
+
+    segments = [];
+    let cursor = 0;
+    for (const extensionRange of extensionRanges) {
+      if (extensionRange.start > cursor) {
+        segments.push(
+          ...parseDecorationSegments(
+            source.slice(cursor, extensionRange.start),
+            sourceIds,
+            autolink,
+            math,
+          ).flatMap(block =>
+            block.range == null ? [] : [offsetRange(block.range, cursor)],
+          ),
+        );
+      }
+      segments.push(extensionRange);
+      cursor = extensionRange.end;
+    }
+    if (cursor < source.length) {
+      segments.push(
+        ...parseDecorationSegments(
+          source.slice(cursor),
+          sourceIds,
+          autolink,
+          math,
+        ).flatMap(block =>
+          block.range == null ? [] : [offsetRange(block.range, cursor)],
+        ),
+      );
+    }
+  }
+
+  if (segments.length !== blocks.length) {
+    return undefined;
+  }
+  return new Map(blocks.map((block, index) => [block, segments[index]]));
+}
+
+function renderDecoratedBlock(
+  block: RenderBlockNode,
+  rendered: SyncReactNode,
+  decorations: ReadonlyArray<MarkdownDecoration>,
+  segmentedRange?: SourceRange,
+): SyncReactNode {
+  const range = segmentedRange ?? block.range;
+  if (range == null || decorations.length === 0) {
+    return rendered;
+  }
+  const matching = decorations.filter(
+    decoration =>
+      decoration.range.start < range.end && decoration.range.end > range.start,
+  );
+  return matching.reduceRight<SyncReactNode>(
+    (children, decoration) => (
+      <div
+        key={decoration.id}
+        role="note"
+        aria-label={decoration.label}
+        data-markdown-decoration={decoration.id}
+        data-markdown-decoration-tone={decoration.tone}
+        {...stylex.props(
+          styles.pluginDecoration,
+          decoration.appearance === 'highlight'
+            ? styles.pluginDecorationHighlight
+            : styles.pluginDecorationUnderline,
+        )}>
+        {children}
+      </div>
+    ),
+    rendered,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1662,6 +2145,7 @@ export function Markdown({
   contentWidth = 680,
   contentAlign = 'start',
   components,
+  plugins,
   inlinePlugins,
   autolink,
   xstyle,
@@ -1678,14 +2162,39 @@ export function Markdown({
     [sources],
   );
 
+  const preparedPlugins =
+    plugins != null && plugins.length > 0
+      ? prepareMarkdownPlugins(plugins)
+      : undefined;
+  const parserPlugins = getStableMarkdownSyntaxEntries(preparedPlugins);
+  const hasParserOptions = parserPlugins != null;
   const hasMathRenderer = components?.math != null;
-  const legacyParseOptions = useMemo<ParseOptions>(
-    () => ({sourceIds, autolink}),
-    [sourceIds, autolink],
+  const legacyParseOptions = useMemo<
+    ParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () =>
+      hasParserOptions
+        ? {
+            sourceIds,
+            autolink,
+            plugins: parserPlugins,
+          }
+        : {sourceIds, autolink},
+    [sourceIds, autolink, parserPlugins, hasParserOptions],
   );
-  const mathParseOptions = useMemo<MathParseOptions>(
-    () => ({sourceIds, autolink, math: true}),
-    [sourceIds, autolink],
+  const mathParseOptions = useMemo<
+    MathParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () =>
+      hasParserOptions
+        ? {
+            sourceIds,
+            autolink,
+            math: true,
+            plugins: parserPlugins,
+          }
+        : {sourceIds, autolink, math: true},
+    [sourceIds, autolink, parserPlugins, hasParserOptions],
   );
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
@@ -1694,6 +2203,11 @@ export function Markdown({
 
   const incrementalStateRef = useRef<IncrementalState<boolean>>(
     createIncrementalState<boolean>(),
+  );
+  warnForUnstableMarkdownPluginList(
+    incrementalStateRef.current,
+    plugins,
+    preparedPlugins,
   );
   // Reset incremental cache when parser-affecting component options toggle —
   // cached settled blocks were parsed with the previous setting.
@@ -1744,6 +2258,36 @@ export function Markdown({
     legacyParseOptions,
   ]);
 
+  const hasDecorations = (preparedPlugins?.decorations.length ?? 0) > 0;
+  const decorationRangeMap = useMemo(() => {
+    if (display === 'inline' || !hasDecorations || blocks.length === 0) {
+      return undefined;
+    }
+    const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
+    const source = isStreaming
+      ? trimStreamingArtifacts(smoothedText, options)
+      : children;
+    return createDecorationRangeMap(
+      source,
+      blocks,
+      sourceIds,
+      autolink,
+      hasMathRenderer,
+    );
+  }, [
+    display,
+    hasDecorations,
+    blocks,
+    hasMathRenderer,
+    mathParseOptions,
+    legacyParseOptions,
+    isStreaming,
+    smoothedText,
+    children,
+    sourceIds,
+    autolink,
+  ]);
+
   // Assign each top-level heading the slug that parseOutlineFromMarkdown
   // would derive for it, so Outline hash links built from the same source
   // always find a matching DOM id. Mirrors that function's traversal exactly:
@@ -1754,16 +2298,16 @@ export function Markdown({
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<BlockNodeWithMath, string>();
+    const map = new Map<RenderBlockNode, string>();
     const counts = new Map<string, number>();
     for (const block of blocks) {
       if (block.type === 'heading') {
-        const label = inlineText(block.children).trim();
+        const label = inlineText(block.children, preparedPlugins).trim();
         map.set(block, uniqueSlug(slugify(label), counts));
       }
     }
     return map;
-  }, [display, blocks]);
+  }, [display, blocks, preparedPlugins]);
 
   const inlineNodes = useMemo(() => {
     if (display !== 'inline') {
@@ -1800,8 +2344,8 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<BlockNodeWithMath[]>([]);
-  const prevInlineNodesRef = useRef<InlineNodeWithMath[]>([]);
+  const prevBlocksRef = useRef<RenderBlockNode[]>([]);
+  const prevInlineNodesRef = useRef<RenderInlineNode[]>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
@@ -1850,6 +2394,7 @@ export function Markdown({
             LinkComponent,
             inlinePlugins,
             components,
+            preparedPlugins,
           ),
         )}
       </span>
@@ -1876,8 +2421,8 @@ export function Markdown({
         className,
         style,
       )}>
-      {blocks.map((block, i) =>
-        renderBlock(
+      {blocks.map((block, i) => {
+        const blockElement = renderBlock(
           block,
           i,
           blocks.length,
@@ -1895,10 +2440,17 @@ export function Markdown({
           LinkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
           t,
           headingIdMap,
-        ),
-      )}
+        );
+        return renderDecoratedBlock(
+          block,
+          blockElement,
+          preparedPlugins?.decorations ?? [],
+          decorationRangeMap?.get(block),
+        );
+      })}
     </div>
   );
 

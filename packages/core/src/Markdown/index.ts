@@ -4,9 +4,34 @@
 
 /**
  * @file index.ts
- * @output Exports Markdown component, parser functions, and types
+ * @output Exports Markdown component, plugin protocol, parser functions, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
+
+export {createMarkdownPlugin} from './plugins';
+export type {
+  MarkdownPluginData,
+  MarkdownExtensionNode,
+  MarkdownTokenizerInput,
+  MarkdownTokenizeResult,
+  MarkdownSyntaxContribution,
+  MarkdownSyntaxCapability,
+  MarkdownTextContribution,
+  MarkdownFenceMode,
+  MarkdownFenceInput,
+  MarkdownFenceResult,
+  MarkdownFenceContribution,
+  MarkdownDecorationAppearance,
+  MarkdownDecorationTone,
+  MarkdownDecoration,
+  MarkdownExtensionRenderers,
+  MarkdownSyntaxPluginDefinition,
+  MarkdownPresentationPluginDefinition,
+  MarkdownPluginDefinition,
+  MarkdownPluginEntry,
+  MarkdownNodeOf,
+  MarkdownExtensionsOf,
+} from './plugins';
 
 export {Markdown} from './Markdown';
 export type {
@@ -35,5 +60,7 @@ export type {
   TableAlignment,
   ParseOptions,
   MathParseOptions,
+  IncrementalParseOptions,
+  IncrementalMathParseOptions,
   IncrementalState as IncrementalParseState,
 } from './parser';

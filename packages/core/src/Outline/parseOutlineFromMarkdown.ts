@@ -2,8 +2,7 @@
 
 /**
  * @file parseOutlineFromMarkdown.ts
- * @input Uses Markdown parser internals (parseMarkdown + heading slug
- *   helpers) and OutlineItem type
+ * @input Uses Markdown parser, parse options, plugin projection, and OutlineItem type
  * @output Exports parseOutlineFromMarkdown for extracting heading outlines from Markdown
  * @position Pure utility; consumed by useOutlineFromMarkdown and public exports
  *
@@ -18,6 +17,9 @@ import {
   slugify,
   uniqueSlug,
 } from '../Markdown/parser';
+import {prepareMarkdownPlugins} from '../Markdown/plugins';
+import type {MathParseOptions, ParseOptions} from '../Markdown/parser';
+import type {MarkdownPluginEntry} from '../Markdown/plugins';
 import type {OutlineItem} from './types';
 
 /**
@@ -28,12 +30,27 @@ import type {OutlineItem} from './types';
  * Ids come from the parser's shared slug helpers, so they always match the
  * `id` attributes Markdown renders on its headings.
  */
-export function parseOutlineFromMarkdown(markdown: string): OutlineItem[] {
+export function parseOutlineFromMarkdown(
+  markdown: string,
+  options?:
+    | ParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+    | MathParseOptions<ReadonlyArray<MarkdownPluginEntry>>,
+): OutlineItem[] {
   const counts = new Map<string, number>();
-  return parseMarkdown(markdown)
+  const plugins =
+    options?.plugins != null && options.plugins.length > 0
+      ? prepareMarkdownPlugins(options.plugins)
+      : undefined;
+  const blocks =
+    options == null
+      ? parseMarkdown(markdown)
+      : options.math === true
+        ? parseMarkdown(markdown, options)
+        : parseMarkdown(markdown, options);
+  return blocks
     .filter(block => block.type === 'heading')
     .map(block => {
-      const label = inlineText(block.children).trim();
+      const label = inlineText(block.children, plugins).trim();
       return {
         id: uniqueSlug(slugify(label), counts),
         label,

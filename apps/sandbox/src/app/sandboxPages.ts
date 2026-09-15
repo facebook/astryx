@@ -88,6 +88,12 @@ export const categories: SandboxCategory[] = [
       'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
+        name: 'Markdown Plugins',
+        href: '/pages/markdown-plugins/',
+        description:
+          'Exercise inline and block syntax, prose replacement, semantic fences, and source-range decoration',
+      },
+      {
         name: 'Mobile Prototypes',
         href: '/pages/mobile-prototypes/',
         description:
