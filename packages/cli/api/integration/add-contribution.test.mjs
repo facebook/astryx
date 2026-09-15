@@ -118,14 +118,14 @@ describe('integrationAdd component', () => {
     );
     expect(pkg.exports).toEqual({
       '.': './index.mjs',
-      './components/MyWidget.tsx': './components/MyWidget.tsx',
+      './components/MyWidget': './components/MyWidget.tsx',
     });
     expect(
       fs.readFileSync(
         path.join(tmpDir, 'components/MyWidget.doc.mjs'),
         'utf-8',
       ),
-    ).toContain('import: "@acme/integration/components/MyWidget.tsx"');
+    ).toContain('import: "@acme/integration/components/MyWidget"');
   });
 
   it('does not create exports when the package has no exports map', async () => {
@@ -143,7 +143,7 @@ describe('integrationAdd component', () => {
     setup({
       exports: {
         '.': './index.mjs',
-        './components/MyWidget.tsx': './different.tsx',
+        './components/MyWidget': './different.tsx',
       },
     });
 
@@ -421,7 +421,7 @@ describe('integrationAdd template', () => {
     );
     expect(pkg.exports).toEqual({
       '.': './index.mjs',
-      './templates/my-widget.tsx': './templates/my-widget.tsx',
+      './templates/my-widget': './templates/my-widget.tsx',
     });
   });
 
