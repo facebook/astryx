@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-036
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-14
+phase: accepted
 owners: [cixzhang]
 affects_architecture:
   [
@@ -25,831 +25,199 @@ affects_consumer_docs: [Markdown, Outline]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | Keep one additive `plugins?: readonly MarkdownPluginEntry[]` prop and `createMarkdownPlugin()`. A plugin has capability-named optional `text`, `syntax`, `fences`, `renderers`, and `decorations`; parser APIs infer its data-only extension nodes and incremental callers explicitly finalize streamed input.                                                                                                                                                                                                                                                                                                                                                                                                     |
-| Behavior                | Built-in syntax and protected contexts win. Plugins resolve in array/declaration order; syntax and fence conflicts use first claim, text conflicts use first claim with legacy `inlinePlugins` adapted last, and decorations compose in deterministic layers without changing the AST.                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| End-user impact         | Readers can receive semantic fences, comments/highlights, structured references, and block extensions while ordinary Markdown, CodeBlock highlighting, copyable fallbacks, heading/Outline identity, accessibility, and built-in link/image/list/table policy remain Core-owned.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Builder impact          | Existing builders make no change. Opt-in builders explicitly import colocated or third-party plugins and keep the list stable. Plugin authors choose only the capabilities they need and may export a static plugin, `createXPlugin(options)`, or `useXPlugin(state)` through the Markdown surface.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Compatibility/readiness | The record is draft and unimplemented. The zero-plugin path and released APIs stay unchanged. `inlinePlugins` is not soft-deprecated until `text` parity, an internal final adapter, migration docs, and a codemod exist. Runtime, browser, type, cache, allocation, and remount evidence remains pending.                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Review checks           | Reject a registry or separate Astryx plugin package family, lifecycle-grouped `parse/render/decorate`, unrestricted whole-document parse/render hooks, raw HTML or arbitrary AST mutation, plugin-state-driven reparsing, per-character/per-node scans of every plugin, a plugin replacement for existing CodeBlock highlighting, unsafe or non-copyable fence failure, decorations that affect parsing, or any plugin override of Core-owned document/link/image/list/table policy.                                                                                                                                                                                                                               |
-| Governing rules         | [`component:Markdown`](../../../packages/core/src/Markdown/Markdown.spec.md); [`architecture:public-component-api`](../../architecture/public-component-api.md); [`family:navigation-destinations`](../../families/navigation-destinations.md); [AST-002 FR4 — Existing composition and styling seams come first](../AST-002/spec.md); [AST-002 FR15 — Invalid states are prevented where practical](../AST-002/spec.md); [AST-002 FR17 — Public module and utility function names disclose one atomic role](../AST-002/spec.md); [AST-002 FR18 — Public primitives support composition intentionally](../AST-002/spec.md); [AST-002 FR20 — Callsite impact and decision burden are explicit](../AST-002/spec.md). |
+| Area                        | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract             | Proposes one additive `plugins` prop and `createMarkdownPlugin()`. Entries may contribute `text`, `syntax`, `fences`, `renderers`, or `decorations`. Every syntax entry also carries stable parse identity and a complete owning renderer set. Exact declarations belong to Markdown and its module API surfaces.                                                                                                                                                                                                                                                                                                                    |
+| Behavior                    | Built-in syntax and protected contexts win. Plugins resolve in array and declaration order. Syntax and text use first claim; fence fallback or enhancement resolves a fence while decline continues; decorations compose in deterministic layers without changing the AST.                                                                                                                                                                                                                                                                                                                                                           |
+| End-user impact             | Readers may receive additional prose presentation, source syntax, semantic fence output, and source-range decoration. Ordinary Markdown, copyable failure fallbacks, heading and Outline identity, accessibility, generic CodeBlock highlighting, and built-in document, navigation, image, list, and table policy remain owned by their canonical surfaces.                                                                                                                                                                                                                                                                         |
+| Builder impact              | Existing builders do nothing. Opt-in builders pass a stable plugin list. Astryx-authored modules may expose static, factory, or hook forms through Markdown and Core; third-party plugins remain explicit ordinary package imports.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Compatibility and readiness | This contract is current; implementation is pending. The zero-plugin path and released APIs stay unchanged. `inlinePlugins` is not soft-deprecated until modern text contributions have behavioral and type parity, an internal final adapter, migration docs, and a codemod. Runtime, browser, type, cache, allocation, bundle, performance, and remount evidence remains pending.                                                                                                                                                                                                                                                  |
+| Review checks               | Reject a registry or separate Astryx plugin package family; lifecycle-grouped public capabilities; unrestricted whole-document parse or render hooks; raw markup or arbitrary AST mutation; plugin-state-driven reparsing; work proportional to every plugin at every source character or rendered node; replacement of existing generic CodeBlock highlighting; unsafe or non-copyable fence failure; parsing-affecting decorations; or plugin override of Core-owned document, heading, navigation, image, list, or table policy.                                                                                                  |
+| Governing rules             | [`architecture:public-component-api`](../../architecture/public-component-api.md); [`family:navigation-destinations`](../../families/navigation-destinations.md); [AST-002 FR4 — Existing composition and styling seams come first](../AST-002/spec.md); [AST-002 FR15 — Invalid states are prevented where practical](../AST-002/spec.md); [AST-002 FR17 — Public module and utility function names disclose one atomic role](../AST-002/spec.md); [AST-002 FR18 — Public primitives support composition intentionally](../AST-002/spec.md); [AST-002 FR20 — Callsite impact and decision burden are explicit](../AST-002/spec.md). |
 
-This table is a review projection; the body below is authoritative.
+This section is a review projection; the body below is authoritative.
 
 ## Intent
 
-Application authors should be able to add reusable Markdown behavior without
-rewriting source text, forking the parser, or replacing the whole renderer. The
-same model must cover simple text replacement, new inline/block syntax,
-language-scoped fences, typed extension-node rendering, and source-range
-annotations while preserving one understandable processing order.
+Application authors should be able to add reusable Markdown behavior without rewriting source text, forking the parser, or replacing the whole renderer. One model must cover prose replacement, inline or block extension syntax, language-scoped semantic fences, typed extension rendering, and source-range decoration while preserving an understandable processing order.
 
-The API follows the existing Table plugin precedent: public plugins and plugin
-helpers are colocated under `Markdown/plugins/*`, re-exported through Markdown and
-Core, and consumed through one `plugins` prop. Third parties may publish compatible
-plugins through ordinary package imports, but Astryx does not create a separate
-plugin package family or discovery registry.
+The system decision owns shared plugin admission, capability boundaries, composition, collision rules, compatibility, failure behavior, parse identity, and observable resource constraints. It does not own exact TypeScript declarations, consumer syntax, private dispatch or cache design, or the independent behavior of first-party plugin modules.
 
-This specification changes no runtime by itself. The requirements below define the
-complete proposed behavior.
+This specification changes no runtime by itself. The requirements below define the complete proposed behavior.
+
+## Ownership boundary
+
+AST-036 owns the shared plugin protocol and its cross-surface guarantees. The Markdown component contract owns aggregate public component and parser behavior. Outline owns its public outline behavior while using the shared projection required here. Any independently contractible first-party plugin will own its API, behavior, accessibility, fallback, and evidence in a module record created with that plugin. Consumer documentation owns signatures, prop and option references, examples, and migration recipes. Architecture owns private dispatch, indexing, cache, invalidation, allocation, and repository mechanisms.
 
 ## Non-goals
 
-- Implement the runtime, first-party modules, consumer docs, codemod, or release
-  artifacts in this specification PR.
-- Add a registry, discovery mechanism, separate Astryx plugin package family,
-  unrestricted whole-document parser/renderer hook, raw-markup parser channel, or
-  arbitrary AST mutation API.
-- Replace generic CodeBlock highlighting or change built-in document, link, image,
-  list, Table, heading, Outline, or focused syntax ownership.
-- Duplicate Mermaid, annotation, or reference-link behavior owned by their colocated
-  module records.
-- Prescribe private dispatch/cache filenames or a universal repository schema.
+- Implement the runtime, first-party modules, consumer docs, codemod, or release artifacts in this specification change.
+- Add a registry, discovery mechanism, separate Astryx plugin package family, unrestricted whole-document parser or renderer hook, raw-markup parser channel, or arbitrary AST mutation API.
+- Replace generic CodeBlock highlighting or change built-in document, heading, navigation, image, list, table, Outline, or focused-syntax ownership.
+- Define any concrete first-party plugin; its module record is added only when that plugin is proposed.
+- Prescribe private dispatch, cache, index, invalidation, file, manifest, or repository mechanisms.
 
 ## Current-state impact
 
-| Need                            | Current support                                                                                                                    | Missing general contract                                                                                                     |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Replace known rendered elements | `components` replaces a fixed set of built-in elements.                                                                            | Independent capabilities cannot compose without one application-owned switch.                                                |
-| Replace prose substrings        | `inlinePlugins` applies regex-based display replacements.                                                                          | No named contribution model, migration path, structured context, or phase identity.                                          |
-| New inline/block syntax         | The exported AST is closed over built-in node kinds.                                                                               | No source-aware matcher, data-only extension node, renderer ownership, or streaming finalization.                            |
-| Fenced content                  | Default CodeBlock already owns generic code syntax highlighting; `components.code` may replace every fence and branch on language. | No language-indexed composition for non-code semantic formats, completion/mode input, or Core-owned fallback/error contract. |
-| Comments and highlights         | No source-range decoration capability exists.                                                                                      | No document revision, selection mapping, overlap, stale-anchor, or streaming-stability contract.                             |
-| Reusable common behavior        | Consumers can write local code.                                                                                                    | No colocated static/factory/hook plugin authoring convention or lifecycle/performance contract.                              |
-| Parsing and streaming           | Incremental parsing reuses immutable settled blocks.                                                                               | Plugin parse identity, live-state separation, indexing, invalidation, and finalization are undefined.                        |
-| Outline interoperability        | Markdown and Outline share built-in slug utilities.                                                                                | Inline extension text has no required plain-text projection or shared parse configuration.                                   |
+| Current seam              | Preserved behavior                                                            | Missing shared contract                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `components`              | Replaces supported built-in renderers, including the all-fence code renderer. | Cannot add typed syntax or compose independent language-scoped fence behavior.                            |
+| `inlinePlugins`           | Replaces matched text in rendered prose.                                      | Has no named general-plugin identity, typed source node, block syntax, or source provenance.              |
+| Parser and streaming APIs | Produce the released closed AST and reuse settled incremental output.         | Have no typed extension union, bounded plugin deferral, finalization rule, or syntax-only cache identity. |
+| Markdown and Outline      | Share built-in heading text and slug behavior.                                | Have no plain-text projection for inline extension nodes.                                                 |
 
-## Public concepts and TypeScript shape
+The proposal adds the missing shared protocol without replacing these seams.
 
-### Shared data and extension nodes
+## Semantic model
 
-```ts
-export type MarkdownPluginData =
-  | null
-  | boolean
-  | number
-  | string
-  | readonly MarkdownPluginData[]
-  | {readonly [key: string]: MarkdownPluginData};
+A plugin entry is an opaque capability-named value created by the public plugin factory. The closed capability names are `text`, `syntax`, `fences`, `renderers`, and `decorations`. A plain structural object cannot masquerade as a plugin entry. Heterogeneous lists preserve the union of their extension-node kinds under strict TypeScript.
 
-export interface MarkdownExtensionNode<
-  PluginName extends string = string,
-  NodeName extends string = string,
-  Display extends 'inline' | 'block' = 'inline' | 'block',
-  Data extends MarkdownPluginData = MarkdownPluginData,
-> {
-  readonly type: 'extension';
-  readonly plugin: PluginName;
-  readonly name: NodeName;
-  readonly display: Display;
-  readonly data: Data;
-  readonly source: string;
-  readonly range?: SourceRange;
-}
+An extension node identifies its owning plugin, node kind, inline or block display, finite data, exact consumed source, and optional source range. Core authors source provenance. Plugin data is limited recursively to null, booleans, numbers, strings, arrays, and string-keyed objects. It is finite and acyclic and contains no React values, DOM nodes, functions, or raw markup.
 
-export type InlineNode<Extension extends MarkdownExtensionNode = never> =
-  | {type: 'text'; content: string}
-  | {type: 'bold'; children: InlineNode<Extension>[]}
-  | {type: 'italic'; children: InlineNode<Extension>[]}
-  | {type: 'strikethrough'; children: InlineNode<Extension>[]}
-  | {type: 'code'; content: string}
-  | {type: 'link'; href: string; children: InlineNode<Extension>[]}
-  | {type: 'image'; src: string; alt: string}
-  | {type: 'citation'; sourceId: string}
-  | {type: 'break'}
-  | Extract<Extension, {display: 'inline'}>;
+A syntax-bearing entry declares stable parse identity through its ordered `name`, `apiVersion`, and `parseKey`, plus a complete renderer set for every extension-node kind it may emit. An entry without syntax cannot declare `parseKey` or renderers. Extension typing propagates through emphasis, links, headings, lists, blockquotes, tables, and every other recursive built-in container. The default no-extension type remains the released parser surface.
 
-export type BlockNode<Extension extends MarkdownExtensionNode = never> =
-  | {
-      type: 'heading';
-      level: 1 | 2 | 3 | 4 | 5 | 6;
-      children: InlineNode<Extension>[];
-    }
-  | {type: 'paragraph'; children: InlineNode<Extension>[]}
-  | {type: 'codeblock'; language: string; content: string}
-  | {type: 'blockquote'; children: BlockNode<Extension>[]}
-  | {
-      type: 'list';
-      ordered: boolean;
-      start?: number;
-      delimiter?: '.' | ')';
-      loose?: boolean;
-      items: ListItemNode<Extension>[];
-    }
-  | {
-      type: 'table';
-      headers: TableCellNode<Extension>[];
-      alignments: TableAlignment[];
-      rows: TableCellNode<Extension>[][];
-    }
-  | {type: 'hr'}
-  | {type: 'image'; src: string; alt: string}
-  | Extract<Extension, {display: 'block'}>;
+A text contribution supplies a global regular-expression pattern, may compute a later match end, and renders only the claimed text. Every match must advance. A computed end must be monotonic and within the available text. Public text contributions run only on eligible remaining built-in prose outside code, images, citations, and existing link children, and never process extension nodes. The internal legacy adapter alone retains the broader traversal required by FR20.
 
-export type ListItemNode<Extension extends MarkdownExtensionNode = never> = {
-  checked?: boolean;
-  children: BlockNode<Extension>[];
-};
+A syntax contribution declares one or more non-empty literal prefixes, a finite pending bound, and a synchronous tokenizer. The tokenizer receives the source, UTF-16 offset and exclusive end, finality, inline or block context, line start, and column. It may report no match, bounded defer, or a match that advances and supplies plugin data without source provenance. Inline syntax supplies one deterministic plain-text projection. Block-only syntax does not.
 
-export type TableCellNode<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNode<Extension>[];
-};
+A fence contribution declares one or more languages and synchronously enhances, explicitly falls back, or declines. Rendering mode is exactly interactive, passive, or inert. Core supplies the exact source, normalized language, uninterpreted metadata, optional source range, finality, mode, and ordinary copyable fallback. Asynchronous loading may exist only inside returned render output under FR16.
 
-export type ReferenceNode = MarkdownExtensionNode<
-  'references',
-  'reference',
-  'inline',
-  {readonly id: string}
->;
+A decoration contribution has a stable identifier, source range, constrained visual description, and accessible label. Appearance is exactly highlight or underline. Tone is exactly neutral, accent, info, positive, warning, or critical. Decorations supply no authored children, renderer, DOM access, or parsing behavior.
 
-export type CalloutNode = MarkdownExtensionNode<
-  'callouts',
-  'callout',
-  'block',
-  {readonly label: string; readonly body: string}
->;
-
-export type AppMarkdownNode = ReferenceNode | CalloutNode;
-```
-
-Core owns extension-node `source` and `range`. Every built-in AST arm above keeps the
-released parser field names, optionality, and mutability exactly; the default generic
-`never` is the released `InlineNode`/`BlockNode` surface. The `Extension` generic is
-threaded through every recursive built-in container, so nested emphasis, link, list,
-blockquote, and table traversal remains typed. Plugin callbacks return only finite,
-acyclic `MarkdownPluginData`; they do not author source identity, built-in nodes,
-React values, DOM nodes, functions, or raw markup in parser output.
-
-### Capability-named plugin definition
-
-```ts
-export interface MarkdownPluginPostParseCapabilities<Name extends string> {
-  readonly name: Name;
-  readonly apiVersion: 1;
-  readonly text?: readonly MarkdownTextContribution[];
-  readonly fences?: readonly MarkdownFenceContribution[];
-  readonly decorations?: MarkdownDecorationsCapability;
-}
-
-export type MarkdownPluginDefinition<
-  Name extends string,
-  Node extends MarkdownExtensionNode<Name> = never,
-> =
-  | (MarkdownPluginPostParseCapabilities<Name> & {
-      readonly syntax: MarkdownSyntaxCapability<Node>;
-      /** Required only for syntax that can change parser output. */
-      readonly parseKey: string;
-      /** Complete map: every emitted node kind has an owning renderer. */
-      readonly renderers: MarkdownRendererMap<Node>;
-    })
-  | (MarkdownPluginPostParseCapabilities<Name> & {
-      readonly syntax?: never;
-      readonly parseKey?: never;
-      readonly renderers?: never;
-    });
-
-export declare function createMarkdownPlugin<
-  const Name extends string,
-  const Node extends MarkdownExtensionNode<Name> = never,
->(definition: MarkdownPluginDefinition<Name, Node>): MarkdownPluginEntry<Node>;
-
-export interface MarkdownProps {
-  // existing props remain unchanged
-  plugins?: readonly MarkdownPluginEntry[];
-}
-```
-
-`MarkdownPluginEntry` is an opaque covariant value created by
-`createMarkdownPlugin`; a plain structural object cannot masquerade as one.
-Heterogeneous plugin lists preserve each plugin's extension-node union under strict
-TypeScript. A syntax-bearing entry carries its required `parseKey`; an entry without
-`syntax` cannot declare `parseKey`.
-
-The capability names are deliberately shallow and searchable. The rejected
-lifecycle-grouped alternative (`parse`, nested `render`, `decorate`) adds no
-behavior or correctness and makes callers learn where a capability was nested.
-There is no unrestricted `parse(source) => ast` or `render(ast) => output` plugin
-hook.
-
-### Text capability
-
-```ts
-export interface MarkdownTextContribution {
-  readonly pattern: RegExp;
-  readonly getEndIndex?: (
-    text: string,
-    match: RegExpMatchArray,
-  ) => number | false;
-  readonly render: (match: RegExpMatchArray, key: string) => React.ReactNode;
-}
-```
-
-`text` is the general form of the released `inlinePlugins` subset. Public `text`
-contributions run only on remaining built-in prose outside code, images, citations,
-and existing link children; they do not receive or mutate arbitrary AST and do not
-process extension nodes. Patterns must be global, advance on every match, and return
-valid monotonic end positions. Core validates progress and bounds so a bad pattern
-cannot hang or truncate rendering.
-
-The internal synthetic adapter for released `inlinePlugins` is intentionally broader:
-it preserves today's recursive traversal into existing link children as well as
-emphasis, lists, and table cells, while still skipping inline/fenced code,
-images, and citations. That compatibility-only context is not exposed to modern
-`text` contributions and remains until a separate breaking compatibility decision.
-
-### Syntax capability
-
-```ts
-export interface MarkdownTokenizerInput {
-  readonly source: string;
-  readonly offset: number; // UTF-16
-  readonly end: number; // exclusive UTF-16
-  readonly isFinal: boolean;
-  readonly context: 'inline' | 'block';
-  readonly lineStart: number;
-  readonly column: number;
-}
-
-type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
-  ? Omit<T, Extract<keyof T, K>>
-  : never;
-
-export type MarkdownTokenizeResult<Node extends MarkdownExtensionNode> =
-  | {readonly status: 'no-match'}
-  | {readonly status: 'defer'}
-  | {
-      readonly status: 'match';
-      readonly end: number;
-      readonly node: DistributiveOmit<Node, 'source' | 'range'>;
-    };
-
-export interface MarkdownSyntaxContribution<
-  Node extends MarkdownExtensionNode,
-> {
-  readonly startsWith: readonly [string, ...string[]];
-  readonly maxPendingChars: number;
-  readonly tokenize: (
-    input: MarkdownTokenizerInput,
-  ) => MarkdownTokenizeResult<Node>;
-}
-
-export type MarkdownSyntaxCapability<Node extends MarkdownExtensionNode> =
-  | {
-      readonly inline: readonly [
-        MarkdownSyntaxContribution<Extract<Node, {display: 'inline'}>>,
-        ...MarkdownSyntaxContribution<Extract<Node, {display: 'inline'}>>[],
-      ];
-      readonly block?: readonly MarkdownSyntaxContribution<
-        Extract<Node, {display: 'block'}>
-      >[];
-      readonly toText: (node: Extract<Node, {display: 'inline'}>) => string;
-    }
-  | {
-      readonly inline?: undefined;
-      readonly block: readonly [
-        MarkdownSyntaxContribution<Extract<Node, {display: 'block'}>>,
-        ...MarkdownSyntaxContribution<Extract<Node, {display: 'block'}>>[],
-      ];
-      readonly toText?: never;
-    };
-```
-
-A plugin with inline syntax must provide `toText`; block-only syntax does not.
-`toText` supplies the same plain-text contribution to heading labels, slugging, and
-Outline labels/targets. The concrete declaration uses distributive helpers so a
-union of node kinds stays discriminated; helper aliases are declaration-private.
-
-### Fence capability
-
-```ts
-export type MarkdownFenceMode = 'interactive' | 'passive' | 'inert';
-
-export interface MarkdownFenceInput {
-  readonly source: string;
-  readonly language: string;
-  readonly meta?: string;
-  readonly range?: SourceRange;
-  readonly isFinal: boolean;
-  readonly mode: MarkdownFenceMode;
-  readonly fallback: React.ReactElement;
-}
-
-export type MarkdownFenceResult =
-  | {readonly status: 'enhance'; readonly content: React.ReactNode}
-  | {readonly status: 'fallback'}
-  | {readonly status: 'decline'};
-
-export interface MarkdownFenceContribution {
-  readonly languages: readonly [string, ...string[]];
-  readonly enhance: (input: MarkdownFenceInput) => MarkdownFenceResult;
-}
-```
-
-Fence enhancement is synchronous in v1. It may return a React lazy/Suspense subtree,
-but async loading/rendering stays inside that subtree and Core's local fallback/error
-boundary; the plugin protocol has no pending result or stale completion race.
-`fallback` is Core's ordinary copyable CodeBlock for the exact source. `fallback`
-explicitly selects it; `decline` lets a later language claimant run. A thrown
-enhancer, rejected lazy subtree, invalid result, unsupported language, incomplete
-source that the plugin refuses, or unsupported mode resolves to ordinary fallback
-without losing source. Core does not execute or parse the fence body for the plugin.
-
-### Renderer capability
-
-```ts
-export type MarkdownRendererMap<Node extends MarkdownExtensionNode> = Readonly<{
-  [NodeName in Node['name']]: React.ComponentType<{
-    node: Extract<Node, {name: NodeName}>;
-  }>;
-}>;
-```
-
-Every syntax node kind has one renderer owned by the same plugin. Plugins cannot
-render another plugin's nodes or replace built-in document, heading, link, image,
-list, or Table policy. Existing `components` remains the built-in override API.
-
-### Decorations capability
-
-```ts
-export type MarkdownDecorationAppearance = 'highlight' | 'underline';
-export type MarkdownDecorationTone =
-  'neutral' | 'accent' | 'info' | 'positive' | 'warning' | 'critical';
-
-export interface MarkdownDecorationVisual {
-  readonly appearance: MarkdownDecorationAppearance;
-  readonly tone: MarkdownDecorationTone;
-  readonly accessibleLabel: string;
-}
-
-export interface MarkdownDecorationContribution {
-  readonly id: string;
-  readonly range: SourceRange;
-  readonly visual: MarkdownDecorationVisual;
-}
-
-export interface MarkdownDecorationsCapability {
-  readonly values: readonly MarkdownDecorationContribution[];
-}
-```
-
-`decorations` is the live post-render capability. Core segments rendered built-in
-text at the union of valid boundaries, preserves authored content in Core-owned
-noninteractive wrappers, and paints each constrained `visual` through Astryx tokens.
-Plugins receive no authored children, DOM node, React renderer slot, or AST mutation
-hook. The capability does not participate in `parseKey`.
-
-The concrete source-anchor, selection, overlap, staleness, highlight, and host-action
-contract is owned by `module:Markdown/useMarkdownAnnotations`; compatible
-third-party decoration plugins follow that module contract rather than duplicating
-another generic annotation model.
+Full and incremental parsing use the same plugin configuration. Incremental callers explicitly finalize input, and finalized incremental output equals full-parse output for the same source and options.
 
 ## Requirements
 
-### Admission, compatibility, and exports
+### Admission, compatibility, and publication
 
-- **FR1 — One public plugin model.** `plugins` and `createMarkdownPlugin` are the
-  canonical general extension model. A plugin declares only the capability fields
-  it uses. No second plugin prop, lifecycle-grouped API, registry, discovery
-  mechanism, or unrestricted document hook is introduced.
-- **FR2 — Exact zero-plugin compatibility.** When `plugins` is omitted or empty and
-  `inlinePlugins` is absent, Markdown takes the current code path without plugin
-  normalization, indexing, allocation, cache-key changes, renderer wrappers,
-  remounts, AST/DOM/styling changes, or measurable performance regression.
-- **FR3 — Released seams remain compatible.** Existing `components`, citations,
-  opt-in GFM autolinking, sources, parser signatures, and any separately accepted
-  focused syntax contract retain their meaning. Existing consumers do not migrate
-  to adopt plugins.
-- **FR4 — `inlinePlugins` migrates only after parity.** Until `text` has behavioral
-  and type parity, migration docs, and a codemod, `inlinePlugins` is not deprecated.
-  Core then adapts it internally as one final synthetic text contribution so current
-  overlap/output behavior is preserved. The later soft deprecation adds guidance,
-  not removal or a second runtime path; removal requires a separate breaking
-  decision.
-- **FR5 — Colocated Astryx modules follow Table.** Astryx-authored plugins live under
-  `Markdown/plugins/*` and are re-exported through Markdown/Core. Public authors may
-  export a static plugin, `createXPlugin(options)`, or `useXPlugin(state)` according
-  to whether the capability is fixed, configured, or live. These names construct
-  or return durable plugin entries; they are not registries.
-- **FR6 — External publishing is ordinary package composition.** A third party may
-  publish a compatible plugin with a peer dependency covering the supported Core
-  semver range, explicit ESM/CJS conditional exports as needed, and tree-shakeable
-  modules (`sideEffects: false` unless a documented side effect is required).
-  Runtime `apiVersion` validates protocol compatibility. Astryx creates no separate
-  plugin library/package family and performs no package discovery.
+- **FR1 — One public plugin model.** `plugins` and `createMarkdownPlugin` are the canonical general extension model. A plugin declares only the capabilities it uses. No second plugin prop, lifecycle-grouped API, registry, discovery mechanism, or unrestricted document hook is introduced. Entries are opaque rather than accepted as arbitrary structural objects. A syntax-bearing entry must provide stable parse identity and a complete renderer set; an entry without syntax cannot declare either. Extension typing must remain discriminated through every recursive built-in container.
+- **FR2 — Exact zero-plugin compatibility.** When `plugins` is omitted or empty and `inlinePlugins` is absent, Markdown takes the current code path without plugin normalization, indexing, allocation, cache-key changes, renderer wrappers, remounts, AST changes, DOM changes, styling changes, or measurable performance regression. Released no-plugin node unions and overloads retain their exact meaning.
+- **FR3 — Released seams remain compatible.** Existing `components`, citations, opt-in GFM autolinking, sources, parser signatures, and any separately accepted focused-syntax contract retain their meaning. Existing consumers do not migrate to adopt plugins. Exact released field names, optionality, mutability, and no-plugin result types remain unchanged.
+- **FR4 — `inlinePlugins` migrates only after parity.** Until modern text contributions have behavioral and type parity, migration docs, and a codemod, `inlinePlugins` is not deprecated. Core then adapts it internally as one final synthetic text contribution so current traversal, overlap, callback results, and error behavior are preserved—including `null` render output and thrown callbacks. The later soft deprecation adds guidance, not removal or a second runtime path. Removal or safer callback semantics require a separate breaking decision.
+- **FR5 — Astryx-authored modules follow the Table precedent.** Each independently contractible first-party plugin is colocated under Markdown, has a canonical module record matching its public export, and is re-exported through Markdown and Core. Public authors may export a static plugin, a named factory, or a named hook according to whether the capability is fixed, configured, or live. Those exports construct or return durable plugin entries; they are not registries. Private dispatch, indexing, cache, and normalization helpers require neither module records nor public exports.
+- **FR6 — External publishing is ordinary package composition.** A third party may publish a compatible plugin with a peer dependency covering the supported Core semver range, explicit module-system exports as needed, and tree-shakeable modules unless a documented side effect is required. Runtime protocol version validates compatibility. Astryx creates no separate plugin library or package family and performs no package discovery.
 
 ### Phase order and collisions
 
-- **FR7 — One fixed phase order.** Core parses built-in syntax and `syntax`, renders
-  built-in/extension nodes and `fences`/`renderers`, applies `text` to remaining
-  built-in text nodes, then applies `decorations` to rendered source ranges.
-  Decorations never change parsing; text never sees extension nodes.
-- **FR8 — Built-in lexical shields win for modern contributions.** Escapes, inline
-  code, fence bodies, existing links/images, citations, and any accepted focused
-  opaque syntax remain protected from public `syntax` and `text` contributions.
-  Inline syntax runs only on remaining literal source and may run inside built-in
-  emphasis/strikethrough after those containers are recognized. Block syntax runs
-  only at a top-level line boundary after built-in blocks decline and before
-  paragraph fallback; it does not run inside list items or blockquotes. The internal
-  legacy `inlinePlugins` adapter is the sole compatibility exception: FR20 preserves
-  its current recursive traversal into existing link children.
-- **FR9 — Ordered first claim resolves exclusive conflicts.** Duplicate plugin names
-  fail validation. Syntax plugins and contributions are consulted in array and
-  declaration order; the first `match` claims source, `no-match` continues, and
-  `defer` reserves the offset until resolved. A proper prefix of an earlier matcher
-  similarly reserves a non-final tail. Fence claimants use normalized
-  case-insensitive languages; `decline` continues to the next claimant, while
-  `enhance` or `fallback` resolves the fence. Text matches use the same ordered
-  first-claim overlap rule, with the synthetic legacy contribution last.
-- **FR10 — Decorations compose instead of claiming.** Every valid decoration
-  contribution reaches the post-render phase in plugin order and its own representable
-  contribution order; one contribution cannot suppress another. Concrete overlap,
-  layering, hit-testing, and accessible traversal are owned by
-  `module:Markdown/useMarkdownAnnotations`.
+- **FR7 — One fixed phase order.** Core recognizes built-in syntax and extension syntax; renders built-in and extension nodes and resolves semantic fences; applies text contributions only to remaining eligible built-in prose; then applies decorations to rendered source ranges. Decorations never change parsing. Text contributions never process extension nodes.
+- **FR8 — Built-in lexical shields win for modern contributions.** Escapes, inline code, fence bodies, existing links and images, citations, and any accepted focused opaque syntax remain protected from public syntax and text contributions. Inline extension syntax runs only on remaining literal source and may run inside built-in emphasis or strikethrough after those containers are recognized. Block extension syntax runs only at a top-level line boundary after built-in blocks decline and before paragraph fallback; it does not run inside list items or blockquotes. The internal legacy `inlinePlugins` adapter is the sole compatibility exception: FR20 preserves its current recursive traversal into existing link children.
+- **FR9 — Ordered first claim resolves exclusive conflicts.** Duplicate plugin names fail validation. Syntax plugins and their contributions are consulted in plugin-array and declaration order. The first match claims source; no-match continues; defer reserves the current offset until resolved. A proper prefix of an earlier matcher similarly reserves a non-final tail. Fence claimants use normalized case-insensitive language names: decline continues, while enhancement or explicit fallback resolves the fence. Text matches use the same ordered first-claim overlap rule, with the synthetic legacy contribution last.
+- **FR10 — Decorations compose instead of claiming.** Every valid decoration contribution reaches the post-render phase in plugin order and its own representable contribution order. One contribution cannot suppress another. This shared protocol does not define capability-specific source anchoring, overlap presentation, selection, stale mapping, or host actions; those behaviors remain outside scope until a concrete module is proposed.
 
 ### Syntax validation and streaming
 
-- **FR11 — Prefixes and matches advance.** Every `startsWith` entry is a non-empty
-  literal string. Offsets and ranges use JavaScript UTF-16 units. Match end is
-  greater than `offset` and no greater than `end`; plugin/name/display must match
-  the owning definition. Invalid configuration or output fails validation rather
-  than looping, truncating, or silently changing order.
-- **FR12 — Tokenization is synchronous and deterministic.** A tokenizer depends only
-  on its input and immutable parse configuration; it performs no I/O, time/random
-  work, mutation, or async work. Core rejects promises but cannot sandbox trusted
-  application code. Plugin callback complexity remains the plugin author's
-  documented responsibility.
-- **FR13 — Pending syntax is bounded and finalizable.** `maxPendingChars` is positive,
-  finite, and at least the longest prefix length minus one. `defer` is accepted only
-  on a non-final candidate ending at current input end and within that bound. Full
-  parsing always uses `isFinal: true`. A terminal incremental call with
-  `IncrementalParseOptions.isFinal: true` resolves every remaining prefix/defer as a
-  match or literal, stores a final immutable snapshot, and produces the same AST as
-  a full parse with the same options. Omitted `isFinal` remains false for released
-  incremental-call compatibility.
-- **FR14 — Core owns source provenance.** Core attaches exact consumed `source` and
-  optional absolute `range`; callbacks do not author or shift them. Extension nodes
-  are immutable data and cannot insert, delete, reorder, or mutate unrelated nodes.
-  Each extension node is atomic for streaming fade boundaries and advances by its
-  consumed source length.
+- **FR11 — Prefixes and matches advance.** Every declared prefix is a non-empty literal string. Offsets and ranges use JavaScript UTF-16 units. A match end is greater than the current offset and no greater than the available end. Emitted plugin, node name, and display kind must match the owning definition. Invalid configuration or output fails validation rather than looping, truncating content, or silently changing resolution order.
+- **FR12 — Tokenization is synchronous and deterministic.** A tokenizer depends only on its supplied source window, position, finality, context, and immutable parse configuration. It performs no I/O, time-dependent work, random work, mutation, or asynchronous work. Core rejects promises but cannot sandbox trusted application code. Callback complexity remains the plugin author's documented responsibility.
+- **FR13 — Pending syntax has one bounded decision span.** Every syntax contribution declares a positive finite UTF-16 span at least as large as its longest prefix. Core exposes at most that span from a candidate in both full and incremental parsing. The tokenizer must return match or no-match within it; defer is accepted only while non-final input has not yet filled the span. A match end remains inside the supplied span. A terminal incremental call resolves every remaining candidate under the same bound as full parsing, stores a final immutable snapshot, and produces the same AST for the same source and options. Omitting finality remains equivalent to false for released incremental-call compatibility.
+- **FR14 — Core owns source provenance.** Core attaches the exact consumed source and optional absolute range. Plugin callbacks do not author or shift provenance. Extension nodes are immutable finite acyclic data. They cannot contain React values, DOM nodes, functions, or raw markup, and cannot insert, delete, reorder, or mutate unrelated nodes. Each extension node is atomic for streaming fade boundaries and advances by its consumed source length.
 
 ### Fence completion and fallback
 
-- **FR15 — Fence input states are explicit.** Every fence renderer receives literal
-  source, normalized language, uninterpreted metadata, source range when enabled,
-  `isFinal`, rendering `mode`, and Core's ordinary-code fallback. A plugin may
-  enhance, explicitly show fallback, or decline. It cannot suppress source merely
-  because input is incomplete or unsupported.
-- **FR16 — Core owns error isolation and copyable fallback.** Unsupported languages,
-  decline exhaustion, refusal, invalid results, throws/rejections, unavailable lazy
-  dependencies, and incomplete final fences render ordinary copyable code. Error
-  isolation is local to the fence; sibling Markdown continues rendering. Development
-  diagnostics identify the plugin/fence once without exposing source contents.
-- **FR17 — Mode bounds interactivity.** `interactive` permits the plugin's documented
-  controls; `passive` renders perceivable output without requiring activation;
-  `inert` supplies noninteractive output suitable for restricted/server contexts.
-  A plugin that cannot satisfy the requested mode returns fallback or decline.
-- **FR18 — Existing code override remains compatible.** When `components.code` is
-  supplied, it keeps the existing application-owned all-fence override and wins
-  before plugin fence resolution. Removing it exposes the ordered plugin chain and
-  Core fallback; no consumer is silently migrated.
+- **FR15 — Fence input states are explicit.** Every semantic fence renderer receives the literal source, normalized language, uninterpreted metadata, source range when enabled, finality, rendering mode, and Core's ordinary-code fallback for that exact source. A plugin may enhance, explicitly select fallback, or decline so a later claimant can run. It cannot suppress source because input is incomplete or unsupported.
+- **FR16 — Core owns error isolation and copyable fallback.** Unsupported languages, exhausted declines, refusal, invalid results, thrown errors, rejected lazy subtrees, unavailable lazy dependencies, incomplete final fences, and unsupported modes render ordinary copyable code. Error isolation is local to the fence, and sibling Markdown continues rendering. Development diagnostics identify the plugin and fence once without exposing source contents. The protocol remains synchronous; asynchronous loading or rendering may occur only inside a returned lazy or Suspense subtree and Core's local fallback and error boundary, so no pending protocol state or stale-completion race exists.
+- **FR17 — Mode bounds interactivity.** Interactive mode permits the plugin's documented controls. Passive mode renders perceivable output without requiring activation. Inert mode supplies noninteractive output suitable for restricted or server contexts. A plugin that cannot satisfy the requested mode returns fallback or decline.
+- **FR18 — Existing code override remains compatible.** When the released custom code renderer is supplied, it keeps the application-owned all-fence override and wins before plugin fence resolution. Removing that override exposes the ordered plugin chain and Core fallback. No consumer is silently migrated. Generic CodeBlock syntax highlighting remains existing CodeBlock behavior, not a plugin responsibility.
 
 ### Rendering, text, and Outline
 
-- **FR19 — Extension rendering stays local and complete.** Every syntax-bearing
-  plugin statically supplies a complete renderer map for every emitted node kind;
-  missing or incomplete maps fail type checking/validation. Non-syntax plugins
-  cannot provide a renderer-only branch. Renderers receive typed nodes only and
-  cannot replace Core-owned document, heading/ID, link/image, list, or Table
-  semantics.
-- **FR20 — Text parity preserves legacy behavior.** Public `text` covers the released
-  pattern, `(text, match) => number | false` end-index, and render callback shapes,
-  but follows the modern protected-context default in FR8. The internal final
-  synthetic `inlinePlugins` adapter preserves every released traversal context and
-  overlap/output rule: it recurses through emphasis, existing link children, lists,
-  and table cells, while skipping inline/fenced code, images, and citations. Regex
-  progress/end bounds are validated without changing valid output. Exact fixtures,
-  including a match inside authored link-child text, must remain byte/DOM-equivalent
-  before soft deprecation.
-- **FR21 — One text projection governs heading identity.** Inline syntax provides
-  deterministic `toText`. Markdown and Outline use the same plugin list, parse
-  options, projection, slugger, and collision allocator. Renderer output cannot
-  change the ID. Block extension nodes do not create Outline entries in v1.
-- **FR22 — Missing or failed capability preserves readable source.** Unknown or
-  unmatched syntax remains literal and unknown/declined/failed fences use ordinary
-  code. A tokenizer throw disables only that contribution for the current parse and
-  continues ordered matching; if nothing claims the source it remains literal. A
-  `toText` failure projects exact `node.source`. Core isolates each `text` callback
-  and extension renderer: a throw renders the exact matched text or `node.source`
-  locally and leaves sibling Markdown running. A plugin cannot make authored content
-  disappear. Renderer-specific rich output has a perceivable text alternative when
-  its visual representation is not equivalent to the source. Development identifies
-  the failed plugin/capability once without logging source contents.
+- **FR19 — Extension rendering stays local and complete.** Every syntax-bearing plugin statically supplies a complete renderer set for every node kind it can emit. Missing or incomplete ownership fails type checking or validation. Non-syntax plugins cannot provide a renderer-only branch. Renderers receive typed extension-node data only and cannot replace Core-owned document, heading or heading-ID, navigation, image, list, or table semantics.
+- **FR20 — Text parity preserves legacy behavior.** Public text contributions cover the released regular-expression pattern, end-index, and render-callback capabilities but follow FR8's modern protected-context and failure defaults. The internal final synthetic `inlinePlugins` adapter preserves every released traversal context, overlap rule, callback result, and error behavior: it recurses through emphasis, existing link children, lists, and table cells; skips inline code, fenced code, images, and citations; preserves a valid `null` result; and does not add local recovery for a thrown legacy callback. Core validates progress and bounds without changing valid output. Exact fixtures, including linked-child text, `null`, and thrown callbacks, must remain equivalent before soft deprecation.
+- **FR21 — One text projection governs plugin-enabled heading identity.** When inline extension nodes can contribute to headings, Markdown and Outline use the same plugin list, parse options, text projection, slugger, and collision allocator, producing unique matching IDs for that plugin-enabled document. Renderer output cannot change the generated ID. Block extension nodes do not create Outline entries in the first protocol version. The zero-plugin path retains its released heading-ID behavior under FR2.
+- **FR22 — Missing or failed modern capability preserves readable source.** Unknown or unmatched syntax remains literal. Unknown, declined, refused, invalid, or failed fences render ordinary code. A tokenizer throw disables only that contribution for the current parse and continues ordered matching; if nothing claims the source, it remains literal. A plain-text projection failure uses the exact node source. Core isolates each modern text callback and extension renderer: a throw renders the exact matched text or node source locally and leaves sibling Markdown running. Modern plugins cannot make authored content disappear. Renderer-specific rich output has a perceivable text alternative when its visual representation is not equivalent to the source. Development diagnostics identify the failed plugin and capability once without logging source contents. The legacy adapter follows FR4 and FR20 instead.
 
-### Decorations phase
+### Decorations
 
-- **FR23 — Decorations are constrained live post-render contributions.**
-  Decorations run after text output, never mutate the AST, and do not participate
-  in `parseKey`. Core owns source segmentation, noninteractive wrappers, Astryx-token
-  visual painting, contribution layering, and local failure isolation from the
-  constrained descriptor above; plugins provide no React renderer or authored
-  children. Core compiles phase/order separately so live values do not parse or
-  remount unaffected syntax/fence output. Source anchoring, overlap/hit testing,
-  selection, streaming, stale/edit mapping, and host-owned annotation actions belong
-  to `module:Markdown/useMarkdownAnnotations`.
+- **FR23 — Decorations are constrained live post-render contributions.** Decorations run after text output, never mutate the AST, and do not participate in parse identity. Core owns source segmentation, noninteractive wrappers, Astryx-token visual painting, contribution ordering, and local failure isolation for the constrained decoration descriptors. Plugins receive no authored children, DOM node, React renderer slot, or AST mutation hook. A decoration change must not reparse content or remount unaffected syntax or fence output. Capability-specific anchoring, overlap presentation, selection, streaming, stale mapping, and host actions remain outside scope until a concrete module is proposed.
 
 ### Security and accessibility
 
-- **FR24 — Markdown source is untrusted; installed plugins are trusted code.** Source
-  may select only capabilities already imported by the application. It cannot name
-  packages, discover a registry, load code, or grant parser callbacks capabilities.
-  Renderers/hooks are ordinary trusted application code and are not sandboxed by
-  Markdown.
-- **FR25 — Core exposes no raw-markup parser channel.** Parser callbacks and accepted
-  node/decoration data contain only finite, acyclic `MarkdownPluginData`. The API
-  exposes no raw-HTML node, DOM-valued AST field, arbitrary AST visitor, or
-  `dangerouslySetInnerHTML` helper. Trusted renderers remain responsible for their
-  own safe React/SVG output.
-- **FR26 — Navigation and embedded-resource owners remain authoritative.** URL-like
-  plugin data is not trusted. Astryx-owned navigation uses
-  `family:navigation-destinations`; embedded resources retain their separate stricter
-  policy. Core does not claim to sanitize links/resources manufactured entirely by
-  trusted renderer code.
-- **FR27 — Plugin output has a documented semantic contract.** Each public plugin
-  documents role/name/description, keyboard/focus behavior, reduced motion, forced
-  colors, non-color meaning, and text fallback. Built-in document, heading, link,
-  image, list, and Table semantics cannot be overridden. An interactive plugin owns
-  its complete established ARIA pattern and does not create invalid nested
-  interaction.
+- **FR24 — Markdown source is untrusted; installed plugins are trusted code.** Source may select only capabilities already imported by the application. It cannot name packages, discover a registry, load code, or grant parser callbacks additional capabilities. Renderers and hooks are ordinary trusted application code and are not sandboxed by Markdown.
+- **FR25 — Core exposes no raw-markup parser channel.** Parser callbacks and accepted extension-node or decoration data contain only finite acyclic data. The protocol exposes no raw-HTML node, DOM-valued AST field, arbitrary AST visitor, or `dangerouslySetInnerHTML` helper. Trusted renderers remain responsible for their own safe React or SVG output.
+- **FR26 — Navigation and embedded-resource owners remain authoritative.** URL-like plugin data is not trusted. Astryx-owned navigation follows [`family:navigation-destinations`](../../families/navigation-destinations.md). Embedded resources retain their separate stricter policy. Core does not claim to sanitize links or resources manufactured entirely by trusted renderer code.
+- **FR27 — Plugin output has a documented semantic contract.** Each public plugin documents role, accessible name and description, keyboard and focus behavior, reduced-motion behavior, forced-colors behavior, non-color meaning, and text fallback. Built-in document, heading, navigation, image, list, and table semantics cannot be overridden. An interactive plugin owns its complete established ARIA pattern and must not create invalid nested interaction.
 
-### Identity, cache, and performance
+### Identity, updates, and resources
 
-- **FR28 — Parse identity includes syntax contributors only.** Incremental parse
-  identity is the ordered tuple `(name, apiVersion, parseKey)` for syntax-bearing
-  plugins in plugin order, plus existing parse-affecting Markdown options. Text,
-  fences, renderers, decorations, plugin object identity, permissions, selection,
-  and other live state are excluded. Adding, removing, reordering, or updating a
-  non-syntax plugin refreshes only its phase index/rendering and retains settled AST
-  cache. A syntax plugin changes `parseKey` whenever its parser output can change;
-  changing the filtered syntax order/key invalidates once. No separate `renderKey`
-  is required: stable logical plugin/list identity plus phase-specific live indexes
-  updates post-parse behavior.
-- **FR29 — Stable live updates avoid reparse and remount.** A stable logical plugin
-  may update renderer callbacks, lazy resources, annotation values, selection
-  handlers, or permissions without reparsing or remounting unaffected output.
-  Development warns when renders repeatedly recreate an equivalent plugin/list with
-  the same logical keys where stable identity would avoid compilation/allocation;
-  production behavior remains correct and warning-free.
-- **FR30 — Core compiles a stable list once.** For a stable ordered plugin list, Core
-  normalizes and indexes syntax by phase/prefix, fences by language, renderers by
-  `(plugin,node kind)`, text by phase/order, and decorations by plugin/order. It does
-  not loop through every plugin at every source character or rendered node.
-  Recompilation is limited to list/protocol/parse-key changes; live renderer and
-  decoration updates refresh only their indexes/state.
-- **FR31 — Existing parser budgets remain the plugin-free floor.** Plugin-free full
-  parse ceilings remain `<20 ms` for 10 generated sections, `<50 ms` for 50,
-  `<100 ms` for 200, `<400 ms` for 500, and `<1,000 ms` for 2,000 under the existing
-  benchmark. Existing streaming budgets and settled-tail reuse gates also remain.
-- **FR32 — Core overhead has focused budgets.** Benchmarks cover exact plugin-free,
-  five zero-work plugins, realistic text/syntax/fence plugins, streaming reuse,
-  allocation counts, and remount counts. Zero-work dispatch adds at most 15% to
-  200/500-section parse medians; realistic trivial callbacks add at most 25% while
-  staying within absolute ceilings. These are Core indexing/dispatch budgets, not a
-  promise about arbitrary plugin work.
-- **FR33 — Optional work stays optional.** Heavy diagram and ANSI renderers are
-  lazy/tree-shakeable and absent from Core's parser path and bundle unless imported.
-  Parser-only/server use requires no DOM. Each shipped plugin documents and tests
-  its own callback/resource budget.
+- **FR28 — Parse identity includes syntax contributors only.** Incremental parse identity is the ordered tuple of plugin name, protocol version, and `parseKey` for syntax-bearing plugins in plugin order, plus existing parse-affecting Markdown options. Text, fences, renderers, decorations, plugin object identity, permissions, selection, and other live state are excluded. Adding, removing, reordering, or updating a non-syntax plugin refreshes only its post-parse behavior and retains settled AST cache. A syntax plugin changes its `parseKey` whenever its parser output can change. Changing the filtered syntax order or key invalidates once. No separate render key is required.
+- **FR29 — Stable live updates avoid reparse and remount.** A stable logical plugin may update non-parse callbacks, lazy resources, or other live post-parse state without reparsing or remounting unaffected output. Development warns when renders repeatedly recreate an equivalent plugin or list with the same logical keys where stable identity would avoid preparation or allocation. Production behavior remains correct and warning-free.
+- **FR30 — Stable plugin preparation is reused.** For a stable ordered plugin list, Core must prepare plugin dispatch once and reuse it across parsing and rendering. It must not repeat list-wide preparation unless the ordered list, protocol version, or syntax parse identity changes, and it must not inspect every plugin at every source character or rendered node. Live non-syntax updates refresh only their affected post-parse behavior and preserve the no-reparse and no-remount guarantees in FR28–FR29.
+- **FR31 — Existing parser budgets remain the plugin-free floor.** Plugin-free full parsing remains below 20 milliseconds for 10 generated sections, 50 milliseconds for 50, 100 milliseconds for 200, 400 milliseconds for 500, and 1,000 milliseconds for 2,000 under the existing benchmark. Existing streaming budgets and settled-tail reuse gates also remain in force.
+- **FR32 — Core overhead has focused budgets.** Evidence covers the exact plugin-free path, five zero-work plugins, realistic text, syntax, and fence plugins, streaming reuse, allocation counts, and remount counts. Zero-work dispatch adds at most 15 percent to 200- and 500-section parse medians. Realistic trivial callbacks add at most 25 percent while remaining within the absolute FR31 ceilings. These are Core preparation and dispatch budgets, not promises about arbitrary plugin work.
+- **FR33 — Optional work stays optional.** Heavy optional renderers are lazy and tree-shakeable and remain absent from Core's parser path and bundle unless explicitly imported. Parser-only and server use requires no DOM. Each shipped plugin documents and tests its own callback and resource budget.
 
-## Parser signatures and finalization
+## Public parser integration
 
-`MarkdownParseOptions`, `MarkdownIncrementalParseOptions`, and
-`MarkdownOutlineOptions` are exported named option shapes. `ParseOptions` remains a
-compatible alias for ordinary parser callers and is available from both
-`@astryxdesign/core/Markdown` and the server-safe
-`@astryxdesign/core/Markdown/utils` entrypoint. Existing `ReadonlySet<string>` and
-no-plugin overloads remain. Plugin overloads infer
-`MarkdownExtensionsOf<Plugins>`.
+Markdown's block, inline, incremental, and Outline parsing entrypoints must accept the same plugin configuration and infer the same extension-node union. Every released no-plugin name, overload, return type, field, and mutability guarantee remains unchanged. Full and incremental parsing use the same plugin configuration; only incremental parsing exposes finality. Exact type names, overload declarations, and private mapping helpers belong to their owning API declarations and records.
 
-```ts
-export type MarkdownParseOptions<
-  Plugins extends readonly MarkdownPluginEntry[] =
-    readonly MarkdownPluginEntry[],
-> = Omit<ParseOptions, 'plugins'> & {
-  readonly plugins?: Plugins;
-};
+## Compatibility, migration, and lifecycle
 
-export type MarkdownIncrementalParseOptions<
-  Plugins extends readonly MarkdownPluginEntry[] =
-    readonly MarkdownPluginEntry[],
-> = MarkdownParseOptions<Plugins> & {
-  readonly isFinal?: boolean;
-};
+Existing consumers make no change.
 
-export type MarkdownOutlineOptions<
-  Plugins extends readonly MarkdownPluginEntry[] =
-    readonly MarkdownPluginEntry[],
-> = MarkdownParseOptions<Plugins>;
+Modern text parity and the synthetic-last compatibility adapter must exist before adding a soft-deprecation annotation to `inlinePlugins`. The same release that soft-deprecates it supplies consumer migration documentation and a codemod to an equivalent plugin entry. The adapter remains for compatibility, and no removal timeline is implied.
 
-export function parseMarkdown<
-  const Plugins extends readonly MarkdownPluginEntry[],
->(
-  source: string,
-  options: MarkdownParseOptions<Plugins> & {readonly plugins: Plugins},
-): BlockNode<MarkdownExtensionsOf<Plugins>>[];
+Protocol version changes only for incompatible protocol revisions. Package peer-semver ranges communicate which Core releases implement a protocol version. Mixed unsupported runtime versions fail validation before parsing or rendering.
 
-export function parseInline<
-  const Plugins extends readonly MarkdownPluginEntry[],
->(
-  source: string,
-  options: MarkdownParseOptions<Plugins> & {readonly plugins: Plugins},
-): InlineNode<MarkdownExtensionsOf<Plugins>>[];
+Astryx-authored plugin modules, their consumer docs, and their release notes land as separate atomic implementation changes only after AST-036 and the corresponding module contract are current. Each implementation owns public exports, generated API evidence, tests, docs, and a package Changeset. This specification-only change carries none.
 
-export function parseMarkdownIncremental<
-  const Plugins extends readonly MarkdownPluginEntry[],
->(
-  source: string,
-  state: IncrementalState,
-  options: MarkdownIncrementalParseOptions<Plugins> & {
-    readonly plugins: Plugins;
-  },
-): BlockNode<MarkdownExtensionsOf<Plugins>>[];
+## Future plugin ownership
 
-export function parseOutlineFromMarkdown<
-  const Plugins extends readonly MarkdownPluginEntry[],
->(
-  source: string,
-  options: MarkdownOutlineOptions<Plugins> & {readonly plugins: Plugins},
-): MarkdownOutlineItem[];
-```
-
-The concrete declarations retain every released overload before these generic forms.
-Private helper aliases do not become exports. All recursive built-in inline/block
-containers carry the same `Extension` generic, so extension nodes remain typed inside
-emphasis, links, headings, lists, blockquotes, and tables rather than only at the
-top-level unions. `BuiltInLeafInlineNode` and `BuiltInLeafBlockNode` above stand for
-the current non-recursive AST arms.
-
-## Repository and export layout
-
-Astryx-authored plugins follow the Table precedent and remain inside Core:
-
-```text
-packages/core/src/Markdown/
-  pluginTypes.ts
-  createMarkdownPlugin.ts
-  resolveMarkdownPlugins.ts
-  plugins/
-    mermaid/
-      index.ts
-      createMarkdownMermaidPlugin.tsx
-      createMarkdownMermaidPlugin.doc.mjs
-      createMarkdownMermaidPlugin.spec.md
-      tests colocated
-    annotations/
-      index.ts
-      useMarkdownAnnotations.tsx
-      useMarkdownAnnotations.doc.mjs
-      useMarkdownAnnotations.spec.md
-      tests colocated
-    referenceLinks/
-      index.ts
-      createMarkdownReferenceLinksPlugin.tsx
-      createMarkdownReferenceLinksPlugin.doc.mjs
-      createMarkdownReferenceLinksPlugin.spec.md
-      tests colocated
-  index.ts
-```
-
-Exact private helper filenames may vary, but these observable layout rules do not:
-
-- Every independently contractible first-party plugin lives at least one directory
-  below the Markdown root, has a canonical module ID matching its public export, and
-  is linked from `component:Markdown.modules`.
-- Markdown/Core re-export the shared plugin types/factory and every accepted
-  first-party plugin; private dispatch, indexing, cache, and normalization helpers
-  need no module record or public export.
-- Consumer signatures, reference tables, and usage belong in each eventual
-  `.doc.mjs`; behavior and evidence belong in its module record.
-- No plugin creates a separate Astryx package or global registry. Third-party
-  packages are explicit compatible imports under FR6.
-- Knowledge validation checks canonical filename/ID, parent backlink, and later
-  consumer-doc projection without adding a universal schema or rewriting unrelated
-  records.
-
-## Candidate module records
-
-The shared architecture links, but does not duplicate, the independently owned
-initial modules:
-
-- [`module:Markdown/createMarkdownMermaidPlugin`](../../../packages/core/src/Markdown/plugins/mermaid/createMarkdownMermaidPlugin.spec.md)
-  owns the Astryx-themed finalized-fence renderer, fallback, lazy loading, and
-  large-diagram interaction contract.
-- [`module:Markdown/useMarkdownAnnotations`](../../../packages/core/src/Markdown/plugins/annotations/useMarkdownAnnotations.spec.md)
-  owns source anchors, highlights, overlap, stable selection events, stale mapping,
-  streaming, and host-owned action UI.
-- [`module:Markdown/createMarkdownReferenceLinksPlugin`](../../../packages/core/src/Markdown/plugins/referenceLinks/createMarkdownReferenceLinksPlugin.spec.md)
-  owns prefixed-number linkification and the canonical `inlinePlugins` migration
-  example.
-
-Callouts/directives and ANSI terminal output are the next common candidates after
-these modules prove the model. Generic code syntax highlighting remains existing
-CodeBlock behavior, not a plugin module. Product-specific references, charts, and
-interactive diffs remain external compatible plugins unless a later admission review
-promotes them.
-
-## Migration and lifecycle
-
-- Existing consumers make no change.
-- Implement `text` parity and the synthetic-last adapter before adding a soft
-  deprecation annotation to `inlinePlugins`.
-- The same change that soft-deprecates it supplies consumer docs and a codemod from
-  `inlinePlugins={items}` to an equivalent plugin entry. The adapter remains for
-  compatibility; no removal timeline is implied.
-- `apiVersion` changes only for incompatible protocol revisions. Package peer semver
-  communicates which Core releases implement that protocol. Mixed unsupported
-  runtime versions fail validation before parsing/rendering.
-- Astryx-authored plugin modules, their docs, and their release notes land in
-  separate atomic implementation PRs after this spec and each module contract are
-  current.
-- The implementation owns public exports, generated API evidence, tests, docs, and
-  a package Changeset. This specification-only PR carries none.
+No first-party plugin is proposed by this record. When a first-party plugin is designed, its public export and module record are added together; this shared protocol is linked rather than copied. Generic code syntax highlighting remains existing CodeBlock behavior.
 
 ## Verification
 
-| Contract             | Required evidence                                                                                                             | Representative states                                                                                                                                                                                                                                              | Failure signal                                                                                                                                                                                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1–FR6              | Public type/export and compatibility fixtures                                                                                 | direct exported inline-only, block-only, and mixed node aliases; exact released built-in fields/mutability; nested emphasis/link/list/blockquote/table traversal; complete/incomplete renderer maps; static/factory/hook; Core-colocated/third-party; zero plugins | A released AST field/mutability changes, nested extension typing becomes `never`, syntax lacks a complete renderer map, a plain object masquerades as a plugin, or an external plugin cannot tree-shake/import explicitly.                             |
-| FR7–FR10             | Phase/collision and modern-versus-legacy context matrix                                                                       | built-ins; authored link children; two syntax claims; decline chain; overlapping modern text; synthetic legacy-last adapter; overlapping decorations                                                                                                               | Phase order changes, modern text enters protected links, legacy link-child output changes, conflict depends on chunking, or one decoration erases another.                                                                                             |
-| FR11–FR14            | Parser validation, full/incremental parity, immutable snapshot and source-range tests                                         | UTF-16; zero/backward/overrun; prefix split at every character; omitted/false/true `isFinal`; reorder/parse-key change                                                                                                                                             | A callback loops/truncates, final incremental differs from full parse, settled nodes mutate, or ranges cease matching exact source.                                                                                                                    |
-| FR15–FR18            | Generic fence completion/mode/fallback/error matrix                                                                           | unsupported; incomplete; final; enhance; decline; fallback; throw; lazy subtree reject; all modes; `components.code`                                                                                                                                               | Authored source disappears, an error replaces sibling Markdown, async protocol state leaks into fence resolution, an unsupported mode remains interactive, or the released override loses precedence.                                                  |
-| FR19–FR23            | Renderer/text/Outline/decoration local-fallback and legacy parity tests                                                       | every node kind; legacy linked-child text; emphasis/list/table traversal; code/image/citation skips; tokenizer/toText/text/renderer/decoration throw; non-ASCII/duplicates                                                                                         | A failure removes source/siblings/layers, modern text enters protected links, legacy linked-child/overlap output changes, heading/Outline diverges, or unmatched content vanishes.                                                                     |
-| FR23                 | Decorations phase/order/no-reparse integration tests                                                                          | no decorations; two decoration contributions; stable/live entry; syntax/fence siblings                                                                                                                                                                             | Decoration changes parse/remount unaffected output, mutates AST, runs before text, or suppresses another valid contribution.                                                                                                                           |
-| FR24–FR27            | Security, axe, keyboard, forced-colors, reduced-motion, and server-render evidence                                            | script-like source; cyclic/non-data values; URL obfuscation; interactive/passive/inert; light/dark/RTL                                                                                                                                                             | Source loads code, raw markup enters parser output, an Astryx-owned unsafe sink activates, or essential meaning becomes color/pointer-only.                                                                                                            |
-| FR28–FR33            | Filtered parse-signature/cache instrumentation, phase-index, allocation/remount, performance, bundle, and server-import tests | exact zero; five no-op; add/remove/reorder text/fence/renderer/decoration plugins; live callback/decoration updates; syntax add/remove/reorder/`parseKey` change; streaming; equivalent recreation                                                                 | A non-syntax change reparses or drops settled AST, a syntax-signature change fails to invalidate exactly once, zero path allocates/indexes, Core scans all plugins per char/node, overhead exceeds budget, or optional code enters Core/server parser. |
-| Repository integrity | `pnpm check:knowledge`, type checks, public-content scan, formatting, and changed-file audit                                  | AST-036 plus required canonical backlinks only                                                                                                                                                                                                                     | Invalid record shape, private context, unrelated component behavior, implementation, or Changeset enters this proposal.                                                                                                                                |
+- **FR1–FR6:** Public type, export, and compatibility evidence must cover direct exported inline-only, block-only, and mixed extension aliases; exact released built-in fields and mutability; nested emphasis, link, list, blockquote, and table typing; complete and incomplete renderer ownership; static, factory, and hook modules; first-party colocation and explicit third-party imports; and the zero-plugin path. Failure includes changing a released AST field or mutability, losing nested extension typing, accepting syntax without complete renderers, accepting a plain object as an entry, or preventing explicit tree-shakeable third-party import.
+- **FR7–FR10:** Phase and collision evidence must cover built-ins; authored link children; competing syntax claims; fence decline chains; overlapping modern text; the synthetic legacy-last adapter; and overlapping decorations. Failure includes changing phase order, allowing modern text into protected links, changing legacy link-child output, making conflict resolution depend on chunking, or allowing one decoration to erase another.
+- **FR11–FR14:** Parser validation and full-versus-incremental evidence must cover UTF-16 offsets; zero, backward, and overrun results; every-character prefix splits; omitted, false, and true finality; syntax reorder and `parseKey` changes; immutable snapshots; and exact source ranges. Failure includes callback loops or truncation, finalized incremental output differing from full parsing, mutation of settled nodes, or ranges no longer matching exact source.
+- **FR15–FR18:** Fence evidence must cover unsupported, incomplete, and final input; enhancement, decline, explicit fallback, throws, lazy-subtree rejection, every mode, and the released all-fence custom-code override. Failure includes lost authored source, a fence error replacing sibling Markdown, asynchronous protocol state leaking into fence resolution, an unsupported mode remaining interactive, or the released override losing precedence.
+- **FR19–FR23:** Rendering, text, Outline, and decoration evidence must cover every extension-node kind; legacy linked-child text, `null` output, and thrown callbacks; emphasis, list, and table traversal; code, image, and citation shields; modern callback failures; non-ASCII source; plugin-enabled duplicate headings; released no-plugin heading IDs; no decorations; two decoration contributions; stable live updates; and unaffected syntax and fence siblings. Failure includes removal of source, siblings, or valid layers; modern text entering protected links; changed legacy behavior; plugin-enabled heading and Outline identity diverging; no-plugin IDs changing; unmatched content disappearing; decoration changes reparsing or remounting unaffected output; AST mutation; decoration before text; or one valid decoration suppressing another.
+- **FR24–FR27:** Security and accessibility evidence must cover script-like source; cyclic or non-data values; obfuscated URL-like data; interactive, passive, and inert output; keyboard operation; forced colors; reduced motion; light and dark themes; RTL; axe checks; and server rendering. Failure includes source loading code, raw markup entering parser output, an Astryx-owned unsafe sink activating, or essential meaning becoming color-only or pointer-only.
+- **FR28–FR33:** Identity, cache, allocation, remount, performance, bundle, and server-import evidence must cover the exact zero-plugin path; five no-op plugins; adding, removing, reordering, and updating text, fence, renderer, and decoration entries; live callback and decoration updates; syntax add, remove, reorder, and `parseKey` changes; streaming; stable-list preparation reuse; and equivalent recreation. Failure includes a non-syntax change reparsing or dropping settled AST, a syntax-signature change failing to invalidate exactly once, repeated preparation for an unchanged list, zero-path allocation or indexing, work proportional to all plugins per character or node, budget overruns, or optional plugin code entering Core or the server parser.
+- **Repository integrity:** Knowledge validation, type checks, public-content checks, formatting, and changed-file review must confirm that this proposal contains AST-036 and only required canonical backlinks. Failure includes invalid record shape, private context, unrelated component behavior, implementation, or a Changeset entering this proposal.
 
 ## Related owner prerequisites
 
-Before implementation acceptance:
+Before implementation acceptance, each prerequisite must exist in its canonical current owner and be linked by exact clause. This section records dependency status; it does not become a second owner.
 
-1. Markdown and Outline use one parse configuration and collision allocator for
-   unique matching IDs, including citation-bearing headings and cross-base slug
-   collisions.
-2. Incremental parsing invalidates every current parse-affecting option before the
-   ordered plugin parse key extends that mechanism.
-3. Parser and renderer navigation/resource checks conform to their current family
-   owners before plugins rely on shared outcomes.
-4. `text` parity is proven against every released `inlinePlugins` fixture before
-   soft deprecation or codemod publication.
+1. Plugin-enabled Markdown and Outline must use one parse configuration and collision allocator for unique matching IDs, including citation-bearing headings and collisions across slug bases; the zero-plugin path retains released heading-ID behavior under FR2.
+2. Incremental parsing must invalidate every current parse-affecting option before the ordered plugin parse identity extends that mechanism.
+3. Parser and renderer navigation or embedded-resource behavior must conform to its current family owner before plugins rely on a shared result.
+4. Modern text behavior must be proven against every released `inlinePlugins` fixture before soft deprecation or codemod publication; FR4 and FR20 remain the normative owner of that condition.
 
-Other current parser cleanup remains report-only unless its canonical owner makes it
-an explicit dependency.
+If an exact current owner clause does not yet exist for prerequisites 1–3, the item remains an unresolved dependency. AST-036 does not silently create parallel Markdown, Outline, parser, navigation, or resource authority. Other parser cleanup remains report-only unless its canonical owner makes it an explicit dependency.
 
 ## Decision log
 
 ### DEC-1 — Keep one capability-named plugin model
 
 **Reference:** `spec:AST-036/DEC-1`
-**Direction owner:** `cixzhang`, `2026-09-13`; exact-head approval pending
+**Direction owner:** `cixzhang`, `2026-09-14`
 
-The public model keeps `plugins` and `createMarkdownPlugin` with optional `text`,
-`syntax`, `fences`, `renderers`, and `decorations`. This shape is shallower and more
-searchable than lifecycle-grouped nesting and follows Table's composable plugin
-precedent.
+Adopts FR1. Capability names expose caller choices directly, remain shallow and searchable, and follow the existing Table composition precedent.
 
-Rejected: replacing released seams immediately, adding parallel extension props,
-using generic whole-document parse/render hooks, or organizing public concepts by
-internal lifecycle rather than caller capability.
+Rejected: immediately replacing released seams; adding parallel extension props; adding a registry or discovery mechanism; exposing unrestricted whole-document parse or render hooks; or organizing the public model around internal lifecycle stages.
 
 ### DEC-2 — Colocate Astryx plugins; allow ordinary external packages
 
 **Reference:** `spec:AST-036/DEC-2`
-**Direction owner:** `cixzhang`, `2026-09-13`; exact-head approval pending
+**Direction owner:** `cixzhang`, `2026-09-14`
 
-Astryx-authored plugins live under Markdown and export static, factory, or hook
-forms through Markdown/Core. Third parties may publish explicit compatible imports
-with peer semver and runtime `apiVersion`. No registry or separate Astryx plugin
-package family exists.
+Adopts FR5–FR6. First-party modules stay with Markdown and use ordinary public static, factory, or hook exports. Third parties use explicit package imports with protocol and package-version compatibility rather than an Astryx-controlled registry.
 
-Rejected: package discovery, central registration, a global plugin marketplace
-contract, or separate first-party packages for the initial common plugins.
+Rejected: package discovery, central registration, a global plugin-marketplace contract, or separate first-party packages for the initial common plugins.
 
-### DEC-3 — Separate parse identity from live renderer and annotation state
+### DEC-3 — Separate parse identity from live non-parse state
 
 **Reference:** `spec:AST-036/DEC-3`
-**Direction owner:** `cixzhang`, `2026-09-13`; exact-head approval pending
+**Direction owner:** `cixzhang`, `2026-09-14`
 
-The filtered ordered syntax signature `(name, apiVersion, parseKey)` owns parsing.
-Text, fences, renderers, decorations, callbacks, lazy resources, permissions,
-selection, and other live state update only their owning phases and carry no
-`parseKey`. Core compiles stable capabilities into phase-specific indexes and
-preserves an exact zero-plugin fast path; no separate `renderKey` exists.
+Adopts FR28–FR30. Only ordered syntax contributors and existing parse-affecting Markdown options determine parse identity. Non-syntax capabilities, callbacks, lazy resources, and other live state update only their owning post-parse behavior. Equivalent internal implementations remain free to meet the observable cache, preparation, reparse, remount, and resource guarantees.
 
-Rejected: object identity as parse identity, reparsing on comment/renderer changes,
-or scanning every plugin at every character or node.
+Rejected: object identity as parse identity; reparsing on live non-parse state changes; a separate public render key; repeated list-wide preparation for stable inputs; or work proportional to every plugin at every source character or rendered node.
 
 ## Open questions
 
-None. This proposed contract still requires exact-head owner approval and promotion
-to `authority: current` before it governs implementation.
+None. This contract is current; implementation and its required evidence remain pending.
+
+## Content boundary
+
+This record does not duplicate consumer signatures, prop or option references, examples, migration recipes, private parser or renderer mechanisms, repository file layouts, module-specific behavior, current audit results, or implementation steps. It links those facts to their canonical owners.
