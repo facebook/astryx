@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6248,
+  "headSha": "5732490443a45ff288acd902a70df6a845e8483e",
+  "testedSha": "5732490443a45ff288acd902a70df6a845e8483e",
+  "baseSha": "41ab6db2a5d193739759ad2ba14b6be21509a2d7",
+  "run": {
+    "id": 34614650772,
+    "attempt": 2
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-11T15:44:42.291Z",
+    "context": {
+      "sha": "5732490443a45ff288acd902a70df6a845e8483e",
+      "runId": "34614650772",
+      "runAttempt": "2",
+      "headSha": "5732490443a45ff288acd902a70df6a845e8483e",
+      "baseSha": "41ab6db2a5d193739759ad2ba14b6be21509a2d7",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "FieldStatus",
+          "ProgressBar"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.states.ts",
+          "packages/core/src/ProgressBar/ProgressBar.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-09T13:21:32.655Z",
+      "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

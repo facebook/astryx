@@ -1,0 +1,1 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{M as r,j as i}from"./utils-eYNPhPe_.js";function a(e,t,n,i,a,s){return(0,o.useMemo)(()=>r(e,t,n,i,a,s),[e,t,n,i,a,s])}var o,s=e((()=>{o=t(n(),1),i()}));export{a as n,s as t};

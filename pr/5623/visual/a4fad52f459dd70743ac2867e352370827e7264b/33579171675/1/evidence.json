@@ -1,0 +1,412 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5623,
+  "headSha": "a4fad52f459dd70743ac2867e352370827e7264b",
+  "testedSha": "a4fad52f459dd70743ac2867e352370827e7264b",
+  "baseSha": "864e66d241a575d90e8e1a8466ad7d87224f2596",
+  "run": {
+    "id": 33579171675,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-powersearch--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "26137fa36cfbd03c846c0e921ed0fcabd7bfb580cfabaef2cb9b91ebc33e8597",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f01a3afd19a425122267fd9d597f4b8e1a8e9a55657a6e614c9031178f9034c0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9cf10dcb08073ca566e2ff6afb5af8db2c40ae43532e9e5bcf23e7bc9f221888",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4c2baebf421c61b479dd6c1306e47851cafe0f7f98acc397b25aca4094e8ad1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9bcec4a88c4db59c5c91f33935b0d9c2acf3e8fb9c0a59e4bdf28084139ab8c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a90d88fd1349bebdf6a847badf52ce36e7fddeb213ea25c416c36c323552d429",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6977c84b3821e2fc995094caeafcafa1f34710c3f26619dd83cc4a6245b16167",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "147af2852c18dc52a5867306601a03f91f9329af4e8e426f499b1a8e400cc2ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0ca4d0187ae317bcc4844f10b3c8586617a83cfcea0bd4e6600e2bd98ff7165d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12675aed628bdefc876c52b0e1c04aaeaf998eb84be7c471e7fd2243b00c1287",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0af1ca065c2001abed51c76fad49017257e0b8cf5e0c28830adefad2b547303c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-powersearch--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1d4d6c69df2acff7e051c638cdd1e5446cbbdb591e86587da5c7cdeda3f1e58c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-powersearch--default",
+        "title": "Core/PowerSearch",
+        "name": "Default",
+        "component": "PowerSearch",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-02T01:56:31.023Z",
+    "context": {
+      "sha": "a4fad52f459dd70743ac2867e352370827e7264b",
+      "runId": "33579171675",
+      "runAttempt": "1",
+      "headSha": "a4fad52f459dd70743ac2867e352370827e7264b",
+      "baseSha": "864e66d241a575d90e8e1a8466ad7d87224f2596",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "PowerSearch"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/PowerSearch/PowerSearch.tsx",
+          "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+          "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+          "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+          "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+          "packages/core/src/PowerSearch/types.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-02T01:14:33.005Z",
+      "sha": "8c9576db008a568e3df49c645032a3c0f78f57f0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 14,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 12,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-powersearch--default__butter-light",
+      "core-powersearch--default__butter-dark",
+      "core-powersearch--default__gothic-light",
+      "core-powersearch--default__gothic-dark",
+      "core-powersearch--default__stone-light",
+      "core-powersearch--default__stone-dark",
+      "core-powersearch--default__y2k-light",
+      "core-powersearch--default__y2k-dark",
+      "core-powersearch--default__matcha-light",
+      "core-powersearch--default__matcha-dark",
+      "core-powersearch--default__chocolate-light",
+      "core-powersearch--default__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

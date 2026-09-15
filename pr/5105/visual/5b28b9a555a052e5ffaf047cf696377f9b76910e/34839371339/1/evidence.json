@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5105,
+  "headSha": "5b28b9a555a052e5ffaf047cf696377f9b76910e",
+  "testedSha": "5b28b9a555a052e5ffaf047cf696377f9b76910e",
+  "baseSha": "f138ed997b88e4dc4361e73b388bd4b1d8a47bf4",
+  "run": {
+    "id": 34839371339,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-14T12:59:59.810Z",
+    "context": {
+      "sha": "5b28b9a555a052e5ffaf047cf696377f9b76910e",
+      "runId": "34839371339",
+      "runAttempt": "1",
+      "headSha": "5b28b9a555a052e5ffaf047cf696377f9b76910e",
+      "baseSha": "f138ed997b88e4dc4361e73b388bd4b1d8a47bf4",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Dialog"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Dialog/Dialog.tsx",
+          "packages/core/src/Dialog/DialogContext.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": [
+          "@astryxdesign/lab"
+        ]
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

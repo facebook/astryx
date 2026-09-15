@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-02T01:56:31.023Z",
+  "context": {
+    "sha": "a4fad52f459dd70743ac2867e352370827e7264b",
+    "runId": "33579171675",
+    "runAttempt": "1",
+    "headSha": "a4fad52f459dd70743ac2867e352370827e7264b",
+    "baseSha": "864e66d241a575d90e8e1a8466ad7d87224f2596",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "PowerSearch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/PowerSearch/PowerSearch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+        "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+        "packages/core/src/PowerSearch/types.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T01:14:33.005Z",
+    "sha": "8c9576db008a568e3df49c645032a3c0f78f57f0",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 14,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-powersearch--default__butter-light",
+    "core-powersearch--default__butter-dark",
+    "core-powersearch--default__gothic-light",
+    "core-powersearch--default__gothic-dark",
+    "core-powersearch--default__stone-light",
+    "core-powersearch--default__stone-dark",
+    "core-powersearch--default__y2k-light",
+    "core-powersearch--default__y2k-dark",
+    "core-powersearch--default__matcha-light",
+    "core-powersearch--default__matcha-dark",
+    "core-powersearch--default__chocolate-light",
+    "core-powersearch--default__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

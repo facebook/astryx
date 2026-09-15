@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-14T06:24:36.371Z",
+  "context": {
+    "sha": "66be9ecab9c57e9a1f4c104de6324b7540a7e632",
+    "runId": "34808215804",
+    "runAttempt": "1",
+    "headSha": "66be9ecab9c57e9a1f4c104de6324b7540a7e632",
+    "baseSha": "1c4033d4978fec47be12e9be239cafbcfda93ec8",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "AppShell",
+        "MobileNav"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/AppShell/AppShell.tsx",
+        "packages/core/src/MobileNav/MobileNav.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

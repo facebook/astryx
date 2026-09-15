@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6150,
+  "headSha": "1ed9a7ca58cc919879c9ea523a3a44bc44dbab80",
+  "testedSha": "1ed9a7ca58cc919879c9ea523a3a44bc44dbab80",
+  "baseSha": "592d0807462f8bc426f2f92d937784bf28311232",
+  "run": {
+    "id": 34198097339,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-08T07:32:39.329Z",
+    "context": {
+      "sha": "1ed9a7ca58cc919879c9ea523a3a44bc44dbab80",
+      "runId": "34198097339",
+      "runAttempt": "1",
+      "headSha": "1ed9a7ca58cc919879c9ea523a3a44bc44dbab80",
+      "baseSha": "592d0807462f8bc426f2f92d937784bf28311232",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Button",
+          "ClickableCard"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Button/__tests__/Button.a11y.known-failures.ts",
+          "packages/core/src/ClickableCard/ClickableCard.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-08T04:08:03.775Z",
+      "sha": "409248619ffb6a26ca4899e4b7dcdf18007206ea",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 4,
+      "unchanged": 4,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

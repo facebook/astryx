@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5873,
+  "headSha": "e73d76c60b79065d790e1f713a1b80d65d8e2edb",
+  "testedSha": "e73d76c60b79065d790e1f713a1b80d65d8e2edb",
+  "baseSha": "4357d28158d55ef02a263956c2fbd130d8348553",
+  "run": {
+    "id": 33585459889,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "b0949e2bb64d733878e42853ad47611db818e54d",
+    "manifestDigest": "d0958a8d36886df0b9057610573d60432086dadc60c8df0e6f363d5147f2b4d5"
+  },
+  "keys": [
+    {
+      "key": "core-appshell--playground__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "64979d389e44c0aebb55cf33d10b2fbfe0b1e1c0e55d2fc1dc0a24576bf054fd",
+      "shot": {
+        "sha256": "64979d389e44c0aebb55cf33d10b2fbfe0b1e1c0e55d2fc1dc0a24576bf054fd",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3e662e2e82d5452bdef09cde148bb615f35764aeedf5634d58321a9605395aa6",
+      "shot": {
+        "sha256": "3e662e2e82d5452bdef09cde148bb615f35764aeedf5634d58321a9605395aa6",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "407874e8c6cd96c7ce418c256fe26e9239fff348f0aa6d00ff9ffc5667d4e620",
+      "shot": {
+        "sha256": "407874e8c6cd96c7ce418c256fe26e9239fff348f0aa6d00ff9ffc5667d4e620",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "407874e8c6cd96c7ce418c256fe26e9239fff348f0aa6d00ff9ffc5667d4e620",
+      "shot": {
+        "sha256": "407874e8c6cd96c7ce418c256fe26e9239fff348f0aa6d00ff9ffc5667d4e620",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "12a2fbedb45721255d19115b4e55887c711cf75d31598f8f86a26d37e1ff656e",
+      "shot": {
+        "sha256": "12a2fbedb45721255d19115b4e55887c711cf75d31598f8f86a26d37e1ff656e",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d88c12b8a8bc80d63b4302043b6d9da3dd8ce22be744408019aa7758507e80b7",
+      "shot": {
+        "sha256": "d88c12b8a8bc80d63b4302043b6d9da3dd8ce22be744408019aa7758507e80b7",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2d6b275c4231e7e6ee14bb5081f22f900a3b320bc964ce40757628b37067ac11",
+      "shot": {
+        "sha256": "2d6b275c4231e7e6ee14bb5081f22f900a3b320bc964ce40757628b37067ac11",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dad3d4ffd4920cd6688d85dc6fc129a408b47dd6921551c30d6af00a8a2f2466",
+      "shot": {
+        "sha256": "dad3d4ffd4920cd6688d85dc6fc129a408b47dd6921551c30d6af00a8a2f2466",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d2a3841ea88d5bf2a617690eb1fca35961b12830516d63e57a754791977047a4",
+      "shot": {
+        "sha256": "d2a3841ea88d5bf2a617690eb1fca35961b12830516d63e57a754791977047a4",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "65aeea1265a8b44fd7016f2c4cb20e2b7acb36aa215b0b2da926c036e2296193",
+      "shot": {
+        "sha256": "65aeea1265a8b44fd7016f2c4cb20e2b7acb36aa215b0b2da926c036e2296193",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "22aa6763abff83a64fcb1fedf9db566aa5d6288bdf8df58f4b8c9c57a64d8b91",
+      "shot": {
+        "sha256": "22aa6763abff83a64fcb1fedf9db566aa5d6288bdf8df58f4b8c9c57a64d8b91",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-appshell--playground__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2deb5f91f991301beab37734d46ab8ce8c22cdfb3a9b74ba6806405aef2203c2",
+      "shot": {
+        "sha256": "2deb5f91f991301beab37734d46ab8ce8c22cdfb3a9b74ba6806405aef2203c2",
+        "width": 1024,
+        "height": 800,
+        "storyId": "core-appshell--playground",
+        "title": "Core/AppShell",
+        "name": "Playground",
+        "component": "AppShell",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "The section variant intentionally paints its surface on the auto-height sticky header so scrolling content cannot show through; other variants and fill mode are unchanged.",
+    "commentId": 5503950595,
+    "at": "2026-09-02T03:42:57.746Z"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6265,
+    "headSha": "bd8e36f9491c8d937fee44d431a725fad547d0b1",
+    "headRef": "agentcloud/integration-template-replacements",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34707170713,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6265/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6265/sandbox/",
+      "indexSha256": "94c092c12d34596cedc721b108e87877f069b8cdbe7f7faf1e86528a6bb7914a"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5340,
+    "headSha": "8ce8dd78040dd39f97b4900333e2f83f9f239663",
+    "headRef": "rocky/issue-5300-template-search-hygiene",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 34085613150,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/5340/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/5340/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

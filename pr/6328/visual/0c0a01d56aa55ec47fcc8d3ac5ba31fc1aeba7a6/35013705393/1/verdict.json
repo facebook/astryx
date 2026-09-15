@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-15T20:47:15.797Z",
+  "context": {
+    "sha": "0c0a01d56aa55ec47fcc8d3ac5ba31fc1aeba7a6",
+    "runId": "35013705393",
+    "runAttempt": "1",
+    "headSha": "0c0a01d56aa55ec47fcc8d3ac5ba31fc1aeba7a6",
+    "baseSha": "bc93547cf59532ea6d8c4bea9c70e3d3fb05bcc3",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Markdown",
+        "Outline"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Markdown/Markdown.tsx",
+        "packages/core/src/Markdown/index.ts",
+        "packages/core/src/Markdown/parser.ts",
+        "packages/core/src/Markdown/plugins.ts",
+        "packages/core/src/Markdown/utils.ts",
+        "packages/core/src/Outline/parseOutlineFromMarkdown.ts",
+        "packages/core/src/Outline/useOutlineFromMarkdown.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 8,
+    "unchanged": 8,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

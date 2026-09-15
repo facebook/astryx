@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-02T05:26:53.236Z",
+  "context": {
+    "sha": "ecb0737f69881619f912d982746dc55c43f9c8d8",
+    "runId": "33592671189",
+    "runAttempt": "1",
+    "headSha": "ecb0737f69881619f912d982746dc55c43f9c8d8",
+    "baseSha": "501e97588c87b59fc0fba9e65df9b4a440619dd9",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "PowerSearch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/PowerSearch/PowerSearch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+        "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+        "packages/core/src/PowerSearch/types.ts",
+        "packages/core/src/PowerSearch/usePowerSearchSource.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T03:52:30.200Z",
+    "sha": "701fd39bdde375c8ef24ec4659de5624f36e5407",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 14,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-powersearch--default__butter-light",
+    "core-powersearch--default__butter-dark",
+    "core-powersearch--default__gothic-light",
+    "core-powersearch--default__gothic-dark",
+    "core-powersearch--default__stone-light",
+    "core-powersearch--default__stone-dark",
+    "core-powersearch--default__y2k-light",
+    "core-powersearch--default__y2k-dark",
+    "core-powersearch--default__matcha-light",
+    "core-powersearch--default__matcha-dark",
+    "core-powersearch--default__chocolate-light",
+    "core-powersearch--default__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

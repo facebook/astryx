@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6046,
+    "headSha": "6b322f569ce4ba6e74cc4fc745a3612e1e29936a",
+    "headRef": "nynexman4464/docs/rtl-audit-evidence",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34981303719,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6046/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6046/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

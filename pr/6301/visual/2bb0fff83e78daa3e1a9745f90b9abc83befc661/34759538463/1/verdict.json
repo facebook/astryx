@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-13T14:31:22.878Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "2bb0fff83e78daa3e1a9745f90b9abc83befc661",
+    "headSha": "2bb0fff83e78daa3e1a9745f90b9abc83befc661",
+    "baseSha": "2ca486d78bfca3ceb2d3e935f1099471c152ae91",
+    "runId": "34759538463",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "BottomSheet"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/BottomSheet/BottomSheet.tsx",
+        "packages/core/src/BottomSheet/BottomSheetPanel.tsx",
+        "packages/core/src/hooks/useScrollableArea.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 386,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "BottomSheet"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

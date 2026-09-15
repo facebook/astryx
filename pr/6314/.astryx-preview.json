@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6314,
+    "headSha": "2396c56ffc1e38d7ebc3d658c6e2cc6f8db60e42",
+    "headRef": "rocky/issue-6306-harden-scrollablearea",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 34925147240,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6314/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6314/sandbox/",
+      "indexSha256": "0c169660f545bccb145e771b11c668341bbaadb12cfd966c728962ec046f7384"
+    }
+  }
+}
