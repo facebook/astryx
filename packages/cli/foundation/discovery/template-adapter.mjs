@@ -714,9 +714,10 @@ const UBIQUITOUS = new Set([
 
 /**
  * @param {string} pagePath
+ * @param {Set<string>|((name: string) => boolean)|null} [knownComponents] exact resolvability oracle (a prebuilt name set or a per-name predicate), or null to skip filtering
  * @returns {string[]}
  */
-export function extractComponents(pagePath) {
+export function extractComponents(pagePath, knownComponents = null) {
   const src = fs.readFileSync(pagePath, 'utf-8');
   // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
   // Templates author bare component names post un-prefix migration
@@ -743,11 +744,25 @@ export function extractComponents(pagePath) {
       matches
         .filter(n => !['Theme', 'ThemeProvider'].includes(n))
         .filter(n => !UBIQUITOUS.has(n))
+        // Exact names only when filtering against the resolution oracle: a
+        // name is advertised iff `astryx component <Name>` resolves it
+        // as-is. No suffix-fuzzying (StackItem stays StackItem; a local
+        // TimelineSection is dropped rather than rewritten to Timeline).
+        // Unfiltered callers keep the base-name normalization below.
+        .filter(
+          n =>
+            knownComponents === null ||
+            (typeof knownComponents === 'function'
+              ? knownComponents(n)
+              : knownComponents.has(n)),
+        )
         .map(n =>
-          n.replace(
-            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
-            '',
-          ),
+          knownComponents === null
+            ? n.replace(
+                /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
+                '',
+              )
+            : n,
         )
         .filter(Boolean),
     ),
