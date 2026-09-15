@@ -19,6 +19,7 @@ import {colorVars} from '../../../theme/tokens.stylex';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
+  HeaderRowRenderProps,
   TableColumn,
   ColumnWidth,
 } from '../../types';
@@ -197,10 +198,17 @@ const handleStyles = stylex.create({
     top: 0,
     // Extend the handle the full height of the table, not just the header.
     // The <th> has overflow:visible (from headerCellRelative), so the handle
-    // visually reaches through the body rows. The CSS variable is set by
-    // the plugin's ResizeObserver — falls back to 100% (header only) when
-    // the observer hasn't fired yet.
-    height: 'var(--table-resize-height, 100%)',
+    // visually reaches through the body rows. Both variables are set by the
+    // plugin's ResizeObserver — they fall back to header-height when it
+    // hasn't fired yet.
+    //
+    // `top: 0` does not land on the table's top edge: the handle hangs from
+    // its cell's content box, and the header's vertical centring shifts that
+    // box down by an amount that depends on how tall its own content is.
+    // Subtracting that drop keeps the handle from hanging past the last row
+    // and forcing the scroll wrapper to scroll.
+    height:
+      'calc(var(--table-resize-height, 100%) - var(--table-resize-offset, 0px))',
     // Wide transparent hit area; the visible indicator uses ::after to span
     // the full handle height independently of the border box.
     width: '8px',
@@ -214,8 +222,17 @@ const handleStyles = stylex.create({
     // Drive the indicator color via a CSS variable that ::after reads.
     // The parent handle is the hover/focus target — pseudo-elements
     // can't receive :hover directly.
+    /*
+     * The resting value is inherited rather than fixed: the header row sets
+     * `--resize-hint` while it is hovered, which reveals every boundary at
+     * once so the columns can advertise that they move. Reading it as the
+     * default (instead of matching the row's hover from down here) keeps this
+     * element's own :hover a plain same-element override — an ancestor
+     * selector would outrank it and the handle under the pointer would never
+     * reach accent.
+     */
     '--indicator-color': {
-      default: 'transparent',
+      default: 'var(--resize-hint, transparent)',
       ':hover:where(:not(:disabled,[aria-disabled="true"]))':
         colorVars['--color-accent'],
       ':focus-visible': colorVars['--color-accent'],
@@ -243,6 +260,25 @@ const handleStyles = stylex.create({
       width: 'var(--indicator-width, 1px)',
       backgroundColor: 'var(--indicator-color, transparent)',
       transition: 'background-color 150ms ease, width 150ms ease',
+    },
+  },
+});
+
+/**
+ * Publishes the hint colour the handles read at rest. Hover has to be caught
+ * on the row so that entering the header anywhere reveals every boundary, not
+ * only the cell under the pointer. Pointer-only — there is no hover to lead
+ * with on touch, where the handles are `display:none` regardless.
+ */
+const headerRowStyles = stylex.create({
+  base: {
+    '--resize-hint': {
+      default: 'transparent',
+      '@media (hover: hover)': {
+        default: 'transparent',
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-border'],
+      },
     },
   },
 });
@@ -684,6 +720,9 @@ function ResizeHandle({
       aria-valuemax={maxWidth === Infinity ? undefined : maxWidth}
       aria-label={ariaLabel}
       tabIndex={0}
+      // Lets the height observer find its own handles without matching any
+      // separator a consumer happens to render inside the table.
+      data-resize-handle=""
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}
       {...stylex.props(handleStyles.base, handleStyles.indicator)}
@@ -721,8 +760,9 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
   );
 
   // Measure the table height via ResizeObserver and expose as
-  // --table-resize-height on the <table> element. This is initialized
-  // entirely by the resize plugin — the base table has no knowledge of it.
+  // --table-resize-height on the <table> element, alongside the distance the
+  // handles start below that top edge. Both are initialized entirely by the
+  // resize plugin — the base table has no knowledge of either.
   const observedTableRef = useRef<HTMLTableElement | null>(null);
   const unobserveTableRef = useRef<(() => void) | null>(null);
 
@@ -741,8 +781,29 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
 
     if (table && typeof ResizeObserver !== 'undefined') {
       unobserveTableRef.current = observeResize(table, () => {
-        const height = table.getBoundingClientRect().height;
-        table.style.setProperty('--table-resize-height', `${height}px`);
+        const rect = table.getBoundingClientRect();
+        table.style.setProperty('--table-resize-height', `${rect.height}px`);
+
+        /*
+         * Each handle hangs from its own cell's content box, so they do not
+         * all start at the same y. Publish the largest drop: every handle then
+         * ends at or just above the table's bottom edge, where ending a
+         * fraction short is invisible but overhanging is not — it shows up as
+         * a few px of stray scrolling in the wrapper.
+         *
+         * Reading the handles here cannot feed back into this observer: they
+         * are absolutely positioned, so their height never moves the table.
+         */
+        let offset = 0;
+        for (const handle of table.querySelectorAll<HTMLElement>(
+          '[data-resize-handle]',
+        )) {
+          offset = Math.max(
+            offset,
+            handle.getBoundingClientRect().top - rect.top,
+          );
+        }
+        table.style.setProperty('--table-resize-offset', `${offset}px`);
       });
       observedTableRef.current = table;
     }
@@ -764,6 +825,9 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
             {children}
           </div>
         );
+      },
+      transformHeaderRow(props: HeaderRowRenderProps): HeaderRowRenderProps {
+        return {...props, xstyle: [...props.xstyle, headerRowStyles.base]};
       },
       transformHeaderCell(
         props: HeaderCellRenderProps,
