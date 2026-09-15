@@ -964,3 +964,122 @@ describe('TopNavMegaMenu — owned handlers on the trigger', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+describe('TopNavMegaMenuItem pass-through props', () => {
+  it('forwards pass-through props in default mode', () => {
+    render(
+      <TopNavMegaMenuItem
+        title="Analytics"
+        aria-label="Open analytics"
+        id="mega-analytics"
+        data-tracking="mega-item"
+        data-testid="item"
+      />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('aria-label', 'Open analytics');
+    expect(item).toHaveAttribute('id', 'mega-analytics');
+    expect(item).toHaveAttribute('data-tracking', 'mega-item');
+  });
+
+  it('forwards event handlers in default mode', () => {
+    const handleMouseEnter = vi.fn();
+    render(
+      <TopNavMegaMenuItem
+        title="Analytics"
+        onMouseEnter={handleMouseEnter}
+        data-testid="item"
+      />,
+    );
+    fireEvent.mouseEnter(screen.getByTestId('item'));
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+  });
+
+  it('forwards pass-through props in drawer mode', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenuItem
+          title="Analytics"
+          data-tracking="mega-item"
+          data-testid="item"
+        />
+      </TopNavRenderContext>,
+    );
+    expect(screen.getByTestId('item')).toHaveAttribute(
+      'data-tracking',
+      'mega-item',
+    );
+  });
+
+  it('composes consumer styling and forwards tabIndex in drawer mode', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenuItem
+          title="Analytics"
+          className="consumer-item"
+          style={{outlineColor: 'red'}}
+          tabIndex={-1}
+          data-testid="item"
+        />
+      </TopNavRenderContext>,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveClass('consumer-item');
+    expect(item.style.outlineColor).toBe('red');
+    expect(item).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('composes consumer styling in default mode', () => {
+    render(
+      <TopNavMegaMenuItem
+        title="Analytics"
+        className="consumer-item"
+        style={{outlineColor: 'red'}}
+        data-testid="item"
+      />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveClass('consumer-item');
+    // The internal classes are still applied alongside the consumer's.
+    expect(item.className.split(' ').length).toBeGreaterThan(1);
+    expect(item.style.outlineColor).toBe('red');
+  });
+
+  it('applies xstyle as extra classes in both modes', () => {
+    const xstyleTestStyles = stylex.create({
+      custom: {marginInlineEnd: '7px'},
+    });
+    const renderBoth = (xstyle?: (typeof xstyleTestStyles)['custom']) => (
+      <>
+        <TopNavMegaMenuItem
+          title="Analytics"
+          xstyle={xstyle}
+          data-testid="default-item"
+        />
+        <TopNavRenderContext value="drawer">
+          <TopNavMegaMenuItem
+            title="Analytics"
+            xstyle={xstyle}
+            data-testid="drawer-item"
+          />
+        </TopNavRenderContext>
+      </>
+    );
+    const {rerender} = render(renderBoth());
+    const defaultWithout = screen
+      .getByTestId('default-item')
+      .getAttribute('class');
+    const drawerWithout = screen
+      .getByTestId('drawer-item')
+      .getAttribute('class');
+
+    // xstyle values are compiled StyleX styles; passing one adds classes.
+    rerender(renderBoth(xstyleTestStyles.custom));
+    expect(
+      screen.getByTestId('default-item').getAttribute('class'),
+    ).not.toEqual(defaultWithout);
+    expect(screen.getByTestId('drawer-item').getAttribute('class')).not.toEqual(
+      drawerWithout,
+    );
+  });
+});

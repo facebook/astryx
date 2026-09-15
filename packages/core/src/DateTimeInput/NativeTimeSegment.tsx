@@ -40,6 +40,7 @@ import {
   formatISOTime,
   isTimeInRange,
   parseISOTime,
+  composeEventHandlers,
   type ISOTimeString,
 } from '../utils';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
@@ -80,6 +81,8 @@ export type NativeTimeSegmentProps = {
   isBusy: boolean;
   statusType?: InputStatusType;
   ariaDescribedBy?: string;
+  /** Pass-through attributes and handlers for the native `<input>`. */
+  inputProps?: React.HTMLAttributes<HTMLInputElement>;
 };
 
 /** The shared native time control rendered inside Astryx field chrome. */
@@ -103,7 +106,14 @@ export function NativeTimeSegment({
   isBusy,
   statusType,
   ariaDescribedBy,
+  inputProps,
 }: NativeTimeSegmentProps) {
+  const {
+    onFocus: onFocusProp,
+    onBlur: onBlurProp,
+    'aria-label': ariaLabelProp,
+    ...restInputProps
+  } = inputProps ?? {};
   const t = useTranslator();
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
   const internalInputRef = useRef<HTMLInputElement | null>(null);
@@ -277,21 +287,24 @@ export function NativeTimeSegment({
       </button>
       <span {...stylex.props(styles.slot)}>
         <input
+          {...restInputProps}
           ref={mergedInputRef}
           id={id}
           type="time"
           // UNCONTROLLED on purpose; see initialValueRef and the sync effect.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           step={60}
           disabled={isEffectivelyDisabled && !hasDisabledMessage}
           aria-disabled={hasDisabledMessage ? 'true' : undefined}
           readOnly={hasDisabledMessage || undefined}
-          aria-label={ariaLabelledBy ? undefined : inputLabel}
+          aria-label={
+            ariaLabelProp ?? (ariaLabelledBy ? undefined : inputLabel)
+          }
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           autoFocus={hasAutoFocus}
