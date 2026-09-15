@@ -1,5 +1,9 @@
 # @xds/theme-butter
 
+# 0.6.2
+
+---
+
 # 0.6.1
 
 #### Fixes
