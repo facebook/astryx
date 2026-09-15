@@ -60,15 +60,15 @@ they are separately named.
   surface with a concrete check owner and dependency boundary. The initial
   taxonomy and current owners are:
 
-  | Surface             | Positive path ownership                                                                                                            | Current check owners                                                                                                                                 |
-  | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and exact-head spec-owner approval                                                                                              |
-  | `docsite`           | the docsite application                                                                                                            | docsite generation and tests                                                                                                                         |
-  | `node-tooling`      | individually admitted operational Node programs and their tests whose consumers are covered by Node contract tests                 | Node Vitest, repository guardrails, and ESLint                                                                                                       |
-  | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                          | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
-  | `theme-build`       | shipped theme packages and theme compilation outputs                                                                               | theme tests, theme package builds, theme-family browser behavior, and stable visual evidence where applicable                                        |
-  | `storybook-visual`  | Storybook stories/configuration and visual, accessibility, or RTL audit infrastructure                                             | Storybook build, preview/visual-acceptance publication, and the applicable browser, visual, accessibility, and RTL checks                            |
-  | `shared-or-unknown` | shared configuration, dependency graphs, workflows, classifiers, generated ownership, ambiguous paths, and every unclassified path | all applicable pull-request CI checks                                                                                                                |
+  | Surface             | Positive path ownership                                                                                                                                                                       | Current check owners                                                                                                                                 |
+  | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                                                                                        | knowledge validation and exact-head spec-owner approval                                                                                              |
+  | `docsite`           | the docsite application                                                                                                                                                                       | docsite generation and tests                                                                                                                         |
+  | `node-tooling`      | individually admitted operational tooling groups: Node programs, their tests, the libraries and documentation they own, and a workflow that dispatches one and runs on no pull request        | Node Vitest, repository guardrails, and ESLint                                                                                                       |
+  | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                                                                                     | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
+  | `theme-build`       | shipped theme packages and theme compilation outputs                                                                                                                                          | theme tests, theme package builds, theme-family browser behavior, and stable visual evidence where applicable                                        |
+  | `storybook-visual`  | Storybook stories/configuration and visual, accessibility, or RTL audit infrastructure                                                                                                        | Storybook build, preview/visual-acceptance publication, and the applicable browser, visual, accessibility, and RTL checks                            |
+  | `shared-or-unknown` | shared configuration, dependency graphs, every workflow that is not an admitted group's own dispatch workflow, classifiers, generated ownership, ambiguous paths, and every unclassified path | all applicable pull-request CI checks                                                                                                                |
 
   A category does not earn a specialized lane merely by existing in this table.
   Until every selected surface has an admitted, complete specialized owner route,
@@ -78,8 +78,9 @@ they are separately named.
 - **FR3 — Classification uses trusted base policy.** Pull-request code MUST NOT
   choose its own lane. The workflow MUST load the classifier and every classifier
   dependency from the trusted base ref, then apply that policy to the merge-base
-  three-dot path set. Workflow, classifier, classifier-dependency, and routing-test
-  changes therefore use the broad lane.
+  three-dot path set. Classifier, classifier-dependency, and routing-test
+  changes, and changes to any workflow that runs on a pull-request or
+  merge-group event, therefore use the broad lane.
 - **FR4 — Uncertainty fails closed.** A missing merge base, missing trusted
   classifier dependency, failed classifier, empty or incomplete file list,
   ambiguous rename, unknown path, or merge-group event without a trusted PR path
@@ -94,7 +95,12 @@ they are separately named.
   `node-tooling` only when dependency analysis proves that package runtime,
   component UI, theme/build output, Storybook/visual evidence, and browser
   behavior are not changed directly, and every operational consumer has a Node
-  contract test. Directory-wide or extension-wide admission is prohibited.
+  contract test. A group MAY also admit the library modules and documentation it
+  owns, and the workflow that dispatches it when that workflow runs on no
+  pull-request or merge-group event and gates no required check. Every admitted
+  path MUST be listed, file by file, in one trusted registry that every routing
+  classifier reads, so no two classifiers can admit different sets for the same
+  change. Directory-wide or extension-wide admission is prohibited.
 - **FR7 — Required check names remain stable.** `test`, `build`, `docsite-test`,
   and `lint` MUST continue to report on every pull request through their existing
   jobs or join jobs. A specialized lane skips owned steps inside those jobs; it
@@ -113,10 +119,11 @@ they are separately named.
 - **FR9 — Routing tests are mutation-sensitive.** Tests MUST prove both the
   intended fast path and the unsafe near misses. At minimum they cover pure
   tooling; pure spec; component spec plus component code; module spec plus Table
-  plugin code; tooling plus component code; workflow or classifier self-change;
-  unknown paths; shared infrastructure; rename history; incomplete input; and
-  public source in every component-bearing package. Removing any fail-closed edge
-  MUST make a test fail.
+  plugin code; tooling plus component code; each admitted tooling group's
+  complete path set and its unadmitted neighbors; workflow or classifier
+  self-change; unknown paths; shared infrastructure; rename history; incomplete
+  input; and public source in every component-bearing package. Removing any
+  fail-closed edge MUST make a test fail.
 - **FR10 — New surfaces follow one admission convention.** A new surface MUST be
   admitted by an owner-approved amendment to this record before implementation.
   The amendment MUST name its positive path ownership, dependency boundary, test
@@ -168,16 +175,16 @@ the shared Storybook PR owner.
 
 ## Verification
 
-| Contract | Verification                                                             | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
-| -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | classifier unit tests expose the surface set                             | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
-| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier      | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
-| FR5      | mixed-surface and incomplete-owner routing tests                         | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
-| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
-| FR9      | mutation-sensitive classifier and workflow fixtures                      | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | surface-admission and routing contract tests                             | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
-| FR11     | surface owner, internal-job, and required-join contract tests            | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
-| FR12     | Storybook visual-plan, PR owner, and status-projection contract tests    | component, package, story, and theme-family cases                                                        | visual coverage bypasses the shared PR owner, creates another independently routed PR visual owner, or conflates a status projection with a lane                                   |
+| Contract | Verification                                                             | Representative states                                                                                                                  | Mutation or failure expectation                                                                                                                                                                                        |
+| -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | classifier unit tests expose the surface set                             | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown                                       | an unclassified path receives a specialized lane or a category has no check owner                                                                                                                                      |
+| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier      | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group                                          | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                                                                 |
+| FR5      | mixed-surface and incomplete-owner routing tests                         | spec+component; tooling+component; named surface without admitted lane; docsite+shared                                                 | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                                                       |
+| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests | every admitted group's complete path set; unadmitted neighbors; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for an admitted tool set, two classifiers admit different sets, an operational consumer is untested, a visual status stays pending, or a required context disappears |
+| FR9      | mutation-sensitive classifier and workflow fixtures                      | unknown path; rename from unknown; truncated list; package-specific public paths                                                       | weakening a fail-closed rule leaves the suite green                                                                                                                                                                    |
+| FR10     | surface-admission and routing contract tests                             | existing surface; proposed surface with and without the full admission contract                                                        | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                                                               |
+| FR11     | surface owner, internal-job, and required-join contract tests            | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                                                       | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                                                          |
+| FR12     | Storybook visual-plan, PR owner, and status-projection contract tests    | component, package, story, and theme-family cases                                                                                      | visual coverage bypasses the shared PR owner, creates another independently routed PR visual owner, or conflates a status projection with a lane                                                                       |
 
 ## Decision log
 

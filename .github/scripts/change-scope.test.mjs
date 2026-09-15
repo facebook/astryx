@@ -183,12 +183,26 @@ describe('spec-only change scope', () => {
 describe('positive CI surfaces', () => {
   const scoreLedger = 'scripts/score-ledger.mjs';
   const scoreLedgerTest = 'scripts/score-ledger.test.mjs';
+  const crowdinTooling = [
+    '.github/workflows/crowdin-upload.yml',
+    'internal/scripts/README.md',
+    'internal/scripts/lib/crowdin-strategies.mjs',
+    'internal/scripts/upload-crowdin-screenshots.mjs',
+  ];
 
   it('admits only the complete score-ledger tooling group', () => {
     const result = classifyChanges([
       {filename: scoreLedger},
       {filename: scoreLedgerTest},
     ]);
+    expect(result.toolingOnly).toBe(true);
+    expect(result.surfaces).toEqual([SURFACES.NODE_TOOLING]);
+  });
+
+  it('admits the Crowdin screenshot tooling group with its workflow and docs', () => {
+    const result = classifyChanges(
+      crowdinTooling.map(filename => ({filename})),
+    );
     expect(result.toolingOnly).toBe(true);
     expect(result.surfaces).toEqual([SURFACES.NODE_TOOLING]);
   });
@@ -231,6 +245,19 @@ describe('positive CI surfaces', () => {
     {
       name: 'classifier self-change',
       files: ['.github/scripts/change-scope.cjs'],
+    },
+    {
+      name: 'tooling registry self-change',
+      files: ['.github/scripts/tooling-paths.cjs'],
+    },
+    {
+      name: 'unadmitted sibling of admitted tooling',
+      files: [...crowdinTooling, 'internal/scripts/lib/other-strategies.mjs'],
+    },
+    {
+      name: 'admitted tooling plus the catalog it reads',
+      files: [...crowdinTooling, 'packages/core/locales/en.json'],
+      surfaces: [SURFACES.NODE_TOOLING, 'runtime:core'],
     },
     {
       name: 'unknown path',

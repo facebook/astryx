@@ -41,6 +41,9 @@ describe('spec-only workflow contract', () => {
         'git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs"',
       );
       expect(source, workflow).toContain(
+        'git show "origin/${{ github.base_ref }}:.github/scripts/tooling-paths.cjs"',
+      );
+      expect(source, workflow).toContain(
         'git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs"',
       );
       expect(source, workflow).toContain(
@@ -56,7 +59,11 @@ describe('spec-only workflow contract', () => {
       const registryDir = path.join(isolated, 'scripts');
       fs.mkdirSync(classifierDir, {recursive: true});
       fs.mkdirSync(registryDir, {recursive: true});
-      for (const file of ['change-scope.cjs', 'knowledge-paths.cjs']) {
+      for (const file of [
+        'change-scope.cjs',
+        'knowledge-paths.cjs',
+        'tooling-paths.cjs',
+      ]) {
         fs.copyFileSync(
           path.join(root, '.github/scripts', file),
           path.join(classifierDir, file),
