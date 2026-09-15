@@ -142,6 +142,12 @@ export const docs = {
       default: "'start'",
     },
     {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        'Ordered extensions created by createMarkdownPlugin(). Plugins may add protected inline or block syntax, prose text replacements, language-scoped semantic fences, typed renderers, and constrained source-range decorations. Omit this prop to keep the exact default parser and renderer path.',
+    },
+    {
       name: 'inlinePlugins',
       type: 'MarkdownInlinePlugin[]',
       description:
@@ -244,7 +250,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+          'Use plugins created by createMarkdownPlugin for reusable text, syntax, semantic-fence, renderer, or decoration behavior. Keep the ordered list stable while its configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Existing inlinePlugins remain supported for prose-only shorthand; new general extensions should use the plugins protocol.',
       },
       {
         guidance: true,
@@ -287,6 +298,28 @@ import {Text} from '@astryxdesign/core/Text';
 <Markdown autolink="gfm">
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Plugin text contribution',
+      code: `
+import {Markdown, createMarkdownPlugin} from '@astryxdesign/core/Markdown';
+import {Link} from '@astryxdesign/core/Link';
+
+const issuePlugin = createMarkdownPlugin({
+  name: 'issue-links',
+  apiVersion: 1,
+  text: [{
+    pattern: /\\bAST-\\d+\\b/g,
+    render: (match, key) => (
+      <Link key={key} href={\`/issues/\${match[0]}\`}>{match[0]}</Link>
+    ),
+  }],
+});
+
+<Markdown plugins={[issuePlugin]}>
+  {'See AST-2048. Inline code stays plain: \`AST-9999\`.'}
 </Markdown>;
 `,
     },
@@ -396,6 +429,12 @@ export const docsZh = {
       description:
         '当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。',
       default: "'start'",
+    },
+    {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        '由 createMarkdownPlugin() 创建的有序扩展。插件可添加受保护的行内或块级语法、文本替换、按语言匹配的语义代码围栏、类型化渲染器和受约束的源码范围装饰。省略此属性时保持原有解析和渲染路径。',
     },
     {
       name: 'inlinePlugins',
@@ -510,7 +549,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+          'Use plugins created by createMarkdownPlugin for reusable text, syntax, semantic-fence, renderer, or decoration behavior. Keep the ordered list stable while its configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Existing inlinePlugins remain supported for prose-only shorthand; new general extensions should use the plugins protocol.',
       },
       {
         guidance: true,
@@ -557,7 +601,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
+          'Use plugins created by createMarkdownPlugin for reusable text, syntax, semantic-fence, renderer, or decoration behavior. Keep the ordered list stable while its configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Existing inlinePlugins remain supported for prose-only shorthand; new general extensions should use the plugins protocol.',
       },
       {
         guidance: true,
@@ -598,6 +647,8 @@ export const docsDense = {
       'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign:
       "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+    plugins:
+      'readonly MarkdownPluginEntry[]. Ordered extensions from createMarkdownPlugin() for text, syntax, fences, renderers, and source-range decorations. Default: omitted.',
     inlinePlugins:
       'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
     autolink:
