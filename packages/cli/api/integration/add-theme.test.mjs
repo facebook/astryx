@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe('integrationAddTheme', () => {
-  it('writes a valid source theme, catalog, root, package files entry, and receipt', async () => {
+  it('writes a typed same-stem descriptor and source with no central catalog', async () => {
     setup();
     const result = await integrationAddTheme('ocean', {cwd: tmpDir});
 
@@ -45,7 +45,7 @@ describe('integrationAddTheme', () => {
         manifest: 'astryx.integration.mjs',
         files: [
           'themes/ocean/oceanTheme.ts',
-          'themes/manifest.json',
+          'themes/ocean/oceanTheme.doc.mjs',
           'package.json',
           'astryx.integration.mjs',
         ],
@@ -56,21 +56,17 @@ describe('integrationAddTheme', () => {
     expect(
       fs.readFileSync(path.join(tmpDir, 'themes/ocean/oceanTheme.ts'), 'utf-8'),
     ).toContain('export const oceanTheme = defineTheme');
-    expect(
-      JSON.parse(
-        fs.readFileSync(path.join(tmpDir, 'themes/manifest.json'), 'utf-8'),
-      ),
-    ).toMatchObject({
-      version: 1,
-      themes: [
-        {
-          slug: 'ocean',
-          entry: 'oceanTheme.ts',
-          exportName: 'oceanTheme',
-          files: ['oceanTheme.ts'],
-        },
-      ],
-    });
+
+    const descriptor = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.doc.mjs'),
+      'utf-8',
+    );
+    expect(descriptor).toContain("@astryxdesign/cli/authoring').ThemeDoc");
+    expect(descriptor).toContain("type: 'theme'");
+    expect(descriptor).toContain("name: 'ocean'");
+    expect(fs.existsSync(path.join(tmpDir, 'themes/manifest.json'))).toBe(
+      false,
+    );
     expect(
       fs.readFileSync(path.join(tmpDir, 'astryx.integration.mjs'), 'utf-8'),
     ).toContain("themes: './themes'");
@@ -96,6 +92,7 @@ describe('integrationAddTheme', () => {
     expect(result.data.dryRun).toBe(true);
     expect(result.data.root).toEqual({path: './themes', created: true});
     expect(result.data.files).toContain('themes/ocean/oceanTheme.ts');
+    expect(result.data.files).toContain('themes/ocean/oceanTheme.doc.mjs');
     expect(fs.existsSync(path.join(tmpDir, 'themes'))).toBe(false);
     expect(
       fs.readFileSync(path.join(tmpDir, 'astryx.integration.mjs'), 'utf-8'),
@@ -125,27 +122,58 @@ describe('integrationAddTheme', () => {
     expect(
       fs.existsSync(path.join(tmpDir, 'src/themes/ocean/oceanTheme.ts')),
     ).toBe(true);
+    expect(
+      fs.existsSync(path.join(tmpDir, 'src/themes/ocean/oceanTheme.doc.mjs')),
+    ).toBe(true);
   });
 
-  it('refuses an invalid existing catalog without changing its bytes', async () => {
+  it('refuses an obsolete central catalog without changing its bytes', async () => {
     setup();
     fs.mkdirSync(path.join(tmpDir, 'themes'));
     const catalog = path.join(tmpDir, 'themes', 'manifest.json');
-    fs.writeFileSync(catalog, '{not-json\n');
+    fs.writeFileSync(catalog, '{"version":1}\n');
 
     await expect(
       integrationAddTheme('ocean', {cwd: tmpDir}),
     ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
-    expect(fs.readFileSync(catalog, 'utf-8')).toBe('{not-json\n');
+    expect(fs.readFileSync(catalog, 'utf-8')).toBe('{"version":1}\n');
     expect(fs.existsSync(path.join(tmpDir, 'themes', 'ocean'))).toBe(false);
   });
 
-  it('refuses duplicate themes and existing source files', async () => {
+  it('refuses an invalid existing descriptor without changing it', async () => {
+    setup();
+    const existing = path.join(tmpDir, 'themes', 'forest');
+    fs.mkdirSync(existing, {recursive: true});
+    const descriptor = path.join(existing, 'forestTheme.doc.mjs');
+    fs.writeFileSync(descriptor, 'export default {type: "theme"};\n');
+    fs.writeFileSync(
+      path.join(existing, 'forestTheme.ts'),
+      'export const forestTheme = {};\n',
+    );
+
+    await expect(
+      integrationAddTheme('ocean', {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
+    expect(fs.readFileSync(descriptor, 'utf-8')).toBe(
+      'export default {type: "theme"};\n',
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'themes', 'ocean'))).toBe(false);
+  });
+
+  it('refuses a duplicate valid theme directory', async () => {
     setup();
     await integrationAddTheme('ocean', {cwd: tmpDir});
     await expect(
       integrationAddTheme('ocean', {cwd: tmpDir}),
     ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
+  });
+
+  it('refuses an existing invalid theme directory', async () => {
+    setup();
+    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+    await expect(
+      integrationAddTheme('ocean', {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
   });
 
   it.each(['../ocean', 'Ocean', 'ocean theme', '.ocean'])(
