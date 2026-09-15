@@ -412,6 +412,14 @@ export interface PowerSearchProps extends Omit<
   statusVariant?: FieldStatusVariant;
   /** Max width for dropdown menu. */
   menuWidth?: number;
+  /**
+   * Maximum width (in px) for the filter-editor popover. Clamped to never
+   * exceed the anchor width — so the popover is always
+   * `min(popoverMaxWidth, anchor-size(width))`.
+   *
+   * When omitted the popover stretches to the full anchor width.
+   */
+  popoverMaxWidth?: number;
   /** Max display length for filter token values. @default 40 */
   maxTokenLength?: number;
   /** Max suggestions in string and entity value typeaheads. @default 10 */
@@ -562,6 +570,7 @@ export function PowerSearch({
   status,
   statusVariant = 'attached',
   menuWidth,
+  popoverMaxWidth,
   maxTokenLength = 40,
   maxOperatorMenuItems,
   maxSearchResults = DEFAULT_MAX_SEARCH_RESULTS,
@@ -1095,6 +1104,10 @@ export function PowerSearch({
         alignment: 'start',
         offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
+        style:
+          popoverMaxWidth != null
+            ? {maxWidth: `min(${popoverMaxWidth}px, anchor-size(width))`}
+            : undefined,
       })}
     </>
   );

@@ -132,6 +132,12 @@ export const docs = {
         'Width in pixels for the main field/search menu. Does not affect field value editors.',
     },
     {
+      name: 'popoverMaxWidth',
+      type: 'number',
+      description:
+        'Maximum width in pixels for the filter-editor popover. Clamped to never exceed the anchor width. When omitted the popover stretches to the full anchor width.',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: 'Label for the save button in the edit popover.',
@@ -174,6 +180,12 @@ export const docs = {
       name: 'menuWidth',
       type: 'number',
       description: 'Maximum width for the operator/value dropdown menu in pixels.',
+    },
+    {
+      name: 'popoverMaxWidth',
+      type: 'number',
+      description:
+        'Maximum width in pixels for the filter-editor popover. Clamped to never exceed the anchor width.',
     },
     {
       name: 'maxOperatorMenuItems',
@@ -401,6 +413,12 @@ export const docsZh = {
       description: '主字段/搜索菜单的像素宽度。不影响字段值编辑器。',
     },
     {
+      name: 'popoverMaxWidth',
+      type: 'number',
+      description:
+        '筛选编辑器弹出层的最大像素宽度。不会超过锚点宽度。未设置时弹出层与锚点同宽。',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
@@ -521,6 +539,8 @@ export const docsDense = {
     maxSearchResults:
       'Max ranked results for a non-empty query; excludes value editors.',
     menuWidth: 'Main field/search menu width in pixels.',
+    popoverMaxWidth:
+      'Max width for filter-editor popover in pixels; clamped to anchor width.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef:
