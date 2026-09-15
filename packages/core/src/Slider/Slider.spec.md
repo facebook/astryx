@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: component
 id: component:Slider
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-14
 owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
@@ -29,7 +29,7 @@ system_specs: []
 ## Intent
 
 Slider presents a labeled control for selecting one numeric value or a bounded
-range. This draft records its consumer anatomy and theming ownership, including
+range. This contract records its consumer anatomy and theming ownership, including
 an additive target for the interactive control surface.
 
 ## Compatibility and migration
@@ -68,10 +68,10 @@ documented in `Slider.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                  | Basis                                   | Draft review state                                 |
+| ID  | Candidate invariant                                                                                                                                  | Basis                                   | Review state                                       |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
 | FR1 | The current render places a filled range, one or two thumbs, and optional tick marks over the background track.                                      | Current source, docs, and focused tests | Verified current behavior; no new behavior decided |
-| FR2 | `Slider`, `Interactive control`, `Track`, and `Thumb` carry the `slider`, `slider-control`, `slider-track`, and `slider-thumb` targets respectively. | Current source, public docs, and #6224  | Proposed additive target contract                  |
+| FR2 | `Slider`, `Interactive control`, `Track`, and `Thumb` carry the `slider`, `slider-control`, `slider-track`, and `slider-thumb` targets respectively. | Current source, public docs, and #6224  | Approved additive target contract                  |
 | FR3 | Filled range, tick marks, mark labels, and adjacent text value display are stable rendered parts without their own current Slider target.            | Current source and public docs          | Verified current asymmetry; not ratified as policy |
 | FR4 | Label and status presentation continue to use Field and FieldStatus; value tooltips continue to use Tooltip.                                         | Current source and focused tests        | Verified composition boundary                      |
 
@@ -111,7 +111,7 @@ either component's remaining target shape.
 
 ## Accessibility contract
 
-This draft does not change or extend Slider's existing accessible name, value,
+This contract does not change or extend Slider's existing accessible name, value,
 range-thumb naming, description/status association, keyboard behavior, disabled
 behavior, or value-tooltip behavior.
 
@@ -214,8 +214,15 @@ remains missing focused test coverage.
 
 ## Decision log
 
-None. This draft proposes one additive target for owner review and changes no
-default behavior or styling.
+### DEC-1 — Interactive control is public Slider anatomy
+
+**Reference:** `component:Slider/DEC-1`
+**Decider:** cixzhang, 2026-09-14
+
+The stable pointer/keyboard interaction and compositing surface is a
+consumer-recognizable part, so it carries `slider-control`. `Thumb` remains
+separate anatomy and continues to carry `slider-thumb`. This adds no default
+behavior or styling change.
 
 ## Open questions
 
