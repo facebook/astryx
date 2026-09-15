@@ -209,6 +209,121 @@ describe('useLinkComponent — to prop', () => {
 });
 
 // =============================================================================
+// href scheme rule
+// =============================================================================
+
+describe('useLinkComponent — href scheme rule', () => {
+  // Kept in a const so the JSX stays lint-clean — the test is ABOUT this URL.
+  const scriptUrl = 'javascript:alert(1)';
+
+  function HrefConsumer({href}: {href: string}) {
+    const LinkComponent = useLinkComponent();
+    return (
+      <LinkComponent href={href} data-testid="resolved-link">
+        Link
+      </LinkComponent>
+    );
+  }
+
+  function propSpy() {
+    return vi.fn(
+      ({
+        children,
+        ...props
+      }: {
+        children?: React.ReactNode;
+        [key: string]: unknown;
+      }) => (
+        <a data-testid="spy-link" href={props.href as string}>
+          {children}
+        </a>
+      ),
+    );
+  }
+
+  it('forwards ordinary hrefs to a custom component untouched', () => {
+    const spy = propSpy();
+    function SpyLink(props: {[key: string]: unknown}) {
+      return spy(props);
+    }
+    render(
+      <LinkProvider component={SpyLink}>
+        <HrefConsumer href="/docs/button" />
+      </LinkProvider>,
+    );
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: '/docs/button', to: '/docs/button'}),
+    );
+  });
+
+  it('withholds a script-scheme href from a custom component (href and to alike)', () => {
+    const spy = propSpy();
+    function SpyLink(props: {[key: string]: unknown}) {
+      return spy(props);
+    }
+    render(
+      <LinkProvider component={SpyLink}>
+        {/* eslint-disable-next-line @eslint-react/dom-no-script-url -- the test proves this URL never navigates */}
+        <HrefConsumer href={scriptUrl} />
+      </LinkProvider>,
+    );
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: undefined, to: undefined}),
+    );
+  });
+
+  it('an explicit `to` passes the same check instead of riding through ...rest', () => {
+    const spy = propSpy();
+    function SpyLink(props: {[key: string]: unknown}) {
+      return spy(props);
+    }
+    function ToConsumer({to}: {to: string}) {
+      const LinkComponent = useLinkComponent();
+      return (
+        <LinkComponent href="/fallback" to={to} data-testid="resolved-link">
+          Link
+        </LinkComponent>
+      );
+    }
+    render(
+      <LinkProvider component={SpyLink}>
+        {/* eslint-disable-next-line @eslint-react/dom-no-script-url -- the test proves this URL never reaches the router */}
+        <ToConsumer to={scriptUrl} />
+      </LinkProvider>,
+    );
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: '/fallback', to: undefined}),
+    );
+  });
+
+  it('an ordinary explicit `to` keeps its precedence over href', () => {
+    const spy = propSpy();
+    function SpyLink(props: {[key: string]: unknown}) {
+      return spy(props);
+    }
+    function ToConsumer() {
+      const LinkComponent = useLinkComponent();
+      return (
+        <LinkComponent
+          href="/fallback"
+          to="/routed"
+          data-testid="resolved-link">
+          Link
+        </LinkComponent>
+      );
+    }
+    render(
+      <LinkProvider component={SpyLink}>
+        <ToConsumer />
+      </LinkProvider>,
+    );
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: '/fallback', to: '/routed'}),
+    );
+  });
+});
+
+// =============================================================================
 // LinkProvider
 // =============================================================================
 

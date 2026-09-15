@@ -16,6 +16,7 @@
  */
 
 import {useCallback, useEffect, type RefObject, type MouseEvent} from 'react';
+import {isSafeUrl} from '../utils/safeUrl';
 
 /**
  * Canonical list of interactive element selectors — native controls plus
@@ -180,17 +181,21 @@ export function useClickableContainer({
         return;
       }
 
-      // Navigate if href is provided
+      // Navigate if href is provided. React DOM vets the hrefs it writes as
+      // attributes; these imperative navigations never pass through React, so
+      // they apply the same scheme rule themselves.
       if (href != null) {
         const shouldOpenNewTab =
           target === '_blank' || event.ctrlKey || event.metaKey;
         if (shouldOpenNewTab) {
-          window.open(href, '_blank', 'noopener');
+          if (isSafeUrl(href)) {
+            window.open(href, '_blank', 'noopener');
+          }
         } else if (interactiveRef?.current) {
           // Proxy click to the sr-only link so the framework link component
           // handles navigation (client-side transitions in Next.js, etc.).
           interactiveRef.current.click();
-        } else {
+        } else if (isSafeUrl(href)) {
           // eslint-disable-next-line react-compiler/react-compiler -- browser navigation API
           window.location.href = href;
         }
@@ -230,11 +235,13 @@ export function useClickableContainer({
         return;
       }
 
-      // Middle-click on href opens in new tab
+      // Middle-click on href opens in new tab (same scheme rule as onClick —
+      // this navigation never passes through React either).
       const isMiddleClick = event.button === 1;
       if (
         isMiddleClick &&
         href != null &&
+        isSafeUrl(href) &&
         (eventTarget === event.currentTarget ||
           !hasInteractiveAncestor(eventTarget, containerEl))
       ) {
