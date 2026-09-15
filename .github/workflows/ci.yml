@@ -295,6 +295,25 @@ jobs:
       - run: pnpm vitest run --project node
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
+      # Theme-family compilation is owned by `theme-build`, not Build. Until
+      # that surface has an admitted dedicated lane, broad CI keeps its browser
+      # contract inside the existing Node test owner rather than `test-build`.
+      - name: Install Playwright for theme-family contract
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: npx playwright install chromium
+
+      - name: Build theme-family compiler dependencies
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Generate the maintained theme-family fixture
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/sandbox generate:theme-family
+
+      - name: Run theme family cascade guard
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: node .github/scripts/theme-family-cascade.js
+
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
   # item through the exact pinned ShadCN client and compiles every written source.
@@ -359,23 +378,29 @@ jobs:
           ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES: '1'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
 
-  # Historical required check name. The two Vitest lanes and the public
-  # registry contract always report, so this asserts success rather than
-  # tolerating a skip.
+  # Historical required check name. The Vitest lanes, Build test owner, and
+  # public registry contract always report or explicitly skip, so this join
+  # projects their combined result without creating another surface lane.
   test:
-    needs: [test-ui, test-node, registry-contract]
+    needs: [check-scope, test-ui, test-node, test-build, registry-contract]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-slim
-    permissions: {}
+    permissions:
+      contents: read
     steps:
-      - name: Assert every test gate succeeded
-        run: |
-          echo "test-ui:          ${{ needs.test-ui.result }}"
-          echo "test-node:        ${{ needs.test-node.result }}"
-          echo "registry-contract: ${{ needs.registry-contract.result }}"
-          [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
-          [ "${{ needs.test-node.result }}" = "success" ] || exit 1
-          [ "${{ needs.registry-contract.result }}" = "success" ] || exit 1
+      - uses: actions/checkout@v7
+
+      - name: Require expected test-owner outcomes
+        env:
+          CHECK_SCOPE_RESULT: ${{ needs.check-scope.result }}
+          DOCSITE_ONLY: ${{ needs.check-scope.outputs.docsite_only }}
+          SPEC_ONLY: ${{ needs.check-scope.outputs.spec_only }}
+          TOOLING_ONLY: ${{ needs.check-scope.outputs.tooling_only }}
+          TEST_UI_RESULT: ${{ needs.test-ui.result }}
+          TEST_NODE_RESULT: ${{ needs.test-node.result }}
+          TEST_BUILD_RESULT: ${{ needs.test-build.result }}
+          REGISTRY_CONTRACT_RESULT: ${{ needs.registry-contract.result }}
+        run: node .github/scripts/ci-test-join.mjs
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
@@ -777,17 +802,12 @@ jobs:
       - name: Run accessibility spec-test contracts
         run: pnpm test:a11y-contract
 
-  # The layer order Astryx promises is Astryx < theme < product, and which
-  # declaration paints is a cascade fact no jsdom test can settle: the build has
-  # been wrong in both directions inside one week — unsplit, so StyleX outranked
-  # every theme, then wrapped instead of split, so an app's own styles lost to
-  # one. vite.build.test.ts reads the built stylesheet; this renders it.
-  #
-  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
-  # runs only when packages/core or packages/lab changed, and what this guards
-  # is packages/build — so hosting it there would skip it on exactly the PRs
-  # that can break it. Gated like `test` instead: everything but docsite-only.
-  theme-layers:
+  # Build package test owner. The plugin's production CSS partition is a Build
+  # integration contract: source inspection cannot prove which declaration
+  # paints after Vite emits the final bundle. The `test-build` name makes that
+  # package ownership explicit; the historical `test` join above projects its
+  # result. Until runtime:build has a specialized route, broad CI dispatches it.
+  test-build:
     needs: [check-scope]
     if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
@@ -806,20 +826,8 @@ jobs:
       - name: Build the Vite plugin
         run: pnpm -F @astryxdesign/build build
 
-      - name: Run theme layer cascade guard
+      - name: Run Build CSS-layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js
-
-      # AST-034's family contract is also a cascade contract: structural tests
-      # cannot prove identity switching, nested boundaries, media surfaces, or
-      # equal-specificity unrelated stylesheets in either physical order.
-      - name: Build theme-family compiler dependencies
-        run: pnpm -F @astryxdesign/core build
-
-      - name: Generate the maintained theme-family fixture
-        run: pnpm -F @astryxdesign/sandbox generate:theme-family
-
-      - name: Run theme family cascade guard
-        run: node .github/scripts/theme-family-cascade.js
 
   # Guest token boundaries cross portals and the host light/dark cascade. This
   # requires a production browser render; source and jsdom checks cannot prove
