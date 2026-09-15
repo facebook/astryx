@@ -109,7 +109,10 @@ their public value/prop types, `useTranslator`, `TranslatorFn`, `useLocale`,
   missing non-English translation silently falls back. A key absent from every
   source including English is a defect: development warns once and renders the
   key visibly. Malformed locale tags are outside this fallback guarantee and may
-  throw when platform formatters or collators are constructed.
+  throw when platform formatters or collators are constructed. Known bug: the
+  final step reads shipped English only, not a supplied `en` catalog, so
+  non-Astryx keys have no cross-locale fallback today; see
+  `component:InternationalizationProvider` OQ1.
 - **INV6 — English is the source contract.** `packages/core/locales/en.json`
   defines Astryx's key set, default messages, descriptions, and ICU runtime
   contracts. Translation catalogs may omit keys and fall back to English; they

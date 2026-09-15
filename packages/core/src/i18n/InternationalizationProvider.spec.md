@@ -112,7 +112,8 @@ Consumer prop syntax and examples remain in
 ### Allowed variation
 
 - **AV1 — Catalog completeness.** A non-English supplied catalog may contain any
-  subset of English keys; missing entries use fallback.
+  subset of English keys; missing entries use fallback. Today that fallback
+  reaches shipped English only, so it covers Astryx keys; see OQ1.
 - **AV2 — Locale specificity.** Callers may provide a regional, script, or base
   locale. The resolver canonicalizes and walks the corresponding parent chain.
 - **AV3 — Application integration.** Another i18n provider may wrap Astryx inside
@@ -216,12 +217,16 @@ and added rich-message complexity without demonstrated Astryx need.
 
 ## Open questions
 
-- **OQ1 — Supplied `en` as a fallback for non-Astryx keys.** Today shipped
-  English is the only cross-locale fallback and it holds Astryx keys only, so an
-  application key missing from the active locale renders as its key even when the
-  caller supplied an `en` catalog. Decide whether a supplied `en` catalog should
-  become a final fallback for every key, or whether consumer docs should stop
-  implying that it is. (`human-api`)
+- **OQ1 — Supplied `en` as a fallback for non-Astryx keys (known bug).** The
+  shipped English catalog is the only cross-locale fallback and it holds Astryx
+  keys only. An application or library key that is missing from the active
+  locale therefore renders as its raw key even when the caller supplied an `en`
+  catalog, which the consumer guide currently implies is a fallback. This
+  contradicts the intent of RFC #3641 and is tracked as a defect, not a design
+  choice. This record describes the shipped behavior until the fix lands; the fix
+  (consult a supplied `en` catalog before shipped English) changes FR1 and ORD1
+  and needs a test with a non-Astryx key that fails on today's resolver.
+  (`human-api`)
 - **OQ2 — Malformed locale behavior.** Decide whether a future release should
   reject invalid BCP 47 tags at the provider boundary or preserve today's
   formatter-specific throws. (`human-api`)
