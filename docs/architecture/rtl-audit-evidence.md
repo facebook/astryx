@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: architecture
 id: architecture:rtl-audit-evidence
 authority: draft
@@ -12,6 +12,7 @@ owners: [cixzhang, imdreamrunner, nynexman4464]
 applies_to:
   [
     apps/storybook/rtl-audit/,
+    scripts/component-packages.cjs,
     .github/workflows/ci.yml,
     .github/workflows/rtl-weekly.yml,
     .github/scripts/rtl-audit-coverage.test.mjs,
@@ -29,6 +30,20 @@ deciding_specs: []
 
 # RTL audit evidence architecture
 
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Governing contract      | `design:bidirectionality` owns what correct RTL behavior means; component contracts own local adoption. No product contract changes; this record owns evidence admission and freshness.                                                                                             |
+| System behavior         | Every component in the live roster of registered component packages is rendered LTR and RTL and graded as a relationship. Results are measured, verified N/A, coverage gap, or behavior failure. Lint and rendered audit prove different claims and do not substitute.              |
+| End-user impact         | People reading RTL interfaces are protected by evidence that actually observed mirroring, ordering, placement, geometry, and behavior, rather than by a green report that measured nothing.                                                                                         |
+| Builder impact          | A new or changed component must either be measured by an applicable check or carry an explicit gap; behavior failures have no allowlist. Verified-N/A and pre-existing-debt admission await owner decisions (OQ1, OQ2).                                                             |
+| Compatibility/readiness | Draft. Measured, coverage-gap, behavior-failure, and applicable-dimension staleness are shipped behavior; verified-N/A closure, byte-bound invalidation, known-debt baselines, D7 size enforcement, and required-check status are unresolved or unimplemented.                      |
+| Review checks           | Reject lint standing in for rendered evidence (INV1); an allowlist that relabels a behavior failure (INV3); all-N/A credited as RTL-ready (INV4); a component dropping from the roster because its story moved (INV5); a new dimension without a red/green mutation receipt (INV9). |
+| Governing rules         | No deciding system spec; `architecture:knowledge-contracts` evidence-freshness and human-decision rules apply.                                                                                                                                                                      |
+
+This table is a review projection; the body below is authoritative.
+
 ## Purpose
 
 Astryx needs review evidence that distinguishes three claims:
@@ -45,7 +60,7 @@ system and the policy choices still requiring owner approval.
 
 ```text
 changed component or full-library sweep
-  → discover the live Core/Lab component roster
+  → discover the live component roster across every registered component package
   → render relevant stories LTR and RTL
   → run automatic relationship checks
   → run curated component checks
@@ -83,16 +98,20 @@ Lint and rendered audit are complementary:
 - **INV4 — All-N/A is not measured.** A component for which every dimension is N/A
   has no positive RTL evidence. It is either verified not applicable under an
   admitted evidence policy or remains a coverage gap/debt.
-- **INV5 — The live source roster owns coverage.** A component cannot disappear
-  from review merely because it has no story or because its story title changed.
-  Missing renderability is itself a coverage gap when the component is in scope.
+- **INV5 — The live source roster owns coverage.** The roster is every public
+  component of every package registered as a component package, not only Core
+  and Lab. A component cannot disappear from review merely because it has no
+  story or because its story title changed. Missing renderability is itself a
+  coverage gap when the component is in scope.
 - **INV6 — Automatic and curated coverage compose.** Generic checks cover broadly
   discoverable icon, decoration, and positional relationships. Component-specific
   selectors are used only for semantics generic discovery cannot infer, such as
   order, scroll direction, overlay side, or touch-target ownership.
 - **INV7 — CI scope and weekly scope answer different questions.** PR CI checks
-  components affected by the change. The scheduled unfiltered audit checks the
-  full live roster and shared regressions. Neither silently replaces the other.
+  components affected by the change; it may run per package, but the PR result is
+  the join of every package scope and cannot pass with one scope missing. The
+  scheduled unfiltered audit checks the full live roster and shared regressions.
+  Neither silently replaces the other.
 - **INV8 — Applicable evidence invalidates N/A.** A new applicable automatic or
   curated dimension MUST make an existing verified-N/A declaration stale. Source-
   and story-byte invalidation is a proposed additional closure requirement, not a
@@ -131,13 +150,16 @@ mechanics but cannot claim the unresolved policy as settled.
 - `apps/storybook/rtl-audit/rtl-audit.mjs` — renders and compares LTR/RTL behavior.
 - `apps/storybook/rtl-audit/rtl-audit-coverage.mjs` — discovers the live roster and
   combines measured, N/A, and gap states.
+- `scripts/component-packages.cjs` — the registry of component packages whose
+  public components form the roster.
 - `apps/storybook/rtl-audit/targets.json` — curated D2/D3/D4/D7 behavior targets.
 - `apps/storybook/rtl-audit/verified-not-applicable.json` — candidate verified-N/A
   registry; its admission policy is unresolved in this draft.
 - `apps/storybook/rtl-audit/known-coverage-gaps.json` — proposed by PR #5988
   for pre-existing debt; this file is not present on current `main`, and its
   admission policy is unresolved in this draft.
-- `.github/workflows/ci.yml` — affected-component PR audit.
+- `.github/workflows/ci.yml` — affected-component PR audit, sharded per component
+  package and joined into one result.
 - `.github/workflows/rtl-weekly.yml` — full-roster scheduled audit.
 - `internal/eslint-plugin-astryx/no-physical-properties.js` — source-provable
   physical/logical declaration constraints.
