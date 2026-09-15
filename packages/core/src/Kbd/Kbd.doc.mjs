@@ -27,7 +27,7 @@ export const docs = {
       name: 'keys',
       type: 'string',
       description:
-        'Keyboard shortcut string. Use "+" to separate keys. Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right.',
+        'Keyboard shortcut string. Use "+" to separate keys. Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right. Also accepts the "esc" and "return" aliases useHotkeys uses for the same combo string.',
       required: true,
     },
     {
@@ -122,7 +122,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    keys: 'Shortcut string. "+" separates keys. Special: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right.',
+    keys: 'Shortcut string. "+" separates keys. Special: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right. Also accepts "esc"/"return" aliases.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
     className: 'CSS class for root element. Prefer xstyle; className for non-StyleX integration.',
     style: 'Inline styles for root element. Prefer xstyle; inline styles bypass StyleX optimization.',

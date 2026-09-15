@@ -57,6 +57,18 @@ const styles = stylex.create({
 });
 
 /**
+ * Aliases that `useHotkeys` accepts in the same '+'-separated combo string
+ * (its own `KEY_ALIASES`) and that map onto a name `KEY_DISPLAY`/`KEY_LABEL`
+ * already cover below. Narrower than `useHotkeys`' own list on purpose:
+ * `meta` and `space` are a platform/design decision for a maintainer, not a
+ * plain naming gap, so they are left unresolved here (#5403).
+ */
+const KEY_ALIASES: Record<string, string> = {
+  esc: 'escape',
+  return: 'enter',
+};
+
+/**
  * Map of modifier key names to display symbols.
  * Note: `mod` is not in this map — it resolves dynamically via platform
  * detection inside the component.
@@ -85,7 +97,8 @@ function getKeyDisplay(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? '\u2318' : 'Ctrl';
   }
-  return KEY_DISPLAY[key] ?? key.toUpperCase();
+  const resolved = KEY_ALIASES[key] ?? key;
+  return KEY_DISPLAY[resolved] ?? resolved.toUpperCase();
 }
 
 /**
@@ -112,7 +125,8 @@ function getKeyLabel(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? 'Command' : 'Control';
   }
-  return KEY_LABEL[key] ?? key.toUpperCase();
+  const resolved = KEY_ALIASES[key] ?? key;
+  return KEY_LABEL[resolved] ?? resolved.toUpperCase();
 }
 
 function subscribeToPlatformChanges(): () => void {
@@ -128,6 +142,8 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
+   * Also accepts the "esc" and "return" aliases `useHotkeys` uses for the
+   * same combo string, resolved to escape/enter respectively.
    * Use "plus" to render a literal "+" key (e.g. "shift+plus").
    *
    * @example
