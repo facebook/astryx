@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  278 targets, 906 selectors (generated from the docs)
+//   components  282 targets, 913 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2052,6 +2052,30 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(240.3 74% 25%)',
       },
     },
+    'dialog-header': {
+      base: {
+        backgroundColor: 'hsl(312.1 73% 56%)',
+        color: 'hsl(253.8 72% 12%)',
+        borderColor: 'hsl(79.0 70% 25%)',
+        outlineColor: 'hsl(252.5 77% 25%)',
+      },
+    },
+    'dialog-header-close-icon': {
+      base: {
+        backgroundColor: 'hsl(90.9 85% 52%)',
+        color: 'hsl(55.2 71% 12%)',
+        borderColor: 'hsl(180.8 84% 25%)',
+        outlineColor: 'hsl(215.4 89% 25%)',
+      },
+    },
+    'dialog-header-title-block': {
+      base: {
+        backgroundColor: 'hsl(279.3 88% 58%)',
+        color: 'hsl(210.9 80% 12%)',
+        borderColor: 'hsl(219.8 84% 25%)',
+        outlineColor: 'hsl(358.8 73% 25%)',
+      },
+    },
     divider: {
       base: {
         backgroundColor: 'hsl(26.4 77% 53%)',
@@ -3971,6 +3995,32 @@ export const probeTheme = defineTheme({
         color: 'hsl(288.1 94% 12%)',
         borderColor: 'hsl(264.7 79% 25%)',
         outlineColor: 'hsl(58.8 73% 25%)',
+      },
+    },
+    'scrollable-area': {
+      base: {
+        backgroundColor: 'hsl(170.2 82% 57%)',
+        color: 'hsl(26.0 76% 12%)',
+        borderColor: 'hsl(40.8 70% 25%)',
+        outlineColor: 'hsl(17.3 90% 25%)',
+      },
+      'axis:inline': {
+        backgroundColor: 'hsl(118.1 92% 62%)',
+        color: 'hsl(340.0 75% 12%)',
+        borderColor: 'hsl(98.6 94% 25%)',
+        outlineColor: 'hsl(163.6 70% 25%)',
+      },
+      'axis:block': {
+        backgroundColor: 'hsl(310.5 79% 45%)',
+        color: 'hsl(156.4 74% 12%)',
+        borderColor: 'hsl(34.4 81% 25%)',
+        outlineColor: 'hsl(180.6 89% 25%)',
+      },
+      'axis:both': {
+        backgroundColor: 'hsl(170.0 84% 52%)',
+        color: 'hsl(112.4 74% 12%)',
+        borderColor: 'hsl(281.8 89% 25%)',
+        outlineColor: 'hsl(288.5 81% 25%)',
       },
     },
     section: {
