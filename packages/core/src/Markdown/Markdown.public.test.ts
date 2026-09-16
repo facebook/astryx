@@ -2,23 +2,28 @@
 
 /**
  * @file Markdown.public.test.ts
- * @input Imports Markdown parser functions and node types from the public barrel
- * @output Compile-time compatibility coverage for legacy and math-enabled results
+ * @input Imports Markdown parser, plugin factory, visitor, and node types from the public barrel
+ * @output Compile-time compatibility coverage for legacy, math-enabled, and plugin results
  * @position Public API test guarding @astryxdesign/core/Markdown
  */
 
 import {describe, expectTypeOf, it} from 'vitest';
 import {
   createIncrementalState,
+  createMarkdownPlugin,
+  isMarkdownExtensionNode,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
+  visitMarkdownNodes,
 } from './index';
 import type {
   BlockNode,
   BlockNodeWithMath,
   InlineNode,
   InlineNodeWithMath,
+  MarkdownExtensionNode,
+  MarkdownSyntaxPluginDefinition,
   ParseOptions,
 } from './index';
 
@@ -153,5 +158,50 @@ describe('Markdown public parser types', () => {
     expectTypeOf<
       Extract<BlockNodeWithMath, {type: 'math'}>['value']
     >().toBeString();
+  });
+
+  it('exports typed plugin construction and node-kind visitors', () => {
+    type PublicNode = MarkdownExtensionNode<
+      'public-demo',
+      'token',
+      {readonly label: string},
+      'inline'
+    >;
+    const definition = {
+      name: 'public-demo',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        inline: [
+          {
+            startsWith: ['::'],
+            maxSpan: 20,
+            tokenize: () => ({status: 'no-match'}) as const,
+          },
+        ],
+      },
+      renderers: {
+        token: {
+          render: () => null,
+          toText: node => node.data.label,
+        },
+      },
+    } satisfies MarkdownSyntaxPluginDefinition<'public-demo', PublicNode>;
+    const plugin = createMarkdownPlugin<'public-demo', PublicNode>(definition);
+    const nodes = parseInline('plain', {plugins: [plugin] as const});
+
+    expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
+    expectTypeOf(visitMarkdownNodes).toBeFunction();
+    expectTypeOf(isMarkdownExtensionNode).toBeFunction();
+
+    function compileOnlyPluginGuards() {
+      // @ts-expect-error transforms that own extension nodes require renderers
+      createMarkdownPlugin<'public-demo', PublicNode>({
+        name: 'public-demo',
+        apiVersion: 1,
+        transform: root => root,
+      });
+    }
+    expectTypeOf(compileOnlyPluginGuards).toBeFunction();
   });
 });

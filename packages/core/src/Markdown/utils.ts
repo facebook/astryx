@@ -2,9 +2,38 @@
 
 /**
  * @file utils.ts
- * @output Server-safe re-exports of pure Markdown parser functions
+ * @output Server-safe exports for Markdown parsing, plugin construction, and AST traversal
  * @position Subpath entry point: `@astryxdesign/core/Markdown/utils`
  */
+
+export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
+export type {
+  MarkdownPluginData,
+  MarkdownExtensionNode,
+  MarkdownTokenizerInput,
+  MarkdownTokenizeResult,
+  MarkdownSyntaxContribution,
+  MarkdownSyntaxCapability,
+  MarkdownTransformContext,
+  MarkdownTransform,
+  MarkdownExtensionRenderer,
+  MarkdownExtensionRenderers,
+  MarkdownSyntaxPluginDefinition,
+  MarkdownTransformPluginDefinition,
+  MarkdownPluginDefinition,
+  MarkdownPluginEntry,
+  MarkdownNodeOf,
+  MarkdownExtensionsOf,
+} from './plugins';
+export {visitMarkdownNodes} from './ast';
+export type {
+  MarkdownAstExtensionNode,
+  MarkdownAstPhrasingContent,
+  MarkdownAstBlockContent,
+  MarkdownAstRoot,
+  MarkdownAstNodeMap,
+  MarkdownAstNode,
+} from './ast';
 
 export {
   parseMarkdown,
@@ -26,5 +55,7 @@ export type {
   TableAlignment,
   ParseOptions,
   MathParseOptions,
+  IncrementalParseOptions,
+  IncrementalMathParseOptions,
   IncrementalState,
 } from './parser';
