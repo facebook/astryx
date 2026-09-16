@@ -117,3 +117,8 @@ export {
   SPINBUTTON_PATTERN,
   type SpinbuttonStateFacts,
 } from './patterns/spinbutton';
+
+export {
+  DISCLOSURE_PATTERN,
+  type DisclosureStateFacts,
+} from './patterns/disclosure';
