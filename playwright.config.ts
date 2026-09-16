@@ -37,6 +37,9 @@ export default defineConfig({
     'internal/a11y-spec/src/**/*.chromium.spec.ts',
     // Component bindings.
     'packages/*/src/**/*.a11y.chromium.spec.ts',
+    // Real-layout regressions that are not accessibility-tree bindings (e.g.
+    // CSS anchor positioning), which jsdom cannot exercise.
+    'packages/*/src/**/*.chromium.spec.ts',
   ],
   // The contract mounts, focuses, and types into one page at a time; parallel
   // workers would race over real keyboard focus.
