@@ -2,6 +2,7 @@
 
 /**
  * @file ChartAxis.tsx (v2)
+ * @input Chart context scales, axis presentation props, and grapheme-safe text utilities
  * @output Renders an axis (top, right, bottom, left) using the chart's scales
  * @position Child of Chart v2; reads scales from chart context
  *
@@ -19,6 +20,7 @@
 
 import {useCallback, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {characterCount, truncateCharacters} from '@astryxdesign/core/utils';
 import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
@@ -33,7 +35,7 @@ export interface ChartAxisProps {
   maxTicks?: number;
   /** Custom tick formatter */
   tickFormat?: (value: unknown) => string;
-  /** Truncate labels to this many characters (appends "\u2026"). */
+  /** Truncate labels to this many user-perceived characters (appends "\u2026"). */
   truncate?: number;
   /** Enable smooth transitions for streaming (default: true) */
   animated?: boolean;
@@ -121,8 +123,8 @@ export function ChartAxis({
   const format = useCallback(
     (value: unknown): string => {
       const str = (tickFormat ?? autoFormat ?? String)(value);
-      return truncate && str.length > truncate
-        ? str.slice(0, truncate) + '\u2026'
+      return truncate && characterCount(str) > truncate
+        ? truncateCharacters(str, truncate, '') + '\u2026'
         : str;
     },
     [tickFormat, autoFormat, truncate],

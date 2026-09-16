@@ -112,6 +112,11 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-axis",
+      "path": "components/charts/chart-axis",
+      "aliases": []
+    },
+    {
       "name": "component-charts-chart-swatch",
       "path": "components/charts/chart-swatch",
       "aliases": []

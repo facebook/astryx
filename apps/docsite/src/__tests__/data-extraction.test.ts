@@ -244,6 +244,7 @@ describe('componentRegistry', () => {
     expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
     expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
       'Chart',
+      'ChartAxis',
       'ChartSwatch',
     ]);
     expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
