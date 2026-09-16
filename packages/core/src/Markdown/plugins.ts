@@ -9,7 +9,7 @@
 
 import type React from 'react';
 import {warnOnce} from '../utils/devWarning';
-import {isSafeMarkdownTransformedUrl} from './url';
+import {isSafeMarkdownParserUrl} from './url';
 import type {
   MarkdownAstDataValue,
   MarkdownAstExtensionNode,
@@ -556,13 +556,25 @@ function collectExtensionSignatures(
   return signatures;
 }
 
-function collectHeadingDepths(
+const sourceHeadingMarker = Symbol('MarkdownSourceHeading');
+
+interface SourceHeadingMarker {
+  readonly depth: number;
+}
+
+function markSourceHeadings(
   root: MarkdownAstRoot<MarkdownExtensionNode>,
-): number[] {
-  const depths: number[] = [];
+): void {
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
-    if (node.type === 'heading') {
-      depths.push((node as unknown as {readonly depth: number}).depth);
+    if (node.type === 'heading' && !(sourceHeadingMarker in node)) {
+      Object.defineProperty(node, sourceHeadingMarker, {
+        configurable: false,
+        enumerable: true,
+        value: Object.freeze({
+          depth: (node as unknown as {readonly depth: number}).depth,
+        } satisfies SourceHeadingMarker),
+        writable: false,
+      });
     }
     if ('children' in node && Array.isArray(node.children)) {
       for (const child of node.children) {
@@ -573,7 +585,6 @@ function collectHeadingDepths(
     }
   };
   visit(root);
-  return depths;
 }
 
 const PHRASING_TYPES = new Set([
@@ -622,7 +633,6 @@ function validateAst(
   pluginNames: ReadonlySet<string>,
   rendererKeys: ReadonlySet<string>,
   sourcePositions: Map<string, SourceInvariant[]>,
-  expectedHeadingDepths: ReadonlyArray<number>,
   activePluginName: string,
   existingExtensions: Map<string, ExistingExtension>,
   display: 'inline' | 'block',
@@ -631,9 +641,13 @@ function validateAst(
     return false;
   }
   const seen = new Set<object>();
-  const headingDepths: number[] = [];
+  const seenHeadingMarkers = new Set<SourceHeadingMarker>();
   let count = 0;
-  const visit = (value: unknown, parent: string | null): boolean => {
+  const visit = (
+    value: unknown,
+    parent: string | null,
+    insideLink: boolean,
+  ): boolean => {
     if (value == null || typeof value !== 'object' || seen.has(value)) {
       return false;
     }
@@ -658,7 +672,7 @@ function validateAst(
       if (
         (PHRASING_PARENTS.has(parent) && !phrasing) ||
         (BLOCK_PARENTS.has(parent) && !block) ||
-        (parent === 'link' && type === 'link') ||
+        (insideLink && type === 'link') ||
         (parent === 'list' && type !== 'listItem') ||
         (parent === 'table' && type !== 'tableRow') ||
         (parent === 'tableRow' && type !== 'tableCell')
@@ -709,12 +723,26 @@ function validateAst(
           return false;
         }
         break;
-      case 'heading':
+      case 'heading': {
         if (![1, 2, 3, 4, 5, 6].includes(node.depth as number)) {
           return false;
         }
-        headingDepths.push(node.depth as number);
+        const marker = (
+          node as unknown as {
+            readonly [sourceHeadingMarker]?: SourceHeadingMarker;
+          }
+        )[sourceHeadingMarker];
+        if (
+          marker != null &&
+          (marker.depth !== node.depth || seenHeadingMarkers.has(marker))
+        ) {
+          return false;
+        }
+        if (marker != null) {
+          seenHeadingMarkers.add(marker);
+        }
         break;
+      }
       case 'text':
       case 'inlineCode':
       case 'inlineMath':
@@ -734,7 +762,7 @@ function validateAst(
       case 'link':
         if (
           typeof node.url !== 'string' ||
-          !isSafeMarkdownTransformedUrl(node.url)
+          !isSafeMarkdownParserUrl(node.url)
         ) {
           return false;
         }
@@ -742,7 +770,7 @@ function validateAst(
       case 'image':
         if (
           typeof node.url !== 'string' ||
-          !isSafeMarkdownTransformedUrl(node.url) ||
+          !isSafeMarkdownParserUrl(node.url) ||
           typeof node.alt !== 'string'
         ) {
           return false;
@@ -822,7 +850,7 @@ function validateAst(
         return false;
       }
       for (const child of node.children) {
-        if (!visit(child, type)) {
+        if (!visit(child, type, insideLink || type === 'link')) {
           return false;
         }
       }
@@ -833,12 +861,8 @@ function validateAst(
   };
   const candidate = root as MarkdownAstRoot<MarkdownExtensionNode>;
   return (
-    visit(candidate, null) &&
+    visit(candidate, null, false) &&
     candidate.type === 'root' &&
-    headingDepths.length === expectedHeadingDepths.length &&
-    headingDepths.every(
-      (depth, index) => depth === expectedHeadingDepths[index],
-    ) &&
     Array.from(existingExtensions.values()).every(
       extension =>
         extension.plugin === activePluginName || extension.count === 0,
@@ -896,6 +920,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
   }
   const pluginNames = new Set(plugins.entries.map(entry => entry.name));
   const rendererKeys = new Set(plugins.renderers.keys());
+  markSourceHeadings(root);
   let document = freezeAst(root);
   for (const prepared of plugins.transforms) {
     try {
@@ -922,7 +947,6 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
         continue;
       }
       const positions = collectSourceInvariants(document);
-      const headingDepths = collectHeadingDepths(document);
       const existingExtensions = collectExtensionSignatures(document);
       if (
         !validateAst(
@@ -930,7 +954,6 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
           pluginNames,
           rendererKeys,
           positions,
-          headingDepths,
           prepared.pluginName,
           existingExtensions,
           display,

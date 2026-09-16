@@ -41,6 +41,10 @@ type BrokenMentionNode = MarkdownExtensionNode<
   'inline'
 >;
 
+function ThrowingRendererChild(): never {
+  throw new Error('broken renderer child');
+}
+
 type InvalidSyntaxNode = MarkdownExtensionNode<
   'invalid-syntax',
   'mention',
@@ -279,6 +283,12 @@ describe('Markdown plugin protocol', () => {
     expect(() =>
       parseMarkdown('plain', {plugins: [mentionPlugin, mentionPlugin]}),
     ).toThrow(/duplicate name/);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const duplicate = render(
+      <Markdown plugins={[mentionPlugin, mentionPlugin]}>plain</Markdown>,
+    );
+    expect(duplicate.getByText('plain')).toBeInTheDocument();
+    duplicate.unmount();
 
     const invalid = createMarkdownPlugin<'invalid-syntax', InvalidSyntaxNode>({
       ...mentionDefinition,
@@ -294,7 +304,6 @@ describe('Markdown plugin protocol', () => {
       },
       renderers: mentionDefinition.renderers,
     } as never);
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(parseMarkdown('Hello @{Ada}', {plugins: [invalid]})).toEqual([
       {
         type: 'paragraph',
@@ -382,6 +391,31 @@ describe('Markdown plugin protocol', () => {
     warning.mockRestore();
   });
 
+  it('allows synthetic headings without changing source-backed depth', () => {
+    const addHeading = createMarkdownPlugin({
+      name: 'add-heading',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: [
+            ...root.children,
+            {
+              type: 'heading' as const,
+              depth: 2 as const,
+              children: [{type: 'text' as const, value: 'Generated'}],
+            },
+          ],
+        };
+      },
+    });
+
+    expect(parseMarkdown('# Source', {plugins: [addHeading]})).toMatchObject([
+      {type: 'heading', level: 1},
+      {type: 'heading', level: 2, children: [{content: 'Generated'}]},
+    ]);
+  });
+
   it('rejects unsafe destinations, forged provenance, and foreign deletion', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const unsafeDestination = createMarkdownPlugin({
@@ -399,6 +433,42 @@ describe('Markdown plugin protocol', () => {
                       type: 'link' as const,
                       url: 'javascript:alert(1)',
                       children: [{type: 'text' as const, value: 'unsafe'}],
+                    },
+                  ],
+                }
+              : block,
+          ),
+        };
+      },
+    });
+    const nestedLink = createMarkdownPlugin({
+      name: 'nested-link',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'paragraph'
+              ? {
+                  ...block,
+                  children: [
+                    {
+                      type: 'link' as const,
+                      url: '/outer',
+                      children: [
+                        {
+                          type: 'strong' as const,
+                          children: [
+                            {
+                              type: 'link' as const,
+                              url: '/inner',
+                              children: [
+                                {type: 'text' as const, value: 'nested'},
+                              ],
+                            },
+                          ],
+                        },
+                      ],
                     },
                   ],
                 }
@@ -456,6 +526,20 @@ describe('Markdown plugin protocol', () => {
     expect(parseMarkdown('Safe', {plugins: [unsafeDestination]})).toMatchObject(
       [{type: 'paragraph', children: [{type: 'text', content: 'Safe'}]}],
     );
+    expect(parseMarkdown('Safe', {plugins: [nestedLink]})).toMatchObject([
+      {type: 'paragraph', children: [{type: 'text', content: 'Safe'}]},
+    ]);
+    const identityReplacement = replaceText('missing', 'unchanged');
+    expect(
+      parseMarkdown('![pic](data:image/png;base64,abc)', {
+        plugins: [identityReplacement],
+      }),
+    ).toMatchObject([{type: 'image', src: 'data:image/png;base64,abc'}]);
+    expect(
+      parseMarkdown('[empty]()', {plugins: [identityReplacement]}),
+    ).toMatchObject([
+      {type: 'paragraph', children: [{type: 'link', href: ''}]},
+    ]);
     expect(parseMarkdown('Safe', {plugins: [forgedSource]})).toMatchObject([
       {type: 'paragraph', children: [{type: 'text', content: 'Safe'}]},
     ]);
@@ -646,10 +730,44 @@ describe('Markdown plugin protocol', () => {
         },
       },
     });
+    const descendant = createMarkdownPlugin<
+      'broken-mentions',
+      BrokenMentionNode
+    >({
+      ...mentionDefinition,
+      name: 'broken-mentions',
+      syntax: {
+        inline: [
+          {
+            ...mentionDefinition.syntax.inline[0],
+            tokenize(input) {
+              const result = mentionDefinition.syntax.inline[0].tokenize(input);
+              return result.status === 'match'
+                ? {
+                    ...result,
+                    node: {...result.node, plugin: 'broken-mentions' as const},
+                  }
+                : result;
+            },
+          },
+        ],
+      },
+      renderers: {
+        mention: {
+          render: () => <ThrowingRendererChild />,
+          toText: node => `@${node.data.label}`,
+        },
+      },
+    });
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(
       renderToString(<Markdown plugins={[broken]}>{'Hello @{Ada}'}</Markdown>),
+    ).toContain('@{Ada}');
+    expect(
+      renderToString(
+        <Markdown plugins={[descendant]}>{'Hello @{Ada}'}</Markdown>,
+      ),
     ).toContain('@{Ada}');
     render(<Markdown plugins={[broken]}>{'Hello @{Ada}'}</Markdown>);
     expect(screen.getByText(/@\{Ada\}/)).toBeInTheDocument();

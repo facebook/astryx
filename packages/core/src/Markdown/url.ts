@@ -22,12 +22,6 @@ export function isSafeMarkdownParserUrl(url: string): boolean {
   return !PARSER_DANGEROUS_URL_PATTERN.test(normalizeMarkdownUrl(url));
 }
 
-/** Apply the stricter DOM/resource policy to transformed destinations. */
-export function isSafeMarkdownTransformedUrl(url: string): boolean {
-  const normalized = normalizeMarkdownUrl(url);
-  return normalized !== '' && !RENDER_DANGEROUS_URL_PATTERN.test(normalized);
-}
-
 export function sanitizeMarkdownUrl(url: string): string | null {
   const normalized = normalizeMarkdownUrl(url);
   return normalized !== '' && !RENDER_DANGEROUS_URL_PATTERN.test(normalized)

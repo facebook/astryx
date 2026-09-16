@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, useMemo, useRef} from 'react';
+import {Component, Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1082,7 +1082,7 @@ function renderInline(
           resetKey={node}
           resetRenderer={renderer.render}
           fallback={fallback}>
-          {rendered}
+          <Suspense fallback={fallback}>{rendered}</Suspense>
         </MarkdownPluginBoundary>
       );
     }
@@ -1723,7 +1723,7 @@ function renderBlock(
               resetKey={node}
               resetRenderer={renderer.render}
               fallback={fallback}>
-              {rendered}
+              <Suspense fallback={fallback}>{rendered}</Suspense>
             </MarkdownPluginBoundary>
           );
         } catch (error) {
@@ -1855,13 +1855,17 @@ export function Markdown<
     [sources],
   );
 
-  const preparedPlugins = useMemo(
-    () =>
-      plugins == null
-        ? undefined
-        : prepareMarkdownPlugins(plugins as ReadonlyArray<MarkdownPluginEntry>),
-    [plugins],
-  );
+  const preparedPlugins = useMemo(() => {
+    if (plugins == null) {
+      return undefined;
+    }
+    try {
+      return prepareMarkdownPlugins(plugins);
+    } catch (error) {
+      reportMarkdownPluginFailure('configuration', 'transform', error);
+      return undefined;
+    }
+  }, [plugins]);
   const syntaxPlugins = useStableMarkdownSyntaxEntries(preparedPlugins);
   const hasMathRenderer = components?.math != null;
   const legacyParseOptions = useMemo<

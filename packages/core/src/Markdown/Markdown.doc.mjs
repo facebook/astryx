@@ -145,7 +145,7 @@ export const docs = {
       name: 'plugins',
       type: 'readonly MarkdownPluginEntry[]',
       description:
-        'Ordered extensions created by createMarkdownPlugin(). Plugins may add bounded syntax, immutable typed AST transforms, and typed extension renderers. Omitted and empty lists preserve the released Markdown behavior.',
+        'Ordered extensions created by createMarkdownPlugin(). Plugins may add bounded syntax, immutable typed AST transforms, and typed extension renderers. Renderer callbacks are pure; return a child component when hooks are needed. Omitted and empty lists preserve the released Markdown behavior.',
     },
     {
       name: 'inlinePlugins',
@@ -435,7 +435,7 @@ export const docsZh = {
       name: 'plugins',
       type: 'readonly MarkdownPluginEntry[]',
       description:
-        '由 createMarkdownPlugin() 创建的有序扩展。插件可添加有界语法、不可变的类型化 AST 转换和类型化扩展渲染器。省略或传入空列表时保持已发布的 Markdown 行为。',
+        '由 createMarkdownPlugin() 创建的有序扩展。插件可添加有界语法、不可变的类型化 AST 转换和类型化扩展渲染器。渲染回调必须是纯函数；需要 Hook 时请返回子组件。省略或传入空列表时保持已发布的 Markdown 行为。',
     },
     {
       name: 'inlinePlugins',
@@ -649,7 +649,7 @@ export const docsDense = {
     contentAlign:
       "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
     plugins:
-      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Default: omitted or empty.',
+      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Renderer callbacks are pure. Default: omitted or empty.',
     inlinePlugins:
       'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
     autolink:
