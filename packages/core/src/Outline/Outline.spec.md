@@ -12,7 +12,7 @@ owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
   [packages/core/src/Outline/Outline.test.tsx, scripts/check-knowledge.mjs]
-modules: []
+modules: [module:Outline/parseOutlineFromMarkdown]
 families: []
 design_specs: []
 architecture: [architecture:component-theming-surface]
@@ -116,15 +116,15 @@ target does not decide that the part must remain unthemeable.
 
 ```json
 {
-  "Outline": {"target": "outline"},
-  "Heading link": {"target": "outline-item"},
-  "Label": {"inherits": "outline-item"},
+  "Outline": { "target": "outline" },
+  "Heading link": { "target": "outline-item" },
+  "Label": { "inherits": "outline-item" },
   "Indicator track": {
     "none": {
       "reason": "unsettled: No current public target reaches this part"
     }
   },
-  "Active indicator": {"target": "outline-indicator"}
+  "Active indicator": { "target": "outline-indicator" }
 }
 ```
 
