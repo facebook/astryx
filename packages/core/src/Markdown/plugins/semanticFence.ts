@@ -7,12 +7,15 @@
  * @position Optional helper layer compiled onto the core transform protocol
  */
 
-import type {MarkdownAstBlockContent, MarkdownAstCode} from '../ast';
+import type {
+  MarkdownAstBlockContent,
+  MarkdownAstCode,
+  MarkdownAstListItem,
+} from '../ast';
 import {
-  freezeMarkdownPluginData,
-  getMarkdownTransformPluginName,
-  isMarkdownPluginData,
+  getMarkdownHelperOwnership,
   markMarkdownTransformClaim,
+  markMarkdownTransformTrusted,
   type MarkdownExtensionNode,
   type MarkdownPluginData,
   type MarkdownTransform,
@@ -74,33 +77,74 @@ export function getMarkdownFenceProposal(
   return (node as FenceCode)[markdownFenceProposal];
 }
 
-function clonePluginData<Data extends MarkdownPluginData>(value: Data): Data {
+function cloneNestedPluginData(
+  value: unknown,
+  parent: object,
+  ancestors: ReadonlySet<object> | undefined,
+): MarkdownPluginData {
   if (value == null || typeof value !== 'object') {
-    return value;
+    return clonePluginData(value, ancestors);
   }
-  if (Array.isArray(value)) {
-    const clone: MarkdownPluginData[] = [];
-    for (const item of value) {
-      clone.push(clonePluginData(item));
-    }
-    return clone as unknown as Data;
-  }
-  return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [
-      key,
-      clonePluginData(nested),
-    ]),
-  ) as Data;
+  const nestedAncestors = new Set(ancestors);
+  nestedAncestors.add(parent);
+  return clonePluginData(value, nestedAncestors);
 }
 
-function sameItems<T>(
-  left: ReadonlyArray<T>,
-  right: ReadonlyArray<T>,
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+function clonePluginData(
+  value: unknown,
+  ancestors?: ReadonlySet<object>,
+): MarkdownPluginData {
+  if (
+    value == null ||
+    typeof value === 'boolean' ||
+    typeof value === 'string'
+  ) {
+    return value as MarkdownPluginData;
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new TypeError('invalid plugin data');
+    }
+    return value;
+  }
+  if (
+    typeof value !== 'object' ||
+    ancestors?.has(value) === true ||
+    (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype)
+  ) {
+    throw new TypeError('invalid plugin data');
+  }
+  let clone: MarkdownPluginData;
+  if (Array.isArray(value)) {
+    const items = new Array<MarkdownPluginData>(value.length);
+    for (let index = 0; index < value.length; index++) {
+      if (index in value) {
+        items[index] = cloneNestedPluginData(value[index], value, ancestors);
+      }
+    }
+    clone = Object.freeze(items);
+  } else {
+    const record: Record<string, MarkdownPluginData> = {};
+    for (const key in value) {
+      const nested = cloneNestedPluginData(
+        (value as Record<string, unknown>)[key],
+        value,
+        ancestors,
+      );
+      if (key === '__proto__') {
+        Object.defineProperty(record, key, {
+          configurable: true,
+          enumerable: true,
+          value: nested,
+          writable: true,
+        });
+      } else {
+        record[key] = nested;
+      }
+    }
+    clone = Object.freeze(record);
+  }
+  return clone;
 }
 
 function createProposal(
@@ -108,6 +152,7 @@ function createProposal(
     MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>
   >,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
 ): MarkdownFenceProposal {
   if (
     node == null ||
@@ -116,23 +161,34 @@ function createProposal(
     node.plugin !== pluginName ||
     typeof node.name !== 'string' ||
     node.name.trim() === '' ||
+    // Every extension node must have a renderer and a text projection
+    // (FR14). Checking it here is what lets Core run this helper on its
+    // trusted path: the node is fully validated before it is inserted.
+    !hasRenderer(node.name) ||
     node.display !== 'block' ||
-    !isMarkdownPluginData(node.data) ||
     'source' in node ||
     'position' in node
   ) {
     throw new TypeError(
-      'Markdown fence createNode must return an owned block extension node with finite data',
+      'Markdown fence createNode must return an owned block extension node with finite data and a registered renderer',
     );
   }
 
+  let data: MarkdownPluginData;
+  try {
+    data = clonePluginData(node.data);
+  } catch {
+    throw new TypeError(
+      'Markdown fence createNode must return an owned block extension node with finite data and a registered renderer',
+    );
+  }
   return Object.freeze({
     node: Object.freeze({
       type: 'extension' as const,
       plugin: node.plugin,
       name: node.name,
       display: 'block' as const,
-      data: freezeMarkdownPluginData(clonePluginData(node.data)),
+      data,
     }),
   });
 }
@@ -160,6 +216,7 @@ function annotateCode(
   node: MarkdownAstCode,
   languages: ReadonlySet<string>,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
   createNode: (
     context: MarkdownFenceContext<string>,
   ) =>
@@ -197,7 +254,7 @@ function annotateCode(
   Object.defineProperty(annotated, markdownFenceProposal, {
     configurable: false,
     enumerable: true,
-    value: createProposal(proposalNode, pluginName),
+    value: createProposal(proposalNode, pluginName, hasRenderer),
     writable: false,
   });
   return annotated;
@@ -207,6 +264,7 @@ function transformBlocks(
   blocks: ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>>,
   languages: ReadonlySet<string>,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
   createNode: (
     context: MarkdownFenceContext<string>,
   ) =>
@@ -217,37 +275,59 @@ function transformBlocks(
     | undefined,
   report: (message: string) => void,
 ): ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>> {
-  const next = blocks.map(block => {
+  let next: MarkdownAstBlockContent<MarkdownExtensionNode>[] | undefined;
+  for (let index = 0; index < blocks.length; index++) {
+    const block = blocks[index];
+    let replacement: MarkdownAstBlockContent<MarkdownExtensionNode>;
     switch (block.type) {
       case 'code':
-        return annotateCode(block, languages, pluginName, createNode, report);
+        replacement = annotateCode(
+          block,
+          languages,
+          pluginName,
+          hasRenderer,
+          createNode,
+          report,
+        );
+        break;
       case 'blockquote': {
         const children = transformBlocks(
           block.children,
           languages,
           pluginName,
+          hasRenderer,
           createNode,
           report,
         );
-        return children === block.children ? block : {...block, children};
+        replacement =
+          children === block.children ? block : {...block, children};
+        break;
       }
       case 'list': {
-        let changed = false;
-        const children = block.children.map(item => {
+        let items: MarkdownAstListItem<MarkdownExtensionNode>[] | undefined;
+        for (
+          let itemIndex = 0;
+          itemIndex < block.children.length;
+          itemIndex++
+        ) {
+          const item = block.children[itemIndex];
           const itemChildren = transformBlocks(
             item.children,
             languages,
             pluginName,
+            hasRenderer,
             createNode,
             report,
           );
           if (itemChildren === item.children) {
-            return item;
+            items?.push(item);
+            continue;
           }
-          changed = true;
-          return {...item, children: itemChildren};
-        });
-        return changed ? {...block, children} : block;
+          items ??= block.children.slice(0, itemIndex);
+          items.push({...item, children: itemChildren});
+        }
+        replacement = items == null ? block : {...block, children: items};
+        break;
       }
       case 'heading':
       case 'paragraph':
@@ -256,10 +336,15 @@ function transformBlocks(
       case 'thematicBreak':
       case 'image':
       case 'extension':
-        return block;
+        replacement = block;
+        break;
     }
-  });
-  return sameItems(blocks, next) ? blocks : next;
+    if (next === undefined && replacement !== block) {
+      next = blocks.slice(0, index);
+    }
+    next?.push(replacement);
+  }
+  return next ?? blocks;
 }
 
 export function createMarkdownFenceTransform<
@@ -291,6 +376,12 @@ export function createMarkdownFenceTransform<
 
   const declaredLanguages = Object.freeze([...options.languages]);
   const languages = new Set<string>(declaredLanguages);
+  const sourceNeedles = Object.freeze(
+    declaredLanguages.flatMap(language => [
+      `\`\`\`${language}`,
+      `~~~${language}`,
+    ]),
+  );
   const createNode = options.createNode as (
     context: MarkdownFenceContext<string>,
   ) =>
@@ -303,8 +394,8 @@ export function createMarkdownFenceTransform<
     root,
     context: MarkdownTransformContext,
   ) => {
-    const pluginName = getMarkdownTransformPluginName(context);
-    if (pluginName == null) {
+    const ownership = getMarkdownHelperOwnership(context);
+    if (ownership == null) {
       throw new TypeError(
         'Markdown fence transforms must run through createMarkdownPlugin',
       );
@@ -312,18 +403,22 @@ export function createMarkdownFenceTransform<
     const children = transformBlocks(
       root.children,
       languages,
-      pluginName,
+      ownership.pluginName,
+      ownership.hasRenderer,
       createNode,
       context.report,
     );
     return children === root.children ? root : {...root, children};
   };
 
-  return markMarkdownTransformClaim(transform, source =>
-    declaredLanguages.some(
-      language =>
-        source.includes(`\`\`\`${language}`) ||
-        source.includes(`~~~${language}`),
-    ),
+  // Every node this helper inserts is validated above against the same
+  // rules Core applies to plugin-authored output — owned plugin name,
+  // registered renderer, representable frozen data, no authored provenance
+  // — and nothing else in the tree is touched. Core may therefore skip
+  // revalidating the whole document after it runs.
+  return markMarkdownTransformTrusted(
+    markMarkdownTransformClaim(transform, source =>
+      sourceNeedles.some(needle => source.includes(needle)),
+    ) as MarkdownTransform<never>,
   );
 }

@@ -18,6 +18,15 @@ export type {
   MarkdownFenceNode,
   MarkdownFenceTransformOptions,
 } from './semanticFence';
+export {
+  createMarkdownSourceDecoration,
+  getMarkdownSourceDecorations,
+} from './sourceDecoration';
+export type {
+  MarkdownSourceDecoration,
+  MarkdownSourceDecorationOptions,
+  MarkdownSourceDecorationRange,
+} from './sourceDecoration';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,

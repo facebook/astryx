@@ -7,8 +7,8 @@
  * @position Acceptance tests for the optional Markdown text helper
  */
 
-import {describe, expect, expectTypeOf, it} from 'vitest';
-import {parseInline, parseMarkdown} from '../parser';
+import {describe, expect, expectTypeOf, it, vi} from 'vitest';
+import {parseInline, parseMarkdown, parseMarkdownAst} from '../parser';
 import {createMarkdownPlugin} from './protocol';
 import type {MarkdownExtensionNode} from './protocol';
 import {createMarkdownTextTransform} from './textTransform';
@@ -351,5 +351,117 @@ describe('createMarkdownTextTransform', () => {
     }
     expectTypeOf(compileOnlyRendererRequirement).toBeFunction();
     expectTypeOf(createMarkdownTextTransform).toBeFunction();
+  });
+
+  it('adopts a fresh replacement node and freezes it against later writes', () => {
+    // A callback that builds a node per match hands over a fresh object, so
+    // the helper puts it straight into the tree rather than copying it. That
+    // is only safe because the node is frozen on the way in: whoever still
+    // holds the reference cannot reach into the document afterwards.
+    const handedOver: {type: 'text'; value: string}[] = [];
+    const plugin = createMarkdownPlugin({
+      name: 'fresh-nodes',
+      apiVersion: 1,
+      transform: createMarkdownTextTransform({
+        pattern: /TODO/g,
+        requiredSubstrings: ['TODO'],
+        replace: () => {
+          const node = {type: 'text' as const, value: 'done'};
+          handedOver.push(node);
+          return node;
+        },
+      }),
+    });
+
+    const blocks = parseMarkdown('TODO and TODO again', {plugins: [plugin]});
+    expect(handedOver).toHaveLength(2);
+    expect(handedOver.every(node => Object.isFrozen(node))).toBe(true);
+
+    // A late write by the caller is rejected and the document is unaffected.
+    expect(() => {
+      'use strict';
+      handedOver[0].value = 'HACKED';
+    }).toThrow(TypeError);
+    expect(blocks).toEqual([
+      {
+        type: 'paragraph',
+        children: [
+          {type: 'text', content: 'done'},
+          {type: 'text', content: ' and '},
+          {type: 'text', content: 'done'},
+          {type: 'text', content: ' again'},
+        ],
+      },
+    ]);
+  });
+
+  it('copies a replacement node the callback hands over more than once', () => {
+    // One object cannot occupy two positions in the tree, and the first
+    // position's node is already frozen. A callback that returns the same
+    // object for every match therefore gets a copy from the second match on.
+    const shared = {type: 'text' as const, value: 'done'};
+    const plugin = createMarkdownPlugin({
+      name: 'shared-node',
+      apiVersion: 1,
+      transform: createMarkdownTextTransform({
+        pattern: /TODO/g,
+        requiredSubstrings: ['TODO'],
+        replace: () => shared,
+      }),
+    });
+
+    const root = parseMarkdownAst('TODO and TODO again', {plugins: [plugin]});
+    const paragraph = root.children[0];
+    if (paragraph.type !== 'paragraph') {
+      throw new Error('Expected a paragraph');
+    }
+    const [first, , third] = paragraph.children;
+    expect(first).not.toBe(third);
+    expect(first).toEqual({type: 'text', value: 'done'});
+    expect(third).toEqual({type: 'text', value: 'done'});
+
+    // Both documents agree with a run whose callback allocates per match.
+    expect(parseMarkdown('TODO and TODO again', {plugins: [plugin]})).toEqual(
+      parseMarkdown('TODO and TODO again', {
+        plugins: [
+          createMarkdownPlugin({
+            name: 'per-match-node',
+            apiVersion: 1,
+            transform: createMarkdownTextTransform({
+              pattern: /TODO/g,
+              requiredSubstrings: ['TODO'],
+              replace: () => ({type: 'text', value: 'done'}),
+            }),
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('still rejects an unrepresentable node without freezing the batch', () => {
+    const rejected = {
+      type: 'text' as const,
+      value: 'ok',
+      position: {start: {offset: 0}, end: {offset: 2}},
+    };
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const plugin = createMarkdownPlugin({
+      name: 'forged-provenance',
+      apiVersion: 1,
+      transform: createMarkdownTextTransform({
+        pattern: /TODO/g,
+        requiredSubstrings: ['TODO'],
+        replace: () => rejected as never,
+      }),
+    });
+
+    // Authored provenance is refused, the document keeps its source text,
+    // and the caller's object is left exactly as it was.
+    expect(parseMarkdown('TODO', {plugins: [plugin]})).toEqual(
+      parseMarkdown('TODO'),
+    );
+    expect(Object.isFrozen(rejected)).toBe(false);
+    expect(warning).toHaveBeenCalled();
+    warning.mockRestore();
   });
 });
