@@ -9,7 +9,7 @@
 
 import type React from 'react';
 import {warnOnce} from '../utils/devWarning';
-import type {SourceRange} from './parser';
+import type {BlockNode, SourceRange} from './parser';
 
 export type MarkdownPluginData =
   | null
@@ -98,7 +98,7 @@ export type MarkdownSyntaxCapability<
       readonly toText?: never;
     };
 
-export interface MarkdownTextContribution {
+export interface MarkdownTextTransformOptions {
   /** Global expression matched against eligible built-in prose only. */
   readonly pattern: RegExp;
   readonly getEndIndex?: (
@@ -110,7 +110,7 @@ export interface MarkdownTextContribution {
 
 export type MarkdownFenceMode = 'interactive' | 'passive' | 'inert';
 
-export interface MarkdownFenceInput {
+export interface MarkdownFenceTransformInput {
   readonly source: string;
   readonly language: string;
   readonly meta: string | undefined;
@@ -120,28 +120,109 @@ export interface MarkdownFenceInput {
   readonly fallback: React.ReactNode;
 }
 
-export type MarkdownFenceResult =
+export type MarkdownFenceTransformResult =
   | {readonly status: 'enhance'; readonly content: React.ReactNode}
   | {readonly status: 'fallback'}
   | {readonly status: 'decline'};
 
-export interface MarkdownFenceContribution {
+export interface MarkdownFenceTransformOptions {
   readonly languages: readonly [string, ...string[]];
   readonly mode?: MarkdownFenceMode;
-  render(input: MarkdownFenceInput): MarkdownFenceResult;
+  render(input: MarkdownFenceTransformInput): MarkdownFenceTransformResult;
 }
 
 export type MarkdownDecorationAppearance = 'highlight' | 'underline';
 export type MarkdownDecorationTone =
   'neutral' | 'accent' | 'info' | 'positive' | 'warning' | 'critical';
 
-export interface MarkdownDecoration {
+export interface MarkdownSourceDecoration {
   readonly id: string;
   readonly range: SourceRange;
   readonly appearance: MarkdownDecorationAppearance;
   readonly tone: MarkdownDecorationTone;
   readonly label: string;
 }
+
+export interface MarkdownDocument<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> {
+  readonly type: 'root';
+  readonly children: ReadonlyArray<BlockNode<Node>>;
+}
+
+export interface MarkdownTransformContext {
+  readonly source: string;
+  readonly isFinal: boolean;
+}
+
+export type MarkdownAstTransformer<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> = (
+  document: MarkdownDocument<Node>,
+  context: MarkdownTransformContext,
+) => MarkdownDocument<Node>;
+
+declare const markdownTransformNode: unique symbol;
+
+/** Opaque transform created by one of the Markdown transform helpers. */
+export interface MarkdownTransform<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> {
+  readonly [markdownTransformNode]: Node;
+}
+
+const markdownTransformDefinition = Symbol('MarkdownTransformDefinition');
+
+type InternalMarkdownTransformDefinition =
+  | {readonly kind: 'text'; readonly value: MarkdownTextTransformOptions}
+  | {readonly kind: 'fence'; readonly value: MarkdownFenceTransformOptions}
+  | {readonly kind: 'decoration'; readonly value: MarkdownSourceDecoration}
+  | {readonly kind: 'ast'; readonly value: MarkdownAstTransformer};
+
+interface InternalMarkdownTransform<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> extends MarkdownTransform<Node> {
+  readonly [markdownTransformDefinition]: InternalMarkdownTransformDefinition;
+}
+
+function createTransform<Node extends MarkdownExtensionNode>(
+  definition: InternalMarkdownTransformDefinition,
+): MarkdownTransform<Node> {
+  return Object.freeze({
+    [markdownTransformDefinition]: definition,
+  }) as unknown as MarkdownTransform<Node>;
+}
+
+export function createMarkdownTextTransform(
+  options: MarkdownTextTransformOptions,
+): MarkdownTransform<never> {
+  return createTransform({kind: 'text', value: options});
+}
+
+export function createMarkdownFenceTransform(
+  options: MarkdownFenceTransformOptions,
+): MarkdownTransform<never> {
+  return createTransform({kind: 'fence', value: options});
+}
+
+export function createMarkdownDecorationTransform(
+  decoration: MarkdownSourceDecoration,
+): MarkdownTransform<never> {
+  return createTransform({kind: 'decoration', value: decoration});
+}
+
+export function createMarkdownAstTransform<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+>(transform: MarkdownAstTransformer<Node>): MarkdownTransform<Node> {
+  return createTransform({
+    kind: 'ast',
+    value: transform as MarkdownAstTransformer,
+  });
+}
+
+type MarkdownTextContribution = MarkdownTextTransformOptions;
+type MarkdownFenceContribution = MarkdownFenceTransformOptions;
+type MarkdownDecoration = MarkdownSourceDecoration;
 
 export type MarkdownExtensionRenderers<Node extends MarkdownExtensionNode> =
   Readonly<{
@@ -150,18 +231,19 @@ export type MarkdownExtensionRenderers<Node extends MarkdownExtensionNode> =
     }>;
   }>;
 
-interface MarkdownPluginDefinitionBase<Name extends string> {
+interface MarkdownPluginDefinitionBase<
+  Name extends string,
+  Node extends MarkdownExtensionNode<Name>,
+> {
   readonly name: Name;
   readonly apiVersion: 1;
-  readonly text?: ReadonlyArray<MarkdownTextContribution>;
-  readonly fences?: ReadonlyArray<MarkdownFenceContribution>;
-  readonly decorations?: ReadonlyArray<MarkdownDecoration>;
+  readonly transform?: ReadonlyArray<MarkdownTransform<Node>>;
 }
 
 export interface MarkdownSyntaxPluginDefinition<
   Name extends string,
   Node extends MarkdownExtensionNode<Name>,
-> extends MarkdownPluginDefinitionBase<Name> {
+> extends MarkdownPluginDefinitionBase<Name, Node> {
   readonly parseKey: string;
   readonly syntax: MarkdownSyntaxCapability<Node>;
   readonly renderers: MarkdownExtensionRenderers<Node>;
@@ -169,7 +251,11 @@ export interface MarkdownSyntaxPluginDefinition<
 
 export interface MarkdownPresentationPluginDefinition<
   Name extends string,
-> extends MarkdownPluginDefinitionBase<Name> {
+> extends MarkdownPluginDefinitionBase<Name, never> {
+  readonly transform: readonly [
+    MarkdownTransform<never>,
+    ...MarkdownTransform<never>[],
+  ];
   readonly parseKey?: never;
   readonly syntax?: never;
   readonly renderers?: never;
@@ -275,25 +361,38 @@ export function createMarkdownPlugin<
   if (definition.apiVersion !== 1) {
     fail(`"${definition.name}" uses unsupported apiVersion`);
   }
-  for (const text of definition.text ?? []) {
-    validatePattern(definition.name, text);
-  }
-  for (const fence of definition.fences ?? []) {
-    if (fence.languages.length === 0) {
-      fail(`"${definition.name}" fence languages must not be empty`);
+  for (const transform of definition.transform ?? []) {
+    const internal = transform as Partial<InternalMarkdownTransform>;
+    const transformDefinition = internal[markdownTransformDefinition];
+    if (transformDefinition == null) {
+      fail(`"${definition.name}" transforms must come from a transform helper`);
     }
-    for (const language of fence.languages) {
-      normalizeLanguage(language);
-    }
-  }
-  for (const decoration of definition.decorations ?? []) {
-    if (
-      decoration.id.trim() === '' ||
-      decoration.label.trim() === '' ||
-      decoration.range.start < 0 ||
-      decoration.range.end <= decoration.range.start
-    ) {
-      fail(`"${definition.name}" has an invalid decoration`);
+    switch (transformDefinition.kind) {
+      case 'text':
+        validatePattern(definition.name, transformDefinition.value);
+        break;
+      case 'fence':
+        if (transformDefinition.value.languages.length === 0) {
+          fail(`"${definition.name}" fence languages must not be empty`);
+        }
+        for (const language of transformDefinition.value.languages) {
+          normalizeLanguage(language);
+        }
+        break;
+      case 'decoration': {
+        const decoration = transformDefinition.value;
+        if (
+          decoration.id.trim() === '' ||
+          decoration.label.trim() === '' ||
+          decoration.range.start < 0 ||
+          decoration.range.end <= decoration.range.start
+        ) {
+          fail(`"${definition.name}" has an invalid decoration`);
+        }
+        break;
+      }
+      case 'ast':
+        break;
     }
   }
   if ('syntax' in definition && definition.syntax != null) {
@@ -304,12 +403,8 @@ export function createMarkdownPlugin<
     if (Object.keys(definition.renderers).length === 0) {
       fail(`"${definition.name}" syntax must provide renderers`);
     }
-  } else if (
-    (definition.text?.length ?? 0) === 0 &&
-    (definition.fences?.length ?? 0) === 0 &&
-    (definition.decorations?.length ?? 0) === 0
-  ) {
-    fail(`"${definition.name}" must declare at least one capability`);
+  } else if ((definition.transform?.length ?? 0) === 0) {
+    fail(`"${definition.name}" must declare syntax or transform`);
   }
 
   const entry = {
@@ -348,6 +443,11 @@ export interface PreparedFenceContribution {
   readonly contribution: MarkdownFenceContribution;
 }
 
+export interface PreparedAstTransform {
+  readonly pluginName: string;
+  readonly transform: MarkdownAstTransformer;
+}
+
 export interface PreparedMarkdownPlugins {
   readonly entries: ReadonlyArray<InternalMarkdownPluginEntry>;
   readonly syntaxEntries: ReadonlyArray<MarkdownPluginEntry>;
@@ -365,6 +465,7 @@ export interface PreparedMarkdownPlugins {
     ReadonlyArray<PreparedFenceContribution>
   >;
   readonly decorations: ReadonlyArray<MarkdownDecoration>;
+  readonly astTransforms: ReadonlyArray<PreparedAstTransform>;
   readonly syntaxIdentity: string;
   readonly renderers: ReadonlyMap<
     string,
@@ -453,6 +554,7 @@ export function prepareMarkdownPlugins(
   const text: PreparedTextContribution[] = [];
   const fencesByLanguage = new Map<string, PreparedFenceContribution[]>();
   const decorations: MarkdownDecoration[] = [];
+  const astTransforms: PreparedAstTransform[] = [];
   const renderers = new Map<
     string,
     Readonly<Record<string, React.ComponentType<{node: never}>>>
@@ -474,22 +576,36 @@ export function prepareMarkdownPlugins(
     names.add(definition.name);
     entries.push(entry as InternalMarkdownPluginEntry);
 
-    for (const contribution of definition.text ?? []) {
-      text.push({
-        order: text.length,
-        pluginName: definition.name,
-        contribution,
-      });
-    }
-    for (const fence of definition.fences ?? []) {
-      for (const language of fence.languages) {
-        appendMapValue(fencesByLanguage, normalizeLanguage(language), {
-          pluginName: definition.name,
-          contribution: fence,
-        });
+    for (const publicTransform of definition.transform ?? []) {
+      const transform = publicTransform as InternalMarkdownTransform;
+      const transformDefinition = transform[markdownTransformDefinition];
+      switch (transformDefinition.kind) {
+        case 'text':
+          text.push({
+            order: text.length,
+            pluginName: definition.name,
+            contribution: transformDefinition.value,
+          });
+          break;
+        case 'fence':
+          for (const language of transformDefinition.value.languages) {
+            appendMapValue(fencesByLanguage, normalizeLanguage(language), {
+              pluginName: definition.name,
+              contribution: transformDefinition.value,
+            });
+          }
+          break;
+        case 'decoration':
+          decorations.push(transformDefinition.value);
+          break;
+        case 'ast':
+          astTransforms.push({
+            pluginName: definition.name,
+            transform: transformDefinition.value,
+          });
+          break;
       }
     }
-    decorations.push(...(definition.decorations ?? []));
 
     if ('syntax' in definition && definition.syntax != null) {
       syntaxEntries.push(publicEntry);
@@ -543,12 +659,136 @@ export function prepareMarkdownPlugins(
     text: prepareTextDispatch(text),
     fencesByLanguage,
     decorations,
+    astTransforms,
     syntaxIdentity: syntaxIdentity.join('\u0001'),
     renderers,
     toText,
   };
   preparedPluginLists.set(plugins, prepared);
   return prepared;
+}
+
+const MARKDOWN_AST_NODE_TYPES = new Set([
+  'root',
+  'heading',
+  'paragraph',
+  'text',
+  'bold',
+  'italic',
+  'strikethrough',
+  'code',
+  'codeblock',
+  'blockquote',
+  'list',
+  'link',
+  'image',
+  'citation',
+  'break',
+  'table',
+  'hr',
+  'math',
+  'extension',
+]);
+
+function isValidMarkdownAstValue(
+  value: unknown,
+  pluginNames: ReadonlySet<string>,
+  seen: Set<object> = new Set(),
+): boolean {
+  if (
+    value == null ||
+    typeof value === 'undefined' ||
+    typeof value === 'boolean' ||
+    typeof value === 'string'
+  ) {
+    return true;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+  if (typeof value !== 'object' || seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    const valid = value.every(item =>
+      isValidMarkdownAstValue(item, pluginNames, seen),
+    );
+    seen.delete(value);
+    return valid;
+  }
+  if (Object.getPrototypeOf(value) !== Object.prototype) {
+    seen.delete(value);
+    return false;
+  }
+  const node = value as {type?: unknown; plugin?: unknown};
+  if (
+    node.type != null &&
+    (typeof node.type !== 'string' || !MARKDOWN_AST_NODE_TYPES.has(node.type))
+  ) {
+    seen.delete(value);
+    return false;
+  }
+  if (
+    node.type === 'extension' &&
+    (typeof node.plugin !== 'string' || !pluginNames.has(node.plugin))
+  ) {
+    seen.delete(value);
+    return false;
+  }
+  const valid = Object.values(value).every(item =>
+    isValidMarkdownAstValue(item, pluginNames, seen),
+  );
+  seen.delete(value);
+  return valid;
+}
+
+function freezeMarkdownAst<T>(value: T, seen: Set<object> = new Set()): T {
+  if (value == null || typeof value !== 'object' || seen.has(value)) {
+    return value;
+  }
+  seen.add(value);
+  for (const child of Object.values(value)) {
+    freezeMarkdownAst(child, seen);
+  }
+  return Object.freeze(value);
+}
+
+/** @internal Apply ordered immutable document transforms to parsed blocks. */
+export function applyMarkdownTransforms<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+>(
+  blocks: ReadonlyArray<BlockNode<Node>>,
+  plugins: PreparedMarkdownPlugins | undefined,
+  source: string,
+  isFinal: boolean,
+): BlockNode<Node>[] {
+  if (plugins == null || plugins.astTransforms.length === 0) {
+    return blocks as BlockNode<Node>[];
+  }
+  const pluginNames = new Set(plugins.entries.map(entry => entry.name));
+  let document = freezeMarkdownAst({
+    type: 'root' as const,
+    children: [...blocks],
+  }) as MarkdownDocument<Node>;
+  for (const prepared of plugins.astTransforms) {
+    try {
+      const next = prepared.transform(document, {source, isFinal}) as unknown;
+      if (
+        next == null ||
+        typeof next !== 'object' ||
+        (next as {type?: unknown}).type !== 'root' ||
+        !Array.isArray((next as {children?: unknown}).children) ||
+        !isValidMarkdownAstValue(next, pluginNames)
+      ) {
+        throw new Error('transform returned an invalid Markdown document');
+      }
+      document = freezeMarkdownAst(next) as MarkdownDocument<Node>;
+    } catch (error) {
+      reportMarkdownPluginFailure(prepared.pluginName, 'transform', error);
+    }
+  }
+  return [...document.children] as BlockNode<Node>[];
 }
 
 const stableSyntaxEntries = new Map<
