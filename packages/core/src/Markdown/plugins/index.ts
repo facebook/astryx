@@ -7,6 +7,11 @@
  */
 
 export {createMarkdownPlugin, isMarkdownExtensionNode} from './protocol';
+export {createMarkdownTextTransform} from './textTransform';
+export type {
+  MarkdownTextTransformContext,
+  MarkdownTextTransformOptions,
+} from './textTransform';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,

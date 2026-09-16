@@ -9,6 +9,7 @@
 
 import {
   createMarkdownPlugin,
+  createMarkdownTextTransform,
   type MarkdownExtensionNode,
   type MarkdownSyntaxPluginDefinition,
 } from '@astryxdesign/core/Markdown/plugins';
@@ -16,6 +17,13 @@ import {
 type MentionNode = MarkdownExtensionNode<
   'demo-mentions',
   'mention',
+  {readonly label: string},
+  'inline'
+>;
+
+type TodoNode = MarkdownExtensionNode<
+  'demo-todos',
+  'todo',
   {readonly label: string},
   'inline'
 >;
@@ -101,9 +109,32 @@ const calloutDefinition = {
   },
 } satisfies MarkdownSyntaxPluginDefinition<'demo-callouts', CalloutNode>;
 
+const todoPlugin = createMarkdownPlugin<'demo-todos', TodoNode>({
+  name: 'demo-todos',
+  apiVersion: 1,
+  transform: createMarkdownTextTransform<TodoNode>({
+    pattern: /\bTODO\b/g,
+    requiredSubstrings: ['TODO'],
+    replace: () => ({
+      type: 'extension',
+      plugin: 'demo-todos',
+      name: 'todo',
+      display: 'inline',
+      data: {label: 'TODO'},
+    }),
+  }),
+  renderers: {
+    todo: {
+      render: ({node}) => <mark>{node.data.label}</mark>,
+      toText: node => node.data.label,
+    },
+  },
+});
+
 export const markdownDemoPlugins = [
   createMarkdownPlugin<'demo-mentions', MentionNode>(mentionDefinition),
   createMarkdownPlugin<'demo-callouts', CalloutNode>(calloutDefinition),
+  todoPlugin,
 ] as const;
 
 interface DelayedValue<Value> {

@@ -15,7 +15,11 @@ import {
   parseMarkdownIncremental,
   visitMarkdownNodes,
 } from './index';
-import {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
+import {
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
+  isMarkdownExtensionNode,
+} from './plugins';
 import type {
   MarkdownExtensionNode,
   MarkdownSyntaxPluginDefinition,
@@ -193,6 +197,7 @@ describe('Markdown public parser types', () => {
 
     expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
     expectTypeOf(visitMarkdownNodes).toBeFunction();
+    expectTypeOf(createMarkdownTextTransform).toBeFunction();
     expectTypeOf(isMarkdownExtensionNode).toBeFunction();
 
     function compileOnlyPluginGuards() {

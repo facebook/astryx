@@ -494,7 +494,7 @@ export const SyntaxPlugins: Story = {
     <div style={{maxWidth: 680}}>
       <Markdown plugins={markdownDemoPlugins}>
         {
-          '# Plugin composition\n\nHello @{Ada}. Ordinary **Markdown** keeps its behavior.\n\n:::note\nThis callout and mention are typed extension nodes.\n:::\n\nProtected contexts stay literal: `@{Linus}` and [@{Grace}](/people).'
+          '# Plugin composition\n\nHello @{Ada}. Ordinary **Markdown** keeps its behavior, while TODO becomes a transform-owned node.\n\n:::note\nThis callout and mention are typed extension nodes.\n:::\n\nProtected contexts stay literal: `TODO @{Linus}` and [TODO @{Grace}](/people).'
         }
       </Markdown>
     </div>

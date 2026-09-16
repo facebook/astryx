@@ -101,10 +101,39 @@ export interface MarkdownTransformContext {
   report(message: string): void;
 }
 
-export type MarkdownTransform = (
-  document: MarkdownAstRoot<MarkdownExtensionNode>,
-  context: MarkdownTransformContext,
-) => MarkdownAstRoot<MarkdownExtensionNode>;
+declare const markdownTransformNode: unique symbol;
+
+export interface MarkdownTransform<Node extends MarkdownExtensionNode = never> {
+  (
+    document: MarkdownAstRoot<MarkdownExtensionNode>,
+    context: MarkdownTransformContext,
+  ): MarkdownAstRoot<MarkdownExtensionNode>;
+  readonly [markdownTransformNode]?: Node;
+}
+
+const markdownTransformClaim = Symbol('MarkdownTransformClaim');
+
+interface ClaimAwareMarkdownTransform<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> extends MarkdownTransform<Node> {
+  readonly [markdownTransformClaim]?: (source: string) => boolean;
+}
+
+/** @internal Registers a cheap source-level claim check for a helper transform. */
+export function markMarkdownTransformClaim<
+  Node extends MarkdownExtensionNode = never,
+>(
+  transform: MarkdownTransform<Node>,
+  claims: (source: string) => boolean,
+): MarkdownTransform<Node> {
+  Object.defineProperty(transform, markdownTransformClaim, {
+    configurable: false,
+    enumerable: false,
+    value: claims,
+    writable: false,
+  });
+  return transform;
+}
 
 export interface MarkdownExtensionRenderer<Node extends MarkdownExtensionNode> {
   /** Pure render callback. Hooks belong in components returned by this callback. */
@@ -130,7 +159,7 @@ export interface MarkdownSyntaxPluginDefinition<
 > extends MarkdownPluginDefinitionBase<Name> {
   readonly parseKey: string;
   readonly syntax: MarkdownSyntaxCapability<Node>;
-  readonly transform?: MarkdownTransform;
+  readonly transform?: MarkdownTransform<Node>;
   readonly renderers: MarkdownExtensionRenderers<Node>;
 }
 
@@ -138,7 +167,7 @@ export type MarkdownTransformPluginDefinition<
   Name extends string,
   Node extends MarkdownExtensionNode<Name> = never,
 > = MarkdownPluginDefinitionBase<Name> & {
-  readonly transform: MarkdownTransform;
+  readonly transform: MarkdownTransform<Node>;
   readonly parseKey?: never;
   readonly syntax?: never;
 } & ([Node] extends [never]
@@ -323,7 +352,8 @@ export interface PreparedSyntaxContribution {
 
 interface PreparedTransform {
   readonly pluginName: string;
-  readonly transform: MarkdownTransform;
+  readonly transform: MarkdownTransform<MarkdownExtensionNode>;
+  readonly claims?: (source: string) => boolean;
 }
 
 interface PreparedRenderer {
@@ -417,6 +447,9 @@ export function prepareMarkdownPlugins(
       transforms.push({
         pluginName: definition.name,
         transform: definition.transform,
+        claims: (definition.transform as ClaimAwareMarkdownTransform)[
+          markdownTransformClaim
+        ],
       });
     }
     if (definition.renderers != null) {
@@ -990,9 +1023,19 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
   }
   const pluginNames = new Set(plugins.entries.map(entry => entry.name));
   const rendererKeys = new Set(plugins.renderers.keys());
-  const sourceHeadingMarkers = markSourceHeadings(root);
-  let document = freezeAst(root);
+  let document: MarkdownAstRoot<Node> = root;
+  let sourceHeadingMarkers: Set<SourceHeadingMarker> | undefined;
+  let started = false;
+  let priorTransformChangedTree = false;
   for (const prepared of plugins.transforms) {
+    if (!priorTransformChangedTree && prepared.claims?.(source) === false) {
+      continue;
+    }
+    if (!started) {
+      sourceHeadingMarkers = markSourceHeadings(root);
+      document = freezeAst(root);
+      started = true;
+    }
     try {
       const next = prepared.transform(document, {
         source,
@@ -1025,7 +1068,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
           pluginNames,
           rendererKeys,
           positions,
-          sourceHeadingMarkers,
+          sourceHeadingMarkers as ReadonlySet<SourceHeadingMarker>,
           prepared.pluginName,
           existingExtensions,
           display,
@@ -1033,6 +1076,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
       ) {
         throw new TypeError('Transform returned an invalid Markdown document');
       }
+      priorTransformChangedTree = true;
       document = freezeAst(next) as MarkdownAstRoot<Node>;
     } catch (error) {
       reportMarkdownPluginFailure(prepared.pluginName, 'transform', error);
