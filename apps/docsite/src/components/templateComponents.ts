@@ -124,6 +124,10 @@ export const TEMPLATE_COMPONENTS: Record<
   ide: lazy(
     () => import('../../../../packages/cli/assets/templates/pages/ide/page'),
   ),
+  'information-maximalist': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/information-maximalist/page'),
+  ),
   'kanban-board': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/kanban-board/page'),

@@ -4756,6 +4756,11 @@
       "aliases": []
     },
     {
+      "name": "template-information-maximalist",
+      "path": "templates/information-maximalist",
+      "aliases": []
+    },
+    {
       "name": "template-kanban-board",
       "path": "templates/kanban-board",
       "aliases": []
