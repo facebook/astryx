@@ -7,7 +7,8 @@
  * @position Focused acceptance tests for the core Markdown plugin protocol
  */
 
-import {renderToString} from 'react-dom/server';
+import {PassThrough} from 'node:stream';
+import {renderToPipeableStream, renderToString} from 'react-dom/server';
 import {act, render, screen} from '@testing-library/react';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {Markdown} from '../Markdown';
@@ -326,6 +327,75 @@ describe('Markdown plugin protocol', () => {
     );
     expect(screen.getByText('Before', {exact: false})).toBeInTheDocument();
     expect(screen.getByText('after.', {exact: false})).toBeInTheDocument();
+  });
+
+  it('streams readable node fallback and siblings before a renderer resolves', async () => {
+    let resolved = false;
+    let resolve: (() => void) | undefined;
+    const pending = new Promise<void>(done => {
+      resolve = () => {
+        resolved = true;
+        done();
+      };
+    });
+
+    function StreamingMention({label}: {readonly label: string}) {
+      if (!resolved) {
+        // React Suspense uses a thrown thenable as control flow.
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw pending;
+      }
+      return <span>@{label} streamed</span>;
+    }
+
+    const plugin = createMarkdownPlugin<'mentions', MentionNode>({
+      ...mentionDefinition,
+      renderers: {
+        mention: {
+          render: ({node}) => <StreamingMention label={node.data.label} />,
+          toText: node => `@${node.data.label}`,
+        },
+      },
+    });
+    const destination = new PassThrough();
+    destination.setEncoding('utf8');
+    const chunks: string[] = [];
+    destination.on('data', chunk => chunks.push(String(chunk)));
+    const finished = new Promise<void>((done, reject) => {
+      destination.on('end', done);
+      destination.on('error', reject);
+    });
+    let rejectShell: (error: unknown) => void = () => {};
+    const shellReady = new Promise<void>((done, reject) => {
+      rejectShell = reject;
+      const {pipe} = renderToPipeableStream(
+        <Markdown plugins={[plugin]}>{'Before @{Ada} after.'}</Markdown>,
+        {
+          onShellReady() {
+            pipe(destination);
+            done();
+          },
+          onShellError(error) {
+            reject(error);
+          },
+        },
+      );
+    });
+    destination.on('error', error => rejectShell(error));
+
+    await shellReady;
+    await new Promise<void>(done => setImmediate(done));
+    const shell = chunks.join('');
+    expect(shell).toContain('Before ');
+    expect(shell).toContain('@{Ada}');
+    expect(shell).toContain(' after.');
+    expect(shell).not.toContain('@Ada streamed');
+
+    resolve?.();
+    await finished;
+    expect(chunks.join('').replaceAll('<!-- -->', '')).toContain(
+      '@Ada streamed',
+    );
   });
 
   it('rejects duplicate entries and contains invalid tokenizer output', () => {

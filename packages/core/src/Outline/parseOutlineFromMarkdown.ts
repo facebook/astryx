@@ -11,7 +11,11 @@
  * - /packages/core/src/Outline/index.ts
  */
 
-import {parseMarkdownAst, slugify, uniqueSlug} from '../Markdown/parser';
+import {
+  parseMarkdownAstInternal,
+  slugify,
+  uniqueSlug,
+} from '../Markdown/parser';
 import {markdownAstText} from '../Markdown/ast';
 import {
   markdownExtensionText,
@@ -50,7 +54,7 @@ export function parseOutlineFromMarkdown<
       ? undefined
       : prepareMarkdownPlugins(options.plugins);
   const counts = new Map<string, number>();
-  return parseMarkdownAst(
+  return parseMarkdownAstInternal(
     markdown,
     {plugins: options?.plugins},
     options?.isFinal ?? true,

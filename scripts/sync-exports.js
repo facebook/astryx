@@ -97,17 +97,11 @@ const STATIC_EXPORTS = {
   './locales/*.json': './locales/*.json',
 };
 
-/**
- * Server-safe utility subpath exports.
- *
- * These re-export pure functions from component directories without
- * the `'use client'` directive, making them importable from React
- * Server Components. Each entry points to a `utils.ts` file that
- * re-exports only the server-safe subset of a component's utilities.
- *
- * See: https://github.com/facebook/astryx/issues/1977
- */
-const DIRECTORY_MODULE_SUBPATH_EXPORTS = ['Markdown/plugins'];
+/** Nested modules backed by an index.ts entry point. */
+const DIRECTORY_MODULE_SUBPATH_EXPORTS = [
+  'Markdown/plugins',
+  'Markdown/parser',
+];
 
 const UTIL_SUBPATH_DIRS = [
   'Calendar',

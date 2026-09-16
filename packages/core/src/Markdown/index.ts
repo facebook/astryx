@@ -4,7 +4,7 @@
 
 /**
  * @file index.ts
- * @output Exports Markdown component, parser functions, and types
+ * @output Exports Markdown component, canonical and compatibility parser functions, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
@@ -50,9 +50,11 @@ export type {
 
 export {
   parseMarkdown,
+  parseMarkdownAst,
   parseMarkdownIncremental,
   createIncrementalState,
   parseInline,
+  parseInlineAst,
 } from './parser';
 export type {
   BlockNode,

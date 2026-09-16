@@ -4,7 +4,7 @@
  * @file ast.ts
  * @input Parsed Markdown structure and optional Astryx extension nodes
  * @output Canonical immutable MDAST-aligned Markdown node types and text projection
- * @position Internal canonical Markdown tree shared by parsing, rendering, and Outline
+ * @position Public canonical Markdown tree shared by parsing, transforms, rendering, and Outline
  */
 
 export type MarkdownAstDataValue =

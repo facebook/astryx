@@ -10,7 +10,7 @@
 import {renderToString} from 'react-dom/server';
 import {describe, expect, expectTypeOf, it} from 'vitest';
 import {Markdown} from '../Markdown';
-import {parseMarkdownAst} from '../parser';
+import {parseMarkdownAst, parseMarkdownAstInternal} from '../parser';
 import {createMarkdownPlugin, type MarkdownTransform} from './protocol';
 import {createMarkdownFrontmatter} from './frontmatter';
 
@@ -53,7 +53,7 @@ describe('createMarkdownFrontmatter', () => {
   });
 
   it('hides unfinished streaming frontmatter and exposes it once closed', () => {
-    const partial = parseMarkdownAst(
+    const partial = parseMarkdownAstInternal(
       '---\ntitle: Pending',
       {plugins: [documentMetadata.plugin]},
       false,
@@ -61,7 +61,7 @@ describe('createMarkdownFrontmatter', () => {
     expect(documentMetadata.getMetadata(partial)).toBeUndefined();
     expect(partial.children).toEqual([]);
 
-    const settled = parseMarkdownAst(
+    const settled = parseMarkdownAstInternal(
       SOURCE,
       {plugins: [documentMetadata.plugin]},
       false,

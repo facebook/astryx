@@ -3,9 +3,10 @@
 /**
  * @file parser.ts
  * @input Markdown string, released parse options, and optional ordered plugins
- * @output Canonical MDAST-aligned nodes for internal consumers plus unchanged
+ * @output Canonical MDAST-aligned nodes for public/server consumers plus unchanged
  *   released parser-node projections; shared heading slug helpers
- * @position Core parser and compatibility boundary; consumed by Markdown and Outline
+ * @position Core parser and compatibility boundary; consumed by public parser entry,
+ *   Markdown, and Outline
  */
 
 import {
@@ -1356,11 +1357,43 @@ export function parseInline(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeInlineNode[] {
-  return projectInlineNodes(parseInlineAst(text, arg), wantsLegacyRanges(arg));
+  return projectInlineNodes(
+    parseInlineAstRuntime(text, arg),
+    wantsLegacyRanges(arg),
+  );
 }
 
-/** @internal Canonical inline parse used by Markdown rendering. */
+/**
+ * Parse inline Markdown into the canonical immutable Astryx AST.
+ *
+ * Unlike `parseInline`, this returns MDAST-aligned node names and fields. Math
+ * nodes are present only when `math: true`, and plugin extension nodes are
+ * inferred from the ordered `plugins` tuple.
+ */
 export function parseInlineAst(
+  text: string,
+  sourceIds?: ReadonlySet<string>,
+): MarkdownAstPhrasingContent[];
+export function parseInlineAst(
+  text: string,
+  options: ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins,
+): MarkdownAstPhrasingContent[];
+export function parseInlineAst<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  text: string,
+  options: (ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins) & {
+    plugins: Plugins;
+  },
+): MarkdownAstPhrasingContent<MarkdownExtensionsOf<Plugins>>[];
+export function parseInlineAst(
+  text: string,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+  return parseInlineAstRuntime(text, arg);
+}
+
+function parseInlineAstRuntime(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
@@ -2320,16 +2353,46 @@ export function parseMarkdown(
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeBlockNode[] {
   return projectMarkdownRoot(
-    parseMarkdownAst(input, arg),
+    parseMarkdownAstInternal(input, arg, true),
     wantsLegacyRanges(arg),
   );
 }
 
-/** @internal Canonical block parse used by Markdown and Outline rendering. */
+/**
+ * Parse block Markdown into the canonical immutable Astryx AST.
+ *
+ * Unlike `parseMarkdown`, this returns the MDAST-aligned root used by Markdown,
+ * transforms, and Outline. Math nodes are present only when `math: true`, and
+ * plugin extension nodes are inferred from the ordered `plugins` tuple.
+ */
+export function parseMarkdownAst(
+  input: string,
+  sourceIds?: ReadonlySet<string>,
+): MarkdownAstRoot;
+export function parseMarkdownAst(
+  input: string,
+  options: ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins,
+): MarkdownAstRoot;
+export function parseMarkdownAst<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  input: string,
+  options: (ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins) & {
+    plugins: Plugins;
+  },
+): MarkdownAstRoot<MarkdownExtensionsOf<Plugins>>;
 export function parseMarkdownAst(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
-  isFinal = true,
+): MarkdownAstRoot<RuntimeExtensionNode> {
+  return parseMarkdownAstInternal(input, arg, true);
+}
+
+/** @internal Full-parse entry point with streaming finality for Outline. */
+export function parseMarkdownAstInternal(
+  input: string,
+  arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
+  isFinal: boolean,
 ): MarkdownAstRoot<RuntimeExtensionNode> {
   const resolved = resolveOptions(arg);
   const opts = isFinal ? resolved : {...resolved, isFinal: false};

@@ -624,6 +624,11 @@
       "types": "./dist/Markdown/plugins/index.d.ts",
       "default": "./dist/Markdown/plugins/index.js"
     },
+    "./Markdown/parser": {
+      "source": "./src/Markdown/parser/index.ts",
+      "types": "./dist/Markdown/parser/index.d.ts",
+      "default": "./dist/Markdown/parser/index.js"
+    },
     "./Calendar/utils": {
       "source": "./src/Calendar/utils.ts",
       "types": "./dist/Calendar/utils.d.ts",
