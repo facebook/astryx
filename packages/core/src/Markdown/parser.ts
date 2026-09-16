@@ -2222,8 +2222,10 @@ export function parseMarkdown(
 export function parseMarkdownAst(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
+  isFinal = true,
 ): MarkdownAstRoot<RuntimeExtensionNode> {
-  const opts = resolveOptions(arg);
+  const resolved = resolveOptions(arg);
+  const opts = isFinal ? resolved : {...resolved, isFinal: false};
   const root: MarkdownAstRoot<RuntimeExtensionNode> = {
     type: 'root',
     children: parseMarkdownImpl(input, opts),
@@ -2261,10 +2263,15 @@ function parseMarkdownImpl(
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
   const lines = cleaned.split('\n');
+  const hasBlockExtensionSyntax =
+    opts.allowBlockSyntax !== false &&
+    (opts.plugins?.blockByFirstCharacter.size ?? 0) > 0;
   const lineOffsets = [0];
-  for (let offset = 0; offset < cleaned.length; offset++) {
-    if (cleaned[offset] === '\n') {
-      lineOffsets.push(offset + 1);
+  if (opts.sourceRanges || hasBlockExtensionSyntax) {
+    for (let offset = 0; offset < cleaned.length; offset++) {
+      if (cleaned[offset] === '\n') {
+        lineOffsets.push(offset + 1);
+      }
     }
   }
   const blockExtensionMatches = new Map<number, ExtensionMatch>();
@@ -2411,7 +2418,7 @@ function parseMarkdownImpl(
     }
 
     // --- Extension block syntax (built-in blocks take precedence) ---
-    if (opts.plugins != null && opts.allowBlockSyntax !== false) {
+    if (hasBlockExtensionSyntax) {
       const extensionColumn = blockExtensionColumn(line);
       const extensionOffset =
         extensionColumn == null
@@ -2467,7 +2474,7 @@ function parseMarkdownImpl(
       ) {
         break;
       }
-      if (opts.plugins != null && opts.allowBlockSyntax !== false) {
+      if (hasBlockExtensionSyntax) {
         const extensionColumn = blockExtensionColumn(nextLine);
         if (extensionColumn != null) {
           const extensionOffset = lineOffsets[index] + extensionColumn;
@@ -3389,28 +3396,6 @@ function parseMarkdownIncrementalAstBlocks(
     resetIncrementalCache(state, cache);
     return [];
   }
-  if (opts.isFinal) {
-    const finalBlocks = parseMarkdownImpl(input, opts);
-    state.prevInput = input;
-    state.settledText = input;
-    state.settledUpTo = input.split('\n').length;
-    state.autolink = opts.autolink;
-    state.math = opts.math;
-    state.sourceRanges = opts.sourceRanges;
-    state.sourceIdsKey = nextSourceIdsKey;
-    state.pluginSyntaxIdentity = nextPluginSyntaxIdentity;
-    const finalCache = makeIncrementalCache(state);
-    finalCache.settledAstBlocks = finalBlocks;
-    finalCache.settledRevision = cache.settledRevision + 1;
-    finalCache.work = {
-      splitCharacters: input.length,
-      boundaryLines: input.split('\n').length,
-      definitionCharacters: input.length,
-      renderedBlocks: finalBlocks.length,
-    };
-    return [...finalBlocks];
-  }
-
   // The settled prefix is only reusable while the input still contains it
   // verbatim. Lengths alone cannot tell: a same-length or longer replacement
   // (new args after reusing a state) disagrees with the prefix without ever

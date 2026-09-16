@@ -35,6 +35,8 @@ export interface ParseOutlineFromMarkdownOptions<
   Node extends MarkdownExtensionNode = never,
 > {
   readonly plugins?: ReadonlyArray<MarkdownPluginEntry<Node>>;
+  /** Match Markdown's transform finality while content is streaming. */
+  readonly isFinal?: boolean;
 }
 
 export function parseOutlineFromMarkdown<
@@ -48,7 +50,11 @@ export function parseOutlineFromMarkdown<
       ? undefined
       : prepareMarkdownPlugins(options.plugins);
   const counts = new Map<string, number>();
-  return parseMarkdownAst(markdown, {plugins: options?.plugins})
+  return parseMarkdownAst(
+    markdown,
+    {plugins: options?.plugins},
+    options?.isFinal ?? true,
+  )
     .children.filter(block => block.type === 'heading')
     .map(block => {
       const label = markdownAstText(block.children, node =>

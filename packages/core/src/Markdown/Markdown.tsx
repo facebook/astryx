@@ -66,7 +66,6 @@ import type {
 import {
   applyMarkdownTransforms,
   getMarkdownExtensionRenderer,
-  getStableMarkdownSyntaxEntries,
   markdownExtensionText,
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
@@ -750,6 +749,30 @@ class MarkdownPluginBoundary extends Component<
   }
 }
 
+function useStableMarkdownSyntaxEntries(
+  plugins: PreparedMarkdownPlugins | undefined,
+): ReadonlyArray<MarkdownPluginEntry> | undefined {
+  const identity = plugins?.syntaxIdentity ?? '';
+  const syntaxEntriesRef = useRef<
+    | {
+        identity: string;
+        entries: ReadonlyArray<MarkdownPluginEntry> | undefined;
+      }
+    | undefined
+  >(undefined);
+  if (
+    syntaxEntriesRef.current == null ||
+    syntaxEntriesRef.current.identity !== identity
+  ) {
+    syntaxEntriesRef.current = {
+      identity,
+      entries:
+        plugins == null || identity === '' ? undefined : plugins.syntaxEntries,
+    };
+  }
+  return syntaxEntriesRef.current.entries;
+}
+
 // ---------------------------------------------------------------------------
 // Inline renderer
 // ---------------------------------------------------------------------------
@@ -1037,14 +1060,20 @@ function renderInline(
       if (renderer == null) {
         return fallback;
       }
-      const Renderer = renderer.render;
+      let rendered: React.ReactNode;
+      try {
+        rendered = renderer.render({node});
+      } catch (error) {
+        reportMarkdownPluginFailure(node.plugin, 'render', error);
+        return fallback;
+      }
       return (
         <MarkdownPluginBoundary
           key={index}
           pluginName={node.plugin}
           resetKey={node}
           fallback={fallback}>
-          <Renderer node={node} />
+          {rendered}
         </MarkdownPluginBoundary>
       );
     }
@@ -1674,21 +1703,39 @@ function renderBlock(
       const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
       const fallbackText =
         node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = (
-        <div key={index}>{wrapTextWithFade(fallbackText, cursor, index)}</div>
-      );
-      if (renderer == null) {
-        return fallback;
+      const fallback = wrapTextWithFade(fallbackText, cursor, index);
+      let content: React.ReactNode = fallback;
+      if (renderer != null) {
+        try {
+          const rendered = renderer.render({node});
+          content = (
+            <MarkdownPluginBoundary
+              pluginName={node.plugin}
+              resetKey={node}
+              fallback={fallback}>
+              {rendered}
+            </MarkdownPluginBoundary>
+          );
+        } catch (error) {
+          reportMarkdownPluginFailure(node.plugin, 'render', error);
+        }
       }
-      const Renderer = renderer.render;
       return (
-        <MarkdownPluginBoundary
+        <div
           key={index}
-          pluginName={node.plugin}
-          resetKey={node}
-          fallback={fallback}>
-          <Renderer node={node} />
-        </MarkdownPluginBoundary>
+          {...stylex.props(
+            spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}>
+          {content}
+        </div>
       );
     }
     case 'thematicBreak': {
@@ -1805,10 +1852,7 @@ export function Markdown<
         : prepareMarkdownPlugins(plugins as ReadonlyArray<MarkdownPluginEntry>),
     [plugins],
   );
-  const syntaxPlugins = useMemo(
-    () => getStableMarkdownSyntaxEntries(preparedPlugins),
-    [preparedPlugins],
-  );
+  const syntaxPlugins = useStableMarkdownSyntaxEntries(preparedPlugins);
   const hasMathRenderer = components?.math != null;
   const legacyParseOptions = useMemo<
     ParseOptions<ReadonlyArray<MarkdownPluginEntry>>

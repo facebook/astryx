@@ -27,6 +27,18 @@ export type MarkdownExtensionNode<
   Display extends 'inline' | 'block' = 'inline' | 'block',
 > = MarkdownAstExtensionNode<PluginName, NodeName, Data, Display>;
 
+export function isMarkdownExtensionNode<Node extends MarkdownExtensionNode>(
+  node: MarkdownAstNodeBase & {readonly type: string},
+  plugin: Node['plugin'],
+  name: Node['name'],
+): node is Node {
+  return (
+    node.type === 'extension' &&
+    (node as MarkdownExtensionNode).plugin === plugin &&
+    (node as MarkdownExtensionNode).name === name
+  );
+}
+
 export interface MarkdownTokenizerInput {
   readonly source: string;
   /** UTF-16 offset into `source`. */
@@ -89,15 +101,14 @@ export interface MarkdownTransformContext {
   report(message: string): void;
 }
 
-export type MarkdownTransform<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
-> = (
-  document: MarkdownAstRoot<Node>,
+export type MarkdownTransform = (
+  document: MarkdownAstRoot<MarkdownExtensionNode>,
   context: MarkdownTransformContext,
-) => MarkdownAstRoot<Node>;
+) => MarkdownAstRoot<MarkdownExtensionNode>;
 
 export interface MarkdownExtensionRenderer<Node extends MarkdownExtensionNode> {
-  readonly render: React.ComponentType<{node: Node}>;
+  /** Pure render callback. Hooks belong in components returned by this callback. */
+  readonly render: (props: {node: Node}) => React.ReactNode;
   readonly toText: (node: Node) => string;
 }
 
@@ -108,33 +119,31 @@ export type MarkdownExtensionRenderers<Node extends MarkdownExtensionNode> =
     >;
   }>;
 
-interface MarkdownPluginDefinitionBase<
-  Name extends string,
-  Node extends MarkdownExtensionNode<Name>,
-> {
+interface MarkdownPluginDefinitionBase<Name extends string> {
   readonly name: Name;
   readonly apiVersion: 1;
-  readonly transform?: MarkdownTransform<Node>;
-  readonly renderers?: MarkdownExtensionRenderers<Node>;
 }
 
 export interface MarkdownSyntaxPluginDefinition<
   Name extends string,
   Node extends MarkdownExtensionNode<Name>,
-> extends MarkdownPluginDefinitionBase<Name, Node> {
+> extends MarkdownPluginDefinitionBase<Name> {
   readonly parseKey: string;
   readonly syntax: MarkdownSyntaxCapability<Node>;
+  readonly transform?: MarkdownTransform;
   readonly renderers: MarkdownExtensionRenderers<Node>;
 }
 
-export interface MarkdownTransformPluginDefinition<
+export type MarkdownTransformPluginDefinition<
   Name extends string,
   Node extends MarkdownExtensionNode<Name> = never,
-> extends MarkdownPluginDefinitionBase<Name, Node> {
-  readonly transform: MarkdownTransform<Node>;
+> = MarkdownPluginDefinitionBase<Name> & {
+  readonly transform: MarkdownTransform;
   readonly parseKey?: never;
   readonly syntax?: never;
-}
+} & ([Node] extends [never]
+    ? {readonly renderers?: never}
+    : {readonly renderers: MarkdownExtensionRenderers<Node>});
 
 export type MarkdownPluginDefinition<
   Name extends string,
@@ -411,33 +420,6 @@ export function prepareMarkdownPlugins(
   return prepared;
 }
 
-const stableSyntaxEntries = new Map<
-  string,
-  ReadonlyArray<MarkdownPluginEntry>
->();
-const MAX_STABLE_SYNTAX_IDENTITIES = 100;
-
-/** @internal Reuse parse-equivalent syntax entries across live transforms. */
-export function getStableMarkdownSyntaxEntries(
-  plugins: PreparedMarkdownPlugins | undefined,
-): ReadonlyArray<MarkdownPluginEntry> | undefined {
-  if (plugins == null || plugins.syntaxIdentity === '') {
-    return undefined;
-  }
-  const cached = stableSyntaxEntries.get(plugins.syntaxIdentity);
-  if (cached != null) {
-    return cached;
-  }
-  if (stableSyntaxEntries.size >= MAX_STABLE_SYNTAX_IDENTITIES) {
-    const oldest = stableSyntaxEntries.keys().next().value;
-    if (oldest != null) {
-      stableSyntaxEntries.delete(oldest);
-    }
-  }
-  stableSyntaxEntries.set(plugins.syntaxIdentity, plugins.syntaxEntries);
-  return plugins.syntaxEntries;
-}
-
 export function isMarkdownPluginData(
   value: unknown,
   seen: Set<object> = new Set(),
@@ -456,13 +438,18 @@ export function isMarkdownPluginData(
     return false;
   }
   seen.add(value);
+  let valid: boolean;
   if (Array.isArray(value)) {
-    return value.every(item => isMarkdownPluginData(item, seen));
+    valid = value.every(item => isMarkdownPluginData(item, seen));
+  } else if (Object.getPrototypeOf(value) !== Object.prototype) {
+    valid = false;
+  } else {
+    valid = Object.values(value).every(item =>
+      isMarkdownPluginData(item, seen),
+    );
   }
-  if (Object.getPrototypeOf(value) !== Object.prototype) {
-    return false;
-  }
-  return Object.values(value).every(item => isMarkdownPluginData(item, seen));
+  seen.delete(value);
+  return valid;
 }
 
 export function freezeMarkdownPluginData<T extends MarkdownPluginData>(
@@ -496,13 +483,13 @@ interface SourceInvariant {
 
 function collectSourceInvariants(
   root: MarkdownAstRoot<MarkdownExtensionNode>,
-): Map<string, SourceInvariant> {
-  const positions = new Map<string, SourceInvariant>();
+): Map<string, SourceInvariant[]> {
+  const positions = new Map<string, SourceInvariant[]>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
     const key = positionKey(node.position);
     if (key != null) {
       const record = node as unknown as Record<string, unknown>;
-      positions.set(key, {
+      const invariant = {
         type: node.type,
         depth: record.depth,
         ordered: record.ordered,
@@ -511,7 +498,8 @@ function collectSourceInvariants(
         plugin: record.plugin,
         name: record.name,
         display: record.display,
-      });
+      };
+      positions.set(key, [...(positions.get(key) ?? []), invariant]);
     }
     if ('children' in node && Array.isArray(node.children)) {
       for (const child of node.children) {
@@ -536,16 +524,25 @@ function extensionSignature(node: Record<string, unknown>): string {
   ]);
 }
 
+interface ExistingExtension {
+  readonly plugin: string;
+  count: number;
+}
+
 function collectExtensionSignatures(
   root: MarkdownAstRoot<MarkdownExtensionNode>,
-): Map<string, number> {
-  const signatures = new Map<string, number>();
+): Map<string, ExistingExtension> {
+  const signatures = new Map<string, ExistingExtension>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
     if (node.type === 'extension') {
       const signature = extensionSignature(
         node as unknown as Record<string, unknown>,
       );
-      signatures.set(signature, (signatures.get(signature) ?? 0) + 1);
+      const existing = signatures.get(signature);
+      signatures.set(signature, {
+        plugin: String((node as unknown as Record<string, unknown>).plugin),
+        count: (existing?.count ?? 0) + 1,
+      });
     }
     if ('children' in node && Array.isArray(node.children)) {
       for (const child of node.children) {
@@ -624,10 +621,10 @@ function validateAst(
   root: unknown,
   pluginNames: ReadonlySet<string>,
   rendererKeys: ReadonlySet<string>,
-  sourcePositions: ReadonlyMap<string, SourceInvariant>,
+  sourcePositions: Map<string, SourceInvariant[]>,
   expectedHeadingDepths: ReadonlyArray<number>,
   activePluginName: string,
-  existingExtensions: Map<string, number>,
+  existingExtensions: Map<string, ExistingExtension>,
   display: 'inline' | 'block',
 ): root is MarkdownAstRoot<MarkdownExtensionNode> {
   if (root == null || typeof root !== 'object') {
@@ -661,6 +658,7 @@ function validateAst(
       if (
         (PHRASING_PARENTS.has(parent) && !phrasing) ||
         (BLOCK_PARENTS.has(parent) && !block) ||
+        (parent === 'link' && type === 'link') ||
         (parent === 'list' && type !== 'listItem') ||
         (parent === 'table' && type !== 'tableRow') ||
         (parent === 'tableRow' && type !== 'tableCell')
@@ -684,20 +682,25 @@ function validateAst(
       }
     }
     if (key != null) {
-      const invariant = sourcePositions.get(key);
-      if (
-        invariant == null ||
-        invariant.type !== type ||
-        invariant.depth !== node.depth ||
-        invariant.ordered !== node.ordered ||
-        invariant.start !== node.start ||
-        invariant.delimiter !== node.delimiter ||
-        invariant.plugin !== node.plugin ||
-        invariant.name !== node.name ||
-        invariant.display !== node.display
-      ) {
+      const invariants = sourcePositions.get(key) ?? [];
+      const invariantIndex = invariants.findIndex(
+        invariant =>
+          invariant.type === type &&
+          invariant.depth === node.depth &&
+          invariant.ordered === node.ordered &&
+          invariant.start === node.start &&
+          invariant.delimiter === node.delimiter &&
+          invariant.plugin === node.plugin &&
+          invariant.name === node.name &&
+          invariant.display === node.display,
+      );
+      if (invariantIndex < 0) {
         return false;
       }
+      invariants.splice(invariantIndex, 1);
+    }
+    if (type !== 'extension' && node.source !== undefined) {
+      return false;
     }
 
     switch (type) {
@@ -729,10 +732,7 @@ function validateAst(
         }
         break;
       case 'link':
-        if (
-          typeof node.url !== 'string' ||
-          !isSafeMarkdownUrl(node.url)
-        ) {
+        if (typeof node.url !== 'string' || !isSafeMarkdownUrl(node.url)) {
           return false;
         }
         break;
@@ -786,13 +786,16 @@ function validateAst(
         ) {
           return false;
         }
-        if (node.plugin !== activePluginName) {
-          const signature = extensionSignature(node);
-          const remaining = existingExtensions.get(signature) ?? 0;
-          if (remaining === 0) {
-            return false;
-          }
-          existingExtensions.set(signature, remaining - 1);
+        const signature = extensionSignature(node);
+        const existing = existingExtensions.get(signature);
+        if (existing != null && existing.count > 0) {
+          existing.count--;
+        } else if (
+          node.plugin !== activePluginName ||
+          node.source !== undefined ||
+          node.position !== undefined
+        ) {
+          return false;
         }
         break;
       }
@@ -833,19 +836,31 @@ function validateAst(
     headingDepths.every(
       (depth, index) => depth === expectedHeadingDepths[index],
     ) &&
+    Array.from(existingExtensions.values()).every(
+      extension =>
+        extension.plugin === activePluginName || extension.count === 0,
+    ) &&
     (display === 'block' ||
       (candidate.children.length === 1 &&
         candidate.children[0]?.type === 'paragraph'))
   );
 }
 
+const deeplyFrozenAstValues = new WeakSet<object>();
+
 function freezeAst<T>(value: T, seen: Set<object> = new Set()): T {
-  if (value != null && typeof value === 'object' && !seen.has(value)) {
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    !seen.has(value) &&
+    !deeplyFrozenAstValues.has(value)
+  ) {
     seen.add(value);
     for (const nested of Object.values(value)) {
       freezeAst(nested, seen);
     }
     Object.freeze(value);
+    deeplyFrozenAstValues.add(value);
   }
   return value;
 }
@@ -878,11 +893,8 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
   }
   const pluginNames = new Set(plugins.entries.map(entry => entry.name));
   const rendererKeys = new Set(plugins.renderers.keys());
-  const positions = collectSourceInvariants(root);
-  const headingDepths = collectHeadingDepths(root);
   let document = freezeAst(root);
   for (const prepared of plugins.transforms) {
-    const existingExtensions = collectExtensionSignatures(document);
     try {
       const next = prepared.transform(document, {
         source,
@@ -903,6 +915,12 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
       ) {
         throw new TypeError('Async Markdown transforms are not supported');
       }
+      if (next === document) {
+        continue;
+      }
+      const positions = collectSourceInvariants(document);
+      const headingDepths = collectHeadingDepths(document);
+      const existingExtensions = collectExtensionSignatures(document);
       if (
         !validateAst(
           next,
