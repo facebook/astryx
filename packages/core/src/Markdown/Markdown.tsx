@@ -711,11 +711,13 @@ interface MarkdownPluginBoundaryProps {
   fallback: React.ReactNode;
   pluginName: string;
   resetKey: unknown;
+  resetRenderer: unknown;
 }
 
 interface MarkdownPluginBoundaryState {
   failed: boolean;
   resetKey: unknown;
+  resetRenderer: unknown;
 }
 
 class MarkdownPluginBoundary extends Component<
@@ -725,6 +727,7 @@ class MarkdownPluginBoundary extends Component<
   state: MarkdownPluginBoundaryState = {
     failed: false,
     resetKey: this.props.resetKey,
+    resetRenderer: this.props.resetRenderer,
   };
 
   static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
@@ -735,9 +738,14 @@ class MarkdownPluginBoundary extends Component<
     props: MarkdownPluginBoundaryProps,
     state: MarkdownPluginBoundaryState,
   ): Partial<MarkdownPluginBoundaryState> | null {
-    return props.resetKey === state.resetKey
+    return props.resetKey === state.resetKey &&
+      props.resetRenderer === state.resetRenderer
       ? null
-      : {failed: false, resetKey: props.resetKey};
+      : {
+          failed: false,
+          resetKey: props.resetKey,
+          resetRenderer: props.resetRenderer,
+        };
   }
 
   componentDidCatch(error: unknown): void {
@@ -1072,6 +1080,7 @@ function renderInline(
           key={index}
           pluginName={node.plugin}
           resetKey={node}
+          resetRenderer={renderer.render}
           fallback={fallback}>
           {rendered}
         </MarkdownPluginBoundary>
@@ -1712,6 +1721,7 @@ function renderBlock(
             <MarkdownPluginBoundary
               pluginName={node.plugin}
               resetKey={node}
+              resetRenderer={renderer.render}
               fallback={fallback}>
               {rendered}
             </MarkdownPluginBoundary>

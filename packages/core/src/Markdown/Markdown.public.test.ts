@@ -11,6 +11,7 @@ import {describe, expectTypeOf, it} from 'vitest';
 import {
   createIncrementalState,
   createMarkdownPlugin,
+  isMarkdownExtensionNode,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
@@ -191,5 +192,16 @@ describe('Markdown public parser types', () => {
 
     expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
     expectTypeOf(visitMarkdownNodes).toBeFunction();
+    expectTypeOf(isMarkdownExtensionNode).toBeFunction();
+
+    function compileOnlyPluginGuards() {
+      // @ts-expect-error transforms that own extension nodes require renderers
+      createMarkdownPlugin<'public-demo', PublicNode>({
+        name: 'public-demo',
+        apiVersion: 1,
+        transform: root => root,
+      });
+    }
+    expectTypeOf(compileOnlyPluginGuards).toBeFunction();
   });
 });

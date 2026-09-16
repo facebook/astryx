@@ -6,7 +6,7 @@
  * @position Subpath entry point: `@astryxdesign/core/Markdown/utils`
  */
 
-export {createMarkdownPlugin} from './plugins';
+export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,

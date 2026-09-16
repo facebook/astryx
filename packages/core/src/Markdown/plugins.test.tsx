@@ -7,6 +7,7 @@
  * @position Focused acceptance tests for the core Markdown plugin protocol
  */
 
+import {renderToString} from 'react-dom/server';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {Markdown} from './Markdown';
@@ -17,7 +18,7 @@ import {
   parseMarkdownIncremental,
 } from './parser';
 import type {InlineNode} from './parser';
-import {createMarkdownPlugin} from './plugins';
+import {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 import {visitMarkdownNodes} from './ast';
 import type {
   MarkdownExtensionNode,
@@ -230,6 +231,38 @@ describe('Markdown plugin protocol', () => {
       children: [{type: 'text', content: '@{Grace}'}],
     });
     expect(nodes[4]).toEqual({type: 'code', content: '@{Linus}'});
+
+    const forgedProvenance = createMarkdownPlugin<'mentions', MentionNode>({
+      ...mentionDefinition,
+      syntax: {
+        inline: [
+          {
+            ...mentionDefinition.syntax.inline[0],
+            tokenize(input) {
+              const result = mentionDefinition.syntax.inline[0].tokenize(input);
+              return result.status === 'match'
+                ? ({
+                    ...result,
+                    node: {
+                      ...result.node,
+                      source: 'forged',
+                      position: {start: {offset: 99}, end: {offset: 100}},
+                    },
+                  } as never)
+                : result;
+            },
+          },
+        ],
+      },
+    });
+    const [forgedNode] = parseInline('@{Ada}', {
+      plugins: [forgedProvenance],
+    });
+    expect(forgedNode).toMatchObject({
+      type: 'extension',
+      source: '@{Ada}',
+    });
+    expect(forgedNode).not.toHaveProperty('position');
   });
 
   it('renders inline and top-level block extension nodes', () => {
@@ -349,6 +382,94 @@ describe('Markdown plugin protocol', () => {
     warning.mockRestore();
   });
 
+  it('rejects unsafe destinations, forged provenance, and foreign deletion', () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const unsafeDestination = createMarkdownPlugin({
+      name: 'unsafe-destination',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'paragraph'
+              ? {
+                  ...block,
+                  children: [
+                    {
+                      type: 'link' as const,
+                      url: 'javascript:alert(1)',
+                      children: [{type: 'text' as const, value: 'unsafe'}],
+                    },
+                  ],
+                }
+              : block,
+          ),
+        };
+      },
+    });
+    const forgedSource = createMarkdownPlugin<'badges', BadgeNode>({
+      ...badgeDefinition,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'paragraph'
+              ? {
+                  ...block,
+                  children: [
+                    ...block.children,
+                    {
+                      type: 'extension' as const,
+                      plugin: 'badges' as const,
+                      name: 'badge' as const,
+                      display: 'inline' as const,
+                      data: {label: 'forged'},
+                      source: 'forged',
+                    },
+                  ],
+                }
+              : block,
+          ),
+        };
+      },
+    } as MarkdownTransformPluginDefinition<'badges', BadgeNode>);
+    const deleteForeign = createMarkdownPlugin({
+      name: 'delete-foreign',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'paragraph'
+              ? {
+                  ...block,
+                  children: block.children.filter(
+                    astNode => astNode.type !== 'extension',
+                  ),
+                }
+              : block,
+          ),
+        };
+      },
+    });
+
+    expect(parseMarkdown('Safe', {plugins: [unsafeDestination]})).toMatchObject(
+      [{type: 'paragraph', children: [{type: 'text', content: 'Safe'}]}],
+    );
+    expect(parseMarkdown('Safe', {plugins: [forgedSource]})).toMatchObject([
+      {type: 'paragraph', children: [{type: 'text', content: 'Safe'}]},
+    ]);
+    expect(
+      parseMarkdown('@{Ada}', {plugins: [mentionPlugin, deleteForeign]}),
+    ).toMatchObject([
+      {
+        type: 'paragraph',
+        children: [{type: 'extension', plugin: 'mentions', name: 'mention'}],
+      },
+    ]);
+    warning.mockRestore();
+  });
+
   it('narrows visitor callbacks by node kind', () => {
     const plugin = createMarkdownPlugin({
       name: 'typed-visitor',
@@ -356,6 +477,17 @@ describe('Markdown plugin protocol', () => {
       transform(root) {
         visitMarkdownNodes(root, 'heading', heading => {
           expectTypeOf(heading.depth).toEqualTypeOf<1 | 2 | 3 | 4 | 5 | 6>();
+        });
+        visitMarkdownNodes(root, 'extension', extension => {
+          if (
+            isMarkdownExtensionNode<MentionNode>(
+              extension,
+              'mentions',
+              'mention',
+            )
+          ) {
+            expectTypeOf(extension.data.label).toBeString();
+          }
         });
         return root;
       },
@@ -416,6 +548,24 @@ describe('Markdown plugin protocol', () => {
     });
   });
 
+  it('preserves settled identities when finalizing deferred syntax', () => {
+    const state = createIncrementalState();
+    const streaming = parseMarkdownIncremental('First\n\n@{', state, {
+      plugins: [mentionPlugin],
+    });
+    const firstBlock = streaming[0];
+    const final = parseMarkdownIncremental('First\n\n@{', state, {
+      plugins: [mentionPlugin],
+      isFinal: true,
+    });
+
+    expect(final[0]).toBe(firstBlock);
+    expect(final[1]).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: '@{'}],
+    });
+  });
+
   it('uses transformed heading text for both Markdown and Outline', () => {
     const plugin = replaceText('Draft', 'Final');
     const source = '# Draft';
@@ -427,6 +577,41 @@ describe('Markdown plugin protocol', () => {
       'id',
       'final',
     );
+  });
+
+  it('passes matching transform finality to Markdown-derived outlines', () => {
+    const plugin = createMarkdownPlugin({
+      name: 'finality-label',
+      apiVersion: 1,
+      transform(root, context) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'heading'
+              ? {
+                  ...block,
+                  children: [
+                    {type: 'text' as const, value: context.isFinal ? 'Final' : 'Draft'},
+                  ],
+                }
+              : block,
+          ),
+        };
+      },
+    });
+
+    expect(
+      parseOutlineFromMarkdown('# Pending', {
+        plugins: [plugin],
+        isFinal: false,
+      }),
+    ).toEqual([{id: 'draft', label: 'Draft', level: 1}]);
+    expect(
+      parseOutlineFromMarkdown('# Pending', {
+        plugins: [plugin],
+        isFinal: true,
+      }),
+    ).toEqual([{id: 'final', label: 'Final', level: 1}]);
   });
 
   it('falls back to readable source when an extension renderer throws', () => {
@@ -460,6 +645,9 @@ describe('Markdown plugin protocol', () => {
     });
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(
+      renderToString(<Markdown plugins={[broken]}>{'Hello @{Ada}'}</Markdown>),
+    ).toContain('@{Ada}');
     render(<Markdown plugins={[broken]}>{'Hello @{Ada}'}</Markdown>);
     expect(screen.getByText(/@\{Ada\}/)).toBeInTheDocument();
     warning.mockRestore();

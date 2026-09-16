@@ -196,10 +196,13 @@ function ControlledOutline() {
           code: `
 import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
 
-function MarkdownOutline({markdown, plugins}) {
-  // Pass the same plugins to Markdown and Outline so transformed headings
-  // share labels and ids.
-  const items = useOutlineFromMarkdown(markdown, {plugins});
+function MarkdownOutline({markdown, plugins, isStreaming}) {
+  // Pass the same plugins and finality to Markdown and Outline so transformed
+  // headings share labels and ids while content streams.
+  const items = useOutlineFromMarkdown(markdown, {
+    plugins,
+    isFinal: !isStreaming,
+  });
   return <Outline items={items} />;
 }
 `,

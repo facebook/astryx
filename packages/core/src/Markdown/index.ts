@@ -8,7 +8,7 @@
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {createMarkdownPlugin} from './plugins';
+export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,
