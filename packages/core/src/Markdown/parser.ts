@@ -2,13 +2,21 @@
 
 /**
  * @file parser.ts
- * @input Markdown string
- * @output Array of MarkdownNode AST nodes, including opt-in math; heading slug
- *   helpers
- *   (inlineText, slugify, uniqueSlug) shared by Markdown rendering and
- *   Outline's parseOutlineFromMarkdown
- * @position Core parser; consumed by Markdown.tsx and Outline
+ * @input Markdown string and released parse options
+ * @output Canonical MDAST-aligned nodes for internal consumers plus unchanged
+ *   released parser-node projections; shared heading slug helpers
+ * @position Core parser and compatibility boundary; consumed by Markdown and Outline
  */
+
+import type {
+  MarkdownAstBlockContent,
+  MarkdownAstListItem,
+  MarkdownAstPhrasingContent,
+  MarkdownAstPosition,
+  MarkdownAstRoot,
+  MarkdownAstTableCell,
+  MarkdownAstTableRow,
+} from './ast';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -130,6 +138,199 @@ export type TableCellNode = {children: InlineNode[]};
 type TableCellNodeWithMath = {children: InlineNodeWithMath[]};
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
+type LegacyProjectionCache = WeakMap<object, object>;
+
+function projectRange(
+  position: MarkdownAstPosition | undefined,
+): BlockMetadata {
+  const start = position?.start.offset;
+  const end = position?.end.offset;
+  return start == null || end == null ? {} : {range: {start, end}};
+}
+
+function projectInlineNode(
+  node: MarkdownAstPhrasingContent,
+  cache: LegacyProjectionCache,
+): InlineNodeWithMath {
+  const cached = cache.get(node);
+  if (cached != null) {
+    return cached as InlineNodeWithMath;
+  }
+  let projected: InlineNodeWithMath;
+  switch (node.type) {
+    case 'text':
+      projected = {type: 'text', content: node.value};
+      break;
+    case 'strong':
+      projected = {
+        type: 'bold',
+        children: node.children.map(child => projectInlineNode(child, cache)),
+      };
+      break;
+    case 'emphasis':
+      projected = {
+        type: 'italic',
+        children: node.children.map(child => projectInlineNode(child, cache)),
+      };
+      break;
+    case 'delete':
+      projected = {
+        type: 'strikethrough',
+        children: node.children.map(child => projectInlineNode(child, cache)),
+      };
+      break;
+    case 'inlineCode':
+      projected = {type: 'code', content: node.value};
+      break;
+    case 'inlineMath':
+      projected = {type: 'math', value: node.value};
+      break;
+    case 'link':
+      projected = {
+        type: 'link',
+        href: node.url,
+        children: node.children.map(child => projectInlineNode(child, cache)),
+      };
+      break;
+    case 'image':
+      projected = {type: 'image', src: node.url, alt: node.alt};
+      break;
+    case 'citation':
+      projected = {type: 'citation', sourceId: node.sourceId};
+      break;
+    case 'break':
+      projected = {type: 'break'};
+      break;
+  }
+  cache.set(node, projected);
+  return projected;
+}
+
+function projectTableCell(
+  node: MarkdownAstTableCell,
+  cache: LegacyProjectionCache,
+): TableCellNodeWithMath {
+  const cached = cache.get(node);
+  if (cached != null) {
+    return cached as TableCellNodeWithMath;
+  }
+  const projected = {
+    children: node.children.map(child => projectInlineNode(child, cache)),
+  };
+  cache.set(node, projected);
+  return projected;
+}
+
+function projectListItem(
+  node: MarkdownAstListItem,
+  cache: LegacyProjectionCache,
+): ListItemNodeWithMath {
+  const cached = cache.get(node);
+  if (cached != null) {
+    return cached as ListItemNodeWithMath;
+  }
+  const projected = {
+    checked: node.checked,
+    children: node.children.map(child => projectBlockNode(child, cache)),
+  };
+  cache.set(node, projected);
+  return projected;
+}
+
+function projectBlockNode(
+  node: MarkdownAstBlockContent,
+  cache: LegacyProjectionCache,
+): BlockNodeWithMath {
+  const cached = cache.get(node);
+  if (cached != null) {
+    return cached as BlockNodeWithMath;
+  }
+  const metadata = projectRange(node.position);
+  let projected: BlockNodeWithMath;
+  switch (node.type) {
+    case 'heading':
+      projected = {
+        type: 'heading',
+        level: node.depth,
+        children: node.children.map(child => projectInlineNode(child, cache)),
+        ...metadata,
+      };
+      break;
+    case 'paragraph':
+      projected = {
+        type: 'paragraph',
+        children: node.children.map(child => projectInlineNode(child, cache)),
+        ...metadata,
+      };
+      break;
+    case 'code':
+      projected = {
+        type: 'codeblock',
+        language: node.lang ?? 'plaintext',
+        content: node.value,
+        ...metadata,
+      };
+      break;
+    case 'math':
+      projected = {type: 'math', value: node.value, ...metadata};
+      break;
+    case 'blockquote':
+      projected = {
+        type: 'blockquote',
+        children: node.children.map(child => projectBlockNode(child, cache)),
+        ...metadata,
+      };
+      break;
+    case 'list':
+      projected = {
+        type: 'list',
+        ordered: node.ordered,
+        start: node.start,
+        delimiter: node.delimiter,
+        loose: node.spread,
+        items: node.children.map(item => projectListItem(item, cache)),
+        ...metadata,
+      };
+      break;
+    case 'table': {
+      const [header = {type: 'tableRow' as const, children: []}, ...rows] =
+        node.children;
+      projected = {
+        type: 'table',
+        headers: header.children.map(cell => projectTableCell(cell, cache)),
+        alignments: [...node.align],
+        rows: rows.map(row =>
+          row.children.map(cell => projectTableCell(cell, cache)),
+        ),
+        ...metadata,
+      };
+      break;
+    }
+    case 'thematicBreak':
+      projected = {type: 'hr', ...metadata};
+      break;
+    case 'image':
+      projected = {type: 'image', alt: node.alt, src: node.url, ...metadata};
+      break;
+  }
+  cache.set(node, projected);
+  return projected;
+}
+
+function projectInlineNodes(
+  nodes: ReadonlyArray<MarkdownAstPhrasingContent>,
+  cache: LegacyProjectionCache = new WeakMap(),
+): InlineNodeWithMath[] {
+  return nodes.map(node => projectInlineNode(node, cache));
+}
+
+function projectMarkdownRoot(
+  root: MarkdownAstRoot,
+  cache: LegacyProjectionCache = new WeakMap(),
+): BlockNodeWithMath[] {
+  return root.children.map(node => projectBlockNode(node, cache));
+}
+
 // ---------------------------------------------------------------------------
 // Parse options
 // ---------------------------------------------------------------------------
@@ -201,7 +402,10 @@ type ResolvedOptions = {
   readonly linkDefs?: ReadonlyMap<string, string>;
 };
 
-const EMPTY_OPTS: ResolvedOptions = {sourceIds: undefined, autolink: undefined};
+const EMPTY_OPTS: ResolvedOptions = {
+  sourceIds: undefined,
+  autolink: undefined,
+};
 
 function resolveOptions(
   arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
@@ -542,7 +746,7 @@ function matchReferenceLink(
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
-): {node: InlineNodeWithMath; end: number} | null {
+): {node: MarkdownAstPhrasingContent; end: number} | null {
   const textClose = text.indexOf(']', start + 1);
   if (textClose === -1) {
     return null;
@@ -560,7 +764,11 @@ function matchReferenceLink(
       const href = linkDefs.get(normalizeLinkLabel(label));
       if (href != null && isSafeUrl(href)) {
         return {
-          node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
+          node: {
+            type: 'link',
+            url: href,
+            children: parseInlineImpl(linkText, opts),
+          },
           end: labelClose + 1,
         };
       }
@@ -577,7 +785,7 @@ function matchReferenceLink(
     return null;
   }
   return {
-    node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
+    node: {type: 'link', url: href, children: parseInlineImpl(linkText, opts)},
     end: textClose + 1,
   };
 }
@@ -587,7 +795,7 @@ function matchReferenceImage(
   text: string,
   start: number,
   linkDefs: ReadonlyMap<string, string>,
-): {node: InlineNodeWithMath; end: number} | null {
+): {node: MarkdownAstPhrasingContent; end: number} | null {
   const altClose = text.indexOf(']', start + 2);
   if (altClose === -1) {
     return null;
@@ -600,7 +808,7 @@ function matchReferenceImage(
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
       if (src != null && isSafeUrl(src)) {
-        return {node: {type: 'image', src, alt}, end: labelClose + 1};
+        return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
       }
       // No match — fall back to a shortcut `![alt]`.
     }
@@ -612,7 +820,7 @@ function matchReferenceImage(
   if (src == null || !isSafeUrl(src)) {
     return null;
   }
-  return {node: {type: 'image', src, alt}, end: altClose + 1};
+  return {node: {type: 'image', url: src, alt}, end: altClose + 1};
 }
 
 // ---------------------------------------------------------------------------
@@ -791,6 +999,14 @@ export function parseInline(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): InlineNodeWithMath[] {
+  return projectInlineNodes(parseInlineAst(text, arg));
+}
+
+/** @internal Canonical inline parse used by Markdown rendering. */
+export function parseInlineAst(
+  text: string,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): MarkdownAstPhrasingContent[] {
   return parseInlineEntry(text, resolveOptions(arg));
 }
 
@@ -806,7 +1022,7 @@ export function parseInline(
 function parseInlineEntry(
   text: string,
   opts: ResolvedOptions,
-): InlineNodeWithMath[] {
+): MarkdownAstPhrasingContent[] {
   const nodes = parseInlineImpl(text, opts);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
@@ -814,14 +1030,14 @@ function parseInlineEntry(
 function parseInlineImpl(
   text: string,
   opts: ResolvedOptions,
-): InlineNodeWithMath[] {
-  const nodes: InlineNodeWithMath[] = [];
+): MarkdownAstPhrasingContent[] {
+  const nodes: MarkdownAstPhrasingContent[] = [];
   let i = 0;
 
   while (i < text.length) {
     // --- Escape ---
     if (text[i] === '\\' && i + 1 < text.length) {
-      nodes.push({type: 'text', content: text[i + 1]});
+      nodes.push({type: 'text', value: text[i + 1]});
       i += 2;
       continue;
     }
@@ -832,7 +1048,10 @@ function parseInlineImpl(
       const openIndex = i + tickCount;
       const closeIndex = text.indexOf('`'.repeat(tickCount), openIndex);
       if (closeIndex !== -1) {
-        nodes.push({type: 'code', content: text.slice(openIndex, closeIndex)});
+        nodes.push({
+          type: 'inlineCode',
+          value: text.slice(openIndex, closeIndex),
+        });
         i = closeIndex + tickCount;
         continue;
       }
@@ -842,7 +1061,10 @@ function parseInlineImpl(
     if (opts.math && text[i] === '$') {
       const closeIndex = findInlineMathEnd(text, i);
       if (closeIndex !== -1) {
-        nodes.push({type: 'math', value: text.slice(i + 1, closeIndex)});
+        nodes.push({
+          type: 'inlineMath',
+          value: text.slice(i + 1, closeIndex),
+        });
         i = closeIndex + 1;
         continue;
       }
@@ -867,11 +1089,11 @@ function parseInlineImpl(
           const src = text.slice(altClose + 2, srcClose);
           if (!isSafeUrl(src)) {
             // Dangerous scheme — emit as plain text.
-            nodes.push({type: 'text', content: text.slice(i, srcClose + 1)});
+            nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
           } else {
             nodes.push({
               type: 'image',
-              src,
+              url: src,
               alt: text.slice(i + 2, altClose),
             });
           }
@@ -910,11 +1132,11 @@ function parseInlineImpl(
           const href = text.slice(textClose + 2, urlClose);
           if (!isSafeUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
-            nodes.push({type: 'text', content: text.slice(i, urlClose + 1)});
+            nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
           } else {
             nodes.push({
               type: 'link',
-              href,
+              url: href,
               children: parseInlineImpl(text.slice(i + 1, textClose), opts),
             });
           }
@@ -950,10 +1172,10 @@ function parseInlineImpl(
           (!isUnderscore || !isWordChar(text[closeIndex + 3]))
         ) {
           nodes.push({
-            type: 'bold',
+            type: 'strong',
             children: [
               {
-                type: 'italic',
+                type: 'emphasis',
                 children: parseInlineImpl(text.slice(i + 3, closeIndex), opts),
               },
             ],
@@ -980,7 +1202,7 @@ function parseInlineImpl(
           (!isUnderscore || !isWordChar(text[closeIndex + 2]))
         ) {
           nodes.push({
-            type: 'bold',
+            type: 'strong',
             children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
           });
           i = closeIndex + 2;
@@ -994,7 +1216,7 @@ function parseInlineImpl(
       const closeIndex = text.indexOf('~~', i + 2);
       if (closeIndex !== -1) {
         nodes.push({
-          type: 'strikethrough',
+          type: 'delete',
           children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
         });
         i = closeIndex + 2;
@@ -1015,7 +1237,7 @@ function parseInlineImpl(
           (!isUnderscore || !isWordChar(text[closeIndex + 1]))
         ) {
           nodes.push({
-            type: 'italic',
+            type: 'emphasis',
             children: parseInlineImpl(text.slice(i + 1, closeIndex), opts),
           });
           i = closeIndex + 1;
@@ -1043,9 +1265,12 @@ function parseInlineImpl(
         if (trimmed.length > 0) {
           const last = nodes[nodes.length - 1];
           if (last?.type === 'text') {
-            last.content += trimmed;
+            nodes[nodes.length - 1] = {
+              ...last,
+              value: last.value + trimmed,
+            };
           } else {
-            nodes.push({type: 'text', content: trimmed});
+            nodes.push({type: 'text', value: trimmed});
           }
         }
         nodes.push({type: 'break'});
@@ -1056,9 +1281,9 @@ function parseInlineImpl(
 
     const last = nodes[nodes.length - 1];
     if (last?.type === 'text') {
-      last.content += content;
+      nodes[nodes.length - 1] = {...last, value: last.value + content};
     } else {
-      nodes.push({type: 'text', content});
+      nodes.push({type: 'text', value: content});
     }
     i = end;
   }
@@ -1303,26 +1528,26 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
  * Split a text-node `content` string into a sequence of text + link nodes
  * based on autolink matches.
  */
-function splitTextOnAutolinks(content: string): InlineNodeWithMath[] {
+function splitTextOnAutolinks(content: string): MarkdownAstPhrasingContent[] {
   const matches = scanAutolinksInText(content);
   if (matches.length === 0) {
-    return [{type: 'text', content}];
+    return [{type: 'text', value: content}];
   }
-  const out: InlineNodeWithMath[] = [];
+  const out: MarkdownAstPhrasingContent[] = [];
   let cursor = 0;
   for (const m of matches) {
     if (m.start > cursor) {
-      out.push({type: 'text', content: content.slice(cursor, m.start)});
+      out.push({type: 'text', value: content.slice(cursor, m.start)});
     }
     out.push({
       type: 'link',
-      href: m.href,
-      children: [{type: 'text', content: m.display}],
+      url: m.href,
+      children: [{type: 'text', value: m.display}],
     });
     cursor = m.end;
   }
   if (cursor < content.length) {
-    out.push({type: 'text', content: content.slice(cursor)});
+    out.push({type: 'text', value: content.slice(cursor)});
   }
   return out;
 }
@@ -1335,23 +1560,25 @@ function splitTextOnAutolinks(content: string): InlineNodeWithMath[] {
  * `image` alt text, `citation`, or `break`. Runs only on the outermost
  * block's inline tree (see `parseInlineEntry`).
  */
-function transformAutolinks(nodes: InlineNodeWithMath[]): InlineNodeWithMath[] {
-  const out: InlineNodeWithMath[] = [];
+function transformAutolinks(
+  nodes: ReadonlyArray<MarkdownAstPhrasingContent>,
+): MarkdownAstPhrasingContent[] {
+  const out: MarkdownAstPhrasingContent[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
-      const split = splitTextOnAutolinks(node.content);
+      const split = splitTextOnAutolinks(node.value);
       for (const seg of split) {
         const last = out[out.length - 1];
         if (seg.type === 'text' && last?.type === 'text') {
-          last.content += seg.content;
+          out[out.length - 1] = {...last, value: last.value + seg.value};
         } else {
           out.push(seg);
         }
       }
     } else if (
-      node.type === 'bold' ||
-      node.type === 'italic' ||
-      node.type === 'strikethrough'
+      node.type === 'strong' ||
+      node.type === 'emphasis' ||
+      node.type === 'delete'
     ) {
       out.push({...node, children: transformAutolinks(node.children)});
     } else {
@@ -1510,9 +1737,9 @@ function parseTable(
   lines: string[],
   lineIndex: number,
   opts: ResolvedOptions,
-): {node: BlockNodeWithMath; nextIndex: number} {
-  const headers: TableCellNodeWithMath[] = splitTableRow(lines[lineIndex]).map(
-    cell => ({children: parseInlineEntry(cell, opts)}),
+): {node: MarkdownAstBlockContent; nextIndex: number} {
+  const headers: MarkdownAstTableCell[] = splitTableRow(lines[lineIndex]).map(
+    cell => ({type: 'tableCell', children: parseInlineEntry(cell, opts)}),
   );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
@@ -1528,22 +1755,28 @@ function parseTable(
             : null;
     },
   );
-  const rows: TableCellNodeWithMath[][] = [];
+  const rows: MarkdownAstTableRow[] = [];
   let rowIndex = lineIndex + 2;
   while (
     rowIndex < lines.length &&
     lines[rowIndex].includes('|') &&
     lines[rowIndex].trim() !== ''
   ) {
-    rows.push(
-      splitTableRow(lines[rowIndex]).map(cell => ({
+    rows.push({
+      type: 'tableRow',
+      children: splitTableRow(lines[rowIndex]).map(cell => ({
+        type: 'tableCell',
         children: parseInlineEntry(cell, opts),
       })),
-    );
+    });
     rowIndex++;
   }
   return {
-    node: {type: 'table', headers, alignments, rows},
+    node: {
+      type: 'table',
+      align: alignments,
+      children: [{type: 'tableRow', children: headers}, ...rows],
+    },
     nextIndex: rowIndex,
   };
 }
@@ -1553,8 +1786,8 @@ function parseList(
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
-): {node: BlockNodeWithMath; nextIndex: number} {
-  const items: ListItemNodeWithMath[] = [];
+): {node: MarkdownAstBlockContent; nextIndex: number} {
+  const items: MarkdownAstListItem[] = [];
   const baseIndent = getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
   // (CommonMark 5.2). Capture which one this list starts with so its items
@@ -1608,7 +1841,11 @@ function parseList(
       itemText += '\n' + deindented.join('\n');
     }
 
-    items.push({checked, children: parseMarkdownImpl(itemText, nested(opts))});
+    items.push({
+      type: 'listItem',
+      checked,
+      children: parseMarkdownImpl(itemText, nested(opts)),
+    });
 
     // CommonMark loose list: blank line(s) between items of the same style
     // and indent still form one list. Skip the blanks and continue if the
@@ -1632,8 +1869,8 @@ function parseList(
       ordered,
       start,
       delimiter: ordered ? (delim as '.' | ')') : undefined,
-      loose: loose || undefined,
-      items,
+      spread: loose || undefined,
+      children: items,
     },
     nextIndex: index,
   };
@@ -1659,13 +1896,24 @@ export function parseMarkdown(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): BlockNodeWithMath[] {
-  return parseMarkdownImpl(input, resolveOptions(arg));
+  return projectMarkdownRoot(parseMarkdownAst(input, arg));
+}
+
+/** @internal Canonical block parse used by Markdown and Outline rendering. */
+export function parseMarkdownAst(
+  input: string,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): MarkdownAstRoot {
+  return {
+    type: 'root',
+    children: parseMarkdownImpl(input, resolveOptions(arg)),
+  };
 }
 
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
-): BlockNodeWithMath[] {
+): MarkdownAstBlockContent[] {
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
@@ -1686,7 +1934,7 @@ function parseMarkdownImpl(
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
   const lines = cleaned.split('\n');
-  const blocks: BlockNodeWithMath[] = [];
+  const blocks: MarkdownAstBlockContent[] = [];
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
@@ -1697,7 +1945,7 @@ function parseMarkdownImpl(
     ? []
     : null;
   let blockStartLine = 0;
-  const pushBlock = (node: BlockNodeWithMath, endLine?: number) => {
+  const pushBlock = (node: MarkdownAstBlockContent, endLine?: number) => {
     blocks.push(node);
     blockStartLines?.push(blockStartLine);
     blockEndLines?.push(endLine);
@@ -1716,7 +1964,7 @@ function parseMarkdownImpl(
     const fenceMatch = line.match(/^(`{3,}|~{3,})(\w*)/);
     if (fenceMatch) {
       const fence = fenceMatch[1];
-      const language = fenceMatch[2] || 'plaintext';
+      const language = fenceMatch[2] || null;
       const codeLines: string[] = [];
       index++;
       while (index < lines.length && !lines[index].startsWith(fence)) {
@@ -1728,7 +1976,7 @@ function parseMarkdownImpl(
       // can end on them, so it states its own end rather than letting the
       // positional derivation trim them off.
       pushBlock(
-        {type: 'codeblock', language, content: codeLines.join('\n')},
+        {type: 'code', lang: language, value: codeLines.join('\n')},
         Math.min(index, lines.length) - 1,
       );
       continue;
@@ -1752,7 +2000,7 @@ function parseMarkdownImpl(
     if (headingMatch) {
       pushBlock({
         type: 'heading',
-        level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
+        depth: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
         children: parseInlineEntry(headingMatch[2], opts),
       });
       index++;
@@ -1761,7 +2009,7 @@ function parseMarkdownImpl(
 
     // --- HR (must precede list check to handle `- - -`, `* * *`, `_ _ _`) ---
     if (isHorizontalRule(line)) {
-      pushBlock({type: 'hr'});
+      pushBlock({type: 'thematicBreak'});
       index++;
       continue;
     }
@@ -1775,7 +2023,7 @@ function parseMarkdownImpl(
       line.trim() === imageMatch[0] &&
       isSafeUrl(imageMatch[2])
     ) {
-      pushBlock({type: 'image', alt: imageMatch[1], src: imageMatch[2]});
+      pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
       index++;
       continue;
     }
@@ -1866,7 +2114,7 @@ function parseMarkdownImpl(
  * `lineMap` says which input line each surviving line came from.
  */
 function stampSourceRanges(
-  blocks: BlockNodeWithMath[],
+  blocks: MarkdownAstBlockContent[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
@@ -1903,7 +2151,13 @@ function stampSourceRanges(
     // range that dropped it would slice to something that re-parses
     // differently.
     const end = lineStart(endLine) + lines[endLine].length;
-    blocks[i] = {...blocks[i], range: {start: lineStart(startLine), end}};
+    blocks[i] = {
+      ...blocks[i],
+      position: {
+        start: {offset: lineStart(startLine)},
+        end: {offset: end},
+      },
+    };
   }
 }
 
@@ -1968,6 +2222,13 @@ type IncrementalCache = {
   /** The effective document-global definitions used by slice parses. */
   linkDefs: ReadonlyMap<string, string>;
   linkDefsKey: string;
+  /** Canonical settled blocks shared by rendering and compatibility projection. */
+  settledAstBlocks: MarkdownAstBlockContent[];
+  settledRevision: number;
+  projectedRevision: number;
+  projectedSettledBlocks: BlockNodeWithMath[];
+  /** Preserves released settled-node identity across projected snapshots. */
+  projectionCache: LegacyProjectionCache;
   work: IncrementalWork;
 };
 
@@ -1986,6 +2247,11 @@ function makeIncrementalCache(
     tailLinkDefs: new Map(),
     linkDefs: defs,
     linkDefsKey: linkDefsSignature(defs),
+    settledAstBlocks: [],
+    settledRevision: 0,
+    projectedRevision: -1,
+    projectedSettledBlocks: [],
+    projectionCache: new WeakMap(),
     work: {
       splitCharacters: 0,
       boundaryLines: 0,
@@ -2481,9 +2747,9 @@ function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
  * lists even though the full-text parser joins them per CommonMark §5.3.
  */
 function mergeSettledBlocks(
-  prev: BlockNodeWithMath[],
-  delta: BlockNodeWithMath[],
-): BlockNodeWithMath[] {
+  prev: MarkdownAstBlockContent[],
+  delta: MarkdownAstBlockContent[],
+): MarkdownAstBlockContent[] {
   if (prev.length === 0 || delta.length === 0) {
     return [...prev, ...delta];
   }
@@ -2495,17 +2761,21 @@ function mergeSettledBlocks(
     prevLast.ordered === deltaFirst.ordered &&
     prevLast.delimiter === deltaFirst.delimiter
   ) {
-    const merged: BlockNodeWithMath = {
+    const merged: MarkdownAstBlockContent = {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
       delimiter: prevLast.delimiter,
-      loose: true,
-      items: [...prevLast.items, ...deltaFirst.items],
-      // One list now, so one range: from where the first half started to
-      // where the second half ended.
-      ...(prevLast.range != null && deltaFirst.range != null
-        ? {range: {start: prevLast.range.start, end: deltaFirst.range.end}}
+      spread: true,
+      children: [...prevLast.children, ...deltaFirst.children],
+      // One list now, so one position spans both halves.
+      ...(prevLast.position != null && deltaFirst.position != null
+        ? {
+            position: {
+              start: prevLast.position.start,
+              end: deltaFirst.position.end,
+            },
+          }
         : null),
     };
     return [...prev.slice(0, -1), merged, ...delta.slice(1)];
@@ -2515,15 +2785,15 @@ function mergeSettledBlocks(
 
 /** Append a newly-settled slice without copying the already-settled prefix. */
 function appendSettledBlocks(
-  prev: BlockNodeWithMath[],
-  delta: BlockNodeWithMath[],
-): void {
+  prev: MarkdownAstBlockContent[],
+  delta: MarkdownAstBlockContent[],
+): boolean {
   if (delta.length === 0) {
-    return;
+    return false;
   }
   if (prev.length === 0) {
     prev.push(...delta);
-    return;
+    return false;
   }
   const prevLast = prev[prev.length - 1];
   const deltaFirst = delta[0];
@@ -2538,16 +2808,22 @@ function appendSettledBlocks(
       ordered: prevLast.ordered,
       start: prevLast.start,
       delimiter: prevLast.delimiter,
-      loose: true,
-      items: [...prevLast.items, ...deltaFirst.items],
-      ...(prevLast.range != null && deltaFirst.range != null
-        ? {range: {start: prevLast.range.start, end: deltaFirst.range.end}}
+      spread: true,
+      children: [...prevLast.children, ...deltaFirst.children],
+      ...(prevLast.position != null && deltaFirst.position != null
+        ? {
+            position: {
+              start: prevLast.position.start,
+              end: deltaFirst.position.end,
+            },
+          }
         : null),
     };
     prev.push(...delta.slice(1));
-    return;
+    return true;
   }
   prev.push(...delta);
+  return false;
 }
 
 function sameUnsettledDefinitions(
@@ -2583,6 +2859,11 @@ function resetIncrementalCache(
   cache.tailLinkDefs = new Map();
   cache.linkDefs = new Map();
   cache.linkDefsKey = '';
+  cache.settledAstBlocks = [];
+  cache.settledRevision++;
+  cache.projectedRevision = -1;
+  cache.projectedSettledBlocks = [];
+  cache.projectionCache = new WeakMap();
   cache.work = {
     splitCharacters: 0,
     boundaryLines: 0,
@@ -2622,6 +2903,36 @@ export function parseMarkdownIncremental(
   state: IncrementalState<boolean>,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): BlockNodeWithMath[] {
+  const root = parseMarkdownAstIncremental(input, state, arg);
+  const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
+  const projected = projectMarkdownRoot(root, cache.projectionCache);
+  if (cache.projectedRevision !== cache.settledRevision) {
+    cache.projectedSettledBlocks = cache.settledAstBlocks.map(block =>
+      projectBlockNode(block, cache.projectionCache),
+    );
+    cache.projectedRevision = cache.settledRevision;
+  }
+  state.settledBlocks = cache.projectedSettledBlocks;
+  return projected;
+}
+
+/** @internal Canonical incremental parse used by Markdown rendering. */
+export function parseMarkdownAstIncremental(
+  input: string,
+  state: IncrementalState<boolean>,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): MarkdownAstRoot {
+  return {
+    type: 'root',
+    children: parseMarkdownIncrementalAstBlocks(input, state, arg),
+  };
+}
+
+function parseMarkdownIncrementalAstBlocks(
+  input: string,
+  state: IncrementalState<boolean>,
+  arg?: ReadonlySet<string> | RuntimeParseOptions,
+): MarkdownAstBlockContent[] {
   const opts = resolveOptions(arg);
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
   let reparseSettled = false;
@@ -2746,17 +3057,39 @@ export function parseMarkdownIncremental(
 
   let parsedSettledBlocks = 0;
   if (reparseSettled) {
-    state.settledBlocks = state.settledText
+    cache.settledAstBlocks = state.settledText
       ? parseMarkdownImpl(state.settledText, parseOpts)
       : [];
-    parsedSettledBlocks = state.settledBlocks.length;
+    parsedSettledBlocks = cache.settledAstBlocks.length;
+    cache.settledRevision++;
+    cache.projectedSettledBlocks = cache.settledAstBlocks.map(block =>
+      projectBlockNode(block, cache.projectionCache),
+    );
+    cache.projectedRevision = cache.settledRevision;
   } else if (settledDelta !== '') {
     const deltaBlocks = parseMarkdownImpl(
       settledDelta,
       atOffset(parseOpts, oldSettledEnd),
     );
-    appendSettledBlocks(state.settledBlocks, deltaBlocks);
+    const mergeIndex = cache.settledAstBlocks.length - 1;
+    const mergedList = appendSettledBlocks(cache.settledAstBlocks, deltaBlocks);
     parsedSettledBlocks = deltaBlocks.length;
+    cache.settledRevision++;
+    const projectedDelta = deltaBlocks.map(block =>
+      projectBlockNode(block, cache.projectionCache),
+    );
+    if (mergedList) {
+      const canonicalMerged = cache.settledAstBlocks[mergeIndex];
+      const projectedMerged = projectBlockNode(
+        canonicalMerged,
+        cache.projectionCache,
+      );
+      cache.projectedSettledBlocks[mergeIndex] = projectedMerged;
+      cache.projectedSettledBlocks.push(...projectedDelta.slice(1));
+    } else {
+      cache.projectedSettledBlocks.push(...projectedDelta);
+    }
+    cache.projectedRevision = cache.settledRevision;
   }
 
   // The unsettled tail is trimmed before parsing, so its offset in the
@@ -2790,7 +3123,7 @@ export function parseMarkdownIncremental(
     definitionCharacters: settledDelta.length + unsettledInput.length,
     renderedBlocks: parsedSettledBlocks + unsettledBlocks.length,
   };
-  return mergeSettledBlocks(state.settledBlocks, unsettledBlocks);
+  return mergeSettledBlocks(cache.settledAstBlocks, unsettledBlocks);
 }
 
 // ---------------------------------------------------------------------------
@@ -2800,30 +3133,6 @@ export function parseMarkdownIncremental(
 // slugs as `id` attributes on h1–h6, and Outline's parseOutlineFromMarkdown
 // derives its item ids from the same functions, so outline hash links always
 // resolve to a rendered heading by construction.
-
-/** Flatten inline nodes into their plain text content. */
-export function inlineText(nodes: ReadonlyArray<InlineNodeWithMath>): string {
-  return nodes
-    .map(node => {
-      switch (node.type) {
-        case 'text':
-        case 'code':
-        case 'math':
-          return node.type === 'math' ? node.value : node.content;
-        case 'bold':
-        case 'italic':
-        case 'strikethrough':
-        case 'link':
-          return inlineText(node.children);
-        case 'image':
-          return node.alt;
-        case 'citation':
-        case 'break':
-          return '';
-      }
-    })
-    .join('');
-}
 
 /** Turn heading text into a URL-safe slug (lowercase, hyphen-separated). */
 export function slugify(value: string): string {
