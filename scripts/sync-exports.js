@@ -107,7 +107,7 @@ const STATIC_EXPORTS = {
  *
  * See: https://github.com/facebook/astryx/issues/1977
  */
-const MODULE_SUBPATH_EXPORTS = ['Markdown/plugins'];
+const DIRECTORY_MODULE_SUBPATH_EXPORTS = ['Markdown/plugins'];
 
 const UTIL_SUBPATH_DIRS = [
   'Calendar',
@@ -118,6 +118,19 @@ const UTIL_SUBPATH_DIRS = [
   'Table',
   'Typeahead',
 ];
+
+/**
+ * Optional module subpath exports.
+ *
+ * Separately imported modules that deliberately stay out of their component's
+ * own entry point, so a bundle that never imports the subpath never pulls the
+ * module in. Unlike `UTIL_SUBPATH_DIRS` these are not server-safe re-exports
+ * of an existing component — each one is its own opt-in module.
+ *
+ * `Markdown/remark` is the limited Remark compatibility adapter
+ * (`module:Markdown/remark`, `spec:AST-036` FR24).
+ */
+const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark'];
 
 /**
  * Discover all exportable directories under src/.
@@ -180,7 +193,7 @@ function buildExports() {
   }
 
   // Explicit nested module entry points.
-  for (const modulePath of MODULE_SUBPATH_EXPORTS) {
+  for (const modulePath of DIRECTORY_MODULE_SUBPATH_EXPORTS) {
     exports[`./${modulePath}`] = {
       source: `./src/${modulePath}/index.ts`,
       types: `./dist/${modulePath}/index.d.ts`,
@@ -194,6 +207,15 @@ function buildExports() {
       source: `./src/${dir}/utils.ts`,
       types: `./dist/${dir}/utils.d.ts`,
       default: `./dist/${dir}/utils.js`,
+    };
+  }
+
+  // Optional, separately imported module subpaths
+  for (const subpath of FILE_MODULE_SUBPATH_EXPORTS) {
+    exports[`./${subpath}`] = {
+      source: `./src/${subpath}.ts`,
+      types: `./dist/${subpath}.d.ts`,
+      default: `./dist/${subpath}.js`,
     };
   }
 

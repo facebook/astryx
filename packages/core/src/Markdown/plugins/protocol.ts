@@ -1157,7 +1157,6 @@ function validateAst(
   return (
     visit(candidate, null, false) &&
     candidate.type === 'root' &&
-    seenHeadingMarkers.size === sourceHeadingMarkers.size &&
     Array.from(existingExtensions.values()).every(
       extension =>
         extension.plugin === activePluginName || extension.count === 0,

@@ -270,6 +270,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -415,6 +420,38 @@ const readDecorations = createMarkdownPlugin({
 });
 
 <Markdown plugins={[searchHits, readDecorations]}>{source}</Markdown>;
+`,
+    },
+    {
+      label: 'Compatible Remark plugin',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownPlugin} from '@astryxdesign/core/Markdown/plugins';
+import {createMarkdownRemarkTransform} from '@astryxdesign/core/Markdown/remark';
+
+// A synchronous transform-only Remark plugin in the usual attacher shape.
+const remarkRename =
+  ({from, to}) =>
+  tree => {
+    const rename = node => {
+      if (node.type === 'text') {
+        node.value = node.value.split(from).join(to);
+      }
+      node.children?.forEach(rename);
+    };
+    rename(tree);
+  };
+
+const productName = createMarkdownPlugin({
+  name: 'product-name',
+  apiVersion: 1,
+  transform: createMarkdownRemarkTransform(remarkRename, {
+    from: 'Astryx',
+    to: 'Astryx Design',
+  }),
+});
+
+<Markdown plugins={[productName]}># Astryx release notes</Markdown>;
 `,
     },
     {
@@ -663,6 +700,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -726,6 +768,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use createMarkdownSourceDecoration to attach non-visual metadata — search hits, review annotations — to the blocks a source range touches, and getMarkdownSourceDecorations to read it back in a later plugin. Decorations appear on the settled document rather than on partial streaming chunks, and never change rendering, copyable text, accessible names, ids, focus order, or navigation.',
+      },
+      {
+        guidance: true,
+        description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse a synchronous transform-only Remark plugin; it stays out of every other bundle and unsupported behavior keeps the last valid document with one diagnostic.",
       },
       {
         guidance: true,

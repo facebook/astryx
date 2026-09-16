@@ -533,31 +533,7 @@ describe('Markdown plugin protocol', () => {
       },
     });
 
-    const headingRebuild = createMarkdownPlugin({
-      name: 'heading-rebuild',
-      apiVersion: 1,
-      transform(root) {
-        return {
-          ...root,
-          children: root.children.map(block =>
-            block.type === 'heading'
-              ? {
-                  type: 'heading' as const,
-                  depth: 5 as const,
-                  children: block.children,
-                }
-              : block,
-          ),
-        };
-      },
-    });
-
-    for (const plugin of [
-      mutating,
-      asyncPlugin,
-      headingChange,
-      headingRebuild,
-    ]) {
+    for (const plugin of [mutating, asyncPlugin, headingChange]) {
       expect(parseMarkdown('# Safe', {plugins: [plugin]})).toEqual([
         {
           type: 'heading',
@@ -569,7 +545,7 @@ describe('Markdown plugin protocol', () => {
     warning.mockRestore();
   });
 
-  it('allows synthetic headings without changing source-backed depth', () => {
+  it('allows source heading removal and synthetic headings without changing surviving depth', () => {
     const addHeading = createMarkdownPlugin({
       name: 'add-heading',
       apiVersion: 1,
@@ -588,9 +564,30 @@ describe('Markdown plugin protocol', () => {
       },
     });
 
+    const removeHeading = createMarkdownPlugin({
+      name: 'remove-heading',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.filter(block => block.type !== 'heading'),
+        };
+      },
+    });
+
     expect(parseMarkdown('# Source', {plugins: [addHeading]})).toMatchObject([
       {type: 'heading', level: 1},
       {type: 'heading', level: 2, children: [{content: 'Generated'}]},
+    ]);
+    expect(
+      parseMarkdown('# Removed\n\nSurviving body.', {
+        plugins: [removeHeading],
+      }),
+    ).toMatchObject([
+      {
+        type: 'paragraph',
+        children: [{type: 'text', content: 'Surviving body.'}],
+      },
     ]);
   });
 

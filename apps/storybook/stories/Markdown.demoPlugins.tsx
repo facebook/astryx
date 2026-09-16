@@ -106,7 +106,11 @@ const calloutDefinition = {
   },
   renderers: {
     callout: {
-      render: ({node}) => <aside aria-label="Note">{node.data.body}</aside>,
+      render: ({node}) => (
+        <aside role="note" aria-label="Note">
+          {node.data.body}
+        </aside>
+      ),
       toText: node => node.data.body,
     },
   },
