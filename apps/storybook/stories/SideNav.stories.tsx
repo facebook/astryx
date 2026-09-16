@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {useState} from 'react';
 import {
   SideNav,
+  SideNavCollapseButton,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
@@ -712,4 +714,96 @@ export const IconlessNestedItems: Story = {
       </SideNavSection>
     </SideNav>
   ),
+};
+
+// =============================================================================
+// Hidden Collapse (collapsedWidth: 0)
+// =============================================================================
+
+function HiddenCollapseDemo() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  // One controlled config for both the outside toggle and the nav.
+  const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: 720,
+      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: 8,
+          flexShrink: 0,
+        }}>
+        <SideNavCollapseButton collapsible={collapsible} size="sm" />
+        <Text type="supporting" color="secondary">
+          Toggle the nav. Tab into it first to see focus land on the toggle.
+        </Text>
+      </div>
+      <div style={{display: 'flex', flex: 1, minHeight: 0}}>
+        <SideNav
+          collapsible={{
+            ...collapsible,
+            hasButton: false,
+            collapsedWidth: 0,
+            isAnimated: true,
+          }}
+          header={
+            <SideNavHeading
+              icon={
+                <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+              }
+              heading="My App"
+              headingHref="/"
+            />
+          }>
+          <SideNavSection title="Main">
+            <SideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+              href="/dashboard"
+            />
+            <SideNavItem
+              label="Projects"
+              icon={FolderIcon}
+              selectedIcon={FolderIconSolid}
+              href="/projects"
+            />
+            <SideNavItem
+              label="Analytics"
+              icon={ChartBarIcon}
+              href="/analytics"
+            />
+          </SideNavSection>
+        </SideNav>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 12,
+            flex: 1,
+            padding: 16,
+          }}>
+          <Text type="supporting" color="secondary">
+            Main content. The nav slides out on transform only; the space it
+            held is reclaimed once the slide is over.
+          </Text>
+          <Button label="A control in the content" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const HiddenCollapse: Story = {
+  name: 'Hidden Collapse (collapsedWidth: 0)',
+  render: () => <HiddenCollapseDemo />,
 };
