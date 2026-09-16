@@ -123,19 +123,24 @@ export function ChartAxis({
   const format = useCallback(
     (value: unknown): string => {
       const str = (tickFormat ?? autoFormat ?? String)(value);
-      return truncate && characterCount(str) > truncate
-        ? truncateCharacters(str, truncate, '') + '\u2026'
-        : str;
+      if (!truncate) {
+        return str;
+      }
+      const shortened = truncateCharacters(str, truncate, '');
+      return shortened === str ? str : shortened + '\u2026';
     },
     [tickFormat, autoFormat, truncate],
   );
 
   const ticks = useMemo(() => {
-    let allTicks: {value: unknown; offset: number}[];
+    // Format each generated tick once so density and rendering share the same
+    // grapheme-safe label instead of repeating consumer formatting/segmentation.
+    let allTicks: {value: unknown; offset: number; label: string}[];
     if (isBandScale(scale)) {
       allTicks = scale.domain().map(d => ({
         value: d,
         offset: (scale(d) ?? 0) + scale.bandwidth() / 2,
+        label: format(d),
       }));
     } else {
       const linearScale = scale as
@@ -143,6 +148,7 @@ export function ChartAxis({
       allTicks = linearScale.ticks(safeTickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),
+        label: format(d),
       }));
     }
 
@@ -156,7 +162,7 @@ export function ChartAxis({
     if (cap == null && allTicks.length > 1) {
       if (isHorizontal && width > 0) {
         const widestChars = allTicks.reduce(
-          (m, t) => Math.max(m, format(t.value).length),
+          (m, tick) => Math.max(m, characterCount(tick.label)),
           1,
         );
         const approxLabelPx = widestChars * 7 + 16;
@@ -212,8 +218,7 @@ export function ChartAxis({
           {...stylex.props(styles.axisLine)}
         />
       )}
-      {ticks.map(({value, offset}) => {
-        const label = format(value);
+      {ticks.map(({value, offset, label}) => {
         // Key off the raw tick value, not the formatted label: distinct ticks
         // can format (or truncate) to the same string and would collide as keys.
         const key = String(value);

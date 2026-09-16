@@ -5,7 +5,7 @@
  * @input Uses vitest, @testing-library/react, Chart, ChartAxis, bar mark
  * @output Functional tests for axis rendering — group semantics, band/linear
  *         tick labels, physical edge placement, default edge-line rules,
- *         custom formatting, grapheme-safe truncation, and label capping
+ *         custom formatting, grapheme-safe truncation and density, and label capping
  * @position Colocated test for ChartAxis.tsx (issue #4295 viz coverage)
  */
 
@@ -102,6 +102,36 @@ describe('ChartAxis bottom (band scale)', () => {
     const narrowLabelCount = axis.querySelectorAll('text').length;
     expect(narrowLabelCount).toBeGreaterThan(0);
     expect(narrowLabelCount).toBeLessThan(wideLabelCount);
+  });
+
+  it('keeps the same auto-thinned labels after ASCII and Unicode truncation', () => {
+    const asciiData = Array.from({length: 9}, (_, index) => ({
+      month: `${index + 1}AB`,
+      sales: index,
+    }));
+    const clusters = ['👨‍👩‍👧‍👦', '🇯🇵', '👩🏽‍🚀'];
+    const unicodeData = Array.from({length: 9}, (_, index) => ({
+      month: `${index + 1}${clusters[index % clusters.length]}X`,
+      sales: index,
+    }));
+
+    const retainedIndexes = (data: typeof asciiData) => {
+      const {unmount} = renderChart(
+        <ChartAxis position="bottom" truncate={2} />,
+        data,
+      );
+      reportWidth(300);
+      const indexes = Array.from(
+        screen
+          .getByRole('group', {name: 'bottom axis'})
+          .querySelectorAll('text'),
+        label => Number(label.textContent?.match(/^(\d+)/)?.[1]),
+      );
+      unmount();
+      return indexes;
+    };
+
+    expect(retainedIndexes(unicodeData)).toEqual(retainedIndexes(asciiData));
   });
 
   it('truncates long category labels with an ellipsis', () => {

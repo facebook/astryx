@@ -31,15 +31,15 @@ system_specs: [spec:AST-002, spec:AST-029]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | No API shape or default changes. Truncation now preserves complete grapheme clusters under the objective Unicode text-segmentation standard.                       |
-| Behavior                | The selected physical plot edge determines scale, placement, label direction, and the default edge line; explicit formatting and density inputs refine labels.     |
-| End-user impact         | Chart readers keep complete tick-label characters and the existing Cartesian placement, line, tick, formatting, and density behavior.                              |
-| Builder impact          | None. Existing callsites remain valid and receive direct CLI documentation for the current surface.                                                                |
-| Compatibility/readiness | The canary API and defaults are preserved. This record is draft observational evidence; rendered and accessibility-tree evidence remains incomplete.               |
-| Review checks           | Reject a changed public shape/default, an axis using the wrong Chart scale, broken physical-edge placement, split grapheme labels, or hidden line/tick precedence. |
-| Governing rules         | `spec:AST-029/FR3–FR7`, `architecture:component-test-sufficiency/INV1–INV9`, and [Unicode Text Segmentation](https://www.unicode.org/reports/tr29/).               |
+| Area                    | Contract                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | No API shape or default changes. Truncation and automatic horizontal density now count complete grapheme clusters under the objective Unicode text-segmentation standard. |
+| Behavior                | The selected physical plot edge determines scale, placement, label direction, and the default edge line; explicit formatting and density inputs refine labels.            |
+| End-user impact         | Chart readers keep complete tick-label characters, and equally short Unicode labels are no longer thinned more aggressively than ASCII labels.                            |
+| Builder impact          | None. Existing callsites remain valid and receive direct CLI documentation for the current surface.                                                                       |
+| Compatibility/readiness | The canary API and defaults are preserved. This record is draft observational evidence; rendered and accessibility-tree evidence remains incomplete.                      |
+| Review checks           | Reject a changed public shape/default, an axis using the wrong Chart scale, broken physical-edge placement, split grapheme labels, or hidden line/tick precedence.        |
+| Governing rules         | `spec:AST-029/FR3–FR7`, `architecture:component-test-sufficiency/INV1–INV9`, and [Unicode Text Segmentation](https://www.unicode.org/reports/tr29/).                      |
 
 This table is a review projection; the body below is authoritative.
 
@@ -52,7 +52,7 @@ optional axis edge line while Chart owns the scale domains and plot geometry.
 ## Compatibility and migration
 
 - Released default preserved: yes; the package is canary-only and has no stable release.
-- Compatibility class: no public API, default, or observable placement change in this backfill.
+- Compatibility class: no public API or default changes; Unicode truncation and automatic thinning intentionally change only labels containing multi-code-unit graphemes, while representative ASCII behavior is preserved.
 - Controlled/uncontrolled behavior: not applicable.
 - Migration decision: none; this draft does not authorize a public API change.
 
@@ -92,16 +92,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision.
 
-| ID  | Candidate invariant                                                                                                                                                                 | Basis                                                          | Draft review state |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
-| FR1 | A top or bottom axis MUST consume Chart's x scale; a left or right axis MUST consume the categorical y scale when present and the linear y scale otherwise.                         | implementation, types, and focused tests                       | verify             |
-| FR2 | Continuous tick generation MUST use one sanitized count for both d3 tick generation and its default formatter; band scales MUST use their complete domain before thinning.          | implementation                                                 | verify             |
-| FR3 | A supplied `tickFormat` MUST win; otherwise continuous scales use d3 formatting and band values use `String`.                                                                       | implementation and focused tests                               | verify             |
-| FR4 | Explicit `maxTicks` MUST win over the size-derived cap. Truncation MUST keep complete Unicode grapheme clusters while preserving the documented content-count-plus-ellipsis output. | implementation, focused tests, Unicode Standard Annex #29      | settled            |
-| FR5 | Bottom MUST show an edge line by default and the other edges MUST hide it by default. `showTicks` MUST force the edge line on and render one mark per surviving tick.               | implementation, JSDoc, focused tests, and Storybook            | verify             |
-| FR6 | Bottom and right axes MUST translate to the corresponding plot edge. Top and left remain at the plot origin. Labels and tick marks extend outwards from that physical edge.         | implementation and focused tests                               | verify             |
-| FR7 | On a mixed-sign linear y domain, the bottom edge line MUST align with y=0; categorical y leaves it on the plot edge.                                                                | implementation                                                 | verify             |
-| FR8 | Tick movement and visibility MAY transition when `animated` is true and MUST be immediate when false. Out-of-range ticks remain mounted with zero opacity during updates.           | implementation and streaming examples; motion intent unsettled | human decision     |
+| ID   | Candidate invariant                                                                                                                                                         | Basis                                                          | Draft review state |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
+| FR1  | A top or bottom axis MUST consume Chart's x scale; a left or right axis MUST consume the categorical y scale when present and the linear y scale otherwise.                 | implementation, types, and focused tests                       | verify             |
+| FR2  | Continuous tick generation MUST use one sanitized count for both d3 tick generation and its default formatter; band scales MUST use their complete domain before thinning.  | implementation                                                 | verify             |
+| FR3  | A supplied `tickFormat` MUST win; otherwise continuous scales use d3 formatting and band values use `String`.                                                               | implementation and focused tests                               | verify             |
+| FR4  | Explicit `maxTicks` MUST win over the size-derived cap.                                                                                                                     | implementation and focused tests                               | verify             |
+| FR5  | Truncation MUST keep complete Unicode grapheme clusters while preserving the documented content-count-plus-ellipsis output.                                                 | focused red/green test and Unicode Standard Annex #29          | settled            |
+| FR6  | Automatic horizontal density MUST estimate formatted label length in user-perceived characters rather than UTF-16 storage units.                                            | focused red/green equivalence test and Unicode segmentation    | settled            |
+| FR7  | Bottom MUST show an edge line by default and the other edges MUST hide it by default. `showTicks` MUST force the edge line on and render one mark per surviving tick.       | implementation, JSDoc, focused tests, and Storybook            | verify             |
+| FR8  | Bottom and right axes MUST translate to the corresponding plot edge. Top and left remain at the plot origin. Labels and tick marks extend outwards from that physical edge. | implementation and focused tests                               | verify             |
+| FR9  | On a mixed-sign linear y domain, the bottom edge line MUST align with y=0; categorical y leaves it on the plot edge.                                                        | implementation                                                 | verify             |
+| FR10 | Tick movement and visibility MAY transition when `animated` is true and MUST be immediate when false. Out-of-range ticks remain mounted with zero opacity during updates.   | implementation and streaming examples; motion intent unsettled | human decision     |
 
 ### Allowed variation
 
@@ -126,14 +128,14 @@ intentional decision.
 
 ### Transformation and precedence order
 
-- **ORD1 — Scale.** Resolve physical orientation → choose Chart scale → generate all ticks → derive the density cap → evenly filter labels.
+- **ORD1 — Scale.** Resolve physical orientation → choose Chart scale → generate and format each tick once → derive the grapheme-aware density cap → evenly filter labels.
 - **ORD2 — Label.** Apply the supplied formatter or the scale default → preserve complete grapheme clusters when truncating → render the result.
 - **ORD3 — Edge.** Resolve the position default → apply `showAxisLine` → force the line on when `showTicks` is true.
 
 ### Performance and resources
 
 - **PR1 — Bounded continuous ticks.** Sanitization caps the d3 request at 1000 so a consumer value cannot allocate an unbounded tick array.
-- **PR2 — Derived tick state.** Tick generation and formatting remain render-derived and memoized; ChartAxis owns no listener, observer, timer, or persistent resource.
+- **PR2 — Derived tick state.** Tick generation and formatting remain render-derived and memoized; each generated label is formatted once and shared by density and rendering, and ChartAxis owns no listener, observer, timer, or persistent resource.
 
 ## Accessibility contract
 
@@ -145,10 +147,10 @@ intentional decision.
 
 | Anatomy or state | Design requirement                                     | Representation authority                          | Hierarchy role | Component contract |
 | ---------------- | ------------------------------------------------------ | ------------------------------------------------- | -------------- | ------------------ |
-| Axis edge line   | Grounds the physical plot edge when present.           | unsettled; no current design record is linked     | supporting     | FR5, FR7           |
-| Tick marks       | Associate retained labels with positions on the scale. | unsettled; no current design record is linked     | supporting     | FR5                |
-| Tick labels      | Preserve readable value/category text around the plot. | Unicode grapheme boundaries settle text integrity | supporting     | FR3, FR4, AR1      |
-| Tick transition  | Shows continuity during scale changes.                 | unsettled; `design:motion` remains draft          | supporting     | FR8                |
+| Axis edge line   | Grounds the physical plot edge when present.           | unsettled; no current design record is linked     | supporting     | FR7, FR9           |
+| Tick marks       | Associate retained labels with positions on the scale. | unsettled; no current design record is linked     | supporting     | FR7                |
+| Tick labels      | Preserve readable value/category text around the plot. | Unicode grapheme boundaries settle text integrity | supporting     | FR3, FR5, FR6, AR1 |
+| Tick transition  | Shows continuity during scale changes.                 | unsettled; `design:motion` remains draft          | supporting     | FR10               |
 
 ### Theming anatomy
 
@@ -184,15 +186,16 @@ intentional decision.
 
 ## Verification map
 
-| Contract | Verification                                                       | Representative states                                | Mutation or failure expectation                                                        | Audit section                     |
-| -------- | ------------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1, FR6 | `ChartAxis.test.tsx`; `ChartAxis.stories.tsx`                      | top, right, bottom, left; band and linear            | An edge uses the wrong scale, transform, or outward label side.                        | `audit:ChartAxis/behavior-layout` |
-| FR2, FR3 | `ChartAxis.test.tsx`                                               | default count; band, linear, and custom formatting   | Generation and formatting disagree or a supplied formatter is ignored.                 | `audit:ChartAxis/behavior`        |
-| FR4, AR1 | red-before-green grapheme regression; density tests; browser story | ASCII; emoji ZWJ; wide and narrow plots              | A visible label splits a grapheme or a narrow plot keeps the wide label set.           | `audit:ChartAxis/i18n-testing`    |
-| FR5      | `ChartAxis.test.tsx`; Axes & Grids Storybook fixture               | defaults; line requested; ticks requested            | Tick marks lose their edge line or line defaults change.                               | `audit:ChartAxis/behavior`        |
-| FR7      | source review; browser evidence remains pending                    | positive-only, negative-only, mixed-sign, y-band     | The mixed-sign zero line moves to the edge or a categorical axis crosses the plot.     | `audit:ChartAxis/behavior-design` |
-| FR8      | streaming stories; exact-head browser evidence remains pending     | animated, immediate, entering/leaving tick           | Disabling animation retains a transition or a moving label jumps to stale geometry.    | `audit:ChartAxis/design-testing`  |
-| AR2, AR3 | Chart accessibility tests; package axe; accessibility-tree review  | title/subtitle, small-data table, nested axis groups | Chart loses its alternative or an unreviewed nested semantic claim is treated as fact. | `audit:ChartAxis/accessibility`   |
+| Contract      | Verification                                                        | Representative states                                           | Mutation or failure expectation                                                           | Audit section                     |
+| ------------- | ------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1, FR8      | `ChartAxis.test.tsx`; `ChartAxis.stories.tsx`                       | top, right, bottom, left; band and linear                       | An edge uses the wrong scale, transform, or outward label side.                           | `audit:ChartAxis/behavior-layout` |
+| FR2, FR3      | `ChartAxis.test.tsx`                                                | default count; band, linear, and custom formatting              | Generation and formatting disagree or a supplied formatter is ignored.                    | `audit:ChartAxis/behavior`        |
+| FR4           | `ChartAxis.test.tsx`                                                | automatic cap and explicit `maxTicks`                           | Explicit capping stops winning over size-derived thinning.                                | `audit:ChartAxis/behavior`        |
+| FR5, FR6, AR1 | red-before-green grapheme regressions; density tests; browser story | ASCII, emoji, flag, and ZWJ labels; truncated wide/narrow plots | A visible label splits a grapheme or equal perceived-width labels retain different ticks. | `audit:ChartAxis/i18n-testing`    |
+| FR7           | `ChartAxis.test.tsx`; Axes & Grids Storybook fixture                | defaults; line requested; ticks requested                       | Tick marks lose their edge line or line defaults change.                                  | `audit:ChartAxis/behavior`        |
+| FR9           | source review; browser evidence remains pending                     | positive-only, negative-only, mixed-sign, y-band                | The mixed-sign zero line moves to the edge or a categorical axis crosses the plot.        | `audit:ChartAxis/behavior-design` |
+| FR10          | streaming stories; exact-head browser evidence remains pending      | animated, immediate, entering/leaving tick                      | Disabling animation retains a transition or a moving label jumps to stale geometry.       | `audit:ChartAxis/design-testing`  |
+| AR2, AR3      | Chart accessibility tests; package axe; accessibility-tree review   | title/subtitle, small-data table, nested axis groups            | Chart loses its alternative or an unreviewed nested semantic claim is treated as fact.    | `audit:ChartAxis/accessibility`   |
 
 ## Decision log
 
