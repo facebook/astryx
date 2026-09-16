@@ -48,22 +48,21 @@ import type {CitationSource} from '../Citation/Citation';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {
-  parseInline,
-  parseMarkdown,
-  parseMarkdownIncremental,
+  parseInlineAst,
+  parseMarkdownAst,
+  parseMarkdownAstIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
-  inlineText,
   slugify,
   uniqueSlug,
 } from './parser';
+import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
+import {markdownAstText} from './ast';
 import type {
-  BlockNodeWithMath,
-  InlineNodeWithMath,
-  IncrementalState,
-  MathParseOptions,
-  ParseOptions,
-} from './parser';
+  MarkdownAstBlockContent,
+  MarkdownAstPhrasingContent,
+  MarkdownAstTable,
+} from './ast';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -487,25 +486,27 @@ interface StreamingCursor {
  * Count the total text characters in inline nodes without rendering.
  * Used to advance the cursor past a block that will be faded as a whole unit.
  */
-function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
+function countInlineTextLength(
+  nodes: ReadonlyArray<MarkdownAstPhrasingContent>,
+): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
       case 'text':
-        len += node.content.length;
+        len += node.value.length;
         break;
-      case 'code':
-        len += node.content.length;
+      case 'inlineCode':
+        len += node.value.length;
         break;
-      case 'math':
+      case 'inlineMath':
         len += node.value.length;
         break;
       case 'image':
         len += node.alt.length;
         break;
-      case 'bold':
-      case 'italic':
-      case 'strikethrough':
+      case 'strong':
+      case 'emphasis':
+      case 'delete':
       case 'link':
         len += countInlineTextLength(node.children);
         break;
@@ -523,7 +524,9 @@ function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
 /**
  * Count total text characters in a block node tree.
  */
-function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
+function countBlockTextLength(
+  nodes: ReadonlyArray<MarkdownAstBlockContent>,
+): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -531,8 +534,8 @@ function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
       case 'paragraph':
         len += countInlineTextLength(node.children);
         break;
-      case 'codeblock':
-        len += node.content.length;
+      case 'code':
+        len += node.value.length;
         break;
       case 'math':
         len += node.value.length;
@@ -541,21 +544,18 @@ function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
         len += countBlockTextLength(node.children);
         break;
       case 'list':
-        for (const item of node.items) {
+        for (const item of node.children) {
           len += countBlockTextLength(item.children);
         }
         break;
       case 'table':
-        for (const h of node.headers) {
-          len += countInlineTextLength(h.children);
-        }
-        for (const row of node.rows) {
-          for (const cell of row) {
+        for (const row of node.children) {
+          for (const cell of row.children) {
             len += countInlineTextLength(cell.children);
           }
         }
         break;
-      case 'hr':
+      case 'thematicBreak':
         break;
       case 'image':
         len += node.alt.length;
@@ -768,7 +768,7 @@ function getCitationNumber(ctx: CitationContext, sourceId: string): number {
 }
 
 function renderInline(
-  node: InlineNodeWithMath,
+  node: MarkdownAstPhrasingContent,
   index: number,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -780,7 +780,7 @@ function renderInline(
   switch (node.type) {
     case 'text': {
       if (inlinePlugins && inlinePlugins.length > 0) {
-        const segments = applyInlinePlugins(node.content, inlinePlugins);
+        const segments = applyInlinePlugins(node.value, inlinePlugins);
         // If no plugin matched, fall through to the normal path
         // O(1) guard: applyInlinePlugins returns a single text segment when
         // nothing matched — skip the plugin path entirely in that case.
@@ -803,9 +803,9 @@ function renderInline(
           return <Fragment key={index}>{result}</Fragment>;
         }
       }
-      return wrapTextWithFade(node.content, cursor, index);
+      return wrapTextWithFade(node.value, cursor, index);
     }
-    case 'bold':
+    case 'strong':
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
           {node.children.map((c, i) =>
@@ -822,7 +822,7 @@ function renderInline(
           )}
         </strong>
       );
-    case 'italic':
+    case 'emphasis':
       return (
         <em key={index}>
           {node.children.map((c, i) =>
@@ -839,7 +839,7 @@ function renderInline(
           )}
         </em>
       );
-    case 'strikethrough':
+    case 'delete':
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
           {node.children.map((c, i) =>
@@ -856,18 +856,18 @@ function renderInline(
           )}
         </del>
       );
-    case 'code': {
+    case 'inlineCode': {
       // Track code content length for cursor but don't split inside code
-      cursor.offset += node.content.length;
+      cursor.offset += node.value.length;
       const InlineCodeComp = components?.inlineCode;
       const codeEl = InlineCodeComp ? (
-        <InlineCodeComp key={index}>{node.content}</InlineCodeComp>
+        <InlineCodeComp key={index}>{node.value}</InlineCodeComp>
       ) : (
-        <Code key={index}>{node.content}</Code>
+        <Code key={index}>{node.value}</Code>
       );
       return codeEl;
     }
-    case 'math': {
+    case 'inlineMath': {
       const MathComp = components?.math;
       if (MathComp == null) {
         return wrapTextWithFade(`$${node.value}$`, cursor, index);
@@ -876,7 +876,7 @@ function renderInline(
       return <MathComp key={index} value={node.value} display="inline" />;
     }
     case 'link': {
-      const safeHref = sanitizeUrl(node.href);
+      const safeHref = sanitizeUrl(node.url);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
         return (
@@ -954,7 +954,7 @@ function renderInline(
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.src);
+      const safeSrc = sanitizeUrl(node.url);
       if (safeSrc == null) {
         return <span key={index}>[{node.alt}]</span>;
       }
@@ -1012,13 +1012,13 @@ function renderInline(
 // ---------------------------------------------------------------------------
 
 function getElementSpacing(
-  node: BlockNodeWithMath,
+  node: MarkdownAstBlockContent,
   density: 'default' | 'compact',
 ): StyleXStyles {
   const compact = density === 'compact';
   switch (node.type) {
     case 'heading':
-      return node.level <= 3
+      return node.depth <= 3
         ? compact
           ? styles.spacingHeadingMajorCompact
           : styles.spacingHeadingMajorDefault
@@ -1029,7 +1029,7 @@ function getElementSpacing(
       return compact
         ? styles.spacingParagraphCompact
         : styles.spacingParagraphDefault;
-    case 'codeblock':
+    case 'code':
     case 'math':
       return compact
         ? styles.spacingCodeblockCompact
@@ -1042,7 +1042,7 @@ function getElementSpacing(
       return compact ? styles.spacingListCompact : styles.spacingListDefault;
     case 'table':
       return compact ? styles.spacingTableCompact : styles.spacingTableDefault;
-    case 'hr':
+    case 'thematicBreak':
       return compact ? styles.spacingHrCompact : styles.spacingHrDefault;
     case 'image':
       return compact ? styles.spacingImageCompact : styles.spacingImageDefault;
@@ -1057,15 +1057,17 @@ function getElementSpacing(
  * Compute per-column min-widths from table AST content.
  * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
  */
-function computeTableColumnMinWidths(node: {
-  headers: {children: InlineNodeWithMath[]}[];
-  rows: {children: InlineNodeWithMath[]}[][];
-}): number[] {
-  return node.headers.map((h, colIdx) => {
-    let maxLen = countInlineTextLength(h.children);
-    for (const row of node.rows) {
-      if (row[colIdx]) {
-        const len = countInlineTextLength(row[colIdx].children);
+function computeTableColumnMinWidths(node: MarkdownAstTable): number[] {
+  const [header, ...rows] = node.children;
+  if (header == null) {
+    return [];
+  }
+  return header.children.map((cell, colIdx) => {
+    let maxLen = countInlineTextLength(cell.children);
+    for (const row of rows) {
+      const rowCell = row.children[colIdx];
+      if (rowCell != null) {
+        const len = countInlineTextLength(rowCell.children);
         if (len > maxLen) {
           maxLen = len;
         }
@@ -1076,7 +1078,7 @@ function computeTableColumnMinWidths(node: {
 }
 
 function renderBlock(
-  node: BlockNodeWithMath,
+  node: MarkdownAstBlockContent,
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
@@ -1090,7 +1092,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<BlockNodeWithMath, string>,
+  headingIdMap?: ReadonlyMap<MarkdownAstBlockContent, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1103,7 +1105,7 @@ function renderBlock(
 
   switch (node.type) {
     case 'heading': {
-      const level = Math.min(node.level + headingLevelStart - 1, 6) as
+      const level = Math.min(node.depth + headingLevelStart - 1, 6) as
         1 | 2 | 3 | 4 | 5 | 6;
       const headingChildren = node.children.map((c, i) =>
         renderInline(
@@ -1203,16 +1205,16 @@ function renderBlock(
         </div>
       );
     }
-    case 'codeblock': {
+    case 'code': {
       // Track codeblock content in cursor for accurate character counting
-      cursor.offset += node.content.length;
+      cursor.offset += node.value.length;
       const CodeBlockComp = components?.code;
       if (CodeBlockComp) {
         return (
           <CodeBlockComp
             key={index}
-            code={node.content}
-            language={node.language}
+            code={node.value}
+            language={node.lang ?? 'plaintext'}
           />
         );
       }
@@ -1229,8 +1231,8 @@ function renderBlock(
             ),
           )}>
           <CodeBlock
-            code={node.content}
-            language={node.language}
+            code={node.value}
+            language={node.lang ?? 'plaintext'}
             isCollapsible
             xstyle={[
               contentWidthValue != null
@@ -1316,11 +1318,12 @@ function renderBlock(
     case 'list': {
       // Detect task lists: all items have a checked state
       const isTaskList =
-        node.items.length > 0 && node.items.every(item => item.checked != null);
+        node.children.length > 0 &&
+        node.children.every(item => item.checked != null);
 
       if (isTaskList) {
         // Extract labels from task items — render as rich inline content
-        const checkedValues = node.items
+        const checkedValues = node.children
           .map((item, i) => ({item, key: `task-${i}`}))
           .filter(({item}) => item.checked)
           .map(({key}) => key);
@@ -1343,7 +1346,7 @@ function renderBlock(
               xstyle={styles.blockIndent}
               isReadOnly
               density="compact">
-              {node.items.map((item, i) => {
+              {node.children.map((item, i) => {
                 const firstChild = item.children[0];
                 const isInline =
                   item.children.length === 1 &&
@@ -1423,7 +1426,7 @@ function renderBlock(
             density="compact"
             start={node.ordered ? node.start : undefined}
             xstyle={styles.blockIndent}>
-            {node.items.map((item, i) => {
+            {node.children.map((item, i) => {
               const firstChild = item.children[0];
               const isInline =
                 item.children.length === 1 && firstChild?.type === 'paragraph';
@@ -1483,6 +1486,7 @@ function renderBlock(
     }
     case 'table': {
       const colMinWidths = computeTableColumnMinWidths(node);
+      const [header, ...rows] = node.children;
 
       return (
         <div
@@ -1512,14 +1516,14 @@ function renderBlock(
           <Table dividers="rows" textOverflow="wrap">
             <TableHeader>
               <TableRow>
-                {node.headers.map((h, i) => (
+                {header?.children.map((h, i) => (
                   <TableHeaderCell
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table columns are positional by definition
                     key={i}
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
-                      node.alignments[i] === 'center' && cellAlignStyles.center,
-                      node.alignments[i] === 'right' && cellAlignStyles.end,
+                      node.align[i] === 'center' && cellAlignStyles.center,
+                      node.align[i] === 'right' && cellAlignStyles.end,
                     ]}>
                     {h.children.map((c, j) =>
                       renderInline(
@@ -1538,14 +1542,14 @@ function renderBlock(
               </TableRow>
             </TableHeader>
             <TableBody>
-              {node.rows.map((row, i) => {
-                const cells = row.map((cell, j) => (
+              {rows.map((row, i) => {
+                const cells = row.children.map((cell, j) => (
                   <TableCell
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
                     xstyle={[
-                      node.alignments[j] === 'center' && cellAlignStyles.center,
-                      node.alignments[j] === 'right' && cellAlignStyles.end,
+                      node.align[j] === 'center' && cellAlignStyles.center,
+                      node.align[j] === 'right' && cellAlignStyles.end,
                     ]}>
                     {cell.children.map((c, k) =>
                       renderInline(
@@ -1574,7 +1578,7 @@ function renderBlock(
         </div>
       );
     }
-    case 'hr': {
+    case 'thematicBreak': {
       const HrComp = components?.hr;
       if (HrComp) {
         return <HrComp key={index} />;
@@ -1595,7 +1599,7 @@ function renderBlock(
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.src);
+      const safeSrc = sanitizeUrl(node.url);
       if (safeSrc == null) {
         return (
           <div
@@ -1719,21 +1723,25 @@ export function Markdown({
       }
       const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
       const input = trimStreamingArtifacts(smoothedText, options);
-      return hasMathRenderer
-        ? parseMarkdownIncremental(
-            input,
-            incrementalStateRef.current as IncrementalState<true>,
-            mathParseOptions,
-          )
-        : parseMarkdownIncremental(
-            input,
-            incrementalStateRef.current as IncrementalState<false>,
-            legacyParseOptions,
-          );
+      return (
+        hasMathRenderer
+          ? parseMarkdownAstIncremental(
+              input,
+              incrementalStateRef.current,
+              mathParseOptions,
+            )
+          : parseMarkdownAstIncremental(
+              input,
+              incrementalStateRef.current,
+              legacyParseOptions,
+            )
+      ).children;
     }
-    return hasMathRenderer
-      ? parseMarkdown(children, mathParseOptions)
-      : parseMarkdown(children, legacyParseOptions);
+    return (
+      hasMathRenderer
+        ? parseMarkdownAst(children, mathParseOptions)
+        : parseMarkdownAst(children, legacyParseOptions)
+    ).children;
   }, [
     display,
     smoothedText,
@@ -1754,11 +1762,11 @@ export function Markdown({
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<BlockNodeWithMath, string>();
+    const map = new Map<MarkdownAstBlockContent, string>();
     const counts = new Map<string, number>();
     for (const block of blocks) {
       if (block.type === 'heading') {
-        const label = inlineText(block.children).trim();
+        const label = markdownAstText(block.children).trim();
         map.set(block, uniqueSlug(slugify(label), counts));
       }
     }
@@ -1774,8 +1782,8 @@ export function Markdown({
       ? trimStreamingArtifacts(smoothedText, options)
       : children;
     return hasMathRenderer
-      ? parseInline(input, mathParseOptions)
-      : parseInline(input, legacyParseOptions);
+      ? parseInlineAst(input, mathParseOptions)
+      : parseInlineAst(input, legacyParseOptions);
   }, [
     display,
     smoothedText,
@@ -1800,8 +1808,10 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<BlockNodeWithMath[]>([]);
-  const prevInlineNodesRef = useRef<InlineNodeWithMath[]>([]);
+  const prevBlocksRef = useRef<ReadonlyArray<MarkdownAstBlockContent>>([]);
+  const prevInlineNodesRef = useRef<ReadonlyArray<MarkdownAstPhrasingContent>>(
+    [],
+  );
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
