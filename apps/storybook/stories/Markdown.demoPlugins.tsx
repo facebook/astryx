@@ -9,6 +9,7 @@
 
 import {
   createMarkdownPlugin,
+  createMarkdownFenceTransform,
   createMarkdownTextTransform,
   type MarkdownExtensionNode,
   type MarkdownSyntaxPluginDefinition,
@@ -130,6 +131,44 @@ const todoPlugin = createMarkdownPlugin<'demo-todos', TodoNode>({
     },
   },
 });
+
+type DiagramNode = MarkdownExtensionNode<
+  'demo-semantic-fences',
+  'diagram',
+  {readonly code: string; readonly label?: string},
+  'block'
+>;
+
+const semanticFencePlugin = createMarkdownPlugin<
+  'demo-semantic-fences',
+  DiagramNode
+>({
+  name: 'demo-semantic-fences',
+  apiVersion: 1,
+  transform: createMarkdownFenceTransform({
+    languages: ['diagram'],
+    createNode: ({code, meta}) => ({
+      type: 'extension',
+      plugin: 'demo-semantic-fences',
+      name: 'diagram',
+      display: 'block',
+      data: {code, ...(meta == null ? {} : {label: meta})},
+    }),
+  }),
+  renderers: {
+    diagram: {
+      render: ({node}) => (
+        <figure aria-label={node.data.label ?? 'Workflow diagram'}>
+          <figcaption>{node.data.label ?? 'Workflow diagram'}</figcaption>
+          <pre>{node.data.code}</pre>
+        </figure>
+      ),
+      toText: node => node.data.code,
+    },
+  },
+});
+
+export const markdownSemanticFenceDemoPlugin = semanticFencePlugin;
 
 export const markdownDemoPlugins = [
   createMarkdownPlugin<'demo-mentions', MentionNode>(mentionDefinition),

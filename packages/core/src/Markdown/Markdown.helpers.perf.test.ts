@@ -2,14 +2,16 @@
 
 /**
  * @file Markdown.helpers.perf.test.ts
- * @input Deterministic 200/500-section Markdown and zero-work text helpers
- * @output Paired median fast-path evidence for hinted no-claim helpers
+ * @input Deterministic 200/500-section Markdown and zero-work transform helpers
+ * @output Paired median fast-path evidence for unclaimed helper transforms
  * @position Helper dispatch regression; full FR23 evidence lands after all helpers
  */
 
 import {describe, expect, it} from 'vitest';
 import {parseMarkdown} from './parser';
 import {createMarkdownPlugin} from './plugins';
+import type {MarkdownExtensionNode} from './plugins';
+import {createMarkdownFenceTransform} from './semanticFence';
 import {createMarkdownTextTransform} from './textTransform';
 
 let benchmarkSink = 0;
@@ -71,19 +73,47 @@ function pairedMedianRatio(
   return median(ratios);
 }
 
-const zeroWorkPlugins = Array.from({length: 5}, (_, index) =>
-  createMarkdownPlugin({
-    name: `zero-work-${index}`,
+const zeroWorkPlugins = [
+  ...Array.from({length: 4}, (_, index) =>
+    createMarkdownPlugin({
+      name: `zero-work-${index}`,
+      apiVersion: 1,
+      transform: createMarkdownTextTransform({
+        pattern: new RegExp(`NEVER_MATCH_${index}`, 'g'),
+        requiredSubstrings: [`NEVER_MATCH_${index}`],
+        replace: () => {
+          throw new Error('An unclaimed helper callback ran');
+        },
+      }),
+    }),
+  ),
+  createMarkdownPlugin<
+    'zero-work-semantic-fence',
+    MarkdownExtensionNode<
+      'zero-work-semantic-fence',
+      'never',
+      {readonly value: string},
+      'block'
+    >
+  >({
+    name: 'zero-work-semantic-fence',
     apiVersion: 1,
-    transform: createMarkdownTextTransform({
-      pattern: new RegExp(`NEVER_MATCH_${index}`, 'g'),
-      requiredSubstrings: [`NEVER_MATCH_${index}`],
-      replace: () => {
-        throw new Error('An unclaimed helper callback ran');
+    transform: createMarkdownFenceTransform({
+      languages: ['never-fence'],
+      createNode: ({code}) => {
+        throw new Error(`An unclaimed semantic fence callback ran: ${code}`);
       },
     }),
+    renderers: {
+      never: {
+        render: () => {
+          throw new Error('An unclaimed semantic fence renderer ran');
+        },
+        toText: node => node.data.value,
+      },
+    },
   }),
-);
+];
 
 describe('Markdown helper performance', () => {
   it.each([200, 500])(

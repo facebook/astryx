@@ -260,6 +260,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -326,6 +331,51 @@ const finalLabels = createMarkdownPlugin({
 });
 
 <Markdown plugins={[finalLabels]}># Draft</Markdown>;
+`,
+    },
+    {
+      label: 'Semantic fence helper',
+      code: `
+import {
+  Markdown,
+  createMarkdownPlugin,
+  createMarkdownFenceTransform,
+  type MarkdownExtensionNode,
+} from '@astryxdesign/core/Markdown';
+
+type DiagramNode = MarkdownExtensionNode<
+  'diagrams',
+  'diagram',
+  {readonly code: string; readonly label?: string},
+  'block'
+>;
+
+const diagrams = createMarkdownPlugin<'diagrams', DiagramNode>({
+  name: 'diagrams',
+  apiVersion: 1,
+  transform: createMarkdownFenceTransform({
+    languages: ['mermaid'],
+    createNode: ({code, meta}) => ({
+      type: 'extension',
+      plugin: 'diagrams',
+      name: 'diagram',
+      display: 'block',
+      data: {code, ...(meta == null ? {} : {label: meta})},
+    }),
+  }),
+  renderers: {
+    diagram: {
+      render: ({node}) => (
+        <Diagram source={node.data.code} label={node.data.label} />
+      ),
+      toText: node => node.data.code,
+    },
+  },
+});
+
+<Markdown plugins={[diagrams]}>
+  {'\`\`\`mermaid Checkout flow\\ngraph LR; A-->B\\n\`\`\`'}
+</Markdown>;
 `,
     },
     {
@@ -564,6 +614,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -617,6 +672,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
       },
       {
         guidance: true,

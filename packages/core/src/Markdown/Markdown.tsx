@@ -57,7 +57,7 @@ import {
   uniqueSlug,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
-import {markdownAstText} from './ast';
+import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstPhrasingContent,
@@ -70,6 +70,7 @@ import {
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
 } from './plugins';
+import {getMarkdownFenceProposal} from './semanticFence';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -1330,17 +1331,14 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
+      const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
       const CodeBlockComp = components?.code;
       if (CodeBlockComp) {
         return (
-          <CodeBlockComp
-            key={index}
-            code={node.value}
-            language={node.lang ?? 'plaintext'}
-          />
+          <CodeBlockComp key={index} code={node.value} language={language} />
         );
       }
-      return (
+      const fallback = (
         <div
           key={index}
           {...mergeProps(
@@ -1354,7 +1352,7 @@ function renderBlock(
           )}>
           <CodeBlock
             code={node.value}
-            language={node.lang ?? 'plaintext'}
+            language={language}
             isCollapsible
             xstyle={[
               contentWidthValue != null
@@ -1365,6 +1363,36 @@ function renderBlock(
           />
         </div>
       );
+      const proposal = getMarkdownFenceProposal(node);
+      if (proposal == null) {
+        return fallback;
+      }
+      const renderer = getMarkdownExtensionRenderer(
+        preparedPlugins,
+        proposal.node,
+      );
+      if (renderer == null) {
+        return fallback;
+      }
+      try {
+        const rendered = renderer.render({node: proposal.node});
+        if (rendered == null || typeof rendered === 'boolean') {
+          return fallback;
+        }
+        return (
+          <MarkdownPluginBoundary
+            key={index}
+            pluginName={proposal.node.plugin}
+            resetKey={proposal.node}
+            resetRenderer={renderer.render}
+            fallback={fallback}>
+            <Suspense fallback={fallback}>{rendered}</Suspense>
+          </MarkdownPluginBoundary>
+        );
+      } catch (error) {
+        reportMarkdownPluginFailure(proposal.node.plugin, 'render', error);
+        return fallback;
+      }
     }
     case 'math': {
       cursor.offset += node.value.length;

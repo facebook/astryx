@@ -101,6 +101,21 @@ export interface MarkdownTransformContext {
   report(message: string): void;
 }
 
+const markdownTransformPluginName = Symbol('MarkdownTransformPluginName');
+
+type InternalMarkdownTransformContext = MarkdownTransformContext & {
+  readonly [markdownTransformPluginName]: string;
+};
+
+/** @internal Reads the owning plugin name without expanding the public context. */
+export function getMarkdownTransformPluginName(
+  context: MarkdownTransformContext,
+): string | undefined {
+  return (context as Partial<InternalMarkdownTransformContext>)[
+    markdownTransformPluginName
+  ];
+}
+
 declare const markdownTransformNode: unique symbol;
 
 export interface MarkdownTransform<Node extends MarkdownExtensionNode = never> {
@@ -503,6 +518,115 @@ function positionKey(position: MarkdownAstPosition | undefined): string | null {
   return start == null || end == null ? null : `${start}:${end}`;
 }
 
+interface CodeInternalProperties {
+  readonly descriptors: ReadonlyArray<readonly [symbol, PropertyDescriptor]>;
+}
+
+function codeSourceSignature(node: Record<string, unknown>): string {
+  return JSON.stringify([
+    node.lang,
+    node.meta,
+    node.value,
+    node.position ?? null,
+  ]);
+}
+
+function collectCodeInternalProperties(
+  root: MarkdownAstRoot<MarkdownExtensionNode>,
+): Map<string, CodeInternalProperties[]> {
+  const properties = new Map<string, CodeInternalProperties[]>();
+  const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
+    if (node.type === 'code') {
+      const descriptors = Object.getOwnPropertySymbols(node)
+        .map(
+          symbol =>
+            [symbol, Object.getOwnPropertyDescriptor(node, symbol)] as const,
+        )
+        .filter(
+          (entry): entry is readonly [symbol, PropertyDescriptor] =>
+            entry[1]?.enumerable === true,
+        );
+      if (descriptors.length > 0) {
+        const key = codeSourceSignature(
+          node as unknown as Record<string, unknown>,
+        );
+        properties.set(key, [...(properties.get(key) ?? []), {descriptors}]);
+      }
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
+        if (child != null && typeof child === 'object') {
+          visit(child as MarkdownAstNodeBase & {readonly type: string});
+        }
+      }
+    }
+  };
+  visit(root);
+  return properties;
+}
+
+function restoreCodeInternalProperties(
+  previous: MarkdownAstRoot<MarkdownExtensionNode>,
+  next: MarkdownAstRoot<MarkdownExtensionNode>,
+): MarkdownAstRoot<MarkdownExtensionNode> {
+  const properties = collectCodeInternalProperties(previous);
+  if (properties.size === 0) {
+    return next;
+  }
+
+  const visit = (
+    node: MarkdownAstNodeBase & {readonly type: string},
+  ): MarkdownAstNodeBase & {readonly type: string} => {
+    let current = node;
+    if (node.type === 'code') {
+      const key = codeSourceSignature(
+        node as unknown as Record<string, unknown>,
+      );
+      const queue = properties.get(key);
+      const internal = queue?.shift();
+      const shouldRestore = internal?.descriptors.some(
+        ([symbol, descriptor]) => {
+          const current = Object.getOwnPropertyDescriptor(node, symbol);
+          return (
+            current == null ||
+            current.value !== descriptor.value ||
+            current.get !== descriptor.get ||
+            current.set !== descriptor.set ||
+            current.enumerable !== descriptor.enumerable ||
+            current.configurable !== descriptor.configurable ||
+            current.writable !== descriptor.writable
+          );
+        },
+      );
+      if (internal != null && shouldRestore === true) {
+        const clone = {...node};
+        for (const [symbol, descriptor] of internal.descriptors) {
+          Object.defineProperty(clone, symbol, descriptor);
+        }
+        current = clone;
+      }
+    }
+    if ('children' in current && Array.isArray(current.children)) {
+      const currentChildren = current.children as ReadonlyArray<
+        MarkdownAstNodeBase & {readonly type: string}
+      >;
+      const children = currentChildren.map(child => visit(child));
+      if (children.some((child, index) => child !== currentChildren[index])) {
+        const parent: MarkdownAstNodeBase & {
+          readonly type: string;
+          readonly children: ReadonlyArray<
+            MarkdownAstNodeBase & {readonly type: string}
+          >;
+        } = {...current, children};
+        current = parent;
+      }
+    }
+    return current;
+  };
+
+  return visit(next) as MarkdownAstRoot<MarkdownExtensionNode>;
+}
+
 interface SourceInvariant {
   readonly type: string;
   readonly depth?: unknown;
@@ -801,7 +925,8 @@ function validateAst(
       case 'code':
         if (
           typeof node.value !== 'string' ||
-          (node.lang !== null && typeof node.lang !== 'string')
+          (node.lang !== null && typeof node.lang !== 'string') ||
+          (node.meta !== undefined && typeof node.meta !== 'string')
         ) {
           return false;
         }
@@ -982,7 +1107,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
       started = true;
     }
     try {
-      const next = prepared.transform(document, {
+      const context: InternalMarkdownTransformContext = {
         source,
         isFinal,
         display,
@@ -993,7 +1118,9 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
             message,
           );
         },
-      }) as unknown;
+        [markdownTransformPluginName]: prepared.pluginName,
+      };
+      const next = prepared.transform(document, context) as unknown;
       if (
         next != null &&
         typeof next === 'object' &&
@@ -1021,7 +1148,9 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
         throw new TypeError('Transform returned an invalid Markdown document');
       }
       priorTransformChangedTree = true;
-      document = freezeAst(next) as MarkdownAstRoot<Node>;
+      document = freezeAst(
+        restoreCodeInternalProperties(document, next),
+      ) as MarkdownAstRoot<Node>;
     } catch (error) {
       reportMarkdownPluginFailure(prepared.pluginName, 'transform', error);
     }

@@ -8,6 +8,10 @@
  * @position Core parser and compatibility boundary; consumed by Markdown and Outline
  */
 
+import {
+  getMarkdownAstLegacyCodeLanguage,
+  markMarkdownAstLegacyCodeLanguage,
+} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstList,
@@ -311,7 +315,7 @@ function projectBlockNode(
     case 'code':
       projected = {
         type: 'codeblock',
-        language: node.lang ?? 'plaintext',
+        language: getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext',
         content: node.value,
         ...metadata,
       };
@@ -2305,10 +2309,16 @@ function parseMarkdownImpl(
     }
 
     // --- Fenced code block ---
-    const fenceMatch = line.match(/^(`{3,}|~{3,})(\w*)/);
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
     if (fenceMatch) {
       const fence = fenceMatch[1];
-      const language = fenceMatch[2] || null;
+      const info = line.slice(fence.length);
+      const language = info.match(/^(\S+)/)?.[1] ?? null;
+      const legacyLanguage = info.match(/^(\w*)/)?.[1] || null;
+      const meta =
+        language == null
+          ? undefined
+          : info.slice(language.length).trim() || undefined;
       const codeLines: string[] = [];
       index++;
       while (index < lines.length && !lines[index].startsWith(fence)) {
@@ -2320,7 +2330,15 @@ function parseMarkdownImpl(
       // can end on them, so it states its own end rather than letting the
       // positional derivation trim them off.
       pushBlock(
-        {type: 'code', lang: language, value: codeLines.join('\n')},
+        markMarkdownAstLegacyCodeLanguage(
+          {
+            type: 'code',
+            lang: language,
+            ...(meta == null ? {} : {meta}),
+            value: codeLines.join('\n'),
+          },
+          legacyLanguage,
+        ),
         Math.min(index, lines.length) - 1,
       );
       continue;
