@@ -16,11 +16,12 @@ verified_by:
     packages/core/src/Markdown/Markdown.public.test.ts,
     packages/core/src/Markdown/parser.test.ts,
     packages/core/src/Markdown/incremental.test.ts,
+    packages/core/src/Markdown/remark.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: []
+modules: [module:Markdown/remark]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
@@ -109,8 +110,9 @@ without entering parse identity. Every extension node introduced
 by syntax or transformation has complete renderer ownership and a deterministic
 text projection. Text matching, semantic fences, and source decoration are helpers
 that compile to transforms rather than separate protocol phases. `spec:AST-036`
-owns the shared protocol and limited Remark compatibility profile; this component
-owns aggregate application and fallback.
+owns the shared protocol and limited Remark compatibility profile,
+`module:Markdown/remark` owns that profile's adapter, and this component owns
+aggregate application and fallback.
 
 ### Acceptance and implementation state
 
@@ -299,6 +301,8 @@ and this change preserves the existing spelling exactly.
 - `spec:AST-036` owns the opaque syntax/transform/renderer protocol, immutable AST
   validation, limited Remark compatibility, performance, and resource boundaries.
   This record owns aggregate Markdown behavior in FR12–FR16;
+  `module:Markdown/remark` owns the separately imported Remark adapter's
+  supported subset, rejections, and diagnostics; and
   `module:Outline/parseOutlineFromMarkdown` owns the corresponding Outline
   projection.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;

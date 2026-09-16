@@ -653,6 +653,11 @@
       "source": "./src/Typeahead/utils.ts",
       "types": "./dist/Typeahead/utils.d.ts",
       "default": "./dist/Typeahead/utils.js"
+    },
+    "./Markdown/remark": {
+      "source": "./src/Markdown/remark.ts",
+      "types": "./dist/Markdown/remark.d.ts",
+      "default": "./dist/Markdown/remark.js"
     }
   },
   "files": [
