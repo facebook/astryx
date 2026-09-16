@@ -33,6 +33,7 @@ import type {
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
 } from './plugins';
+import {isSafeMarkdownUrl} from './url';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -867,7 +868,7 @@ function matchReferenceLink(
       // matches nothing.
       const label = rawLabel === '' ? linkText : rawLabel;
       const href = linkDefs.get(normalizeLinkLabel(label));
-      if (href != null && isSafeUrl(href)) {
+      if (href != null && isSafeMarkdownUrl(href)) {
         return {
           node: {
             type: 'link',
@@ -886,7 +887,7 @@ function matchReferenceLink(
     return null;
   }
   const href = linkDefs.get(normalizeLinkLabel(linkText));
-  if (href == null || !isSafeUrl(href)) {
+  if (href == null || !isSafeMarkdownUrl(href)) {
     return null;
   }
   return {
@@ -919,7 +920,7 @@ function matchReferenceImage(
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
-      if (src != null && isSafeUrl(src)) {
+      if (src != null && isSafeMarkdownUrl(src)) {
         return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
       }
       // No match — fall back to a shortcut `![alt]`.
@@ -929,7 +930,7 @@ function matchReferenceImage(
     return null;
   }
   const src = linkDefs.get(normalizeLinkLabel(alt));
-  if (src == null || !isSafeUrl(src)) {
+  if (src == null || !isSafeMarkdownUrl(src)) {
     return null;
   }
   return {node: {type: 'image', url: src, alt}, end: altClose + 1};
@@ -1021,30 +1022,6 @@ function findInlineMathEnd(text: string, start: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// URL scheme sanitization
-// ---------------------------------------------------------------------------
-
-/**
- * Reject URLs with dangerous schemes (javascript:, vbscript:, data:) that
- * could execute arbitrary code when rendered as link hrefs or image srcs.
- * Returns true if the URL is safe to use, false otherwise.
- */
-function isSafeUrl(url: string): boolean {
-  // Trim and collapse whitespace/control chars that browsers tolerate but
-  // could bypass a naive prefix check (e.g. "java\nscript:alert(1)").
-  // eslint-disable-next-line no-control-regex -- control chars are the bypass
-  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
-  const lower = normalized.toLowerCase();
-  if (
-    lower.startsWith('javascript:') ||
-    lower.startsWith('vbscript:') ||
-    lower.startsWith('data:text/html')
-  ) {
-    return false;
-  }
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 // Inline parser
 // ---------------------------------------------------------------------------
@@ -1213,13 +1190,22 @@ function matchExtensionSyntax(
       );
       continue;
     }
+    const rawNode = result.node as typeof result.node & {
+      readonly source?: unknown;
+      readonly position?: unknown;
+    };
+    const {
+      source: _ignoredSource,
+      position: _ignoredPosition,
+      ...safeNode
+    } = rawNode;
     const absoluteStart = (opts.baseOffset ?? 0) + offset;
     const absoluteEnd = (opts.baseOffset ?? 0) + result.end;
     return {
       status: 'match',
       end: result.end,
       node: Object.freeze({
-        ...result.node,
+        ...safeNode,
         data: freezeMarkdownPluginData(result.node.data),
         source: source.slice(offset, result.end),
         ...(opts.sourceRanges && context === 'block'
@@ -1376,7 +1362,7 @@ function parseInlineImpl(
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
           const src = text.slice(altClose + 2, srcClose);
-          if (!isSafeUrl(src)) {
+          if (!isSafeMarkdownUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
           } else {
@@ -1419,7 +1405,7 @@ function parseInlineImpl(
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
           const href = text.slice(textClose + 2, urlClose);
-          if (!isSafeUrl(href)) {
+          if (!isSafeMarkdownUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
             nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
           } else {
@@ -1716,7 +1702,7 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     while ((m = re.exec(text)) !== null) {
       const url = m[1];
       // Skip dangerous URL schemes (javascript:, vbscript:, data:text/html)
-      if (!isSafeUrl(url)) {
+      if (!isSafeMarkdownUrl(url)) {
         continue;
       }
       matches.push({
@@ -2372,7 +2358,7 @@ function parseMarkdownImpl(
     if (
       imageMatch &&
       line.trim() === imageMatch[0] &&
-      isSafeUrl(imageMatch[2])
+      isSafeMarkdownUrl(imageMatch[2])
     ) {
       pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
       index++;

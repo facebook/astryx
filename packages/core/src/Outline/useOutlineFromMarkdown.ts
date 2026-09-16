@@ -26,8 +26,9 @@ export function useOutlineFromMarkdown<
   markdown: string,
   options?: ParseOutlineFromMarkdownOptions<Node>,
 ): OutlineItem[] {
+  const plugins = options?.plugins;
   return useMemo(
-    () => parseOutlineFromMarkdown(markdown, options),
-    [markdown, options],
+    () => parseOutlineFromMarkdown(markdown, {plugins}),
+    [markdown, plugins],
   );
 }

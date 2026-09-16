@@ -9,6 +9,7 @@
 
 import type React from 'react';
 import {warnOnce} from '../utils/devWarning';
+import {isSafeMarkdownUrl} from './url';
 import type {
   MarkdownAstDataValue,
   MarkdownAstExtensionNode,
@@ -728,12 +729,19 @@ function validateAst(
         }
         break;
       case 'link':
-        if (typeof node.url !== 'string') {
+        if (
+          typeof node.url !== 'string' ||
+          !isSafeMarkdownUrl(node.url)
+        ) {
           return false;
         }
         break;
       case 'image':
-        if (typeof node.url !== 'string' || typeof node.alt !== 'string') {
+        if (
+          typeof node.url !== 'string' ||
+          !isSafeMarkdownUrl(node.url) ||
+          typeof node.alt !== 'string'
+        ) {
           return false;
         }
         break;

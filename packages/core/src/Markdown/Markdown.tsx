@@ -76,6 +76,7 @@ import type {
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
 } from './plugins';
+import {sanitizeMarkdownUrl} from './url';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -601,27 +602,6 @@ const headingStyles = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// URL sanitization — block dangerous protocols
-// ---------------------------------------------------------------------------
-
-const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
-
-function sanitizeUrl(url: string): string | null {
-  // Strip control characters before testing, the same normalization the
-  // parser's isSafeUrl applies — the anchored pattern must see the URL the
-  // way a browser will. Return the normalized value so the stripped
-  // characters don't ride along into an attribute or component override.
-  // eslint-disable-next-line no-control-regex -- control chars are the bypass
-  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
-  if (normalized.length === 0) {
-    return null;
-  }
-  if (DANGEROUS_URL_PATTERN.test(normalized)) {
-    return null;
-  }
-  return normalized;
-}
-
 // ---------------------------------------------------------------------------
 // Inline plugin matching
 // ---------------------------------------------------------------------------
@@ -731,16 +711,34 @@ interface MarkdownPluginBoundaryProps {
   children: React.ReactNode;
   fallback: React.ReactNode;
   pluginName: string;
+  resetKey: unknown;
+}
+
+interface MarkdownPluginBoundaryState {
+  failed: boolean;
+  resetKey: unknown;
 }
 
 class MarkdownPluginBoundary extends Component<
   MarkdownPluginBoundaryProps,
-  {failed: boolean}
+  MarkdownPluginBoundaryState
 > {
-  state = {failed: false};
+  state: MarkdownPluginBoundaryState = {
+    failed: false,
+    resetKey: this.props.resetKey,
+  };
 
-  static getDerivedStateFromError(): {failed: boolean} {
+  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
     return {failed: true};
+  }
+
+  static getDerivedStateFromProps(
+    props: MarkdownPluginBoundaryProps,
+    state: MarkdownPluginBoundaryState,
+  ): Partial<MarkdownPluginBoundaryState> | null {
+    return props.resetKey === state.resetKey
+      ? null
+      : {failed: false, resetKey: props.resetKey};
   }
 
   componentDidCatch(error: unknown): void {
@@ -931,7 +929,7 @@ function renderInline(
       return <MathComp key={index} value={node.value} display="inline" />;
     }
     case 'link': {
-      const safeHref = sanitizeUrl(node.url);
+      const safeHref = sanitizeMarkdownUrl(node.url);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
         return (
@@ -1012,7 +1010,7 @@ function renderInline(
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.url);
+      const safeSrc = sanitizeMarkdownUrl(node.url);
       if (safeSrc == null) {
         return <span key={index}>[{node.alt}]</span>;
       }
@@ -1044,6 +1042,7 @@ function renderInline(
         <MarkdownPluginBoundary
           key={index}
           pluginName={node.plugin}
+          resetKey={node}
           fallback={fallback}>
           <Renderer node={node} />
         </MarkdownPluginBoundary>
@@ -1686,6 +1685,7 @@ function renderBlock(
         <MarkdownPluginBoundary
           key={index}
           pluginName={node.plugin}
+          resetKey={node}
           fallback={fallback}>
           <Renderer node={node} />
         </MarkdownPluginBoundary>
@@ -1712,7 +1712,7 @@ function renderBlock(
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.url);
+      const safeSrc = sanitizeMarkdownUrl(node.url);
       if (safeSrc == null) {
         return (
           <div
