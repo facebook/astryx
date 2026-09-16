@@ -16,13 +16,17 @@ import {
   visitMarkdownNodes,
 } from './index';
 import {
+  createMarkdownFenceTransform,
   createMarkdownPlugin,
   createMarkdownTextTransform,
   isMarkdownExtensionNode,
 } from './plugins';
 import type {
   MarkdownExtensionNode,
+  MarkdownFenceTransformOptions,
+  MarkdownPluginEntry,
   MarkdownSyntaxPluginDefinition,
+  MarkdownTransform,
 } from './plugins';
 import type {
   BlockNode,
@@ -209,5 +213,68 @@ describe('Markdown public parser types', () => {
       });
     }
     expectTypeOf(compileOnlyPluginGuards).toBeFunction();
+  });
+
+  it('exports a language-narrowed semantic fence transform helper', () => {
+    type PublicFenceNode = MarkdownExtensionNode<
+      'public-semantic-fences',
+      'diagram',
+      {
+        readonly code: string;
+        readonly language: 'mermaid' | 'dot';
+        readonly meta?: string;
+      },
+      'block'
+    >;
+    const options = {
+      languages: ['mermaid', 'dot'] as const,
+      createNode: ({language, code, meta}) => {
+        expectTypeOf(language).toEqualTypeOf<'mermaid' | 'dot'>();
+        expectTypeOf(code).toBeString();
+        expectTypeOf(meta).toEqualTypeOf<string | undefined>();
+        return {
+          type: 'extension',
+          plugin: 'public-semantic-fences',
+          name: 'diagram',
+          display: 'block',
+          data: {
+            code,
+            language,
+            ...(meta == null ? {} : {meta}),
+          },
+        } as const;
+      },
+    } satisfies MarkdownFenceTransformOptions<
+      readonly ['mermaid', 'dot'],
+      PublicFenceNode
+    >;
+    const transform = createMarkdownFenceTransform(options);
+    const plugin = createMarkdownPlugin<
+      'public-semantic-fences',
+      PublicFenceNode
+    >({
+      name: 'public-semantic-fences',
+      apiVersion: 1,
+      transform,
+      renderers: {
+        diagram: {
+          render: () => null,
+          toText: node => node.data.code,
+        },
+      },
+    });
+    const typedTransform: MarkdownTransform<PublicFenceNode> = transform;
+
+    expectTypeOf(typedTransform).toBeFunction();
+    expectTypeOf(plugin).toEqualTypeOf<MarkdownPluginEntry<PublicFenceNode>>();
+
+    function compileOnlyFenceGuards() {
+      createMarkdownFenceTransform({
+        languages: ['mermaid'],
+        // @ts-expect-error fence helpers create data nodes; render belongs in renderers
+        render: () => null,
+      });
+    }
+    expectTypeOf(compileOnlyFenceGuards).toBeFunction();
   });
 });

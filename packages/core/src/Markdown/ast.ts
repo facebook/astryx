@@ -121,10 +121,44 @@ export interface MarkdownAstParagraph<
   readonly children: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>;
 }
 
+const markdownAstLegacyCodeLanguage = Symbol('MarkdownAstLegacyCodeLanguage');
+
 export interface MarkdownAstCode extends MarkdownAstNodeBase {
   readonly type: 'code';
   readonly lang: string | null;
+  readonly meta?: string;
   readonly value: string;
+}
+
+type MarkdownAstCodeWithLegacyLanguage = MarkdownAstCode & {
+  readonly [markdownAstLegacyCodeLanguage]?: string | null;
+};
+
+/** @internal Preserves the released parser/renderer language projection. */
+export function markMarkdownAstLegacyCodeLanguage<Node extends MarkdownAstCode>(
+  node: Node,
+  language: string | null,
+): Node {
+  if (language === node.lang) {
+    return node;
+  }
+  Object.defineProperty(node, markdownAstLegacyCodeLanguage, {
+    configurable: false,
+    enumerable: true,
+    value: language,
+    writable: false,
+  });
+  return node;
+}
+
+/** @internal Reads the released language projection for a canonical code node. */
+export function getMarkdownAstLegacyCodeLanguage(
+  node: MarkdownAstCode,
+): string | null {
+  const legacyLanguage = (node as MarkdownAstCodeWithLegacyLanguage)[
+    markdownAstLegacyCodeLanguage
+  ];
+  return legacyLanguage === undefined ? node.lang : legacyLanguage;
 }
 
 export interface MarkdownAstMath extends MarkdownAstNodeBase {

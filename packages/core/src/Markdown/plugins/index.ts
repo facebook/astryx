@@ -12,6 +12,12 @@ export type {
   MarkdownTextTransformContext,
   MarkdownTextTransformOptions,
 } from './textTransform';
+export {createMarkdownFenceTransform} from './semanticFence';
+export type {
+  MarkdownFenceContext,
+  MarkdownFenceNode,
+  MarkdownFenceTransformOptions,
+} from './semanticFence';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,

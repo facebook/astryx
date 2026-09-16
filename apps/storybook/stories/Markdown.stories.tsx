@@ -10,6 +10,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {
   createDelayedMarkdownDemoPlugin,
   markdownDemoPlugins,
+  markdownSemanticFenceDemoPlugin,
 } from './Markdown.demoPlugins';
 
 const meta: Meta<typeof Markdown> = {
@@ -528,4 +529,17 @@ export const SuspenseRenderer: Story = {
       </div>
     );
   },
+};
+
+export const SemanticFence: Story = {
+  name: 'Semantic Fence',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={[markdownSemanticFenceDemoPlugin]}>
+        {
+          '# Build flow\n\n```diagram Checkout to deploy\nCheckout --> Test --> Deploy\n```\n\nThe plugin renderer presents typed data only for declared languages. Other fences keep the ordinary copyable code fallback:\n\n```text\npnpm test\n```'
+        }
+      </Markdown>
+    </div>
+  ),
 };
