@@ -33,7 +33,7 @@ import type {
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
 } from './plugins';
-import {isSafeMarkdownUrl} from './url';
+import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -868,7 +868,7 @@ function matchReferenceLink(
       // matches nothing.
       const label = rawLabel === '' ? linkText : rawLabel;
       const href = linkDefs.get(normalizeLinkLabel(label));
-      if (href != null && isSafeMarkdownUrl(href)) {
+      if (href != null && isSafeMarkdownParserUrl(href)) {
         return {
           node: {
             type: 'link',
@@ -887,7 +887,7 @@ function matchReferenceLink(
     return null;
   }
   const href = linkDefs.get(normalizeLinkLabel(linkText));
-  if (href == null || !isSafeMarkdownUrl(href)) {
+  if (href == null || !isSafeMarkdownParserUrl(href)) {
     return null;
   }
   return {
@@ -920,7 +920,7 @@ function matchReferenceImage(
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
-      if (src != null && isSafeMarkdownUrl(src)) {
+      if (src != null && isSafeMarkdownParserUrl(src)) {
         return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
       }
       // No match — fall back to a shortcut `![alt]`.
@@ -930,7 +930,7 @@ function matchReferenceImage(
     return null;
   }
   const src = linkDefs.get(normalizeLinkLabel(alt));
-  if (src == null || !isSafeMarkdownUrl(src)) {
+  if (src == null || !isSafeMarkdownParserUrl(src)) {
     return null;
   }
   return {node: {type: 'image', url: src, alt}, end: altClose + 1};
@@ -1362,7 +1362,7 @@ function parseInlineImpl(
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
           const src = text.slice(altClose + 2, srcClose);
-          if (!isSafeMarkdownUrl(src)) {
+          if (!isSafeMarkdownParserUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
           } else {
@@ -1405,7 +1405,7 @@ function parseInlineImpl(
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
           const href = text.slice(textClose + 2, urlClose);
-          if (!isSafeMarkdownUrl(href)) {
+          if (!isSafeMarkdownParserUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
             nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
           } else {
@@ -1702,7 +1702,7 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     while ((m = re.exec(text)) !== null) {
       const url = m[1];
       // Skip dangerous URL schemes (javascript:, vbscript:, data:text/html)
-      if (!isSafeMarkdownUrl(url)) {
+      if (!isSafeMarkdownParserUrl(url)) {
         continue;
       }
       matches.push({
@@ -2365,7 +2365,7 @@ function parseMarkdownImpl(
     if (
       imageMatch &&
       line.trim() === imageMatch[0] &&
-      isSafeMarkdownUrl(imageMatch[2])
+      isSafeMarkdownParserUrl(imageMatch[2])
     ) {
       pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
       index++;

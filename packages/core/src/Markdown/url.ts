@@ -3,21 +3,34 @@
 /**
  * @file url.ts
  * @input Untrusted Markdown link or image destination
- * @output Normalized safe destination or rejection
+ * @output Parser-compatible acceptance and normalized render-safe destinations
  * @position Shared URL policy for parser, transforms, and renderer
  */
 
-const DANGEROUS_URL_PATTERN = /^(javascript|data:text\/html|vbscript):/i;
+const PARSER_DANGEROUS_URL_PATTERN =
+  /^(?:javascript:|data:text\/html|vbscript:)/i;
+const RENDER_DANGEROUS_URL_PATTERN = /^(?:javascript:|data:|vbscript:)/i;
 
-export function sanitizeMarkdownUrl(url: string): string | null {
+function normalizeMarkdownUrl(url: string): string {
   // Browsers ignore embedded controls in schemes, so normalize before checking.
   // eslint-disable-next-line no-control-regex -- control chars are the bypass
-  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
-  return normalized !== '' && !DANGEROUS_URL_PATTERN.test(normalized)
-    ? normalized
-    : null;
+  return url.replace(/[\x00-\x1f\x7f]/g, '').trim();
 }
 
-export function isSafeMarkdownUrl(url: string): boolean {
-  return sanitizeMarkdownUrl(url) != null;
+/** Preserve the released parser policy for no-plugin output compatibility. */
+export function isSafeMarkdownParserUrl(url: string): boolean {
+  return !PARSER_DANGEROUS_URL_PATTERN.test(normalizeMarkdownUrl(url));
+}
+
+/** Apply the stricter DOM/resource policy to transformed destinations. */
+export function isSafeMarkdownTransformedUrl(url: string): boolean {
+  const normalized = normalizeMarkdownUrl(url);
+  return normalized !== '' && !RENDER_DANGEROUS_URL_PATTERN.test(normalized);
+}
+
+export function sanitizeMarkdownUrl(url: string): string | null {
+  const normalized = normalizeMarkdownUrl(url);
+  return normalized !== '' && !RENDER_DANGEROUS_URL_PATTERN.test(normalized)
+    ? normalized
+    : null;
 }

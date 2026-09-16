@@ -591,7 +591,10 @@ describe('Markdown plugin protocol', () => {
               ? {
                   ...block,
                   children: [
-                    {type: 'text' as const, value: context.isFinal ? 'Final' : 'Draft'},
+                    {
+                      type: 'text' as const,
+                      value: context.isFinal ? 'Final' : 'Draft',
+                    },
                   ],
                 }
               : block,
