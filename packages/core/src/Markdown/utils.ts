@@ -11,6 +11,15 @@ export type {
   MarkdownTextTransformContext,
   MarkdownTextTransformOptions,
 } from './textTransform';
+export {
+  createMarkdownSourceDecoration,
+  getMarkdownSourceDecorations,
+} from './sourceDecoration';
+export type {
+  MarkdownSourceDecoration,
+  MarkdownSourceDecorationOptions,
+  MarkdownSourceDecorationRange,
+} from './sourceDecoration';
 export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 export type {
   MarkdownPluginData,

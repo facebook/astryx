@@ -194,9 +194,32 @@ function projectRange(
   return start == null || end == null ? {} : {range: {start, end}};
 }
 
+/**
+ * Canonical nodes always carry Core-authored positions; the released block
+ * shape exposes them as `range` only when the caller passed `sourceRanges`,
+ * so this projection stays byte-for-byte what it has always returned.
+ *
+ * An extension node is the one kind the projection passes through instead of
+ * rebuilding field by field, so it is the one kind that could carry a
+ * canonical `position` out into released output. Strip it unless the caller
+ * asked for provenance, in which case the node keeps exactly the `position`
+ * it has always exposed.
+ */
+function projectExtensionNode<Node extends RuntimeExtensionNode>(
+  node: Node,
+  withRanges: boolean,
+): Node {
+  if (withRanges || node.position === undefined) {
+    return node;
+  }
+  const {position: _canonicalPosition, ...released} = node;
+  return released as Node;
+}
+
 function projectInlineNode(
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>,
   cache: LegacyProjectionCache,
+  withRanges: boolean,
 ): RuntimeInlineNode {
   const cached = cache.get(node);
   if (cached != null) {
@@ -210,19 +233,25 @@ function projectInlineNode(
     case 'strong':
       projected = {
         type: 'bold',
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
       };
       break;
     case 'emphasis':
       projected = {
         type: 'italic',
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
       };
       break;
     case 'delete':
       projected = {
         type: 'strikethrough',
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
       };
       break;
     case 'inlineCode':
@@ -235,7 +264,9 @@ function projectInlineNode(
       projected = {
         type: 'link',
         href: node.url,
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
       };
       break;
     case 'image':
@@ -248,7 +279,7 @@ function projectInlineNode(
       projected = {type: 'break'};
       break;
     case 'extension':
-      projected = node;
+      projected = projectExtensionNode(node, withRanges);
       break;
   }
   cache.set(node, projected);
@@ -258,13 +289,16 @@ function projectInlineNode(
 function projectTableCell(
   node: MarkdownAstTableCell<RuntimeExtensionNode>,
   cache: LegacyProjectionCache,
+  withRanges: boolean,
 ): TableCellNodeWithMath<RuntimeExtensionNode> {
   const cached = cache.get(node);
   if (cached != null) {
     return cached as TableCellNodeWithMath<RuntimeExtensionNode>;
   }
   const projected = {
-    children: node.children.map(child => projectInlineNode(child, cache)),
+    children: node.children.map(child =>
+      projectInlineNode(child, cache, withRanges),
+    ),
   };
   cache.set(node, projected);
   return projected;
@@ -273,6 +307,7 @@ function projectTableCell(
 function projectListItem(
   node: MarkdownAstListItem<RuntimeExtensionNode>,
   cache: LegacyProjectionCache,
+  withRanges: boolean,
 ): ListItemNodeWithMath<RuntimeExtensionNode> {
   const cached = cache.get(node);
   if (cached != null) {
@@ -280,7 +315,9 @@ function projectListItem(
   }
   const projected = {
     checked: node.checked,
-    children: node.children.map(child => projectBlockNode(child, cache)),
+    children: node.children.map(child =>
+      projectBlockNode(child, cache, withRanges),
+    ),
   };
   cache.set(node, projected);
   return projected;
@@ -289,26 +326,31 @@ function projectListItem(
 function projectBlockNode(
   node: MarkdownAstBlockContent<RuntimeExtensionNode>,
   cache: LegacyProjectionCache,
+  withRanges: boolean,
 ): RuntimeBlockNode {
   const cached = cache.get(node);
   if (cached != null) {
     return cached as RuntimeBlockNode;
   }
-  const metadata = projectRange(node.position);
+  const metadata = withRanges ? projectRange(node.position) : {};
   let projected: RuntimeBlockNode;
   switch (node.type) {
     case 'heading':
       projected = {
         type: 'heading',
         level: node.depth,
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
         ...metadata,
       };
       break;
     case 'paragraph':
       projected = {
         type: 'paragraph',
-        children: node.children.map(child => projectInlineNode(child, cache)),
+        children: node.children.map(child =>
+          projectInlineNode(child, cache, withRanges),
+        ),
         ...metadata,
       };
       break;
@@ -326,7 +368,9 @@ function projectBlockNode(
     case 'blockquote':
       projected = {
         type: 'blockquote',
-        children: node.children.map(child => projectBlockNode(child, cache)),
+        children: node.children.map(child =>
+          projectBlockNode(child, cache, withRanges),
+        ),
         ...metadata,
       };
       break;
@@ -337,7 +381,9 @@ function projectBlockNode(
         start: node.start,
         delimiter: node.delimiter,
         loose: node.spread,
-        items: node.children.map(item => projectListItem(item, cache)),
+        items: node.children.map(item =>
+          projectListItem(item, cache, withRanges),
+        ),
         ...metadata,
       };
       break;
@@ -346,10 +392,12 @@ function projectBlockNode(
         node.children;
       projected = {
         type: 'table',
-        headers: header.children.map(cell => projectTableCell(cell, cache)),
+        headers: header.children.map(cell =>
+          projectTableCell(cell, cache, withRanges),
+        ),
         alignments: [...node.align],
         rows: rows.map(row =>
-          row.children.map(cell => projectTableCell(cell, cache)),
+          row.children.map(cell => projectTableCell(cell, cache, withRanges)),
         ),
         ...metadata,
       };
@@ -362,7 +410,7 @@ function projectBlockNode(
       projected = {type: 'image', alt: node.alt, src: node.url, ...metadata};
       break;
     case 'extension':
-      projected = node;
+      projected = projectExtensionNode(node, withRanges);
       break;
   }
   cache.set(node, projected);
@@ -371,16 +419,29 @@ function projectBlockNode(
 
 function projectInlineNodes(
   nodes: ReadonlyArray<MarkdownAstPhrasingContent<RuntimeExtensionNode>>,
+  withRanges: boolean,
   cache: LegacyProjectionCache = new WeakMap(),
 ): RuntimeInlineNode[] {
-  return nodes.map(node => projectInlineNode(node, cache));
+  return nodes.map(node => projectInlineNode(node, cache, withRanges));
 }
 
 function projectMarkdownRoot(
   root: MarkdownAstRoot<RuntimeExtensionNode>,
+  withRanges: boolean,
   cache: LegacyProjectionCache = new WeakMap(),
 ): RuntimeBlockNode[] {
-  return root.children.map(node => projectBlockNode(node, cache));
+  return root.children.map(node => projectBlockNode(node, cache, withRanges));
+}
+
+/** Whether a caller asked for the released `range` field on its blocks. */
+function wantsLegacyRanges(
+  arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
+): boolean {
+  return (
+    arg != null &&
+    typeof (arg as {has?: unknown}).has !== 'function' &&
+    (arg as RuntimeParseOptions).sourceRanges === true
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -465,7 +526,15 @@ type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
   readonly math?: boolean;
+  /** Whether the caller asked for the released `range` projection. */
   readonly sourceRanges?: boolean;
+  /**
+   * Whether this parse authors canonical `position` offsets on its blocks.
+   * Internal only, and independent of `sourceRanges`: the canonical tree
+   * transforms observe always carries provenance, while `sourceRanges` alone
+   * decides whether the released projection exposes it as `range`.
+   */
+  readonly astPositions?: boolean;
   readonly plugins?: PreparedMarkdownPlugins;
   readonly isFinal: boolean;
   readonly allowBlockSyntax?: boolean;
@@ -484,18 +553,42 @@ type ResolvedOptions = {
   readonly linkDefs?: ReadonlyMap<string, string>;
 };
 
-const EMPTY_OPTS: ResolvedOptions = {
-  sourceIds: undefined,
-  autolink: undefined,
-  isFinal: true,
-};
+/**
+ * Every resolved options object is built here, so all of them share one key
+ * set in one order — and therefore one hidden class. The parser reads these
+ * fields in its hottest loops; letting an omitted-options parse and an
+ * options-bag parse produce differently-shaped objects makes those reads
+ * polymorphic in any process that does both, which is exactly what a caller
+ * comparing an empty pipeline against a configured one does.
+ */
+function makeResolvedOptions(
+  fields: Partial<ResolvedOptions> & {readonly isFinal: boolean},
+): ResolvedOptions {
+  return {
+    sourceIds: fields.sourceIds,
+    autolink: fields.autolink,
+    math: fields.math,
+    sourceRanges: fields.sourceRanges,
+    astPositions: fields.astPositions ?? true,
+    plugins: fields.plugins,
+    isFinal: fields.isFinal,
+    allowBlockSyntax: fields.allowBlockSyntax ?? true,
+    baseOffset: fields.baseOffset,
+    linkDefs: fields.linkDefs,
+  };
+}
+
+const EMPTY_OPTS: ResolvedOptions = makeResolvedOptions({isFinal: true});
+const EMPTY_INCREMENTAL_OPTS: ResolvedOptions = makeResolvedOptions({
+  isFinal: false,
+});
 
 function resolveOptions(
   arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
   incremental = false,
 ): ResolvedOptions {
   if (arg == null) {
-    return incremental ? {...EMPTY_OPTS, isFinal: false} : EMPTY_OPTS;
+    return incremental ? EMPTY_INCREMENTAL_OPTS : EMPTY_OPTS;
   }
   // Duck-type the legacy `ReadonlySet<string>` form: any object whose
   // `.has` is callable is treated as the legacy sourceIds set. This is
@@ -503,14 +596,13 @@ function resolveOptions(
   // or polyfilled `ReadonlySet` implementations as a `ParseOptions` bag
   // and silently lose citation resolution.
   if (typeof (arg as {has?: unknown}).has === 'function') {
-    return {
+    return makeResolvedOptions({
       sourceIds: arg as ReadonlySet<string>,
-      autolink: undefined,
       isFinal: !incremental,
-    };
+    });
   }
   const opts = arg as RuntimeParseOptions;
-  return {
+  return makeResolvedOptions({
     sourceIds: opts.sourceIds,
     autolink: opts.autolink,
     math: opts.math === true ? true : undefined,
@@ -520,8 +612,7 @@ function resolveOptions(
         ? prepareMarkdownPlugins(opts.plugins)
         : undefined,
     isFinal: incremental ? opts.isFinal === true : true,
-    allowBlockSyntax: true,
-  };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1265,7 +1356,7 @@ export function parseInline(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeInlineNode[] {
-  return projectInlineNodes(parseInlineAst(text, arg));
+  return projectInlineNodes(parseInlineAst(text, arg), wantsLegacyRanges(arg));
 }
 
 /** @internal Canonical inline parse used by Markdown rendering. */
@@ -1311,6 +1402,14 @@ function parseInlineImpl(
   opts: ResolvedOptions,
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
   const nodes: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
+  // Only a plugin that actually contributes INLINE syntax may cost anything
+  // per source position. A transform-only list contributes none, so it takes
+  // the same path as an omitted or empty one: no candidate probe per
+  // position, and no map lookup per character in the plain-text scan below.
+  const inlineExtensionStarts =
+    opts.plugins != null && opts.plugins.inlineByFirstCharacter.size > 0
+      ? opts.plugins.inlineByFirstCharacter
+      : undefined;
   let i = 0;
 
   while (i < text.length) {
@@ -1529,7 +1628,7 @@ function parseInlineImpl(
     }
 
     // --- Extension syntax (built-ins and protected contexts win) ---
-    if (opts.plugins != null) {
+    if (inlineExtensionStarts !== undefined) {
       const extension = matchExtensionSyntax(text, i, 'inline', opts);
       if (extension.status === 'match') {
         nodes.push(
@@ -1549,7 +1648,8 @@ function parseInlineImpl(
       end < text.length &&
       !'*_~`[!\\\n\u3010'.includes(text[end]) &&
       !(opts.math && text[end] === '$') &&
-      opts.plugins?.inlineByFirstCharacter.has(text[end]) !== true
+      (inlineExtensionStarts === undefined ||
+        !inlineExtensionStarts.has(text[end]))
     ) {
       end++;
     }
@@ -1963,8 +2063,8 @@ function isTableSeparator(line: string): boolean {
 function nested(opts: ResolvedOptions): ResolvedOptions {
   const nestedOptions =
     opts.allowBlockSyntax === false ? opts : {...opts, allowBlockSyntax: false};
-  return nestedOptions.sourceRanges
-    ? {...nestedOptions, sourceRanges: false}
+  return nestedOptions.sourceRanges || nestedOptions.astPositions
+    ? {...nestedOptions, sourceRanges: false, astPositions: false}
     : nestedOptions;
 }
 
@@ -2219,7 +2319,10 @@ export function parseMarkdown(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeBlockNode[] {
-  return projectMarkdownRoot(parseMarkdownAst(input, arg));
+  return projectMarkdownRoot(
+    parseMarkdownAst(input, arg),
+    wantsLegacyRanges(arg),
+  );
 }
 
 /** @internal Canonical block parse used by Markdown and Outline rendering. */
@@ -2270,12 +2373,14 @@ function parseMarkdownImpl(
   const hasBlockExtensionSyntax =
     opts.allowBlockSyntax !== false &&
     (opts.plugins?.blockByFirstCharacter.size ?? 0) > 0;
+  // Derived from the already-split lines rather than a second character
+  // scan: every line contributes its own length plus the newline it ended on.
   const lineOffsets = [0];
-  if (opts.sourceRanges || hasBlockExtensionSyntax) {
-    for (let offset = 0; offset < cleaned.length; offset++) {
-      if (cleaned[offset] === '\n') {
-        lineOffsets.push(offset + 1);
-      }
+  if (opts.astPositions === true || hasBlockExtensionSyntax) {
+    let offset = 0;
+    for (let index = 0; index < lines.length; index++) {
+      offset += lines[index].length + 1;
+      lineOffsets.push(offset);
     }
   }
   const blockExtensionMatches = new Map<number, ExtensionMatch>();
@@ -2283,12 +2388,12 @@ function parseMarkdownImpl(
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
-  const blockStartLines: number[] | null = opts.sourceRanges ? [] : null;
+  const blockStartLines: number[] | null =
+    opts.astPositions === true ? [] : null;
   // Set only by a block that consumes blank lines as content, where the
   // positional end derivation would trim them away.
-  const blockEndLines: (number | undefined)[] | null = opts.sourceRanges
-    ? []
-    : null;
+  const blockEndLines: (number | undefined)[] | null =
+    opts.astPositions === true ? [] : null;
   let blockStartLine = 0;
   const pushBlock = (
     node: MarkdownAstBlockContent<RuntimeExtensionNode>,
@@ -3166,7 +3271,7 @@ function trimUnsettledStructural(text: string): string {
  * rather than into the slice.
  */
 function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
-  return opts.sourceRanges ? {...opts, baseOffset: offset} : opts;
+  return opts.astPositions === true ? {...opts, baseOffset: offset} : opts;
 }
 
 /**
@@ -3349,12 +3454,17 @@ export function parseMarkdownIncremental(
   state: IncrementalState<boolean>,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeBlockNode[] {
+  const withRanges = wantsLegacyRanges(arg);
   const root = parseMarkdownAstIncremental(input, state, arg);
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
-  const projected = projectMarkdownRoot(root, cache.projectionCache);
+  const projected = projectMarkdownRoot(
+    root,
+    withRanges,
+    cache.projectionCache,
+  );
   if (cache.projectedRevision !== cache.settledRevision) {
     cache.projectedSettledBlocks = cache.settledAstBlocks.map(block =>
-      projectBlockNode(block, cache.projectionCache),
+      projectBlockNode(block, cache.projectionCache, withRanges),
     );
     cache.projectedRevision = cache.settledRevision;
   }
@@ -3516,6 +3626,7 @@ function parseMarkdownIncrementalAstBlocks(
       ? trimOpenDisplayMath(unsettledRaw)
       : trimUnsettledStructural(unsettledRaw);
 
+  const legacyRanges = opts.sourceRanges === true;
   let parsedSettledBlocks = 0;
   if (reparseSettled) {
     cache.settledAstBlocks = state.settledText
@@ -3524,7 +3635,7 @@ function parseMarkdownIncrementalAstBlocks(
     parsedSettledBlocks = cache.settledAstBlocks.length;
     cache.settledRevision++;
     cache.projectedSettledBlocks = cache.settledAstBlocks.map(block =>
-      projectBlockNode(block, cache.projectionCache),
+      projectBlockNode(block, cache.projectionCache, legacyRanges),
     );
     cache.projectedRevision = cache.settledRevision;
   } else if (settledDelta !== '') {
@@ -3537,13 +3648,14 @@ function parseMarkdownIncrementalAstBlocks(
     parsedSettledBlocks = deltaBlocks.length;
     cache.settledRevision++;
     const projectedDelta = deltaBlocks.map(block =>
-      projectBlockNode(block, cache.projectionCache),
+      projectBlockNode(block, cache.projectionCache, legacyRanges),
     );
     if (mergedList) {
       const canonicalMerged = cache.settledAstBlocks[mergeIndex];
       const projectedMerged = projectBlockNode(
         canonicalMerged,
         cache.projectionCache,
+        legacyRanges,
       );
       cache.projectedSettledBlocks[mergeIndex] = projectedMerged;
       cache.projectedSettledBlocks.push(...projectedDelta.slice(1));
@@ -3555,11 +3667,11 @@ function parseMarkdownIncrementalAstBlocks(
 
   // The unsettled tail is trimmed before parsing, so its offset in the
   // document is where that trimmed text actually starts — not the boundary,
-  // which is a line index. If it somehow can't be located, parse it without
-  // ranges rather than report wrong ones. Only worth searching for when
-  // ranges were asked for: this runs on every streamed chunk.
+  // which is a line index. If it somehow cannot be located, parse it without
+  // positions rather than report wrong ones. The search starts at the
+  // settled end, so it scans the tail and never the prefix.
   const unsettledStart =
-    unsettledText && opts.sourceRanges
+    unsettledText && opts.astPositions === true
       ? input.indexOf(unsettledText, cache.settledEnd)
       : -1;
   const unsettledBlocks = unsettledText

@@ -8,6 +8,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
 import {
+  createSourceDecorationDemo,
   markdownDemoPlugins,
   markdownSemanticFenceDemoPlugin,
 } from './Markdown.demoPlugins';
@@ -512,4 +513,27 @@ export const SemanticFence: Story = {
       </Markdown>
     </div>
   ),
+};
+
+const decorationSource =
+  '# Release notes\n\nThe parser now streams incrementally.\n\nEverything else is unchanged.';
+
+export const SourceDecoration: Story = {
+  name: 'Source Decoration',
+  render: () => {
+    const {plugins, readout} = createSourceDecorationDemo(
+      decorationSource,
+      'The parser now streams incrementally.',
+    );
+    return (
+      <div style={{maxWidth: 680}}>
+        <Markdown plugins={plugins}>{decorationSource}</Markdown>
+        <Text>
+          Decorations recorded while rendering: {readout.join(', ') || 'none'}.
+          The document above is identical with and without them — decoration is
+          metadata for the pipeline, not presentation.
+        </Text>
+      </div>
+    );
+  },
 };

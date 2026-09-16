@@ -10,9 +10,10 @@
 import type {MarkdownAstBlockContent, MarkdownAstCode} from './ast';
 import {
   freezeMarkdownPluginData,
-  getMarkdownTransformPluginName,
+  getMarkdownHelperOwnership,
   isMarkdownPluginData,
   markMarkdownTransformClaim,
+  markMarkdownTransformTrusted,
   type MarkdownExtensionNode,
   type MarkdownPluginData,
   type MarkdownTransform,
@@ -108,6 +109,7 @@ function createProposal(
     MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>
   >,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
 ): MarkdownFenceProposal {
   if (
     node == null ||
@@ -116,13 +118,17 @@ function createProposal(
     node.plugin !== pluginName ||
     typeof node.name !== 'string' ||
     node.name.trim() === '' ||
+    // Every extension node must have a renderer and a text projection
+    // (FR14). Checking it here is what lets Core run this helper on its
+    // trusted path: the node is fully validated before it is inserted.
+    !hasRenderer(node.name) ||
     node.display !== 'block' ||
     !isMarkdownPluginData(node.data) ||
     'source' in node ||
     'position' in node
   ) {
     throw new TypeError(
-      'Markdown fence createNode must return an owned block extension node with finite data',
+      'Markdown fence createNode must return an owned block extension node with finite data and a registered renderer',
     );
   }
 
@@ -160,6 +166,7 @@ function annotateCode(
   node: MarkdownAstCode,
   languages: ReadonlySet<string>,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
   createNode: (
     context: MarkdownFenceContext<string>,
   ) =>
@@ -197,7 +204,7 @@ function annotateCode(
   Object.defineProperty(annotated, markdownFenceProposal, {
     configurable: false,
     enumerable: true,
-    value: createProposal(proposalNode, pluginName),
+    value: createProposal(proposalNode, pluginName, hasRenderer),
     writable: false,
   });
   return annotated;
@@ -207,6 +214,7 @@ function transformBlocks(
   blocks: ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>>,
   languages: ReadonlySet<string>,
   pluginName: string,
+  hasRenderer: (nodeName: string) => boolean,
   createNode: (
     context: MarkdownFenceContext<string>,
   ) =>
@@ -220,12 +228,20 @@ function transformBlocks(
   const next = blocks.map(block => {
     switch (block.type) {
       case 'code':
-        return annotateCode(block, languages, pluginName, createNode, report);
+        return annotateCode(
+          block,
+          languages,
+          pluginName,
+          hasRenderer,
+          createNode,
+          report,
+        );
       case 'blockquote': {
         const children = transformBlocks(
           block.children,
           languages,
           pluginName,
+          hasRenderer,
           createNode,
           report,
         );
@@ -238,6 +254,7 @@ function transformBlocks(
             item.children,
             languages,
             pluginName,
+            hasRenderer,
             createNode,
             report,
           );
@@ -303,8 +320,8 @@ export function createMarkdownFenceTransform<
     root,
     context: MarkdownTransformContext,
   ) => {
-    const pluginName = getMarkdownTransformPluginName(context);
-    if (pluginName == null) {
+    const ownership = getMarkdownHelperOwnership(context);
+    if (ownership == null) {
       throw new TypeError(
         'Markdown fence transforms must run through createMarkdownPlugin',
       );
@@ -312,18 +329,26 @@ export function createMarkdownFenceTransform<
     const children = transformBlocks(
       root.children,
       languages,
-      pluginName,
+      ownership.pluginName,
+      ownership.hasRenderer,
       createNode,
       context.report,
     );
     return children === root.children ? root : {...root, children};
   };
 
-  return markMarkdownTransformClaim(transform, source =>
-    declaredLanguages.some(
-      language =>
-        source.includes(`\`\`\`${language}`) ||
-        source.includes(`~~~${language}`),
-    ),
-  );
+  // Every node this helper inserts is validated above against the same
+  // rules Core applies to plugin-authored output — owned plugin name,
+  // registered renderer, representable frozen data, no authored provenance
+  // — and nothing else in the tree is touched. Core may therefore skip
+  // revalidating the whole document after it runs.
+  return markMarkdownTransformTrusted(
+    markMarkdownTransformClaim(transform, source =>
+      declaredLanguages.some(
+        language =>
+          source.includes(`\`\`\`${language}`) ||
+          source.includes(`~~~${language}`),
+      ),
+    ) as MarkdownTransform<never>,
+  ) as MarkdownTransform<Node>;
 }

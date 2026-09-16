@@ -10,7 +10,9 @@
 import {
   createMarkdownPlugin,
   createMarkdownFenceTransform,
+  createMarkdownSourceDecoration,
   createMarkdownTextTransform,
+  getMarkdownSourceDecorations,
   type MarkdownExtensionNode,
   type MarkdownSyntaxPluginDefinition,
 } from '@astryxdesign/core/Markdown';
@@ -175,3 +177,38 @@ export const markdownDemoPlugins = [
   createMarkdownPlugin<'demo-callouts', CalloutNode>(calloutDefinition),
   todoPlugin,
 ] as const;
+
+/**
+ * Decoration demo: one plugin records a search hit on the block a known
+ * source range covers, a second reads the recorded metadata back. Decorations
+ * are non-visual, so the rendered document is identical either way.
+ */
+export function createSourceDecorationDemo(source: string, query: string) {
+  const start = source.indexOf(query);
+  const readout: string[] = [];
+  const plugins = [
+    createMarkdownPlugin({
+      name: 'demo-search-hits',
+      apiVersion: 1,
+      transform: createMarkdownSourceDecoration({
+        name: 'search-hit',
+        ranges:
+          start < 0 ? [] : [{start, end: start + query.length, data: {query}}],
+      }),
+    }),
+    createMarkdownPlugin({
+      name: 'demo-decoration-readout',
+      apiVersion: 1,
+      transform(root) {
+        readout.length = 0;
+        root.children.forEach((block, index) => {
+          for (const decoration of getMarkdownSourceDecorations(block)) {
+            readout.push(`block ${index} (${block.type}) — ${decoration.name}`);
+          }
+        });
+        return root;
+      },
+    }),
+  ];
+  return {plugins, readout};
+}
