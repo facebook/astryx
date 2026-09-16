@@ -8,6 +8,11 @@
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
+export {createMarkdownTextTransform} from './textTransform';
+export type {
+  MarkdownTextTransformContext,
+  MarkdownTextTransformOptions,
+} from './textTransform';
 export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 export type {
   MarkdownPluginData,

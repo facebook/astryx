@@ -6,6 +6,11 @@
  * @position Subpath entry point: `@astryxdesign/core/Markdown/utils`
  */
 
+export {createMarkdownTextTransform} from './textTransform';
+export type {
+  MarkdownTextTransformContext,
+  MarkdownTextTransformOptions,
+} from './textTransform';
 export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
 export type {
   MarkdownPluginData,

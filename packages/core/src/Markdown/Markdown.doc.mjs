@@ -255,6 +255,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -302,23 +307,22 @@ import {Text} from '@astryxdesign/core/Text';
 `,
     },
     {
-      label: 'Immutable transform plugin',
+      label: 'Text transform helper',
       code: `
-import {Markdown, createMarkdownPlugin} from '@astryxdesign/core/Markdown';
+import {
+  Markdown,
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
+} from '@astryxdesign/core/Markdown';
 
 const finalLabels = createMarkdownPlugin({
   name: 'final-labels',
   apiVersion: 1,
-  transform(root) {
-    return {
-      ...root,
-      children: root.children.map(node =>
-        node.type === 'heading'
-          ? {...node, children: [{type: 'text', value: 'Final'}]}
-          : node,
-      ),
-    };
-  },
+  transform: createMarkdownTextTransform({
+    pattern: /\\bDraft\\b/g,
+    requiredSubstrings: ['Draft'],
+    replace: () => ({type: 'text', value: 'Final'}),
+  }),
 });
 
 <Markdown plugins={[finalLabels]}># Draft</Markdown>;
@@ -555,6 +559,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -603,6 +612,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
         guidance: true,
