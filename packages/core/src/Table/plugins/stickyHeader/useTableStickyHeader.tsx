@@ -4,7 +4,7 @@
 
 /**
  * @file useTableStickyHeader.tsx
- * @input React, StyleX, theme tokens, Table types
+ * @input React, StyleX, theme tokens, Table types, browser computed styles
  * @output Exports useTableStickyHeader hook and UseTableStickyHeaderConfig type
  * @position Sticky-header plugin; consumed by Table via plugins prop
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useMemo, type CSSProperties} from 'react';
+import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import type {
@@ -21,6 +21,18 @@ import type {
   HeaderCellRenderProps,
   ScrollWrapperRenderProps,
 } from '../../types';
+
+/**
+ * The pinned header's height, published on the scroll container.
+ *
+ * Anything else pinning inside the same scrollport has to start below the
+ * header or it will be drawn over it, and the height is not knowable ahead of
+ * time — it moves with density, with wrapped headings, and with whatever a
+ * column puts in its `header`. Publishing it as a variable is what lets
+ * `useTableGroupedRows` clear the header without the two plugins referring to
+ * each other, the same way they already share `--table-sticky-background`.
+ */
+const HEADER_HEIGHT_VAR = '--table-sticky-header-height';
 
 // =============================================================================
 // Config
@@ -106,6 +118,43 @@ export function useTableStickyHeader<T extends Record<string, unknown>>(
 ): TablePlugin<T> {
   const {maxHeight} = config;
 
+  // Measured against the DOM rather than held in state: the height is only
+  // ever read back out as a CSS variable, so putting it through React would
+  // re-render the whole table on every resize to produce the same paint.
+  const detachRef = useRef<(() => void) | null>(null);
+  const publishHeaderHeight = useCallback((el: HTMLDivElement | null) => {
+    detachRef.current?.();
+    detachRef.current = null;
+    if (el == null) {
+      return;
+    }
+    // Refs attach depth-first, so the table is already in the DOM here.
+    const head = el.querySelector('thead');
+    if (head == null) {
+      return;
+    }
+    const update = () => {
+      const rect = head.getBoundingClientRect();
+      // AST-025 FR1/FR3: resolve the logical block axis through the computed
+      // writing mode before reading physical geometry. In vertical and
+      // sideways writing modes the block axis is horizontal, so the header's
+      // block extent is its width; publishing the physical height would clip
+      // the pinned heading and the collapse control.
+      const blockIsHorizontal = /^(vertical|sideways)/.test(
+        getComputedStyle(head).writingMode,
+      );
+      el.style.setProperty(
+        HEADER_HEIGHT_VAR,
+        `${blockIsHorizontal ? rect.width : rect.height}px`,
+      );
+    };
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    resizeObserver?.observe(head);
+    update();
+    detachRef.current = () => resizeObserver?.disconnect();
+  }, []);
+
   return useMemo<TablePlugin<T>>(
     () => ({
       transformScrollWrapper(
@@ -120,10 +169,23 @@ export function useTableStickyHeader<T extends Record<string, unknown>>(
                 maxHeight:
                   typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
               };
+        // Compose with any ref a prior plugin set on the same element, the
+        // way useTableStickyColumns does for its scroll shadows.
+        const existingRef = props.htmlProps.ref;
+        const mergedRef = (node: HTMLDivElement | null) => {
+          publishHeaderHeight(node);
+          if (typeof existingRef === 'function') {
+            existingRef(node);
+          } else if (existingRef != null) {
+            existingRef.current = node;
+          }
+        };
+
         return {
           ...props,
           htmlProps: {
             ...props.htmlProps,
+            ref: mergedRef,
             style: {...props.htmlProps.style, ...heightStyle},
           },
           xstyle: [...props.xstyle, stickyHeaderStyles.scrollWrapper],
@@ -137,6 +199,6 @@ export function useTableStickyHeader<T extends Record<string, unknown>>(
         };
       },
     }),
-    [maxHeight],
+    [maxHeight, publishHeaderHeight],
   );
 }
