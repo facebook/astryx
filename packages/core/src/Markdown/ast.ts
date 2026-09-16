@@ -7,6 +7,14 @@
  * @position Internal canonical Markdown tree shared by parsing, rendering, and Outline
  */
 
+export type MarkdownAstDataValue =
+  | null
+  | boolean
+  | number
+  | string
+  | ReadonlyArray<MarkdownAstDataValue>
+  | {readonly [key: string]: MarkdownAstDataValue};
+
 export interface MarkdownAstPoint {
   readonly line?: number;
   readonly column?: number;
@@ -20,12 +28,13 @@ export interface MarkdownAstPosition {
 
 export interface MarkdownAstNodeBase {
   readonly position?: MarkdownAstPosition;
+  readonly data?: MarkdownAstDataValue;
 }
 
 export interface MarkdownAstExtensionNode<
   Plugin extends string = string,
   Name extends string = string,
-  Data = Readonly<Record<string, unknown>>,
+  Data extends MarkdownAstDataValue = MarkdownAstDataValue,
   Display extends 'inline' | 'block' = 'inline' | 'block',
 > extends MarkdownAstNodeBase {
   readonly type: 'extension';
@@ -199,8 +208,68 @@ export interface MarkdownAstRoot<
   readonly children: ReadonlyArray<MarkdownAstBlockContent<Extension>>;
 }
 
-export function markdownAstText(
-  nodes: ReadonlyArray<MarkdownAstPhrasingContent>,
+export interface MarkdownAstNodeMap<
+  Extension extends MarkdownAstExtensionNode = MarkdownAstExtensionNode,
+> {
+  readonly root: MarkdownAstRoot<Extension>;
+  readonly text: MarkdownAstText;
+  readonly strong: MarkdownAstParent<'strong', Extension>;
+  readonly emphasis: MarkdownAstParent<'emphasis', Extension>;
+  readonly delete: MarkdownAstParent<'delete', Extension>;
+  readonly inlineCode: MarkdownAstInlineCode;
+  readonly inlineMath: MarkdownAstInlineMath;
+  readonly break: MarkdownAstBreak;
+  readonly link: MarkdownAstLink<Extension>;
+  readonly image: MarkdownAstImage;
+  readonly citation: MarkdownAstCitation;
+  readonly heading: MarkdownAstHeading<Extension>;
+  readonly paragraph: MarkdownAstParagraph<Extension>;
+  readonly code: MarkdownAstCode;
+  readonly math: MarkdownAstMath;
+  readonly blockquote: MarkdownAstBlockquote<Extension>;
+  readonly list: MarkdownAstList<Extension>;
+  readonly listItem: MarkdownAstListItem<Extension>;
+  readonly table: MarkdownAstTable<Extension>;
+  readonly tableRow: MarkdownAstTableRow<Extension>;
+  readonly tableCell: MarkdownAstTableCell<Extension>;
+  readonly thematicBreak: MarkdownAstThematicBreak;
+  readonly extension: Extension;
+}
+
+export type MarkdownAstNode<
+  Extension extends MarkdownAstExtensionNode = MarkdownAstExtensionNode,
+  Type extends keyof MarkdownAstNodeMap<Extension> =
+    keyof MarkdownAstNodeMap<Extension>,
+> = MarkdownAstNodeMap<Extension>[Type];
+
+export function visitMarkdownNodes<
+  Extension extends MarkdownAstExtensionNode,
+  Type extends keyof MarkdownAstNodeMap<Extension>,
+>(
+  root: MarkdownAstRoot<Extension>,
+  type: Type,
+  visitor: (node: MarkdownAstNodeMap<Extension>[Type]) => void,
+): void {
+  const visit = (node: MarkdownAstNode<Extension>): void => {
+    if (node.type === type) {
+      visitor(node as MarkdownAstNodeMap<Extension>[Type]);
+    }
+    if ('children' in node) {
+      for (const child of node.children) {
+        visit(child);
+      }
+    }
+  };
+  visit(root);
+}
+
+export function markdownAstText<
+  Extension extends MarkdownAstExtensionNode = never,
+>(
+  nodes: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>,
+  extensionText: (
+    node: Extension & {readonly display: 'inline'},
+  ) => string = node => node.source ?? '',
 ): string {
   let text = '';
   for (const node of nodes) {
@@ -214,13 +283,16 @@ export function markdownAstText(
       case 'emphasis':
       case 'delete':
       case 'link':
-        text += markdownAstText(node.children);
+        text += markdownAstText(node.children, extensionText);
         break;
       case 'image':
         text += node.alt;
         break;
       case 'citation':
       case 'break':
+        break;
+      case 'extension':
+        text += extensionText(node);
         break;
       default: {
         node satisfies never;

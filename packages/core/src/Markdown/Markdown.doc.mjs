@@ -142,6 +142,12 @@ export const docs = {
       default: "'start'",
     },
     {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        'Ordered extensions created by createMarkdownPlugin(). Plugins may add bounded syntax, immutable typed AST transforms, and typed extension renderers. Omitted and empty lists preserve the released Markdown behavior.',
+    },
+    {
       name: 'inlinePlugins',
       type: 'MarkdownInlinePlugin[]',
       description:
@@ -244,6 +250,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -288,6 +299,29 @@ import {Text} from '@astryxdesign/core/Text';
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
 </Markdown>;
+`,
+    },
+    {
+      label: 'Immutable transform plugin',
+      code: `
+import {Markdown, createMarkdownPlugin} from '@astryxdesign/core/Markdown';
+
+const finalLabels = createMarkdownPlugin({
+  name: 'final-labels',
+  apiVersion: 1,
+  transform(root) {
+    return {
+      ...root,
+      children: root.children.map(node =>
+        node.type === 'heading'
+          ? {...node, children: [{type: 'text', value: 'Final'}]}
+          : node,
+      ),
+    };
+  },
+});
+
+<Markdown plugins={[finalLabels]}># Draft</Markdown>;
 `,
     },
     {
@@ -396,6 +430,12 @@ export const docsZh = {
       description:
         '当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。',
       default: "'start'",
+    },
+    {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        '由 createMarkdownPlugin() 创建的有序扩展。插件可添加有界语法、不可变的类型化 AST 转换和类型化扩展渲染器。省略或传入空列表时保持已发布的 Markdown 行为。',
     },
     {
       name: 'inlinePlugins',
@@ -510,6 +550,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -557,6 +602,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -598,6 +648,8 @@ export const docsDense = {
       'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign:
       "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+    plugins:
+      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Default: omitted or empty.',
     inlinePlugins:
       'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
     autolink:

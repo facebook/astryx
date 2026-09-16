@@ -7,6 +7,7 @@ import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
+import {markdownDemoPlugins} from './Markdown.demoPlugins';
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown',
@@ -478,6 +479,19 @@ export const CustomMath: Story = {
       <Markdown components={{math: StoryMath}}>
         {
           'A renderer can typeset inline math such as $E = mc^2$ without preprocessing the source.\n\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n\nCode remains opaque: `$not_math$`.'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
+export const SyntaxPlugins: Story = {
+  name: 'Syntax Plugins',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={markdownDemoPlugins}>
+        {
+          '# Plugin composition\n\nHello @{Ada}. Ordinary **Markdown** keeps its behavior.\n\n:::note\nThis callout and mention are typed extension nodes.\n:::\n\nProtected contexts stay literal: `@{Linus}` and [@{Grace}](/people).'
         }
       </Markdown>
     </div>
