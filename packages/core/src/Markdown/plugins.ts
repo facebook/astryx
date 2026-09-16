@@ -8,7 +8,7 @@
  */
 
 import type React from 'react';
-import {warnOnce} from '../utils/devWarning';
+import {devError, warnOnce} from '../utils/devWarning';
 import {isSafeMarkdownParserUrl} from './url';
 import type {
   MarkdownAstDataValue,
@@ -170,12 +170,57 @@ export type MarkdownExtensionsOf<
   Plugins extends ReadonlyArray<MarkdownPluginEntry>,
 > = MarkdownNodeOf<Plugins[number]>;
 
-const markdownPluginDefinition = Symbol('MarkdownPluginDefinition');
+const MARKDOWN_PLUGIN_BRAND = '@astryxdesign/core/MarkdownPluginEntry';
+const markdownPluginDefinition = Symbol.for(MARKDOWN_PLUGIN_BRAND);
+
+interface MarkdownPluginBrand<
+  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+> {
+  readonly kind: typeof MARKDOWN_PLUGIN_BRAND;
+  readonly apiVersion: 1;
+  readonly definition: MarkdownPluginDefinition<string, Node>;
+}
 
 interface InternalMarkdownPluginEntry<
   Node extends MarkdownExtensionNode = MarkdownExtensionNode,
 > extends MarkdownPluginEntry<Node> {
-  readonly [markdownPluginDefinition]: MarkdownPluginDefinition<string, Node>;
+  readonly [markdownPluginDefinition]: MarkdownPluginBrand<Node>;
+}
+
+function getMarkdownPluginDefinition(
+  publicEntry: MarkdownPluginEntry,
+): MarkdownPluginDefinition<string, MarkdownExtensionNode> {
+  if (
+    publicEntry == null ||
+    typeof publicEntry !== 'object' ||
+    Object.getPrototypeOf(publicEntry) !== Object.prototype
+  ) {
+    fail('entries must come from a compatible createMarkdownPlugin()');
+  }
+  const entry = publicEntry as Partial<InternalMarkdownPluginEntry>;
+  const brand = entry[markdownPluginDefinition];
+  const definition = brand?.definition;
+  if (
+    Reflect.ownKeys(entry).length !== 3 ||
+    typeof entry.name !== 'string' ||
+    entry.apiVersion !== 1 ||
+    !Object.isFrozen(entry) ||
+    brand == null ||
+    typeof brand !== 'object' ||
+    Object.getPrototypeOf(brand) !== Object.prototype ||
+    Reflect.ownKeys(brand).length !== 3 ||
+    !Object.isFrozen(brand) ||
+    brand.kind !== MARKDOWN_PLUGIN_BRAND ||
+    brand.apiVersion !== 1 ||
+    definition == null ||
+    typeof definition !== 'object' ||
+    !Object.isFrozen(definition) ||
+    definition.name !== entry.name ||
+    definition.apiVersion !== entry.apiVersion
+  ) {
+    fail('entries must come from a compatible createMarkdownPlugin()');
+  }
+  return definition;
 }
 
 function deepFreezeConfig<T>(value: T, seen: Set<object> = new Set()): T {
@@ -258,10 +303,15 @@ export function createMarkdownPlugin(
   }
 
   const frozenDefinition = deepFreezeConfig(definition);
+  const brand = Object.freeze({
+    kind: MARKDOWN_PLUGIN_BRAND,
+    apiVersion: 1 as const,
+    definition: frozenDefinition,
+  });
   return Object.freeze({
     name: frozenDefinition.name,
     apiVersion: 1 as const,
-    [markdownPluginDefinition]: frozenDefinition,
+    [markdownPluginDefinition]: brand,
   }) as unknown as MarkdownPluginEntry;
 }
 
@@ -315,14 +365,19 @@ function syntaxOnlyEntry(
   publicEntry: MarkdownPluginEntry,
 ): MarkdownPluginEntry {
   const entry = publicEntry as InternalMarkdownPluginEntry;
-  const definition = entry[markdownPluginDefinition];
+  const definition = getMarkdownPluginDefinition(publicEntry);
   if (definition.transform == null) {
     return publicEntry;
   }
+  const syntaxDefinition = Object.freeze({...definition, transform: undefined});
   return Object.freeze({
     name: entry.name,
     apiVersion: entry.apiVersion,
-    [markdownPluginDefinition]: {...definition, transform: undefined},
+    [markdownPluginDefinition]: Object.freeze({
+      kind: MARKDOWN_PLUGIN_BRAND,
+      apiVersion: 1 as const,
+      definition: syntaxDefinition,
+    }),
   }) as unknown as MarkdownPluginEntry;
 }
 
@@ -350,16 +405,13 @@ export function prepareMarkdownPlugins(
   const syntaxEntries: MarkdownPluginEntry[] = [];
 
   for (const publicEntry of plugins) {
-    const entry = publicEntry as Partial<InternalMarkdownPluginEntry>;
-    const definition = entry[markdownPluginDefinition];
-    if (definition == null || entry.apiVersion !== 1) {
-      fail('entries must come from createMarkdownPlugin()');
-    }
+    const definition = getMarkdownPluginDefinition(publicEntry);
+    const entry = publicEntry as InternalMarkdownPluginEntry;
     if (names.has(definition.name)) {
       fail(`duplicate name "${definition.name}"`);
     }
     names.add(definition.name);
-    entries.push(entry as InternalMarkdownPluginEntry);
+    entries.push(entry);
 
     if (definition.transform != null) {
       transforms.push({
@@ -564,7 +616,8 @@ interface SourceHeadingMarker {
 
 function markSourceHeadings(
   root: MarkdownAstRoot<MarkdownExtensionNode>,
-): void {
+): Set<SourceHeadingMarker> {
+  const markers = new Set<SourceHeadingMarker>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
     if (node.type === 'heading' && !(sourceHeadingMarker in node)) {
       Object.defineProperty(node, sourceHeadingMarker, {
@@ -576,6 +629,15 @@ function markSourceHeadings(
         writable: false,
       });
     }
+    if (node.type === 'heading') {
+      markers.add(
+        (
+          node as unknown as {
+            readonly [sourceHeadingMarker]: SourceHeadingMarker;
+          }
+        )[sourceHeadingMarker],
+      );
+    }
     if ('children' in node && Array.isArray(node.children)) {
       for (const child of node.children) {
         if (child != null && typeof child === 'object') {
@@ -585,6 +647,7 @@ function markSourceHeadings(
     }
   };
   visit(root);
+  return markers;
 }
 
 const PHRASING_TYPES = new Set([
@@ -633,6 +696,7 @@ function validateAst(
   pluginNames: ReadonlySet<string>,
   rendererKeys: ReadonlySet<string>,
   sourcePositions: Map<string, SourceInvariant[]>,
+  sourceHeadingMarkers: ReadonlySet<SourceHeadingMarker>,
   activePluginName: string,
   existingExtensions: Map<string, ExistingExtension>,
   display: 'inline' | 'block',
@@ -734,7 +798,9 @@ function validateAst(
         )[sourceHeadingMarker];
         if (
           marker != null &&
-          (marker.depth !== node.depth || seenHeadingMarkers.has(marker))
+          (!sourceHeadingMarkers.has(marker) ||
+            marker.depth !== node.depth ||
+            seenHeadingMarkers.has(marker))
         ) {
           return false;
         }
@@ -863,6 +929,7 @@ function validateAst(
   return (
     visit(candidate, null, false) &&
     candidate.type === 'root' &&
+    seenHeadingMarkers.size === sourceHeadingMarkers.size &&
     Array.from(existingExtensions.values()).every(
       extension =>
         extension.plugin === activePluginName || extension.count === 0,
@@ -892,20 +959,23 @@ function freezeAst<T>(value: T, seen: Set<object> = new Set()): T {
   return value;
 }
 
+const reportedProductionPluginFailures = new Set<string>();
+
 export function reportMarkdownPluginFailure(
   pluginName: string,
   phase: 'syntax' | 'transform' | 'render',
   error: unknown,
 ): void {
+  const key = `markdown-plugin:${pluginName}:${phase}`;
+  const message = `plugin "${pluginName}" failed in ${phase}; rendered readable fallback.`;
   if (process.env.NODE_ENV === 'production') {
+    if (!reportedProductionPluginFailures.has(key)) {
+      reportedProductionPluginFailures.add(key);
+      devError('Markdown', message);
+    }
     return;
   }
-  warnOnce(
-    `markdown-plugin:${pluginName}:${phase}`,
-    'Markdown',
-    `plugin "${pluginName}" failed in ${phase}; rendered readable fallback.`,
-    error,
-  );
+  warnOnce(key, 'Markdown', message, error);
 }
 
 export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
@@ -920,7 +990,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
   }
   const pluginNames = new Set(plugins.entries.map(entry => entry.name));
   const rendererKeys = new Set(plugins.renderers.keys());
-  markSourceHeadings(root);
+  const sourceHeadingMarkers = markSourceHeadings(root);
   let document = freezeAst(root);
   for (const prepared of plugins.transforms) {
     try {
@@ -941,6 +1011,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
         typeof next === 'object' &&
         typeof (next as {then?: unknown}).then === 'function'
       ) {
+        void Promise.resolve(next).catch(() => {});
         throw new TypeError('Async Markdown transforms are not supported');
       }
       if (next === document) {
@@ -954,6 +1025,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
           pluginNames,
           rendererKeys,
           positions,
+          sourceHeadingMarkers,
           prepared.pluginName,
           existingExtensions,
           display,

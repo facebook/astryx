@@ -1,5 +1,5 @@
 ---
-'@astryxdesign/core': minor
+'@astryxdesign/core': patch
 ---
 
 [feat] Markdown: add the core plugin protocol

@@ -350,6 +350,111 @@ describe('Markdown plugin protocol', () => {
     );
   });
 
+  it('accepts plugins created by a duplicate Core copy', async () => {
+    vi.resetModules();
+    const duplicateCore = await import('./plugins');
+    const duplicatePlugin = duplicateCore.createMarkdownPlugin({
+      name: 'duplicate-core-copy',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'paragraph'
+              ? {
+                  ...block,
+                  children: block.children.map(node =>
+                    node.type === 'text'
+                      ? {...node, value: node.value.replace('before', 'after')}
+                      : node,
+                  ),
+                }
+              : block,
+          ),
+        };
+      },
+    });
+
+    expect(parseMarkdown('before', {plugins: [duplicatePlugin]})).toMatchObject(
+      [{type: 'paragraph', children: [{type: 'text', content: 'after'}]}],
+    );
+
+    const brand = Symbol.for('@astryxdesign/core/MarkdownPluginEntry');
+    const incompatible = Object.freeze({
+      name: 'incompatible-copy',
+      apiVersion: 1 as const,
+      [brand]: Object.freeze({
+        kind: '@astryxdesign/core/MarkdownPluginEntry',
+        apiVersion: 2,
+        definition: Object.freeze({
+          name: 'incompatible-copy',
+          apiVersion: 1,
+          transform: () => ({type: 'root', children: []}),
+        }),
+      }),
+    });
+    expect(() =>
+      parseMarkdown('safe', {plugins: [incompatible as never]}),
+    ).toThrow(/compatible createMarkdownPlugin/);
+  });
+
+  it('defuses rejected transform promises in runtime and server rendering', async () => {
+    const source = 'Private source must not escape';
+    const rejection = 'Private plugin rejection must not escape';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    const rejected = createMarkdownPlugin({
+      name: 'rejected-promise',
+      apiVersion: 1,
+      transform: (async () => Promise.reject(new Error(rejection))) as never,
+    });
+
+    try {
+      expect(parseMarkdown(source, {plugins: [rejected]})).toMatchObject([
+        {type: 'paragraph', children: [{type: 'text', content: source}]},
+      ]);
+      expect(
+        renderToString(<Markdown plugins={[rejected]}>{source}</Markdown>),
+      ).toContain(source);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(JSON.stringify(warning.mock.calls)).not.toContain(rejection);
+      expect(JSON.stringify(warning.mock.calls)).not.toContain(source);
+    } finally {
+      process.off('unhandledRejection', unhandled);
+      warning.mockRestore();
+    }
+  });
+
+  it('emits one source-free production diagnostic for plugin failure', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const source = 'Private production source';
+    const thrownText = 'Private plugin-thrown text';
+    const broken = createMarkdownPlugin({
+      name: 'production-failure',
+      apiVersion: 1,
+      transform() {
+        throw new Error(thrownText);
+      },
+    });
+
+    try {
+      parseMarkdown(source, {plugins: [broken]});
+      parseMarkdown(source, {plugins: [broken]});
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(error).toHaveBeenCalledWith(
+        'Markdown: plugin "production-failure" failed in transform; rendered readable fallback.',
+      );
+      expect(JSON.stringify(error.mock.calls)).not.toContain(source);
+      expect(JSON.stringify(error.mock.calls)).not.toContain(thrownText);
+    } finally {
+      error.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('keeps the last valid tree after mutation, async, or semantic failure', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const mutating = createMarkdownPlugin({
@@ -379,7 +484,31 @@ describe('Markdown plugin protocol', () => {
       },
     });
 
-    for (const plugin of [mutating, asyncPlugin, headingChange]) {
+    const headingRebuild = createMarkdownPlugin({
+      name: 'heading-rebuild',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'heading'
+              ? {
+                  type: 'heading' as const,
+                  depth: 5 as const,
+                  children: block.children,
+                }
+              : block,
+          ),
+        };
+      },
+    });
+
+    for (const plugin of [
+      mutating,
+      asyncPlugin,
+      headingChange,
+      headingRebuild,
+    ]) {
       expect(parseMarkdown('# Safe', {plugins: [plugin]})).toEqual([
         {
           type: 'heading',
