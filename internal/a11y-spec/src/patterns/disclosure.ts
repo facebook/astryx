@@ -11,6 +11,8 @@ import {definePattern} from '../contract';
 
 export interface DisclosureStateFacts {
   readonly expanded: boolean;
+  readonly controls?: boolean;
+  readonly operable?: boolean;
 }
 
 export const DISCLOSURE_PATTERN = definePattern<DisclosureStateFacts>({
@@ -45,6 +47,73 @@ export const DISCLOSURE_PATTERN = definePattern<DisclosureStateFacts>({
           );
         }
       },
+    },
+    {
+      id: 'disclosure.relationship.controls',
+      outcome:
+        'A declared control relationship identifies the content being disclosed.',
+      sources: [
+        {
+          standard: 'wcag',
+          id: '1.3.1',
+          name: 'Info and Relationships',
+          level: 'A',
+          url: 'https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html',
+        },
+      ],
+      covers: ['1.3.1-info-and-relationships'],
+      appliesWhen: {
+        condition: 'the binding declares a controlled-content relationship',
+        test: facts => facts.controls === true,
+      },
+      evidenceLayer: 'dom',
+      enforcement: 'required',
+      run: async ({harness, subject}) => {
+        const content = await harness.related('content');
+        if (!(await harness.references(subject, 'aria-controls', content))) {
+          throw new Error(
+            'aria-controls does not identify the disclosed content',
+          );
+        }
+        if (
+          (await subject.idReferences('aria-controls')).some(
+            target => target === null,
+          )
+        ) {
+          throw new Error('aria-controls includes a missing content target');
+        }
+      },
+    },
+    {
+      id: 'disclosure.interaction.round-trip',
+      outcome:
+        'Pointer, Enter, and Space reveal the content and hide it again.',
+      sources: [
+        {
+          standard: 'wcag',
+          id: '2.1.1',
+          name: 'Keyboard',
+          level: 'A',
+          url: 'https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html',
+        },
+        {
+          standard: 'astryx',
+          id: 'component:Collapsible',
+          clause: 'AR1',
+          requirement:
+            'The trigger MUST expose its expanded state and controlled-region relationship independently of the chevron artwork.',
+          url: 'https://github.com/facebook/astryx/blob/2b2113d7f95a066a2e21a4b0a27acb819d103601/packages/core/src/Collapsible/Collapsible.spec.md',
+        },
+      ],
+      covers: ['2.1.1-keyboard'],
+      appliesWhen: {
+        condition: 'the disclosure can be operated',
+        test: facts => facts.operable === true,
+      },
+      evidenceLayer: 'real-browser',
+      alsoNeeds: ['dom'],
+      enforcement: 'required',
+      run: async () => undefined,
     },
   ],
   exemptions: {},
