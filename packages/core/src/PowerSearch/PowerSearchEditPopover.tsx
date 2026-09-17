@@ -22,7 +22,10 @@ import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
 import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {PowerSearchValueEditor} from './PowerSearchValueEditor';
+import {
+  PowerSearchValueEditor,
+  type PowerSearchValueEditorProps,
+} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {
@@ -356,6 +359,7 @@ function NestedSubFilterRow({
       {operatorValue && !isEmptyType && !isNestedType && (
         <div {...stylex.props(styles.nestedRowValueEditor)}>
           <PowerSearchValueEditor
+            key={valueEditorKey(subFilter)}
             operatorValue={operatorValue}
             filterValue={subFilter.value}
             onChange={handleValueChange}
@@ -607,6 +611,54 @@ function NestedEditor({
 }
 
 // =============================================================================
+// Value editor cell
+// =============================================================================
+
+/**
+ * The value editor's identity is the (field, operator) pair it edits. Keying
+ * on it remounts the editor when either changes, so nothing an editor keeps
+ * privately — a Tokenizer's open menu, its query text, results fetched from
+ * the previous field's source — survives into the next field. Without the
+ * key, two fields sharing a value type (two `enum_list` fields, say) reuse
+ * one editor instance and the open menu keeps showing the old field's
+ * options.
+ */
+function valueEditorKey(filter: {field: string; operator?: string}): string {
+  return `${filter.field}\u0000${filter.operator ?? ''}`;
+}
+
+/**
+ * Wraps the value editor and moves focus into it once it mounts. Because the
+ * cell is keyed on the filter's field and operator, "mount" means both the
+ * popover opening and the user picking a different field or operator — the
+ * same focus handoff either way, so the freshly mounted editor can bootstrap
+ * its own suggestions.
+ */
+function ValueEditorCell(props: PowerSearchValueEditorProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const container = ref.current;
+      if (!container) {
+        return;
+      }
+      const focusable = container.querySelector<HTMLElement>(
+        'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <div ref={ref} {...stylex.props(styles.valueEditor)}>
+      <PowerSearchValueEditor {...props} />
+    </div>
+  );
+}
+
+// =============================================================================
 // Main popover
 // =============================================================================
 
@@ -625,22 +677,6 @@ export function PowerSearchEditPopover({
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const [partialFilter, setPartialFilter] =
     useState<PartialFilter>(initialFilter);
-  const valueEditorRef = useRef<HTMLDivElement>(null);
-
-  // Focus the first focusable element inside the value editor after mount
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const container = valueEditorRef.current;
-      if (!container) {
-        return;
-      }
-      const focusable = container.querySelector<HTMLElement>(
-        'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      focusable?.focus();
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   const currentOperator = partialFilter.operator
     ? config.getOperator(partialFilter.field, partialFilter.operator)
@@ -854,17 +890,16 @@ export function PowerSearchEditPopover({
             </div>
           )}
           {operatorValue && !isEmptyType && (
-            <div ref={valueEditorRef} {...stylex.props(styles.valueEditor)}>
-              <PowerSearchValueEditor
-                operatorValue={operatorValue}
-                filterValue={partialFilter.value}
-                onChange={handleValueChange}
-                onEnter={handleSave}
-                config={config}
-                maxMenuItems={maxMenuItems}
-                isDisabled={isReadOnly}
-              />
-            </div>
+            <ValueEditorCell
+              key={valueEditorKey(partialFilter)}
+              operatorValue={operatorValue}
+              filterValue={partialFilter.value}
+              onChange={handleValueChange}
+              onEnter={handleSave}
+              config={config}
+              maxMenuItems={maxMenuItems}
+              isDisabled={isReadOnly}
+            />
           )}
         </HStack>
       </div>

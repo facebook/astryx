@@ -533,9 +533,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Monotonic counter incremented on selection and query-clear. Async
-  // searches that resolve after a selection compare their captured
-  // generation to the current value and discard stale results.
+  // Monotonic counter incremented on selection, query-clear, and source
+  // replacement. Async searches that resolve afterwards compare their
+  // captured generation to the current value and discard stale results.
   const searchGenRef = useRef(0);
   // The generation at which results were last populated. handleFocus
   // compares this to searchGenRef — if they differ, the cached results
@@ -987,12 +987,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // Cleanup timeout and cancel in-flight searches on unmount
+  // A replaced or unmounted source ends its search lifetime: drop the pending
+  // debounce, cancel in-flight work where the source supports it, and advance
+  // the generation so a late response from the old source can no longer
+  // commit results into a typeahead that is now reading a different source.
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+      // eslint-disable-next-line @eslint-react/exhaustive-deps -- a counter, not a node: the cleanup must advance the live generation
+      searchGenRef.current++;
       searchSource.cancel?.();
     };
   }, [searchSource]);
