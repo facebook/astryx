@@ -90,11 +90,12 @@ async function pressWithMouse(page: Page, name: string): Promise<void> {
     .getByRole('button', {name, includeHidden: true})
     .first();
   const box = await control.boundingBox();
-  expect(
-    box,
-    `"${name}" has no layout box, so no mouse press could land on it`,
-  ).not.toBeNull();
-  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  if (box == null) {
+    throw new Error(
+      `"${name}" has no layout box, so no mouse press could land on it`,
+    );
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
 /**
