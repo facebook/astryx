@@ -1180,7 +1180,7 @@ describe('BaseTypeahead hasSearched reset', () => {
 });
 
 describe('BaseTypeahead popover after selection', () => {
-  it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+  it('keeps direct single-select BaseTypeahead closed after selection', async () => {
     const onChange = vi.fn();
     render(
       <BaseTypeahead
