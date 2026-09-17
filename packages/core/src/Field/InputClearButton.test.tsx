@@ -8,8 +8,8 @@
  * @output Unit tests for the shared clear-button primitive
  * @position Testing; validates InputClearButton.tsx — the single home for the
  *   clearable input family's clear (✕) affordance and its theme target. Covers
- *   the accessible name, the click callback, the decorative registry glyph,
- *   both theme targets, the touch hit area, and xstyle forwarding.
+ *   the accessible name, contextual hover tooltip, click callback, decorative
+ *   registry glyph, both theme targets, touch hit area, and xstyle forwarding.
  *
  * SYNC: When InputClearButton.tsx changes, update tests to match new behavior.
  */
@@ -17,7 +17,7 @@
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {
   InputClearButton,
@@ -95,6 +95,20 @@ describe('InputClearButton public props', () => {
 });
 
 describe('InputClearButton', () => {
+  it('uses the contextual label for the tooltip and accessible name', async () => {
+    const showPopover = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    render(<InputClearButton label="Clear Search" onClick={() => {}} />);
+
+    const button = screen.getByRole('button', {name: 'Clear Search'});
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    expect(tooltip).toHaveTextContent(/^Clear Search$/);
+    expect(button.getAttribute('aria-describedby')).toBe(tooltip.id);
+
+    fireEvent.mouseEnter(button);
+    await waitFor(() => expect(showPopover).toHaveBeenCalled());
+    showPopover.mockRestore();
+  });
+
   it('renders a real button with the given accessible label', () => {
     render(<InputClearButton label="Clear" onClick={() => {}} />);
     const button = screen.getByRole('button', {name: 'Clear'});
