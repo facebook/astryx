@@ -39,6 +39,8 @@ describe('getLatestVersion', () => {
   it('ignores invalid env var values', () => {
     process.env.ASTRYX_LATEST_VERSION = 'not-a-version';
     expect(getLatestVersion()).toBeNull();
+    process.env.ASTRYX_LATEST_VERSION = '0.0.8garbage';
+    expect(getLatestVersion()).toBeNull();
   });
 
   it('returns null when no signals exist', () => {
