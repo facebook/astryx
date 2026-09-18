@@ -543,6 +543,16 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // be re-shown.
   const resultsGenRef = useRef(0);
 
+  // A replaced source ends the previous one's search lifetime. Done during
+  // render, not in an effect: the swap is a fact of this render, and the
+  // counter and cancel are both idempotent if React discards the pass.
+  const prevSearchSourceRef = useRef(searchSource);
+  if (prevSearchSourceRef.current !== searchSource) {
+    prevSearchSourceRef.current.cancel?.();
+    prevSearchSourceRef.current = searchSource;
+    searchGenRef.current++;
+  }
+
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
     onOpenChange?.(true);
@@ -987,20 +997,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // A replaced or unmounted source ends its search lifetime: drop the pending
-  // debounce, cancel in-flight work where the source supports it, and advance
-  // the generation so a late response from the old source can no longer
-  // commit results into a typeahead that is now reading a different source.
+  // Unmount: clear the pending debounce and cancel in-flight work.
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      // eslint-disable-next-line @eslint-react/exhaustive-deps -- a counter, not a node: the cleanup must advance the live generation
-      searchGenRef.current++;
-      searchSource.cancel?.();
+      prevSearchSourceRef.current.cancel?.();
     };
-  }, [searchSource]);
+  }, []);
 
   return (
     <>
