@@ -35,17 +35,17 @@ system_specs: [spec:AST-027/DEC-3]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None. `Drawer` and `DrawerProps` remain root exports from `@astryxdesign/lab`; `isOpen`, `onOpenChange`, `label`, and `children` are required, with existing `BaseProps<HTMLDialogElement>` composition and optional presentation and sizing controls.                                                          |
-| Behavior                | Caller-controlled, viewport-relative, full-height logical-side overlay; defaults are inline end, 400px, modal with scrim, a 56px mobile page reveal, and the built-in close action. The last-opened sibling owns Escape, while exit retains the host, current children, and opened edge until motion completes. |
-| End-user impact         | None from this documentation-only record; current modal/non-modal semantics, focus return, dismissal, motion, sizing, and sibling ordering remain unchanged.                                                                                                                                                    |
-| Builder impact          | None; there is no migration or new caller choice. Keep state and content caller-owned, preserve content through exit, and compose stacked Drawers as siblings.                                                                                                                                                  |
-| Compatibility/readiness | Additive documentation with no runtime or default change; Drawer remains experimental in Lab, this contract remains `draft`, current behavior is verified, and FR13–FR14 remain named family/top-layer conformance gaps.                                                                                        |
-| Review checks           | Reject regional, docked, or block-axis models; independent modality and scrim axes; nested-Drawer stacking; or claims that the local registry and non-modal `show()` path satisfy shared dismissal and top-layer rules.                                                                                         |
-| Governing rules         | `component:Drawer` FR1–FR14 and AR1–AR6; `family:overlay-dismissal`; `architecture:layer-runtime`, `architecture:public-component-api`, `architecture:react-component-runtime`, and `architecture:component-theming-surface`; `spec:AST-027/DEC-3`.                                                             |
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Current Lab surface     | No public-API delta. At this commit, the experimental `@astryxdesign/lab` root exports `Drawer` and `DrawerProps`; `DrawerProps` extends `BaseProps<HTMLDialogElement>`, separately declares `ref`, and requires `isOpen`, `onOpenChange`, `label`, and `children`. This records current reachability, not a stable compatibility promise.                                                                                                                                                                                                             |
+| Behavior                | Drawer-owned visibility is controlled by the caller for a viewport-relative, full-height logical-side overlay. Native mode is selected from `hasScrim` at open; changing it while open is unsupported, although the current implementation updates scrim styling, `aria-modal`, modal-root clicks, and body lock live. Drawer-local registration gates Escape for same-presentation siblings and assigns non-modal z-index; modal paint is browser-owned, while mixed-presentation and nested stacking are unspecified. Exit renders current children. |
+| End-user impact         | None from this documentation-only record; current modal/non-modal semantics, focus return, dismissal, motion, sizing, and sibling ordering remain unchanged.                                                                                                                                                                                                                                                                                                                                                                                           |
+| Builder impact          | None; there is no migration or new caller choice. State and content remain caller-owned; Drawer renders the caller's current children during exit. Sibling composition remains current consumer guidance.                                                                                                                                                                                                                                                                                                                                              |
+| Compatibility/readiness | Additive documentation with no runtime or default change; Drawer remains experimental in Lab, this record remains `draft`, and its candidate statements require approval. FR13–FR14 record named family/top-layer conformance gaps.                                                                                                                                                                                                                                                                                                                    |
+| Review checks           | Reject regional, docked, or block-axis models; claims that modality and scrim are currently independent; or claims that the local registry and non-modal `show()` path satisfy shared dismissal/top-layer rules, guarantee mixed-presentation or nested ordering, or establish stable API/theming compatibility.                                                                                                                                                                                                                                       |
+| Record context          | `component:Drawer` FR1–FR14 and AR1–AR6 are draft candidate statements. Linked records govern only within their own declared authority and scope.                                                                                                                                                                                                                                                                                                                                                                                                      |
 
-This table is a review projection; the body below is authoritative.
+This table summarizes the draft body below; it does not change this record's declared authority.
 
 ## Intent
 
@@ -64,8 +64,9 @@ it does not revive a regional, pane-scoped, or container-targeted Drawer model.
   `@astryxdesign/lab`.
 - Compatibility class: additive maintainer documentation only; runtime, DOM,
   styling, targets, props, and consumer docs remain unchanged.
-- Controlled/uncontrolled behavior: unchanged; visibility remains fully
-  controlled.
+- Controlled/uncontrolled behavior: unchanged for Drawer-owned paths; callers
+  provide `isOpen`, while direct native mutation through the public dialog ref is
+  outside that guarantee.
 - Migration decision: none.
 
 Consumer migration instructions belong in consumer docs and release notes.
@@ -76,11 +77,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - The viewport-relative side-panel surface, logical edge, inline-size budget, and
   entry/exit motion.
-- The combined modal-with-scrim and non-modal-without-scrim presentation choice.
-- Drawer-local focus entry/return, built-in close affordance, backdrop-click
-  policy, and preservation of its host and content region through exit. Current
-  caller-provided children remain caller-owned throughout that interval.
-- The observable last-opened ordering of sibling Drawers.
+- The current presentation input: its value at native open selects `showModal()`
+  or `show()`. Changing it while open is unsupported; current live effects are
+  recorded as implementation facts rather than durable transition policy.
+- Drawer-local focus entry/return, built-in close affordance, uncanceled
+  backdrop-click handling, and retention of its host through controlled exit
+  while rendering current caller-owned children.
+- The local registration order used for same-presentation sibling Escape
+  eligibility and non-modal z-index assignment. Modal paint order is browser-owned.
 
 **Does not own / non-goals**
 
@@ -98,118 +102,126 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 
-| Concept            | Closed values or states                       | Meaning                                                                | Availability by state                     | Default                  | Owner              | Stability                 | Invalid-value behavior                         |
-| ------------------ | --------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------- | ------------------------ | ------------------ | ------------------------- | ---------------------------------------------- |
-| visibility         | open, closed                                  | whether caller-controlled Drawer presentation is requested             | all presentations                         | caller-controlled        | `component:Drawer` | experimental Lab contract | required controlled value                      |
-| logical edge       | inline start, inline end                      | viewport edge from which the panel enters and exits                    | open and exiting                          | inline end               | `component:Drawer` | experimental Lab contract | closed type rejects other values               |
-| presentation       | modal with scrim, non-modal without scrim     | document modality and visible backdrop versus interactive page context | selected for the presented lifetime       | modal with scrim         | `component:Drawer` | experimental Lab contract | one current boolean selects the paired outcome |
-| inline-size budget | pixel number or valid CSS length              | maximum desktop inline size of the panel                               | desktop and as the mobile cap             | `400px`                  | `component:Drawer` | experimental Lab contract | browser CSS parsing handles invalid strings    |
-| mobile coverage    | page reveal, full viewport                    | whether narrow viewports retain a visible page strip                   | viewports at or below the mobile boundary | 56px page reveal         | `component:Drawer` | experimental Lab contract | closed boolean                                 |
-| close affordance   | built-in close button present, absent         | whether Drawer supplies its top-trailing close action                  | modal and non-modal presentations         | present                  | `component:Drawer` | experimental Lab contract | closed boolean                                 |
-| sibling order      | earlier opened, later opened, exiting, closed | which sibling paints and responds as the current front Drawer          | unrelated sibling Drawers                 | last opened is frontmost | `component:Drawer` | experimental Lab contract | nesting is outside the documented composition  |
+| Concept            | Closed values or states                       | Meaning                                                                     | Availability by state                                             | Default                             | Owner              | Stability                 | Invalid-value behavior                                 |
+| ------------------ | --------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------- | ------------------ | ------------------------- | ------------------------------------------------------ |
+| visibility         | open, closed                                  | whether caller-controlled Drawer presentation is requested                  | all presentations                                                 | caller-controlled                   | `component:Drawer` | experimental Lab contract | required controlled value                              |
+| logical edge       | inline start, inline end                      | viewport edge from which the panel enters and exits                         | open and exiting                                                  | inline end                          | `component:Drawer` | experimental Lab contract | closed type rejects other values                       |
+| presentation       | modal with scrim, non-modal without scrim     | native open mode and associated initial semantics                           | chosen when the native dialog opens; live changes are unsupported | modal with scrim                    | `component:Drawer` | experimental Lab contract | one current boolean selects the initial mode           |
+| inline-size budget | pixel number or valid CSS length              | desktop inline size and reveal-mode mobile cap                              | desktop and mobile page-reveal mode                               | `400px`                             | `component:Drawer` | experimental Lab contract | invalid CSS lengths are unsupported                    |
+| mobile coverage    | page reveal, full viewport                    | whether narrow viewports retain a visible page strip                        | viewports at or below the mobile boundary                         | 56px page reveal                    | `component:Drawer` | experimental Lab contract | closed boolean                                         |
+| close affordance   | built-in close button present, absent         | whether Drawer supplies its top-trailing close action                       | modal and non-modal presentations                                 | present                             | `component:Drawer` | experimental Lab contract | closed boolean                                         |
+| sibling order      | earlier opened, later opened, exiting, closed | same-presentation local Escape eligibility and non-modal z-index assignment | sibling Drawers using one presentation mode                       | later opened is last registry entry | `component:Drawer` | experimental Lab contract | mixed-presentation and nested stacking are unspecified |
 
 ## Behavioral and layout contract
 
-| ID   | Candidate invariant                                                                                                                                                                                                                                                                                                                           | Basis                                      | Draft review state                                    |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
-| FR1  | Drawer MUST remain a viewport-relative, full-block-size overlay on the logical inline-start or inline-end edge and MUST NOT reserve layout space or reflow the page beneath it.                                                                                                                                                               | Current source, docs, stories, and tests   | Verified current behavior; no new behavior decided    |
-| FR2  | The logical edge selected for an open Drawer MUST remain latched through its exit even when caller state changes the live edge prop during close.                                                                                                                                                                                             | Current exit-side test and implementation  | Verified current behavior                             |
-| FR3  | The desktop inline-size budget MUST accept pixel numbers or CSS lengths, remain bounded by the viewport, and act as the mobile cap. At or below 640px, Drawer MUST preserve a 56px page reveal unless full-mobile coverage is selected.                                                                                                       | Current docs, styles, and width tests      | Verified current behavior                             |
-| FR4  | Visibility MUST remain caller-controlled. Escape, backdrop activation, and built-in close actions request `false`; native dialog state MUST NOT become a second open-state owner. Drawer keeps its host and content region mounted while visibly exiting, but it renders the caller's current `children` and does not snapshot prior content. | Current prop contract and lifecycle tests  | Verified current behavior                             |
-| FR5  | The current presentation choice is paired: scrim-backed presentation uses native `showModal()`, `aria-modal`, body scroll locking, and a visible backdrop; clear presentation uses non-modal `show()` and leaves the page behind interactive.                                                                                                 | Current source, docs, and modal tests      | Verified current behavior; independent axes not owned |
-| FR6  | Activating the visible modal backdrop MAY request close. Clicking panel content MUST NOT close Drawer, and non-modal presentation MUST NOT install an invisible outside-pointer dismissal plane.                                                                                                                                              | Current click tests                        | Verified current behavior                             |
-| FR7  | The built-in close affordance MUST appear by default in both presentations, carry an accessible name, and request close without taking open-state ownership. Callers may explicitly omit it.                                                                                                                                                  | Current docs and close-button tests        | Verified current behavior                             |
-| FR8  | Opening MUST capture the external invoking element, enter the native dialog host, and honor one rendered `data-autofocus` descendant when present. Final close MUST return focus to the captured connected invoker when focus can be restored.                                                                                                | Current presence hook and focus tests      | Verified current behavior                             |
-| FR9  | Closing MUST retain the panel host, content region, edge, and native dialog through the transform exit while rendering the caller's current `children`. The transform transition is authoritative; a computed-duration backstop prevents a lost event from stranding the host. Native close and React hiding occur together.                  | Current presence hook and close guard      | Verified current behavior                             |
-| FR10 | Sibling Drawers MUST be composed as siblings. The last-opened present sibling is visually frontmost and owns the first Escape request; closing or unmounting it exposes the next sibling without one request closing both.                                                                                                                    | Current docs, registry, and stack tests    | Verified outcome; local family adoption gap remains   |
-| FR11 | Consumer DOM, data, ARIA, style, class, ref, click, and keyboard inputs MUST reach or compose on the root dialog according to `BaseProps`. A consumer keyboard handler that prevents default MAY cancel Drawer-owned Escape handling.                                                                                                         | Current BaseProps implementation and tests | Verified current behavior                             |
-| FR12 | The root dialog is the painted panel and carries the public `drawer` theming target with the logical `side` axis. Drawer resets inherited container padding at that root; caller content and the scrim have no separate Drawer target.                                                                                                        | Current source, docs, and target metadata  | Verified current reachability; no target change       |
-| FR13 | Drawer currently uses a component-local registry for Escape and sibling ordering. That implementation is a deviation from `family:overlay-dismissal/FR1`, not an accepted family exception or a new component-local policy.                                                                                                                   | Current family adoption table              | Known current adoption gap                            |
-| FR14 | Non-modal Drawer currently uses `dialog.show()` plus a page-level z-index band rather than a native top-layer host. That implementation is a named conformance gap against `spec:AST-027/DEC-3`, not part of the durable component contract.                                                                                                  | Current source and `spec:AST-027`          | Known current top-layer gap                           |
+| ID   | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                                              | Basis                                                      | Draft review state                                                                                       |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| FR1  | Drawer MUST remain a viewport-relative, full-block-size overlay on the logical inline-start or inline-end edge and MUST NOT reserve layout space or reflow the page beneath it.                                                                                                                                                                                                                                                                                  | Current source, docs, stories, and tests                   | Verified current behavior; no new behavior decided                                                       |
+| FR2  | The logical edge selected for an open Drawer MUST remain latched through its exit even when caller state changes the live edge prop during close.                                                                                                                                                                                                                                                                                                                | Current exit-side test and implementation                  | Verified current behavior                                                                                |
+| FR3  | The desktop inline-size budget MUST accept pixel numbers or CSS lengths and remain bounded by the viewport. At or below 640px, page-reveal mode MUST preserve 56px and use `width` as a cap; full-mobile mode MUST override `width` with `100dvw`.                                                                                                                                                                                                               | Current docs, styles, and width tests                      | Verified current behavior                                                                                |
+| FR4  | Visibility through Drawer-owned behavior MUST follow `isOpen`. Uncanceled Escape and modal-backdrop handling, and the built-in close action, request `false`; Drawer prevents its handled native `cancel` event from closing the dialog directly. During controlled exit, Drawer keeps its host and content region mounted while rendering the caller's current `children`.                                                                                      | Current prop contract and lifecycle tests                  | Verified for Drawer-owned paths; direct native mutation through the public ref is outside this guarantee |
+| FR5  | At open time, `hasScrim={true}` MUST select native `showModal()` with `aria-modal`, body scroll locking, and a visible backdrop; `hasScrim={false}` MUST select non-modal `show()` and leave the page behind interactive. Changing `hasScrim` while open is not a supported native-mode transition. The current implementation still updates scrim styling, `aria-modal`, modal-root click handling, and body locking live without switching the native mode.    | Current source, docs, and initial-mode tests               | Initial modes verified; live presentation changes unsupported                                            |
+| FR6  | An uncanceled modal root/backdrop click (`target === currentTarget` while live `hasScrim` is true) MUST request close. Descendant clicks and dialog-root clicks while live `hasScrim` is false MUST NOT request close, and non-modal presentation MUST NOT install an invisible outside-pointer dismissal plane.                                                                                                                                                 | Current click tests                                        | Verified current behavior                                                                                |
+| FR7  | The built-in close affordance MUST appear by default in both presentations, carry an accessible name, and request close without taking open-state ownership. Callers may explicitly omit it.                                                                                                                                                                                                                                                                     | Current docs and close-button tests                        | Verified current behavior                                                                                |
+| FR8  | Opening MUST present the native dialog and attempt to focus the first rendered `[data-autofocus]` descendant, if any. After a completed controlled close, Drawer MUST attempt to restore focus to the element that was active before opening.                                                                                                                                                                                                                    | Current presence hook and focus tests                      | Verified for completed controlled close                                                                  |
+| FR9  | Closing MUST retain the panel host, content region, edge, and native dialog while the exit remains visible and continue rendering the caller's current `children`. Once the visible exit completes, Drawer MUST release native dialog state and hide the panel before the next paint.                                                                                                                                                                            | Current lifecycle tests and browser close-visibility guard | Observable outcome verified; mechanism private                                                           |
+| FR10 | Current Drawer-local coordination is registration-based. Among open sibling Drawers using the same presentation mode, the most recently registered handles a Drawer-local Escape event that reaches it; closing or unmounting unregisters it so the prior open Drawer becomes eligible. Non-modal siblings receive increasing local z-indexes, while modal paint order is browser-owned. Mixed-presentation visual ordering and nested stacking are unspecified. | Current source, docs, and non-modal stack tests            | Recorded current behavior; local family adoption gap remains                                             |
+| FR11 | At this commit, `DrawerProps` extends `BaseProps<HTMLDialogElement>` and separately declares `ref`. The root filters `open`, merges `xstyle`, `className`, and `style`, forwards remaining unclaimed props, composes consumer `onClick` and `onKeyDown`, and owns `aria-label`, `aria-modal`, and `onCancel`. A consumer `onKeyDown` that prevents default cancels Drawer-owned Escape handling.                                                                 | Current source and focused keyboard tests                  | Recorded current Lab behavior; not a stable compatibility decision                                       |
+| FR12 | At this commit, the painted root dialog emits the documented `drawer` target and `side` selector axis and applies the container-padding reset. No separate Drawer target is currently emitted for content or scrim; future target qualification remains owned by `architecture:component-theming-surface`.                                                                                                                                                       | Current source, docs, and structural target metadata       | Current reachability only; no target-admission decision                                                  |
+| FR13 | Drawer currently uses a component-local registry for open order, Escape eligibility, and non-modal z-index assignment. It does not control native modal top-layer order. That implementation is a deviation from `family:overlay-dismissal/FR1`, not an accepted family exception or a new component-local policy.                                                                                                                                               | Current family adoption table                              | Known current adoption gap                                                                               |
+| FR14 | Non-modal Drawer currently uses `dialog.show()` plus a page-level z-index band rather than a native top-layer host. That implementation is a named conformance gap against `spec:AST-027/DEC-3`, not part of the durable component contract.                                                                                                                                                                                                                     | Current source and `spec:AST-027`                          | Known current top-layer gap                                                                              |
 
 ### Allowed variation
 
 - **AV1 — Caller content.** Any renderable inspector/detail content may occupy the
-  scrolling content region without becoming Drawer-owned anatomy. Callers retain
-  the child data they want to remain visible during exit.
+  scrolling content region without becoming Drawer-owned anatomy. Drawer renders
+  current `children`; callers decide whether the underlying data remains available
+  during exit.
 - **AV2 — Inline size.** Consumers may choose the desktop budget within valid CSS
-  and viewport constraints.
-- **AV3 — Presentation.** Modal and non-modal states deliberately differ in page
-  availability, scroll locking, and backdrop behavior.
-- **AV4 — Close control.** Callers may hide the built-in close button only when
-  their content provides an appropriate dismissal path.
+  and viewport constraints. It remains the cap in mobile page-reveal mode, while
+  full-mobile mode uses `100dvw` instead.
+- **AV3 — Presentation.** The value at native open selects modal or non-modal
+  dialog mode. Changing `hasScrim` while open is unsupported; current live scrim,
+  ARIA, root-click, and body-lock updates are implementation effects rather than a
+  supported native-mode transition.
+- **AV4 — Close control.** Callers may hide the built-in close button.
 - **AV5 — Motion duration.** Themes may alter the transform transition duration;
   close timing follows computed CSS and reduced-motion preferences.
 
 ### Representative states
 
-| State                             | Required invariant                                                                                                                           | Allowed variation                                      |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Closed                            | no native dialog presentation or visible panel                                                                                               | caller content may remain mounted in React             |
-| Modal inspector                   | side panel, visible scrim, modal semantics, body lock, and close affordance                                                                  | edge, width, caller content, and autofocus destination |
-| Non-modal master-detail inspector | side panel leaves page interaction available and has no modal backdrop                                                                       | edge, width, and caller content                        |
-| Narrow viewport with page reveal  | panel does not exceed its budget and preserves 56px of the page                                                                              | requested width below the cap                          |
-| Narrow full-coverage viewport     | panel covers the dynamic viewport inline size                                                                                                | caller content                                         |
-| Two sibling Drawers               | later-opened Drawer paints and dismisses first                                                                                               | either presentation, provided composition is sibling   |
-| Exiting Drawer                    | panel host, content region, and logical edge stay stable until native-host release; caller retains any child data it wants to remain visible | computed transition duration                           |
+| State                             | Required invariant                                                                                                                                  | Allowed variation                                                                 |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Closed                            | no native dialog presentation or visible panel                                                                                                      | caller content may remain mounted in React                                        |
+| Modal inspector                   | opened with `hasScrim` true via `showModal()` with scrim, modal semantics, and body lock                                                            | edge, width, caller content, autofocus destination, and built-in close affordance |
+| Non-modal master-detail inspector | opened with `hasScrim` false via `show()`; no scrim, `aria-modal`, modal-root dismissal, or body lock; Escape requires an event reaching the dialog | edge, width, caller content, and built-in close affordance                        |
+| Narrow viewport with page reveal  | panel does not exceed its `width` cap and preserves 56px of the page                                                                                | requested width below the cap                                                     |
+| Narrow full-coverage viewport     | panel uses `100dvw`, overriding the requested `width`                                                                                               | caller content                                                                    |
+| Two non-modal sibling Drawers     | later-opened open Drawer receives a higher page-level z-index and handles Escape dispatched within it                                               | edge, width, and caller content                                                   |
+| Exiting Drawer                    | panel host, content region, logical edge, and native presentation remain while the exit is visible; current children render                         | caller-controlled child data and motion duration                                  |
 
 ### Transformation and precedence order
 
 - **ORD1 — Open.** Resolve the current logical edge and width, retain the rendered
-  panel, capture the external invoker, open the selected native dialog mode, then
-  honor a rendered autofocus destination.
-- **ORD2 — Close.** Caller state requests close; Drawer retains its panel host,
-  content region, edge, presentation, and native dialog through the transform
-  exit while rendering the caller's current children. Transition completion or
-  the backstop closes the host and hides React output in one task; focus then
-  returns to the captured invoker when available.
-- **ORD3 — Sibling order.** For sibling Drawers, current open order determines
-  frontmost visual and Escape ownership. Descendant overlays remain governed by
-  their own component/family contracts rather than Drawer nesting.
+  panel, capture the currently focused element, use current `hasScrim` to select
+  the native dialog mode, then honor a rendered autofocus destination.
+- **ORD2 — Close.** During controlled close, Drawer keeps its panel and
+  caller-provided content visible through the exit animation. After exit,
+  presentation ends without an intermediate visible frame, and Drawer attempts to
+  restore focus to the previously focused element when available.
+- **ORD3 — Sibling order.** For same-presentation sibling Drawers, registration
+  order gates Drawer-local Escape handling; non-modal siblings also receive
+  increasing z-indexes. Modal paint order is browser-owned. Mixed-presentation
+  visual ordering and nested stacking are unspecified.
 
 ### Performance and resources
 
-- **PR1 — Exit-only resources.** Transition listeners and the backstop timer exist
-  only while close is waiting for the visible transform exit and are removed on
-  completion or cleanup.
-- **PR2 — Presentation-only resources.** Native dialog presentation and body scroll
-  locking exist only for their active states and are released on close, unmount,
-  or hidden Activity cleanup.
-- **PR3 — No regional observation.** Current viewport-only Drawer owns no target
-  measurement, ResizeObserver, MutationObserver, or scroll synchronization.
+- **PR1 — Exit cleanup.** Any resources used to coordinate exit are released after
+  completion, interruption, or unmount.
+- **PR2 — Presentation cleanup.** Controlled closing or unmounting Drawer releases
+  native presentation and any active body scroll lock.
+- **PR3 — Viewport-relative sizing.** Drawer derives sizing from `width`,
+  `isFullWidthOnMobile`, and the viewport; callers do not supply a regional
+  measurement target.
 
 ## Accessibility contract
 
-- **AR1 — Name.** Every Drawer MUST receive a non-empty accessible name through
-  its required label contract; caller content does not become an implicit name.
-- **AR2 — Modal truthfulness.** Modal presentation uses native modal dialog state
-  and `aria-modal`; non-modal presentation omits `aria-modal` and leaves the page
-  behind available.
-- **AR3 — Keyboard dismissal.** Escape requests close only for the current
-  frontmost sibling and respects consumer cancellation; unrelated keys do not
-  dismiss.
+- **AR1 — Name.** `label` is a required string forwarded to `aria-label`; caller
+  content is not used as an implicit name. Current code does not reject an empty
+  or whitespace-only value.
+- **AR2 — Modal truthfulness.** At open time, `hasScrim={true}` uses native modal
+  dialog state and `aria-modal`; `hasScrim={false}` uses non-modal dialog state and
+  omits `aria-modal`. Changing `hasScrim` while open is not a supported transition.
+- **AR3 — Keyboard dismissal.** For sibling Drawers using the same presentation
+  mode, Escape requests close only for the last-opened still-open Drawer when a
+  Drawer-local event reaches it; a consumer `onKeyDown` that prevents default
+  cancels Drawer-owned keydown handling, and unrelated keys do not dismiss. Mixed
+  presentation modes are not covered by this guarantee.
 - **AR4 — Focus lifecycle.** Focus enters visible Drawer content through the
-  documented autofocus/native path and returns to the connected invoker after
-  final close when possible.
+  documented autofocus/native path and, after a completed controlled close, Drawer
+  attempts to restore focus to the element that was active when the Drawer opened.
 - **AR5 — Close affordance.** The built-in close action retains an accessible name
   and Button-owned keyboard/focus behavior in both presentations.
-- **AR6 — Direction and motion.** Logical edges resolve under LTR/RTL, and motion
-  reduces under `prefers-reduced-motion` without changing the final state.
+- **AR6 — Direction and motion.** Logical inset placement follows computed
+  direction; slide-direction mirroring currently requires a `[dir="rtl"]`
+  ancestor. Self-applied `dir="rtl"` and CSS-only direction do not trigger
+  transform mirroring. Motion reduces under `prefers-reduced-motion` without
+  changing the final state.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                                    | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | ------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Panel            | Paints the full-height side surface and owns edge, width, border, shadow, and motion. | Current source and public docs | Prominent      | FR1–FR3, FR9, FR12 |
-| Content region   | Provides full-height scrolling for caller-owned inspector content.                    | Current source and public docs | Prominent      | FR4, AV1           |
-| Close button     | Supplies the persistent top-trailing dismissal action when enabled.                   | `component:Button`             | Supporting     | FR7, AR5           |
-| Modal scrim      | Communicates and activates the paired modal presentation behind the panel.            | Current source and public docs | Supporting     | FR5, FR6, AR2      |
-| Page reveal      | Preserves overlay context on narrow viewports unless full coverage is requested.      | Current public docs            | Supporting     | FR3                |
+| Anatomy or state | Design requirement                                                                                                     | Representation authority       | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Panel            | Paints the full-height side surface and owns edge, width, border, shadow, and motion.                                  | Current source and public docs | Prominent      | FR1–FR3, FR9, FR12 |
+| Content region   | Provides full-height scrolling for caller-owned inspector content.                                                     | Current source and public docs | Prominent      | FR4, AV1           |
+| Close button     | Supplies the persistent top-trailing dismissal action when enabled.                                                    | `component:Button`             | Supporting     | FR7, AR5           |
+| Modal scrim      | At initial modal open, communicates the scrim-backed presentation and provides root-click activation behind the panel. | Current source and public docs | Supporting     | FR5, FR6, AR2      |
+| Page reveal      | Preserves overlay context on narrow viewports unless full coverage is requested.                                       | Current public docs            | Supporting     | FR3                |
 
 The root Panel carries the current `drawer` target and reflects `side`. Consumer
-docs do not yet declare canonical `usage.anatomy`, so this draft does not add a
-machine-readable theming-anatomy map or admit targets for Content region, Close
-button, or Modal scrim.
+docs do not yet declare canonical `usage.anatomy`, and no separate Drawer target is
+currently reachable for Content region, Close button, or Modal scrim. This draft
+does not decide future target qualification.
 
 ## Family and system relationships
 
@@ -219,11 +231,11 @@ button, or Modal scrim.
 - `architecture:layer-runtime` owns the distinction between native modal hosting,
   non-modal dialog presentation, top-layer behavior, and shared layer plumbing.
 - `architecture:public-component-api` owns stable API admission and compatibility.
-  Drawer remains experimental in Lab, but its DOM/ref/event composition still
-  follows the shared correctness boundary.
+  Drawer remains experimental in Lab; FR11 records current DOM/ref/event
+  reachability without making a stable compatibility decision.
 - `architecture:react-component-runtime` owns effect/resource cleanup, native-host
-  synchronization, and node/lifecycle safety. Drawer owns the visible open/close
-  outcome and focus handoff.
+  synchronization, and node/lifecycle safety. This draft records Drawer-owned
+  visible close and focus-handoff outcomes.
 - `architecture:component-theming-surface` owns target qualification and future
   anatomy mapping; this draft records the existing `drawer` target only.
 - `spec:AST-027/DEC-3` requires equivalent floating interactions to use an
@@ -232,16 +244,16 @@ button, or Modal scrim.
 
 ## Verification map
 
-| Contract        | Verification                                                              | Representative states                                        | Mutation or failure expectation                                                                  | Audit section                |
-| --------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ---------------------------- |
-| FR1–FR7         | `Drawer.test.tsx` render, mode, click, sizing, side, and control suites   | closed/open, both edges, modal/non-modal, mobile widths      | Layout reflows, a mode gains the wrong semantics, or controlled state stops matching.            | `audit:Drawer/behavior`      |
-| FR11            | Drawer source, shared BaseProps contract, and keyboard cancellation tests | ref, DOM/data/ARIA/style inputs, click and keyboard handlers | A supported root input is dropped or built-in Escape ignores documented consumer cancellation.   | `audit:Drawer/public-api`    |
-| FR8, AR1–AR5    | `Drawer.test.tsx` label, autofocus, close, and focus-return suites        | labeled modal/non-modal, autofocus target, connected opener  | Focus moves before presentation, fails to return, or a dismissal path loses its accessible name. | `audit:Drawer/accessibility` |
-| FR9, PR1–PR2    | close timing tests and `modal-close-visibility.js`                        | transition end, unrelated transition, lost-event backstop    | Native close cuts off motion, strands the host, or leaves one painted frame outside its host.    | `audit:Drawer/motion`        |
-| FR10, FR13, AR3 | Drawer LIFO tests plus `family:overlay-dismissal` adoption table          | two siblings, inner close, unmount, remaining sibling        | One Escape closes two Drawers or local ordering is mistaken for shared-family adoption.          | `audit:Drawer/layers`        |
-| FR14            | Drawer source plus `spec:AST-027` impact inventory and DEC-3              | non-modal `show()` host and page-level stack band            | The current workaround is documented as conforming or mistaken for durable component policy.     | `audit:Drawer/layers`        |
-| FR12            | source, `Drawer.doc.mjs`, and current target discovery                    | start/end Panel and inherited container context              | The root target/axis moves, padding leaks in, or docs claim an unshipped child target.           | `audit:Drawer/theming`       |
-| AR6             | side tests, reduced-motion source inspection, and Storybook RTL audit     | inline start/end under LTR and RTL; reduced motion           | A physical edge replaces logical behavior or the reduced-motion guard disappears.                | `audit:Drawer/accessibility` |
+| Contract        | Verification                                                                            | Representative states                                                                                     | Mutation or failure expectation                                                                                                                                  | Audit section                |
+| --------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| FR1–FR7         | `Drawer.test.tsx` render, initial-mode, click, sizing, side, and control suites         | closed/open, both edges, initial modal/non-modal modes, mobile widths                                     | Layout reflows; an initial mode gains the wrong semantics; uncanceled root-click or full-mobile sizing becomes nondeterministic.                                 | `audit:Drawer/behavior`      |
+| FR11            | Drawer source and focused keyboard composition/cancellation tests                       | filtered `open`, merged styling/ref, forwarded unclaimed props, owned ARIA/cancel, composed click/keydown | Current forwarding changes without review or built-in Escape ignores documented consumer cancellation.                                                           | `audit:Drawer/public-api`    |
+| FR8, AR1–AR5    | `Drawer.test.tsx` label forwarding, autofocus, close, and focus-return suites           | initial modal/non-modal modes, autofocus target, connected previously focused element                     | Focus moves before presentation, completed controlled close fails to restore focus, or label forwarding/dismissal naming breaks.                                 | `audit:Drawer/accessibility` |
+| FR9, PR1–PR2    | close timing tests, browser close-visibility guard, and presence-hook source inspection | controlled close, transform end, unrelated transition, lost-event backstop                                | Native presentation ends before visible exit, the host is stranded, cleanup paths retain resources, or an intermediate frame paints outside native presentation. | `audit:Drawer/motion`        |
+| FR10, FR13, AR3 | Drawer non-modal LIFO tests plus source and `family:overlay-dismissal` adoption table   | two non-modal siblings, Drawer-local keydown, unmount, remaining sibling                                  | One event closes two tested siblings, Drawer-local behavior is promised globally, or tested non-modal ordering is extended to mixed/nested cases.                | `audit:Drawer/layers`        |
+| FR14            | Drawer source plus `spec:AST-027` impact inventory and DEC-3                            | non-modal `show()` host and page-level stack band                                                         | The current workaround is documented as conforming or mistaken for durable component policy.                                                                     | `audit:Drawer/layers`        |
+| FR12            | source, `Drawer.doc.mjs`, and current target discovery                                  | start/end root Panel and inherited container context                                                      | Current root target/axis or padding reset changes, or the record claims an unreachable child target or decides future admission.                                 | `audit:Drawer/theming`       |
+| AR6             | side tests and source inspection plus Storybook ancestor-RTL audit                      | settled `end` placement under ancestor RTL; transform mirroring and reduced motion source-inspected       | Audited settled placement or source-inspected ancestor mirroring/reduced-motion behavior changes without corresponding evidence.                                 | `audit:Drawer/accessibility` |
 
 ## Decision log
 
