@@ -75,41 +75,6 @@ describe('ClickableCard', () => {
     expect(seen[0]).toBe(screen.getByText('Content').parentElement);
   });
 
-  it('passes the card surface as currentTarget when the accessible control is clicked', () => {
-    const seen: EventTarget[] = [];
-    render(
-      <ClickableCard
-        label="Test card"
-        onClick={e => seen.push(e.currentTarget)}>
-        <span>Content</span>
-      </ClickableCard>,
-    );
-    fireEvent.click(screen.getByRole('button', {name: 'Test card'}));
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toBe(screen.getByText('Content').parentElement);
-  });
-
-  it('runs onClick against the card surface when the accessible link is clicked and lets it cancel navigation', () => {
-    const seen: EventTarget[] = [];
-    render(
-      <ClickableCard
-        label="Nav card"
-        href="/settings"
-        onClick={e => {
-          seen.push(e.currentTarget);
-          e.preventDefault();
-        }}>
-        <span>Content</span>
-      </ClickableCard>,
-    );
-    const proceeded = fireEvent.click(
-      screen.getByRole('link', {name: 'Nav card'}),
-    );
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toBe(screen.getByText('Content').parentElement);
-    expect(proceeded).toBe(false);
-  });
-
   it('calls onClick exactly once when the surface of an href card is clicked without preventDefault', () => {
     const handleClick = vi.fn();
     render(
@@ -122,27 +87,6 @@ describe('ClickableCard', () => {
     // must not run the consumer callback a second time.
     fireEvent.click(screen.getByText('Content'));
     expect(handleClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('seals the disabled link control from the pointer', () => {
-    const {rerender} = render(
-      <ClickableCard label="Link" href="/settings">
-        Content
-      </ClickableCard>,
-    );
-    const enabledClass = screen.getByRole('link', {name: 'Link'}).className;
-    rerender(
-      <ClickableCard label="Link" href="/settings" isDisabled>
-        Content
-      </ClickableCard>,
-    );
-    const link = screen.getByRole('link', {name: 'Link'});
-    // StyleX emits a distinct class for the disabled seal; the pointer paths
-    // it closes (click, middle-click, context menu) are proven in Chromium.
-    expect(link.className).not.toBe(enabledClass);
-    expect(link.className.split(' ')).toEqual(
-      expect.arrayContaining(enabledClass.split(' ')),
-    );
   });
 
   it('does NOT call onClick when a nested button is clicked', () => {

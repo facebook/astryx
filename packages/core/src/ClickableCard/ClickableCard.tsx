@@ -20,28 +20,16 @@
  * container tokens, theming). Adds an interactive wrapper with
  * useClickableContainer for safe nested interactive elements.
  *
- * An invisible <button> or <a> inside the card provides the accessible role,
+ * A hidden <button> or <a> inside the card provides the accessible role,
  * label, and focus ring — the card surface itself has no role/tabIndex.
  * This gives screen readers a real interactive element to announce while
  * keeping the visual hover/active overlay on the full card.
- *
- * The control is not clipped to 1×1: it occupies the card's top padding
- * band, so a pointer press aimed at the element that carries the role —
- * speech input, assistive technology, automation — lands on it. It never
- * overlaps the content box, so nested controls, inputs, and text selection
- * behave exactly as they would in a plain Card.
  *
  * For static display, use Card.
  * For toggle selection, use SelectableCard.
  */
 
-import {
-  type ReactNode,
-  type MouseEvent,
-  useCallback,
-  useRef,
-  type Ref,
-} from 'react';
+import {type ReactNode, type MouseEvent, useRef, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -135,37 +123,16 @@ const styles = stylex.create({
     cursor: 'default',
     opacity: 0.5,
   },
-  // The accessible control lives in the card's top padding band — the frame,
-  // never the content box — so a pointer press aimed at the element carrying
-  // the role lands on it without covering anything a consumer rendered.
-  // Invisible, not clipped: it keeps real geometry for hit-testing and stays
-  // in the accessibility tree. `minHeight` keeps it hit-testable at padding 0.
-  control: {
+  srOnly: {
     position: 'absolute',
-    top: 0,
-    insetInline: 0,
-    height: 'var(--container-padding-block-start)',
-    minHeight: '1px',
-    margin: 0,
+    width: '1px',
+    height: '1px',
     padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
     borderWidth: 0,
-    opacity: 0,
-    cursor: {
-      default: 'inherit',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-  },
-  // The bordered variant draws its border inside the padding variable, so the
-  // real padding band is one border-width shorter; match it exactly so the
-  // control never overlaps the first row of content.
-  controlBordered: {
-    height: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,
-  },
-  // A disabled link card keeps `href` for its role. Sealing the control from
-  // the pointer covers every path that would follow it — click, middle-click,
-  // context menu, drag — and the surface runs nothing while disabled.
-  controlDisabled: {
-    pointerEvents: 'none',
   },
 });
 
@@ -258,9 +225,9 @@ export interface ClickableCardProps extends BaseProps {
  * links, inputs) work independently — clicking them does NOT trigger
  * the card's onClick or navigation.
  *
- * An invisible <button> or <a> in the card's top padding band provides the
- * accessible role and label and receives pointer activation. The card
- * surface is a plain <div> — no role or tabIndex on the container.
+ * A visually-hidden <button> or <a> inside the card provides the
+ * accessible role and label. The card surface is a plain <div> —
+ * no role or tabIndex on the container.
  *
  * @compositionHint Use for cards that navigate to a detail page or trigger an action.
  * For toggle selection cards, use SelectableCard instead.
@@ -315,42 +282,6 @@ export function ClickableCard({
     disabled: isDisabled,
   });
 
-  // A press that lands on the role-bearing control itself — a pointer aimed
-  // at the element that is the button/link, or Enter/Space on it — is still a
-  // card activation. Run the consumer's callback here, on the surface, so
-  // `currentTarget` is the card and `preventDefault()` cancels the control's
-  // own default action (link navigation); the container hook would otherwise
-  // treat the control as a nested interactive element and skip the callback.
-  //
-  // A surface click on an href card is proxied by the hook to `link.click()`,
-  // and that synthetic click bubbles back through this handler while the hook
-  // is still running. It is the same activation, already delivered to the
-  // consumer, so it is ignored — otherwise `onClick` would run twice.
-  const proxyingRef = useRef(false);
-  const handleClick = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      if (proxyingRef.current) {
-        return;
-      }
-      const control = interactiveRef.current;
-      if (
-        control != null &&
-        event.target instanceof Node &&
-        control.contains(event.target)
-      ) {
-        onClickProp?.(event);
-        return;
-      }
-      proxyingRef.current = true;
-      try {
-        onClick(event);
-      } finally {
-        proxyingRef.current = false;
-      }
-    },
-    [onClick, onClickProp],
-  );
-
   const handleMouseUp = onMouseUpProp
     ? (e: MouseEvent<HTMLElement>) => {
         onMouseUp(e);
@@ -391,7 +322,7 @@ export function ClickableCard({
           xstyleProp,
         ] as unknown as StyleXStyles
       }
-      onClick={!isDisabled ? handleClick : undefined}
+      onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? handleMouseUp : undefined}
       {...props}>
       {isLink ? (
@@ -402,11 +333,7 @@ export function ClickableCard({
           aria-label={label}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : 0}
-          {...stylex.props(
-            styles.control,
-            hasBorder && styles.controlBordered,
-            isDisabled && styles.controlDisabled,
-          )}
+          {...stylex.props(styles.srOnly)}
         />
       ) : (
         <button
@@ -414,7 +341,8 @@ export function ClickableCard({
           type="button"
           aria-label={label}
           disabled={isDisabled}
-          {...stylex.props(styles.control, hasBorder && styles.controlBordered)}
+          onClick={onClickProp}
+          {...stylex.props(styles.srOnly)}
         />
       )}
       {children}
