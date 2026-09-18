@@ -614,14 +614,14 @@ function NestedEditor({
 // Value editor cell
 // =============================================================================
 
-// Editor identity is the (field, operator) it edits. Keying on it remounts the
-// editor — and drops the Tokenizer's open menu — when either changes.
+// A field switch must replace the editor, not update it in place: a reused
+// editor keeps its open menu and old results.
 function valueEditorKey(filter: {field: string; operator?: string}): string {
   return `${filter.field}\u0000${filter.operator ?? ''}`;
 }
 
-// Keyed on field + operator, so "mount" covers a field switch as well as the
-// popover opening; the focus handoff below runs for both.
+// Keyed on field + operator, so this also mounts on a field switch, not just
+// when the popover opens; the focus handoff below runs for both.
 function ValueEditorCell(props: PowerSearchValueEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
 

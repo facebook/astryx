@@ -543,9 +543,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // be re-shown.
   const resultsGenRef = useRef(0);
 
-  // A replaced source ends the previous one's search lifetime. Done during
-  // render, not in an effect: the swap is a fact of this render, and the
-  // counter and cancel are both idempotent if React discards the pass.
+  // Results still arriving from a replaced source must not land in the new
+  // one's menu.
   const prevSearchSourceRef = useRef(searchSource);
   if (prevSearchSourceRef.current !== searchSource) {
     prevSearchSourceRef.current.cancel?.();
