@@ -23,6 +23,7 @@ import {
   HeroReelDots,
   useHeroReelIsDark,
 } from './_landing/hero/HeroThemeReel';
+import {HeroPinRail} from './_landing/hero/HeroPinRail';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
 import {BlogShowcase} from './_landing/BlogShowcase';
@@ -39,24 +40,26 @@ const styles = stylex.create({
     // Shared by the nav→wordmark gap and the text→cards gap so they match.
     '--hero-gap': 'calc(var(--spacing-12) * 2)',
   },
-  // Desktop: fixed for pin-and-cover (heroSpacer reserves its height). Narrow:
-  // in flow — the mobile hero is taller than the viewport, so pinning stranded
-  // the lower collage below the fold.
+  // Desktop: pinned for pin-and-cover (heroSpacer reserves its height, and
+  // HeroPinRail bounds the pin to heroScope). Narrow: in flow — the mobile hero
+  // is taller than the viewport, so pinning stranded the lower collage below
+  // the fold.
   heroContent: {
     position: {
       default: 'relative',
-      '@media (min-width: 1024px)': 'fixed',
+      '@media (min-width: 1024px)': 'sticky',
     },
-    // top offset only matters when fixed; in flow it would leave a gap.
+    // top offset only matters when pinned; in flow it would leave a gap.
     top: {
       default: 0,
       '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
     },
-    left: 0,
-    right: 0,
-    // Desktop: fixed band, centered (cards are a separate overlap layer).
-    // Narrow: auto height (sizes to text + collage); a ResizeObserver applies it
-    // to heroSpacer so the showcase starts right after the cards.
+    // The rail is pointer-events: none so it can't swallow hover over the hero
+    // gutters; the content column itself has to stay interactive (CTAs, links).
+    pointerEvents: 'auto',
+    // Desktop: fixed-height band, centered (cards are a separate overlap
+    // layer). Narrow: auto height (sizes to text + collage); a ResizeObserver
+    // applies it to heroSpacer so the showcase starts right after the cards.
     height: {
       default: 'auto',
       '@media (min-width: 1024px)': `calc(${HERO_BAND_HEIGHT}px - var(--appshell-header-height, 0px))`,
@@ -68,7 +71,7 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 'center',
     },
     // Narrow: in flow under the transparent nav, so pad by nav height to clear
-    // it. Desktop is fixed + centered, so none.
+    // it. Desktop is pinned + centered, so none.
     paddingBlockStart: {
       default: 'calc(var(--appshell-header-height, 0px) + var(--spacing-8))',
       '@media (min-width: 768px)':
@@ -81,11 +84,13 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-6'],
-    // Decorative-position layer; never intercept clicks outside its actual
-    // content (the buttons/links re-enable pointer events on themselves).
+    // Above the hero's decorative layers but below the showcase surface, which
+    // scrolls over it.
     zIndex: 0,
   },
-  // Reserves the fixed hero's height (desktop); 0 on narrow (hero is in flow).
+  // Reserves the pinned hero's height (desktop); 0 on narrow (hero is in flow).
+  // The pin rail is absolute, so it adds no height of its own — this is still
+  // the only thing holding the band open.
   heroSpacer: {
     height: {
       default: 0,
@@ -344,9 +349,13 @@ export default function HomePage() {
       <HeroReelProvider>
         {/* Desktop overlap cards layer (the gutters). */}
         <HeroReelCards />
-        {/* Reserves the fixed hero's height so the showcase starts below it. */}
+        {/* Reserves the pinned hero's height so the showcase starts below it. */}
         <div {...stylex.props(styles.heroSpacer)} aria-hidden="true" />
-        <HeroContent contentRef={heroContentRef} />
+        {/* Rail bounds the pin to heroScope so the hero can be sticky, not
+            fixed — a fixed hero paints in the overscroll gap. */}
+        <HeroPinRail>
+          <HeroContent contentRef={heroContentRef} />
+        </HeroPinRail>
       </HeroReelProvider>
       <VStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
