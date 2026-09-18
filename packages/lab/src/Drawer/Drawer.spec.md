@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 4
+template_version: 5
 kind: component
 id: component:Drawer
 authority: draft
@@ -32,6 +32,20 @@ system_specs: [spec:AST-027/DEC-3]
 ---
 
 # Drawer component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None. `Drawer` and `DrawerProps` remain root exports from `@astryxdesign/lab`; `isOpen`, `onOpenChange`, `label`, and `children` are required, with existing `BaseProps<HTMLDialogElement>` composition and optional presentation and sizing controls.                                                          |
+| Behavior                | Caller-controlled, viewport-relative, full-height logical-side overlay; defaults are inline end, 400px, modal with scrim, a 56px mobile page reveal, and the built-in close action. The last-opened sibling owns Escape, while exit retains the host, current children, and opened edge until motion completes. |
+| End-user impact         | None from this documentation-only record; current modal/non-modal semantics, focus return, dismissal, motion, sizing, and sibling ordering remain unchanged.                                                                                                                                                    |
+| Builder impact          | None; there is no migration or new caller choice. Keep state and content caller-owned, preserve content through exit, and compose stacked Drawers as siblings.                                                                                                                                                  |
+| Compatibility/readiness | Additive documentation with no runtime or default change; Drawer remains experimental in Lab, this contract remains `draft`, current behavior is verified, and FR13–FR14 remain named family/top-layer conformance gaps.                                                                                        |
+| Review checks           | Reject regional, docked, or block-axis models; independent modality and scrim axes; nested-Drawer stacking; or claims that the local registry and non-modal `show()` path satisfy shared dismissal and top-layer rules.                                                                                         |
+| Governing rules         | `component:Drawer` FR1–FR14 and AR1–AR6; `family:overlay-dismissal`; `architecture:layer-runtime`, `architecture:public-component-api`, `architecture:react-component-runtime`, and `architecture:component-theming-surface`; `spec:AST-027/DEC-3`.                                                             |
+
+This table is a review projection; the body below is authoritative.
 
 ## Intent
 
