@@ -33,14 +33,23 @@ import {useTranslator} from '../i18n';
 const styles = stylex.create({
   container: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
-  // Compensate for the icon button's visual padding on the actions area
-  actionsCompensation: {
-    marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  // Close button is icon-only: pull its inline edge back so the glyph optically
+  // aligns with the header padding, and top-align it so it tracks the title's
+  // first line rather than the centre of a two-line title block.
+  closeButton: {
+    alignSelf: 'flex-start',
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
+  // Shrink the control's margin box back to its glyph box so an icon-only
+  // button does not inflate the header. Omitted when a single-line title sits
+  // beside labelled actions: there the centred action row already sets the
+  // header height and the close button must stay level with it.
+  closeCompensation: {
+    marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   titleWrapper: {
     display: 'flex',
@@ -193,32 +202,30 @@ export function DialogHeader({
             </Text>
           )}
         </div>
-        {(endContent || onOpenChange) && (
-          <div
-            {...stylex.props(
-              styles.actions,
-              onOpenChange && styles.actionsCompensation,
-            )}>
-            {endContent}
-            {onOpenChange && (
-              <Button
-                variant="ghost"
-                label={t('@astryx.dialog.close')}
-                tooltip={t('@astryx.dialog.close')}
-                icon={
-                  <Icon
-                    icon="close"
-                    color="inherit"
-                    {...themeProps('dialog-header-close-icon')}
-                  />
-                }
-                onClick={() => {
-                  onOpenChange?.(false);
-                }}
-                isIconOnly
+        {endContent && (
+          <div {...stylex.props(styles.actions)}>{endContent}</div>
+        )}
+        {onOpenChange && (
+          <Button
+            variant="ghost"
+            label={t('@astryx.dialog.close')}
+            tooltip={t('@astryx.dialog.close')}
+            icon={
+              <Icon
+                icon="close"
+                color="inherit"
+                {...themeProps('dialog-header-close-icon')}
               />
-            )}
-          </div>
+            }
+            onClick={() => {
+              onOpenChange?.(false);
+            }}
+            xstyle={[
+              styles.closeButton,
+              (!endContent || subtitle != null) && styles.closeCompensation,
+            ]}
+            isIconOnly
+          />
         )}
       </div>
     </LayoutHeader>
