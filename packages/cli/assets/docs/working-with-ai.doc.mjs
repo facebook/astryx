@@ -178,11 +178,24 @@ astryx docs tokens --dense`,
         {
           type: 'code',
           lang: 'json',
-          label: 'Claude Code (.mcp.json), Windsurf, Cline',
+          label: 'Claude Code (.mcp.json), Windsurf',
           code: `{
   "mcpServers": {
     "xds": {
       "type": "http",
+      "url": "https://astryx.atmeta.com/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'Cline (cline_mcp_settings.json) - type is streamableHttp',
+          code: `{
+  "mcpServers": {
+    "xds": {
+      "type": "streamableHttp",
       "url": "https://astryx.atmeta.com/mcp"
     }
   }
