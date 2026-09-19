@@ -357,7 +357,7 @@
   },
   "@astryx.checkboxList.item.checkbox": {
     "defaultMessage": "Afkrydsningsfelt",
-    "description": "Screen-reader-only last-ditch fallback name for a checkbox inside a list item when no label is provided. Should almost never render — consumers should supply a real label."
+    "description": "Localized hidden text used internally when a rich visible label names the checkbox through aria-labelledby. It does not become the computed name; callers must provide aria-label when rich content has no text."
   },
   "@astryx.commandPalette.emptySearch": {
     "defaultMessage": "Ingen resultater",
