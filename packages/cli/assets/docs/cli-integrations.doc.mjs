@@ -90,7 +90,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Edit the generated theme and guide files before publishing. Palette generation writes an importable TypeScript candidate and a reproducibility receipt; import the candidate from the theme and list both nested files in that theme catalog entry. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source file or files allowlist entry fails before a consumer sees it.',
+          text: 'Edit the generated theme descriptor, source, and guide files before publishing. Palette generation writes an importable TypeScript candidate and a reproducibility receipt inside the theme directory; that whole directory is copied and packed as one unit. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source or descriptor fails before a consumer sees it.',
         },
         {
           type: 'code',
@@ -100,7 +100,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies every file listed by the selected catalog entry, including nested token modules, and refuses to overwrite existing project files.',
+          text: "The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies the selected theme's complete directory, including its typed `.doc.mjs`, nested token modules, and receipts, and refuses to overwrite existing project files.",
         },
       ],
     },
@@ -129,7 +129,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`.',
+          text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a strongly typed `.doc.mjs` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.mjs`. Released `.doc.ts` and `.doc.js` inputs remain readable for compatibility, but new authoring uses `.doc.mjs`.',
         },
         {
           type: 'prose',
@@ -138,7 +138,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n};",
+          code: "// AcmeCarousel.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  displayName: 'Acme Carousel',\n  usage: {description: 'A carousel that cycles through slides.'},\n  props: [],\n};",
         },
       ],
     },
@@ -148,7 +148,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.",
+          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a strongly typed plain object stamped with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) in a same-stem `.doc.mjs`, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.doc.mjs`. Released `.template.*` files remain readable for compatibility.",
         },
         {
           type: 'prose',
@@ -157,7 +157,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeLandingPage.template.ts\nexport default {\n  type: 'page',\n  // name, description, preview, ...\n};",
+          code: "// AcmeLandingPage.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */\nexport default {\n  type: 'page',\n  name: 'acme-landing-page',\n  displayName: 'Acme Landing Page',\n  description: 'A complete product landing page.',\n};",
         },
         {
           type: 'prose',
@@ -171,12 +171,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Point the integration file's `docs` field at a directory of reference docs and every `{topic}.doc.{ts,mjs,js}` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object stamped `type: 'generic'`, the same shape core's own topics use.",
+          text: "Point the integration file's `docs` field at a directory of reference docs and every strongly typed `{topic}.doc.mjs` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object stamped `type: 'generic'`, the same shape core's own topics use.",
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// docs/deploying.doc.ts\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  category: 'guide',\n  sections: [\n    {title: 'Overview', content: [{type: 'prose', text: '...'}]},\n  ],\n};",
+          code: "// docs/deploying.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  category: 'guide',\n  sections: [\n    {title: 'Overview', content: [{type: 'prose', text: '...'}]},\n  ],\n};",
         },
         {
           type: 'prose',
@@ -210,21 +210,21 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "A theme contribution is editable `defineTheme` source, not compiled CSS. Add `themes: './themes'` to `astryx.integration.*`, place the source under one directory per slug, and list it in `themes/manifest.json`. If package.json has a `files` allowlist, include both the integration manifest and the themes root; packages with no allowlist already publish both. Do not add an `exports` map only for theme discovery.",
+          text: "A theme contribution is editable `defineTheme` source, not compiled CSS. Add `themes: './themes'` to `astryx.integration.*`. Give each lower-kebab slug its own directory containing a theme source and mandatory same-stem, strongly typed `.doc.mjs`. If package.json has a `files` allowlist, include both the integration manifest and the themes root; packages with no allowlist already publish both. Do not add an `exports` map only for theme discovery.",
         },
         {
           type: 'code',
           lang: 'text',
-          code: 'themes/\n  manifest.json\n  ocean/\n    oceanTheme.ts',
+          code: 'themes/\n  ocean/\n    oceanTheme.ts\n    oceanTheme.doc.mjs\n    tokens/\n      ocean.palette.ts',
         },
         {
           type: 'prose',
-          text: "The root catalog uses the same entry contract as Astryx's bundled themes: `slug`, `displayName`, `description`, `maintained`, `entry`, `exportName`, and `files`. `entry` and every file are relative to `themes/<slug>/`; `exportName` identifies a named runtime export in the entry source. Astryx parses that source without executing it, requires every local static import and re-export to name a file in `files`, and rejects missing or type-only exports.",
+          text: '`ThemeDoc` owns `name` (the slug), `displayName`, `description`, and `maintained`. The descriptor/source stem supplies the source entry and required named runtime export. Astryx parses the source without executing it, confines every local static import and re-export to the theme directory, copies that complete directory, and rejects missing or type-only exports.',
         },
         {
           type: 'code',
-          lang: 'json',
-          code: '{\n  "version": 1,\n  "themes": [{\n    "slug": "ocean",\n    "displayName": "Ocean",\n    "description": "Ocean theme.",\n    "maintained": true,\n    "entry": "oceanTheme.ts",\n    "exportName": "oceanTheme",\n    "files": ["oceanTheme.ts"]\n  }]\n}',
+          lang: 'javascript',
+          code: "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {\n  type: 'theme',\n  name: 'ocean',\n  displayName: 'Ocean',\n  description: 'Ocean theme.',\n  maintained: true,\n};",
         },
         {
           type: 'prose',

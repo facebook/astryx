@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Theme catalog discovery shared by Project, theme list/add, and
+ * @file Theme descriptor discovery shared by Project, theme list/add, and
  * integration validation.
  *
- * A theme root uses the same layout as the CLI's generated bundle:
- * `manifest.json` beside one directory per slug. Manifest `entry` and `files`
- * paths are relative to that slug directory and are confined there before any
- * caller reads or copies them.
+ * A theme root contains one directory per lower-kebab slug. Each directory has
+ * a theme source and mandatory same-stem `.doc.mjs`; the directory is the
+ * complete copy and pack boundary. Descriptor metadata is parsed without
+ * executing theme source.
  *
  * @input a bundled or integration-owned theme root
  * @output validated source-theme records with package ownership
@@ -16,13 +16,14 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import jscodeshift from 'jscodeshift';
+import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 
 export const BUNDLED_THEME_PACKAGE = '@astryxdesign/cli';
 export const THEMES_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'themes');
-export const THEME_MANIFEST_BASENAME = 'manifest.json';
-export const MANIFEST_PATH = path.join(THEMES_DIR, THEME_MANIFEST_BASENAME);
+export const THEME_DOC_SUFFIX = '.doc.mjs';
 
 /**
  * @typedef {object} DiscoveredTheme
@@ -36,17 +37,8 @@ export const MANIFEST_PATH = path.join(THEMES_DIR, THEME_MANIFEST_BASENAME);
  * @property {string} package
  * @property {string} sourceDir absolute directory holding this theme's files
  * @property {boolean} bundled
+ * @property {string} docPath absolute descriptor path
  */
-
-/** @param {unknown} value @param {string} field @param {string} owner */
-function requiredString(value, field, owner) {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(
-      `Theme catalog for ${owner} has an invalid ${field}; expected a non-empty string.`,
-    );
-  }
-  return value;
-}
 
 /**
  * Resolve one authored relative path without allowing POSIX or Windows escape
@@ -78,6 +70,23 @@ function resolveThemePath(value, root, label) {
 const THEME_MODULE_EXTENSIONS = ['.mjs', '.js', '.mts', '.ts', '.tsx', '.jsx'];
 
 /**
+ * @param {unknown} specifier
+ * @param {string} fromFile
+ * @returns {string[]}
+ */
+function localThemeModuleCandidates(specifier, fromFile) {
+  if (typeof specifier !== 'string' || !specifier.startsWith('.')) return [];
+  const base = path.resolve(path.dirname(fromFile), specifier);
+  return [
+    base,
+    ...THEME_MODULE_EXTENSIONS.map(extension => `${base}${extension}`),
+    ...THEME_MODULE_EXTENSIONS.map(extension =>
+      path.join(base, `index${extension}`),
+    ),
+  ];
+}
+
+/**
  * Resolve a local theme module only when the target is a listed file confined
  * to the theme directory.
  * @param {unknown} specifier
@@ -86,15 +95,7 @@ const THEME_MODULE_EXTENSIONS = ['.mjs', '.js', '.mts', '.ts', '.tsx', '.jsx'];
  * @param {Set<string>} allowedFiles
  */
 function resolveLocalThemeModule(specifier, fromFile, themeDir, allowedFiles) {
-  if (typeof specifier !== 'string' || !specifier.startsWith('.')) return null;
-  const base = path.resolve(path.dirname(fromFile), specifier);
-  const candidates = [
-    base,
-    ...THEME_MODULE_EXTENSIONS.map(extension => `${base}${extension}`),
-    ...THEME_MODULE_EXTENSIONS.map(extension =>
-      path.join(base, `index${extension}`),
-    ),
-  ];
+  const candidates = localThemeModuleCandidates(specifier, fromFile);
   for (const candidate of candidates) {
     try {
       if (!fs.statSync(candidate).isFile()) continue;
@@ -111,6 +112,7 @@ function resolveLocalThemeModule(specifier, fromFile, themeDir, allowedFiles) {
 }
 
 class ThemeModuleReferenceError extends Error {}
+class ThemeRuntimeExportError extends Error {}
 
 /**
  * Validate that every local static dependency is copied with the theme.
@@ -120,6 +122,7 @@ class ThemeModuleReferenceError extends Error {}
  * @param {Set<string>} allowedFiles
  * @param {string} owner
  * @param {string} entry
+ * @param {string} descriptorPath
  * @param {Set<string>} [seen]
  */
 function validateThemeModuleGraph(
@@ -129,6 +132,7 @@ function validateThemeModuleGraph(
   allowedFiles,
   owner,
   entry,
+  descriptorPath,
   seen = new Set(),
 ) {
   if (seen.has(file)) return;
@@ -179,8 +183,19 @@ function validateThemeModuleGraph(
       allowedFiles,
     );
     if (!target) {
+      const referencesDescriptor = localThemeModuleCandidates(
+        specifier,
+        file,
+      ).some(
+        candidate => path.resolve(candidate) === path.resolve(descriptorPath),
+      );
+      if (referencesDescriptor) {
+        throw new ThemeModuleReferenceError(
+          `Theme entry "${entry}" from ${owner} must not import its descriptor "${path.basename(descriptorPath)}". Theme descriptors are authoring metadata, not runtime modules.`,
+        );
+      }
       throw new ThemeModuleReferenceError(
-        `Theme catalog for ${owner} entry "${entry}" references local module "${specifier}" that must resolve to a listed file inside the theme directory.`,
+        `Theme entry "${entry}" from ${owner} references local module "${specifier}" that must resolve to a file inside the theme directory.`,
       );
     }
     if (THEME_MODULE_EXTENSIONS.includes(path.extname(target))) {
@@ -191,6 +206,7 @@ function validateThemeModuleGraph(
         allowedFiles,
         owner,
         entry,
+        descriptorPath,
         seen,
       );
     }
@@ -428,172 +444,322 @@ function moduleExportsName(
 }
 
 /**
- * Read and validate one theme catalog.
- * @param {string} themeRoot absolute catalog root
- * @param {string} owner package that owns the catalog
+ * Convert one static literal used by ThemeDoc. Theme descriptors intentionally
+ * contain data only so synchronous bundled-theme APIs stay synchronous.
+ * @param {any} node
+ * @param {string} label
+ * @returns {string | boolean}
+ */
+function staticThemeValue(node, label) {
+  if (node?.type === 'StringLiteral' || typeof node?.value === 'string') {
+    return node.value;
+  }
+  if (node?.type === 'BooleanLiteral' || typeof node?.value === 'boolean') {
+    return node.value;
+  }
+  throw new Error(
+    `${label} must use static string and boolean values in its default export.`,
+  );
+}
+
+/**
+ * Read one strongly typed theme descriptor without executing it.
+ * @param {string} docPath
+ * @param {string} owner
+ * @returns {import('../../authoring/doctypes/theme/type').ThemeDoc}
+ */
+function readThemeDoc(docPath, owner) {
+  const label = `Theme descriptor ${path.basename(docPath)} for ${owner}`;
+  let statements;
+  const source = fs.readFileSync(docPath, 'utf-8');
+  if (
+    !/@type\s*\{\s*import\(['"]@astryxdesign\/cli\/authoring['"]\)\.ThemeDoc\s*\}/u.test(
+      source,
+    )
+  ) {
+    throw new Error(
+      `${label} must declare its public ThemeDoc type from @astryxdesign/cli/authoring.`,
+    );
+  }
+  try {
+    const j = jscodeshift.withParser('babel');
+    statements = j(source).find(j.Program).nodes()[0]?.body;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${label} could not be parsed: ${message}`, {cause: error});
+  }
+
+  const defaults = (statements ?? []).filter(
+    (/** @type {any} */ statement) =>
+      statement.type === 'ExportDefaultDeclaration',
+  );
+  const unsupported = (statements ?? []).filter(
+    (/** @type {any} */ statement) =>
+      statement.type !== 'ExportDefaultDeclaration' &&
+      statement.type !== 'EmptyStatement',
+  );
+  if (unsupported.length > 0) {
+    throw new Error(
+      `${label} must contain only its static default-exported ThemeDoc object.`,
+    );
+  }
+  if (
+    defaults.length !== 1 ||
+    defaults[0].declaration?.type !== 'ObjectExpression'
+  ) {
+    throw new Error(`${label} must default-export one static ThemeDoc object.`);
+  }
+
+  /** @type {Record<string, string | boolean>} */
+  const value = {};
+  for (const property of defaults[0].declaration.properties ?? []) {
+    if (property.type !== 'ObjectProperty' && property.type !== 'Property') {
+      throw new Error(`${label} must contain only static object properties.`);
+    }
+    if (
+      property.computed ||
+      property.method ||
+      property.kind === 'get' ||
+      property.kind === 'set'
+    ) {
+      throw new Error(`${label} must contain only static object properties.`);
+    }
+    const key =
+      property.key?.type === 'Identifier'
+        ? property.key.name
+        : typeof property.key?.value === 'string'
+          ? property.key.value
+          : null;
+    if (!key) {
+      throw new Error(`${label} has an invalid property name.`);
+    }
+    if (Object.prototype.hasOwnProperty.call(value, key)) {
+      throw new Error(`${label} declares "${key}" more than once.`);
+    }
+    value[key] = staticThemeValue(property.value, label);
+  }
+  return parseTheme(value, label);
+}
+
+/**
+ * Recursively enumerate the files owned by one theme directory. The complete
+ * directory, including its descriptor, is copied and checked as one unit.
+ * @param {string} themeDir
+ * @param {string} docPath
+ * @param {string} slug
+ * @returns {string[]} POSIX paths relative to themeDir
+ */
+function enumerateThemeFiles(themeDir, docPath, slug) {
+  /** @type {string[]} */
+  const files = [];
+  /** @param {string} directory */
+  function walk(directory) {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      const full = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) {
+        throw new Error(
+          `Theme "${slug}" contains symlink "${path.relative(themeDir, full)}"; theme files must be regular files inside the theme directory.`,
+        );
+      }
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const confined = assertWithin(full, themeDir, {
+        allowAbsolute: true,
+        label: `theme "${slug}" file`,
+      });
+      if (entry.name.endsWith(THEME_DOC_SUFFIX) && confined !== docPath) {
+        throw new Error(
+          `Theme "${slug}" contains more than one .doc.mjs descriptor.`,
+        );
+      }
+      files.push(path.relative(themeDir, confined).split(path.sep).join('/'));
+    }
+  }
+  walk(themeDir);
+  return files.sort();
+}
+
+/**
+ * Discover and validate one theme root.
+ * @param {string} themeRoot absolute root containing one directory per slug
+ * @param {string} owner package that owns the root
  * @param {{bundled?: boolean}} [options]
  * @returns {DiscoveredTheme[]}
  */
-export function discoverThemeCatalog(themeRoot, owner, {bundled = false} = {}) {
+export function discoverThemeDirectory(
+  themeRoot,
+  owner,
+  {bundled = false} = {},
+) {
   if (!fs.existsSync(themeRoot) || !fs.statSync(themeRoot).isDirectory()) {
     throw new Error(
       `Declared themes root does not exist on disk: ${themeRoot}`,
     );
   }
-
-  const manifestPath = resolveThemePath(
-    THEME_MANIFEST_BASENAME,
-    themeRoot,
-    'theme catalog manifest',
-  );
-  if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) {
+  if (fs.existsSync(path.join(themeRoot, 'manifest.json'))) {
     throw new Error(
-      `Theme root for ${owner} must contain ${THEME_MANIFEST_BASENAME}.`,
+      `Theme root for ${owner} contains unsupported manifest.json. Give every theme a strongly typed same-stem .doc.mjs descriptor instead.`,
     );
-  }
-
-  /** @type {unknown} */
-  let parsed;
-  try {
-    parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Theme catalog for ${owner} is unreadable: ${message}`, {
-      cause: error,
-    });
-  }
-
-  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`Theme catalog for ${owner} must be a JSON object.`);
-  }
-  const catalog = /** @type {{version?: unknown, themes?: unknown}} */ (parsed);
-  if (catalog.version !== 1) {
-    throw new Error(`Theme catalog for ${owner} must use version 1.`);
-  }
-  if (!Array.isArray(catalog.themes)) {
-    throw new Error(`Theme catalog for ${owner} must contain a themes array.`);
   }
 
   /** @type {DiscoveredTheme[]} */
   const themes = [];
   const slugs = new Set();
-  for (const [index, raw] of catalog.themes.entries()) {
-    if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
-      throw new Error(
-        `Theme catalog for ${owner} has an invalid entry at index ${index}.`,
-      );
-    }
-    const entry = /** @type {Record<string, unknown>} */ (raw);
-    const slug = requiredString(entry.slug, `themes[${index}].slug`, owner);
+  const rootEntries = fs.readdirSync(themeRoot, {withFileTypes: true});
+  const rootDescriptor = rootEntries.find(
+    entry => entry.isFile() && entry.name.endsWith(THEME_DOC_SUFFIX),
+  );
+  if (rootDescriptor) {
+    throw new Error(
+      `Theme descriptor "${rootDescriptor.name}" for ${owner} must be inside a lower-kebab theme directory.`,
+    );
+  }
+  const rootSymlink = rootEntries.find(entry => entry.isSymbolicLink());
+  if (rootSymlink) {
+    throw new Error(
+      `Theme root for ${owner} contains symlink "${rootSymlink.name}"; theme directories must stay inside the declared root.`,
+    );
+  }
+  const directories = rootEntries
+    .filter(entry => entry.isDirectory())
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  for (const directory of directories) {
+    const slug = directory.name;
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(slug)) {
       throw new Error(
-        `Theme catalog for ${owner} has invalid slug "${slug}"; use lowercase kebab-case starting with a letter.`,
+        `Theme root for ${owner} has invalid directory "${slug}"; use lowercase kebab-case starting with a letter.`,
       );
     }
     const normalizedSlug = slug.toLowerCase();
     if (slugs.has(normalizedSlug)) {
       throw new Error(
-        `Theme catalog for ${owner} declares duplicate slug "${slug}".`,
+        `Theme root for ${owner} declares duplicate slug "${slug}".`,
       );
     }
     slugs.add(normalizedSlug);
-
-    const displayName = requiredString(
-      entry.displayName,
-      `theme "${slug}" displayName`,
-      owner,
-    );
-    if (typeof entry.description !== 'string') {
-      throw new Error(
-        `Theme catalog for ${owner} has an invalid description for "${slug}".`,
-      );
-    }
-    if (typeof entry.maintained !== 'boolean') {
-      throw new Error(
-        `Theme catalog for ${owner} has an invalid maintained flag for "${slug}".`,
-      );
-    }
-    const entryFile = requiredString(
-      entry.entry,
-      `theme "${slug}" entry`,
-      owner,
-    );
-    const exportName = requiredString(
-      entry.exportName,
-      `theme "${slug}" exportName`,
-      owner,
-    );
-    if (!/^[$A-Z_a-z][$\w]*$/u.test(exportName)) {
-      throw new Error(
-        `Theme catalog for ${owner} has invalid exportName "${exportName}".`,
-      );
-    }
-    if (!Array.isArray(entry.files) || entry.files.length === 0) {
-      throw new Error(
-        `Theme catalog for ${owner} theme "${slug}" must list at least one file.`,
-      );
-    }
-
-    const files = entry.files.map((file, fileIndex) =>
-      requiredString(file, `theme "${slug}" files[${fileIndex}]`, owner),
-    );
-    if (new Set(files).size !== files.length) {
-      throw new Error(
-        `Theme catalog for ${owner} theme "${slug}" lists a file more than once.`,
-      );
-    }
-    if (!files.includes(entryFile)) {
-      throw new Error(
-        `Theme catalog for ${owner} theme "${slug}" must include entry "${entryFile}" in files.`,
-      );
-    }
-    if (!/\.(?:ts|tsx|mjs|js)$/u.test(entryFile)) {
-      throw new Error(
-        `Theme catalog for ${owner} theme "${slug}" entry must be source code.`,
-      );
-    }
 
     const sourceDir = resolveThemePath(
       slug,
       themeRoot,
       `theme "${slug}" directory`,
     );
-    if (!fs.existsSync(sourceDir) || !fs.statSync(sourceDir).isDirectory()) {
+    const docs = fs
+      .readdirSync(sourceDir, {withFileTypes: true})
+      .filter(entry => entry.isFile() && entry.name.endsWith(THEME_DOC_SUFFIX))
+      .map(entry => entry.name);
+    if (docs.length !== 1) {
       throw new Error(
-        `Theme catalog for ${owner} is missing directory "${slug}".`,
+        `Theme "${slug}" for ${owner} must contain exactly one same-stem .doc.mjs descriptor; found ${docs.length}.`,
       );
     }
-    for (const file of files) {
-      const source = resolveThemePath(file, sourceDir, `theme "${slug}" file`);
-      if (!fs.existsSync(source) || !fs.statSync(source).isFile()) {
-        throw new Error(
-          `Theme catalog for ${owner} theme "${slug}" is missing file "${file}".`,
+
+    const docPath = resolveThemePath(
+      docs[0],
+      sourceDir,
+      `theme "${slug}" descriptor`,
+    );
+    const exportName = docs[0].slice(0, -THEME_DOC_SUFFIX.length);
+    if (!/^[$A-Z_a-z][$\w]*$/u.test(exportName)) {
+      throw new Error(
+        `Theme "${slug}" descriptor stem "${exportName}" is not a valid runtime export name.`,
+      );
+    }
+    const sourceCandidates = THEME_MODULE_EXTENSIONS.map(extension =>
+      path.join(sourceDir, `${exportName}${extension}`),
+    ).filter(
+      candidate => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+    );
+    if (sourceCandidates.length !== 1) {
+      throw new Error(
+        `Theme "${slug}" for ${owner} must contain exactly one same-stem source for ${docs[0]}; found ${sourceCandidates.length}.`,
+      );
+    }
+
+    const doc = readThemeDoc(docPath, owner);
+    if (doc.name !== slug) {
+      throw new Error(
+        `Theme descriptor ${docs[0]} names "${doc.name}" but its directory is "${slug}".`,
+      );
+    }
+    const entryPath = sourceCandidates[0];
+    const entry = path.basename(entryPath);
+    const files = enumerateThemeFiles(sourceDir, docPath, slug);
+    const allowedFiles = new Set(
+      files
+        .map(file => resolveThemePath(file, sourceDir, `theme "${slug}" file`))
+        .filter(file => file !== docPath),
+    );
+
+    try {
+      validateThemeModuleGraph(
+        entryPath,
+        jscodeshift,
+        sourceDir,
+        allowedFiles,
+        owner,
+        entry,
+        docPath,
+      );
+      if (
+        !moduleExportsName(
+          entryPath,
+          exportName,
+          jscodeshift,
+          sourceDir,
+          allowedFiles,
+        )
+      ) {
+        throw new ThemeRuntimeExportError(
+          `Theme "${slug}" for ${owner} entry "${entry}" does not export "${exportName}".`,
         );
       }
+    } catch (error) {
+      if (
+        error instanceof ThemeModuleReferenceError ||
+        error instanceof ThemeRuntimeExportError
+      ) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Theme "${slug}" for ${owner} entry "${entry}" could not be parsed: ${message}`,
+        {cause: error},
+      );
     }
 
     themes.push({
       slug,
-      displayName,
-      description: entry.description,
-      maintained: entry.maintained,
-      entry: entryFile,
+      displayName: doc.displayName,
+      description: doc.description,
+      maintained: doc.maintained,
+      entry,
       exportName,
       files,
       package: owner,
       sourceDir,
       bundled,
+      docPath,
     });
   }
 
   return themes;
 }
 
+/** @type {DiscoveredTheme[] | null} */
+let bundledThemeCache = null;
+
 /** @returns {DiscoveredTheme[]} */
 export function discoverBundledThemes() {
-  return discoverThemeCatalog(THEMES_DIR, BUNDLED_THEME_PACKAGE, {
-    bundled: true,
-  });
+  bundledThemeCache ??= discoverThemeDirectory(
+    THEMES_DIR,
+    BUNDLED_THEME_PACKAGE,
+    {bundled: true},
+  );
+  return bundledThemeCache.map(theme => ({...theme, files: [...theme.files]}));
 }
 
 /**
@@ -602,49 +768,5 @@ export function discoverBundledThemes() {
  */
 export async function discoverIntegrationThemes(integration) {
   if (!integration.themes) return [];
-  const themes = discoverThemeCatalog(integration.themes, integration.name);
-  const jscodeshift = (await import('jscodeshift')).default;
-  for (const theme of themes) {
-    const allowedFiles = new Set(
-      theme.files.map(file =>
-        resolveThemePath(file, theme.sourceDir, `theme "${theme.slug}" file`),
-      ),
-    );
-    const entryPath = resolveThemePath(
-      theme.entry,
-      theme.sourceDir,
-      `theme "${theme.slug}" entry`,
-    );
-    let exportsName;
-    try {
-      validateThemeModuleGraph(
-        entryPath,
-        jscodeshift,
-        theme.sourceDir,
-        allowedFiles,
-        theme.package,
-        theme.entry,
-      );
-      exportsName = moduleExportsName(
-        entryPath,
-        theme.exportName,
-        jscodeshift,
-        theme.sourceDir,
-        allowedFiles,
-      );
-    } catch (error) {
-      if (error instanceof ThemeModuleReferenceError) throw error;
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Theme catalog for ${theme.package} entry "${theme.entry}" could not be parsed: ${message}`,
-        {cause: error},
-      );
-    }
-    if (!exportsName) {
-      throw new Error(
-        `Theme catalog for ${theme.package} entry "${theme.entry}" does not export "${theme.exportName}".`,
-      );
-    }
-  }
-  return themes;
+  return discoverThemeDirectory(integration.themes, integration.name);
 }

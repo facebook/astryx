@@ -27,6 +27,9 @@ nested `AGENTS.md`.
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.
 - Consequential shared-system changes: use a record under `docs/specs/`.
+- Integration contribution work: read `docs/specs/AST-035/spec.md`. Every new
+  discoverable item owns a strongly typed, same-stem `.doc.mjs`; root manifests
+  locate directories and never catalog their items.
 
 ## Authority
 

@@ -22,6 +22,9 @@ verified_by:
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
+    foundation/discovery/theme-discovery.test.mjs,
+    authoring/doctypes/doctypes-new.test.mjs,
+    scripts/check-cli-theme-bundle.test.mjs,
     clients/cli/commands/integration-authoring.test.mjs,
     clients/cli/commands/integration-real-world.test.mjs,
     api/integration/add-contribution.test.mjs,
@@ -158,13 +161,20 @@ test, applicable text, and consumer-documentation projections.
   and records its issue; a package-scoped theme lookup surfaces that package's
   blocking catalog error instead of misreporting the theme as unknown.
 - **INV19 — Integration themes are packaged editable source.** The manifest's
-  `themes` root contains a versioned catalog. Each entry names its slug, source
-  entry, named runtime export, and complete file list. Discovery parses the entry
-  without executing it, requires every local static import and re-export to name
-  a file in that list, and rejects missing or type-only named exports. Pack
-  verification preserves that identity; `theme list` retains package ownership;
-  `theme add --package` copies every listed file, including nested palette/token
-  modules, before `theme build` compiles the consumer-owned copy.
+  `themes` root contains one directory per slug. Every theme source has a mandatory
+  same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
+  derives the source entry and required named runtime export from the shared stem,
+  parses source without executing it, and rejects escaped local imports and missing
+  or type-only runtime exports. The theme directory is the recursive copy and pack
+  boundary. `theme list` retains package ownership, and `theme add --package` copies
+  the complete directory before `theme build` compiles the consumer-owned copy.
+- **INV20 — Every discoverable integration item owns one typed descriptor.** New
+  authoring emits `<source-stem>.doc.mjs`, annotated with its public type from
+  `@astryxdesign/cli/authoring`, beside the source or payload it describes. The
+  descriptor is the sole per-item metadata authority; `astryx.integration.*`
+  locates roots and integration-level capabilities but never catalogs items. A
+  released alternate reader is an isolated compatibility path, not a second
+  authoring convention.
 
 ## Change coupling
 
@@ -182,7 +192,7 @@ updated in the same pull request when it moves an invariant:
   package.json mutation policy;
 - changing what `integration pack --check` executes or proves about the tarball;
 - changing local, configured, or autolinked integration precedence;
-- changing the integration theme catalog or consumer copy contract.
+- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -208,8 +218,8 @@ non-interactive guarantee.
   packed contribution identity/file contract.
 - `api/integration` — contribution writers, diagnostics, and packed-artifact
   verification.
-- `foundation/discovery/theme-discovery.mjs` and `api/theme` — integration theme
-  catalog discovery, package-aware selection, source copy, and build.
+- `foundation/discovery/theme-discovery.mjs` and `api/theme` — typed integration
+  theme descriptor discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
   writer used by init and upgrade.
 - `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
@@ -236,6 +246,7 @@ non-interactive guarantee.
 | INV17     | `api/integration/pack-check.test.mjs`                                                              | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.   |
 | INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`           | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.       |
 | INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                             | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.  |
+| INV20     | `api/integration/add-contribution.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`       | New authoring emits an untyped or non-`.doc.mjs` item, or an item catalog becomes authoritative.  |
 
 ## Open questions
 

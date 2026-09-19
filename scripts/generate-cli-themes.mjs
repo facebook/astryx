@@ -1,11 +1,12 @@
+#!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Bundles each theme's source, optional icons and palette-authoring
- * artifacts, and a `manifest.json` into
+ * @file Bundles each public theme's source, strongly typed same-stem descriptor,
+ * optional icons, and palette-authoring artifacts into
  * `packages/cli/assets/templates/themes/` so `astryx theme add` can scaffold a
- * complete, reproducible theme without the package installed. Run from the repo
- * root; commit the output so the published CLI carries it.
+ * complete theme without the package installed. There is no central catalog.
+ * Run from the repo root and commit the generated bundle.
  */
 
 import * as fs from 'node:fs';
@@ -24,17 +25,8 @@ const CLI_THEMES_OUT = path.join(
   'themes',
 );
 
-// Flagged in the manifest so `theme list` can mark it "(maintained)".
-const MAINTAINED_SLUG = 'neutral';
-
 function toIdentifier(slug) {
-  return slug.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-}
-
-/** Title-case a slug for display ("y2k" → "Y2K" is special-cased). */
-function toDisplayName(slug) {
-  if (slug === 'y2k') return 'Y2K';
-  return slug.charAt(0).toUpperCase() + slug.slice(1);
+  return slug.replace(/-([a-z])/g, (_, character) => character.toUpperCase());
 }
 
 function readJSON(file) {
@@ -45,22 +37,22 @@ function listThemeSlugs() {
   if (!fs.existsSync(THEMES_SRC_ROOT)) return [];
   return fs
     .readdirSync(THEMES_SRC_ROOT, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
     .filter(slug => {
-      // A theme dir must have a package.json + a src/<slug>Theme.ts to qualify.
+      const sourceDir = path.join(THEMES_SRC_ROOT, slug, 'src');
+      const stem = `${toIdentifier(slug)}Theme`;
       const pkg = path.join(THEMES_SRC_ROOT, slug, 'package.json');
-      const themeFile = path.join(
-        THEMES_SRC_ROOT,
-        slug,
-        'src',
-        `${toIdentifier(slug)}Theme.ts`,
-      );
-      if (!fs.existsSync(pkg) || !fs.existsSync(themeFile)) return false;
-      // A PRIVATE theme package is not a theme a user can pick — it is a test
-      // fixture that happens to live here (packages/themes/probe). These
-      // assets ship inside the CLI tarball, so without this the fixture
-      // becomes a selectable theme in `astryx theme add`.
+      const source = path.join(sourceDir, `${stem}.ts`);
+      const descriptor = path.join(sourceDir, `${stem}.doc.mjs`);
+      if (
+        !fs.existsSync(pkg) ||
+        !fs.existsSync(source) ||
+        !fs.existsSync(descriptor)
+      ) {
+        return false;
+      }
+      // A private theme package is a test fixture, not a selectable theme.
       return readJSON(pkg).private !== true;
     })
     .sort();
@@ -73,43 +65,40 @@ function main() {
     return;
   }
 
-  // Reset the output dir so removed themes don't linger.
+  // Reset the output dir so removed themes and obsolete catalog files do not linger.
   fs.rmSync(CLI_THEMES_OUT, {recursive: true, force: true});
   fs.mkdirSync(CLI_THEMES_OUT, {recursive: true});
 
-  const entries = [];
-
   for (const slug of slugs) {
     const id = toIdentifier(slug);
-    const srcDir = path.join(THEMES_SRC_ROOT, slug, 'src');
-    const themeFileName = `${id}Theme.ts`;
-    const themeFile = path.join(srcDir, themeFileName);
-
+    const sourceDir = path.join(THEMES_SRC_ROOT, slug, 'src');
     const outDir = path.join(CLI_THEMES_OUT, slug);
+    const stem = `${id}Theme`;
     fs.mkdirSync(outDir, {recursive: true});
 
-    const files = [themeFileName];
-    fs.copyFileSync(themeFile, path.join(outDir, themeFileName));
+    const files = [`${stem}.ts`, `${stem}.doc.mjs`];
+    for (const file of files) {
+      fs.copyFileSync(path.join(sourceDir, file), path.join(outDir, file));
+    }
 
     // Keep optional theme-owned authoring artifacts with the template. A
-    // palette-backed theme must remain reproducible after `theme add`, not
-    // merely compile because a generated palette file happened to be copied.
+    // palette-backed theme must remain reproducible after `theme add`.
     const optionalFiles = [
-      {source: path.join(srcDir, 'icons.tsx'), output: 'icons.tsx'},
+      {source: path.join(sourceDir, 'icons.tsx'), output: 'icons.tsx'},
       {
-        source: path.join(srcDir, `${id}Palettes.ts`),
+        source: path.join(sourceDir, `${id}Palettes.ts`),
         output: `${id}Palettes.ts`,
       },
       {
-        source: path.join(srcDir, `${id}Palettes.generated.ts`),
+        source: path.join(sourceDir, `${id}Palettes.generated.ts`),
         output: `${id}Palettes.generated.ts`,
       },
       {
-        source: path.join(srcDir, `${id}PaletteRefs.generated.ts`),
+        source: path.join(sourceDir, `${id}PaletteRefs.generated.ts`),
         output: `${id}PaletteRefs.generated.ts`,
       },
       {
-        source: path.join(srcDir, `${id}Palettes.generated.receipt.json`),
+        source: path.join(sourceDir, `${id}Palettes.generated.receipt.json`),
         output: `${id}Palettes.generated.receipt.json`,
       },
       {
@@ -123,40 +112,11 @@ function main() {
       fs.copyFileSync(file.source, path.join(outDir, file.output));
     }
 
-    // Pull the human description from the package.json (falls back to empty).
-    let description = '';
-    try {
-      const pkg = readJSON(path.join(THEMES_SRC_ROOT, slug, 'package.json'));
-      description = pkg.description || '';
-    } catch {
-      /* best-effort */
-    }
-
-    entries.push({
-      slug,
-      displayName: toDisplayName(slug),
-      description,
-      maintained: slug === MAINTAINED_SLUG,
-      entry: themeFileName,
-      exportName: `${id}Theme`,
-      files,
-    });
-
     console.log(`  bundled theme "${slug}" (${files.length} files)`);
   }
 
-  const manifest = {
-    version: 1,
-    generatedBy: 'scripts/generate-cli-themes.mjs',
-    themes: entries,
-  };
-  fs.writeFileSync(
-    path.join(CLI_THEMES_OUT, 'manifest.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
-
   console.log(
-    `generate-cli-themes: wrote ${entries.length} themes + manifest to ${path.relative(REPO_ROOT, CLI_THEMES_OUT)}`,
+    `generate-cli-themes: wrote ${slugs.length} typed theme directories to ${path.relative(REPO_ROOT, CLI_THEMES_OUT)}`,
   );
 }
 

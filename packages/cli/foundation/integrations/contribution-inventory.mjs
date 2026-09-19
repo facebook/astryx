@@ -14,7 +14,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
-import {THEME_MANIFEST_BASENAME} from '../discovery/theme-discovery.mjs';
 import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 import {discoverIntegrationComponents} from '../discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../discovery/component-loader.mjs';
@@ -41,16 +40,17 @@ const SKIP_DIRS = new Set([
  * `node_modules` and `.git`. Returns sorted absolute paths.
  * @param {string} dir
  * @param {(name: string) => boolean} filter
+ * @param {boolean} [skipIgnored]
  * @returns {string[]}
  */
-function walkDir(dir, filter) {
+function walkDir(dir, filter, skipIgnored = true) {
   if (!dir || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [];
   /** @type {string[]} */
   const out = [];
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-    if (SKIP_DIRS.has(entry.name)) continue;
+    if (skipIgnored && SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walkDir(full, filter));
+    if (entry.isDirectory()) out.push(...walkDir(full, filter, skipIgnored));
     else if (filter(entry.name)) out.push(full);
   }
   return out.sort();
@@ -65,27 +65,10 @@ function rel(packageDir, file) {
 
 /** @param {string} root @param {string} pkgDir */
 function enumerateThemeFiles(root, pkgDir) {
-  /** @type {string[]} */
-  const files = [];
-  const catalog = path.join(root, THEME_MANIFEST_BASENAME);
-  if (!fs.existsSync(catalog)) return files;
-  files.push(rel(pkgDir, catalog));
-  try {
-    const data = JSON.parse(fs.readFileSync(catalog, 'utf-8'));
-    if (data?.version !== 1 || !Array.isArray(data.themes)) return files;
-    for (const theme of data.themes) {
-      if (typeof theme.slug !== 'string' || !Array.isArray(theme.files))
-        continue;
-      for (const f of theme.files) {
-        if (typeof f === 'string') {
-          files.push(rel(pkgDir, path.join(root, theme.slug, f)));
-        }
-      }
-    }
-  } catch {
-    /* Phase 1 catches structural issues */
-  }
-  return files;
+  // A theme directory is its complete copy and pack boundary. Do not apply the
+  // generic test/fixture exclusions here: if an author puts a file inside that
+  // boundary, `theme add` copies it and pack-check must require it.
+  return walkDir(root, () => true, false).map(file => rel(pkgDir, file));
 }
 
 /** @param {string} root @param {string} pkgDir */
@@ -158,7 +141,7 @@ const ROOT_KINDS = /** @type {const} */ ([
 
 /**
  * Compute the files the tarball must contain for an integration's
- * contributions to be visible. Reads catalogs and walks directories;
+ * contributions to be visible. Walks descriptor-owned directories;
  * never imports or executes authored modules.
  *
  * @param {import('./integrations.mjs').LoadedIntegration} loaded

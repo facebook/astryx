@@ -4,8 +4,8 @@
  * @file The doc load boundary. `parseDoc` validates an unknown loaded doc value
  * into its typed shape (or throws a readable error), dispatching on the stamped
  * `type` and falling back to legacy shape-sniffing for unstamped docs. Its
- * acceptance set matches the old permissive `ComponentDocSchema` exactly, so
- * every existing `.doc.*` keeps loading unchanged.
+ * acceptance set preserves the old permissive `ComponentDocSchema` while new
+ * stamped kinds, including `theme`, use their sealed parser.
  */
 
 import {parseComponent} from './component/parse.mjs';
@@ -15,6 +15,7 @@ import {parseTemplate} from './template/parse.mjs';
 import {parseSchema} from './schema/parse.mjs';
 import {parseCommand} from './command/parse.mjs';
 import {parseEnum} from './enum/parse.mjs';
+import {parseTheme} from './theme/parse.mjs';
 import {parseLegacyDoc} from './legacy.mjs';
 
 /** @typedef {import('./types').ComponentDoc} ComponentDoc */
@@ -25,6 +26,7 @@ import {parseLegacyDoc} from './legacy.mjs';
 /** @typedef {import('./types').SchemaDoc} SchemaDoc */
 /** @typedef {import('./types').CommandDoc} CommandDoc */
 /** @typedef {import('./types').EnumDoc} EnumDoc */
+/** @typedef {import('./types').ThemeDoc} ThemeDoc */
 
 /**
  * Validate an unknown loaded doc value into its typed shape, or throw.
@@ -34,7 +36,7 @@ import {parseLegacyDoc} from './legacy.mjs';
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc}
+ * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc | ThemeDoc}
  */
 export function parseDoc(input, label = 'doc') {
   const type =
@@ -58,6 +60,8 @@ export function parseDoc(input, label = 'doc') {
       return parseCommand(input, label);
     case 'enum':
       return parseEnum(input, label);
+    case 'theme':
+      return parseTheme(input, label);
     default:
       return parseLegacyDoc(input, label);
   }
