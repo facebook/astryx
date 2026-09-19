@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6266,
+    "headSha": "1f49b35f356e411403f59bb1a5d980bea8911452",
+    "headRef": "josephfarina/kt-n3el-component-replacements",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 34695731825,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6266/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6266/sandbox/",
+      "indexSha256": "75070736e5705f0268913c54a6176d07b710cc5da33a6be05cd097148a19272b"
+    }
+  }
+}

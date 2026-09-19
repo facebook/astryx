@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6365,
+    "headSha": "368ead592e0d7a57c00cc3190ed9430c9317199b",
+    "headRef": "fix/iso-week-number-dst-southern-hemisphere",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 35347574424,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6365/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6365/sandbox/",
+      "indexSha256": "4ccd324cc3b40e906ab9a3459cdcdb203bc14a0d2de0cdce642566b754808438"
+    }
+  }
+}

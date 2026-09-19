@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5762,
+  "headSha": "0a698b9a6260093f7455c33a7fc3a1b2c051882b",
+  "testedSha": "0a698b9a6260093f7455c33a7fc3a1b2c051882b",
+  "baseSha": "ac68796353a1e51f6e1316557602755d1f1fc621",
+  "run": {
+    "id": 33662291108,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-icon--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bf9a2c624aa23784f28f1fdeb5f138b9b0048b0d3a0b5bb260d56806253d7035",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0a510bcbc663d2975013378a3921f73cdc51d9f9394bde260b30f95afc9b95c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5ec3316b2cf48549d38f760402a4fdfaefa5508c5a6302499ef57c52b72b77bd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c9af6098b4ffee71aa124bc0e1b2d2cb8307aee93bd668abd6a093429945ed82",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b645922e4244e3f091273196a02affc70c6fab53db3ec1f7f698b40ac724bacb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "478aaf682e3348753fbe6ef2e65fae36f7282353bd497750ac8fd6175d3fa719",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1a08b8c12da55db4048fda3a4817222b7af7ef82085a3fe2942b24792f67dd64",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "826b2088694e2215766178eab910ebb72261fdb9710ccf83eefe2de62db8f18a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a29e7486f68e29854bbe5f317e800fad8b2375f9c427e87143cd19b2b2446f2a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "871e88466b2a2f4af9cc908f74f01c468d3e20bfb121d2b42d9a397cba05ee0b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5fab4954a590825e25875b1a52c60f7cce28932909a2b7746ca1f25e5b30a601",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-icon--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "04eb7bb3098d8c7340b527527d41c69ffae4cfb8762ce34275eb3bcf4e425145",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-icon--default",
+        "title": "Core/Icon",
+        "name": "Default",
+        "component": "Icon",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-02T18:17:04.030Z",
+    "context": {
+      "sha": "0a698b9a6260093f7455c33a7fc3a1b2c051882b",
+      "runId": "33662291108",
+      "runAttempt": "1",
+      "headSha": "0a698b9a6260093f7455c33a7fc3a1b2c051882b",
+      "baseSha": "ac68796353a1e51f6e1316557602755d1f1fc621",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Button",
+          "Icon"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Button/Button.tsx",
+          "packages/core/src/Icon/Icon.tsx",
+          "packages/core/src/Icon/IconDefaultSizeContext.ts",
+          "packages/core/src/Icon/IconSize.stylex.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-02T06:00:40.805Z",
+      "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 28,
+      "unchanged": 16,
+      "changed": 0,
+      "added": 12,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-icon--default__butter-light",
+      "core-icon--default__butter-dark",
+      "core-icon--default__gothic-light",
+      "core-icon--default__gothic-dark",
+      "core-icon--default__stone-light",
+      "core-icon--default__stone-dark",
+      "core-icon--default__y2k-light",
+      "core-icon--default__y2k-dark",
+      "core-icon--default__matcha-light",
+      "core-icon--default__matcha-dark",
+      "core-icon--default__chocolate-light",
+      "core-icon--default__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-04T23:45:58.596Z",
+  "context": {
+    "sha": "ede3394ea250b858404e291f3c487f78b1a900ec",
+    "runId": "33929162192",
+    "runAttempt": "1",
+    "headSha": "ede3394ea250b858404e291f3c487f78b1a900ec",
+    "baseSha": "64e715a37244c678a1e4998ade881515b1531184",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "PowerSearch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/PowerSearch/PowerSearch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchToken.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouch.tsx",
+        "packages/core/src/PowerSearch/PowerSearchTouchValueEditor.tsx",
+        "packages/core/src/PowerSearch/PowerSearchValueEditor.tsx",
+        "packages/core/src/PowerSearch/types.ts",
+        "packages/core/src/PowerSearch/usePowerSearchSource.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

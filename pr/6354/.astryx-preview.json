@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6354,
+    "headSha": "1645ec75ef07fd4024c05c712bad11957f457c9d",
+    "headRef": "feat/input-clear-tooltip",
+    "headRepository": "athz/astryx",
+    "headRepositoryId": "1286701560"
+  },
+  "sourceRun": {
+    "id": 35187404886,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6354/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6354/sandbox/",
+      "indexSha256": "cb493e2cf7a26054d5975aa270191ba966818748b8f3573c6249ff9427eb1bf9"
+    }
+  }
+}

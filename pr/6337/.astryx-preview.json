@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6337,
+    "headSha": "840e1e19e566d85870dd0a3c53674c3c0b94534c",
+    "headRef": "ci-tooling-admission-registry",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 35114495767,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6337/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6337/sandbox/",
+      "indexSha256": "a5fde11686e75c8ad7a02784475abd68201fd629bccf8419bde85aefa46b0dbc"
+    }
+  }
+}

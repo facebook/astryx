@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6243,
+  "headSha": "61c516bbe375b8035f1102c8e781743294f5ca3a",
+  "testedSha": "61c516bbe375b8035f1102c8e781743294f5ca3a",
+  "baseSha": "41ab6db2a5d193739759ad2ba14b6be21509a2d7",
+  "run": {
+    "id": 34567399558,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-11T06:30:20.014Z",
+    "context": {
+      "sha": "61c516bbe375b8035f1102c8e781743294f5ca3a",
+      "runId": "34567399558",
+      "runAttempt": "1",
+      "headSha": "61c516bbe375b8035f1102c8e781743294f5ca3a",
+      "baseSha": "41ab6db2a5d193739759ad2ba14b6be21509a2d7",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Kbd"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Kbd/Kbd.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-09T13:21:32.655Z",
+      "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

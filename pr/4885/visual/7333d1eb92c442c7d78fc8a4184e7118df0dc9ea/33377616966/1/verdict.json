@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-08-31T09:55:58.729Z",
+  "context": {
+    "sha": "7333d1eb92c442c7d78fc8a4184e7118df0dc9ea",
+    "runId": "33377616966",
+    "runAttempt": "1",
+    "headSha": "7333d1eb92c442c7d78fc8a4184e7118df0dc9ea",
+    "baseSha": "1f005bf71a7d719ff16d1c1c066545ad30eacd85",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Button"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Button/Button.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-08-30T19:31:54.975Z",
+    "sha": "0443933b693cb0d3987a5e6ad592826e673e1750",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 210,
+    "unchanged": 210,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-17T07:03:44.045Z",
+  "context": {
+    "sha": "1645ec75ef07fd4024c05c712bad11957f457c9d",
+    "runId": "35187404886",
+    "runAttempt": "1",
+    "headSha": "1645ec75ef07fd4024c05c712bad11957f457c9d",
+    "baseSha": "605fa9aa70543cfe43227cf67b80a671e6dc9fed",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Field"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Field/InputClearButton.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

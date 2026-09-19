@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6299,
+    "headSha": "9bf7d5b9b5a38ea6a1fd4dba4ed2498c90995899",
+    "headRef": "codex/issue-5129-storybook-aliases",
+    "headRepository": "jiunshinn/astryx",
+    "headRepositoryId": "1286933429"
+  },
+  "sourceRun": {
+    "id": 34732366424,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6299/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6299/sandbox/",
+      "indexSha256": "81ecfe5ecaff5981309e5d1d6bfe03cef031a84bec1752e97ee7e68c523e4e30"
+    }
+  }
+}

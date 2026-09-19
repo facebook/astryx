@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6085,
+  "headSha": "3de57a99576c9e4a88b1649ce2b48387b42d27d7",
+  "testedSha": "3de57a99576c9e4a88b1649ce2b48387b42d27d7",
+  "baseSha": "b2e6a1d6b0fb9e5ca976b4d53f29f1b476ec3f61",
+  "run": {
+    "id": 34017644103,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "f468cb107e7d821a8ebb14b1c18876eb0fce20f4e182eb0773aea3da3354bffb",
+      "shot": {
+        "sha256": "af7a018866762122dabd2dbde0069c1eeea1b22d4261bd0757e9b890fd703395",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "127c5ef452fefd8e99ab19a4ca18628fe536aa73455833c3fc6b2b5fcd096fbc",
+      "shot": {
+        "sha256": "024f9b6156a1cc0547736b2f5e16035d3bfc253edfe969ad20eb3096735bb810",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-06T07:19:07.853Z",
+    "context": {
+      "sha": "3de57a99576c9e4a88b1649ce2b48387b42d27d7",
+      "runId": "34017644103",
+      "runAttempt": "1",
+      "headSha": "3de57a99576c9e4a88b1649ce2b48387b42d27d7",
+      "baseSha": "b2e6a1d6b0fb9e5ca976b4d53f29f1b476ec3f61",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Chat",
+          "CommandPalette",
+          "ComplexSelector",
+          "DateInput",
+          "DateRangeInput",
+          "DateTimeInput",
+          "Field",
+          "FileInput",
+          "NumberInput",
+          "Selector",
+          "TextArea",
+          "TextInput",
+          "TimeInput",
+          "Typeahead"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Chat/ChatComposerInput.tsx",
+          "packages/core/src/CommandPalette/CommandPaletteInput.tsx",
+          "packages/core/src/ComplexSelector/ComplexSelector.tsx",
+          "packages/core/src/DateInput/DateInput.tsx",
+          "packages/core/src/DateInput/NativeDateField.tsx",
+          "packages/core/src/DateInput/TouchDateField.tsx",
+          "packages/core/src/DateRangeInput/DateRangeInput.tsx",
+          "packages/core/src/DateTimeInput/DateTimeInput.tsx",
+          "packages/core/src/DateTimeInput/TouchDateTimeField.tsx",
+          "packages/core/src/DateTimeInput/nativePickerSegmentStyles.ts",
+          "packages/core/src/Field/PanelSearchInput.tsx",
+          "packages/core/src/FileInput/FileInput.tsx",
+          "packages/core/src/NumberInput/NumberInput.tsx",
+          "packages/core/src/Selector/Selector.tsx",
+          "packages/core/src/TextArea/TextArea.tsx",
+          "packages/core/src/TextInput/TextInput.tsx",
+          "packages/core/src/TimeInput/TimeInput.tsx",
+          "packages/core/src/Typeahead/BaseTypeahead.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": [
+          "@astryxdesign/richtext"
+        ]
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-05T07:37:37.596Z",
+      "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 32,
+      "unchanged": 30,
+      "changed": 2,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+        "diffPixels": 3992,
+        "diffRatio": 0.005076,
+        "sizeChanged": false,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+        "diffPixels": 3825,
+        "diffRatio": 0.004864,
+        "sizeChanged": false,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

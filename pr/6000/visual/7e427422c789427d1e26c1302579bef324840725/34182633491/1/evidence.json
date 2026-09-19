@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6000,
+  "headSha": "7e427422c789427d1e26c1302579bef324840725",
+  "testedSha": "7e427422c789427d1e26c1302579bef324840725",
+  "baseSha": "49625f58d2ccaeec580c5ee1b208bd00b68f894d",
+  "run": {
+    "id": 34182633491,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-08T03:31:46.473Z",
+    "context": {
+      "sha": "7e427422c789427d1e26c1302579bef324840725",
+      "runId": "34182633491",
+      "runAttempt": "1",
+      "headSha": "7e427422c789427d1e26c1302579bef324840725",
+      "baseSha": "49625f58d2ccaeec580c5ee1b208bd00b68f894d",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Tokenizer",
+          "Typeahead"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Tokenizer/Tokenizer.tsx",
+          "packages/core/src/Typeahead/BaseTypeahead.tsx",
+          "packages/core/src/Typeahead/busyIndicatorLane.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-05T07:37:37.596Z",
+      "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 4,
+      "unchanged": 4,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

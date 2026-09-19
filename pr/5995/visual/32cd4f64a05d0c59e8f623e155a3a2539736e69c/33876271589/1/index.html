@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual gate — pass</title>
+<style>
+  :root { color-scheme: light dark; --line: color-mix(in oklab, currentColor 15%, transparent); }
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; max-width: 1200px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 32px 0 4px; }
+  h3 { font-size: 14px; margin: 0; }
+  .muted { opacity: .6; }
+  .ok { color: #1a7f37; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; }
+  .status.pass { background: #1a7f3722; color: #1a7f37; }
+  .status.changed { background: #9a670022; color: #9a6700; }
+  .status.failed { background: #cf222e22; color: #cf222e; }
+  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; }
+  .summary div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 84px; }
+  .summary b { display: block; font-size: 18px; }
+  .howto { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .change { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; }
+  .change header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip, .tag { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+  .tag { opacity: .7; }
+  .chip.warn { border-color: #9a6700; color: #9a6700; }
+  .tabs { display: flex; gap: 4px; margin: 12px 0 8px; }
+  .tabs button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
+  .tabs button.active { background: color-mix(in oklab, currentColor 12%, transparent); font-weight: 600; }
+  .stage img { max-width: 100%; display: block; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .stage > div { display: none; }
+  .stage[data-view="wipe"] .wipe, .stage[data-view="before"] .single.before,
+  .stage[data-view="after"] .single.after, .stage[data-view="diff"] .single.diff,
+  .stage[data-view="side"] .side { display: block; }
+  .side { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stage[data-view="side"] .side { display: grid; }
+  .side figure { margin: 0; }
+  .side figcaption { font-size: 12px; opacity: .6; margin-bottom: 4px; }
+  .wipe { position: relative; }
+  .wipe .before-clip { position: absolute; inset: 0; overflow: hidden; width: 50%; }
+  .wipe .before-clip img { max-width: none; }
+  .wipe input { position: absolute; left: 0; right: 0; bottom: -6px; width: 100%; }
+  .list ul { margin: 4px 0; padding-left: 20px; }
+  footer code { opacity: .5; }
+</style>
+<h1>Visual gate <span class="status pass">pass</span></h1>
+<p class="muted">
+  32cd4f64a05d0c59e8f623e155a3a2539736e69c on linux-arm64
+  · baseline 5d873281643e752567722ecb691325de1b8b2f86
+  · 2026-09-04T13:37:59.531Z
+</p>
+<div class="summary">
+  <div><b>2</b>shots</div>
+  <div><b>0</b>changed</div>
+  <div><b>0</b>added</div>
+  <div><b>0</b>removed</div>
+  <div><b>0</b>failed</div>
+</div>
+<div class="howto">
+  <b>Changed is not the same as broken.</b> For each change below, decide whether the <em>after</em> is the picture you want.
+  If it is, promote it — that is a valid, recorded outcome:
+  <p><code>Repository maintainers only: /accept-visual 33876271589/1 &lt;why every changed frame is correct&gt;</code></p>
+  If it is not, the change is a regression: fix it before the release goes out.
+</div>
+
+<p class="ok">No shot changed against the baseline.</p>
+
+
+
+<section class="list"><h2>Theming targets</h2><p class="ok">Every theme override bound to a rendered target.</p></section>
+<script>
+  for (const views of document.querySelectorAll('.views')) {
+    const stage = views.querySelector('.stage');
+    views.querySelectorAll('.tabs button').forEach((button) => {
+      button.addEventListener('click', () => {
+        views.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b === button));
+        stage.dataset.view = button.dataset.view;
+      });
+    });
+    const range = views.querySelector('.wipe input');
+    const clip = views.querySelector('.before-clip');
+    range?.addEventListener('input', () => { clip.style.width = range.value + '%'; });
+  }
+</script>
+</html>

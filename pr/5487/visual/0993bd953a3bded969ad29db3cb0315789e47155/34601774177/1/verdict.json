@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-11T13:45:50.471Z",
+  "context": {
+    "sha": "0993bd953a3bded969ad29db3cb0315789e47155",
+    "runId": "34601774177",
+    "runAttempt": "1",
+    "headSha": "0993bd953a3bded969ad29db3cb0315789e47155",
+    "baseSha": "2e51213e7584c9161bd652259d6832dab999184f",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "ClickableCard",
+        "SelectableCard",
+        "Thumbnail"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/ClickableCard/ClickableCard.tsx",
+        "packages/core/src/SelectableCard/SelectableCard.tsx",
+        "packages/core/src/Thumbnail/Thumbnail.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-09T13:21:32.655Z",
+    "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 6,
+    "unchanged": 6,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

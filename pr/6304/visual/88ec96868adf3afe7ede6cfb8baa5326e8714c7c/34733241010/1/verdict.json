@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-13T02:50:40.057Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "88ec96868adf3afe7ede6cfb8baa5326e8714c7c",
+    "headSha": "88ec96868adf3afe7ede6cfb8baa5326e8714c7c",
+    "baseSha": "4a0d1d1e2bc1aebf49a1c08ccf77162cb387bfa6",
+    "runId": "34733241010",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "Calendar",
+        "DateInput",
+        "Lightbox",
+        "Pagination"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Calendar/Calendar.tsx",
+        "packages/core/src/DateInput/TouchDateField.tsx",
+        "packages/core/src/Lightbox/Lightbox.tsx",
+        "packages/core/src/Pagination/Pagination.tsx",
+        "packages/core/src/hooks/useDisabledFocusRecovery.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 386,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "Calendar",
+    "DateInput",
+    "Lightbox",
+    "Pagination"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

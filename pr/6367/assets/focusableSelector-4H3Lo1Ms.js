@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";var t,n=e((()=>{t=`button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child`}));export{n,t};

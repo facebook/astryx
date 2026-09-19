@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5398,
+  "headSha": "76bdb39fab50e4e03cc00de715297d87d52f8fbf",
+  "testedSha": "76bdb39fab50e4e03cc00de715297d87d52f8fbf",
+  "baseSha": "5823b00921152bb6abe82c8a4c27cb1777ed856c",
+  "run": {
+    "id": 34079748741,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-07T03:52:17.264Z",
+    "context": {
+      "sha": "76bdb39fab50e4e03cc00de715297d87d52f8fbf",
+      "runId": "34079748741",
+      "runAttempt": "1",
+      "headSha": "76bdb39fab50e4e03cc00de715297d87d52f8fbf",
+      "baseSha": "5823b00921152bb6abe82c8a4c27cb1777ed856c",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "HoverCard",
+          "Layer",
+          "Tooltip"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/HoverCard/useHoverCard.tsx",
+          "packages/core/src/Layer/showWhenAnchored.ts",
+          "packages/core/src/Tooltip/useTooltip.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-05T07:37:37.596Z",
+      "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 6,
+      "unchanged": 6,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

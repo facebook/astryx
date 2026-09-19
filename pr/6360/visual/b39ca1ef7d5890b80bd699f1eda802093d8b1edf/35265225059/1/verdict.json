@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-17T20:46:14.698Z",
+  "context": {
+    "sha": "b39ca1ef7d5890b80bd699f1eda802093d8b1edf",
+    "runId": "35265225059",
+    "runAttempt": "1",
+    "headSha": "b39ca1ef7d5890b80bd699f1eda802093d8b1edf",
+    "baseSha": "5a7b81959305e8f7e63238ff2f475353a7716222",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Tokenizer",
+        "Typeahead"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Tokenizer/Tokenizer.tsx",
+        "packages/core/src/Typeahead/BaseTypeahead.tsx",
+        "packages/core/src/Typeahead/selectionBehavior.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

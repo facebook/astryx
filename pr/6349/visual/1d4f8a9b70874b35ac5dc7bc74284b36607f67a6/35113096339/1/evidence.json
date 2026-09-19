@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6349,
+  "headSha": "1d4f8a9b70874b35ac5dc7bc74284b36607f67a6",
+  "testedSha": "1d4f8a9b70874b35ac5dc7bc74284b36607f67a6",
+  "baseSha": "2b2113d7f95a066a2e21a4b0a27acb819d103601",
+  "run": {
+    "id": 35113096339,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-16T16:27:20.057Z",
+    "context": {
+      "sha": "1d4f8a9b70874b35ac5dc7bc74284b36607f67a6",
+      "runId": "35113096339",
+      "runAttempt": "1",
+      "headSha": "1d4f8a9b70874b35ac5dc7bc74284b36607f67a6",
+      "baseSha": "2b2113d7f95a066a2e21a4b0a27acb819d103601",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Selector"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Selector/__tests__/Listbox.a11y.chromium.spec.ts",
+          "packages/core/src/Selector/__tests__/Listbox.a11y.dom.ts",
+          "packages/core/src/Selector/__tests__/Listbox.a11y.states.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,608 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5075,
+  "headSha": "cdc12ee416b0d7b9d6456d02b4ba787b186fa0b4",
+  "testedSha": "c3133bb3efc5e354031373ddfe71df631fb194fd",
+  "baseSha": "009bcb37fa590bc8723c66599cc5c2784bf28e99",
+  "run": {
+    "id": 33043491070,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "5b212bcf8bfc1ba11f6cc91c9232f638469035bd",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "core-sidenav--collapsible-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ccab272376828dc183def7d00db87fa3e371143754ea754f8eea3413160c4986",
+      "shot": {
+        "sha256": "ccab272376828dc183def7d00db87fa3e371143754ea754f8eea3413160c4986",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69e191df9cdff7fed7fe27b2e7f11b3c6a0b3b0fee969c3bd9370b16cfd48b28",
+      "shot": {
+        "sha256": "69e191df9cdff7fed7fe27b2e7f11b3c6a0b3b0fee969c3bd9370b16cfd48b28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bd57700855b9e584e2a6371c7f563e33f2d59d7a147416e03a4826655a5497fb",
+      "shot": {
+        "sha256": "bd57700855b9e584e2a6371c7f563e33f2d59d7a147416e03a4826655a5497fb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b5504db3c8a49cecee6c311af9f0352555d65993ac6fb4a7cc088f95a69b3fd9",
+      "shot": {
+        "sha256": "b5504db3c8a49cecee6c311af9f0352555d65993ac6fb4a7cc088f95a69b3fd9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e269e2ede825637e4f73c75b5fea5cd754ee34c32cebc26a91cce2d8b73a8225",
+      "shot": {
+        "sha256": "e269e2ede825637e4f73c75b5fea5cd754ee34c32cebc26a91cce2d8b73a8225",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bd9930a67ddd77eff091e8301865a04c4e53b2097b848974c4ca3e8f47e111f3",
+      "shot": {
+        "sha256": "bd9930a67ddd77eff091e8301865a04c4e53b2097b848974c4ca3e8f47e111f3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9368af22012e91f5b0d3e128c686cd49a69e6e2a6e954db3705f79531437f401",
+      "shot": {
+        "sha256": "9368af22012e91f5b0d3e128c686cd49a69e6e2a6e954db3705f79531437f401",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges & Menus)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "299edc1666ecf73b8a30bb83c8efb29c0b4518a22f7069ea65be4e8fae8df890",
+      "shot": {
+        "sha256": "299edc1666ecf73b8a30bb83c8efb29c0b4518a22f7069ea65be4e8fae8df890",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges & Menus)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "15df8d5dc2cb9689d3a7b75008588d111dd9cba2f712156a26ff6b94fee95e6a",
+      "shot": {
+        "sha256": "15df8d5dc2cb9689d3a7b75008588d111dd9cba2f712156a26ff6b94fee95e6a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7ec39703af06de459ac10ca81258c96f8d72041c4505e7de894dfc2c6ae8a4c",
+      "shot": {
+        "sha256": "c7ec39703af06de459ac10ca81258c96f8d72041c4505e7de894dfc2c6ae8a4c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5d23c8d0929b945608bdf0897272921babc1878fdc22eae7d59e244c7768828e",
+      "shot": {
+        "sha256": "5d23c8d0929b945608bdf0897272921babc1878fdc22eae7d59e244c7768828e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9ac9afb9bd6f68f5066f66eaa881d297c0a79d36a86694c339786d605d7005ec",
+      "shot": {
+        "sha256": "9ac9afb9bd6f68f5066f66eaa881d297c0a79d36a86694c339786d605d7005ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1cace028dea39023c45ba7908bc2c7a6c88964ac4cd9366db3736ce6adcd16b8",
+      "shot": {
+        "sha256": "1cace028dea39023c45ba7908bc2c7a6c88964ac4cd9366db3736ce6adcd16b8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "df44ed6c5cb2b32de4b8732620e6353c69b8646c013003cc963f66f378aa3e95",
+      "shot": {
+        "sha256": "df44ed6c5cb2b32de4b8732620e6353c69b8646c013003cc963f66f378aa3e95",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "357fcc81c5137118f10700cc6fb2bd18a582341a01320108f75a46e2d60235a8",
+      "shot": {
+        "sha256": "357fcc81c5137118f10700cc6fb2bd18a582341a01320108f75a46e2d60235a8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e2ca8e7a9de9612df9017c2e30f5839927ba1a4474217680a582b2646602ac15",
+      "shot": {
+        "sha256": "e2ca8e7a9de9612df9017c2e30f5839927ba1a4474217680a582b2646602ac15",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9ee13e2196709809f978e908eda1a28824140f17c8d85c330bd7a954270f1bdd",
+      "shot": {
+        "sha256": "9ee13e2196709809f978e908eda1a28824140f17c8d85c330bd7a954270f1bdd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0cf582882ff778440953c8634bb4bb825f017622d538d19d07dbb25ce837f6e0",
+      "shot": {
+        "sha256": "0cf582882ff778440953c8634bb4bb825f017622d538d19d07dbb25ce837f6e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "042bb5fa5a6e627a1f359970c0ae416536021384e8715e950646c5cc256bbc2e",
+      "shot": {
+        "sha256": "042bb5fa5a6e627a1f359970c0ae416536021384e8715e950646c5cc256bbc2e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "38e7be20e26428efe749f6157287228f79d1d35d28d01e244c51ad26394f98b7",
+      "shot": {
+        "sha256": "38e7be20e26428efe749f6157287228f79d1d35d28d01e244c51ad26394f98b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e86d1c49b3a7265f55de984913dd45e64223541d4d798e1edc2831bf2ebe8005",
+      "shot": {
+        "sha256": "e86d1c49b3a7265f55de984913dd45e64223541d4d798e1edc2831bf2ebe8005",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "03a7f629ba4cbf5d94c5a12961290903817cf86a677a5a8d7315ea313c5ad4a8",
+      "shot": {
+        "sha256": "03a7f629ba4cbf5d94c5a12961290903817cf86a677a5a8d7315ea313c5ad4a8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1c6e2fd3d2f6804ad4b9c56de77d9c273a55275a8c5a77331a755c85dd888db7",
+      "shot": {
+        "sha256": "1c6e2fd3d2f6804ad4b9c56de77d9c273a55275a8c5a77331a755c85dd888db7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e9781cabab0f35c53d35fe04c51f97bf0a8867d97120f789a5de8b2f96ed0f07",
+      "shot": {
+        "sha256": "e9781cabab0f35c53d35fe04c51f97bf0a8867d97120f789a5de8b2f96ed0f07",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "25e2ba8f4fe879bf5a8fb569b65e0eee3656420545517ea34b58735406008039",
+      "shot": {
+        "sha256": "25e2ba8f4fe879bf5a8fb569b65e0eee3656420545517ea34b58735406008039",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "90136670af968f54d15a7661b7cc61ef2444d6a408e3f28c283fed595f6fe05c",
+      "shot": {
+        "sha256": "90136670af968f54d15a7661b7cc61ef2444d6a408e3f28c283fed595f6fe05c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ab1194d930a24475de5f53929b03a44522f95e3919000c2096ba5652dfaca9e4",
+      "shot": {
+        "sha256": "ab1194d930a24475de5f53929b03a44522f95e3919000c2096ba5652dfaca9e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5b185cc9c54eb2a22cda334d02ab89cef6c3fe853da2db613312447ed6625f2c",
+      "shot": {
+        "sha256": "5b185cc9c54eb2a22cda334d02ab89cef6c3fe853da2db613312447ed6625f2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "component"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__neutral-dark",
+      "kind": "removed",
+      "beforeSha256": "d4803d04695c28cf37846c4a2abdec060b21c934194361d86243ad4aff7bce2c",
+      "afterSha256": null,
+      "shot": null
+    },
+    {
+      "key": "lab-resizable--horizontal-split__neutral-light",
+      "kind": "removed",
+      "beforeSha256": "115ff768c65a6d06a0acc6f4f29e89fb0219ff0b8d701bd18901b71fd6ec2ef4",
+      "afterSha256": null,
+      "shot": null
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "maintain",
+    "reason": "The persisted reload now matches the existing 48px collapsed rail byte-for-byte; collapsible-only, resizable-only, combined, owner-handoff, and 220–380px transitions are unchanged or intentional.",
+    "commentId": 5435024072,
+    "at": "2026-08-27T06:21:18.008Z"
+  }
+}

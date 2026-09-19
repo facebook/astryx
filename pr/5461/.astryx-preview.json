@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5461,
+    "headSha": "0d18346f67419783b4bbfe285c19d09654c0bb99",
+    "headRef": "chat-virtualizer-story",
+    "headRepository": "yyq1025/astryx",
+    "headRepositoryId": "1297091272"
+  },
+  "sourceRun": {
+    "id": 33838100807,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5461/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5461/sandbox/",
+      "indexSha256": "890398a3a49dd4aa33b989ee005e0a41da8d009f5e38ce13d4bb815901814e9e"
+    }
+  }
+}
