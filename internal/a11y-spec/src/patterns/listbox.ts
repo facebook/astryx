@@ -149,9 +149,10 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
       enforcement: 'required',
       run: async ({harness, subject, facts}) => {
         const listbox = await harness.related('listbox');
-        const owner = facts.part === 'option' && facts.ownerGroup != null
-          ? await harness.related(facts.ownerGroup)
-          : listbox;
+        const owner =
+          facts.part === 'option' && facts.ownerGroup != null
+            ? await harness.related(facts.ownerGroup)
+            : listbox;
         const owns = async (parent: Subject, child: Subject) =>
           (await harness.contains(parent, child)) ||
           (await harness.references(parent, 'aria-owns', child));
@@ -177,16 +178,33 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
       },
       evidenceLayer: 'accessibility-tree',
       enforcement: 'required',
-      run: async () => undefined,
+      run: async ({subject, facts}) => {
+        const {role, name} = await subject.computed();
+        if (role !== facts.part) {
+          throw new Error(
+            `the browser exposes ${role ?? 'no role'} instead of ${facts.part}`,
+          );
+        }
+        if (name.trim() === '') {
+          throw new Error(
+            `the browser exposes the ${facts.part} without an accessible name`,
+          );
+        }
+      },
     },
     {
       id: 'listbox.selection.single',
-      outcome: 'A single-selection listbox does not expose multiple selected options.',
-      sources: [NAME_ROLE_VALUE, {
-        standard: 'web-standard', specification: 'WAI-ARIA 1.2',
-        requirement: 'Only one item can be selected.',
-        url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-multiselectable',
-      }],
+      outcome:
+        'A single-selection listbox does not expose multiple selected options.',
+      sources: [
+        NAME_ROLE_VALUE,
+        {
+          standard: 'web-standard',
+          specification: 'WAI-ARIA 1.2',
+          requirement: 'Only one item can be selected.',
+          url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-multiselectable',
+        },
+      ],
       covers: ['4.1.2-name-role-value'],
       appliesWhen: {
         condition: 'the listbox permits only one selected option',
@@ -196,17 +214,24 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
       enforcement: 'required',
       run: async ({harness, facts}) => {
         if (facts.optionRelations == null) {
-          throw new MissingBindingCapability('a single-selection listbox must declare its option relations');
+          throw new MissingBindingCapability(
+            'a single-selection listbox must declare its option relations',
+          );
         }
         const attribute = facts.selectionAttribute ?? 'aria-selected';
         let selected = 0;
         for (const relation of facts.optionRelations) {
-          if ((await (await harness.related(relation)).attribute(attribute)) === 'true') {
+          if (
+            (await (await harness.related(relation)).attribute(attribute)) ===
+            'true'
+          ) {
             selected += 1;
           }
         }
         if (selected > 1) {
-          throw new Error(`the single-selection listbox exposes ${selected} selected options`);
+          throw new Error(
+            `the single-selection listbox exposes ${selected} selected options`,
+          );
         }
       },
     },
