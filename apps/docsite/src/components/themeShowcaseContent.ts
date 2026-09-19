@@ -16,7 +16,7 @@
 import type {
   ProductSpec,
   InventoryRow,
-} from '../../../../packages/cli/templates/pages/theme-showcase/page';
+} from '../../../../packages/cli/assets/templates/pages/theme-showcase/page';
 
 export interface ThemeShowcaseContent {
   images: Record<string, string>;
@@ -24,23 +24,22 @@ export interface ThemeShowcaseContent {
   inventory: InventoryRow[];
 }
 
-const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 // Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/matcha-product-1.png`,
-  headphones: `${IMAGE_CDN}/matcha-product-2.png`,
-  backpack: `${IMAGE_CDN}/matcha-product-3.png`,
-  wallet: `${IMAGE_CDN}/matcha-product-5.png`,
-  tumbler: `${IMAGE_CDN}/matcha-product-4.png`,
-  throw_: `${IMAGE_CDN}/matcha-product-6.png`,
+  watch: '/images/matcha/preview-watch.png',
+  headphones: '/images/matcha/preview-headphones.png',
+  backpack: '/images/matcha/preview-backpack.png',
+  wallet: '/images/matcha/preview-wallet.png',
+  tumbler: '/images/matcha/preview-tumbler.png',
+  throw_: '/images/matcha/preview-throw.png',
 };
 
 const MATCHA_CONTENT: ThemeShowcaseContent = {
   images: MATCHA_IMAGES,
   products: [
     {
-      name: 'Iced Matcha Latte',
+      name: 'Matcha',
       description: 'Stone-ground ceremonial matcha over cold milk.',
       badge: 'Classic',
       badgeVariant: 'green',
@@ -61,7 +60,7 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Iced Matcha Latte',
+      name: 'Matcha',
       meta: 'Ceremonial grade, oat or whole',
       available: 64,
       location: 'Bar 1',
@@ -131,12 +130,12 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
 // Butter bakery — butter/breakfast photos. Only five Butter assets exist, so
 // the croissant is reused for the sixth slot.
 const BUTTER_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Butter-Croissant.png`,
-  headphones: `${IMAGE_CDN}/Butter-Pancake.png`,
-  backpack: `${IMAGE_CDN}/Butter-Waffle.png`,
-  wallet: `${IMAGE_CDN}/Butter-Toast.png`,
-  tumbler: `${IMAGE_CDN}/Butter-Stick.png`,
-  throw_: `${IMAGE_CDN}/Butter-Croissant.png`,
+  watch: '/images/butter/preview-watch.png',
+  headphones: '/images/butter/preview-headphones.png',
+  backpack: '/images/butter/preview-backpack.png',
+  wallet: '/images/butter/preview-wallet.png',
+  tumbler: '/images/butter/preview-tumbler.png',
+  throw_: '/images/butter/preview-throw.png',
 };
 
 const BUTTER_CONTENT: ThemeShowcaseContent = {
@@ -149,7 +148,7 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'yellow',
     },
     {
-      name: 'Buttermilk Pancakes',
+      name: 'Pancakes',
       description: 'Stacked tall with a melting pat of butter.',
       badge: 'Popular',
       badgeVariant: 'orange',
@@ -175,7 +174,7 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'b',
-      name: 'Buttermilk Pancakes',
+      name: 'Pancakes',
       meta: 'Stack of three',
       available: 38,
       location: 'Griddle',
@@ -233,12 +232,12 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
 
 // Stone homeware — stoneware photos on stone plinths.
 const STONE_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Stone-bowl.png`,
-  headphones: `${IMAGE_CDN}/Stone-cup.png`,
-  backpack: `${IMAGE_CDN}/Stone-plate.png`,
-  wallet: `${IMAGE_CDN}/Stone-servingbowl.png`,
-  tumbler: `${IMAGE_CDN}/Stone-teapot.png`,
-  throw_: `${IMAGE_CDN}/Stone-vase.png`,
+  watch: '/images/stone/preview-watch.png',
+  headphones: '/images/stone/preview-headphones.png',
+  backpack: '/images/stone/preview-backpack.png',
+  wallet: '/images/stone/preview-wallet.png',
+  tumbler: '/images/stone/preview-tumbler.png',
+  throw_: '/images/stone/preview-throw.png',
 };
 
 const STONE_CONTENT: ThemeShowcaseContent = {
@@ -335,19 +334,19 @@ const STONE_CONTENT: ThemeShowcaseContent = {
 
 // Y2K trinkets — iridescent/holo objects.
 const Y2K_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Y2K-Phone.png`,
-  headphones: `${IMAGE_CDN}/Y2K-Star.png`,
-  backpack: `${IMAGE_CDN}/Y2K-Butterfly.png`,
-  wallet: `${IMAGE_CDN}/Y2K-Heart.png`,
-  tumbler: `${IMAGE_CDN}/Y2K-Flower.png`,
-  throw_: `${IMAGE_CDN}/Y2K-Couch.png`,
+  watch: '/images/y2k/preview-watch.png',
+  headphones: '/images/y2k/preview-headphones.png',
+  backpack: '/images/y2k/preview-backpack.png',
+  wallet: '/images/y2k/preview-wallet.png',
+  tumbler: '/images/y2k/preview-tumbler.png',
+  throw_: '/images/y2k/preview-throw.png',
 };
 
 const Y2K_CONTENT: ThemeShowcaseContent = {
   images: Y2K_IMAGES,
   products: [
     {
-      name: 'Holo Flip Phone',
+      name: 'Phone',
       description: 'Iridescent clamshell with a rainbow screen.',
       badge: 'Retro',
       badgeVariant: 'blue',
@@ -359,7 +358,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'green',
     },
     {
-      name: 'Glitter Butterfly',
+      name: 'Butterfly',
       description: 'Sparkly stick-on in pastel chrome.',
       badge: 'New',
       badgeVariant: 'purple',
@@ -368,7 +367,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Holo Flip Phone',
+      name: 'Phone',
       meta: 'Iridescent, rainbow LCD',
       available: 64,
       location: 'Bin 1',
@@ -390,7 +389,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'c',
-      name: 'Glitter Butterfly',
+      name: 'Butterfly',
       meta: 'Stick-on, pastel chrome',
       available: 51,
       location: 'Bin 2',
@@ -437,19 +436,19 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
 
 // Gothic botanicals — moody single-stem floral photos.
 const GOTHIC_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Gothic-1.png`,
-  headphones: `${IMAGE_CDN}/Gothic-2.png`,
-  backpack: `${IMAGE_CDN}/Gothic-3.png`,
-  wallet: `${IMAGE_CDN}/Gothic-4.png`,
-  tumbler: `${IMAGE_CDN}/Gothic-5.png`,
-  throw_: `${IMAGE_CDN}/Gothic-6.png`,
+  watch: '/images/gothic/preview-watch.png',
+  headphones: '/images/gothic/preview-headphones.png',
+  backpack: '/images/gothic/preview-backpack.png',
+  wallet: '/images/gothic/preview-wallet.png',
+  tumbler: '/images/gothic/preview-tumbler.png',
+  throw_: '/images/gothic/preview-throw.png',
 };
 
 const GOTHIC_CONTENT: ThemeShowcaseContent = {
   images: GOTHIC_IMAGES,
   products: [
     {
-      name: 'Dried Sea Holly',
+      name: 'Sea Holly',
       description: 'A single preserved thistle stem with a steely bloom.',
       badge: 'New',
       badgeVariant: 'blue',
@@ -461,7 +460,7 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'red',
     },
     {
-      name: 'Lilac Ranunculus',
+      name: 'Ranunculus',
       description: 'Layered petals in a soft mauve.',
       badge: 'Limited',
       badgeVariant: 'purple',
@@ -470,7 +469,7 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Dried Sea Holly',
+      name: 'Sea Holly',
       meta: 'Preserved, single stem',
       available: 64,
       location: 'Cooler 1',
@@ -492,13 +491,13 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'c',
-      name: 'Lilac Ranunculus',
+      name: 'Ranunculus',
       meta: 'Fresh cut, mauve',
       available: 51,
       location: 'Cooler 2',
       tags: [{label: 'Limited', variant: 'purple'}],
       imageKey: 'backpack',
-      thumbnailFallback: 'L',
+      thumbnailFallback: 'R',
       selected: false,
     },
     {

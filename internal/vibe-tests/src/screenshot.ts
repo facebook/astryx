@@ -57,19 +57,19 @@ function generatePreviewCode(
   const importPath = relPath.replace(/\.tsx$/, '').replace(/\\/g, '/');
 
   if (target === 'astryx' || target === 'astryx-tailwind') {
-    // XDS+Tailwind uses the same XDS wrapper but also imports Tailwind CSS
+    // Astryx+Tailwind uses the same Astryx wrapper but also imports Tailwind CSS
     const tailwindImport =
       target === 'astryx-tailwind' ? `\nimport '../tailwind.css';` : '';
     return `
 import React from 'react';
 import Component from '${importPath}';${tailwindImport}
-import XDSWrapper from './xds-wrapper';
+import AstryxWrapper from './astryx-wrapper';
 
 export default function Preview({ theme }: { theme: string }) {
   return (
-    <XDSWrapper theme={theme}>
+    <AstryxWrapper theme={theme}>
       <Component />
-    </XDSWrapper>
+    </AstryxWrapper>
   );
 }
 `;

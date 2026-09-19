@@ -24,16 +24,15 @@ export default function Home() {
       <div style={{maxWidth: 640, width: '100%'}}>
         <VStack gap={6}>
           <VStack gap={2}>
-            <Heading level={1}>XDS Example — Next.js (Dist)</Heading>
+            <Heading level={1}>Astryx Example — Next.js (Dist)</Heading>
             <Text type="body" color="secondary">
               This example consumes{' '}
               <Text type="body" weight="bold">
                 @astryxdesign/core
               </Text>{' '}
-              
               as a pre-built dist package: no StyleX build plugin needed. Plain
-              inline styles handle layout. XDS handles components, theming, and
-              design tokens.
+              inline styles handle layout. Astryx handles components, theming,
+              and design tokens.
             </Text>
           </VStack>
 

@@ -2,12 +2,16 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import {useStreamingText} from './useStreamingText';
+import {snapToGraphemeBoundary, useStreamingText} from './useStreamingText';
 
 describe('useStreamingText', () => {
   let rafCallbacks: ((time: number) => void)[];
   let originalRAF: typeof requestAnimationFrame;
   let originalCAF: typeof cancelAnimationFrame;
+  let originalMatchMedia: typeof window.matchMedia | undefined;
+  // Toggled per-test to drive the reduced-motion media query. Reset in
+  // beforeEach so the preference never leaks between tests.
+  let prefersReducedMotion: boolean;
 
   beforeEach(() => {
     rafCallbacks = [];
@@ -19,33 +23,44 @@ describe('useStreamingText', () => {
     });
     globalThis.cancelAnimationFrame = vi.fn();
 
-    // Mock matchMedia for useTheme → useMediaQuery
-    if (!window.matchMedia) {
-      Object.defineProperty(window, 'matchMedia', {
-        writable: true,
-        value: vi.fn().mockImplementation((query: string) => ({
-          matches: false,
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        })),
-      });
-    }
+    // Mock matchMedia for useTheme → useMediaQuery and the hook's own
+    // reduced-motion read. Only the reduced-motion query reflects
+    // `prefersReducedMotion`; theme media queries always report no match.
+    prefersReducedMotion = false;
+    originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('prefers-reduced-motion')
+          ? prefersReducedMotion
+          : false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   afterEach(() => {
     globalThis.requestAnimationFrame = originalRAF;
     globalThis.cancelAnimationFrame = originalCAF;
+    // Restore matchMedia so the mock never leaks into other suites. jsdom
+    // has no matchMedia by default, so drop the property when there was none.
+    if (originalMatchMedia === undefined) {
+      // @ts-expect-error jsdom leaves matchMedia undefined by default
+      delete window.matchMedia;
+    } else {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it('returns full text when not streaming', () => {
-    const {result} = renderHook(() =>
-      useStreamingText('Hello world', false),
-    );
+    const {result} = renderHook(() => useStreamingText('Hello world', false));
     expect(result.current).toBe('Hello world');
   });
 
@@ -53,6 +68,26 @@ describe('useStreamingText', () => {
     const {result} = renderHook(() =>
       useStreamingText('Hello world', true, {speed: 'instant'}),
     );
+    expect(result.current).toBe('Hello world');
+  });
+
+  it('snaps to full text immediately when reduced motion is preferred', () => {
+    prefersReducedMotion = true;
+    const {result} = renderHook(() => useStreamingText('Hello world', true));
+    expect(result.current).toBe('Hello world');
+  });
+
+  it('keeps snapping to the full text on updates when reduced motion is preferred', () => {
+    prefersReducedMotion = true;
+    const {result, rerender} = renderHook(
+      ({text}) => useStreamingText(text, true),
+      {initialProps: {text: 'Hello'}},
+    );
+
+    expect(result.current).toBe('Hello');
+
+    // A later chunk arrives — it should appear in full, not reveal char-by-char.
+    rerender({text: 'Hello world'});
     expect(result.current).toBe('Hello world');
   });
 
@@ -153,5 +188,50 @@ describe('useStreamingText', () => {
     // With enough frames and time elapsed, should have revealed everything
     // (or close to it — the hook drains charsPerTick per tickMs)
     expect(result.current.length).toBeGreaterThan(targetText.length * 0.5);
+  });
+
+  it('never reveals a tick boundary landing mid-surrogate-pair or mid-ZWJ-emoji-sequence (#4779)', () => {
+    // natural speed advances 10 UTF-16 code units per tick. 9 ASCII chars
+    // (indices 0-8) followed by a 4-person ZWJ family emoji (indices 9-19,
+    // one grapheme cluster, 11 code units) means the first tick's raw
+    // boundary (index 10) lands one code unit into the family emoji's first
+    // surrogate pair -- exactly the failure case from the issue.
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
+    const targetText = 'a'.repeat(9) + family + 'end';
+    const {result} = renderHook(() => useStreamingText(targetText, true));
+
+    expect(rafCallbacks.length).toBeGreaterThan(0);
+    const cb = rafCallbacks.pop()!;
+    act(() => cb(performance.now() + 20));
+
+    // Without the fix this would be 'a'.repeat(9) + a lone high surrogate
+    // (renders as U+FFFD). With the fix, the whole not-yet-complete family
+    // cluster is held back rather than rendering a broken glyph.
+    expect(result.current).toBe('a'.repeat(9));
+  });
+});
+
+describe('snapToGraphemeBoundary', () => {
+  it('does not split a surrogate pair', () => {
+    const text = 'a\u{1F389}b'; // 🎉 is a surrogate pair: indices 1 (high) and 2 (low)
+    expect(snapToGraphemeBoundary(text, 2)).toBe(1);
+    expect(snapToGraphemeBoundary(text, 1)).toBe(1);
+  });
+
+  it('does not split a ZWJ emoji sequence', () => {
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
+    const text = 'x' + family + 'y';
+    const familyStart = 1;
+    const familyEnd = 1 + family.length;
+    for (let offset = familyStart + 1; offset < familyEnd; offset++) {
+      expect(snapToGraphemeBoundary(text, offset)).toBe(familyStart);
+    }
+  });
+
+  it('leaves boundary offsets (start, end, plain-ASCII midpoints) unchanged', () => {
+    const text = 'hello';
+    expect(snapToGraphemeBoundary(text, 0)).toBe(0);
+    expect(snapToGraphemeBoundary(text, 5)).toBe(5);
+    expect(snapToGraphemeBoundary(text, 3)).toBe(3);
   });
 });

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CommandPaletteGroup',
@@ -27,6 +27,16 @@ export const docs = {
       description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
+  playground: {
+    defaults: {
+      heading: 'Navigation',
+      children: [
+        {__element: 'CommandPaletteItem', props: {value: 'home', onSelect: undefined}, children: 'Go Home'},
+        {__element: 'CommandPaletteItem', props: {value: 'settings', onSelect: undefined}, children: 'Open Settings'},
+        {__element: 'CommandPaletteItem', props: {value: 'profile', onSelect: undefined}, children: 'View Profile'},
+      ],
+    },
+  },
 };
 
 export const docsZh = {

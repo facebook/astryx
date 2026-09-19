@@ -72,10 +72,28 @@ describe('Kbd', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument();
   });
 
-  it('is aria-hidden', () => {
-    const {container} = render(<Kbd keys="mod+k" />);
-    const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.getAttribute('aria-hidden')).toBe('true');
+  it('exposes a spoken accessible name and hides the glyphs (obs-1)', () => {
+    render(<Kbd keys="mod+shift+k" />);
+    // The wrapper carries a screen-reader name built from spoken key labels
+    // (jsdom is non-Mac, so mod → "Control").
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('aria-label', 'Control + Shift + K');
+    // The visual glyph elements are hidden from assistive tech.
+    const glyphs = img.querySelectorAll('kbd');
+    glyphs.forEach(g => expect(g).toHaveAttribute('aria-hidden', 'true'));
+    expect(img).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('uses "Command" in the accessible name for mod on Mac', () => {
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+    render(<Kbd keys="mod+k" />);
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'aria-label',
+      'Command + K',
+    );
   });
 
   it('uppercases unknown keys', () => {
@@ -100,5 +118,31 @@ describe('Kbd', () => {
     render(<Kbd keys="shift+plus" />);
     expect(screen.getByText('⇧')).toBeInTheDocument();
     expect(screen.getByText('+')).toBeInTheDocument();
+  });
+
+  it('keeps the computed role and aria-label when unrelated rest props are spread', () => {
+    render(<Kbd keys="mod+k" data-testid="kbd" id="shortcut" />);
+    const el = screen.getByTestId('kbd');
+    // Pass-through attributes land on the wrapper...
+    expect(el).toHaveAttribute('id', 'shortcut');
+    // ...without disturbing the computed accessibility contract.
+    expect(el).toHaveAttribute('role', 'img');
+    expect(el).toHaveAttribute('aria-label', 'Control + K');
+  });
+
+  it('computed role and aria-label win over consumer-passed overrides', () => {
+    // Contract props the component computes must not be clobbered by
+    // pass-through attributes: {...rest} is spread before role/aria-label.
+    render(
+      <Kbd
+        keys="mod+k"
+        role="presentation"
+        aria-label="custom"
+        data-testid="kbd"
+      />,
+    );
+    const el = screen.getByTestId('kbd');
+    expect(el).toHaveAttribute('role', 'img');
+    expect(el).toHaveAttribute('aria-label', 'Control + K');
   });
 });

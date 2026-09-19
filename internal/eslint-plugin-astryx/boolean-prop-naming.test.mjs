@@ -5,7 +5,6 @@
  * @description Tests for the Astryx boolean prop naming ESLint rule.
  */
 
-import {describe, it} from 'vitest';
 import {RuleTester} from 'eslint';
 import tseslint from 'typescript-eslint';
 import booleanPropNamingRule from './boolean-prop-naming.js';
@@ -19,143 +18,144 @@ const ruleTester = new RuleTester({
   },
 });
 
-describe('boolean-prop-naming', () => {
-  it('passes RuleTester valid/invalid cases', () => {
-    ruleTester.run('boolean-prop-naming', booleanPropNamingRule, {
-      valid: [
-        // ✅ Correct "is" prefix
-        {
-          code: `
+// RuleTester registers its own describe/it blocks internally, so it
+// must run at the top level. Vitest 4 forbids calling suite functions
+// (describe/it) from inside another it() callback.
+ruleTester.run('boolean-prop-naming', booleanPropNamingRule, {
+  valid: [
+    // ✅ Correct "is" prefix
+    {
+      code: `
             interface ButtonProps {
               isDisabled?: boolean;
             }
           `,
-        },
-        // ✅ Correct "has" prefix
-        {
-          code: `
+    },
+    // ✅ Correct "has" prefix
+    {
+      code: `
             interface TextInputProps {
               hasAutoFocus?: boolean;
             }
           `,
-        },
-        // ✅ Correct "initialIs" prefix
-        {
-          code: `
+    },
+    // ✅ Correct "initialIs" prefix
+    {
+      code: `
             interface DialogProps {
               initialIsOpen?: boolean;
             }
           `,
-        },
-        // ✅ Correct "initialHas" prefix
-        {
-          code: `
+    },
+    // ✅ Correct "initialHas" prefix
+    {
+      code: `
             interface SelectorProps {
               initialHasSelection?: boolean;
             }
           `,
-        },
-        // ✅ Correct "defaultIs" prefix
-        {
-          code: `
+    },
+    // ✅ Correct "defaultIs" prefix
+    {
+      code: `
             interface CollapsibleProps {
               defaultIsOpen?: boolean;
             }
           `,
-        },
-        // ✅ Correct "defaultHas" prefix
-        {
-          code: `
+    },
+    // ✅ Correct "defaultHas" prefix
+    {
+      code: `
             interface SelectorProps {
               defaultHasSelection?: boolean;
             }
           `,
-        },
-        // ✅ Correct "defaultIs" prefix — expanded
-        {
-          code: `
+    },
+    // ✅ Correct "defaultIs" prefix — expanded
+    {
+      code: `
             interface BannerProps {
               defaultIsExpanded?: boolean;
             }
           `,
-        },
-        // ✅ Non-boolean prop — should be ignored
-        {
-          code: `
+    },
+    // ✅ Non-boolean prop — should be ignored
+    {
+      code: `
             interface ButtonProps {
               label: string;
               size?: 'sm' | 'md' | 'lg';
             }
           `,
-        },
-        // ✅ Boolean in non-Props interface — should be ignored
-        {
-          code: `
+    },
+    // ✅ Boolean in non-Props interface — should be ignored
+    {
+      code: `
             interface TableContextValue {
               striped: boolean;
               hover: boolean;
             }
           `,
-        },
-        // ✅ Boolean in non-Props type alias — should be ignored
-        {
-          code: `
+    },
+    // ✅ Boolean in non-Props type alias — should be ignored
+    {
+      code: `
             type ItemData = {
               disabled?: boolean;
             };
           `,
-        },
-        // ✅ Union type with boolean — should be ignored (not purely boolean)
-        {
-          code: `
+    },
+    // ✅ Union type with boolean — should be ignored (not purely boolean)
+    {
+      code: `
             interface HeadingProps {
               truncateTooltip?: boolean | string;
             }
           `,
-        },
-        // ✅ aria-* props — excluded
-        {
-          code: `
+    },
+    // ✅ aria-* props — excluded
+    {
+      code: `
             interface ButtonProps {
               'aria-pressed'?: boolean;
             }
           `,
-        },
-        // ✅ data-* props — excluded
-        {
-          code: `
+    },
+    // ✅ data-* props — excluded
+    {
+      code: `
             interface ButtonProps {
               'data-active'?: boolean;
             }
           `,
-        },
-        // ✅ value prop — excluded (controlled component pattern)
-        {
-          code: `
+    },
+    // ✅ value prop — excluded (controlled component pattern)
+    {
+      code: `
             interface SwitchProps {
               value: boolean;
             }
           `,
-        },
-        // ✅ defaultValue prop — excluded
-        {
-          code: `
+    },
+    // ✅ defaultValue prop — excluded
+    {
+      code: `
             interface ToggleProps {
               defaultValue?: boolean;
             }
           `,
-        },
-        // ✅ Type alias with Props suffix — correct naming
-        {
-          code: `
+    },
+    // ✅ Type alias with Props suffix — correct naming
+    {
+      code: `
             type CardProps = {
               isFullBleed?: boolean;
             };
           `,
-        },
-        // ✅ Multiple valid props
-        {
-          code: `
+    },
+    // ✅ Multiple valid props
+    {
+      code: `
             interface FieldProps {
               isLabelHidden?: boolean;
               isOptional?: boolean;
@@ -164,182 +164,273 @@ describe('boolean-prop-naming', () => {
               hasAutoFocus?: boolean;
             }
           `,
-        },
-      ],
+    },
+  ],
 
-      invalid: [
-        // ❌ Missing prefix — should suggest "isDisabled"
-        {
-          code: `
+  invalid: [
+    {
+      code: `
             interface ButtonProps {
               disabled?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'disabled',
+            interfaceName: 'ButtonProps',
+            suggestion: 'isDisabled',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'disabled',
-                interfaceName: 'ButtonProps',
-                suggestion: 'isDisabled',
-              },
+              desc: 'Rename to "isDisabled"',
+              output: `
+            interface ButtonProps {
+              isDisabled?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Missing prefix — should suggest "isLoading"
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface ButtonProps {
               loading?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'loading',
+            interfaceName: 'ButtonProps',
+            suggestion: 'isLoading',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'loading',
-                interfaceName: 'ButtonProps',
-                suggestion: 'isLoading',
-              },
+              desc: 'Rename to "isLoading"',
+              output: `
+            interface ButtonProps {
+              isLoading?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Missing prefix — should suggest "isInline"
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface CenterProps {
               inline?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'inline',
+            interfaceName: 'CenterProps',
+            suggestion: 'isInline',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'inline',
-                interfaceName: 'CenterProps',
-                suggestion: 'isInline',
-              },
+              desc: 'Rename to "isInline"',
+              output: `
+            interface CenterProps {
+              isInline?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Missing prefix — should suggest "isStandalone"
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface LinkProps {
               standalone?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'standalone',
+            interfaceName: 'LinkProps',
+            suggestion: 'isStandalone',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'standalone',
-                interfaceName: 'LinkProps',
-                suggestion: 'isStandalone',
-              },
+              desc: 'Rename to "isStandalone"',
+              output: `
+            interface LinkProps {
+              isStandalone?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Missing prefix in type alias
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             type TableProps = {
               striped?: boolean;
             };
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'striped',
+            interfaceName: 'TableProps',
+            suggestion: 'isStriped',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'striped',
-                interfaceName: 'TableProps',
-                suggestion: 'isStriped',
-              },
+              desc: 'Rename to "isStriped"',
+              output: `
+            type TableProps = {
+              isStriped?: boolean;
+            };
+          `,
             },
           ],
         },
-        // ❌ "required" should suggest "isRequired"
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface FieldProps {
               required?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'required',
+            interfaceName: 'FieldProps',
+            suggestion: 'isRequired',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'required',
-                interfaceName: 'FieldProps',
-                suggestion: 'isRequired',
-              },
+              desc: 'Rename to "isRequired"',
+              output: `
+            interface FieldProps {
+              isRequired?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ "checked" should suggest "isChecked"
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface CheckboxProps {
               checked?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'checked',
+            interfaceName: 'CheckboxProps',
+            suggestion: 'isChecked',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'checked',
-                interfaceName: 'CheckboxProps',
-                suggestion: 'isChecked',
-              },
+              desc: 'Rename to "isChecked"',
+              output: `
+            interface CheckboxProps {
+              isChecked?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Multiple violations in one interface
-        {
-          code: `
+      ],
+    },
+    {
+      code: `
             interface TableProps {
               striped?: boolean;
               hover?: boolean;
             }
           `,
-          errors: [
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'striped',
+            interfaceName: 'TableProps',
+            suggestion: 'isStriped',
+          },
+          suggestions: [
             {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'striped',
-                interfaceName: 'TableProps',
-                suggestion: 'isStriped',
-              },
-            },
-            {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'hover',
-                interfaceName: 'TableProps',
-                suggestion: 'hasHover',
-              },
+              desc: 'Rename to "isStriped"',
+              output: `
+            interface TableProps {
+              isStriped?: boolean;
+              hover?: boolean;
+            }
+          `,
             },
           ],
         },
-        // ❌ Unknown prop gets generic "is" prefix suggestion
         {
-          code: `
-            interface WidgetProps {
-              active?: boolean;
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'hover',
+            interfaceName: 'TableProps',
+            suggestion: 'hasHover',
+          },
+          suggestions: [
+            {
+              desc: 'Rename to "hasHover"',
+              output: `
+            interface TableProps {
+              striped?: boolean;
+              hasHover?: boolean;
             }
           `,
-          errors: [
-            {
-              messageId: 'invalidBooleanPropName',
-              data: {
-                name: 'active',
-                interfaceName: 'WidgetProps',
-                suggestion: 'isActive',
-              },
             },
           ],
         },
       ],
-    });
-  });
+    },
+    {
+      code: `
+            interface WidgetProps {
+              active?: boolean;
+            }
+          `,
+      errors: [
+        {
+          messageId: 'invalidBooleanPropName',
+          data: {
+            name: 'active',
+            interfaceName: 'WidgetProps',
+            suggestion: 'isActive',
+          },
+          suggestions: [
+            {
+              desc: 'Rename to "isActive"',
+              output: `
+            interface WidgetProps {
+              isActive?: boolean;
+            }
+          `,
+            },
+          ],
+        },
+      ],
+    },
+  ],
 });

@@ -27,9 +27,3 @@ export type {
   UseCalendarNavigationOptions,
   UseCalendarNavigationReturn,
 } from './useCalendarNavigation';
-
-export {useCalendarRovingTabindex} from './useCalendarRovingTabindex';
-export type {
-  UseCalendarRovingTabindexOptions,
-  UseCalendarRovingTabindexReturn,
-} from './useCalendarRovingTabindex';

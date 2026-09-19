@@ -12,7 +12,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
- * - /packages/cli/templates/blocks/components/Layout/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Layout/ (showcase blocks)
  */
 
 import type {AriaRole, ReactNode} from 'react';
@@ -23,7 +23,7 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {LayoutAreaContext} from './LayoutAreaContext';
 import {LayoutSlotsContext} from './LayoutSlotsContext';
 import {mergeProps} from '../utils';
-import type {SpacingStep} from '../utils/types';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import type {ResizableProps} from '../Resizable/useResizable';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -102,7 +102,7 @@ const styles = stylex.create({
 
 // Dynamic styles for sizing props
 const dynamicStyles = stylex.create({
-  sizing: (width: number | string | null) => ({
+  sizing: (width: SizeValue | null) => ({
     width,
   }),
 });
@@ -158,7 +158,7 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
    * Numbers are treated as pixels, strings are used as-is.
    * When `resizable` is provided, this is ignored — the hook controls width.
    */
-  width?: number | string;
+  width?: SizeValue;
 
   /**
    * Resize props from `useResizable()`. When provided, the panel width
@@ -167,7 +167,7 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
    *
    * @example
    * ```
-   * const sidebar = useResizable({ defaultSize: 250, minSizePx: 200 });
+   * const sidebar = useResizable({ defaultSize: 250, minSize: 200 });
    * <LayoutPanel resizable={sidebar.props}>
    *   <Navigation />
    * </LayoutPanel>

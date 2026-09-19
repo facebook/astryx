@@ -47,6 +47,7 @@ function ControlledEditor(
   const [value, setValue] = useState(props.value ?? defaultCode);
   return (
     <CodeEditor
+      label="Code editor"
       language="typescript"
       hasLineNumbers
       {...props}

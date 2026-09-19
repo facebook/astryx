@@ -414,7 +414,10 @@ export const WithTabNavigation: Story = {
               size={size}
               dividers={['bottom']}
               startContent={
-                <TabList value={tab} onChange={setTab}>
+                <TabList
+                  value={tab}
+                  onChange={setTab}
+                  aria-label={`Tab navigation (${size})`}>
                   <Tab value="overview" label="Overview" />
                   <Tab value="analytics" label="Analytics" />
                   <Tab value="settings" label="Settings" />

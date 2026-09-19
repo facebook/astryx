@@ -4,14 +4,36 @@
 
 /**
  * @file hooks.ts
+ * @input Uses untransformed DOM layout geometry from the Selector's outer
+ *   anchor, listbox, and selected option
  * @output Hooks for Selector
  * @position Internal hooks; used by Selector.tsx
  */
 
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useState} from 'react';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
+
+// The selected row renders one optical pixel below the closed trigger label at
+// the same mathematical center, so compensate before viewport clamping.
+const SELECTED_ITEM_OPTICAL_OFFSET = 1;
+
+/**
+ * Return an element's document-relative layout top without CSS transforms.
+ * getBoundingClientRect includes the popover's entry scale, which would make
+ * the measured error grow with each option's distance from the menu top.
+ */
+function getLayoutTop(element: HTMLElement): number {
+  let top = 0;
+  let current: HTMLElement | null = element;
+  while (current) {
+    top += current.offsetTop;
+    current = current.offsetParent as HTMLElement | null;
+  }
+  return top;
+}
 
 // =============================================================================
 // useSelectedItemOffset - Position dropdown to center selected item over trigger
@@ -22,7 +44,7 @@ interface UseSelectedItemOffsetOptions {
   selectedItemIndex: number;
   listboxId: string;
   listboxRef: RefObject<HTMLDivElement | null>;
-  triggerRef: RefObject<HTMLButtonElement | null>;
+  anchorRef: RefObject<HTMLElement | null>;
 }
 
 interface UseSelectedItemOffsetResult {
@@ -32,9 +54,9 @@ interface UseSelectedItemOffsetResult {
 
 /**
  * Calculates the offset needed to position the dropdown so that the selected
- * item appears centered over the trigger button (macOS-style selector).
+ * item appears centered over the outer selector control (macOS-style selector).
  *
- * The desired dropdown top is calculated directly from the trigger center and
+ * The desired dropdown top is calculated directly from the anchor center and
  * selected-item center, then clamped to the viewport. This preserves the
  * default "selected item over trigger" behavior while letting the menu slide
  * upward near the bottom edge or downward near the top edge instead of being
@@ -45,7 +67,7 @@ export function useSelectedItemOffset({
   selectedItemIndex,
   listboxId,
   listboxRef,
-  triggerRef,
+  anchorRef,
 }: UseSelectedItemOffsetOptions): UseSelectedItemOffsetResult {
   const [offset, setOffset] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
@@ -67,7 +89,7 @@ export function useSelectedItemOffset({
       return;
     }
 
-    if (!listboxRef.current || !triggerRef.current) {
+    if (!listboxRef.current || !anchorRef.current) {
       commitPosition(0, true);
       return;
     }
@@ -83,34 +105,37 @@ export function useSelectedItemOffset({
       return;
     }
 
-    // Get positions. JSDOM returns zero rects by default, but browsers provide
-    // real dimensions before paint via layout effect.
-    const listboxRect = listboxRef.current.getBoundingClientRect();
-    const itemRect = targetItem.getBoundingClientRect();
-    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const listbox = listboxRef.current;
+    const anchorRect = anchorRef.current.getBoundingClientRect();
 
-    const listboxHeight = listboxRect.height;
+    // offset* metrics intentionally exclude the popover's entry transform.
+    const listboxHeight = listbox.offsetHeight;
     if (listboxHeight <= 0) {
       commitPosition(0, true);
       return;
     }
 
     // Item center relative to listbox top. This remains stable even as the
-    // popover's top changes between measurements.
+    // popover animates between scale values. scrollTop keeps the calculation
+    // correct when a previously scrolled listbox is reopened.
     const itemCenterInListbox =
-      itemRect.top - listboxRect.top + itemRect.height / 2;
-    const triggerCenter = triggerRect.top + triggerRect.height / 2;
+      getLayoutTop(targetItem) -
+      getLayoutTop(listbox) -
+      listbox.scrollTop +
+      targetItem.offsetHeight / 2;
+    const anchorCenter = anchorRect.top + anchorRect.height / 2;
 
-    // Desired top aligns the selected item's center with trigger center.
-    const desiredTop = triggerCenter - itemCenterInListbox;
+    // Desired top aligns the selected item's center with the anchor center.
+    const desiredTop =
+      anchorCenter - itemCenterInListbox - SELECTED_ITEM_OPTICAL_OFFSET;
     const viewportHeight = window.innerHeight;
     const maxTop = Math.max(0, viewportHeight - listboxHeight);
     const clampedTop = Math.min(Math.max(desiredTop, 0), maxTop);
 
-    // useLayer positions the popover below the trigger. Apply a negative
+    // useLayer positions the popover below the outer anchor. Apply a negative
     // block-start margin to the layer container so the listbox top moves from
-    // triggerRect.bottom to clampedTop.
-    const clampedOffset = Math.max(0, triggerRect.bottom - clampedTop);
+    // anchorRect.bottom to clampedTop.
+    const clampedOffset = Math.max(0, anchorRect.bottom - clampedTop);
 
     commitPosition(clampedOffset, true);
   }, [
@@ -118,7 +143,7 @@ export function useSelectedItemOffset({
     selectedItemIndex,
     listboxId,
     listboxRef,
-    triggerRef,
+    anchorRef,
     commitPosition,
   ]);
 
@@ -126,7 +151,7 @@ export function useSelectedItemOffset({
 }
 
 // =============================================================================
-// useCombobox - Keyboard navigation, typeahead, and selection
+// useCombobox - Keyboard navigation and selection
 // =============================================================================
 
 interface UseComboboxOptions {
@@ -135,9 +160,23 @@ interface UseComboboxOptions {
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
-  onOpen: () => void;
+  onOpen: () => unknown;
   onClose: () => void;
   onSelect?: (value: string) => void;
+  /**
+   * Clear the current value. When provided, pressing Delete or Backspace on the
+   * closed trigger clears the selection — a keyboard equivalent of the clear
+   * button, so clearing is not mouse-only. No-op when the popup is open (arrow
+   * navigation owns those keys there) or when there is no value.
+   */
+  onClear?: () => void;
+  /**
+   * With `hasSearch`, printable characters typed on the trigger are appended to
+   * the search query (opening the popup if needed), so type-to-find works
+   * without a separate open step. Characters keep arriving here until focus
+   * lands in the search input, which then owns its own typing.
+   */
+  onSearchSeed?: (char: string) => void;
   listboxId: string;
 }
 
@@ -152,7 +191,12 @@ interface UseComboboxResult {
 }
 
 /**
- * Handles keyboard navigation, typeahead search, and selection for combobox/listbox patterns.
+ * Handles keyboard navigation and selection for combobox/listbox patterns.
+ *
+ * Type-to-select is not handled here: callers that want it compose the shared
+ * `useTypeahead` hook and run it ahead of this handler (see Selector). That
+ * keeps matching consistent with the other collections and leaves consumers
+ * whose own input already filters the items (CommandPalette) untouched.
  */
 export function useCombobox({
   selectableItems,
@@ -163,13 +207,11 @@ export function useCombobox({
   onOpen,
   onClose,
   onSelect,
+  onClear,
+  onSearchSeed,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [typeahead, setTypeahead] = useState('');
-  const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
 
   const getItemId = useCallback(
     (index: number) => `${listboxId}-item-${index}`,
@@ -209,21 +251,30 @@ export function useCombobox({
     if (isOpen) {
       closeAndReset();
     } else {
-      onOpen();
-      if (!hasSearch) {
+      const didOpen = onOpen() !== false;
+      if (didOpen && !hasSearch) {
         const selectedIndex = findSelectedIndex();
         setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
       }
     }
   }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
 
+  // The scroll effect lives here, the highlight owner, so every consumer
+  // (Selector, CommandPalette) shares one hover/keyboard split (#6077).
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+  });
+
   const onItemMouseEnter = useCallback(
     (item: SelectorOptionData, index: number) => {
       if (!item.disabled) {
-        setHighlightedIndex(index);
+        highlightOnHover(index);
       }
     },
-    [],
+    [highlightOnHover],
   );
 
   const onKeyDown = useCallback(
@@ -238,8 +289,9 @@ export function useCombobox({
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(0);
+            if (onOpen() !== false) {
+              setHighlightedIndex(0);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
@@ -253,8 +305,9 @@ export function useCombobox({
         case 'ArrowUp':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            if (onOpen() !== false) {
+              setHighlightedIndex(selectableItems.length - 1);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
@@ -266,6 +319,8 @@ export function useCombobox({
           if (hasSearch) {
             break;
           }
+        // A space mid-typeahead extends the query instead of activating; the
+        // caller's useTypeahead claims it before this handler ever runs.
         // falls through
         case 'Enter':
           e.preventDefault();
@@ -275,8 +330,8 @@ export function useCombobox({
               selectItem(item);
             }
           } else if (!isOpen) {
-            onOpen();
-            if (!hasSearch) {
+            const didOpen = onOpen() !== false;
+            if (didOpen && !hasSearch) {
               const selectedIndex = findSelectedIndex();
               setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
             }
@@ -310,28 +365,49 @@ export function useCombobox({
           }
           break;
 
+        // PageUp/PageDown mirror Home/End. In search mode Home/End stay on
+        // the input for caret movement (APG editable combobox), so these are
+        // the sanctioned substitute for jumping to the first/last option.
+        case 'PageUp':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[0]);
+          }
+          break;
+
+        case 'PageDown':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[enabledIndices.length - 1]);
+          }
+          break;
+
+        case 'Delete':
+        case 'Backspace':
+          // Keyboard equivalent of the clear button (comboboxes-2): clear the
+          // value from the closed trigger so clearing is not mouse-only. When
+          // hasSearch is active these keys must edit the search text instead,
+          // and when the popup is open arrow navigation owns interaction, so
+          // only handle the closed non-search case with a clearable value.
+          if (!hasSearch && !isOpen && onClear != null && value != null) {
+            e.preventDefault();
+            onClear();
+          }
+          break;
+
         default:
-          if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-            const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
-            }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
-            const matchIndex = selectableItems.findIndex(
-              item =>
-                !item.disabled &&
-                item.label?.toLowerCase().startsWith(newTypeahead),
-            );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
-              }
-              setHighlightedIndex(matchIndex);
+          // Keys land here only while the trigger holds focus — once the search
+          // input takes over it handles its own typing — so they belong in the
+          // query, including the ones racing the open.
+          if (
+            hasSearch &&
+            onSearchSeed &&
+            e.key.length === 1 &&
+            !e.ctrlKey &&
+            !e.metaKey
+          ) {
+            if (isOpen || onOpen() !== false) {
+              onSearchSeed(e.key);
             }
           }
           break;
@@ -347,8 +423,10 @@ export function useCombobox({
       selectItem,
       findSelectedIndex,
       getEnabledIndices,
-      typeahead,
       hasSearch,
+      onClear,
+      onSearchSeed,
+      value,
     ],
   );
 

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /* global module, __dirname */
-const path = require('path');
+const path = require('node:path');
 const {postcss} = require('@astryxdesign/build');
 
 const rootDir = path.resolve(__dirname, '../..');
@@ -11,6 +11,6 @@ const rootDir = path.resolve(__dirname, '../..');
 // plugin only needs to handle product code here.
 module.exports = postcss(rootDir, {
   appDir: path.relative(rootDir, path.resolve(__dirname, 'src')),
-  extraInclude: ['packages/cli/templates/**/*.{ts,tsx}'],
+  extraInclude: ['packages/cli/assets/templates/**/*.{ts,tsx}'],
   classNamePrefix: 'p',
 });

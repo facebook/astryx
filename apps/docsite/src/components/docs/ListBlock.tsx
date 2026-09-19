@@ -52,7 +52,7 @@ export function ListBlock({
     );
   }
 
-  const xdsListStyle =
+  const resolvedListStyle =
     listStyle === 'ordered'
       ? 'decimal'
       : listStyle === 'unordered'
@@ -60,7 +60,7 @@ export function ListBlock({
         : 'none';
 
   return (
-    <List density="compact" listStyle={xdsListStyle}>
+    <List density="compact" listStyle={resolvedListStyle}>
       {items.map((item, i) => (
         <ListItem key={i} label={renderInlineMarkdown(item)} />
       ))}

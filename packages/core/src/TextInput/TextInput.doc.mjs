@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -72,11 +72,35 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'onEnter',
+      type: '() => void',
+      description:
+        'Callback fired when the user presses the Enter key. IME-safe: Enter used to commit a Japanese/Chinese/Korean conversion does not fire it.',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description:
         'Disables the input, preventing interaction and dimming the element.',
       default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the input read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only input is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'isLoading',
@@ -100,13 +124,20 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'SVG icon component displayed at the start of the input. See `npx astryx docs icons` for valid semantic names.',
+        'SVG icon component displayed at the start of the input. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
         'Validation status: applies a colored border and status icon. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'hasClear',
@@ -127,10 +158,22 @@ export const docs = {
       description:
         'The HTML name attribute for the input, useful for form submissions.',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the input unchanged. Does not affect the controlled value.',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {
@@ -144,6 +187,7 @@ export const docs = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -157,7 +201,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextInput',
   displayName: 'Text Input',
@@ -232,6 +276,19 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将输入框设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读输入框不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
+      default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        '说明输入框被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持输入框可聚焦（字段变为只读）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TextInput——已禁用的控件会吞掉外部 Tooltip 所需的悬停事件。',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description:
@@ -262,6 +319,13 @@ export const docsZh = {
         '验证状态：应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
       name: 'hasClear',
       type: 'boolean',
       description: '输入有值时显示清除 (×) 按鈕。点击后清空值并将焦点返回输入框。',
@@ -279,10 +343,16 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给输入框。不影响受控的值。',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {
@@ -296,6 +366,7 @@ export const docsZh = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -309,7 +380,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Text input for collecting user text w/ label, description, validation status, optional/required indicators.',
   usage: {
@@ -323,6 +394,7 @@ export const docsDense = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -346,13 +418,19 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables input, prevents interaction, dims element.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
+    disabledMessage:
+      'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps input focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextInput in Tooltip.',
     isLoading: 'Loading state w/ spinner+aria-busy.',
     placeholder: 'Placeholder when input empty.',
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'SVG icon at input start (e.g. heroicons or lucide).',
     status: 'Validation status; colored border+icon. Message floats below. Error sets aria-invalid.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
   },
 };

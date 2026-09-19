@@ -106,4 +106,38 @@ describe('ClickableCard', () => {
     const link = screen.getByRole('link', {name: 'Disabled link'});
     expect(link).toHaveAttribute('aria-disabled', 'true');
   });
+
+  describe('elevation', () => {
+    it('forwards a distinct elevation class to the card for each level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <ClickableCard label="Card" elevation={elevation}>
+            Content
+          </ClickableCard>,
+        );
+        return container.firstElementChild!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(
+        <ClickableCard label="Card">Content</ClickableCard>,
+      );
+      const {container: none} = render(
+        <ClickableCard label="Card" elevation="none">
+          Content
+        </ClickableCard>,
+      );
+      expect(def.firstElementChild!.className).toBe(
+        none.firstElementChild!.className,
+      );
+    });
+  });
 });

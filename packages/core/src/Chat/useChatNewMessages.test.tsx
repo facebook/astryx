@@ -64,7 +64,7 @@ describe('useChatNewMessages — callback ref (issue #2282)', () => {
       const {contentRef} = useChatNewMessages({isLocked: true, onResize});
       return (
         <div ref={contentRef} data-testid="content">
-          <div className="xds-chat-message">msg</div>
+          <div className="astryx-chat-message">msg</div>
         </div>
       );
     }
@@ -91,7 +91,7 @@ describe('useChatNewMessages — callback ref (issue #2282)', () => {
           </button>
           {mounted && (
             <div ref={contentRef} data-testid="content">
-              <div className="xds-chat-message">msg</div>
+              <div className="astryx-chat-message">msg</div>
             </div>
           )}
         </>
@@ -129,7 +129,7 @@ describe('useChatNewMessages — callback ref (issue #2282)', () => {
           </button>
           {mounted && (
             <div ref={contentRef} data-testid="content">
-              <div className="xds-chat-message">msg</div>
+              <div className="astryx-chat-message">msg</div>
             </div>
           )}
         </>
@@ -198,7 +198,7 @@ describe('useChatNewMessages — callback ref (issue #2282)', () => {
       if (!el.querySelector?.('.astryx-chat-message')) {
         return false;
       }
-      if (el.className?.includes('xds-chat-layout')) {
+      if (el.className?.includes('astryx-chat-layout')) {
         return false;
       }
       return true;

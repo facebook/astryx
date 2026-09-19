@@ -1,16 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file sandboxPages.ts
+ * @file Central registry of sandbox categories and persistent navigation.
+ * @input Authored sandbox metadata and the generated template registry.
+ * @output Typed category, home, and audit navigation entries.
  * @position Central registry of all sandbox pages, grouped by category.
  *
- * The "Templates" category is auto-populated from packages/cli/templates/
+ * The "Templates" category is auto-populated from packages/cli/assets/templates/
  * via `node scripts/sync-templates.js`. Each template has a template.doc.mjs
  * that provides metadata. The sync script generates a registry file at
  * src/generated/templateRegistry.ts.
  *
  * To add a new template:
- *   1. Create packages/cli/templates/<name>/page.tsx + template.doc.mjs
+ *   1. Create packages/cli/assets/templates/<name>/page.tsx + template.doc.mjs
  *   2. Run `node scripts/sync-templates.js`
  *   3. It appears in the sandbox and CLI automatically
  *
@@ -44,6 +46,40 @@ export interface SandboxCategory {
   pages: SandboxPage[];
 }
 
+/**
+ * Persistent sidebar destinations that are not generated category pages.
+ * `icon` is a key into SandboxNav's icon map so this module stays JSX-free.
+ */
+export interface SandboxNavPage {
+  /** Label shown in the sidebar */
+  label: string;
+  /** Route path (with trailing slash) */
+  href: string;
+  /** Key into SandboxNav's icon map */
+  icon: string;
+  /**
+   * Match child routes too. Home must not (`/` prefixes everything); a section
+   * with sub-pages should.
+   */
+  matchesChildren?: boolean;
+}
+
+export const homePage: SandboxNavPage = {
+  label: 'Home',
+  href: '/',
+  icon: 'home',
+};
+
+export const auditPages: SandboxNavPage[] = [
+  {label: 'Template Audits', href: '/templates/', icon: 'templates'},
+  {
+    label: 'Component Audits',
+    href: '/pages/component-scores/',
+    icon: 'scores',
+    matchesChildren: true,
+  },
+];
+
 export const categories: SandboxCategory[] = [
   {
     label: 'Components & Patterns',
@@ -52,9 +88,22 @@ export const categories: SandboxCategory[] = [
       'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
+        name: 'Mobile Prototypes',
+        href: '/pages/mobile-prototypes/',
+        description:
+          'Interactive mobile interaction prototypes (bottom sheets, action sheets, drawers) for the component migration table',
+      },
+      {
+        name: 'TextArea Counter',
+        href: '/pages/textarea-counter/',
+        description:
+          'Explore where the character counter sits on the TextArea — below, inline with the label, or overlaid inside the field',
+      },
+      {
         name: 'Card Examples',
         href: '/pages/example-cards/',
-        description: 'Astryx components showcased in realistic card compositions',
+        description:
+          'Astryx components showcased in realistic card compositions',
       },
       {
         name: 'Table Overview',
@@ -97,6 +146,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example/',
         description: 'General component composition examples',
       },
+      {
+        name: 'Tap Targets (AA)',
+        href: '/pages/tap-targets/',
+        description:
+          'WCAG 2.5.8 AA touch-target sizes visualized on real components',
+      },
     ],
   },
   {
@@ -117,6 +172,12 @@ export const categories: SandboxCategory[] = [
     slug: 'themes',
     description: 'Theme palette previews and design token references.',
     pages: [
+      {
+        name: 'Theme Family Artifacts',
+        href: '/pages/theme-family/',
+        description:
+          'One generated CSS/ESM family with attribute switching, nested descendants, sibling isolation, and cascade-order evidence',
+      },
       {
         name: 'Neutral Palette',
         href: '/pages/neutral-palette/',
@@ -153,12 +214,25 @@ export const categories: SandboxCategory[] = [
         description:
           'Generate and explore color palettes from an accent color or image',
       },
+      {
+        name: 'Palette Generator Lab',
+        href: '/pages/palette-generator/',
+        description:
+          'Compare experimental OKLCH and HCT-like ramps with profiles, anchors, custom stops, and separate dark-mode generation',
+      },
+      {
+        name: 'Mobile Spacing',
+        href: '/pages/mobile-spacing/',
+        description:
+          'Draft mobile semantic spacing preview with real component scale comparisons',
+      },
     ],
   },
   {
     label: 'Tools',
     slug: 'tools',
-    description: 'Interactive tools for building and exploring Astryx components.',
+    description:
+      'Interactive tools for building and exploring Astryx components.',
     pages: [
       {
         name: 'Layout DSL',
@@ -170,6 +244,18 @@ export const categories: SandboxCategory[] = [
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',
+      },
+      {
+        name: 'Table Lab',
+        href: '/pages/table-lab/',
+        description:
+          'Test any combination of Table plugins with live scroll FPS, dropped-frame, and re-render metrics',
+      },
+      {
+        name: 'Motion Lab',
+        href: '/pages/motion-lab/',
+        description:
+          'Every motion proposal as a working before-and-after, with the durations, curves and springs tunable live',
       },
       {
         name: 'Foundations',
@@ -188,6 +274,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
+      },
+      {
+        name: 'Mobile Type',
+        href: '/pages/mobile-type/',
+        description: 'How the type scale adapts on touch devices',
       },
     ],
   },

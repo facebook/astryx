@@ -16,7 +16,3 @@ export type {
   NavHeadingCloseContextValue,
   NavHeadingMenuSize,
 } from './NavMenuContext';
-
-// Backward compat — use NavHeadingMenuItem instead.
-export {NavMenuItem} from './NavMenuItem';
-export type {NavMenuItemProps} from './NavMenuItem';

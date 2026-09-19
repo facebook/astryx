@@ -132,6 +132,19 @@ describe('paginateData', () => {
     expect(paginateData([], 1, 10)).toEqual([]);
   });
 
+  it('clamps invalid page numbers to the first page (#3593)', () => {
+    const data = generateItems(30);
+    // Negative pages previously fed a negative index to Array.slice, which
+    // counts from the END of the data — the tail dressed up as a page.
+    expect(paginateData(data, -1, 10)[0].id).toBe('1');
+    expect(paginateData(data, 0, 10)[0].id).toBe('1');
+    expect(paginateData(data, NaN, 10)[0].id).toBe('1');
+    // Fractional pages floor to the containing page instead of straddling two.
+    expect(paginateData(data, 1.5, 10).map(i => i.id)).toEqual(
+      paginateData(data, 1, 10).map(i => i.id),
+    );
+  });
+
   it('returns empty array when page exceeds data', () => {
     const data = generateItems(10);
     expect(paginateData(data, 5, 10)).toEqual([]);
@@ -184,6 +197,22 @@ describe('useTablePagination', () => {
       ).toBeTruthy();
     });
 
+    it('guards pageSize 0 against Infinity page counts', () => {
+      render(<PaginatedTable data={generateItems(5)} pageSize={0} />);
+      expect(
+        screen.getByRole('navigation', {name: 'Table pagination'}),
+      ).toBeInTheDocument();
+      // pageSize is coerced to 1, so 5 items produce 5 pages, not Infinity,
+      // and page 1 shows the first item instead of an empty slice
+      expect(
+        screen.queryByRole('button', {name: 'Go to page Infinity'}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('button', {name: 'Go to page 5'}),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Item 1')).toBeInTheDocument();
+    });
+
     it('transformTableContext renders Pagination above table', () => {
       render(
         <PaginatedTable
@@ -200,7 +229,7 @@ describe('useTablePagination', () => {
       ).toBeTruthy();
     });
 
-    it('transformTableContext renders Pagination above and below', () => {
+    it('transformTableContext renders distinctly named Pagination above and below', () => {
       render(
         <PaginatedTable
           data={generateItems(30)}
@@ -208,10 +237,40 @@ describe('useTablePagination', () => {
           position="both"
         />,
       );
-      const navs = screen.getAllByRole('navigation', {
-        name: 'Table pagination',
+      const table = screen.getByRole('table');
+      // Each nav landmark gets a unique accessible name (axe landmark-unique)
+      const topNav = screen.getByRole('navigation', {
+        name: 'Table pagination (top)',
       });
-      expect(navs).toHaveLength(2);
+      const bottomNav = screen.getByRole('navigation', {
+        name: 'Table pagination (bottom)',
+      });
+      // Top nav comes before the table, bottom nav after it in DOM order
+      expect(
+        table.compareDocumentPosition(topNav) &
+          Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+      expect(
+        table.compareDocumentPosition(bottomNav) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('position="both" interpolates a consumer label into distinct nav names', () => {
+      render(
+        <PaginatedTable
+          data={generateItems(30)}
+          pageSize={10}
+          position="both"
+          label="Users table"
+        />,
+      );
+      expect(
+        screen.getByRole('navigation', {name: 'Users table (top)'}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('navigation', {name: 'Users table (bottom)'}),
+      ).toBeInTheDocument();
     });
 
     it('transformTableContext does not render Pagination when position is none', () => {

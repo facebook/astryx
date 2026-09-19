@@ -21,6 +21,13 @@ export interface CheckboxListContextValue {
    */
   onChange?: (values: string[], toggledValue?: string) => void;
   isDisabled: boolean;
+  /**
+   * True when the whole group is disabled *and* a `disabledMessage` is set. In
+   * that mode items stay focusable via `aria-disabled` (instead of the native
+   * `disabled` attribute) so the group's disabled-reason tooltip is keyboard-
+   * and AT-discoverable; toggling is still blocked.
+   */
+  hasDisabledMessage?: boolean;
   isReadOnly: boolean;
   /**
    * The value of the item with a pending `changeAction`, or null when idle.

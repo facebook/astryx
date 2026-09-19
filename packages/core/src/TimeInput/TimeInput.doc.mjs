@@ -1,31 +1,105 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TimeInput',
   displayName: 'Time Input',
-  category: 'Data Input',
-  keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield","schedule"],
+  category: 'Form Controls',
+  keywords: [
+    'timeinput',
+    'timepicker',
+    'time',
+    'clock',
+    'hour',
+    'minute',
+    'ampm',
+    'timeselect',
+    'timefield',
+    'schedule',
+  ],
 
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      "TimeInput uses a browser/OS time picker on coarse pointers by default and Astryx's typed field on fine pointers. It converts values to a standard format and supports arrow-key adjustment on the typed surface. Use it in forms, scheduling flows, or any interface where users need to select a specific time.",
     bestPractices: [
-      {guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\u2019s locale \u2014 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.'},
-      {guidance: true, description: 'Set min and max constraints when the context has a valid range, like business hours or event windows, so users cannot submit an out-of-bounds time.'},
-      {guidance: true, description: 'Provide a description or placeholder that hints at the expected format or purpose, like \u201cBusiness hours: 9 AM \u2013 5 PM\u201d.'},
-      {guidance: true, description: 'Use the status prop to surface validation errors inline \u2014 show a message like \u201cTime must be during business hours\u201d so users know exactly what to fix.'},
-      {guidance: true, description: 'Enable hasClear when the field is optional, so users can remove a previously selected time.'},
-      {guidance: false, description: 'Don\u2019t use TimeInput for combined date-and-time selection \u2014 pair it with a separate DateInput instead.'},
-      {guidance: false, description: 'Don\u2019t hide the label \u2014 even when space is tight, keep the label visible or provide a description so the purpose is clear.'},
+      {
+        guidance: true,
+        description:
+          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
+      },
+      {
+        guidance: true,
+        description:
+          'Set min and max constraints when the context has a valid range, like business hours or event windows, so users cannot submit an out-of-bounds time.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a description or placeholder that hints at the expected format or purpose, like "Business hours: 9 AM \u2013 5 PM".',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the status prop to surface validation errors inline: show a message like "Time must be during business hours" so users know exactly what to fix.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable hasClear when the field is optional, so users can remove a previously selected time.',
+      },
+      {
+        guidance: true,
+        description:
+          'Place TimeInput inside InputGroup when the time needs a single-line prefix or suffix addon, like a start/end label or timezone marker.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.",
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
     anatomy: [
-      {name: 'Clock icon', required: false, description: 'A leading clock icon that identifies the field as a time input.'},
-      {name: 'Text input', required: true, description: 'The editable text field where users type or see the formatted time.'},
-      {name: 'Clear button', required: false, description: 'A trailing button to reset the value, shown when hasClear is true and a value is set.'},
-      {name: 'Status icon', required: false, description: 'A trailing icon indicating error, warning, or success state.'},
-      {name: 'Spinner', required: false, description: 'Replaces trailing content during loading to show an async action is in progress.'},
+      {
+        name: 'Clock icon',
+        required: false,
+        description:
+          'A leading clock icon that identifies the field and opens the browser/OS picker in native mode.',
+      },
+      {
+        name: 'Time control',
+        required: true,
+        description:
+          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, nativePicker="never", seconds, and custom increments.',
+      },
+      {
+        name: 'Clear button',
+        required: false,
+        description:
+          'A trailing button to reset the value, shown when hasClear is true and a value is set.',
+      },
+      {
+        name: 'Status icon',
+        required: false,
+        description:
+          'A trailing icon indicating error, warning, or success state.',
+      },
+      {
+        name: 'Spinner',
+        required: false,
+        description:
+          'Replaces trailing content during loading to show an async action is in progress.',
+      },
     ],
   },
 
@@ -33,8 +107,7 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description:
-        'Label text for the input (required for accessibility).',
+      description: 'Label text for the input (required for accessibility).',
       required: true,
     },
     {
@@ -68,6 +141,12 @@ export const docs = {
       type: 'boolean',
       description: 'Disables the input and suppresses interactions.',
       default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled TimeInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'value',
@@ -132,6 +211,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "Which surface selects the time. 'touch' (the default) uses the browser/OS input type=time on a coarse pointer and Astryx's typed field on a fine pointer; 'always' requests the native control on every pointer; 'never' keeps Astryx's typed field everywhere. Native mode forwards min/max and enforces them on commit. hasSeconds or increment other than 1 automatically retains the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence. hourFormat formats the closed value; the open OS picker follows the device locale.",
+      default: "'touch'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description:
@@ -146,15 +232,28 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator that colors the border and displays an icon. When a message is provided it is rendered below the input.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
       type: 'string',
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -165,103 +264,334 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TimeInput',
 
   displayName: 'Time Input',
   props: [
-    {name: 'label', type: 'string', description: '输入框的标签文本（无障碍性所必需）。', required: true},
-    {name: 'isLabelHidden', type: 'boolean', description: '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。', default: 'false'},
-    {name: 'description', type: 'string', description: '显示在标签和输入框之间的描述文本。'},
-    {name: 'isOptional', type: 'boolean', description: '在标签旁显示"（可选）"指示器。与 isRequired 互斥。', default: 'false'},
-    {name: 'isRequired', type: 'boolean', description: '将字段标记为必填并设置 aria-required。与 isOptional 互斥。', default: 'false'},
-    {name: 'isDisabled', type: 'boolean', description: '禁用输入框并抑制交互。', default: 'false'},
-    {name: 'value', type: 'ISOTimeString', description: 'ISO 格式的受控时间值（HH:MM 或 HH:MM:SS）。'},
-    {name: 'onChange', type: '(value: ISOTimeString | undefined) => void', description: '时间变化时触发的回调。输入被清除时接收 undefined。'},
-    {name: 'changeAction', type: '(value: ISOTimeString | undefined) => void | Promise<void>', description: '在 onChange 之后触发的异步操作。包装在 React transition 中以提供乐观 UI；挂起时触发加载旋转器。'},
-    {name: 'isLoading', type: 'boolean', description: '使输入框进入加载状态，显示旋转器。', default: 'false'},
-    {name: 'min', type: 'ISOTimeString', description: 'ISO 格式的最小可选时间。超出范围的值将被拒绝。'},
-    {name: 'max', type: 'ISOTimeString', description: 'ISO 格式的最大可选时间。超出范围的值将被拒绝。'},
-    {name: 'hasSeconds', type: 'boolean', description: '在时间显示和解析中包含秒。', default: 'false'},
-    {name: 'hasClear', type: 'boolean', description: '当有值且输入框未被禁用时显示清除按钮。', default: 'false'},
-    {name: 'hourFormat', type: "'12h' | '24h'", description: "控制显示格式。'12h' 显示 AM/PM（例如 '2:30 PM'）；'24h' 使用 24 小时制（例如 '14:30'）。", default: "'12h'"},
-    {name: 'increment', type: 'number', description: '用户按上或下方向键时增加或减少的分钟数。', default: '1'},
-    {name: 'placeholder', type: 'string', description: '未选择时间时显示的占位符文本。当输入框聚焦且为空时，格式提示会覆盖此文本。', default: "'Select a time'"},
-    {name: 'size', type: "'sm' | 'md' | 'lg'", description: '控制输入框元素的高度。', default: "'md'"},
-    {name: 'status', type: 'InputStatus', description: '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。'},
-    {name: 'labelTooltip', type: 'string', description: '在标签行末尾以信息图标形式渲染的工具提示文本。'},
-    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。'},
+    {
+      name: 'label',
+      type: 'string',
+      description: '输入框的标签文本（无障碍性所必需）。',
+      required: true,
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description: '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '显示在标签和输入框之间的描述文本。',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description: '在标签旁显示"（可选）"指示器。与 isRequired 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description: '将字段标记为必填并设置 aria-required。与 isOptional 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '禁用输入框并抑制交互。',
+      default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示，并通过 aria-disabled 保持输入框可聚焦（仍阻止输入和调整）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TimeInput。',
+    },
+    {
+      name: 'value',
+      type: 'ISOTimeString',
+      description: 'ISO 格式的受控时间值（HH:MM 或 HH:MM:SS）。',
+    },
+    {
+      name: 'onChange',
+      type: '(value: ISOTimeString | undefined) => void',
+      description: '时间变化时触发的回调。输入被清除时接收 undefined。',
+    },
+    {
+      name: 'changeAction',
+      type: '(value: ISOTimeString | undefined) => void | Promise<void>',
+      description:
+        '在 onChange 之后触发的异步操作。包装在 React transition 中以提供乐观 UI；挂起时触发加载旋转器。',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: '使输入框进入加载状态，显示旋转器。',
+      default: 'false',
+    },
+    {
+      name: 'min',
+      type: 'ISOTimeString',
+      description: 'ISO 格式的最小可选时间。超出范围的值将被拒绝。',
+    },
+    {
+      name: 'max',
+      type: 'ISOTimeString',
+      description: 'ISO 格式的最大可选时间。超出范围的值将被拒绝。',
+    },
+    {
+      name: 'hasSeconds',
+      type: 'boolean',
+      description: '在时间显示和解析中包含秒。',
+      default: 'false',
+    },
+    {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '当有值且输入框未被禁用时显示清除按钮。',
+      default: 'false',
+    },
+    {
+      name: 'hourFormat',
+      type: "'12h' | '24h'",
+      description:
+        "控制显示格式。'12h' 显示 AM/PM（例如 '2:30 PM'）；'24h' 使用 24 小时制（例如 '14:30'）。",
+      default: "'12h'",
+    },
+    {
+      name: 'increment',
+      type: 'number',
+      description: '用户按上或下方向键时增加或减少的分钟数。',
+      default: '1',
+    },
+    {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "选择时间所用的界面。'touch'（默认）在粗指针设备上使用浏览器/操作系统的 input type=time，在精细指针设备上使用 Astryx 文本字段；'always' 在所有指针类型上请求原生控件；'never' 始终使用 Astryx 文本字段。原生模式会传递 min/max 并在提交时强制校验。hasSeconds 或 increment 不为 1 时会自动保留文本字段，因为 iOS 没有秒滚轮，并且只把 step 当作校验规则而非选择器步进。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+      default: "'touch'",
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description:
+        '未选择时间时显示的占位符文本。当输入框聚焦且为空时，格式提示会覆盖此文本。',
+      default: "'Select a time'",
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '控制输入框元素的高度。',
+      default: "'md'",
+    },
+    {
+      name: 'status',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
+      description:
+        '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description: '在标签行末尾以信息图标形式渲染的工具提示文本。',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      'TimeInput 默认在粗指针设备上使用浏览器/操作系统的时间选择器，在精细指针设备上使用 Astryx 文本字段。它将时间转换为标准格式，并在文本字段界面支持方向键调整。适用于表单、排期流程和其他时间选择场景。',
     bestPractices: [
-      {guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\u2019s locale \u2014 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.'},
-      {guidance: true, description: 'Set min and max constraints when the context has a valid range, like business hours or event windows, so users cannot submit an out-of-bounds time.'},
-      {guidance: true, description: 'Provide a description or placeholder that hints at the expected format or purpose, like \u201cBusiness hours: 9 AM \u2013 5 PM\u201d.'},
-      {guidance: true, description: 'Use the status prop to surface validation errors inline \u2014 show a message like \u201cTime must be during business hours\u201d so users know exactly what to fix.'},
-      {guidance: true, description: 'Enable hasClear when the field is optional, so users can remove a previously selected time.'},
-      {guidance: false, description: 'Don\u2019t use TimeInput for combined date-and-time selection \u2014 pair it with a separate DateInput instead.'},
-      {guidance: false, description: 'Don\u2019t hide the label \u2014 even when space is tight, keep the label visible or provide a description so the purpose is clear.'},
+      {
+        guidance: true,
+        description:
+          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
+      },
+      {
+        guidance: true,
+        description:
+          'Set min and max constraints when the context has a valid range, like business hours or event windows, so users cannot submit an out-of-bounds time.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a description or placeholder that hints at the expected format or purpose, like "Business hours: 9 AM \u2013 5 PM".',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the status prop to surface validation errors inline: show a message like "Time must be during business hours" so users know exactly what to fix.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable hasClear when the field is optional, so users can remove a previously selected time.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.",
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
     anatomy: [
-      {name: 'Clock icon', required: false, description: 'A leading clock icon that identifies the field as a time input.'},
-      {name: 'Text input', required: true, description: 'The editable text field where users type or see the formatted time.'},
-      {name: 'Clear button', required: false, description: 'A trailing button to reset the value, shown when hasClear is true and a value is set.'},
-      {name: 'Status icon', required: false, description: 'A trailing icon indicating error, warning, or success state.'},
-      {name: 'Spinner', required: false, description: 'Replaces trailing content during loading to show an async action is in progress.'},
+      {
+        name: 'Clock icon',
+        required: false,
+        description:
+          '用于识别时间字段的前置时钟图标；在原生模式下也可打开浏览器/操作系统选择器。',
+      },
+      {
+        name: 'Time control',
+        required: true,
+        description:
+          '原生模式下使用真正的 input type=time；精细指针、nativePicker="never"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
+      },
+      {
+        name: 'Clear button',
+        required: false,
+        description:
+          'A trailing button to reset the value, shown when hasClear is true and a value is set.',
+      },
+      {
+        name: 'Status icon',
+        required: false,
+        description:
+          'A trailing icon indicating error, warning, or success state.',
+      },
+      {
+        name: 'Spinner',
+        required: false,
+        description:
+          'Replaces trailing content during loading to show an async action is in progress.',
+      },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Time input that converts free-text entry to standard format with arrow-key adjustment.',
+  description:
+    'Time input with browser/OS picker on touch by default and Astryx typed-field fallbacks for seconds or custom increments.',
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      'TimeInput uses a browser/OS picker on coarse pointers by default and Astryx typed entry on fine pointers. It standardizes values and supports arrow-key adjustment on the typed surface.',
     bestPractices: [
-      {guidance: true, description: 'Choose hour format (12h/24h) to match locale \u2014 12h for US, 24h for international.'},
-      {guidance: true, description: 'Set min/max constraints for valid ranges like business hours.'},
-      {guidance: true, description: 'Provide description or placeholder hinting at expected format.'},
-      {guidance: true, description: 'Use status prop for inline validation errors.'},
+      {
+        guidance: true,
+        description:
+          'Choose hour format (12h/24h) to match locale: 12h for US, 24h for international.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set min/max constraints for valid ranges like business hours.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide description or placeholder hinting at expected format.',
+      },
+      {
+        guidance: true,
+        description: 'Use status prop for inline validation errors.',
+      },
       {guidance: true, description: 'Enable hasClear for optional fields.'},
-      {guidance: false, description: 'Don\u2019t use for date-and-time \u2014 pair with DateInput instead.'},
-      {guidance: false, description: 'Don\u2019t hide the label \u2014 keep it visible for clarity.'},
+      {
+        guidance: true,
+        description:
+          'Place inside InputGroup for a single-line prefix or suffix addon, like a label or timezone marker.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use for date-and-time; pair with DateInput instead.",
+      },
+      {
+        guidance: false,
+        description: "Don't hide the label; keep it visible for clarity.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't wrap a disabled TimeInput in Tooltip; use the disabledMessage prop instead.",
+      },
     ],
   },
   propDescriptions: {
     label: 'Label text (required for a11y).',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
-    isOptional: 'Shows "(optional)" indicator. Mutually exclusive w/ isRequired.',
-    isRequired: 'Marks required+sets aria-required. Mutually exclusive w/ isOptional.',
+    isOptional:
+      'Shows "(optional)" indicator. Mutually exclusive w/ isRequired.',
+    isRequired:
+      'Marks required+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables input, suppresses interactions.',
+    disabledMessage:
+      'Reason shown in a tooltip on hover/focus when disabled; keeps input focusable via aria-disabled.',
     value: 'Controlled time in ISO format (HH:MM or HH:MM:SS).',
     onChange: 'Fired on time change. Receives undefined when cleared.',
-    changeAction: 'Async action after onChange in React transition; triggers spinner while pending.',
+    changeAction:
+      'Async action after onChange in React transition; triggers spinner while pending.',
     isLoading: 'Loading state w/ spinner.',
     min: 'Min selectable time in ISO format. Out-of-range rejected.',
     max: 'Max selectable time in ISO format. Out-of-range rejected.',
     hasSeconds: 'Includes seconds in display+parsing.',
     hasClear: 'Shows clear button when value set+not disabled.',
-    hourFormat: "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
+    hourFormat:
+      "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment: 'Minutes to add/subtract on arrow up/down.',
+    nativePicker:
+      "picker surface: 'touch' (default) = browser/OS on coarse pointer, 'always' = native wherever compatible, 'never' = Astryx typed field. hasSeconds or increment!=1 retains typed field; min/max enforced on commit.",
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+    xstyle:
+      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

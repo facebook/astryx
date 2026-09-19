@@ -65,7 +65,7 @@ export default function Home() {
       <div {...stylex.props(styles.container)}>
         <VStack gap={6}>
           <VStack gap={2}>
-            <Heading level={1}>XDS + Next.js (Source Build)</Heading>
+            <Heading level={1}>Astryx + Next.js (Source Build)</Heading>
             <Text type="body" color="secondary">
               This example compiles{' '}
               <Text type="body" weight="bold">
@@ -127,7 +127,7 @@ export default function Home() {
                     3. product — product overrides theme
                   </Text>
                   <Text type="supporting" color="secondary">
-                    Product styles use a different class prefix (x vs xds) so
+                    Product styles use a different class prefix (x vs astryx) so
                     they don't collide with library classes in the base layer.
                   </Text>
                   <HStack gap={3} vAlign="center">
@@ -160,13 +160,14 @@ export default function Home() {
           <VStack gap={3}>
             <Heading level={2}>Class Prefix Verification</Heading>
             <Text type="body" color="secondary">
-              Inspect these elements in devtools. XDS library classes start with{' '}
-              <code>xds</code>, product classes start with <code>x</code>.
+              Inspect these elements in devtools. Astryx library classes start
+              with <code>astryx</code>, product classes start with{' '}
+              <code>x</code>.
             </Text>
             <Card padding={4}>
               <VStack gap={2}>
                 <Text type="supporting" weight="bold">
-                  This card is an XDS component → xds-prefixed classes
+                  This card is an Astryx component → astryx-prefixed classes
                 </Text>
                 <div {...stylex.props(styles.prefixDemo)}>
                   This div uses product StyleX → x-prefixed classes
@@ -189,7 +190,7 @@ export default function Home() {
             <Switch
               label="Enable notifications"
               value={toggle}
-              onChange={(checked) => setToggle(checked)}
+              onChange={checked => setToggle(checked)}
             />
           </VStack>
 
@@ -215,9 +216,10 @@ export default function Home() {
             <div {...stylex.props(styles.card)}>
               <VStack gap={2}>
                 <Text type="body">
-                  <code>@astryxdesign/build/babel</code> wraps the StyleX babel plugin
-                  and routes files to two internal instances with different{' '}
-                  <code>classNamePrefix</code> values based on file path.
+                  <code>@astryxdesign/build/babel</code> wraps the StyleX babel
+                  plugin and routes files to two internal instances with
+                  different <code>classNamePrefix</code> values based on file
+                  path.
                 </Text>
                 <Text type="body">
                   <code>@astryxdesign/build/postcss</code> does the same for CSS
@@ -226,7 +228,9 @@ export default function Home() {
                 </Text>
                 <Text type="body">
                   Open devtools → CSS layers panel to see:{' '}
-                  <code>reset &lt; astryx-base &lt; astryx-theme &lt; product</code>
+                  <code>
+                    reset &lt; astryx-base &lt; astryx-theme &lt; product
+                  </code>
                 </Text>
               </VStack>
             </div>

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import path from 'path';
-import {fileURLToPath} from 'url';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import stylex from '@stylexjs/unplugin';
@@ -12,7 +12,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 /**
  * Browser targets for lightningcss.
  * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
- * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * polyfill variables. Astryx tokens use native light-dark() which is baseline 2024:
  * Chrome 123+, Firefox 120+, Safari 17.5+
  *
  * Must match the targets in apps/storybook/.storybook/main.ts
@@ -26,8 +26,8 @@ const lightningcssTargets = {
 /**
  * Vite config for the preview app.
  *
- * Supports BOTH StyleX (for XDS component internals) AND Tailwind
- * (for consumer code in XDS+Tailwind results). XDS components use
+ * Supports BOTH StyleX (for Astryx component internals) AND Tailwind
+ * (for consumer code in Astryx+Tailwind results). Astryx components use
  * StyleX internally — handled by the StyleX plugin. Consumer code
  * uses Tailwind utility classes via className — handled by PostCSS.
  */

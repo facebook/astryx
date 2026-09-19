@@ -1,12 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTablePagination',
   subComponentOf: 'Table',
   displayName: 'useTablePagination',
-  description: 'Headless pagination plugin for Table. Supports client-side slicing, server-side pagination, and cursor-based pagination. Renders Pagination controls automatically above, below, or both.',
+  description: 'Headless pagination plugin for Table. Call with a config object: `useTablePagination({ page, onPageChange, totalItems })`. Returns a TablePlugin to pass to `<Table plugins={{ pagination: paginationPlugin }} />`.',
+  usage: {
+    description: 'Call useTablePagination with a config object containing page state and callback. Pass the returned plugin to Table via the plugins prop.',
+  },
   props: [
     {
       name: 'page',
@@ -69,6 +72,12 @@ export const docs = {
       description: 'Horizontal alignment of the pagination controls.',
       default: "'center'",
     },
+    {
+      name: 'label',
+      type: 'string',
+      description: "Accessible name for the pagination nav landmark. With position='both' the two navs get distinct names (the label suffixed as '(top)' and '(bottom)') so same-type landmarks stay unique (axe landmark-unique).",
+      default: "'Table pagination'",
+    },
   ],
 };
 
@@ -126,5 +135,6 @@ export const docsDense = {
     pageSize: 'Items per page. Default 10.',
     variant: "Pagination variant: 'pages'|'count'|'compact'|'dots'|'none'.",
     position: "Render position: 'below'|'above'|'both'|'none'.",
+    label: "Accessible name for the nav landmark; position='both' emits '<label> (top)' / '<label> (bottom)'.",
   },
 };

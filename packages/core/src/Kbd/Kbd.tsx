@@ -10,12 +10,13 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Kbd/index.ts
- * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
 import React, {useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
+import {isApplePlatform} from '../utils/isApplePlatform';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -87,30 +88,39 @@ function getKeyDisplay(key: string, isMac: boolean): string {
   return KEY_DISPLAY[key] ?? key.toUpperCase();
 }
 
+/**
+ * Spoken-word labels for screen readers. The visual `KEY_DISPLAY` uses glyphs
+ * (⌘, ⇧, ↵, …) that assistive tech cannot announce meaningfully, so the
+ * accessible name for the shortcut is built from these words instead.
+ */
+const KEY_LABEL: Record<string, string> = {
+  ctrl: 'Control',
+  alt: 'Alt',
+  shift: 'Shift',
+  enter: 'Enter',
+  backspace: 'Backspace',
+  escape: 'Escape',
+  tab: 'Tab',
+  up: 'Up arrow',
+  down: 'Down arrow',
+  left: 'Left arrow',
+  right: 'Right arrow',
+  plus: 'Plus',
+};
+
+function getKeyLabel(key: string, isMac: boolean): string {
+  if (key === 'mod') {
+    return isMac ? 'Command' : 'Control';
+  }
+  return KEY_LABEL[key] ?? key.toUpperCase();
+}
+
 function subscribeToPlatformChanges(): () => void {
   return () => {};
 }
 
 function getServerPlatformSnapshot(): boolean {
   return false;
-}
-
-/**
- * Detects whether the current platform is macOS/iOS.
- * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
- * falls back to navigator.platform (deprecated but universally supported).
- */
-function detectMac(): boolean {
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-  // Prefer User-Agent Client Hints API (not deprecated)
-  const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
-  if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
-    return /mac/i.test((uaData as {platform: string}).platform ?? '');
-  }
-  // Fallback: navigator.platform (deprecated but still shipped everywhere)
-  return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
 }
 
 export interface KbdProps extends BaseProps<HTMLSpanElement> {
@@ -149,25 +159,30 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
 export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
   const isMac = useSyncExternalStore(
     subscribeToPlatformChanges,
-    detectMac,
+    isApplePlatform,
     getServerPlatformSnapshot,
   );
 
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
+  // Screen-reader name: the joined spoken labels (e.g. "Command + K"), since
+  // the visual glyphs below are announced meaninglessly by assistive tech.
+  const accessibleName = parts.map(key => getKeyLabel(key, isMac)).join(' + ');
+
   return (
     <span
-      ref={ref}
       {...rest}
+      ref={ref}
+      role="img"
+      aria-label={accessibleName}
       {...mergeProps(
         themeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,
-      )}
-      aria-hidden="true">
+      )}>
       {parts.map(key => (
-        <kbd key={key} {...stylex.props(styles.kbd)}>
+        <kbd key={key} aria-hidden="true" {...stylex.props(styles.kbd)}>
           {getKeyDisplay(key, isMac)}
         </kbd>
       ))}

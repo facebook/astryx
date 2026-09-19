@@ -15,7 +15,7 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
-const CLI_SRC = path.join(REPO_ROOT, 'packages', 'cli', 'src');
+const CLI_SRC = path.join(REPO_ROOT, 'packages', 'cli', 'clients', 'cli');
 const OUT_DIR = path.resolve(__dirname, '..', 'src', 'generated');
 const OUT_FILE = path.join(OUT_DIR, 'cliRegistry.ts');
 
@@ -42,7 +42,6 @@ const commandModules = [
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
-  {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},

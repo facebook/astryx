@@ -12,8 +12,11 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Token} from '../Token';
+import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
 import {fontWeightVars} from '../theme/tokens.stylex';
 import {formatFilterValue} from './formatFilterValue';
+import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {useInternalConfig} from './useInternalConfig';
 import type {PowerSearchTokenProps} from './types';
 
@@ -41,13 +44,18 @@ export function PowerSearchToken({
   isDisabled,
 }: PowerSearchTokenProps) {
   const config = useInternalConfig(configProp);
+  const t = useTranslator();
+  const locale = useLocale();
 
   const fieldLabel = field.label;
-  const operatorLabel = operator.label ? `: ${operator.label}` : '';
+  const resolvedOperatorLabel = resolveOperatorLabel(operator, t);
+  const operatorLabel = resolvedOperatorLabel
+    ? `: ${resolvedOperatorLabel}`
+    : '';
   const tokenLabel = `${fieldLabel}${operatorLabel}`;
 
   const adjustedMaxLength = Math.max(
-    maxLength - fieldLabel.length - (operator.label?.length ?? 0),
+    maxLength - fieldLabel.length - resolvedOperatorLabel.length,
     10,
   );
 
@@ -56,6 +64,8 @@ export function PowerSearchToken({
     operator.value,
     filter.value,
     adjustedMaxLength,
+    t,
+    locale,
   );
 
   const valueContent = valueStr ? (
@@ -66,10 +76,14 @@ export function PowerSearchToken({
     <Token
       label={tokenLabel}
       endContent={valueContent}
-      onClick={onClick ? (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onClick();
-      } : undefined}
+      onClick={
+        onClick
+          ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              onClick();
+            }
+          : undefined
+      }
       onRemove={onRemove}
       isDisabled={isDisabled}
     />

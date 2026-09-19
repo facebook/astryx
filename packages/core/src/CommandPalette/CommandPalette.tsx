@@ -3,13 +3,13 @@
 'use client';
 /**
  * @file CommandPalette.tsx
- * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox
+ * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox, useAnnounce
  * @output Exports CommandPalette root component and props
  * @position Core root component; dialog shell with searchSource-driven items
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {
@@ -24,12 +24,7 @@ import {
   type ReactNode,
 } from 'react';
 import {Dialog} from '../Dialog';
-import {
-  Layout,
-  LayoutHeader,
-  LayoutContent,
-  LayoutFooter,
-} from '../Layout';
+import {Layout, LayoutHeader, LayoutContent, LayoutFooter} from '../Layout';
 import type {SearchSource, SearchableItem} from '../Typeahead';
 import {useCombobox} from '../Selector';
 import type {SelectorOptionData} from '../Selector';
@@ -41,6 +36,8 @@ import {CommandPaletteInput} from './CommandPaletteInput';
 import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
+import {useAnnounce} from '../hooks/useAnnounce';
+import {useTranslator} from '../i18n';
 
 export interface CommandPaletteProps<
   T extends SearchableItem = SearchableItem,
@@ -133,9 +130,7 @@ function getGroup(item: SearchableItem): string | undefined {
  * When groups are present, items are ordered by group (preserving insertion order),
  * with ungrouped items at the end — matching the DefaultRenderer layout.
  */
-function buildSelectableItems(
-  items: SearchableItem[],
-): SelectorOptionData[] {
+function buildSelectableItems(items: SearchableItem[]): SelectorOptionData[] {
   const hasGroups = items.some(item => getGroup(item) != null);
 
   if (!hasGroups) {
@@ -173,6 +168,26 @@ function buildSelectableItems(
     result.push({value: item.id, label: item.label});
   }
   return result;
+}
+
+/**
+ * O(1) value → index lookup over selectable items, used by the delegated
+ * mouseover handler (#6077). The index is built once per results change;
+ * each hover then pays a Map probe instead of a linear findIndex scan,
+ * so cost no longer scales with list size. Keeps the first occurrence of
+ * duplicate values to match the previous findIndex behavior.
+ */
+function createValueLookup<T extends {value: string}>(
+  items: ReadonlyArray<T>,
+): (value: string) => number | undefined {
+  const indexByValue = new Map<string, number>();
+  for (let i = 0; i < items.length; i++) {
+    const value = items[i].value;
+    if (!indexByValue.has(value)) {
+      indexByValue.set(value, i);
+    }
+  }
+  return value => indexByValue.get(value);
 }
 
 interface RendererProps<T extends SearchableItem> {
@@ -258,9 +273,7 @@ function ItemRenderer<T extends SearchableItem>({
  * />
  * ```
  */
-export function CommandPalette<
-  T extends SearchableItem = SearchableItem,
->({
+export function CommandPalette<T extends SearchableItem = SearchableItem>({
   ref,
   isOpen,
   isInline,
@@ -269,14 +282,21 @@ export function CommandPalette<
   input,
   footer,
   renderItem,
-  emptySearchText = 'No results',
-  emptyBootstrapText = 'Type to search',
+  emptySearchText: emptySearchTextFromProps,
+  emptyBootstrapText: emptyBootstrapTextFromProps,
   value: controlledValue,
   onValueChange,
-  label = 'Command palette',
+  label: labelFromProps,
   width = 640,
   maxHeight = 480,
+  ...rest
 }: CommandPaletteProps<T>) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.commandPalette.label');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.commandPalette.emptySearch');
+  const emptyBootstrapText =
+    emptyBootstrapTextFromProps ?? t('@astryx.commandPalette.emptyBootstrap');
   const listId = useId();
   // search: the committed query — only advances when async results arrive.
   // optimisticSearch: updates immediately on keystroke, drives input + empty state.
@@ -291,6 +311,13 @@ export function CommandPalette<
     useOptimistic(searchResults);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
+
+  // Announce search status to screen readers through the shared polite live
+  // region (comboboxes-7 announce path, mirroring Selector / BaseTypeahead).
+  // The busy spinner and the empty states are otherwise purely visual, so a
+  // screen-reader user typing a query would hear nothing when loading starts
+  // or results disappear.
+  const announce = useAnnounce();
 
   const value = controlledValue ?? internalValue;
 
@@ -311,7 +338,17 @@ export function CommandPalette<
     [optimisticResults],
   );
 
+  const valueLookup = useMemo(
+    () => createValueLookup(selectableItems),
+    [selectableItems],
+  );
+
   const handleClose = useCallback(() => {
+    // Invalidate any in-flight search. Most sources don't implement cancel(),
+    // and a response that resolves after close would still pass runSearch's
+    // version check and re-commit the stale query/results into the closed
+    // palette (visible as a ghost query on reopen while bootstrap is pending).
+    searchVersionRef.current++;
     // Reset both committed and optimistic search on close
     setSearch('');
     setSearchResults([]);
@@ -319,8 +356,12 @@ export function CommandPalette<
       setInternalValue('');
     }
     searchSource.cancel?.();
+    // Clear any lingering result / loading announcement when the palette
+    // closes so stale status text does not linger in the a11y tree
+    // (matching Selector's onHide).
+    announce('');
     onOpenChange(false);
-  }, [onOpenChange, searchSource, controlledValue]);
+  }, [onOpenChange, searchSource, controlledValue, announce]);
 
   const selectItem = useCallback(
     (itemValue: string) => {
@@ -356,6 +397,14 @@ export function CommandPalette<
       startTransition(async () => {
         const isBootstrap = query === '';
 
+        // Loading started for a user query: tell screen-reader users the
+        // spinner appeared. The polite region coalesces rapid updates, so for
+        // fast sources the result-count announcement below simply replaces
+        // this instead of stacking one "Loading" per keystroke.
+        if (!isBootstrap) {
+          announce(t('@astryx.commandPalette.loading'));
+        }
+
         // Client-filter previous results for instant narrowing while fetch is in flight
         if (!isBootstrap && searchResults.length > 0) {
           const lower = query.toLowerCase().trim();
@@ -378,13 +427,44 @@ export function CommandPalette<
           setOptimisticResults(items);
           setSearchResults(items);
 
+          // Announce the outcome from the search commit (not a reactive
+          // effect), matching Selector / BaseTypeahead: exactly one
+          // announcement per committed query, and the version check above
+          // already discards stale keystrokes. Bootstrap stays silent — the
+          // same role PowerSearch's mount guard plays — so opening the
+          // palette announces nothing; clearing the query only clears any
+          // lingering status text.
+          if (isBootstrap) {
+            announce('');
+          } else if (items.length === 0) {
+            announce(t('@astryx.commandPalette.noResultsFor', {query}));
+          } else {
+            announce(
+              t('@astryx.commandPalette.resultCount', {count: items.length}),
+            );
+          }
+
           // When opening with a preselected value, highlight it once
           // bootstrap results arrive. No value → highlight stays at -1
-          // and ArrowDown naturally moves to the first item.
+          // and ArrowDown naturally moves to the first item. Inline previews
+          // take the hover-aware path so the initial highlight does not
+          // scrollIntoView the surrounding page (#6077).
           if (isBootstrap && value != null && value !== '') {
             const selectedIdx = items.findIndex(item => item.id === value);
             if (selectedIdx >= 0) {
-              combobox.setHighlightedIndex(selectedIdx);
+              if (isInline) {
+                // `items` is the fresh bootstrap result; the closure's
+                // selectableItems may still be empty at commit time.
+                const selectedItem = items[selectedIdx];
+                if (selectedItem) {
+                  combobox.onItemMouseEnter(
+                    {value: selectedItem.id},
+                    selectedIdx,
+                  );
+                }
+              } else {
+                combobox.setHighlightedIndex(selectedIdx);
+              }
             }
           }
         }
@@ -395,8 +475,11 @@ export function CommandPalette<
       searchResults,
       startTransition,
       value,
+      isInline,
       combobox,
       setOptimisticResults,
+      announce,
+      t,
     ],
   );
 
@@ -444,14 +527,42 @@ export function CommandPalette<
     [combobox, handleClose, selectableItems, selectItem],
   );
 
+  // Hover highlight is owned here by a single delegated handler on the list
+  // container: it routes to useCombobox's hover-aware path, which moves the
+  // highlight without scrolling (#6077) — a stationary pointer cannot
+  // re-highlight and auto-scroll in a runaway loop. Keeping it off the public
+  // context preserves CommandPaletteContextValue's setHighlightedIndex shape;
+  // disabled items are skipped via aria-disabled (selectableItems carries no
+  // disabled info). Use mouseover so moves between options bubble to the list;
+  // mouseenter only runs when the pointer enters the list from outside.
+  const handleListMouseOver = useCallback(
+    (e: React.MouseEvent) => {
+      const option = (e.target as HTMLElement).closest?.('[role="option"]');
+      if (!option || option.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+      const itemValue = option.getAttribute('data-value');
+      if (itemValue == null) {
+        return;
+      }
+      const index = valueLookup(itemValue);
+      if (index !== undefined) {
+        combobox.onItemMouseEnter(selectableItems[index], index);
+      }
+    },
+    [combobox, selectableItems, valueLookup],
+  );
+
   const contextValue = useMemo(
     () => ({
       // Input uses optimisticSearch — reflects keystrokes immediately.
-      // setSearch calls setOptimisticSearch for instant feedback then
-      // triggers the async search directly (no effect indirection).
+      // setSearch calls setOptimisticSearch inside a transition for instant
+      // feedback then triggers the async search directly (no effect indirection).
       search: optimisticSearch,
       setSearch: (query: string) => {
-        setOptimisticSearch(query);
+        startTransition(() => {
+          setOptimisticSearch(query);
+        });
         runSearch(query);
       },
       value,
@@ -488,13 +599,12 @@ export function CommandPalette<
     ],
   );
 
-  // Empty state uses committed search (= what current results correspond to),
-  // not optimisticSearch (= what the user typed).
-  // While the transition is pending, search stays at '' so showEmptyBootstrap
-  // remains true even after the user has started typing.
+  // `search` is the committed query the on-screen results correspond to (it
+  // still holds the previous query while a transition is pending). Keeping both
+  // flags ungated by `isPending` makes them exhaustive over the empty case, so
+  // the empty state is never unmounted and re-added mid-search (which flashed).
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
-  const showEmptySearch =
-    !isPending && search !== '' && optimisticResults.length === 0;
+  const showEmptySearch = search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
@@ -502,9 +612,7 @@ export function CommandPalette<
       <CommandPaletteEmpty>{emptyBootstrapText}</CommandPaletteEmpty>
     );
   } else if (showEmptySearch) {
-    listContent = (
-      <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>
-    );
+    listContent = <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>;
   } else {
     listContent = (
       <ItemRenderer
@@ -530,7 +638,8 @@ export function CommandPalette<
       width={width}
       maxHeight={maxHeight}
       purpose="info"
-      aria-label={label}>
+      aria-label={label}
+      {...rest}>
       <CommandPaletteContext value={contextValue}>
         <Layout
           defaultHasDividers
@@ -541,7 +650,9 @@ export function CommandPalette<
           }
           content={
             <LayoutContent padding={0}>
-              <CommandPaletteList>{listContent}</CommandPaletteList>
+              <CommandPaletteList onMouseOver={handleListMouseOver}>
+                {listContent}
+              </CommandPaletteList>
             </LayoutContent>
           }
           footer={

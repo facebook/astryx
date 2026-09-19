@@ -6,5 +6,5 @@
     "checkJs": true,
     "noEmit": true
   },
-  "include": ["src/**/*.doc.mjs", "src/docs-types.ts"]
+  "include": ["src/**/*.doc.mjs"]
 }

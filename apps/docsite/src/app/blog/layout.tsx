@@ -6,28 +6,29 @@
  * "Avoid traditional blog sidebars"). Mirrors the craft/playground layout.
  */
 
-import {headers} from 'next/headers';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
+import {CanaryBanner} from '../../components/CanaryBanner';
+import {CURRENT_TARGET} from '../../lib/docsVersions';
 import {SiteFooter} from '../../components/SiteFooter';
+import {getCopyrightYear} from '../../lib/copyrightYear';
 
 export default async function BlogLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') ?? '';
-  const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
+  const year = await getCopyrightYear();
 
   return (
     <AppShell
       variant="surface"
       height="auto"
-      mobileNav={{defaultIsMobile}}
+      mobileNav={false}
+      banner={CURRENT_TARGET === 'canary' ? <CanaryBanner /> : undefined}
       topNav={<SharedTopNav />}>
       {children}
-      <SiteFooter />
+      <SiteFooter year={year} />
     </AppShell>
   );
 }

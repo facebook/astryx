@@ -55,7 +55,7 @@ export default function App() {
         <div {...stylex.props(styles.container)}>
           <VStack gap={6}>
             <VStack gap={2}>
-              <Heading level={1}>XDS Example — Vite (Source)</Heading>
+              <Heading level={1}>Astryx Example — Vite (Source)</Heading>
               <Text type="body" color="secondary">
                 This example compiles{' '}
                 <Text type="body" weight="bold">
@@ -72,7 +72,7 @@ export default function App() {
             <VStack gap={3}>
               <Heading level={2}>Layer Demo</Heading>
               <Text type="body" color="secondary">
-                Product StyleX styles override XDS component defaults via CSS
+                Product StyleX styles override Astryx component defaults via CSS
                 layer ordering. No <code>!important</code> needed.
               </Text>
 
@@ -80,7 +80,7 @@ export default function App() {
                 <VStack gap={3}>
                   <VStack gap={1}>
                     <Text type="supporting" weight="bold">
-                      Default XDS buttons (astryx-base layer)
+                      Default Astryx buttons (astryx-base layer)
                     </Text>
                     <HStack gap={3} vAlign="center">
                       <Button label="Default" variant="primary" />
@@ -111,8 +111,8 @@ export default function App() {
                       Three-layer cascade: base → theme → product
                     </Text>
                     <Text type="supporting" color="secondary">
-                      Secondary button background: XDS base → theme override →
-                      green product override.
+                      Secondary button background: Astryx base → theme override
+                      → green product override.
                     </Text>
                     <HStack gap={3} vAlign="center">
                       <Button label="Theme color" variant="secondary" />
@@ -180,9 +180,11 @@ export default function App() {
               <div {...stylex.props(styles.card)}>
                 <Text type="body">
                   Open devtools → inspect the CSS layers panel. You'll see{' '}
-                  <code>@layer astryx-base</code> and <code>@layer product</code>.
-                  The layer order{' '}
-                  <code>reset &lt; astryx-base &lt; astryx-theme &lt; product</code>{' '}
+                  <code>@layer astryx-base</code> and{' '}
+                  <code>@layer product</code>. The layer order{' '}
+                  <code>
+                    reset &lt; astryx-base &lt; astryx-theme &lt; product
+                  </code>{' '}
                   ensures product styles always win.
                 </Text>
               </div>

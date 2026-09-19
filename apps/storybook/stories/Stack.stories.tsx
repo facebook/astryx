@@ -133,6 +133,50 @@ const meta: Meta<typeof Stack> = {
       options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
       description: 'Spacing step for gap between items',
     },
+    padding: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Inner padding on all sides (spacing step)',
+    },
+    paddingInline: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline (horizontal) padding; overrides padding on that axis',
+    },
+    paddingInlineStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-start (left in LTR) padding; overrides paddingInline/padding on that edge',
+    },
+    paddingInlineEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-end (right in LTR) padding; overrides paddingInline/padding on that edge',
+    },
+    paddingBlock: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Block (vertical) padding; overrides padding on that axis',
+    },
+    paddingBlockStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-start (top) padding; overrides paddingBlock/padding on that edge',
+    },
+    paddingBlockEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-end (bottom) padding; overrides paddingBlock/padding on that edge',
+    },
+    isScrollable: {
+      control: 'boolean',
+      description: 'Enables scrollable overflow (overflow: auto)',
+    },
     hAlign: {
       control: 'select',
       options: [
@@ -645,6 +689,81 @@ export const PageLayout: Story = {
           <Box>Main Content</Box>
         </StackItem>
       </Stack>
+    </Stack>
+  ),
+};
+
+// ============================================================================
+// Padding — inner padding via the spacing scale (no inline styles needed)
+// ============================================================================
+
+export const Padding: Story = {
+  args: {
+    gap: 2,
+    padding: 4,
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      <Box>Item 1</Box>
+      <Box>Item 2</Box>
+      <Box>Item 3</Box>
+    </Stack>
+  ),
+};
+
+export const PaddingPerAxis: Story = {
+  args: {
+    gap: 2,
+    paddingInline: 6,
+    paddingBlock: 2,
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      <Box>Item 1</Box>
+      <Box>Item 2</Box>
+      <Box>Item 3</Box>
+    </Stack>
+  ),
+};
+
+export const PaddingPerEdge: Story = {
+  args: {
+    gap: 2,
+    padding: 6,
+    paddingBlockStart: 1,
+    paddingInlineEnd: 2,
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      <Box>Item 1</Box>
+      <Box>Item 2</Box>
+      <Box>Item 3</Box>
+    </Stack>
+  ),
+};
+
+// ============================================================================
+// Scrollable — overflow: auto via the isScrollable prop
+// ============================================================================
+
+export const Scrollable: Story = {
+  args: {
+    gap: 2,
+    padding: 2,
+    isScrollable: true,
+    height: 160,
+    // A scrollable stack of non-interactive content needs a tab stop and an
+    // accessible name so keyboard users can scroll it (axe:
+    // scrollable-region-focusable). Stack forwards these through BaseProps.
+    tabIndex: 0,
+    role: 'region',
+    'aria-label': 'Scrollable stack',
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      {Array.from({length: 12}, (_, i) => (
+        <Box key={i}>Item {i + 1}</Box>
+      ))}
     </Stack>
   ),
 };

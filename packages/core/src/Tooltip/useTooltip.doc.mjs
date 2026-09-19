@@ -1,17 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTooltip',
   displayName: 'useTooltip',
   group: 'Tooltip',
   keywords: ['tooltip', 'hint', 'label', 'hover', 'info', 'title', 'floating'],
   params: [
-    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: 'Position relative to the trigger.', default: "'above'"},
-    {name: 'alignment', type: "'start' | 'center' | 'end'", description: 'Alignment along the placement axis.', default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: "Position relative to the trigger. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing on hover, in milliseconds.', default: '200'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '0'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the tooltip. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
+    {name: 'touchTrigger', type: "'auto' | 'tap' | 'none'", description: 'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own; tap always opens (an info icon rendered as a button); none never opens on touch.', default: "'auto'"},
     {name: 'isEnabled', type: 'boolean', description: 'Whether hover and focus triggers are enabled.', default: 'true'},
     {name: 'isOpen', type: 'boolean', description: 'Controlled open state. true force-shows, false force-hides, undefined lets hover/focus manage visibility.'},
     {name: 'isDefaultOpen', type: 'boolean', description: 'Whether the tooltip should be shown on mount.', default: 'false'},
@@ -24,7 +25,7 @@ export const docs = {
     {name: 'interactionRef', type: 'RefCallback<HTMLElement>', description: 'Ref for the hover/focus interaction element.'},
     {name: 'anchorId', type: 'string', description: 'CSS anchor name for advanced positioning cases.'},
     {name: 'describedBy', type: 'string', description: 'ID to compose into aria-describedby on the trigger.'},
-    {name: 'renderTooltip', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for the anchor-positioned tooltip content.'},
+    {name: 'renderTooltip', type: "(children: ReactNode, props?: Omit<ContextRenderProps, 'positioning'>) => ReactNode", description: 'Render function for the anchor-positioned tooltip content. The positioning opt-out is excluded: the tooltip always derives its position from placement/alignment.'},
   ],
   usage: {
     description: 'Headless hook for hover/focus-triggered tooltips. Builds on useLayer with hover intent, keyboard focus handling, and accessible aria-describedby linking. Use for custom trigger elements that need tooltip behavior without the wrapper component.',
@@ -40,15 +41,16 @@ export const docs = {
   category: 'interaction',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description: 'Headless hover/focus tooltip hook. Builds on useLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
   paramDescriptions: {
-    placement: 'position relative to trigger.',
-    alignment: 'alignment along placement axis.',
+    placement: 'position relative to trigger. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+    alignment: 'alignment along placement axis. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
     delay: 'show delay in ms.',
     hideDelay: 'hide delay after mouse/focus leave in ms.',
     focusTrigger: 'when focus opens tooltip; auto = naturally focusable elements only.',
+    touchTrigger: 'tap behavior with no hover; auto = tap unless trigger acts, tap = always, none = never.',
     isEnabled: 'whether hover/focus triggers are enabled.',
     isOpen: 'controlled open state: true force-show, false force-hide, undefined unmanaged.',
     isDefaultOpen: 'show on mount.',

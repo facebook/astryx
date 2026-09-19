@@ -13,7 +13,6 @@
  */
 
 // Code components — syntax highlighting domain
-export {CodeBlock, type CodeBlockProps} from './CodeBlock';
 export {CodeEditor, type CodeEditorProps} from './CodeEditor';
 export {
   tokenize,
@@ -22,11 +21,50 @@ export {
   type SyntaxToken,
 } from '@astryxdesign/core/CodeBlock';
 
+// InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
+export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
+
+// TransferList — controlled dual-panel collection input
+export {
+  TransferList,
+  TransferListSelector,
+  transferListVars,
+  type TransferListOption,
+  type TransferListProps,
+  type TransferListSelectorCommitBehavior,
+  type TransferListSelectorProps,
+} from './TransferList';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export * from './Chat';
+
+// Drawer — experimental overlay panel
+export {Drawer, type DrawerProps} from './Drawer';
+
+// Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
+export {
+  Tour,
+  type TourProps,
+  TourStep,
+  type TourStepProps,
+  useTour,
+  type UseTourReturn,
+  type TourDismissSource,
+} from './Tour';
+
+// Stat — experimental KPI/metric display
+export {
+  Stat,
+  type StatProps,
+  type StatDelta,
+  type StatDeltaDirection,
+  type StatDeltaSentiment,
+  type StatSize,
+} from './Stat';
 
 // Schedule — experimental full-calendar views
 export * from './Schedule';
@@ -200,51 +238,22 @@ export {
   type SankeyContext,
 } from './Sankey';
 
-// Chart v2 — config model
-export {
-  Chart as ChartV2,
-  type ChartProps as ChartV2Props,
-  ChartLegend as ChartV2Legend,
-  type ChartLegendProps as ChartV2LegendProps,
-  type LegendItem as ChartV2LegendItem,
-  ChartAxis as ChartV2Axis,
-  type ChartAxisProps as ChartV2AxisProps,
-  ChartGrid as ChartV2Grid,
-  type ChartGridProps as ChartV2GridProps,
-  ChartSwatch as ChartV2Swatch,
-  swatchVariantForType as xdsChartV2SwatchVariantForType,
-  type ChartSwatchProps as ChartV2SwatchProps,
-  type ChartSwatchVariant as ChartV2SwatchVariant,
-  ChartTooltip as ChartV2Tooltip,
-  type ChartTooltipProps as ChartV2TooltipProps,
-  type ChartTooltipPlacement as ChartV2TooltipPlacement,
-  type TooltipSeriesValue as ChartV2TooltipSeriesValue,
-  bar,
-  line,
-  dot,
-  area,
-  band,
-  candlestick,
-  errorBar,
-  referenceLine,
-  dotGL,
-  dotGLInteractive,
-  heatmapGL,
-  streamGL,
-  useChartV2,
-  type SeriesDef,
-  type ChartV2Context,
-  type ChartPointerEvent,
-  type ResolvedPoint,
-  type ResolvedPositions,
-  type SeriesContext,
-  type ErrorBarOptions,
-  type ReferenceLineOptions,
-  type DotGLOptions,
-  type DotGLInteractiveOptions,
-  type HeatmapGLOptions,
-  type StreamGLOptions,
-  type StreamGLHandle,
-} from './ChartV2';
-export * from './Stepper';
+// Chart v2 (config model) moved to its own package: @astryxdesign/charts.
+// It is no longer re-exported from @astryxdesign/lab.
 export * from './CircularProgress';
+
+// ListInput — compact editor for short collections of simple records
+export * from './ListInput';
+
+// LogStream — experimental streaming log viewer
+export {
+  LogStream,
+  type LogStreamProps,
+  type LogEntry,
+  type LogStreamLevel,
+} from './LogStream';
+
+// RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
+// into its own canary-only package, @astryxdesign/richtext, so it can be canaried
+// independently (e.g. into EPS/Nest). Import it from there:
+//   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

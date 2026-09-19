@@ -1,19 +1,27 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxListItem',
   subComponentOf: 'CheckboxList',
   displayName: 'Checkbox List Item',
   isHiddenFromOverview: true,
-  description: 'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
+  description:
+    'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: 'Primary text label for the item.',
+      type: 'ReactNode',
+      description:
+        'Primary text label for the item. Rich labels may contain links or buttons, which keep their own behavior without toggling the item. A ReactNode label names the checkbox from its visible text; pass aria-label only when that text is absent, or include all visible label words in the override.',
       required: true,
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description:
+        'Plain-text accessible name for the checkbox, replacing the one derived from label. Applied to the checkbox control. Use it when a rich label has no visible text; otherwise the value must retain every visible label word.',
     },
     {
       name: 'value',
@@ -22,8 +30,9 @@ export const docs = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: 'Secondary text below the label.',
+      type: 'ReactNode',
+      description:
+        "Secondary content below the label. String or ReactNode. Exposed as the checkbox's accessible description through aria-describedby, so assistive technology can tell it is the explanation for that choice.",
     },
     {
       name: 'endContent',
@@ -69,19 +78,37 @@ export const docs = {
       description: 'Direct check handler (standalone mode only).',
     },
   ],
+  examples: [
+    {
+      label: 'Rich label with an overriding aria-label',
+      code: `<CheckboxListItem
+  label={<span>Pro plan <Badge label="Recommended" /></span>}
+  aria-label="Pro plan Recommended option"
+  value="pro"
+/>`,
+    },
+  ],
 };
 
 export const docsZh = {
   name: 'CheckboxListItem',
   isHiddenFromOverview: true,
   displayName: 'Checkbox List Item',
-  description: '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
+  description:
+    '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: '选项的主要文本标签。',
+      type: 'ReactNode',
+      description:
+        '选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会切换该选项。ReactNode 标签会以其可见文本为复选框命名；仅当可见文本缺失时使用 aria-label，否则覆盖值必须保留全部可见文字。',
       required: true,
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description:
+        '复选框的纯文本无障碍名称，会替换由 label 推导出的名称。仅当富标签没有可见文本时才完全替代；否则必须保留全部可见文字。',
     },
     {
       name: 'value',
@@ -90,8 +117,9 @@ export const docsZh = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: '标签下方的辅助文本。',
+      type: 'ReactNode',
+      description:
+        '标签下方的辅助内容。可为字符串或 ReactNode。会通过 aria-describedby 作为复选框的无障碍描述暴露，便于辅助技术识别它是该选项的说明。',
     },
     {
       name: 'endContent',
@@ -128,11 +156,16 @@ export const docsDense = {
   name: 'CheckboxListItem',
   isHiddenFromOverview: true,
   displayName: 'Checkbox List Item',
-  description: 'Individual checkbox item w/ label, description, end content slot.',
+  description:
+    'Individual checkbox item w/ label, description, end content slot.',
   propDescriptions: {
-    label: 'Primary text label for item.',
+    label:
+      'Primary label. String or ReactNode; nested controls keep their behavior. A ReactNode names the checkbox from its visible text.',
+    'aria-label':
+      'Plain-text checkbox name replacing the one derived from label. Use when visible text is absent; otherwise retain every visible label word.',
     value: 'Identity key (required inside CheckboxList).',
-    description: 'Secondary text below label.',
+    description:
+      "Secondary content below label. String or ReactNode. Exposed as the checkbox's accessible description via aria-describedby.",
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
     isLoading:

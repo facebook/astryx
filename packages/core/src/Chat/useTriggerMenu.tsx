@@ -30,6 +30,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {
   colorVars,
   spacingVars,
@@ -40,10 +41,8 @@ import {
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
-import type {
-  ChatComposerTrigger,
-  ChatComposerToken,
-} from './ChatComposerInput';
+import {useTranslator} from '../i18n';
+import type {ChatComposerTrigger, ChatComposerToken} from './ChatComposerInput';
 
 // =============================================================================
 // Types
@@ -81,8 +80,15 @@ export interface UseTriggerMenuReturn {
   renderMenu: () => ReactNode;
   /** Reset/close the trigger menu */
   reset: () => void;
-  /** ARIA props to spread onto the textbox element */
+  /**
+   * ARIA props to spread onto the editable element: the role, and every
+   * attribute whose validity depends on it. Emit them as one spread — the
+   * role and its allowed attributes have to be decided together. See the
+   * construction site for which attribute forces which role.
+   */
   ariaProps: {
+    role: 'combobox' | 'textbox';
+    'aria-multiline'?: 'true';
     'aria-expanded'?: boolean;
     'aria-controls'?: string;
     'aria-activedescendant'?: string;
@@ -105,10 +111,6 @@ const styles = stylex.create({
   popoverSurface: {
     minWidth: '180px',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -116,11 +118,14 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
-    textAlign: 'left' as const,
+    textAlign: 'start' as const,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -250,6 +255,7 @@ function deleteTriggerText(
 export function useTriggerMenu(
   options: UseTriggerMenuOptions,
 ): UseTriggerMenuReturn {
+  const t = useTranslator();
   const {
     triggers,
     editableRef,
@@ -296,6 +302,9 @@ export function useTriggerMenu(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; focus stays in
+    // the contenteditable composer, so a modal dialog wrapper is incorrect.
+    role: 'none',
   });
 
   // Cleanup on unmount
@@ -589,19 +598,31 @@ export function useTriggerMenu(
     [listboxId],
   );
 
-  // Scroll highlighted item into view on keyboard navigation
-  useEffect(() => {
-    if (!popover.isOpen || state.highlightedIndex < 0) {
-      return;
-    }
-    const el = document.getElementById(getItemId(state.highlightedIndex));
-    el?.scrollIntoView({block: 'nearest'});
-  }, [state.highlightedIndex, popover.isOpen, getItemId]);
+  // Keep the highlighted option visible during keyboard navigation; hover
+  // highlights never scroll (#6077). Both sides live in useHighlightedOptionScroll.
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen: popover.isOpen,
+    highlightedIndex: state.highlightedIndex,
+    setHighlightedIndex: index =>
+      setState(prev => ({...prev, highlightedIndex: index})),
+    getOptionId: getItemId,
+  });
 
-  // ARIA props for the textbox element
-  const ariaProps =
-    state.isActive && popover.isOpen
+  // ARIA props for the editable element. Of the attributes the trigger menu
+  // needs, only aria-expanded forces the role: aria-controls and
+  // aria-haspopup are global, and aria-activedescendant is allowed on
+  // textbox too. So the element becomes a combobox exactly when triggers are
+  // configured and there is an expanded state to report; with no triggers it
+  // stays a plain textbox. aria-multiline runs the other way — ARIA 1.2
+  // supports it on textbox but not on combobox — so it rides the textbox
+  // branch. Emitting it on the combobox branch is a critical
+  // aria-allowed-attr violation (#4681).
+  const hasTriggers = (triggers?.length ?? 0) > 0;
+  const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
+    ? {role: 'textbox', 'aria-multiline': 'true'}
+    : state.isActive && popover.isOpen
       ? {
+          role: 'combobox',
           'aria-expanded': true as const,
           'aria-controls': listboxId,
           'aria-activedescendant':
@@ -611,6 +632,7 @@ export function useTriggerMenu(
           'aria-haspopup': 'listbox' as const,
         }
       : {
+          role: 'combobox',
           'aria-expanded': false as const,
           'aria-haspopup': 'listbox' as const,
         };
@@ -646,9 +668,7 @@ export function useTriggerMenu(
                 e.preventDefault(); // Keep focus in the editable
                 selectItem(item);
               }}
-              onMouseEnter={() =>
-                setState(prev => ({...prev, highlightedIndex: idx}))
-              }
+              onMouseEnter={() => highlightOnHover(idx)}
               {...stylex.props(
                 styles.item,
                 idx === state.highlightedIndex && styles.itemHighlighted,
@@ -682,7 +702,9 @@ export function useTriggerMenu(
       <div
         id={listboxId}
         role="listbox"
-        aria-label={trigger?.menuLabel ?? 'Suggestions'}
+        aria-label={
+          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+        }
         {...mergeProps(
           themeProps('trigger-menu'),
           stylex.props(styles.dropdown),
@@ -692,10 +714,11 @@ export function useTriggerMenu(
       {
         placement: 'above',
         alignment: 'start',
-        xstyle: [styles.popoverSurface, styles.popoverGap],
+        offset: spacingVars['--spacing-1'],
+        xstyle: styles.popoverSurface,
       },
     );
-  }, [popover, listboxId, state, selectItem, getItemId]);
+  }, [popover, listboxId, state, selectItem, getItemId, highlightOnHover, t]);
 
   return {
     state,

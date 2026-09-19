@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Overlay',
@@ -180,9 +180,15 @@ export const docs = {
       description: 'Ref forwarded to the overlay root element.',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-overlay'},
+      {className: 'astryx-overlay-scrim', visualProps: ['position']},
+    ],
+  },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'layered content over media/card surfaces with scrim + hover/focus/controlled reveal',
   usage: {

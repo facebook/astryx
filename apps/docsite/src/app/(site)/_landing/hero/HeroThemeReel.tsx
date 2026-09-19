@@ -12,6 +12,9 @@
  * so the wordmark, cards, and dots — placed in different parts of the DOM by
  * page.tsx — re-skin together. Auto-advance pauses on hover/focus and when the
  * tab is hidden, and respects prefers-reduced-motion.
+ *
+ * Manual control: touch swipe (mobile) and the Pagination dots, which own
+ * keyboard navigation (arrow keys, Home/End) via the useListFocus primitive.
  */
 
 import {
@@ -136,7 +139,7 @@ const styles = stylex.create({
   //
   // The extra MUST match the showcase overlay's corner radius, which is the
   // docsite (Astryx) --radius-page = 32px. We can't read --radius-page here
-  // because this fill renders inside <XDSTheme theme={active}>, where the
+  // because this fill renders inside <Theme theme={active}>, where the
   // active theme overrides it — e.g. Y2K sets --radius-page: 0, which left the
   // fill 32px short and exposed the docsite body color in the rounded corners.
   // Hence a fixed 32px tied to the overlay radius rather than the theme token.
@@ -165,12 +168,31 @@ const styles = stylex.create({
     transition: 'background-color 600ms ease',
     zIndex: 0,
   },
-  // Blurred aurora glow — fixed, in the same 1200px box as the cards so blobs
-  // and cards stay aligned. Capped to 100vw to avoid horizontal scroll. Blob
-  // centers sit under the card clusters; colors come from --aurora-* per slide.
+  // Blurred aurora glow — in the same 1200px box as the cards so blobs and
+  // cards stay aligned; pinned at >=1024px and scrolling away with the hero
+  // below that (see `position`). Capped to 100vw to avoid horizontal scroll.
+  // Blob centers sit under the card clusters; colors come from --aurora-* per
+  // slide.
   backdropGlow: {
-    position: 'fixed',
-    top: 'var(--appshell-header-height, 0px)',
+    // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
+    // and the cards stage. Narrow: absolute within heroScope (position:
+    // relative), so it scrolls away with the hero instead of staying pinned
+    // for the whole page — a fixed glow below 1024px reached past the footer
+    // into the bottom-overscroll gap. That exposure is what the app-global
+    // `overscroll-behavior-y: none` in globals.css was suppressing, at the
+    // cost of pull-to-refresh on every route on mobile; bounding the glow
+    // here is what lets that rule scope to desktop widths (#5392).
+    position: {
+      default: 'absolute',
+      '@media (min-width: 1024px)': 'fixed',
+    },
+    // heroScope already starts below the header (it's the sibling after
+    // navBackdrop in document flow), so the absolute case needs no offset;
+    // only the fixed case has to clear the header itself.
+    top: {
+      default: 0,
+      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
+    },
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'min(1200px, 100vw)',
@@ -229,6 +251,9 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  // Auto-advance is desktop-only; on mobile the reel stays manual (swipe + dots)
+  // so the cards don't move on their own while the user reads/scrolls.
+  const isNarrow = useMediaQuery('(max-width: 1023px)');
   const {themeMode: userMode} = useThemeMode();
 
   const goTo = useCallback(
@@ -282,14 +307,20 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   );
 
   useEffect(() => {
-    if (!AUTOPLAY_ENABLED || reduceMotion || paused || slides.length <= 1) {
+    if (
+      !AUTOPLAY_ENABLED ||
+      reduceMotion ||
+      isNarrow ||
+      paused ||
+      slides.length <= 1
+    ) {
       return;
     }
     const id = window.setInterval(() => {
       setIndex(i => (i + 1) % slides.length);
     }, ADVANCE_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [reduceMotion, paused, slides.length]);
+  }, [reduceMotion, isNarrow, paused, slides.length]);
 
   useEffect(() => {
     const onVisibility = () => setPaused(document.hidden);

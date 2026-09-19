@@ -14,13 +14,14 @@
  */
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
+import {useLocale, useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export interface UseSpeechRecognitionOptions {
-  /** BCP-47 language tag. @default navigator.language */
+  /** BCP-47 language tag. @default InternationalizationProvider locale */
   lang?: string;
   /** Whether recognition continues until explicitly stopped. @default true */
   continuous?: boolean;
@@ -241,7 +242,7 @@ async function createVolumeAnalyser(
 
 let _sharedAudioCtx: AudioContext | null = null;
 
-export function getDefaultAudioContext(): AudioContext {
+function getDefaultAudioContext(): AudioContext {
   if (!_sharedAudioCtx || _sharedAudioCtx.state === 'closed') {
     _sharedAudioCtx = new AudioContext();
   }
@@ -258,6 +259,8 @@ export function getDefaultAudioContext(): AudioContext {
 export function useSpeechRecognition(
   options: UseSpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn {
+  const t = useTranslator();
+  const providerLocale = useLocale();
   const {
     lang,
     continuous = true,
@@ -346,7 +349,7 @@ export function useSpeechRecognition(
     }
     recognitionRef.current?.abort();
     const recognition = new SR();
-    recognition.lang = lang ?? navigator.language;
+    recognition.lang = lang ?? providerLocale;
     recognition.continuous = continuous;
     recognition.interimResults = interimResults;
 
@@ -408,13 +411,21 @@ export function useSpeechRecognition(
     recognition.onnomatch = () => {
       callbacksRef.current.onError?.({
         error: 'no-speech',
-        message: 'No speech was detected.',
+        message: t('@astryx.chat.speechRecognition.noSpeechDetected'),
       });
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [lang, continuous, interimResults, startVolumePolling, stopVolumePolling]);
+  }, [
+    lang,
+    providerLocale,
+    continuous,
+    interimResults,
+    startVolumePolling,
+    stopVolumePolling,
+    t,
+  ]);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();

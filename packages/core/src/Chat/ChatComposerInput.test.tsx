@@ -1,7 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {ChatComposer} from './ChatComposer';
+import {useChatComposerContext} from './ChatContext';
 import {ChatComposerInput} from './ChatComposerInput';
 import type {
   ChatComposerTrigger,
@@ -80,6 +83,22 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       expect(textbox).toHaveAttribute('contenteditable', 'false');
     });
+
+    it('marks the textbox as multiline', () => {
+      render(<ChatComposerInput />);
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-multiline',
+        'true',
+      );
+    });
+
+    // ARIA 1.2 supports aria-multiline on textbox but not on combobox, and
+    // configuring triggers switches the editable element to combobox.
+    it('drops aria-multiline once triggers make it a combobox', () => {
+      render(<ChatComposerInput triggers={[createMentionTrigger()]} />);
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).not.toHaveAttribute('aria-multiline');
+    });
   });
 
   describe('change and submit', () => {
@@ -128,6 +147,132 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       fireEvent.keyDown(textbox, {key: 'Enter'});
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('keeps parent submit flow when child onChange observes input changes', () => {
+      const onSubmit = vi.fn();
+      const onInputChange = vi.fn();
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={<ChatComposerInput onChange={onInputChange} />}
+        />,
+      );
+
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello world';
+      fireEvent.input(textbox);
+
+      expect(onInputChange).toHaveBeenLastCalledWith('hello world');
+
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      expect(onSubmit).toHaveBeenCalledWith('hello world');
+      expect(onInputChange).toHaveBeenLastCalledWith('');
+      expect(textbox.textContent).toBe('');
+    });
+  });
+
+  describe('composer focus control', () => {
+    it('registers a focus control so a body click focuses the input', () => {
+      render(
+        <ChatComposer onSubmit={() => {}} input={<ChatComposerInput />} />,
+      );
+      const editable = screen.getByRole('textbox');
+      // Walk to the composer body: editable → input root → inputArea → body.
+      const inputRoot = editable.parentElement!;
+      const inputArea = inputRoot.parentElement!;
+      const body = inputArea.parentElement!;
+      // Click empty space in the body → shell drives the registered control.
+      fireEvent.click(body);
+      expect(document.activeElement).toBe(editable);
+    });
+  });
+
+  describe('Enter submit behavior', () => {
+    it('does not submit on Enter while IME composition is in progress', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'こんにちは';
+      fireEvent.input(textbox);
+      // isComposing is surfaced on the native event during IME composition.
+      fireEvent.keyDown(textbox, {key: 'Enter', isComposing: true});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('does not submit on Enter for the legacy keyCode 229 composing signal', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'ㅎ';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter', keyCode: 229});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('lets onKeyDown suppress the default submit via preventDefault (touch-newline recipe)', () => {
+      // The documented "insert a newline instead of sending" pattern: a
+      // consumer preventDefaults Enter (e.g. on a coarse pointer).
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+        }
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('lets onKeyDown add behavior (Cmd/Ctrl+Enter submit) without preventDefault', () => {
+      // Adding a submit shortcut is just handling the event yourself; the
+      // built-in Enter handling still runs for the plain-Enter case.
+      const onSubmit = vi.fn();
+      const handle = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          handle();
+        }
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter', metaKey: true});
+      expect(handle).toHaveBeenCalled();
+      // Consumer did not preventDefault, so the built-in submit also fires.
+      expect(onSubmit).toHaveBeenCalledWith('hello');
+    });
+
+    it('calls onKeyDown before submit and lets preventDefault take over', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        e.preventDefault();
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('calls onKeyDown but still submits when the consumer does not preventDefault', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).toHaveBeenCalledWith('hello');
     });
   });
 
@@ -222,6 +367,194 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  // ArrowUp/ArrowDown recall previously submitted messages, but only at
+  // the text boundaries — otherwise the caret can't move between lines
+  // of a multi-line draft. ArrowUp recalls at the very start, ArrowDown
+  // at the very end; mid-text the browser moves the caret (default not
+  // prevented).
+  describe('message history navigation', () => {
+    function submit(textbox: HTMLElement, value: string) {
+      textbox.textContent = value;
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+    }
+
+    function placeCaret(node: Node, offset: number) {
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    it('recalls the previous message on ArrowUp at the start of the draft', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+      submit(textbox, 'second');
+
+      // Fresh empty draft — caret is trivially at the start.
+      textbox.focus();
+      placeCaret(textbox, 0);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe('second');
+    });
+
+    it('recalls from a first-text-node caret without cloning draft contents', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'previous message');
+
+      textbox.textContent = 'pending draft';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Chromium places this caret in the first text node, not on the root.
+      placeCaret(textbox.firstChild!, 0);
+      const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(cloneContents).toHaveBeenCalledTimes(0);
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe('previous message');
+      cloneContents.mockRestore();
+    });
+
+    it('steps forward from a final-text-node caret without cloning draft contents', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'previous message');
+
+      const draft = 'pending draft';
+      textbox.textContent = draft;
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      // The prior ArrowUp selected a recalled message. Put the pending
+      // draft back in place, then navigate forward from the final text node.
+      textbox.textContent = draft;
+      fireEvent.input(textbox);
+      placeCaret(textbox.firstChild!, draft.length);
+      const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+
+      expect(cloneContents).toHaveBeenCalledTimes(0);
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe(draft);
+      cloneContents.mockRestore();
+    });
+
+    it('does not recall on ArrowUp when the caret is mid-text', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      textbox.textContent = 'aaa';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret between the a's — not at the very start.
+      placeCaret(textbox.firstChild!, 1);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      // Default is not prevented: the browser moves the caret up a line.
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('aaa');
+    });
+
+    it('does not recall on ArrowUp from the first line of a multi-line draft when not at the start', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      // Multi-line draft: "aaa" <br> "bbb".
+      textbox.innerHTML = 'aaa<br>bbb';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret mid first line.
+      placeCaret(textbox.firstChild!, 2);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(prevented).toBe(false);
+      expect(textbox.querySelector('br')).not.toBeNull();
+    });
+
+    it('steps back and forth through history at the boundaries', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+      submit(textbox, 'second');
+
+      textbox.focus();
+      placeCaret(textbox, 0);
+
+      // Up to the most recent, then further back.
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('second');
+      // Recalled text is fully selected — Up again steps further back.
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('first');
+      // Down steps forward again.
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+      expect(textbox.textContent).toBe('second');
+    });
+
+    it('restores the pending draft on ArrowDown past the newest message', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      textbox.textContent = 'draft';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret at the very start — ArrowUp recalls and stashes the draft.
+      placeCaret(textbox, 0);
+
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('first');
+      // The recalled message is fully selected, so ArrowDown steps
+      // forward past the newest entry and restores the stashed draft.
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+      expect(textbox.textContent).toBe('draft');
+    });
+
+    it('does nothing when there is no history', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox, 0);
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('hello');
+    });
+
+    it('does not recall when hasHistory is false', () => {
+      render(<ChatComposerInput hasHistory={false} onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      // Even after "submitting", history is disabled.
+      textbox.textContent = 'first';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('hello');
+    });
+  });
+
   describe('file handling', () => {
     it('calls onFiles on paste with files', () => {
       const onFiles = vi.fn();
@@ -247,6 +580,13 @@ describe('ChatComposerInput', () => {
   describe('selection recovery (no range inside editable)', () => {
     function clearSelection() {
       window.getSelection()?.removeAllRanges();
+    }
+
+    /** Type a message and send it, so history has something to recall. */
+    function submitMessage(textbox: HTMLElement, value: string) {
+      textbox.textContent = value;
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
     }
 
     it('paste inserts plain text after a focus() with no selection range', () => {
@@ -329,6 +669,313 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toContain('hello');
     });
 
+    // History recall reads where the caret sits, so where a programmatic
+    // focus leaves it decides whether ArrowUp recalls or moves the caret.
+    // Measured in Chromium: `focus()` collapses the caret to offset 0 —
+    // the START of the draft — so a composer that trusted it would let the
+    // first ArrowUp after a padding click replace whatever was typed. The
+    // composer states the caret itself instead: after the draft.
+    describe('caret placement on programmatic focus', () => {
+      /** What Chromium does to the Selection on `editable.focus()`. */
+      function focusLikeChromium(editable: HTMLElement) {
+        editable.focus();
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.setStart(editable.firstChild ?? editable, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function caretOffsetFromEnd(editable: HTMLElement): number {
+        const selection = window.getSelection()!;
+        const range = selection.getRangeAt(0);
+        const toEnd = document.createRange();
+        toEnd.selectNodeContents(editable);
+        toEnd.setStart(range.endContainer, range.endOffset);
+        return toEnd.toString().length;
+      }
+
+      it('puts the caret after the draft when the composer shell focuses it', async () => {
+        const user = userEvent.setup();
+        render(
+          <ChatComposer onSubmit={() => {}} input={<ChatComposerInput />} />,
+        );
+        const textbox = screen.getByRole('textbox');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+
+        // Walk to the composer body: editable → input root → inputArea → body.
+        const body = textbox.parentElement!.parentElement!.parentElement!;
+        await user.click(body);
+
+        expect(document.activeElement).toBe(textbox);
+        expect(caretOffsetFromEnd(textbox)).toBe(0);
+      });
+
+      // The click path overrides rather than restores: clicking the space
+      // after the text says where the user wants to be, so a caret left
+      // over from earlier does not win. Driving the shell's registered
+      // control directly is what makes this distinguishable — jsdom's
+      // synthetic click clears the selection on its own, so a click alone
+      // would pass either way.
+      it('overrides a stale mid-draft caret when the shell focuses it', () => {
+        let shellFocus: (() => void) | undefined;
+        function GrabControl() {
+          const ctx = useChatComposerContext();
+          shellFocus = () => {
+            ctx?.inputControlRef?.current?.focus();
+          };
+          return null;
+        }
+        render(
+          <ChatComposer
+            onSubmit={() => {}}
+            input={
+              <>
+                <ChatComposerInput />
+                <GrabControl />
+              </>
+            }
+          />,
+        );
+        const textbox = screen.getByRole('textbox');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.setStart(textbox.firstChild!, 3);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        shellFocus!();
+
+        expect(caretOffsetFromEnd(textbox)).toBe(0);
+      });
+
+      it('keeps a pending draft when ArrowUp follows a click on the composer padding', async () => {
+        const user = userEvent.setup();
+        render(
+          <ChatComposer onSubmit={() => {}} input={<ChatComposerInput />} />,
+        );
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+
+        const body = textbox.parentElement!.parentElement!.parentElement!;
+        await user.click(body);
+        const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        // Caret movement, not recall: the draft survives untouched.
+        expect(prevented).toBe(false);
+        expect(textbox.textContent).toBe('pending draft');
+      });
+
+      it('recalls history when ArrowUp follows a padding click on an empty composer', async () => {
+        const user = userEvent.setup();
+        render(
+          <ChatComposer onSubmit={() => {}} input={<ChatComposerInput />} />,
+        );
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+
+        const body = textbox.parentElement!.parentElement!.parentElement!;
+        await user.click(body);
+        const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        // An empty draft is at its start and its end at once.
+        expect(prevented).toBe(true);
+        expect(textbox.textContent).toBe('first');
+      });
+
+      it('puts the caret after the draft on the imperative focus() with no prior caret', () => {
+        let handle: ChatComposerInputHandle | null = null;
+        render(
+          <ChatComposerInput
+            handleRef={h => {
+              handle = h;
+            }}
+          />,
+        );
+        const textbox = screen.getByRole('textbox');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        clearSelection();
+
+        handle!.focus();
+
+        expect(document.activeElement).toBe(textbox);
+        expect(caretOffsetFromEnd(textbox)).toBe(0);
+      });
+
+      // A consumer calling focus() to return the user to the composer must
+      // not move them: the caret they left behind is theirs, not ours.
+      it('keeps a mid-draft caret across the imperative focus()', () => {
+        let handle: ChatComposerInputHandle | null = null;
+        render(
+          <ChatComposerInput
+            handleRef={h => {
+              handle = h;
+            }}
+          />,
+        );
+        const textbox = screen.getByRole('textbox');
+        const draft = 'pending draft';
+        textbox.textContent = draft;
+        fireEvent.input(textbox);
+        // Caret between "pending" and " draft".
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.setStart(textbox.firstChild!, 7);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        handle!.focus();
+
+        expect(document.activeElement).toBe(textbox);
+        expect(caretOffsetFromEnd(textbox)).toBe(draft.length - 7);
+      });
+
+      it('keeps a ranged selection across the imperative focus()', () => {
+        let handle: ChatComposerInputHandle | null = null;
+        render(
+          <ChatComposerInput
+            handleRef={h => {
+              handle = h;
+            }}
+          />,
+        );
+        const textbox = screen.getByRole('textbox');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.setStart(textbox.firstChild!, 0);
+        range.setEnd(textbox.firstChild!, 7);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        handle!.focus();
+
+        const after = window.getSelection()!;
+        expect(after.isCollapsed).toBe(false);
+        expect(after.toString()).toBe('pending');
+      });
+
+      it('keeps a start-of-draft caret across the imperative focus(), so ArrowUp still recalls', () => {
+        let handle: ChatComposerInputHandle | null = null;
+        render(
+          <ChatComposerInput
+            onSubmit={() => {}}
+            handleRef={h => {
+              handle = h;
+            }}
+          />,
+        );
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        // The user deliberately put the caret at the start.
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.setStart(textbox.firstChild!, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        handle!.focus();
+        fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        // Their caret is honored, not overridden into "end of draft".
+        expect(textbox.textContent).toBe('first');
+      });
+
+      it('ignores a selection outside the editable on the imperative focus()', () => {
+        let handle: ChatComposerInputHandle | null = null;
+        const {container} = render(
+          <div>
+            <p>elsewhere</p>
+            <ChatComposerInput
+              handleRef={h => {
+                handle = h;
+              }}
+            />
+          </div>,
+        );
+        const textbox = screen.getByRole('textbox');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        const outside = container.querySelector('p')!;
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.selectNodeContents(outside);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        handle!.focus();
+
+        // Not the user's position in the composer, so it does not count.
+        expect(caretOffsetFromEnd(textbox)).toBe(0);
+      });
+
+      it('keeps a pending draft when the caret is the one Chromium leaves on a bare focus()', () => {
+        render(<ChatComposerInput onSubmit={() => {}} />);
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+
+        // A consumer focusing the DOM node directly bypasses our focus
+        // control, so this is the caret the engine chose.
+        focusLikeChromium(textbox);
+        const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        // The user did put the caret at the start here as far as the DOM can
+        // tell, so recall is the documented behavior — but the draft must be
+        // recoverable, not lost.
+        expect(prevented).toBe(true);
+        expect(textbox.textContent).toBe('first');
+        fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+        expect(textbox.textContent).toBe('pending draft');
+      });
+
+      it('recalls history on ArrowUp when no caret exists inside the editable', () => {
+        render(<ChatComposerInput onSubmit={() => {}} />);
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+
+        // An engine that creates no Range on focus, or a consumer that never
+        // focused at all: the composer falls back to a caret after the draft.
+        textbox.focus();
+        clearSelection();
+        expect(window.getSelection()?.rangeCount ?? 0).toBe(0);
+
+        const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        expect(prevented).toBe(true);
+        expect(textbox.textContent).toBe('first');
+      });
+
+      it('keeps a pending draft when no caret exists inside the editable', () => {
+        render(<ChatComposerInput onSubmit={() => {}} />);
+        const textbox = screen.getByRole('textbox');
+        submitMessage(textbox, 'first');
+        textbox.textContent = 'pending draft';
+        fireEvent.input(textbox);
+        textbox.focus();
+        clearSelection();
+
+        const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+        expect(prevented).toBe(false);
+        expect(textbox.textContent).toBe('pending draft');
+      });
+    });
+
     it('paste falls through to plain-text path when pasteAsToken={false}', () => {
       const onChange = vi.fn();
       render(<ChatComposerInput pasteAsToken={false} onChange={onChange} />);
@@ -345,7 +992,9 @@ describe('ChatComposerInput', () => {
         },
       });
 
-      expect(textbox.querySelector('[data-astryx-token]')).not.toBeInTheDocument();
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
       expect(textbox.textContent).toBe(long);
     });
   });
@@ -409,18 +1058,36 @@ describe('ChatComposerInput', () => {
   });
 
   describe('accessibility', () => {
-    it('has aria-haspopup on the textbox', () => {
+    it('exposes role=combobox when triggers are configured', () => {
       const triggers = [createMentionTrigger()];
       render(<ChatComposerInput triggers={triggers} />);
-      const textbox = screen.getByRole('textbox');
-      expect(textbox).toHaveAttribute('aria-haspopup', 'listbox');
+      // aria-expanded/haspopup/controls/activedescendant are only valid on
+      // role="combobox", so the editable element must be a combobox (not a
+      // plain textbox) whenever trigger-menu behavior is wired.
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+
+    it('has aria-haspopup on the combobox', () => {
+      const triggers = [createMentionTrigger()];
+      render(<ChatComposerInput triggers={triggers} />);
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox');
     });
 
     it('has aria-expanded=false when menu is closed', () => {
       const triggers = [createMentionTrigger()];
       render(<ChatComposerInput triggers={triggers} />);
-      const textbox = screen.getByRole('textbox');
-      expect(textbox).toHaveAttribute('aria-expanded', 'false');
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('stays role=textbox with no combobox attributes when no triggers are configured', () => {
+      render(<ChatComposerInput label="Message" />);
+      const textbox = screen.getByRole('textbox', {name: 'Message'});
+      // A plain textbox must not carry combobox-only ARIA (axe: aria-allowed-attr).
+      expect(textbox).not.toHaveAttribute('aria-expanded');
+      expect(textbox).not.toHaveAttribute('aria-haspopup');
     });
   });
 
@@ -590,7 +1257,8 @@ describe('ChatComposerInput', () => {
       const result = render(
         <ChatComposerInput triggers={triggers} onChange={onChange} />,
       );
-      const textbox = screen.getByRole('textbox');
+      // With triggers configured the editable is a combobox, not a textbox.
+      const textbox = screen.getByRole('combobox');
       textbox.focus();
       return {...result, textbox, onChange};
     }
@@ -684,7 +1352,7 @@ describe('ChatComposerInput', () => {
           onChange={onChange}
         />,
       );
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByRole('combobox');
       textbox.focus();
 
       setCursorAfterText(textbox, 'hello @');
@@ -725,6 +1393,79 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
+
+  describe('trigger menu hover scrolling', () => {
+    // Regression: the scroll-highlighted-item-into-view effect ran for
+    // mouse-hover highlights too. A pointer resting near the bottom of the
+    // menu kept scrolling: each scrollIntoView moved a new option under the
+    // stationary cursor, whose mouseenter re-highlighted and scrolled again.
+    // Hover must highlight only; keyboard navigation keeps its scrolling.
+    function openMenu() {
+      // jsdom does not implement scrollIntoView — install a spy directly.
+      const original = Element.prototype.scrollIntoView;
+      const spy = vi.fn();
+      Element.prototype.scrollIntoView = spy;
+      cleanupFns.push(() => {
+        Element.prototype.scrollIntoView = original;
+      });
+      render(<ChatComposerInput triggers={[createMentionTrigger()]} />);
+      const textbox = screen.getByRole('combobox');
+      textbox.focus();
+      const textNode = document.createTextNode('@');
+      textbox.appendChild(textNode);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, 1);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+      return {textbox, spy};
+    }
+
+    // The menu layer is a `[popover]` element; jsdom has no popover semantics
+    // so testing-library's role queries see it as hidden. Query via
+    // aria-controls instead.
+    async function getMenuOptions(textbox: HTMLElement) {
+      const listbox = await waitFor(() => {
+        const el = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        const options = el?.querySelectorAll<HTMLElement>('[role="option"]');
+        expect(options?.length ?? 0).toBeGreaterThan(1);
+        return options!;
+      });
+      return Array.from(listbox);
+    }
+
+    const cleanupFns: (() => void)[] = [];
+
+    afterEach(() => {
+      cleanupFns.splice(0).forEach(fn => fn());
+    });
+
+    it('does not scroll when hover highlights an option', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      const options = await getMenuOptions(textbox);
+      fireEvent.mouseEnter(options[1]);
+
+      expect(options[1]).toHaveAttribute('aria-selected', 'true');
+      expect(spy.mock.calls.length).toBe(callsAfterOpen);
+    });
+
+    it('still scrolls on keyboard navigation', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      await getMenuOptions(textbox);
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+
+      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterOpen);
     });
   });
 });

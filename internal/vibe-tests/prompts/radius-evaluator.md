@@ -82,8 +82,8 @@ Return JSON:
 ```json
 {
   "success": true/false,
-  "componentsUsed": ["XDSCard", ...],
-  "componentsExpected": ["XDSCard", ...],
+  "componentsUsed": ["Card", ...],
+  "componentsExpected": ["Card", ...],
   "radiusTokensUsed": ["--radius-container", ...],
   "radiusSelectionCorrect": true/false,
   "radiusSelectionDetail": "Correctly used container radius for card, element radius for button",

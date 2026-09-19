@@ -12,10 +12,10 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
- * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
-import React, {useCallback, type ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -29,9 +29,10 @@ import {
 } from '../theme/tokens.stylex';
 import {useSegmentedControlContext} from './SegmentedControlContext';
 import type {SegmentedControlSize} from './SegmentedControlContext';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -81,31 +82,45 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    whiteSpace: 'nowrap',
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   hover: {
     backgroundColor: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
   },
   selected: {
-    color: colorVars['--color-text-primary'],
+    // Forced colors (Windows High Contrast) strips the painted surface fill
+    // and box shadow, which would leave the selected segment with no state
+    // indication beyond font weight. Highlight/HighlightText is the platform
+    // convention for a selected item (WCAG 1.4.11).
+    //
+    // forced-color-adjust must be `none` here: the segment is a <button>, and
+    // the UA keeps native form-control colors (ButtonFace surface) for it under
+    // forced colors, ignoring the authored Highlight fill — the label kept its
+    // HighlightText color, giving white text on a white surface. Opting the
+    // selected segment out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: colorVars['--color-background-surface'],
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
     boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {
@@ -114,6 +129,7 @@ const styles = stylex.create({
   },
   fill: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   icon: {
@@ -121,6 +137,11 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  labelText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
   },
 });
 
@@ -168,19 +189,30 @@ export function SegmentedControlItem({
   isLabelHidden = false,
   icon,
   isDisabled = false,
+  onClick: onClickProp,
+  xstyle,
+  ...rest
 }: SegmentedControlItemProps) {
   const ctx = useSegmentedControlContext();
 
   const isSelected = ctx.value === value;
   const isItemDisabled = isDisabled || ctx.isDisabled;
+  // When the whole group is disabled with a disabledMessage, keep the selected
+  // segment focusable so the group's reason tooltip is keyboard-discoverable.
+  // Per-item disabling (`isDisabled` on the item) always drops out of the tab
+  // order. Activation stays blocked by the isItemDisabled guard in handleClick.
+  const keepsSelectedFocusable =
+    isSelected && (ctx.hasDisabledMessage ?? false) && !isDisabled;
   const size: SegmentedControlSize = ctx.size;
   const isFill = ctx.layout === 'fill';
 
-  const handleClick = useCallback(() => {
+  // Consumer-first: a consumer onClick can call preventDefault() to opt out of
+  // selection; otherwise selection proceeds when enabled and not selected.
+  const handleClick = composeEventHandlers(onClickProp, () => {
     if (!isItemDisabled && !isSelected) {
       ctx.onChange(value);
     }
-  }, [ctx, value, isItemDisabled, isSelected]);
+  });
 
   const iconElement = icon ? (
     <span {...stylex.props(styles.icon, iconSizeStyles[size])}>{icon}</span>
@@ -189,13 +221,21 @@ export function SegmentedControlItem({
   return (
     <button
       ref={ref}
+      {...rest}
       type="button"
       role="radio"
       aria-checked={isSelected}
       aria-disabled={isItemDisabled || undefined}
       aria-label={isLabelHidden ? label : undefined}
       data-value={value}
-      tabIndex={isSelected ? 0 : -1}
+      // Disabled items (including when the whole group is disabled) are not tab
+      // stops — otherwise the selected segment stays keyboard-focusable but is
+      // silently dead (arrows and activation are no-ops) (navigation-13). The
+      // exception is a whole-group disabledMessage, where the selected segment
+      // stays focusable so the reason tooltip is keyboard-discoverable.
+      tabIndex={
+        (isSelected && !isItemDisabled) || keepsSelectedFocusable ? 0 : -1
+      }
       onClick={handleClick}
       {...mergeProps(
         themeProps('segmented-control-item', {
@@ -203,17 +243,20 @@ export function SegmentedControlItem({
           selected: isSelected ? 'selected' : null,
           disabled: isItemDisabled ? 'disabled' : null,
         }),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.base,
           sizeStyles[size],
           isFill && styles.fill,
           isSelected && styles.selected,
           !isSelected && !isItemDisabled && styles.hover,
           isItemDisabled && styles.disabled,
+          xstyle,
         ),
       )}>
       {iconElement}
-      {!isLabelHidden && <span>{label}</span>}
+      {!isLabelHidden && (
+        <span {...stylex.props(styles.labelText)}>{label}</span>
+      )}
     </button>
   );
 }

@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   fontWeightVars,
+  textSizeVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
@@ -100,8 +101,7 @@ export const defaultWeightByTypeStyles = stylex.create({
 // Baseline Size/Leading by Type (from type-scale tokens)
 //
 // These ensure Text renders with correct sizing even without a theme.
-// Theme component overrides (.astryx-text.body { ... } today, plus data-type
-// reflection on rendered text elements) win when present
+// Theme component overrides (`.astryx-text[data-type="body"]`, etc.) win when
 // because they have higher specificity via @scope.
 // =============================================================================
 
@@ -142,6 +142,46 @@ export const sizeByTypeStyles = stylex.create({
   inherit: {
     fontSize: 'inherit',
     lineHeight: 'inherit',
+  },
+});
+
+// =============================================================================
+// Explicit Size Override
+// =============================================================================
+
+export const sizeStyles = stylex.create({
+  '4xs': {
+    fontSize: textSizeVars['--font-size-4xs'],
+  },
+  '3xs': {
+    fontSize: textSizeVars['--font-size-3xs'],
+  },
+  '2xs': {
+    fontSize: textSizeVars['--font-size-2xs'],
+  },
+  xsm: {
+    fontSize: textSizeVars['--font-size-xs'],
+  },
+  sm: {
+    fontSize: textSizeVars['--font-size-sm'],
+  },
+  base: {
+    fontSize: textSizeVars['--font-size-base'],
+  },
+  lg: {
+    fontSize: textSizeVars['--font-size-lg'],
+  },
+  xl: {
+    fontSize: textSizeVars['--font-size-xl'],
+  },
+  '2xl': {
+    fontSize: textSizeVars['--font-size-2xl'],
+  },
+  '3xl': {
+    fontSize: textSizeVars['--font-size-3xl'],
+  },
+  '4xl': {
+    fontSize: textSizeVars['--font-size-4xl'],
   },
 });
 

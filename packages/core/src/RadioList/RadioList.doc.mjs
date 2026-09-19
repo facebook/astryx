@@ -1,19 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'RadioList',
   displayName: 'Radio List',
   group: 'Radio',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'astryx-radio-list-item'},
-      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'astryx-radio-dot', visualProps: ['size']},
+      {className: 'astryx-radio-list-item', visualProps: ['size'], states: ['selected', 'disabled']},
+      {className: 'astryx-radio-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
+      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'radio-indicator'},
+      {className: 'astryx-radio-dot', visualProps: ['size'], deprecatedFor: 'radio-indicator-dot'},
     ],
   },
   description: 'Radio group container with field integration for label, description, and status.',
@@ -75,6 +77,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute shared by the radio inputs, useful for form submissions. When omitted, a unique internal name still groups the radios.',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the group is disabled. Applies to the whole-group disabled state (isDisabled), not per item. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the radios focusable via aria-disabled (selection stays blocked). Use this instead of wrapping a disabled RadioList in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isRequired',
       type: 'boolean',
       description: 'Whether the radio group is required.',
@@ -88,7 +102,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator ({ type, message }).',
     },
     {
@@ -101,6 +115,12 @@ export const docs = {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text for an info icon next to the label.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -121,6 +141,7 @@ export const docs = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -130,7 +151,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -142,6 +163,7 @@ export const docsZh = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -151,7 +173,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Radio group component for single-value selection from list of options.',
@@ -165,6 +187,7 @@ export const docsDense = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},

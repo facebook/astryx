@@ -14,6 +14,17 @@ import {render, screen} from '@testing-library/react';
 import {Grid} from './Grid';
 import {GridSpan} from './GridSpan';
 
+/**
+ * The track template is applied via a StyleX dynamic style: the element
+ * carries an inline CSS variable while the `grid-template-columns`
+ * declaration lives in a class (so consumer xstyle/@media overrides can
+ * win). `--x-gridTemplateColumns` is the debug-mode variable name emitted
+ * by the StyleX transform in tests.
+ */
+function templateColumns(el: HTMLElement): string {
+  return el.style.getPropertyValue('--x-gridTemplateColumns');
+}
+
 describe('Grid', () => {
   it('renders with fixed columns', () => {
     render(
@@ -25,7 +36,22 @@ describe('Grid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid).toBeInTheDocument();
-    expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)');
+    expect(templateColumns(grid)).toBe('repeat(3, 1fr)');
+  });
+
+  it('does not write grid-template-columns as a raw inline style (regression: inline style defeats xstyle/@media overrides)', () => {
+    render(
+      <Grid columns={3} rowHeight={80} data-testid="grid">
+        <div>Item 1</div>
+      </Grid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // The declaration must live in a class (via CSS-var indirection), never
+    // as a raw inline property — inline would beat any consumer override.
+    expect(grid.style.gridTemplateColumns).toBe('');
+    expect(grid.style.gridAutoRows).toBe('');
+    expect(templateColumns(grid)).toBe('repeat(3, 1fr)');
+    expect(grid.style.getPropertyValue('--x-gridAutoRows')).toBe('80px');
   });
 
   it('renders with columns object (auto-fill default)', () => {
@@ -36,12 +62,10 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(250px, 1fr))',
-    );
+    expect(templateColumns(grid)).toBe('repeat(auto-fill, minmax(250px, 1fr))');
   });
 
-  it('renders with columns object max (capped via track-max)', () => {
+  it('renders with columns object max (count capped, tracks still fill)', () => {
     render(
       <Grid columns={{minWidth: 250, max: 3}} gap={4} data-testid="grid">
         <div>Item 1</div>
@@ -50,27 +74,48 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    // Track max caps at (100% - 2 * gap) / 3 — no maxWidth on container
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(250px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+    // Cap lives on the track MIN (min(100%, max(minWidth, perColumn))); the
+    // track MAX stays 1fr so present columns fill the row (a lone column on
+    // mobile stretches to 100% instead of leaving dead space).
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(250px, calc((100% - 2 * var(--spacing-4)) / 3))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
+  it('keeps track max at 1fr with a max cap so a lone column can fill (#3391)', () => {
+    // Regression: previously the cap was applied to the track MAX
+    // (minmax(minWidth, 100%/max)), so when fewer than `max` columns fit —
+    // e.g. a single column on mobile — the lone column was pinned to ~100%/max
+    // and left dead space on the right. The cap now lives on the track MIN and
+    // the track MAX stays 1fr, so present columns always stretch to fill.
+    render(
+      <Grid columns={{minWidth: 360, max: 2}} gap={4} data-testid="grid">
+        <div>Left</div>
+        <div>Right</div>
+      </Grid>,
+    );
+    const grid = screen.getByTestId('grid');
+    const template = templateColumns(grid);
+    // Track max must be 1fr (fills), not a fraction-of-container cap.
+    expect(template).toMatch(/, 1fr\)\)$/);
+    expect(template).not.toMatch(/, calc\([^)]*\/ 2\)\)\)$/);
+    expect(template).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(360px, calc((100% - 1 * var(--spacing-4)) / 2))), 1fr))',
+    );
+  });
+
   it('renders with columns object max using columnGap', () => {
     render(
-      <Grid
-        columns={{minWidth: 200, max: 4}}
-        columnGap={6}
-        data-testid="grid">
+      <Grid columns={{minWidth: 200, max: 4}} columnGap={6} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    // columnGap takes precedence for track-max calculation
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(200px, calc((100% - 3 * var(--spacing-6)) / 4)))',
+    // columnGap takes precedence in the perColumn floor calculation
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(200px, calc((100% - 3 * var(--spacing-6)) / 4))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -118,7 +163,7 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe('1fr');
+    expect(templateColumns(grid)).toBe('1fr');
   });
 
   // --- P1: columns={0} guard (hardening #719) ---
@@ -131,7 +176,7 @@ describe('Grid', () => {
     );
     const grid = screen.getByTestId('grid');
     // columns={0} must not produce repeat(0, 1fr) — should fall back to default
-    expect(grid.style.gridTemplateColumns).toBe('1fr');
+    expect(templateColumns(grid)).toBe('1fr');
   });
 
   it('falls back to 1fr when columns is negative', () => {
@@ -141,19 +186,17 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe('1fr');
+    expect(templateColumns(grid)).toBe('1fr');
   });
 
-  it('uses auto-fill without track-max cap when no max specified', () => {
+  it('uses auto-fill with a plain 1fr track when no max specified', () => {
     render(
       <Grid columns={{minWidth: 200}} data-testid="grid">
         <div>Item</div>
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(200px, 1fr))',
-    );
+    expect(templateColumns(grid)).toBe('repeat(auto-fill, minmax(200px, 1fr))');
     expect(grid.style.maxWidth).toBe('');
   });
 
@@ -201,7 +244,7 @@ describe('Grid', () => {
 
   // --- P2: columns object + columnGap interaction (hardening #719) ---
 
-  it('uses columnGap var in track-max when both columnGap and gap are set', () => {
+  it('uses columnGap var in the count-cap floor when both columnGap and gap are set', () => {
     render(
       <Grid
         columns={{minWidth: 200, max: 3}}
@@ -212,35 +255,35 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    // columnGap takes precedence over gap in track-max
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(200px, calc((100% - 2 * var(--spacing-6)) / 3)))',
+    // columnGap takes precedence over gap in the perColumn floor
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(200px, calc((100% - 2 * var(--spacing-6)) / 3))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('uses gap var in track-max when columnGap is not set', () => {
+  it('uses gap var in the count-cap floor when columnGap is not set', () => {
     render(
       <Grid columns={{minWidth: 150, max: 2}} gap={3} data-testid="grid">
         <div>Item</div>
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(150px, calc((100% - 1 * var(--spacing-3)) / 2)))',
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(150px, calc((100% - 1 * var(--spacing-3)) / 2))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('uses simple fraction in track-max when no gap is set', () => {
+  it('uses simple fraction in the count-cap floor when no gap is set', () => {
     render(
       <Grid columns={{minWidth: 100, max: 3}} data-testid="grid">
         <div>Item</div>
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(100px, calc(100% / 3)))',
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(100px, calc(100% / 3))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -288,9 +331,7 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(280px, 1fr))',
-    );
+    expect(templateColumns(grid)).toBe('repeat(auto-fill, minmax(280px, 1fr))');
   });
 
   it('renders with columns={{minWidth, repeat: "fit"}} using auto-fit', () => {
@@ -301,9 +342,7 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(280px, 1fr))',
-    );
+    expect(templateColumns(grid)).toBe('repeat(auto-fit, minmax(280px, 1fr))');
   });
 
   it('renders with columns={{minWidth, repeat: "fill"}} using auto-fill', () => {
@@ -314,12 +353,10 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(280px, 1fr))',
-    );
+    expect(templateColumns(grid)).toBe('repeat(auto-fill, minmax(280px, 1fr))');
   });
 
-  it('renders with columns={{minWidth, max}} capping via track-max', () => {
+  it('renders with columns={{minWidth, max}} capping the count while filling', () => {
     render(
       <Grid columns={{minWidth: 280, max: 3}} gap={4} data-testid="grid">
         <div>Item 1</div>
@@ -327,14 +364,15 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    // Track-max limits columns — grid stays full width
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(280px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+    // Count is capped via the track MIN; track MAX stays 1fr so present
+    // columns fill the row (grid stays full width).
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(280px, calc((100% - 2 * var(--spacing-4)) / 3))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('renders with columns={{minWidth, max, repeat: "fit"}} using auto-fit + track-max', () => {
+  it('renders with columns={{minWidth, max, repeat: "fit"}} using auto-fit + count cap', () => {
     render(
       <Grid
         columns={{minWidth: 280, max: 3, repeat: 'fit'}}
@@ -345,8 +383,8 @@ describe('Grid', () => {
       </Grid>,
     );
     const grid = screen.getByTestId('grid');
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(280px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fit, minmax(min(100%, max(280px, calc((100% - 2 * var(--spacing-4)) / 3))), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });

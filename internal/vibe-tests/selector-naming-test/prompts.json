@@ -1,6 +1,6 @@
 {
   "name": "selector-naming",
-  "description": "Vibe test comparing 'items' vs 'options' naming for XDSSelector child elements",
+  "description": "Vibe test comparing 'items' vs 'options' naming for Selector child elements",
   "variants": ["items", "options"],
   "prompts": [
     {

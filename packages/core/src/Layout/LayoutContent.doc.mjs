@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'LayoutContent',
@@ -15,9 +15,16 @@ export const docs = {
       description: 'Content.',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Internal padding using the spacing scale. Overrides the default padding from the layout container.',
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: 'Enable scrollable overflow.',
+      description:
+        'Enable scrollable overflow. With arithmetic contentWidth values, the scrollport spans through every open side while context-aware insets keep children aligned.',
       default: 'true',
     },
     {
@@ -45,9 +52,15 @@ export const docsZh = {
       description: '内容。',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '使用间距比例的内边距。覆盖布局容器的默认内边距。',
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: '启用可滚动溢出。',
+      description:
+        '启用可滚动溢出。设置可参与算术计算的 contentWidth 时，滚动区域会延伸到所有未被面板占用的边缘，同时根据上下文调整内边距以保持子内容对齐。',
       default: 'true',
     },
     {
@@ -70,7 +83,9 @@ export const docsDense = {
   description: 'Scrollable main content area.',
   propDescriptions: {
     children: 'Content.',
-    isScrollable: 'Enable scrollable overflow.',
+    padding: 'Internal padding on spacing scale. Overrides layout container default.',
+    isScrollable:
+      'Enable scrollable overflow. With arithmetic contentWidth values, the scrollport reaches open sides while context-aware insets align children.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
   },

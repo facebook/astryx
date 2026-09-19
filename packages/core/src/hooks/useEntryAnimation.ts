@@ -61,25 +61,37 @@ const scaleIn = stylex.keyframes({
 
 const styles = stylex.create({
   slideDown: {
-    animationName: slideDown,
+    animationName: {
+      default: slideDown,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
   },
   slideUp: {
-    animationName: slideUp,
+    animationName: {
+      default: slideUp,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
   },
   fadeIn: {
-    animationName: fadeIn,
+    animationName: {
+      default: fadeIn,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
   },
   scaleIn: {
-    animationName: scaleIn,
+    animationName: {
+      default: scaleIn,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',

@@ -1,4 +1,4 @@
-# XDS agent docs (generated)
+# Astryx agent docs (generated)
 .astryx-docs/
 AGENTS.md
 
@@ -11,11 +11,14 @@ AGENTS.html.md
 
 # Generated skill doc (from CLI)
 .generated/*
-# Exception: XDS + Tailwind skill doc is committed (not auto-generated)
+# Exception: Astryx + Tailwind skill doc is committed (not auto-generated)
 
 # Test results (generated)
 results/
 
 # Preview build temp dirs
 .preview-tmp*
+
+# Canonical fixture run sandboxes
+.fixture-runs/
 # .baseline/ is committed (real shadcn components for type checking)

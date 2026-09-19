@@ -1,12 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Templates gallery — extracted from craft.
+ * @file Templates gallery index.
+ * @input Uses generated template metadata, URL preview state, live thumbnails, and a lazy preview dialog.
+ * @output Renders the filterable gallery and loads the query-synced preview dialog on first open.
+ * @position Public `/templates` docsite route.
  */
 
 'use client';
 
-import {useCallback, useMemo, useState} from 'react';
+import {Suspense, lazy, useCallback, useEffect, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
@@ -19,13 +22,20 @@ import {Grid} from '@astryxdesign/core/Grid';
 import {Button} from '@astryxdesign/core/Button';
 import {Overlay} from '@astryxdesign/core/Overlay';
 import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
-import {templates} from '../../../generated/templateRegistry';
+import {templateMetadata as templates} from '../../../generated/templateMetadataRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
-import {buildPlaygroundHref} from '../../../components/playgroundLink';
-import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
+import {buildTemplatePlaygroundHref} from '../../../components/playgroundLink';
+import {buildTemplatePreviewHref} from '../../../components/templatePreviewUrl';
+import {sortTemplatesByTitle} from '../../../components/templateGalleryOrder';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
 import {layout} from '../../../layout.stylex';
+
+const LazyTemplatePreviewDialog = lazy(() =>
+  import('../../../components/TemplatePreviewDialog').then(module => ({
+    default: module.TemplatePreviewDialog,
+  })),
+);
 
 const CARD_STYLE: CSSProperties & {'--color-overlay': string} = {
   '--color-overlay':
@@ -92,10 +102,46 @@ interface TemplateItem {
   slug: string;
   href: string;
   category: string;
-  source: string;
 }
 
 export default function TemplatesPage() {
+  return <TemplatesGallery />;
+}
+
+interface TemplatePreviewURLSyncProps {
+  indexBySlug: Map<string, number>;
+  onSlugChange: (slug: string | null) => void;
+}
+
+/**
+ * Keeps `?preview=` authoritative for deep links and soft navigation without
+ * making the visible gallery part of the query-dependent PPR hole.
+ */
+function TemplatePreviewURLSync({
+  indexBySlug,
+  onSlugChange,
+}: TemplatePreviewURLSyncProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const previewSlug = searchParams.get('preview');
+  const openSlug =
+    previewSlug != null && indexBySlug.has(previewSlug) ? previewSlug : null;
+
+  useEffect(() => {
+    onSlugChange(openSlug);
+    if (previewSlug != null && openSlug == null) {
+      router.replace(
+        buildTemplatePreviewHref(pathname, searchParams.toString(), null),
+        {scroll: false},
+      );
+    }
+  }, [onSlugChange, openSlug, pathname, previewSlug, router, searchParams]);
+
+  return null;
+}
+
+function TemplatesGallery() {
   const {isMobile} = useAppShellMobile();
 
   // Flat, display-ordered list of available templates. Ordered by category
@@ -110,7 +156,6 @@ export default function TemplatesPage() {
         slug: t.slug,
         href: `/templates/${t.slug}`,
         category: t.category,
-        source: t.source,
       }))
       .sort((a, b) => {
         const ga = groupOf(a.category);
@@ -133,13 +178,13 @@ export default function TemplatesPage() {
     return ['All', ...present];
   }, [items]);
 
-  const filteredItems = useMemo(
-    () =>
+  const filteredItems = useMemo(() => {
+    const visibleItems =
       activeCategory === 'All'
         ? items
-        : items.filter(i => groupOf(i.category) === activeCategory),
-    [items, activeCategory],
-  );
+        : items.filter(i => groupOf(i.category) === activeCategory);
+    return sortTemplatesByTitle(visibleItems);
+  }, [items, activeCategory]);
 
   // Flattened display-order list backing the preview dialog's prev/next
   // navigation, plus a slug -> index lookup for opening at a given card.
@@ -149,7 +194,6 @@ export default function TemplatesPage() {
         slug: i.slug,
         name: i.name,
         description: i.description,
-        source: i.source,
         category: groupOf(i.category),
       })),
     [filteredItems],
@@ -160,26 +204,32 @@ export default function TemplatesPage() {
     return m;
   }, [flatItems]);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-
-  const previewSlug = searchParams.get('preview');
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [hasLoadedPreview, setHasLoadedPreview] = useState(false);
+  const handlePreviewSlugChange = useCallback((slug: string | null) => {
+    if (slug !== null) {
+      setHasLoadedPreview(true);
+    }
+    setOpenSlug(slug);
+  }, []);
   const openIndex =
-    previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+    openSlug != null ? (indexBySlug.get(openSlug) ?? null) : null;
 
   const setOpenIndex = useCallback(
     (index: number | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (index !== null && flatItems[index]) {
-        params.set('preview', flatItems[index].slug);
-      } else {
-        params.delete('preview');
+      const nextSlug = index !== null ? (flatItems[index]?.slug ?? null) : null;
+      if (nextSlug !== null) {
+        setHasLoadedPreview(true);
       }
-      const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
+      setOpenSlug(nextSlug);
+      router.replace(
+        buildTemplatePreviewHref(pathname, window.location.search, nextSlug),
+        {scroll: false},
+      );
     },
-    [searchParams, flatItems, router, pathname],
+    [flatItems, router, pathname],
   );
 
   const openPreview = useCallback(
@@ -199,7 +249,10 @@ export default function TemplatesPage() {
   );
 
   return (
-    <Section maxWidth={layout.contentMaxWidth} padding={6} style={{marginInline: 'auto'}}>
+    <Section
+      maxWidth={layout.contentMaxWidth}
+      padding={6}
+      style={{marginInline: 'auto'}}>
       <VStack gap={10}>
         {/* Header */}
         <VStack gap={6} align="stretch">
@@ -223,7 +276,7 @@ export default function TemplatesPage() {
         </VStack>
 
         {/* Body */}
-        <Grid columns={{minWidth: isMobile ? 280 : 420}} gap={4} width="100%">
+        <Grid columns={{minWidth: isMobile ? 280 : 360}} gap={4} width="100%">
           {filteredItems.map(item => {
             const templateContent = <TemplateThumbnail slug={item.slug} />;
 
@@ -261,21 +314,19 @@ export default function TemplatesPage() {
                             variant="secondary"
                             onClick={() => openPreview(item.slug)}
                           />
-                          {item.source && (
-                            <Button
-                              label="Open in Playground"
-                              variant="secondary"
-                              href={buildPlaygroundHref(item.source)}
-                              onClick={e => {
-                                e.stopPropagation();
-                                trackOpenPlayground({
-                                  page: 'templates',
-                                  item: item.slug,
-                                  category: groupOf(item.category),
-                                });
-                              }}
-                            />
-                          )}
+                          <Button
+                            label="Open in Playground"
+                            variant="secondary"
+                            href={buildTemplatePlaygroundHref(item.slug)}
+                            onClick={e => {
+                              e.stopPropagation();
+                              trackOpenPlayground({
+                                page: 'templates',
+                                item: item.slug,
+                                category: groupOf(item.category),
+                              });
+                            }}
+                          />
                         </HStack>
                       </VStack>
                     }>
@@ -288,18 +339,29 @@ export default function TemplatesPage() {
         </Grid>
       </VStack>
 
-      <TemplatePreviewDialog
-        items={flatItems}
-        index={openIndex ?? 0}
-        isOpen={openIndex !== null}
-        onOpenChange={open => {
-          if (!open) {
-            setOpenIndex(null);
-          }
-        }}
-        onIndexChange={setOpenIndex}
-        variant={isMobile ? 'fullscreen' : undefined}
-      />
+      <Suspense fallback={null}>
+        <TemplatePreviewURLSync
+          indexBySlug={indexBySlug}
+          onSlugChange={handlePreviewSlugChange}
+        />
+      </Suspense>
+
+      {hasLoadedPreview ? (
+        <Suspense fallback={null}>
+          <LazyTemplatePreviewDialog
+            items={flatItems}
+            index={openIndex ?? 0}
+            isOpen={openIndex !== null}
+            onOpenChange={open => {
+              if (!open) {
+                setOpenIndex(null);
+              }
+            }}
+            onIndexChange={setOpenIndex}
+            variant={isMobile ? 'fullscreen' : undefined}
+          />
+        </Suspense>
+      ) : null}
     </Section>
   );
 }

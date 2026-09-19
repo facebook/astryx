@@ -1,7 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseInline} from './parser';
+import {
+  createIncrementalState,
+  parseInline,
+  parseMarkdown,
+  parseMarkdownIncremental,
+} from './parser';
+import type {BlockNode, InlineNode} from './parser';
 
 describe('parseInline', () => {
   it('parses plain text', () => {
@@ -36,6 +42,73 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'code', content: 'const x'}]);
   });
 
+  it('leaves math delimiters as literal text by default', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.')).toEqual([
+      {type: 'text', content: 'Euler: $e^{i * pi} + 1 = 0$.'},
+    ]);
+  });
+
+  it('parses inline math before Markdown formatting when explicitly enabled', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.', {math: true})).toEqual([
+      {type: 'text', content: 'Euler: '},
+      {type: 'math', value: 'e^{i * pi} + 1 = 0'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('preserves escaped delimiters inside math and leaves escaped openers literal', () => {
+    expect(
+      parseInline('Price: \\$5; formula: $x \\$ y$.', {math: true}),
+    ).toEqual([
+      {type: 'text', content: 'Price: '},
+      {type: 'text', content: '$5; formula: '},
+      {type: 'math', value: 'x \\$ y'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('leaves an unmatched inline math delimiter literal', () => {
+    expect(parseInline('The value is $x + 1.', {math: true})).toEqual([
+      {type: 'text', content: 'The value is $x + 1.'},
+    ]);
+  });
+
+  it('does not mistake paired currency amounts for inline math', () => {
+    expect(
+      parseInline('Tickets cost $20 and $30 today.', {math: true}),
+    ).toEqual([{type: 'text', content: 'Tickets cost $20 and $30 today.'}]);
+    expect(parseInline('$x$5 and $y$', {math: true})).toEqual([
+      {type: 'text', content: '$x$5 and '},
+      {type: 'math', value: 'y'},
+    ]);
+  });
+
+  it('allows an inline expression to begin with a number', () => {
+    expect(parseInline('Result: $2 + 2$.', {math: true})).toEqual([
+      {type: 'text', content: 'Result: '},
+      {type: 'math', value: '2 + 2'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('does not treat non-block double-dollar runs as inline math', () => {
+    expect(parseInline('Keep $$x + y$$ literal.', {math: true})).toEqual([
+      {type: 'text', content: 'Keep $$x + y$$ literal.'},
+    ]);
+  });
+
+  it('keeps code and link destinations opaque while parsing math in link labels', () => {
+    expect(parseInline('`$code$` [$label$](/price/$5)', {math: true})).toEqual([
+      {type: 'code', content: '$code$'},
+      {type: 'text', content: ' '},
+      {
+        type: 'link',
+        href: '/price/$5',
+        children: [{type: 'math', value: 'label'}],
+      },
+    ]);
+  });
+
   it('parses links', () => {
     const result = parseInline('[click](https://example.com)');
     expect(result[0].type).toBe('link');
@@ -48,6 +121,48 @@ describe('parseInline', () => {
   it('parses images', () => {
     const result = parseInline('![alt](img.png)');
     expect(result).toEqual([{type: 'image', src: 'img.png', alt: 'alt'}]);
+  });
+
+  it('rejects javascript: links as plain text (XSS prevention)', () => {
+    const result = parseInline('[click](javascript:alert(1))');
+    // Should be emitted as plain text, NOT as a link node
+    expect(result).toEqual([
+      {type: 'text', content: '[click](javascript:alert(1))'},
+    ]);
+  });
+
+  it('rejects javascript: with mixed case and whitespace (XSS prevention)', () => {
+    const result = parseInline('[click](JaVaScRiPt:alert(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](JaVaScRiPt:alert(1))'},
+    ]);
+  });
+
+  it('rejects vbscript: links (XSS prevention)', () => {
+    const result = parseInline('[click](vbscript:MsgBox(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](vbscript:MsgBox(1))'},
+    ]);
+  });
+
+  it('rejects data:text/html image src (XSS prevention)', () => {
+    const result = parseInline(
+      '![xss](data:text/html,<script>alert(1)</script>)',
+    );
+    expect(result).toEqual([
+      {
+        type: 'text',
+        content: '![xss](data:text/html,<script>alert(1)</script>)',
+      },
+    ]);
+  });
+
+  it('allows normal http/https links', () => {
+    const result = parseInline('[safe](https://example.com)');
+    expect(result[0].type).toBe('link');
+    if (result[0].type === 'link') {
+      expect(result[0].href).toBe('https://example.com');
+    }
   });
 
   it('parses strikethrough', () => {
@@ -220,6 +335,61 @@ describe('parseMarkdown', () => {
     if (result[0].type === 'codeblock') {
       expect(result[0].language).toBe('python');
     }
+  });
+
+  it('parses display math only when explicitly enabled', () => {
+    const source = '$$\n\\int_0^1 x^2 \\, dx\n$$';
+    expect(parseMarkdown(source)).not.toContainEqual({
+      type: 'math',
+      value: '\\int_0^1 x^2 \\, dx',
+    });
+    expect(parseMarkdown(source, {math: true})).toEqual([
+      {type: 'math', value: '\\int_0^1 x^2 \\, dx'},
+    ]);
+  });
+
+  it('parses a same-line display math block', () => {
+    expect(parseMarkdown('$$E = mc^2$$', {math: true})).toEqual([
+      {type: 'math', value: 'E = mc^2'},
+    ]);
+  });
+
+  it('keeps empty display delimiters literal', () => {
+    const source = '$$\n$$';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves unmatched display math delimiters literal', () => {
+    const source = '$$\nx + y';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves escaped display delimiters literal', () => {
+    const blocks = parseMarkdown('\\$\\$\nx + y\n\\$\\$', {math: true});
+    expect(blocks.some(block => block.type === 'math')).toBe(false);
+  });
+
+  it('reports a display-math source range including its delimiters', () => {
+    const source = 'Before.\n\n$$\nx + y\n$$\n\nAfter.';
+    const blocks = parseMarkdown(source, {math: true, sourceRanges: true});
+    expect(blocks[1]?.range).toEqual({start: 9, end: 20});
+    expect(source.slice(blocks[1].range?.start, blocks[1].range?.end)).toBe(
+      '$$\nx + y\n$$',
+    );
+  });
+
+  it('keeps fenced code opaque when math parsing is enabled', () => {
+    expect(parseMarkdown('```tex\n$x$\n$$y$$\n```', {math: true})).toEqual([
+      {type: 'codeblock', language: 'tex', content: '$x$\n$$y$$'},
+    ]);
+  });
+
+  it('does not collect link definitions from display math', () => {
+    const blocks = parseMarkdown('$$\n[x]: /not-a-link\n$$\n\n[x]', {
+      math: true,
+    });
+    expect(blocks[0]).toEqual({type: 'math', value: '[x]: /not-a-link'});
+    expect(JSON.stringify(blocks[1])).not.toContain('"type":"link"');
   });
 
   it('parses blockquotes', () => {
@@ -404,6 +574,14 @@ describe('parseMarkdown', () => {
       expect(result[0].src).toBe('image.png');
       expect(result[0].alt).toBe('alt text');
     }
+  });
+
+  it('rejects a standalone image with an unsafe scheme as literal text (XSS prevention)', () => {
+    // Same rule as inline images: the line falls through to the paragraph
+    // path and stays literal text instead of becoming an image node.
+    const result = parseMarkdown('![alt](vbscript:msgbox)');
+    expect(result[0].type).toBe('paragraph');
+    expect(JSON.stringify(result)).not.toContain('"type":"image"');
   });
 
   it('parses complex AI response', () => {
@@ -726,6 +904,17 @@ describe('citation parsing', () => {
       });
     });
 
+    it('rejects <javascript:...> angle-bracket autolinks (XSS prevention)', () => {
+      const result = parseInline('see <javascript:alert(1)> ok', {
+        autolink: 'gfm',
+      });
+      // Should NOT produce a link node with javascript: href
+      const linkNodes = result.filter(
+        (n): n is Extract<typeof n, {type: 'link'}> => n.type === 'link',
+      );
+      expect(linkNodes).toHaveLength(0);
+    });
+
     it('parses <email> angle-bracket autolinks', () => {
       const result = parseInline('mail <user@example.com> please', {
         autolink: 'gfm',
@@ -944,5 +1133,377 @@ describe('citation parsing', () => {
       expect(result.some(n => n.type === 'citation')).toBe(true);
       expect(result.some(n => n.type === 'link')).toBe(true);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Link reference definitions
+// ---------------------------------------------------------------------------
+
+describe('link reference definitions', () => {
+  // Collect every link/image node across a block tree for concise assertions.
+  function collectLinks(
+    nodes: InlineNode[],
+  ): {type: string; href?: string; src?: string; text: string}[] {
+    const out: {type: string; href?: string; src?: string; text: string}[] = [];
+    const textOf = (inlineNodes: InlineNode[]): string =>
+      inlineNodes
+        .map(inline =>
+          inline.type === 'text'
+            ? inline.content
+            : 'children' in inline
+              ? textOf(inline.children)
+              : '',
+        )
+        .join('');
+    for (const node of nodes) {
+      if (node.type === 'link') {
+        out.push({type: 'link', href: node.href, text: textOf(node.children)});
+      } else if (node.type === 'image') {
+        out.push({type: 'image', src: node.src, text: node.alt});
+      } else if ('children' in node) {
+        out.push(...collectLinks(node.children));
+      }
+    }
+    return out;
+  }
+
+  function paragraphLinks(input: string) {
+    const blocks = parseMarkdown(input);
+    const links = blocks.flatMap(block =>
+      block.type === 'paragraph' ? collectLinks(block.children) : [],
+    );
+    return {blocks, links};
+  }
+
+  it('resolves a full reference `[text][label]` and drops the definition', () => {
+    const {blocks, links} = paragraphLinks(
+      'See [the docs][docs] here.\n\n[docs]: https://example.com/docs\n',
+    );
+    // Only the paragraph survives; the definition line produces no block.
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('paragraph');
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a collapsed reference `[text][]`', () => {
+    const {links} = paragraphLinks(
+      'See [the docs][].\n\n[the docs]: https://example.com/docs',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a shortcut reference `[text]`', () => {
+    const {links} = paragraphLinks(
+      'See [the docs].\n\n[the docs]: https://example.com/docs',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a reference that appears before its definition', () => {
+    const {links} = paragraphLinks('[foo]\n\n[foo]: /bar');
+    expect(links).toEqual([{type: 'link', href: '/bar', text: 'foo'}]);
+  });
+
+  it('matches labels case-insensitively with collapsed whitespace', () => {
+    const {links} = paragraphLinks(
+      'See [The   Docs][DOCS].\n\n[docs]: https://example.com/d',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/d', text: 'The   Docs'},
+    ]);
+  });
+
+  it('supports an angle-bracket destination and a title', () => {
+    const {links} = paragraphLinks(
+      'See [x].\n\n[x]: <https://example.com/x> "the title"',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/x', text: 'x'},
+    ]);
+  });
+
+  it('absorbs a title on the line after a title-less definition', () => {
+    const {blocks, links} = paragraphLinks(
+      'See [x].\n\n[x]: https://example.com/x\n  "the title"\n',
+    );
+    // The continuation title line must not leak as its own paragraph.
+    expect(blocks).toHaveLength(1);
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/x', text: 'x'},
+    ]);
+  });
+
+  it('resolves an empty angle-bracket destination to an empty href', () => {
+    const {blocks, links} = paragraphLinks('[foo]\n\n[foo]: <>');
+    expect(blocks).toHaveLength(1);
+    expect(links).toEqual([{type: 'link', href: '', text: 'foo'}]);
+  });
+
+  it('recognizes a definition immediately after a heading (no blank line)', () => {
+    const {blocks, links} = paragraphLinks('# Title\n[x]: /url\n\n[x]');
+    expect(blocks.map(block => block.type)).toEqual(['heading', 'paragraph']);
+    expect(links).toEqual([{type: 'link', href: '/url', text: 'x'}]);
+  });
+
+  it('recognizes a definition immediately after a closed code fence', () => {
+    const {blocks, links} = paragraphLinks('```\ncode\n```\n[x]: /url\n\n[x]');
+    expect(blocks.map(block => block.type)).toEqual(['codeblock', 'paragraph']);
+    expect(links).toEqual([{type: 'link', href: '/url', text: 'x'}]);
+  });
+
+  it('uses the first definition when a label is defined twice', () => {
+    const {links} = paragraphLinks('[a]\n\n[a]: /first\n[a]: /second');
+    expect(links).toEqual([{type: 'link', href: '/first', text: 'a'}]);
+  });
+
+  it('resolves a blockquote-nested definition even with a top-level definition present', () => {
+    const blocks = parseMarkdown('[outer]: /o\n\n> [inner]\n>\n> [inner]: /i');
+    const quote = blocks.find(block => block.type === 'blockquote');
+    expect(quote?.type).toBe('blockquote');
+    if (quote != null && quote.type === 'blockquote') {
+      const links = quote.children.flatMap(block =>
+        block.type === 'paragraph' ? collectLinks(block.children) : [],
+      );
+      expect(links).toEqual([{type: 'link', href: '/i', text: 'inner'}]);
+    }
+  });
+
+  it('resolves a reference image `![alt][label]`', () => {
+    const {links} = paragraphLinks('![logo][l]\n\n[l]: /logo.png');
+    expect(links).toEqual([{type: 'image', src: '/logo.png', text: 'logo'}]);
+  });
+
+  it('rejects a reference image whose definition has an unsafe scheme (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo][l]\n\n[l]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects a shortcut reference image with an unsafe definition (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo]\n\n[logo]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects definitions that hide the scheme behind control chars (XSS prevention)', () => {
+    // isSafeUrl strips control characters before testing; the angle-bracket
+    // destination form is the only definition shape that can contain them.
+    // Both consumers of a definition — reference images and reference links —
+    // must apply it.
+    const {links: imageLinks} = paragraphLinks(
+      '![logo][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(imageLinks).toEqual([]);
+    const {links: refLinks} = paragraphLinks(
+      '[click][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(refLinks).toEqual([]);
+  });
+
+  it('does not treat a whitespace-only second label as collapsed', () => {
+    // `[foo][ ]` is a full reference to the empty (normalized) label and matches
+    // nothing; `[foo]` still resolves as a shortcut and `[ ]` stays literal.
+    const blocks = parseMarkdown('[foo][ ]\n\n[foo]: /f');
+    expect(blocks[0].type).toBe('paragraph');
+    if (blocks[0].type === 'paragraph') {
+      expect(collectLinks(blocks[0].children)).toEqual([
+        {type: 'link', href: '/f', text: 'foo'},
+      ]);
+      const literal = blocks[0].children
+        .map(node => (node.type === 'text' ? node.content : ''))
+        .join('');
+      expect(literal).toContain('[ ]');
+    }
+  });
+
+  it('leaves an unresolved reference as literal text', () => {
+    const {blocks, links} = paragraphLinks('See [the docs][missing].');
+    expect(links).toEqual([]);
+    expect(blocks[0].type).toBe('paragraph');
+    if (blocks[0].type === 'paragraph') {
+      expect(blocks[0].children).toContainEqual({
+        type: 'text',
+        content: 'See [the docs][missing].',
+      });
+    }
+  });
+
+  it('does not resolve a definition or reference inside a code fence', () => {
+    const blocks = parseMarkdown('```\n[x]\n[x]: /should-not-resolve\n```');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('codeblock');
+    if (blocks[0].type === 'codeblock') {
+      expect(blocks[0].content).toBe('[x]\n[x]: /should-not-resolve');
+    }
+  });
+
+  it('does not treat a definition-shaped line as a definition mid-paragraph', () => {
+    // CommonMark: a definition cannot interrupt a paragraph.
+    const {blocks, links} = paragraphLinks('Foo\n[bar]: /baz');
+    expect(links).toEqual([]);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('paragraph');
+  });
+
+  it('leaves footnote markers and definitions untouched', () => {
+    const blocks = parseMarkdown(
+      'A claim.[^1]\n\n[^1]: https://example.com/note',
+    );
+    // No link nodes; the `[^1]` marker stays literal and `[^1]:` is not
+    // treated as a link reference definition (footnotes are out of scope).
+    const links = blocks.flatMap(block =>
+      block.type === 'paragraph' ? collectLinks(block.children) : [],
+    );
+    expect(links).toEqual([]);
+    expect(blocks).toHaveLength(2);
+  });
+
+  it('leaves ordinary bracketed text with no definition alone', () => {
+    const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
+    expect(links).toEqual([]);
+    expect(blocks[0].type).toBe('paragraph');
+  });
+});
+
+describe('sourceRanges', () => {
+  const slice = (source: string, block: BlockNode) =>
+    block.range == null
+      ? null
+      : source.slice(block.range.start, block.range.end);
+
+  it('is off by default', () => {
+    const [block] = parseMarkdown('# Title');
+    expect(block.range).toBeUndefined();
+  });
+
+  it('addresses a block with named start and end offsets', () => {
+    const source = 'One.\n\nTwo.';
+    const [, second] = parseMarkdown(source, {sourceRanges: true});
+    expect(second.range).toEqual({start: 6, end: 10});
+  });
+
+  it('gives every top-level block the source it came from', () => {
+    const source = [
+      '# Title',
+      '',
+      'A paragraph that',
+      'wraps onto two lines.',
+      '',
+      '- one',
+      '- two',
+      '',
+      '```js',
+      'const x = 1;',
+      '```',
+      '',
+      '| a | b |',
+      '| --- | --- |',
+      '| 1 | 2 |',
+      '',
+      '> quoted',
+      '',
+      '---',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'A paragraph that\nwraps onto two lines.',
+      '- one\n- two',
+      '```js\nconst x = 1;\n```',
+      '| a | b |\n| --- | --- |\n| 1 | 2 |',
+      '> quoted',
+      '---',
+    ]);
+  });
+
+  it('reports offsets into the input, not into the link-definition-stripped text', () => {
+    // The definition lines are removed before the block loop runs, so a naive
+    // offset would drift by their length for everything after them.
+    const source = [
+      '[ref]: https://example.com',
+      '',
+      'See [the docs][ref].',
+      '',
+      'Another paragraph.',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      'See [the docs][ref].',
+      'Another paragraph.',
+    ]);
+  });
+
+  it('reports absolute offsets when the document is parsed incrementally', () => {
+    const source = ['# Title', '', 'One.', '', 'Two.', '', 'Three.'].join('\n');
+    const state = createIncrementalState();
+    let blocks: BlockNode[] = [];
+    for (let end = 1; end <= source.length; end++) {
+      blocks = parseMarkdownIncremental(source.slice(0, end), state, {
+        sourceRanges: true,
+      });
+    }
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+  });
+
+  it('keeps the blank lines an unterminated fence owns', () => {
+    // Mid-stream the closing fence has not arrived, and the blank lines are
+    // part of the code, not spacing between blocks.
+    const source = '```\ncode\n\n';
+    const [block] = parseMarkdown(source, {sourceRanges: true});
+    // The whole thing: the fence consumed those lines as code.
+    expect(slice(source, block)).toBe(source);
+  });
+
+  it('slices to something that re-parses to the same block', () => {
+    // The property a consumer actually needs, and the one that says the
+    // offsets are right: what the range points at is the block.
+    const check = (source: string) => {
+      for (const block of parseMarkdown(source, {sourceRanges: true})) {
+        const {range: _range, ...node} = block;
+        expect(parseMarkdown(slice(source, block)!)).toEqual([node]);
+      }
+    };
+    check('# Title\n\nA paragraph.\n\n- one\n- two\n\n> quoted');
+    // CRLF: the parser keeps the `\r` in its own content, so the range does
+    // too rather than slicing to text that parses differently.
+    check('# Title\r\n\r\nA paragraph.\r\n');
+  });
+
+  it('re-parses when the caller flips the option on an existing state', () => {
+    const source = 'One.\n\nTwo.\n\nThree.';
+    const state = createIncrementalState();
+    const without = parseMarkdownIncremental(source, state);
+    expect(without.every(b => b.range == null)).toBe(true);
+    const with_ = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(with_.map(b => slice(source, b))).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+    const back = parseMarkdownIncremental(source, state);
+    expect(back.every(b => b.range == null)).toBe(true);
+  });
+
+  it('spans both halves of a list the incremental parser merged', () => {
+    const source = '1. one\n\n1. two';
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. one\n\n', state, {sourceRanges: true});
+    const blocks = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(blocks).toHaveLength(1);
+    expect(slice(source, blocks[0])).toBe(source);
   });
 });

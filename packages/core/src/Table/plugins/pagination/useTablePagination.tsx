@@ -22,6 +22,7 @@ import {spacingVars} from '../../../theme/tokens.stylex';
 import {Pagination} from '../../../Pagination';
 import type {PaginationProps} from '../../../Pagination';
 import type {TablePlugin} from '../../types';
+import {useTranslator} from '../../../i18n';
 
 // =============================================================================
 // Styles
@@ -163,6 +164,9 @@ export interface UseTablePaginationConfig {
 
   /**
    * Accessible label for the pagination nav landmark.
+   * When `position` is 'both', the two navs get distinct names by suffixing
+   * this label — "{label} (top)" above and "{label} (bottom)" below — so
+   * same-type landmarks stay distinguishable to assistive technology.
    * @default 'Table pagination'
    */
   label?: string;
@@ -193,21 +197,34 @@ export interface UseTablePaginationConfig {
 export function useTablePagination<T extends Record<string, unknown>>(
   config: UseTablePaginationConfig,
 ): TablePlugin<T> {
+  const t = useTranslator();
   const {
     page,
     onPageChange,
     totalItems,
     totalPages: totalPagesProp,
     hasMore,
-    pageSize = 10,
+    pageSize: pageSizeConfig = 10,
     onPageSizeChange,
     pageSizeOptions,
     variant = 'pages',
     size = 'md',
     position = 'below',
     align = 'center',
-    label = 'Table pagination',
+    label: labelFromProps,
   } = config;
+  const label = labelFromProps ?? t('@astryx.table.pagination.label');
+  // position='both' renders two nav landmarks; suffix the base label so each
+  // gets a unique accessible name (axe landmark-unique).
+  const labelAbove = t('@astryx.table.pagination.labelAbove', {label});
+  const labelBelow = t('@astryx.table.pagination.labelBelow', {label});
+
+  // Same guard as Pagination itself: 0/NaN/negative pageSize would produce an
+  // Infinity/NaN totalPages here, which bypasses Pagination's own coercion
+  // because it is passed down as the explicit totalPages prop.
+  const pageSize = Number.isFinite(pageSizeConfig)
+    ? Math.max(1, Math.floor(pageSizeConfig))
+    : 10;
 
   const computedTotalPages =
     totalPagesProp ??
@@ -230,8 +247,20 @@ export function useTablePagination<T extends Record<string, unknown>>(
 
   // Keep current config in a ref so the plugin can read the latest values
   // without needing to recreate the plugin object on every change.
-  const configRef = useRef({paginationProps, position, align});
-  configRef.current = {paginationProps, position, align};
+  const configRef = useRef({
+    paginationProps,
+    position,
+    align,
+    labelAbove,
+    labelBelow,
+  });
+  configRef.current = {
+    paginationProps,
+    position,
+    align,
+    labelAbove,
+    labelBelow,
+  };
 
   // Stable plugin object \u2014 created once, reads config via ref.
   return useMemo(
@@ -241,6 +270,8 @@ export function useTablePagination<T extends Record<string, unknown>>(
           position: pos,
           paginationProps: props,
           align: a,
+          labelAbove: above,
+          labelBelow: below,
         } = configRef.current;
         if (pos === 'none') {
           return children;
@@ -267,7 +298,18 @@ export function useTablePagination<T extends Record<string, unknown>>(
               a === 'end' && styles.alignEnd,
               a === 'start' && styles.alignStart,
             )}>
-            <Pagination {...props} />
+            <Pagination
+              {...props}
+              // Two navs with the same name are indistinguishable landmarks;
+              // give each side a unique name when both render.
+              label={
+                pos === 'both'
+                  ? side === 'above'
+                    ? above
+                    : below
+                  : props.label
+              }
+            />
           </div>
         );
 

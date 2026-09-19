@@ -15,9 +15,10 @@
 import React, {useCallback, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
 import {
   NavHeadingMenuContext,
@@ -25,6 +26,7 @@ import {
   type NavHeadingMenuSize,
 } from './NavMenuContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -94,12 +96,37 @@ export function NavHeadingMenu({
   className,
   style: styleProp,
   'data-testid': testId,
+  onKeyDown: onKeyDownProp,
+  ...rest
 }: NavHeadingMenuProps) {
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
 
-  const {listRef, handleKeyDown} = useListFocus({
+  const {listRef, handleKeyDown, focusItem} = useListFocus({
+    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     onEscape: closeMenu,
+  });
+
+  // First-character typeahead over the (enabled) menu items (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
   });
 
   // Extend useListFocus with Enter/Space activation. Items rendered without an
@@ -116,9 +143,13 @@ export function NavHeadingMenu({
           return;
         }
       }
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
       handleKeyDown(e);
     },
-    [handleKeyDown],
+    [handleKeyDown, typeahead],
   );
 
   const ctx = useMemo(
@@ -134,16 +165,17 @@ export function NavHeadingMenu({
   return (
     <NavHeadingMenuContext value={ctx}>
       <div
-        ref={mergeRefs(ref, listRef)}
-        role="menu"
-        onKeyDown={listKeyDown}
+        ref={useMergedRefs(ref, listRef)}
         data-testid={testId}
         {...mergeProps(
           themeProps('nav-heading-menu', {size}),
           stylex.props(styles.root, sizeStyles[size], xstyle),
           className,
           inlineStyle,
-        )}>
+        )}
+        {...rest}
+        role="menu"
+        onKeyDown={composeEventHandlers(onKeyDownProp, listKeyDown)}>
         {children}
       </div>
     </NavHeadingMenuContext>

@@ -1,6 +1,12 @@
-# Create XDS Theme
+# Create Astryx Theme
 
-Create a new XDS theme using `defineTheme`.
+Create a new Astryx theme using `defineTheme`.
+
+> Read `packages/cli/assets/theme.template.ts` first (`astryx theme template` writes it into a consumer project). It is the annotated,
+> drift-guarded map of the whole theme surface — every field, the token
+> families, the override syntax — and it names the CLI command that prints the
+> authoritative reference for each. What follows is the packaging around a
+> theme; the template is what goes inside it.
 
 ## Theme Name
 
@@ -26,7 +32,7 @@ packages/themes/{themeName}/
   "name": "@astryxdesign/theme-{themeName}",
   "version": "0.0.1",
   "private": false,
-  "description": "{Description} theme for XDS",
+  "description": "{Description} theme for Astryx",
   "license": "MIT",
   "sideEffects": false,
   "main": "./src/index.ts",
@@ -37,7 +43,7 @@ packages/themes/{themeName}/
   },
   "files": ["dist", "src"],
   "scripts": {
-    "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
+    "build:theme": "astryx theme build src/index.ts -o dist/theme.css"
   },
   "peerDependencies": {
     "@astryxdesign/core": "*"
@@ -133,10 +139,10 @@ Component overrides generate scoped CSS:
 
 ```css
 @scope ([data-astryx-theme="{themeName}"]) to ([data-astryx-theme]) {
-  .astryx-button.secondary {
+  .astryx-button[data-variant='secondary'] {
     background-color: ...;
   }
-  .astryx-heading.level-1 {
+  .astryx-heading[data-level='1'] {
     font-size: var(--font-size-2xl);
   }
 }
@@ -144,8 +150,8 @@ Component overrides generate scoped CSS:
 
 ### Distribution
 
-- **Unbuilt**: `XDSTheme` generates CSS and injects `<style>` at runtime
-- **Built**: `npx astryx theme build` pre-compiles to a CSS file
+- **Unbuilt**: `Theme` generates CSS and injects `<style>` at runtime
+- **Built**: `astryx theme build` pre-compiles to a CSS file
 
 ## Extending an Existing Theme
 

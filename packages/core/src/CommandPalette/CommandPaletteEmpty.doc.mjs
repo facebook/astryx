@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CommandPaletteEmpty',
@@ -16,6 +16,11 @@ export const docs = {
       required: true,
     },
   ],
+  playground: {
+    defaults: {
+      children: 'No results found. Try a different search.',
+    },
+  },
 };
 
 export const docsZh = {

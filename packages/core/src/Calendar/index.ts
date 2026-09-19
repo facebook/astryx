@@ -26,7 +26,6 @@ export {
   useCalendarDays,
   useCalendarConstraints,
   useCalendarNavigation,
-  useCalendarRovingTabindex,
 } from './hooks';
 export type {
   CalendarDay,
@@ -36,16 +35,9 @@ export type {
   UseCalendarConstraintsReturn,
   UseCalendarNavigationOptions,
   UseCalendarNavigationReturn,
-  UseCalendarRovingTabindexOptions,
-  UseCalendarRovingTabindexReturn,
 } from './hooks';
 
 // Re-export calendar-specific utilities for advanced usage
-export {
-  isSameDay,
-  isDateInRange,
-  getWeekNumber,
-  formatAccessibleDate,
-} from './utils';
+export {isSameDay, isDateInRange, getWeekNumber} from './utils';
 
 // Re-export theme styles for customization

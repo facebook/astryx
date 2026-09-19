@@ -20,7 +20,11 @@ import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
+import {MarkdownText} from '../MarkdownText';
 import {AuthorByline} from './AuthorByline';
+import {ReleaseCoverArt} from './ReleaseCoverArt';
+import {MarkdownImage} from './ThemedImage';
+import {parseReleaseVersion} from '../../lib/blog/release';
 import {layout} from '../../layout.stylex';
 
 const styles = stylex.create({
@@ -57,6 +61,7 @@ export interface BlogArticleProps {
 }
 
 export function BlogArticle({post}: BlogArticleProps) {
+  const releaseVersion = parseReleaseVersion(post.title);
   return (
     <Section
       maxWidth={layout.proseMaxWidth}
@@ -73,9 +78,9 @@ export function BlogArticle({post}: BlogArticleProps) {
           <Heading level={1} type="display-1">
             {post.title}
           </Heading>
-          <Text type="large" weight="normal" color="secondary">
-            {post.description}
-          </Text>
+          <MarkdownText type="large" weight="normal" color="secondary">
+            {post.dek ?? post.description}
+          </MarkdownText>
           <AuthorByline
             authors={post.authors}
             date={post.date}
@@ -94,9 +99,19 @@ export function BlogArticle({post}: BlogArticleProps) {
               {...stylex.props(styles.coverImg)}
             />
           </AspectRatio>
+        ) : releaseVersion ? (
+          <AspectRatio ratio={16 / 9} xstyle={styles.cover}>
+            <ReleaseCoverArt
+              version={releaseVersion}
+              packageName={post.releasePackage ?? undefined}
+            />
+          </AspectRatio>
         ) : null}
 
-        <Markdown headingLevelStart={2} contentWidth="100%">
+        <Markdown
+          headingLevelStart={2}
+          contentWidth="100%"
+          components={{image: MarkdownImage}}>
           {post.body}
         </Markdown>
 

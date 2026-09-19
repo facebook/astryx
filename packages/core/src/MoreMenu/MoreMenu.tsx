@@ -15,17 +15,22 @@
  * - /packages/core/src/MoreMenu/MoreMenu.test.tsx
  * - /packages/core/src/MoreMenu/index.ts
  * - /apps/storybook/stories/MoreMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/MoreMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/MoreMenu/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 import {useSize} from '../SizeContext/SizeContext';
-import type {DropdownMenuOption} from '../DropdownMenu';
+import type {
+  DropdownMenuOption,
+  DropdownMenuPresentation,
+} from '../DropdownMenu';
+import type {LayerAlignment, LayerPlacement} from '../Layer';
 import type {ButtonVariant, ButtonSize} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {stableClassName} from '../naming';
+import {useTranslator} from '../i18n';
 
 export interface MoreMenuProps extends Pick<
   BaseProps,
@@ -72,6 +77,27 @@ export interface MoreMenuProps extends Pick<
   isDisabled?: boolean;
 
   /**
+   * Position of the menu relative to the trigger button.
+   * Forwarded to DropdownMenu, which owns the default.
+   * @default 'below'
+   */
+  placement?: LayerPlacement;
+
+  /**
+   * Alignment of the menu along the placement axis.
+   * Forwarded to DropdownMenu, which owns the default.
+   * @default 'start'
+   */
+  alignment?: LayerAlignment;
+
+  /**
+   * Menu presentation policy. `adaptive` uses a BottomSheet on compact
+   * coarse-pointer viewports and an anchored popover elsewhere.
+   * @default 'popover'
+   */
+  presentation?: DropdownMenuPresentation;
+
+  /**
    * Controlled open state for the menu.
    */
   isMenuOpen?: boolean;
@@ -80,13 +106,6 @@ export interface MoreMenuProps extends Pick<
    * Callback fired when the menu visibility changes.
    */
   onOpenChange?: (isOpen: boolean) => void;
-
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
 
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
@@ -109,22 +128,26 @@ export interface MoreMenuProps extends Pick<
  */
 export function MoreMenu({
   items,
-  label = 'More options',
+  label: labelFromProps,
   variant = 'ghost',
   size: sizeProp,
   icon,
   isDisabled = false,
+  placement,
+  alignment,
+  presentation,
   isMenuOpen,
   onOpenChange,
-  hasAutoFocus,
   xstyle,
   className: classNameProp,
   style,
   'data-testid': testId,
   ref,
 }: MoreMenuProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.moreMenu.label');
   const size = useSize(sizeProp, 'md');
-  const moreIcon = getIcon('moreHorizontal');
+  const moreIcon = useIcon('moreHorizontal');
 
   return (
     <DropdownMenu
@@ -137,6 +160,9 @@ export function MoreMenu({
       style={style}
       isMenuOpen={isMenuOpen}
       onOpenChange={onOpenChange}
+      placement={placement}
+      alignment={alignment}
+      presentation={presentation}
       button={{
         label,
         icon: icon ?? moreIcon,
@@ -149,7 +175,6 @@ export function MoreMenu({
       }}
       items={items}
       hasChevron={false}
-      hasAutoFocus={hasAutoFocus}
       data-testid={testId}
     />
   );

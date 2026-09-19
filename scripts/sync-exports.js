@@ -22,8 +22,8 @@
  *   3. "default" — for all JS consumers (ESM-only)
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const CORE_DIR = path.resolve(__dirname, '..', 'packages', 'core');
 const SRC_DIR = path.join(CORE_DIR, 'src');
@@ -58,10 +58,14 @@ const STATIC_EXPORTS = {
     types: './src/astryx.css.d.ts',
     default: './dist/astryx.css',
   },
-  './astryx.umd.js': './dist/astryx.umd.js',
   './tailwind-theme.css': {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
+  },
+  './BaseProps': {
+    source: './src/BaseProps.ts',
+    types: './dist/BaseProps.d.ts',
+    default: './dist/BaseProps.js',
   },
   './naming': {
     source: './src/naming.ts',
@@ -85,6 +89,12 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
+  // i18n message catalogs. Consumers pass these to
+  // <InternationalizationProvider messages={{fr, ...}}> or use them for
+  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
+  // JSON file under packages/core/locales/, which ships thanks to the
+  // `locales` entry in the `files` array.
+  './locales/*.json': './locales/*.json',
 };
 
 /**
@@ -101,6 +111,7 @@ const UTIL_SUBPATH_DIRS = [
   'Calendar',
   'Markdown',
   'PowerSearch',
+  'Resizable',
   'Selector',
   'Table',
   'Typeahead',

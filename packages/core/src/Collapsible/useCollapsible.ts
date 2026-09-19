@@ -65,8 +65,11 @@ export interface UseCollapsibleReturn {
  *
  * Supports three modes:
  * 1. **Group-controlled**: When inside a CollapsibleGroup with a `value`, defers to group.
- * 2. **Controlled**: When `isOpen` and `onOpenChange` are provided in config.
+ * 2. **Controlled**: When `isOpen` is provided in config, the parent owns state;
+ *    `toggle` only calls `onOpenChange` and never mutates internal state.
  * 3. **Uncontrolled**: Self-managed internal state with optional `defaultIsOpen`.
+ *    `onOpenChange`, if supplied, is invoked in addition to the internal update —
+ *    it is a notification callback, not a signal that the component is controlled.
  *
  * @example
  * ```
@@ -111,15 +114,26 @@ export function useCollapsible(
     isOpen = internalIsOpen;
   }
 
-  // Toggle handler dispatches to the appropriate controller
+  // Toggle handler dispatches to the appropriate controller.
+  //
+  // Controlled vs uncontrolled is decided by whether `isOpen` was provided —
+  // mirroring how `isOpen` is derived above. `onOpenChange` is a notification
+  // callback, not a signal of control: an uncontrolled component may still want
+  // to observe changes. So in uncontrolled mode we drive internal state AND
+  // fire the callback; only in controlled mode do we defer entirely to the
+  // parent via the callback.
   const toggle = () => {
     if (isControlledByGroup && value != null) {
       group.toggle(value);
-    } else if (config?.onOpenChange) {
-      config.onOpenChange(!isOpen);
-    } else {
-      setInternalIsOpen(prev => !prev);
+      return;
     }
+    const next = !isOpen;
+    // Uncontrolled: internal state is the source of truth, so update it.
+    if (config?.isOpen === undefined) {
+      setInternalIsOpen(next);
+    }
+    // Always notify — for both controlled and uncontrolled usage.
+    config?.onOpenChange?.(next);
   };
 
   return {isEnabled, isOpen, toggle};

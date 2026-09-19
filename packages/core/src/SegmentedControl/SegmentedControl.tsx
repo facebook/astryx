@@ -4,7 +4,7 @@
 
 /**
  * @file SegmentedControl.tsx
- * @input Uses React, StyleX, SegmentedControlContext
+ * @input Uses React, StyleX, SegmentedControlContext, useListFocus, useKeyboardHint
  * @output Exports SegmentedControl component and SegmentedControlProps type
  * @position Container wrapper; provides context to SegmentedControlItem children
  *
@@ -12,22 +12,26 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
- * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
-import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
+import React, {useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
+import {useListFocus} from '../hooks/useListFocus';
+import {useKeyboardHint} from '../hooks/useKeyboardHint';
+import {useTooltip} from '../Tooltip';
 import type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
   'onChange'
@@ -63,6 +67,17 @@ export interface SegmentedControlProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the control is disabled. Applies to the whole-group disabled
+   * state (`isDisabled`), not individual segments. When set together with
+   * `isDisabled`, the control shows a tooltip with this text on hover and
+   * keyboard focus, and stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Selection stays blocked.
+   *
+   * Use this instead of wrapping a disabled control in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
+  /**
    * SegmentedControlItem children.
    */
   children: ReactNode;
@@ -88,6 +103,12 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none',
+  },
+  // Disabled *with* a disabledMessage: keep the dimmed look but leave pointer
+  // events on so the group can receive hover and surface the reason tooltip.
+  // Selection is still blocked by the isDisabled guards.
+  disabledWithMessage: {
+    opacity: 0.5,
   },
 });
 
@@ -127,98 +148,148 @@ export function SegmentedControl({
   size: sizeProp,
   layout = 'hug',
   isDisabled = false,
+  disabledMessage,
   children,
   xstyle,
   className,
   style,
+  onKeyDown: onKeyDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+  // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
+  // controls swallow pointer events, so the tooltip listeners attach to the
+  // radiogroup container (and the container keeps pointer events on in this
+  // mode) while the radios stay perceivable via aria-disabled. Selection is
+  // blocked by the isDisabled guards in the click/focus handlers.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The radiogroup container is not naturally focusable; focusin bubbles up
+    // from the radios, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
+  // Roving tabindex + arrow/Home/End navigation is owned by the shared
+  // useListFocus primitive: it stamps a single tab stop (tabIndex 0/-1) across
+  // the radios, skips disabled ones, wraps at the ends, handles Home/End, and
+  // repairs the tab stop on mount and whenever items mount/disable — replacing
+  // the component's former inline keyboard handler and tab-stop repair effect.
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+    itemSelector: '[role="radio"]:not([aria-disabled="true"])',
+    hasRovingTabIndex: true,
+    wrap: true,
+    orientation: 'horizontal',
+  });
+
+  const hint = useKeyboardHint({
+    orientation: 'horizontal',
+    isEnabled: !isDisabled,
+  });
+
+  const handleContainerKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      hint.onKeyDown(e);
+      handleKeyDown(e);
+    },
+    [onKeyDownProp, hint, handleKeyDown],
+  );
+
+  // Selection-follows-focus (APG radiogroup): useListFocus only *moves* focus,
+  // so whenever it lands focus on a new radio (arrow/Home/End, or a click) we
+  // select that radio's value. Reading the focused element's data-value here
+  // keeps selection in lockstep with focus without duplicating the navigation
+  // logic. Disabled radios are ignored (they should never become the value),
+  // and the already-selected value is skipped so an initial Tab-in (or a click
+  // on the current segment) is a no-op, matching click behavior.
+  const handleContainerFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onFocusProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      hint.onFocus(e);
+      handleFocus(e);
       if (isDisabled) {
         return;
       }
-
-      const container = containerRef.current;
-      if (!container) {
+      // Only select when focus moved WITHIN the group (arrow/Home/End — APG
+      // selection-follows-focus). When focus is entering from outside, Tab
+      // must stay a pure focus move: with an unmatched or disabled-selected
+      // value the roving tab stop falls back to the first enabled radio, and
+      // selecting it here would rewrite the form value on mere traversal.
+      // Clicks are unaffected: the item's own handleClick selects.
+      if (!e.currentTarget.contains(e.relatedTarget)) {
         return;
       }
-
-      const items = Array.from(
-        container.querySelectorAll<HTMLButtonElement>(
-          '[role="radio"]:not([aria-disabled="true"])',
-        ),
+      const focused = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+        '[role="radio"][data-value]',
       );
-      if (items.length === 0) {
+      if (!focused || focused.getAttribute('aria-disabled') === 'true') {
         return;
       }
-
-      const currentIndex = items.findIndex(
-        item => item === document.activeElement,
-      );
-      let nextIndex: number;
-
-      switch (e.key) {
-        case 'ArrowRight':
-          nextIndex =
-            currentIndex === -1 ? 0 : (currentIndex + 1) % items.length;
-          break;
-        case 'ArrowLeft':
-          nextIndex =
-            currentIndex === -1
-              ? items.length - 1
-              : (currentIndex - 1 + items.length) % items.length;
-          break;
-        case 'Home':
-          nextIndex = 0;
-          break;
-        case 'End':
-          nextIndex = items.length - 1;
-          break;
-        default:
-          return;
-      }
-
-      e.preventDefault();
-      const nextItem = items[nextIndex];
-      nextItem.focus();
-      const nextValue = nextItem.dataset.value;
-      if (nextValue != null) {
+      const nextValue = focused.dataset.value;
+      if (nextValue != null && nextValue !== value) {
         onChange(nextValue);
       }
     },
-    [isDisabled, onChange],
+    [onFocusProp, hint, handleFocus, isDisabled, onChange, value],
   );
 
   const contextValue = useMemo(
-    () => ({value, onChange, size, layout, isDisabled}),
-    [value, onChange, size, layout, isDisabled],
+    () => ({
+      value,
+      onChange,
+      size,
+      layout,
+      isDisabled,
+      hasDisabledMessage: showsDisabledMessage,
+    }),
+    [value, onChange, size, layout, isDisabled, showsDisabledMessage],
   );
 
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={mergeRefs(ref, containerRef)}
+        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
+        {...rest}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}
-        onKeyDown={handleKeyDown}
+        aria-describedby={
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
+        }
+        onKeyDown={handleContainerKeyDown}
+        onFocus={handleContainerFocus}
+        onBlur={composeEventHandlers(onBlurProp, hint.onBlur)}
         {...mergeProps(
           themeProps('segmented-control', {size}),
           stylex.props(
             styles.container,
             sizeStyles[size],
             layout === 'fill' && styles.fill,
-            isDisabled && styles.disabled,
+            isDisabled &&
+              (showsDisabledMessage
+                ? styles.disabledWithMessage
+                : styles.disabled),
             xstyle,
           ),
           className,
           style,
         )}>
         {children}
+        {hint.hintElement}
       </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </SegmentedControlContext>
   );
 }

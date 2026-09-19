@@ -4,22 +4,24 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, useId, useState, useEffect, useCallback, useRef, Field, Icon
- * @output Exports TimeInput component, TimeInputProps
+ * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
+ * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TimeInput/TimeInput.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/TimeInput/TimeInput.test.tsx (typed-field tests)
+ * - /packages/core/src/TimeInput/NativeTimeInput.test.tsx (native-picker tests)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TimeInput/ (showcase blocks)
  */
 
 import {
   useId,
   useState,
   useCallback,
+  useEffect,
   useRef,
   useMemo,
   useOptimistic,
@@ -28,26 +30,25 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {
   type ISOTimeString,
   parseTimeInput,
@@ -55,15 +56,29 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   adjustTime,
+  isImeKeyEvent,
   isTimeInRange,
   mergeProps,
-  mergeRefs,
+  getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
+
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {NativeTimeSegment} from '../DateTimeInput/NativeTimeSegment';
+
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 const styles = stylex.create({
   icon: {
@@ -93,27 +108,10 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 });
 
@@ -135,6 +133,9 @@ const sizeStyles = stylex.create({
 export type TimeInputSize = keyof typeof sizeStyles;
 
 export type TimeInputHourFormat = '12h' | '24h';
+
+/** Which surface TimeInput uses for time selection. */
+export type TimeInputNativePicker = 'touch' | 'always' | 'never';
 
 // Re-export shared types for convenience
 
@@ -182,6 +183,29 @@ export interface TimeInputProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * Explains why the input is disabled. When set together with
+   * `isDisabled`, the input shows a tooltip with this text on hover and
+   * keyboard focus, and the field stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Typing and arrow-key adjustment stay blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <TimeInput
+   *   label="Start time"
+   *   value={time}
+   *   onChange={setTime}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
 
   /**
    * The selected time in ISO format (HH:MM or HH:MM:SS).
@@ -248,6 +272,20 @@ export interface TimeInputProps extends Omit<
   increment?: number;
 
   /**
+   * Which time-selection surface to use.
+   *
+   * - `'touch'`: browser/OS picker on coarse pointers, Astryx's typed field on
+   *   fine pointers
+   * - `'always'`: browser/OS picker wherever `<input type="time">` is supported
+   * - `'never'`: Astryx's typed field everywhere
+   *
+   * Native time pickers cannot preserve seconds or Astryx's arrow-key cadence,
+   * so `hasSeconds` or `increment !== 1` keeps the typed field.
+   * @default 'touch'
+   */
+  nativePicker?: TimeInputNativePicker;
+
+  /**
    * Placeholder text shown when no time is selected.
    * @default "Select a time"
    */
@@ -267,6 +305,14 @@ export interface TimeInputProps extends Omit<
    * If message is provided, displays below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -301,6 +347,7 @@ export function TimeInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   value,
   onChange,
   changeAction,
@@ -312,9 +359,11 @@ export function TimeInput({
   hasAutoFocus = false,
   hourFormat = '12h',
   increment = 1,
-  placeholder = 'Select a time',
+  nativePicker = 'touch',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   width,
   xstyle,
@@ -322,41 +371,80 @@ export function TimeInput({
   style,
   ref,
 }: TimeInputProps) {
+  const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
+  const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+  const requestsNativePicker =
+    nativePicker === 'always' || (nativePicker === 'touch' && isTouch);
+  // iOS has no seconds wheel and treats step as validation rather than wheel
+  // cadence. Preserve those explicit Astryx contracts instead of degrading them.
+  const usesNativeTimePicker =
+    requestsNativePicker && !hasSeconds && increment === 1;
 
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const mergedInputRef = useMergedRefs(ref, inputRef);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  // In grouped mode the status message renders as a visually-hidden node that
+  // exists only for aria-describedby. Announce it through the persistent
+  // useAnnounce live regions instead of role/aria-live on that node — a live
+  // region mounted together with its content is not reliably announced.
+  // Ungrouped mode delegates to Field -> FieldStatus, which announces itself.
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (inputGroup && status?.message) {
+      announce(
+        status.message,
+        status.type === 'error' ? 'assertive' : 'polite',
+      );
+    }
+  }, [announce, inputGroup, status?.message, status?.type]);
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input container (which already exists) and
+  // the input stays perceivable via aria-disabled instead of the disabled
+  // attribute. Typing is blocked with readOnly and value mutation guards.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ],
+    inputGroup,
+  );
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -415,6 +503,11 @@ export function TimeInput({
   // Handle input text change - update immediately if valid
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      // With a disabledMessage the input drops `disabled` for focusability, so
+      // guard value mutation explicitly (readOnly also blocks typing).
+      if (isDisabled) {
+        return;
+      }
       const newValue = e.target.value;
       setPendingInput(newValue);
 
@@ -424,13 +517,19 @@ export function TimeInput({
         fireChange(parsed);
       }
     },
-    [hasSeconds, min, max, value, fireChange],
+    [hasSeconds, min, max, value, fireChange, isDisabled],
   );
 
   // Handle focus
   const handleFocus = useCallback(() => {
+    // A disabled input stays focusable (via aria-disabled) so its reason is
+    // discoverable, but it must not present editing affordances — keep the
+    // static placeholder rather than swapping in the format hint.
+    if (isDisabled) {
+      return;
+    }
     setIsFocused(true);
-  }, []);
+  }, [isDisabled]);
 
   // Handle blur - validate and clear pending input
   const handleBlur = useCallback(
@@ -466,6 +565,18 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+      // Arrow-key adjustment mutates the value; block it while showing a
+      // disabled reason (the input keeps focusability via aria-disabled).
+      if (isDisabled) {
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
@@ -489,17 +600,46 @@ export function TimeInput({
         // Check if within range
         if (isTimeInRange(newTime, min, max)) {
           fireChange(newTime);
+          // Stepping programmatically rewrites a plain textbox's value, and
+          // screen readers do not announce programmatic textbox changes — the
+          // new value must be spoken explicitly or stepping is silent
+          // (WCAG 4.1.2).
+          announce(formatDisplayTime(newTime, hasSeconds));
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange],
+    [
+      value,
+      hasSeconds,
+      increment,
+      min,
+      max,
+      fireChange,
+      isDisabled,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    inputRef.current?.focus();
-  }, [fireChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      // Focusing a native time control reopens the OS picker on iOS.
+      if (!usesNativeTimePicker) {
+        if (!e || e.detail === 0) {
+          inputRef.current?.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            inputRef.current?.focus({preventScroll: true});
+          });
+        }
+      }
+    },
+    [fireChange, usesNativeTimePicker],
+  );
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -508,6 +648,134 @@ export function TimeInput({
       inputRef,
       disabled: isDisabled,
     });
+
+  const inputWrapper = (
+    <div
+      ref={el => {
+        containerRef.current = el;
+        // Anchor + hover/focus listeners for the disabled-message tooltip.
+        // Handlers are gated internally by isEnabled, so attaching
+        // unconditionally is safe.
+        disabledMessageTooltip.ref(el);
+      }}
+      onClick={usesNativeTimePicker ? undefined : handleWrapperClick}
+      onMouseUp={usesNativeTimePicker ? undefined : handleWrapperMouseUp}
+      {...mergeProps(
+        themeProps('time-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
+        stylex.props(
+          inputWrapperStyles.base,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+          inputGroup && groupStyles.inGroup,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
+      {inputGroup && description && (
+        <VisuallyHidden as="div" id={descriptionID}>
+          {description}
+        </VisuallyHidden>
+      )}
+      {inputGroup && status?.message && (
+        <VisuallyHidden as="div" id={statusMessageID}>
+          {status.message}
+        </VisuallyHidden>
+      )}
+      {usesNativeTimePicker ? (
+        <NativeTimeSegment
+          id={id}
+          inputRef={mergedInputRef}
+          value={optimisticValue}
+          onChange={fireChange}
+          placeholder={placeholder}
+          openPickerLabel={t('@astryx.timeInput.openPicker', {label})}
+          ariaLabelledBy={ariaLabelledBy}
+          hasAutoFocus={hasAutoFocus}
+          min={min}
+          max={max}
+          hourFormat={hourFormat}
+          isEffectivelyDisabled={isDisabled}
+          hasDisabledMessage={showsDisabledMessage}
+          isEffectivelyRequired={isEffectivelyRequired}
+          isBusy={isBusy}
+          statusType={status?.type}
+          ariaDescribedBy={ariaDescribedBy}
+        />
+      ) : (
+        <>
+          <div {...stylex.props(styles.icon)}>
+            <Icon icon="clock" size="sm" color="secondary" />
+          </div>
+          <input
+            ref={mergedInputRef}
+            id={id}
+            type="text"
+            value={displayValue}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleInputKeyDown}
+            placeholder={displayPlaceholder}
+            // With a disabledMessage the input keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; typing and
+            // arrow-key adjustment are blocked with readOnly and the guards.
+            disabled={isDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            readOnly={showsDisabledMessage || undefined}
+            autoFocus={hasAutoFocus}
+            data-autofocus={hasAutoFocus || undefined}
+            aria-describedby={ariaDescribedBy}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isInputValid ? 'true' : undefined
+            }
+            aria-busy={isBusy || undefined}
+            aria-labelledby={ariaLabelledBy}
+            {...stylex.props(
+              styles.input,
+              isDisabled && styles.inputDisabled,
+              !isInputValid && styles.inputInvalid,
+            )}
+          />
+          {/*
+              Live region announcing invalid typed input to assistive technology.
+              The value silently reverts on blur, so without this a screen-reader
+              user would get no feedback that their entry was rejected (WCAG 3.3.1).
+            */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
+          </VisuallyHidden>
+        </>
+      )}
+      {isBusy && <Spinner size="sm" />}
+      {hasClear && optimisticValue && !isDisabled && (
+        <InputClearButton
+          label={t('@astryx.timeInput.clearLabel', {label})}
+          onClick={handleClear}
+        />
+      )}
+      {statusIcon}
+    </div>
+  );
+
+  if (inputGroup) {
+    return (
+      <>
+        {inputWrapper}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
+  }
 
   return (
     <Field
@@ -528,70 +796,12 @@ export function TimeInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
-      <div
-        ref={containerRef}
-        onClick={handleWrapperClick}
-        onMouseUp={handleWrapperMouseUp}
-        {...mergeProps(
-          themeProps('time-input', {size, status: status?.type ?? null}),
-          stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        <div {...stylex.props(styles.icon)}>
-          <Icon icon="clock" size="sm" color="secondary" />
-        </div>
-        <input
-          ref={mergeRefs(ref, inputRef)}
-          id={id}
-          type="text"
-          value={displayValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleInputKeyDown}
-          placeholder={displayPlaceholder}
-          disabled={isDisabled}
-          autoFocus={hasAutoFocus}
-          data-autofocus={hasAutoFocus || undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
-          {...stylex.props(
-            styles.input,
-            isDisabled && styles.inputDisabled,
-            !isInputValid && styles.inputInvalid,
-          )}
-        />
-        {isBusy && <Spinner size="sm" />}
-        {hasClear && value && !isDisabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
-          </button>
-        )}
-        {status && (
-          <Icon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
-      </div>
+      {inputWrapper}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

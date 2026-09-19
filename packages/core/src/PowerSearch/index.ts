@@ -17,6 +17,8 @@ export type {PowerSearchProps, PowerSearchSize} from './PowerSearch';
 export {PowerSearchToken} from './PowerSearchToken';
 export {PowerSearchFilterEditor} from './PowerSearchFilterEditor';
 
+export {resolveOperatorLabel} from './resolveOperatorLabel';
+
 export {
   createPowerSearchConfig,
   usePowerSearchConfig,
@@ -28,6 +30,9 @@ export type {
   PowerSearchConfig,
   PowerSearchField,
   PowerSearchOperator,
+  PowerSearchOperatorBase,
+  PowerSearchOperatorWithLabel,
+  PowerSearchOperatorWithI18nKey,
 
   // Operator value types
   OperatorValue,

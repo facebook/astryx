@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SyntaxTheme',
@@ -50,9 +50,9 @@ export const docs = {
           'Syntax themes support light-dark() tuples: each token can have different values for light and dark mode, resolved automatically by the color scheme.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Wrap individual CodeBlock instances with SyntaxTheme: use the syntaxTheme prop on CodeBlock directly for per-instance overrides.',
+          'For a single CodeBlock, pass the syntaxTheme prop directly: it is shorthand for wrapping that block in SyntaxTheme. Use the SyntaxTheme wrapper when theming a whole region of code components.',
       },
     ],
   },
@@ -74,7 +74,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
     description:
@@ -96,9 +96,9 @@ export const docsDense = {
           'Syntax themes support light-dark() tuples: each token can have different values for light/dark mode, resolved automatically by color scheme.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Wrap individual CodeBlock instances w/ SyntaxTheme: use syntaxTheme prop on CodeBlock directly for per-instance overrides instead.',
+          'Single CodeBlock: pass syntaxTheme prop (shorthand for wrapping in SyntaxTheme). Whole region of code components: wrap w/ SyntaxTheme.',
       },
     ],
   },

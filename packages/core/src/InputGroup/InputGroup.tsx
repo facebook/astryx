@@ -4,11 +4,12 @@
 
 /**
  * @file InputGroup.tsx
- * @input Uses React, StyleX, theme tokens, InputGroupContext
- * @output Exports InputGroup component
+ * @input Uses React, StyleX, theme tokens, InputGroupContext, Field
+ * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
- * Children (TextInput, NumberInput) consume the InputGroup context
+ * Children (TextInput, NumberInput, TimeInput, DateInput, Typeahead,
+ * Selector, MultiSelector) consume the InputGroup context
  * to remove their own border/radius so the group container provides
  * the unified border treatment.
  *
@@ -17,7 +18,7 @@
  * - /packages/core/src/InputGroup/InputGroup.test.tsx
  * - /packages/core/src/InputGroup/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/InputGroup/
+ * - /packages/cli/assets/templates/blocks/components/InputGroup/
  */
 
 import {useId, useMemo, type ReactNode} from 'react';
@@ -39,7 +40,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
 });
@@ -156,9 +157,22 @@ export function InputGroup({
 }: InputGroupProps) {
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
+  const labelID = useId();
+  const descriptionID = useId();
   const statusMessageId = useId();
 
-  const contextValue = useMemo(() => ({isInGroup: true as const}), []);
+  const describedByIDs =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageId : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  const contextValue = useMemo(
+    () => ({isInGroup: true as const, labelID, describedByIDs}),
+    [labelID, describedByIDs],
+  );
 
   return (
     <InputGroupContext value={contextValue}>
@@ -168,6 +182,9 @@ export function InputGroup({
           isLabelHidden={isLabelHidden}
           description={description}
           inputID={inputId}
+          labelID={labelID}
+          descriptionID={description ? descriptionID : undefined}
+          isGroupLabel
           isOptional={isOptional}
           isRequired={isRequired}
           isDisabled={isDisabled}
@@ -184,10 +201,11 @@ export function InputGroup({
           labelTooltip={labelTooltip}>
           <div
             ref={ref}
-            role="group"
-            aria-label={label}
             data-testid={testId}
             {...rest}
+            role="group"
+            aria-labelledby={labelID}
+            aria-describedby={describedByIDs}
             {...mergeProps(
               themeProps('input-group', {
                 size,

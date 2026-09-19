@@ -25,6 +25,27 @@ const userSource: SearchSource = {
   bootstrap: () => users.slice(0, 5),
 };
 
+/**
+ * A remote source, near enough — the busy state only exists between the
+ * keystroke and the response, so a synchronous source never shows it.
+ */
+const slowUserSource: SearchSource = {
+  search: (query: string) =>
+    new Promise(resolve => {
+      setTimeout(
+        () =>
+          resolve(
+            users.filter(u =>
+              u.label.toLowerCase().includes(query.toLowerCase()),
+            ),
+          ),
+        1200,
+      );
+    }),
+  bootstrap: () =>
+    new Promise(resolve => setTimeout(() => resolve(users.slice(0, 5)), 1200)),
+};
+
 const meta: Meta<typeof Tokenizer> = {
   title: 'Core/Tokenizer',
   component: Tokenizer,
@@ -33,6 +54,11 @@ const meta: Meta<typeof Tokenizer> = {
     label: {control: 'text'},
     placeholder: {control: 'text'},
     isDisabled: {control: 'boolean'},
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip.',
+    },
     isRequired: {control: 'boolean'},
     isOptional: {control: 'boolean'},
     hasClear: {control: 'boolean'},
@@ -282,10 +308,7 @@ export const OverflowLayer: Story = {
 
 export const WithEndContent: Story = {
   render: args => {
-    const [value, setValue] = useState<SearchableItem[]>([
-      users[0],
-      users[2],
-    ]);
+    const [value, setValue] = useState<SearchableItem[]>([users[0], users[2]]);
     return (
       <Tokenizer
         {...args}
@@ -323,7 +346,12 @@ export const Creatable: Story = {
           hasCreate
           placeholder="Type a tag and press Enter..."
         />
-        <p style={{marginTop: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           {tags.length} tag{tags.length !== 1 ? 's' : ''} added
         </p>
       </div>
@@ -395,4 +423,129 @@ export const CreatableWithSearch: Story = {
     label: 'Team Members',
   },
   name: 'Creatable + Search',
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (input is still blocked). Use
+// disabledMessage instead of wrapping a disabled Tokenizer in Tooltip: disabled
+// controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value] = useState([users[0], users[1]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={() => {}}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    isDisabled: true,
+    disabledMessage: 'You need edit access to change members',
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<SearchableItem[]>([]);
+    const [b, setB] = useState<SearchableItem[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <Tokenizer
+          label="Attached (default)"
+          searchSource={userSource}
+          value={a}
+          onChange={items => setA(items)}
+          status={{type: 'error', message: 'Select at least one member'}}
+        />
+        <Tokenizer
+          label="Detached"
+          searchSource={userSource}
+          value={b}
+          onChange={items => setB(items)}
+          status={{type: 'error', message: 'Select at least one member'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};
+
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([users[0]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={slowUserSource}
+        value={value}
+        onChange={items => setValue(items)}
+        hasClear
+        endContent={<span>{value.length} selected</span>}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
+  name: 'Loading (async source, with clear and end content)',
+};
+
+/**
+ * Tokens plus a clear-all button — the two ends of the field. Under RTL they
+ * must swap sides; this is the story the RTL audit measures as a D2
+ * layout-order-flip.
+ */
+export const LogicalOrder: Story = {
+  render: args => {
+    const [value, setValue] = useState([users[0], users[2]]);
+    return (
+      <div style={{width: 420}}>
+        <Tokenizer
+          {...args}
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+        />
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+    hasClear: true,
+  },
+  name: 'Logical order',
+};
+
+/**
+ * The inline-end lane, populated at rest, for the RTL audit's D4 pass.
+ *
+ * Tokenizer's lane is absolutely positioned — it has to be, so it stays on the
+ * field's first row while tokens wrap below it — which makes its side entirely
+ * a matter of the writing mode. The busy Spinner shares that lane, and busy
+ * only exists mid-search, so a selected token with `hasClear` is what puts the
+ * lane on screen for a measurement that can be held still.
+ */
+export const RtlEndLane: Story = {
+  render: args => (
+    <Tokenizer
+      {...args}
+      searchSource={userSource}
+      value={[users[0]]}
+      onChange={() => {}}
+      hasClear
+    />
+  ),
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
+  name: 'RTL end lane (token + clear)',
 };

@@ -16,7 +16,7 @@ module.exports = {
         plugins: babelConfig.plugins,
       },
       useCSSLayers: {
-        // Declare XDS dist layers before StyleX app layers so
+        // Declare Astryx dist layers before StyleX app layers so
         // product styles always win over component defaults.
         before: ['reset', 'astryx-base', 'astryx-theme'],
       },

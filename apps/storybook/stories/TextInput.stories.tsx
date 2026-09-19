@@ -54,6 +54,16 @@ const meta: Meta<typeof TextInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the input is read-only. The value still submits with the form but cannot be edited. Unlike isDisabled it is not dimmed and stays in the tab order.',
+    },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip.',
+    },
     status: {
       control: 'object',
       description:
@@ -225,6 +235,20 @@ export const DescriptionWithOptional: Story = {
   },
 };
 
+// Read-only shows a value the user should see and send but not change. Unlike
+// a disabled field it is not dimmed, stays in the tab order, and still submits.
+export const ReadOnly: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'ACCT-4417-9920');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Account number',
+    isReadOnly: true,
+    value: 'ACCT-4417-9920',
+  },
+};
+
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Cannot edit this');
@@ -234,6 +258,24 @@ export const Disabled: Story = {
     label: 'Locked Field',
     isDisabled: true,
     value: 'Cannot edit this',
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (editing is still blocked).
+// Use disabledMessage instead of wrapping a disabled TextInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'alice@example.com');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Owner',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
+    value: 'alice@example.com',
   },
 };
 
@@ -489,5 +531,38 @@ export const ClearableWithStatus: Story = {
     label: 'Email',
     hasClear: true,
     status: {type: 'error', message: 'Invalid email address'},
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState('invalid@');
+    const [b, setB] = useState('invalid@');
+    const [c, setC] = useState('invalid@');
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <TextInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Enter a valid email'}}
+        />
+        <TextInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Enter a valid email'}}
+          statusVariant="detached"
+        />
+        <TextInput
+          label="Tooltip (focus, hover, or tap the status icon)"
+          value={c}
+          onChange={setC}
+          status={{type: 'error', message: 'Enter a valid email'}}
+          statusVariant="tooltip"
+        />
+      </div>
+    );
   },
 };

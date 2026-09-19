@@ -28,6 +28,7 @@ import {Theme, MediaTheme} from '@astryxdesign/core/theme';
 import type {ThemeMode} from '@astryxdesign/core/theme';
 import {astryxTheme} from '../../../themes/astryx';
 import {PropertyEditor} from './PropertyEditor';
+import {trustedPreviewOrigin} from '../previewChannel';
 
 const styles = stylex.create({
   badge: {minHeight: 32},
@@ -129,7 +130,10 @@ export function setCleanSource(source: string) {
 }
 
 function postEditToParent(code: string) {
-  window.parent.postMessage({type: 'preview-edit-code', code}, '*');
+  window.parent.postMessage(
+    {type: 'preview-edit-code', code},
+    trustedPreviewOrigin(),
+  );
 }
 
 function renderTargetLabel(label: HTMLDivElement) {
@@ -269,7 +273,7 @@ function clearSelectionOverlay() {
 
 /**
  * Manages the targeting overlay lifecycle inside the iframe. When enabled,
- * intercepts pointer events to highlight hovered XDS components and report
+ * intercepts pointer events to highlight hovered Astryx components and report
  * clicks back to the parent frame.
  */
 export function createTargetingController(

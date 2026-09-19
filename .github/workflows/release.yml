@@ -58,7 +58,7 @@ jobs:
   # Stable publish — manual dispatch only. Publishes the `latest` dist-tag.
   publish:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: 4-core-ubuntu
     # Dedicated, non-cancelling group. Independent of the canary group so a
     # canary push can never cancel or queue ahead of a stable release.
     concurrency:
@@ -71,18 +71,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # registry-url makes setup-node write the auth config `npm publish` reads.
+      # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
+      # which OIDC trusted publishing requires.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
         run: pnpm build
@@ -122,7 +117,7 @@ jobs:
   canary:
     name: Publish canary to npm
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: 4-core-ubuntu
     # Dedicated group, cancel-in-progress so a newer main push supersedes an
     # in-flight canary. Independent of the stable group, so this can never
     # cancel or starve a stable dispatch.
@@ -136,18 +131,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # registry-url makes setup-node write the auth config `npm publish` reads.
+      # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
+      # which OIDC trusted publishing requires.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
         run: pnpm build
@@ -185,9 +175,14 @@ jobs:
             "
           done
 
-          # Publish each package with --tag canary. No `|| true`: canary is its
-          # own job here, so a failed publish surfaces (fails the job) instead of
-          # being silently swallowed.
+          # Publish each package with --tag canary. Failures are collected and
+          # the job still fails at the end (never `|| true`-swallowed), but one
+          # rejected publish no longer aborts the loop: when lab's first OIDC
+          # publish was rejected (no npm package/trust bootstrapped yet), every
+          # package after it in the loop (all seven themes) stopped receiving
+          # canaries. Publishes are per-package and idempotent, so attempting
+          # the rest is always safe.
+          FAILED=""
           for pkg_dir in packages/* packages/themes/*; do
             [ -f "$pkg_dir/package.json" ] || continue
             # canaryOnly packages are publishable here (the stamp step above
@@ -196,8 +191,27 @@ jobs:
             if [ "$IS_PUBLISHABLE" = "yes" ]; then
               NAME=$(node -p "require('./$pkg_dir/package.json').name")
               echo "Publishing ${NAME}@${CANARY_VERSION}"
-              pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks
+              if ! pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks; then
+                echo "::error::Canary publish failed for ${NAME}@${CANARY_VERSION}"
+                FAILED="${FAILED} ${NAME}"
+              fi
             fi
           done
 
+          if [ -n "$FAILED" ]; then
+            echo "::error::Canary publish failed for:${FAILED}"
+            exit 1
+          fi
+
           echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"
+
+      - name: Prune old canary versions
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::notice::Skipping canary cleanup because NPM_TOKEN is not configured."
+            exit 0
+          fi
+          node scripts/npm/prune-canaries.mjs --yes

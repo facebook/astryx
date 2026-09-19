@@ -9,9 +9,9 @@
  * Output: dist/xds-core-{version}.tgz
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const CORE_DIR = path.join(ROOT, 'packages', 'core');
@@ -361,7 +361,7 @@ function copyAgentTools(dest) {
   fs.mkdirSync(agentToolsDest, { recursive: true });
 
   // Copy bin directory
-  const binSrc = path.join(AGENT_TOOLS_DIR, 'bin');
+  const binSrc = path.join(AGENT_TOOLS_DIR, 'clients', 'cli', 'bin');
   const binDest = path.join(agentToolsDest, 'bin');
   if (fs.existsSync(binSrc)) {
     fs.mkdirSync(binDest, { recursive: true });
@@ -372,7 +372,7 @@ function copyAgentTools(dest) {
   }
 
   // Copy docs directory
-  const docsSrc = path.join(AGENT_TOOLS_DIR, 'docs');
+  const docsSrc = path.join(AGENT_TOOLS_DIR, 'assets', 'docs');
   const docsDest = path.join(agentToolsDest, 'docs');
   if (fs.existsSync(docsSrc)) {
     fs.mkdirSync(docsDest, { recursive: true });

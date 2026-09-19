@@ -5,18 +5,30 @@
 /**
  * @file useClickableContainer.ts
  * @input Container ref, interactive element ref, click/href handlers
- * @output onClick and onMouseUp handlers for the container
+ * @output onClick and onMouseUp handlers for the container; INTERACTIVE_SELECTORS list
  * @position Core hook for clickable containers that safely handle nested interactive elements
  *
  * Solves the "nested interactive elements" problem: when a card is clickable
  * but contains buttons/links, clicking those should NOT trigger the card's action.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/hooks/index.ts (export)
  */
 
 import {useCallback, useEffect, type RefObject, type MouseEvent} from 'react';
 
-// Interactive element selectors — clicks on these (or their descendants)
-// should NOT bubble to the container's click handler.
-const INTERACTIVE_SELECTORS = [
+/**
+ * Canonical list of interactive element selectors — native controls plus
+ * role-based interactive elements. Clicks on these (or their descendants)
+ * should NOT bubble to a clickable container's click handler.
+ *
+ * Exported so other focus/interaction utilities can share one comprehensive
+ * definition of "interactive target" rather than hand-rolling divergent lists.
+ * Note: this list is about "don't bubble clicks", not focus-eligibility —
+ * consumers that need focusable elements must additionally exclude
+ * unfocusable/disabled targets (e.g. `[tabindex="-1"]`, `:disabled`).
+ */
+export const INTERACTIVE_SELECTORS = [
   'button',
   'a',
   'input',

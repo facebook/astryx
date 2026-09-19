@@ -191,7 +191,7 @@ export function PromptDetailCard({
                     onClick={() =>
                       window.open(previewUrls['astryx-tailwind'], '_blank')
                     }
-                    label="XDS+TW Preview"
+                    label="Astryx+TW Preview"
                   />
                 )}
                 {hasXdsCode && (
@@ -223,7 +223,7 @@ export function PromptDetailCard({
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewCode('astryx-tailwind')}
-                    label="XDS+TW Code"
+                    label="Astryx+TW Code"
                   />
                 )}
               </div>
@@ -244,7 +244,7 @@ export function PromptDetailCard({
               )}
               {htmlScore && <ScoreSummary label="HTML" score={htmlScore} />}
               {astryxTailwindScore && (
-                <ScoreSummary label="XDS+TW" score={astryxTailwindScore} />
+                <ScoreSummary label="Astryx+TW" score={astryxTailwindScore} />
               )}
             </div>
           )}
@@ -291,7 +291,7 @@ export function PromptDetailCard({
               <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
-                  <Text type="label">XDS+TW Findings</Text>
+                  <Text type="label">Astryx+TW Findings</Text>
                 </div>
                 <Findings score={astryxTailwindScore} />
               </div>

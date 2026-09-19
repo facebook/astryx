@@ -11,14 +11,16 @@
  *
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via SearchSource,
- * inline token rendering, serialization, Enter/Shift+Enter, message
- * history, paste/drop file handling, and mobile-safe touch typography.
+ * inline token rendering, serialization, Enter-to-submit with
+ * IME-composition guarding and an onKeyDown seam for platform-specific
+ * key handling, message history, paste/drop file handling, and
+ * mobile-safe touch typography.
  *
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -41,13 +43,18 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
+import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {
-  useChatComposerTokens,
-  isCustomToken,
-} from './useChatComposerTokens';
-import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
+  ensureCaretInside,
+  insertTextAtCursor,
+  isSelectionAtStart,
+  isSelectionAtEnd,
+  placeCaretAtEnd,
+  getSelectionRangeInside,
+  restoreSelectionRange,
+} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
   useChatPasteAsToken,
@@ -56,6 +63,7 @@ import {
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -99,8 +107,7 @@ export type ChatComposerTokenCustom = {
  *   Use for tooltips, hovercards, or any content beyond a badge.
  */
 export type ChatComposerToken =
-  | ChatComposerTokenBadge
-  | ChatComposerTokenCustom;
+  ChatComposerTokenBadge | ChatComposerTokenCustom;
 
 export type ChatComposerTriggerItem = SearchableItem;
 
@@ -191,6 +198,21 @@ export interface ChatComposerInputProps extends Omit<
   onFiles?: (files: File[]) => void;
   /** Submit handler (Enter without Shift) */
   onSubmit?: (value: string) => void;
+  /**
+   * Key-down handler invoked before the built-in Enter/history behavior
+   * (but after an open trigger menu consumes the event).
+   *
+   * This is the seam for platform- or app-specific key handling:
+   * - Call `event.preventDefault()` to suppress the default submit (e.g.
+   *   let Enter insert a newline on a touch keyboard).
+   * - Add behavior by acting on the event yourself (e.g. submit on
+   *   Cmd/Ctrl+Enter) without calling `preventDefault()`, so the default
+   *   handling still runs for other keys.
+   *
+   * IME composition is always respected regardless of this handler: Enter
+   * never submits while a composition is in progress.
+   */
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
 }
 
 // =============================================================================
@@ -224,8 +246,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {
@@ -240,6 +262,10 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -282,29 +308,52 @@ function serialize(node: Node): string {
 // =============================================================================
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
+  const t = useTranslator();
   const composerCtx = useChatComposerContext();
+  const hasControlledValueProp = props.value !== undefined;
 
   const {
     ref,
     handleRef,
     value: controlledValue = composerCtx?.value,
-    onChange = composerCtx?.onChange,
-    placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
+    onChange: onChangeProp,
+    placeholder: placeholderFromProps,
     maxRows = 8,
     triggers,
     debounceMs = 150,
     hasHistory = true,
-    label = 'Message input',
+    label: labelFromProps,
     isDisabled = composerCtx?.isDisabled ?? false,
     onPaste: onPasteProp,
     pasteAsToken: pasteAsTokenProp,
     onFiles,
     onSubmit = composerCtx?.onSubmit,
+    onKeyDown: onKeyDownProp,
     xstyle,
     className,
     style,
     ...rest
   } = props;
+  const label = labelFromProps ?? t('@astryx.chat.composerInput.label');
+  const placeholder =
+    placeholderFromProps ??
+    composerCtx?.placeholder ??
+    t('@astryx.chat.composer.placeholder');
+
+  const composerOnChange = composerCtx?.onChange;
+  const onChange = useCallback(
+    (nextValue: string) => {
+      if (hasControlledValueProp) {
+        onChangeProp?.(nextValue);
+        return;
+      }
+      composerOnChange?.(nextValue);
+      if (onChangeProp !== composerOnChange) {
+        onChangeProp?.(nextValue);
+      }
+    },
+    [composerOnChange, hasControlledValueProp, onChangeProp],
+  );
 
   const editableRef = useRef<HTMLDivElement>(null);
   const selfRef = useRef<ChatComposerInputHandle>(null);
@@ -336,16 +385,85 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   // when a parent attaches a ref — without this, paste-as-token would
   // silently no-op whenever `ChatComposerInput` is rendered without
   // a forwarded ref (e.g. inside `ChatComposer`).
+  /**
+   * Focus the editable and put the caret after the draft.
+   *
+   * A bare `focus()` is not enough: Chromium collapses the caret to the
+   * start of the content, which is the one position where ArrowUp means
+   * "recall history" — so focusing a composer that already holds a draft
+   * would arm the next ArrowUp to replace it. Landing after the text is
+   * also what a click on the composer's trailing space means.
+   */
+  /**
+   * Focus the editable, keeping a caret or selection the user already has
+   * inside it.
+   *
+   * A bare `focus()` is not enough on its own: Chromium collapses the caret
+   * to the start of the content, which is the one position where ArrowUp
+   * means "recall history" — so focusing a composer that already holds a
+   * draft would arm the next ArrowUp to replace it. But a consumer calling
+   * `focus()` to return the user to where they were must not have their
+   * caret moved either, so an existing in-editor selection is captured
+   * before focusing and restored after. Only when there is none does the
+   * caret land after the draft.
+   */
+  const focusEditable = useCallback(() => {
+    const editable = editableRef.current;
+    if (!editable) {
+      return;
+    }
+    // Read before focusing: `focus()` itself creates the offset-0 caret, so
+    // asking afterwards cannot tell the user's own caret from the engine's.
+    const existing = getSelectionRangeInside(editable);
+    editable.focus();
+    if (existing) {
+      restoreSelectionRange(existing);
+      return;
+    }
+    placeCaretAtEnd(editable);
+  }, []);
+
+  /**
+   * Focus the editable and put the caret after the draft, whatever the
+   * selection was.
+   *
+   * This is the composer shell's click-to-focus path: clicking the empty
+   * space after a draft means "put me after the text", so it overrides a
+   * stale caret rather than restoring one.
+   */
+  const focusEditableAtEnd = useCallback(() => {
+    const editable = editableRef.current;
+    if (!editable) {
+      return;
+    }
+    editable.focus();
+    placeCaretAtEnd(editable);
+  }, []);
+
   const handle: ChatComposerInputHandle = {
     insertToken: (token: ChatComposerToken) => insertTokenRef.current(token),
     expandToken: (id: string) => tokens.expandToken(id),
     insertText: (text: string) => insertTextRef.current(text),
-    focus: () => editableRef.current?.focus(),
+    focus: focusEditable,
     getValue: () =>
       serialize(editableRef.current ?? document.createElement('div')),
   };
   selfRef.current = handle;
   useImperativeHandle(handleRef, () => handle);
+
+  // Register a focus control with the composer shell so body-click-to-focus
+  // works without the shell sniffing the input's DOM shape. Cleared on
+  // unmount so the shell falls back cleanly if the input goes away.
+  const inputControlRef = composerCtx?.inputControlRef;
+  useEffect(() => {
+    if (!inputControlRef) {
+      return;
+    }
+    inputControlRef.current = {focus: focusEditableAtEnd};
+    return () => {
+      inputControlRef.current = null;
+    };
+  }, [inputControlRef, focusEditableAtEnd]);
 
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
@@ -458,6 +576,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
+      // Consumer passthrough — runs before built-in Enter/history handling.
+      // A consumer can preventDefault() to fully own the keystroke.
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+
       // Handle Backspace near tokens — prevent browser from creating
       // stray <br> elements or moving the cursor unexpectedly.
       if (e.key === 'Backspace') {
@@ -500,6 +625,12 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       }
 
       if (e.key === 'Enter' && !e.shiftKey) {
+        // Never submit mid-composition — an IME uses Enter to commit a
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
+          return;
+        }
+
         e.preventDefault();
         if (!editableRef.current) {
           return;
@@ -522,12 +653,37 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
-      // History navigation (only when trigger menu is not active)
+      // History navigation (only when trigger menu is not active).
+      // Recall only at the text boundaries so the caret can still move
+      // between lines in a multi-line draft: ArrowUp recalls the
+      // previous message when the caret is at the very start, ArrowDown
+      // steps forward when it's at the very end. A recalled message is
+      // shown fully selected (see `selectAll` below); that spans both
+      // boundaries at once, so repeated presses keep stepping through
+      // history. Mid-text, we bail before `preventDefault` and let the
+      // browser move the caret up/down a line.
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         if (!editableRef.current) {
           return;
         }
-        const text = serialize(editableRef.current);
+        const editable = editableRef.current;
+        // Last-resort fallback for a caret we never placed: an engine that
+        // leaves no Range inside the editable on focus, or a consumer that
+        // focused the DOM node directly instead of through our focus
+        // control. Place it where the focus control would have, so a
+        // pending draft is never mistaken for a caret at the start. A no-op
+        // whenever a real caret exists — including one the user moved.
+        ensureCaretInside(editable);
+        const isCollapsed = window.getSelection()?.isCollapsed ?? true;
+        const atStart = isSelectionAtStart(editable);
+        const atEnd = isSelectionAtEnd(editable);
+        const canRecallPrev = atStart && (isCollapsed || atEnd);
+        const canRecallNext = atEnd && (isCollapsed || atStart);
+        if (e.key === 'ArrowUp' ? !canRecallPrev : !canRecallNext) {
+          return;
+        }
+
+        const text = serialize(editable);
         const history = historyRef.current;
         if (history.length === 0) {
           return;
@@ -564,7 +720,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
       }
     },
-    [hasHistory, onSubmit, onChange, emitChange, triggerMenu],
+    [hasHistory, onSubmit, onChange, emitChange, triggerMenu, onKeyDownProp],
   );
 
   const handlePaste = useCallback(
@@ -632,8 +788,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       )}
       <div
         ref={editableRef}
-        role="textbox"
-        aria-multiline="true"
         aria-label={label}
         contentEditable={!isDisabled}
         suppressContentEditableWarning
@@ -680,25 +834,17 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({
-  token,
-}: {
-  token: ChatComposerToken;
-}) {
+export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
   return (
     <span
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (
-        <Badge
-          label={token.label}
-          variant={token.variant}
-          icon={token.icon}
-        />
+        <Badge label={token.label} variant={token.variant} icon={token.icon} />
       )}
     </span>
   );

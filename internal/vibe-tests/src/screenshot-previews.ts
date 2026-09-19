@@ -9,7 +9,7 @@
  *
  * Unlike screenshot.ts (which runs a Vite dev server), this script
  * works with pre-built self-contained HTML files. Designed to run in
- * GitHub Actions where Playwright is installed but XDS source isn't needed
+ * GitHub Actions where Playwright is installed but Astryx source isn't needed
  * for rendering.
  *
  * Usage:

@@ -111,7 +111,7 @@ function winnerLabel(w: string): string {
     case 'html':
       return 'HTML';
     case 'astryx-tailwind':
-      return 'XDS+TW';
+      return 'Astryx+TW';
     default:
       return 'Tie';
   }
@@ -296,7 +296,7 @@ function CostComparisonSection({
       ? [
           {
             key: 'astryxTailwind' as const,
-            header: 'XDS+TW',
+            header: 'Astryx+TW',
             renderCell: (row: CostRow) => (
               <Text type="body">{row.astryxTailwind ?? '—'}</Text>
             ),
@@ -399,7 +399,7 @@ export function CompareView({comparison}: CompareViewProps) {
       ? [
           {
             key: 'astryxTailwindScore' as const,
-            header: 'XDS+TW',
+            header: 'Astryx+TW',
             renderCell: (row: DimRow) => (
               <Text type="body">
                 {row.astryxTailwindScore != null
@@ -515,7 +515,7 @@ export function CompareView({comparison}: CompareViewProps) {
       ? [
           {
             key: 'astryxTailwindOverall' as const,
-            header: 'XDS+TW',
+            header: 'Astryx+TW',
             renderCell: (row: CatRow) => (
               <Text type="body">
                 {row.astryxTailwindOverall != null
@@ -586,7 +586,7 @@ export function CompareView({comparison}: CompareViewProps) {
           <Card>
             <div className="report-compare-winCard">
               <VStack gap={2}>
-                <Text type="label">XDS+TW Wins</Text>
+                <Text type="label">Astryx+TW Wins</Text>
                 <Heading level={2}>
                   <span className="report-color-info">
                     {astryxTailwindWins}

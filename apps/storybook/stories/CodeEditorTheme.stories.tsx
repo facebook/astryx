@@ -75,6 +75,7 @@ function ThemedEditor({
   return (
     <SyntaxThemeProvider theme={theme}>
       <CodeEditor
+        label="Code editor"
         value={value}
         onChange={setValue}
         language="typescript"
@@ -85,7 +86,7 @@ function ThemedEditor({
 }
 
 const meta: Meta = {
-  title: 'Lab/CodeEditorTheme',
+  title: 'Lab/Themes/CodeEditorTheme',
   parameters: {
     docs: {
       description: {
@@ -178,7 +179,7 @@ function GalleryEditor({
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: '#888',
+            color: 'var(--color-text-secondary)',
             marginBottom: 4,
             fontFamily: 'monospace',
           }}>
@@ -188,6 +189,7 @@ function GalleryEditor({
           value={value}
           onChange={setValue}
           language="typescript"
+          label="Code editor"
           hasLineNumbers
         />
       </div>

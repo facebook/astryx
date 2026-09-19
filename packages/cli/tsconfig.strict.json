@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "types": ["node"],
+    "strict": true
+  },
+  "include": [
+    "api/**/*.mjs",
+    "api/**/*.ts",
+    "clients/**/*.mjs",
+    "clients/**/*.ts",
+    "foundation/**/*.mjs",
+    "foundation/**/*.ts",
+    "lib/**/*.mjs",
+    "lib/**/*.ts",
+    "utils/**/*.mjs",
+    "utils/**/*.ts",
+    "types/**/*.ts",
+    "authoring/**/*.mjs",
+    "authoring/**/*.ts",
+    "scripts/**/*.mjs",
+    "assets/**/*.mjs",
+    "assets/**/*.ts",
+    "assets/**/*.tsx"
+  ],
+  "exclude": ["**/*.test.mjs"]
+}

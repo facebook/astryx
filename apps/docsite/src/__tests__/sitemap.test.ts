@@ -10,16 +10,22 @@
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
-import {describe, it, expect} from 'vitest';
-import sitemap from '../app/sitemap';
+import {describe, it, expect, vi} from 'vitest';
+
+// Outside a Next.js server, `'use cache'` is inert and cacheLife() has no
+// cache scope to configure. Stub it so the sitemap can run under vitest.
+vi.mock('next/cache', () => ({cacheLife: () => {}}));
+
+import sitemap, {getSitemapPages} from '../app/sitemap';
 import {SITE_URL} from '../lib/siteConfig';
 import {flattenComponentSidebarEntries} from '../components/componentSidebarData';
 import {docTopics} from '../generated/docsRegistry';
 import {packages} from '../generated/packageRegistry';
-import {templates} from '../generated/templateRegistry';
+import {templateMetadata as templates} from '../generated/templateMetadataRegistry';
 import {blogPosts} from '../generated/blogRegistry';
 
-const entries = sitemap();
+const entries = await sitemap();
+const pages = await getSitemapPages();
 const urls = entries.map(e => e.url);
 
 describe('docsite sitemap', () => {
@@ -37,6 +43,12 @@ describe('docsite sitemap', () => {
     for (const path of ['/', '/components', '/docs', '/templates', '/blog']) {
       expect(urls).toContain(new URL(path, SITE_URL).toString());
     }
+  });
+
+  it('exports canonical page titles for route recovery', () => {
+    expect(
+      pages.find(page => new URL(page.url).pathname === '/changelog')?.title,
+    ).toBe("What's New");
   });
 
   it('includes every component detail page', () => {

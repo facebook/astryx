@@ -5,7 +5,7 @@
  * @file backfill-display-name.mjs
  *
  * One-time codemod that adds a `displayName` field to every doc file in
- * the monorepo (`.doc.mjs` under packages/cli/templates and packages/{core,lab}/src).
+ * the monorepo (`.doc.mjs` under packages/cli/assets/templates and packages/{core,lab}/src).
  *
  * Why: the docsite gallery + sidebar previously derived a human-readable
  * version of each component name at render time via a regex. Joey called
@@ -14,7 +14,7 @@
  * the field across all existing doc files so the convention can be enforced.
  *
  * Behavior:
- *   - Finds every `.doc.mjs` file under packages/cli/templates and
+ *   - Finds every `.doc.mjs` file under packages/cli/assets/templates and
  *     packages/{core,lab}/src.
  *   - Reads the file, extracts the `name:` literal.
  *   - Skips files that already declare a `displayName:` field.
@@ -28,7 +28,7 @@
  *     - Otherwise treat as PascalCase / camelCase and space-separate the
  *       words while preserving capitalization
  *       (`ChatMessageMetadata` -> `Chat Message Metadata`,
- *        `Button`         -> `XDS Button`).
+ *        `Button`         -> `Button`).
  *
  * Run from the repo root:
  *   node apps/docsite/scripts/backfill-display-name.mjs
@@ -48,7 +48,7 @@ const DOCSITE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(DOCSITE_ROOT, '..', '..');
 
 const SCAN_ROOTS = [
-  path.join(REPO_ROOT, 'packages', 'cli', 'templates'),
+  path.join(REPO_ROOT, 'packages', 'cli', 'assets', 'templates'),
   path.join(REPO_ROOT, 'packages', 'core', 'src'),
   path.join(REPO_ROOT, 'packages', 'lab', 'src'),
 ];
@@ -81,7 +81,7 @@ function findDocFiles(root, out = []) {
  *  - Otherwise treat as PascalCase / camelCase, insert spaces between
  *    word boundaries while preserving capitalization:
  *    `ChatMessageMetadata` -> `Chat Message Metadata`.
- *    `Button`           -> `XDS Button`.
+ *    `Button`           -> `Button`.
  */
 function deriveDisplayName(name) {
   if (!name) return name;

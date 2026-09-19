@@ -135,13 +135,13 @@ function ensureUniversalJson(iteration: string): UniversalAggregate {
 }
 
 function ensureComparison(
-  xdsId: string,
+  astryxId: string,
   baselineId: string,
   htmlId?: string,
   astryxTailwindId?: string,
 ): UniversalComparison {
   const resultsDir = getResultsDir();
-  const idParts = [xdsId, baselineId];
+  const idParts = [astryxId, baselineId];
   if (htmlId) {
     idParts.push(htmlId);
   }
@@ -159,9 +159,9 @@ function ensureComparison(
     const vsLabel = [baselineId, htmlId, astryxTailwindId]
       .filter(Boolean)
       .join(' vs ');
-    console.log(`Generating comparison for ${xdsId} vs ${vsLabel}...`);
+    console.log(`Generating comparison for ${astryxId} vs ${vsLabel}...`);
     execSync(
-      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --astryx ${xdsId} --baseline ${baselineId}${htmlFlag}${twFlag}`,
+      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --astryx ${astryxId} --baseline ${baselineId}${htmlFlag}${twFlag}`,
       {cwd: path.join(import.meta.dirname, '..'), stdio: 'inherit'},
     );
   }

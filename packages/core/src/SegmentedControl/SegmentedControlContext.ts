@@ -22,6 +22,13 @@ export interface SegmentedControlContextValue {
   size: SegmentedControlSize;
   layout: SegmentedControlLayout;
   isDisabled: boolean;
+  /**
+   * True when the whole control is disabled *and* a `disabledMessage` is set.
+   * In that mode the selected segment stays focusable (via `aria-disabled`
+   * rather than being dropped from the tab order) so the group's disabled-reason
+   * tooltip is keyboard-discoverable; selection is still blocked.
+   */
+  hasDisabledMessage?: boolean;
 }
 
 export const SegmentedControlContext =

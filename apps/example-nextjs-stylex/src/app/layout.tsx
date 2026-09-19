@@ -5,7 +5,7 @@ import './globals.css';
 import {Providers} from './providers';
 
 export const metadata: Metadata = {
-  title: 'XDS Example — Next.js + StyleX (Dist)',
+  title: 'Astryx Example — Next.js + StyleX (Dist)',
   description:
     'Reference example consuming @astryxdesign/core pre-built dist with StyleX for custom styles',
 };

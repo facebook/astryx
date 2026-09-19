@@ -135,6 +135,9 @@ describe('parseTimeInput', () => {
   it('parses compact formats', () => {
     expect(parseTimeInput('1430')).toBe('14:30');
     expect(parseTimeInput('0000')).toBe('00:00');
+    expect(parseTimeInput('0230pm')).toBe('14:30');
+    expect(parseTimeInput('1230am')).toBe('00:30');
+    expect(parseTimeInput('023045pm', true)).toBe('14:30:45');
   });
 
   it('parses hour-only with meridiem', () => {
@@ -144,11 +147,21 @@ describe('parseTimeInput', () => {
     expect(parseTimeInput('12pm')).toBe('12:00');
   });
 
+  it('parses dotted meridiems (a.m./p.m.)', () => {
+    expect(parseTimeInput('2:30 p.m.')).toBe('14:30');
+    expect(parseTimeInput('2:30 P.M.')).toBe('14:30');
+    expect(parseTimeInput('2:30 p.m')).toBe('14:30');
+    expect(parseTimeInput('12 a.m.')).toBe('00:00');
+    expect(parseTimeInput('12 p.m.')).toBe('12:00');
+    expect(parseTimeInput('2 p.m.')).toBe('14:00');
+  });
+
   it('returns null for invalid input', () => {
     expect(parseTimeInput('')).toBeNull();
     expect(parseTimeInput('abc')).toBeNull();
     expect(parseTimeInput('25:00')).toBeNull();
     expect(parseTimeInput('13:00 PM')).toBeNull(); // 13 is invalid in 12h format
+    expect(parseTimeInput('13:00 p.m.')).toBeNull(); // dotted variant rejected too
   });
 });
 
@@ -239,6 +252,21 @@ describe('isTimeInRange', () => {
 });
 
 describe('adjustTime', () => {
+  it('returns the input unchanged for non-finite deltas', () => {
+    // -Infinity previously spun the wrap-around loop forever;
+    // NaN previously produced the corrupt string "NaN:NaN".
+    expect(adjustTime('10:00' as ISOTimeString, -Infinity)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, Infinity)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, NaN)).toBe('10:00');
+  });
+
+  it('wraps large negative deltas in constant time', () => {
+    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7 - 30)).toBe(
+      '09:30',
+    );
+  });
+
   it('adds minutes', () => {
     expect(adjustTime('14:30' as ISOTimeString, 15)).toBe('14:45');
     expect(adjustTime('14:30' as ISOTimeString, 30)).toBe('15:00');

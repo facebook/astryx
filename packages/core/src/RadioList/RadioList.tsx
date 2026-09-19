@@ -4,7 +4,7 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, createContext, ReactNode, Field, InputStatus
+ * @input Uses React useId, useCallback, useRef, createContext, ReactNode, Field, InputStatus
  * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -13,14 +13,23 @@
  * - /packages/core/src/RadioList/RadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
- * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import React, {createContext, useId, useMemo, type ReactNode} from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
+import {useTooltip} from '../Tooltip';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -36,13 +45,21 @@ export interface RadioListContextValue {
   value: string;
   onChange: (value: string) => void;
   isDisabled: boolean;
+  /**
+   * True when the whole group is disabled *and* a `disabledMessage` is set. In
+   * that mode radios stay focusable via `aria-disabled` (instead of the native
+   * `disabled` attribute) so the disabled-reason tooltip is keyboard- and
+   * AT-discoverable; selection is still blocked in the item's onChange guard.
+   */
+  hasDisabledMessage: boolean;
   isRequired: boolean;
   size: RadioListSize;
   status?: InputStatus;
 }
 
-export const RadioListContext =
-  createContext<RadioListContextValue | null>(null);
+export const RadioListContext = createContext<RadioListContextValue | null>(
+  null,
+);
 RadioListContext.displayName = 'RadioListContext';
 
 const styles = stylex.create({
@@ -95,6 +112,24 @@ export interface RadioListProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * The HTML name attribute shared by the radio inputs in the group.
+   * Useful for form submissions; when omitted, a unique internal name is
+   * generated so the group still roves correctly.
+   */
+  htmlName?: string;
+  /**
+   * Explains why the radio group is disabled. Applies to the whole-group
+   * disabled state (`isDisabled`), not individual items. When set together with
+   * `isDisabled`, the group shows a tooltip with this text on hover and keyboard
+   * focus, and its radios stay focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Selection stays blocked.
+   *
+   * Use this instead of wrapping a disabled group in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
   /**
    * Whether the radio group is required.
    * @default false
@@ -112,8 +147,8 @@ export interface RadioListProps extends Omit<
   status?: InputStatus;
   /**
    * The size of the radio controls.
-   * - 'sm': Compact size (18px radio, 20px wrapper)
-   * - 'md': Default size (22px radio, 24px wrapper)
+   * - 'sm': Compact size (20px radio)
+   * - 'md': Default size (24px radio)
    * @default 'md'
    */
   size?: RadioListSize;
@@ -161,6 +196,7 @@ export function RadioList({
   onChange,
   orientation = 'vertical',
   isDisabled = false,
+  disabledMessage,
   isRequired = false,
   isOptional = false,
   size = 'md',
@@ -171,16 +207,142 @@ export function RadioList({
   className,
   style,
   'data-testid': dataTestId,
+  htmlName,
   children,
 }: RadioListProps) {
-  const name = useId();
+  const autoName = useId();
+  const name = htmlName ?? autoName;
   const inputID = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
 
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  // The radiogroup exposes the *effective* required state so a form-wide
+  // `defaultOptionality="required"` is announced even when the group carries no
+  // visible indicator. Individual radios keep their native `required` bound to
+  // the explicit `isRequired` (via context), so a layout default never switches
+  // on browser validation for the group.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+
+  // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
+  // controls swallow pointer events, so the tooltip listeners attach to the
+  // radiogroup container and the radios stay perceivable via aria-disabled
+  // instead of the disabled attribute. Selection is blocked in the item's
+  // onChange guard.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The radiogroup container is not naturally focusable; focusin bubbles up
+    // from the radios, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const contextValue = useMemo<RadioListContextValue>(
-    () => ({name, value, onChange, isDisabled, isRequired, size, status}),
-    [name, value, onChange, isDisabled, isRequired, size, status],
+    () => ({
+      name,
+      value,
+      onChange,
+      isDisabled,
+      hasDisabledMessage: showsDisabledMessage,
+      isRequired,
+      size,
+      status,
+    }),
+    [
+      name,
+      value,
+      onChange,
+      isDisabled,
+      showsDisabledMessage,
+      isRequired,
+      size,
+      status,
+    ],
+  );
+
+  /**
+   * Make the tab stop deterministic when a radio group has no selected value.
+   *
+   * Native `<input type="radio">` groups (same `name`) implement roving
+   * tabindex for free: when a value is selected, that radio is the single tab
+   * stop and receives focus, so no correction is needed there. But the ARIA
+   * radio-group pattern (APG) also requires a deterministic tab stop when the
+   * group has *no* selection — and browsers disagree here. Chrome, when
+   * Shift+Tab moves focus backward into an unselected group, lands on the
+   * *last* radio; forward Tab lands on the *first*. To keep the entry point
+   * predictable we redirect focus:
+   *   - forward entry  → first enabled radio (APG default)
+   *   - backward entry → last enabled radio (matches Chrome's backward tab)
+   *
+   * The redirect only runs when focus arrives from *outside* the group's own
+   * radios (guarded via `relatedTarget` containment). Moving between radios
+   * inside the group — arrow keys, clicks, programmatic focus of a sibling —
+   * is never hijacked.
+   */
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      // Only correct the no-selection case; a selected value already provides
+      // a deterministic native tab stop.
+      if (value !== '') {
+        return;
+      }
+
+      const group = groupRef.current;
+      if (!group) {
+        return;
+      }
+
+      // Ignore focus moving *within* the group. `relatedTarget` is the element
+      // losing focus; if it was inside the group, this is intra-group movement
+      // (arrow keys, clicking a sibling) and must not be hijacked. Some browsers
+      // report a null `relatedTarget`; fall back to checking whether the group
+      // already contained the active element before this focus landed.
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget) {
+        if (group.contains(relatedTarget)) {
+          return;
+        }
+      } else if (
+        document.activeElement &&
+        document.activeElement !== e.target &&
+        group.contains(document.activeElement)
+      ) {
+        return;
+      }
+
+      const radios = Array.from(
+        group.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"]:not([disabled])',
+        ),
+      );
+      if (radios.length === 0) {
+        return;
+      }
+
+      const target = e.target as HTMLElement;
+      const targetIndex = radios.findIndex(radio => radio === target);
+      // Only correct when the focus target is one of our enabled radios (not a
+      // nested control such as end-content).
+      if (targetIndex === -1) {
+        return;
+      }
+
+      // Infer tab direction from which end the browser chose. On a backward
+      // (Shift+Tab) entry into an unselected group, browsers focus the *last*
+      // radio; keep it as the deterministic backward tab stop. Any other entry
+      // (forward Tab, or a browser that lands mid-group) is normalized to the
+      // *first* enabled radio, the APG default.
+      const isBackwardEntry = targetIndex === radios.length - 1;
+      const intended = isBackwardEntry ? radios[radios.length - 1] : radios[0];
+
+      if (target !== intended) {
+        intended.focus();
+      }
+    },
+    [value],
   );
 
   return (
@@ -191,6 +353,8 @@ export function RadioList({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputID}
+      labelID={labelID}
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -211,18 +375,27 @@ export function RadioList({
       className={className}
       style={style}>
       <div
+        ref={el => {
+          groupRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         role="radiogroup"
-        aria-label={label}
+        aria-labelledby={labelID}
+        onFocus={handleFocus}
         aria-describedby={
           [
             description ? descriptionID : null,
             status?.message ? statusMessageID : null,
+            showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
           ]
             .filter(Boolean)
             .join(' ') || undefined
         }
         aria-invalid={status?.type === 'error' ? true : undefined}
-        aria-required={isRequired || undefined}
+        aria-required={isEffectivelyRequired || undefined}
         {...mergeProps(
           themeProps('radio-list', {orientation, size}),
           stylex.props(
@@ -230,10 +403,10 @@ export function RadioList({
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
           ),
         )}>
-        <RadioListContext value={contextValue}>
-          {children}
-        </RadioListContext>
+        <RadioListContext value={contextValue}>{children}</RadioListContext>
       </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

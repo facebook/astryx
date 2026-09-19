@@ -9,7 +9,7 @@
  * Transpiles TSX → CommonJS with the self-hosted TypeScript compiler
  * (window.ts, served from /vendor/typescript.js — corpnet blocks CDNs), then
  * evaluates it with a custom `require` mapped to the preview scope plus a
- * global scope so unimported React hooks / XDS components still resolve.
+ * global scope so unimported React hooks / Astryx components still resolve.
  */
 
 import type * as TS from 'typescript';
@@ -36,6 +36,29 @@ for (const [key, value] of Object.entries(scope)) {
   scopeLookup.set(key.toLowerCase(), value as Record<string, unknown>);
 }
 
+const warnedModules = new Set<string>();
+
+/**
+ * The placeholder proxy below is deliberately forgiving — user code in the
+ * playground may import anything, and a hard failure on every stray import
+ * would make the editor unusable. The cost is that a module missing from the
+ * generated scope is indistinguishable from one that renders nothing: Recharts
+ * went unnoticed this way, with every chart in the dashboard templates
+ * resolving to `() => null` while the legends around it painted normally. Say
+ * so once per module, so the next gap is one console line rather than a
+ * silently empty preview.
+ */
+function warnUnresolved(id: string): void {
+  if (warnedModules.has(id)) {
+    return;
+  }
+  warnedModules.add(id);
+  console.warn(
+    `[playground] "${id}" is not in the preview scope — its exports will ` +
+      `render nothing. Add it in apps/docsite/scripts/generate-scope.mjs.`,
+  );
+}
+
 /** A CommonJS-style require resolving against the preview scope. */
 function makeRequire(): (id: string) => unknown {
   return (id: string) => {
@@ -49,6 +72,7 @@ function makeRequire(): (id: string) => unknown {
         ? mod
         : {...mod, __esModule: true};
     }
+    warnUnresolved(id);
     // Unknown module — return placeholders that render nothing.
     return new Proxy(
       {__esModule: true},
@@ -107,7 +131,7 @@ const RESERVED_GLOBALS = new Set([
 
 /**
  * Build a scope with ALL named exports from every module so React hooks and
- * XDS components are available as globals without an explicit import.
+ * Astryx components are available as globals without an explicit import.
  *
  * Excludes names that would shadow JS built-ins (see RESERVED_GLOBALS).
  */
@@ -162,7 +186,7 @@ function compile(code: string): string {
 /**
  * Names the user's code declares at the top level of the compiled module.
  *
- * Globals (every XDS/icon export) are passed to `new Function` as parameters so
+ * Globals (every Astryx/icon export) are passed to `new Function` as parameters so
  * unimported components resolve. But a top-level `const Foo = ...` in the user
  * code collides with a `Foo` parameter ("Identifier 'Foo' has already been
  * declared") — e.g. a template defining `const AppleIcon` clashes with

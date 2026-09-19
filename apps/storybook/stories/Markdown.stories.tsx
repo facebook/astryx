@@ -3,6 +3,7 @@
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
+import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
@@ -282,7 +283,7 @@ export const Streaming: Story = {
             onClick={replay}
             isDisabled={isStreaming}
           />
-          <span style={{fontSize: 12, color: '#666'}}>
+          <span style={{fontSize: 12, color: 'var(--color-text-secondary)'}}>
             {isStreaming
               ? `Streaming... ${charIndex}/${text.length}`
               : 'Complete'}
@@ -444,4 +445,41 @@ export const InlinePlugins: Story = {
       </div>
     );
   },
+};
+
+const StoryMath: NonNullable<MarkdownComponents['math']> = ({
+  value,
+  display,
+}) => {
+  const Tag = display === 'block' ? 'div' : 'span';
+  return (
+    <Tag
+      role="math"
+      aria-label={`Formula: ${value}`}
+      style={{
+        display: display === 'block' ? 'block' : 'inline',
+        padding: display === 'block' ? '12px 16px' : '1px 4px',
+        marginBlock: display === 'block' ? 12 : undefined,
+        border: '1px solid var(--color-border)',
+        borderRadius: 6,
+        fontFamily: 'serif',
+        fontStyle: 'italic',
+        textAlign: display === 'block' ? 'center' : undefined,
+      }}>
+      {value}
+    </Tag>
+  );
+};
+
+export const CustomMath: Story = {
+  name: 'Custom Math Renderer',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown components={{math: StoryMath}}>
+        {
+          'A renderer can typeset inline math such as $E = mc^2$ without preprocessing the source.\n\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n\nCode remains opaque: `$not_math$`.'
+        }
+      </Markdown>
+    </div>
+  ),
 };

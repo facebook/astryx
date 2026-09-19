@@ -1,12 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TopNavMenu',
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Menu',
   description: 'Navigation item that displays a hover-triggered popover menu with rich items containing an icon, title, and optional description.',
+  playground: {
+    defaults: {
+      label: 'Products',
+      items: [
+        {title: 'Analytics', description: 'Usage metrics and trends', href: '#'},
+        {title: 'Automation', description: 'Workflows and rules', href: '#'},
+        {title: 'Billing', href: '#'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',

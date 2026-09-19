@@ -22,7 +22,7 @@ import {getComponentByModule} from './componentLookup';
 
 /**
  * True if a JSX identifier refers to an XDS-namespace component. Prefix-agnostic
- * (XDS-prefix migration P2380608025): the playground now authors bare names
+ * (XDS-prefix migration): the playground now authors bare names
  * (`<Button>`), but legacy/prefixed names (`<XDSButton>`) must still resolve.
  * Falls back to the `XDS` prefix for components not yet in the registry.
  */

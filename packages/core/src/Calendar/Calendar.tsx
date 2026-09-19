@@ -11,10 +11,11 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Calendar/Calendar.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Calendar/getInitialFocusDate.ts (which month the calendar opens on)
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Calendar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Calendar/ (showcase blocks)
  */
 
 import {
@@ -23,16 +24,16 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
 } from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import {useGridFocus} from '../hooks';
+import {useAnnounce, useGridFocus} from '../hooks';
 import {
   useCalendarDays,
   useCalendarConstraints,
-  useCalendarRovingTabindex,
   type CalendarDay,
 } from './hooks';
 import {
@@ -46,7 +47,6 @@ import {
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
-  plainDateFromDate,
   plainDateToday,
   plainDateSetFirstOfMonth,
   plainDateAddMonths,
@@ -58,12 +58,17 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
   computeRangeRounding,
   computePreviewRounding,
+  computeDayNeighborContinuity,
   isEndpoint,
+  type DayNeighborContinuity,
 } from './dayCellUtils';
 
 // =============================================================================
@@ -84,6 +89,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
+import {useLocale, useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -118,8 +124,31 @@ interface CalendarBaseProps extends Omit<
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
 
   /**
+   * Range mode only. Maximum number of days a selected range may span,
+   * counting both endpoints — `maxRangeSpan={7}` allows a 7-day window
+   * (start + 6 days). Once a start date is picked, days beyond this distance
+   * from it are disabled in either direction; before a start is picked every
+   * otherwise-valid day stays selectable. Use for rolling windows like "at
+   * most a week from the chosen day". For fixed calendar bounds use min/max.
+   */
+  maxRangeSpan?: number;
+
+  /**
+   * Range mode only. Minimum number of days a selected range must span,
+   * counting both endpoints — `minRangeSpan={2}` forbids a single-day range.
+   * Once a start date is picked, days closer than this to it are disabled —
+   * except the start itself, which stays selectable. Clicking the start again
+   * commits a one-day range when the minimum allows it; otherwise it cancels
+   * the in-progress selection so the start can be moved. Defaults to 1 (a
+   * same-day start and end is allowed).
+   */
+  minRangeSpan?: number;
+
+  /**
    * Controlled focus date (which month is visible).
-   * If not provided, defaults to selected date or today.
+   * If not provided, defaults to the selected date, else today clamped into
+   * the `min`/`max` window (so a window that excludes today opens on the
+   * bound nearest to it, not on an all-disabled month).
    */
   focusDate?: ISODateString;
 
@@ -197,16 +226,20 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  * ```
  */
 export function Calendar({ref, ...props}: CalendarProps) {
+  const t = useTranslator();
+  const locale = useLocale();
   const {
     handleRef,
     mode = 'single',
     value,
     defaultValue,
     onChange,
-    numberOfMonths = 1,
+    numberOfMonths: numberOfMonthsProp = 1,
     min,
     max,
     dateConstraints,
+    maxRangeSpan,
+    minRangeSpan,
     focusDate: focusDateProp,
     onFocusDateChange,
     hasOutsideDays = true,
@@ -216,12 +249,18 @@ export function Calendar({ref, ...props}: CalendarProps) {
     xstyle,
     className,
     style,
+    onKeyDown,
     ...rest
   } = props;
 
   // Normalize `weekStartsOn` (number or three-letter day name) to a numeric
   // DayOfWeek so all downstream date math keeps working with an index.
   const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
+
+  // `numberOfMonths` is typed `1 | 2`; defensively clamp anything else that
+  // slips through at runtime to 1 so `Array.from({length})` can't render an
+  // absurd number of month grids (e.g. `numberOfMonths={1000}`).
+  const numberOfMonths = numberOfMonthsProp === 2 ? 2 : 1;
 
   // Today's date (memoized)
   const today = useMemo(() => plainDateToday(), []);
@@ -244,20 +283,19 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Determine effective value
   const effectiveValue = value !== undefined ? value : internalValue;
 
-  // Focus date state (which month is visible)
-  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
-    if (focusDateProp) {
-      return plainDateFromISO(focusDateProp);
-    }
-    if (effectiveValue) {
-      if (typeof effectiveValue === 'string') {
-        return plainDateFromISO(effectiveValue);
-      } else {
-        return plainDateFromISO(effectiveValue.start);
-      }
-    }
-    return plainDateToday();
-  });
+  // Focus date state (which month is visible). Falls back to today, clamped
+  // into the min/max window so a window that doesn't contain today doesn't
+  // open on an all-disabled month.
+  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() =>
+    getInitialFocusDate({
+      focusDate: focusDateProp,
+      value: effectiveValue,
+      min,
+      max,
+      numberOfMonths,
+      today,
+    }),
+  );
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
@@ -296,12 +334,31 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Format month header
   const monthYearLabel = useMemo(() => {
     if (numberOfMonths === 1) {
-      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR, locale);
     }
     return visibleMonths
-      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR, locale))
       .join(' – ');
-  }, [visibleMonths, numberOfMonths]);
+  }, [visibleMonths, numberOfMonths, locale]);
+
+  // Announce the newly visible month to screen readers whenever it changes.
+  // The visible month label (`<span>`) carries no live semantics, so paging the
+  // grid — via the header prev/next buttons, keyboard grid paging (arrow keys
+  // across a month boundary, PageUp/PageDown), the `navigateTo` handle, or a
+  // controlled `focusDate` change — otherwise updates the grid silently. Keying
+  // off `monthYearLabel` reuses the existing single-/multi-month formatting and
+  // only fires when the visible month actually changes (so selecting a date,
+  // which does not move the grid, stays silent). The first-render guard avoids
+  // announcing the initial month on mount.
+  const announce = useAnnounce();
+  const isInitialRenderRef = useRef(true);
+  useEffect(() => {
+    if (isInitialRenderRef.current) {
+      isInitialRenderRef.current = false;
+      return;
+    }
+    announce(monthYearLabel);
+  }, [monthYearLabel, announce]);
 
   // Determine if prev/next navigation is possible based on min/max
   const canNavigatePrevious = useMemo(() => {
@@ -383,11 +440,35 @@ export function Calendar({ref, ...props}: CalendarProps) {
       } else {
         // Range mode
         if (rangeSelectionStart === null) {
-          // First click - start the range
+          // First click - start the range. Nothing else about this pick is
+          // perceivable non-visually (WCAG 1.3.1) — the grid doesn't move, so
+          // the month-change announcement stays silent — so speak the range
+          // progress through the same polite live region.
           setRangeSelectionStart(iso);
+          announce(
+            t('@astryx.calendar.rangeStartAnnounce', {
+              date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
+            }),
+          );
         } else {
           // Second click - complete the range
           const startPd = plainDateFromISO(rangeSelectionStart);
+
+          // Clicking the anchor again commits a one-day range when the minimum
+          // span allows it. For longer minimum spans, the repeated click clears
+          // the in-progress start instead: the anchor is the only nearby day
+          // that remains enabled, so this preserves an escape hatch for moving
+          // the start without violating the configured minimum.
+          if (plainDateIsEqual(date, startPd) && (minRangeSpan ?? 1) > 1) {
+            setRangeSelectionStart(null);
+            announce(
+              t('@astryx.calendar.rangeClearedAnnounce', {
+                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
+              }),
+            );
+            return;
+          }
+
           let start: ISODateString;
           let end: ISODateString;
 
@@ -404,29 +485,56 @@ export function Calendar({ref, ...props}: CalendarProps) {
           setInternalValue(range);
           setRangeSelectionStart(null);
           (onChange as CalendarRangeProps['onChange'])?.(range);
+          // Completed-range announcement, in chronological order (matches the
+          // swapped {start, end} above even for a reverse pick).
+          announce(
+            t('@astryx.calendar.rangeCompleteAnnounce', {
+              start: plainDateFormat(
+                plainDateFromISO(start),
+                DATE_FORMAT_WITH_WEEKDAY,
+                locale,
+              ),
+              end: plainDateFormat(
+                plainDateFromISO(end),
+                DATE_FORMAT_WITH_WEEKDAY,
+                locale,
+              ),
+            }),
+          );
         }
       }
     },
-    [mode, onChange, rangeSelectionStart],
+    [mode, onChange, rangeSelectionStart, minRangeSpan, announce, t, locale],
   );
 
   return (
     <div
       ref={ref}
+      {...rest}
       {...mergeProps(
         themeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
       )}
-      onKeyDown={handleCalendarKeyDown}
-      {...rest}>
+      onKeyDown={composeEventHandlers(onKeyDown, handleCalendarKeyDown)}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
-          label="Previous month"
+          {...themeProps('calendar-nav', {
+            nav: 'prev',
+            disabled: !canNavigatePrevious ? 'disabled' : null,
+          })}
+          label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
-          icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
+          icon={
+            // Wrapper span (not Icon props): Icon's string mode clobbers
+            // caller classNames, so the RTL mirror must live on its own
+            // element.
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
+              <Icon icon="chevronLeft" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(-1)}
           isDisabled={!canNavigatePrevious}
           isIconOnly
@@ -437,9 +545,17 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
-          label="Next month"
+          {...themeProps('calendar-nav', {
+            nav: 'next',
+            disabled: !canNavigateNext ? 'disabled' : null,
+          })}
+          label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
-          icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
+          icon={
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
+              <Icon icon="chevronRight" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(1)}
           isDisabled={!canNavigateNext}
           isIconOnly
@@ -458,6 +574,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
             min={min}
             max={max}
             dateConstraints={dateConstraints}
+            maxRangeSpan={maxRangeSpan}
+            minRangeSpan={minRangeSpan}
             hasOutsideDays={hasOutsideDays}
             hasWeekNumbers={hasWeekNumbers}
             hasVariableRowCount={hasVariableRowCount}
@@ -497,6 +615,8 @@ interface MonthGridProps {
   min?: ISODateString;
   max?: ISODateString;
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
+  maxRangeSpan?: number;
+  minRangeSpan?: number;
   hasOutsideDays: boolean;
   hasWeekNumbers: boolean;
   hasVariableRowCount: boolean;
@@ -519,6 +639,8 @@ function MonthGrid({
   min,
   max,
   dateConstraints,
+  maxRangeSpan,
+  minRangeSpan,
   hasOutsideDays,
   hasWeekNumbers,
   hasVariableRowCount,
@@ -531,6 +653,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
+  const locale = useLocale();
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -540,11 +663,30 @@ function MonthGrid({
     weekStartsOn,
     hasVariableRowCount,
   });
+  const dayNameHeaders = useMemo(
+    () =>
+      dayNames.map((name, offset) => ({
+        dayOfWeek: ((weekStartsOn + offset) % 7) as DayOfWeek,
+        name,
+      })),
+    [dayNames, weekStartsOn],
+  );
+
+  const rangeAnchor = useMemo(
+    () =>
+      mode === 'range' && rangeSelectionStart
+        ? plainDateFromISO(rangeSelectionStart)
+        : null,
+    [mode, rangeSelectionStart],
+  );
 
   const {isDateDisabled} = useCalendarConstraints({
     min,
     max,
     dateConstraints,
+    maxRangeSpan,
+    minRangeSpan,
+    rangeAnchor,
   });
 
   // Parse selected date for roving tabindex priority
@@ -555,33 +697,52 @@ function MonthGrid({
     return null;
   }, [mode, value]);
 
-  const {isTabbable} = useCalendarRovingTabindex({
-    days,
-    today,
-    year,
-    month: month.month,
-    isDateDisabled,
-    selectedDate: selectedDateForTabindex,
-  });
+  // Seed the initial roving tab stop for this month. useGridFocus owns the
+  // live tab stop (see `hasRovingTabIndex` below) — it honors an existing
+  // `tabindex="0"` and repairs/moves it thereafter — so this only decides
+  // which day button starts tabbable. Priority: selected date (if visible and
+  // enabled) > today (if visible and enabled) > first enabled in-month day.
+  const seedTabbableIso = useMemo((): ISODateString | null => {
+    if (selectedDateForTabindex) {
+      const isSelectedInMonth =
+        selectedDateForTabindex.year === year &&
+        selectedDateForTabindex.month === month.month;
+      if (isSelectedInMonth && !isDateDisabled(selectedDateForTabindex)) {
+        return plainDateToISO(selectedDateForTabindex);
+      }
+    }
 
-  // Helper to get the focused date from the currently focused element
+    const isTodayInMonth = today.year === year && today.month === month.month;
+    if (isTodayInMonth && !isDateDisabled(today)) {
+      return plainDateToISO(today);
+    }
+
+    for (const day of days) {
+      if (!day.isOutside && !isDateDisabled(day.date)) {
+        return day.iso;
+      }
+    }
+
+    return null;
+  }, [days, today, year, month.month, isDateDisabled, selectedDateForTabindex]);
+
+  // Helper to get the focused date from the currently focused element.
+  // Reads the machine-readable `data-date` (ISO) attribute rather than parsing
+  // the human-readable `aria-label` with `new Date()`, which is locale/format
+  // dependent and returns Invalid Date in non-English locales (e.g. fr-FR,
+  // ja-JP), silently swallowing month-boundary arrow navigation (complex-4).
   const getFocusedDate = useCallback((): ISODateString | null => {
     const activeElement = document.activeElement as HTMLElement | null;
     if (!activeElement) {
       return null;
     }
 
-    const ariaLabel = activeElement.getAttribute('aria-label');
-    if (!ariaLabel) {
+    const iso = activeElement.getAttribute('data-date');
+    if (!iso) {
       return null;
     }
 
-    const parsed = new Date(ariaLabel);
-    if (isNaN(parsed.getTime())) {
-      return null;
-    }
-
-    return plainDateToISO(plainDateFromDate(parsed));
+    return iso as ISODateString;
   }, []);
 
   // Handle navigation to previous month
@@ -621,16 +782,31 @@ function MonthGrid({
     }
   }, [getFocusedDate, onNavigateNext]);
 
-  // Grid focus navigation
-  const {gridRef, handleKeyDown: handleGridKeyDown} =
-    useGridFocus<HTMLDivElement>({
-      columns: 7,
-      cellSelector: 'button:not([disabled])',
-      onNavigateBefore: handleNavigatePrevious,
-      onNavigateAfter: handleNavigateNext,
-      onPageUp: handlePageUp,
-      onPageDown: handlePageDown,
-    });
+  // Grid focus navigation.
+  //
+  // The hook enumerates ALL grid cells (every `role="gridcell"`, including
+  // disabled days and empty placeholder cells) so the true 7-column geometry is
+  // preserved. `isCellFocusable` / `getFocusTarget` tell the hook which cells
+  // can take focus (those containing an enabled day button) and where to send
+  // focus (the day button inside the cell). Arrow keys move to the target
+  // row/column and, if that cell is disabled, continue in the same direction to
+  // the next enabled cell.
+  const {
+    gridRef,
+    handleKeyDown: handleGridKeyDown,
+    handleFocus: handleGridFocus,
+  } = useGridFocus<HTMLDivElement>({
+    columns: 7,
+    cellSelector: '[role="gridcell"]',
+    isCellFocusable: cell =>
+      cell.querySelector('button:not([disabled])') !== null,
+    getFocusTarget: cell => cell.querySelector<HTMLElement>('button'),
+    hasRovingTabIndex: true,
+    onNavigateBefore: handleNavigatePrevious,
+    onNavigateAfter: handleNavigateNext,
+    onPageUp: handlePageUp,
+    onPageDown: handlePageDown,
+  });
 
   // Handle pending focus after month navigation
   useEffect(() => {
@@ -643,11 +819,11 @@ function MonthGrid({
     );
 
     const targetPd = plainDateFromISO(pendingFocus);
-    const targetLabel = plainDateFormat(targetPd, DATE_FORMAT_WITH_WEEKDAY);
+    const targetIso = plainDateToISO(targetPd);
 
     let targetButton: HTMLElement | null = null;
     for (const button of buttons) {
-      if (button.getAttribute('aria-label') === targetLabel) {
+      if (button.getAttribute('data-date') === targetIso) {
         targetButton = button;
         break;
       }
@@ -699,45 +875,46 @@ function MonthGrid({
 
   // Month label for announcements
   const monthLabel = useMemo(() => {
-    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR);
-  }, [month]);
+    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR, locale);
+  }, [month, locale]);
 
   return (
     <div {...stylex.props(monthGridStyles.monthGrid)}>
-      {/* Day names header */}
-      <div
-        {...stylex.props(
-          monthGridStyles.weekHeader,
-          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
-        )}>
-        {hasWeekNumbers && (
-          <div
-            {...stylex.props(
-              monthGridStyles.dayName,
-              monthGridStyles.weekNumberHeader,
-            )}
-          />
-        )}
-        {dayNames.map(name => (
-          <div
-            key={name}
-            role="columnheader"
-            {...stylex.props(monthGridStyles.dayName)}>
-            {name}
-          </div>
-        ))}
-      </div>
-
-      {/* Days grid */}
+      {/* Days grid (APG grid: header row of columnheaders + week rows) */}
       <div
         ref={gridRef}
         role="grid"
         aria-label={monthLabel}
+        // APG grid pattern: a range selection holds multiple selected cells,
+        // so the grid must advertise multi-selectability.
+        aria-multiselectable={mode === 'range' ? true : undefined}
         onKeyDown={handleGridKeyDown}
+        onFocus={handleGridFocus}
         {...stylex.props(
           monthGridStyles.daysGrid,
           hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
         )}>
+        {/* Day names header row (columnheaders live inside the grid). Uses the
+            same display:contents row so its cells align to the grid columns. */}
+        <div role="row" {...stylex.props(monthGridStyles.weekRow)}>
+          {hasWeekNumbers && (
+            <div
+              {...stylex.props(
+                monthGridStyles.dayName,
+                monthGridStyles.weekNumberHeader,
+              )}
+            />
+          )}
+          {dayNameHeaders.map(({dayOfWeek, name}) => (
+            <div
+              key={dayOfWeek}
+              role="columnheader"
+              {...stylex.props(monthGridStyles.dayName)}>
+              {name}
+            </div>
+          ))}
+        </div>
+
         {weeks.map(week => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
           const weekNum = plainDateGetWeekNumber(weekDate);
@@ -748,29 +925,49 @@ function MonthGrid({
               role="row"
               {...stylex.props(monthGridStyles.weekRow)}>
               {hasWeekNumbers && (
-                <div {...stylex.props(monthGridStyles.weekNumber)}>
+                <div
+                  role="rowheader"
+                  {...stylex.props(monthGridStyles.weekNumber)}>
                   {weekNum}
                 </div>
               )}
-              {week.map((day, dayIndex) => (
-                <DayCell
-                  key={day.iso}
-                  day={day}
-                  dayIndex={dayIndex}
-                  mode={mode}
-                  selectedDate={selectedDate}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  previewStart={previewStart}
-                  previewEnd={previewEnd}
-                  today={today}
-                  hasOutsideDays={hasOutsideDays}
-                  isDisabled={isDateDisabled(day.date)}
-                  isTabbable={isTabbable(day.iso)}
-                  onDayClick={onDayClick}
-                  onDayHover={onDayHover}
-                />
-              ))}
+              {week.map((day, dayIndex) => {
+                // Whether the previous/next day in this week row continues the
+                // highlighted run (range and preview). A disabled or
+                // adjacent-month neighbour breaks continuity, so this day gets
+                // an end cap on that side (#2715).
+                const neighbors = computeDayNeighborContinuity({
+                  week,
+                  dayIndex,
+                  mode,
+                  rangeStart,
+                  rangeEnd,
+                  previewStart,
+                  previewEnd,
+                  isDisabled: isDateDisabled,
+                });
+                return (
+                  <DayCell
+                    key={day.iso}
+                    day={day}
+                    dayIndex={dayIndex}
+                    mode={mode}
+                    selectedDate={selectedDate}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    previewStart={previewStart}
+                    previewEnd={previewEnd}
+                    today={today}
+                    hasOutsideDays={hasOutsideDays}
+                    isDisabled={isDateDisabled(day.date)}
+                    neighbors={neighbors}
+                    isTabbable={day.iso === seedTabbableIso}
+                    isRangeSelectionInProgress={rangeSelectionStart !== null}
+                    onDayClick={onDayClick}
+                    onDayHover={onDayHover}
+                  />
+                );
+              })}
             </div>
           );
         })}
@@ -795,7 +992,25 @@ interface DayCellProps {
   today: PlainDate;
   hasOutsideDays: boolean;
   isDisabled: boolean;
+  /**
+   * Whether the previous/next day in the same week continues the highlighted
+   * run (range and preview). When a neighbour is disabled or outside the month
+   * it breaks the run, so this day gets an end cap on that side (#2715).
+   */
+  neighbors: DayNeighborContinuity;
+  /**
+   * Whether this day seeds the initial roving tab stop. useGridFocus
+   * (`hasRovingTabIndex`) owns the live tab stop thereafter — it honors an
+   * existing `tabindex="0"` and repairs/moves it on navigation and focus.
+   */
   isTabbable: boolean;
+  /**
+   * Whether a range selection is mid-flight (first pick made, awaiting the
+   * second). Disambiguates the accessible name of the picked day: mid-flight
+   * it is only the "range start", while a completed one-day range is both
+   * "range start and range end" (rangeStart === rangeEnd in both cases).
+   */
+  isRangeSelectionInProgress: boolean;
   onDayClick: (date: PlainDate) => void;
   onDayHover: (date: PlainDate | null) => void;
 }
@@ -812,14 +1027,20 @@ function DayCell({
   today,
   hasOutsideDays,
   isDisabled,
+  neighbors,
   isTabbable: isTabbableDay,
+  isRangeSelectionInProgress,
   onDayClick,
   onDayHover,
 }: DayCellProps) {
+  const t = useTranslator();
+  const locale = useLocale();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
-    return <div {...stylex.props(dayCellStyles.cell)} />;
+    // Empty placeholder cell — still a gridcell so the grid geometry stays a
+    // clean 7-per-row set for keyboard navigation.
+    return <div role="gridcell" {...stylex.props(dayCellStyles.cell)} />;
   }
 
   const state = computeDayCellState({
@@ -837,27 +1058,73 @@ function DayCell({
   });
 
   const endpoint = isEndpoint(state);
-  const rangeRounding = computeRangeRounding(state);
-  const previewRounding = computePreviewRounding(state);
+
+  // The day's focus-ring treatment, derived once so the reflected `marker`
+  // theme state and the StyleX ring styles below share a single source of
+  // truth. `state.isSelected` is single-select only, so a range endpoint that
+  // is today still qualifies for the today-in-range ring (unchanged prior
+  // behavior).
+  const showsTodayRing = state.isToday && !state.isSelected && !state.isInRange;
+  const showsTodayInRangeRing =
+    state.isToday && !state.isSelected && state.isInRange;
+  const markerState: 'today-only' | 'today-in-range' | null = showsTodayRing
+    ? 'today-only'
+    : showsTodayInRangeRing
+      ? 'today-in-range'
+      : null;
+
+  // Accessible name for the day button. Roving focus lands on the <button>,
+  // not the role="gridcell" wrapper that carries aria-selected — and
+  // aria-selected is invalid on role="button" — so the selection/range state
+  // must be encoded into the button's name (WCAG 4.1.2). Localized via ICU
+  // params rather than string concatenation. A mid-flight first pick (where
+  // rangeStart === rangeEnd) reads as "range start" only; a completed one-day
+  // range reads as both start and end.
+  const dateLabel = plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale);
+  const dayLabel = state.isSelected
+    ? t('@astryx.calendar.daySelected', {date: dateLabel})
+    : state.isRangeStart && state.isRangeEnd
+      ? isRangeSelectionInProgress
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : t('@astryx.calendar.dayRangeStartAndEnd', {date: dateLabel})
+      : state.isRangeStart
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : state.isRangeEnd
+          ? t('@astryx.calendar.dayRangeEnd', {date: dateLabel})
+          : state.isInRange
+            ? t('@astryx.calendar.dayInRange', {date: dateLabel})
+            : dateLabel;
+
+  const rangeRounding = computeRangeRounding(state, {
+    prevInRange: neighbors.prevInRange,
+    nextInRange: neighbors.nextInRange,
+  });
+  const previewRounding = computePreviewRounding(state, {
+    prevInPreview: neighbors.prevInPreview,
+    nextInPreview: neighbors.nextInPreview,
+  });
 
   return (
-    <div {...stylex.props(dayCellStyles.cell)}>
+    <div
+      role="gridcell"
+      aria-selected={state.isSelected || state.isInRange || undefined}
+      {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
       {state.isInRange && (
         <div
           {...stylex.props(
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
-            rangeRounding.roundLeft && dayCellStyles.rangeBgRadiusLeft,
-            rangeRounding.roundRight && dayCellStyles.rangeBgRadiusRight,
-            state.isRangeStart && dayCellStyles.rangeInsetLeft,
+            rangeRounding.roundStart && dayCellStyles.rangeBgRadiusStart,
+            rangeRounding.roundEnd && dayCellStyles.rangeBgRadiusEnd,
+            state.isRangeStart && dayCellStyles.rangeInsetStart,
             state.isRangeStart &&
-              rangeRounding.roundRight &&
-              dayCellStyles.rangeInsetRight,
-            state.isRangeEnd && dayCellStyles.rangeInsetRight,
+              rangeRounding.roundEnd &&
+              dayCellStyles.rangeInsetEnd,
+            state.isRangeEnd && dayCellStyles.rangeInsetEnd,
             state.isRangeStart &&
-              rangeRounding.roundLeft &&
-              dayCellStyles.rangeInsetLeft,
+              rangeRounding.roundStart &&
+              dayCellStyles.rangeInsetStart,
           )}
         />
       )}
@@ -868,8 +1135,8 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
-            previewRounding.roundLeft && dayCellStyles.previewBgRadiusLeft,
-            previewRounding.roundRight && dayCellStyles.previewBgRadiusRight,
+            previewRounding.roundStart && dayCellStyles.previewBgRadiusStart,
+            previewRounding.roundEnd && dayCellStyles.previewBgRadiusEnd,
             state.isPreviewStart && dayCellStyles.previewStart,
             state.isPreviewEnd && dayCellStyles.previewEnd,
           )}
@@ -879,12 +1146,14 @@ function DayCell({
       {/* Day button */}
       <button
         type="button"
-        role="gridcell"
         data-date={day.iso}
-        aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
-        aria-selected={state.isSelected || state.isInRange || undefined}
+        aria-label={dayLabel}
         aria-disabled={state.effectivelyDisabled || undefined}
+        // Mark today's cell programmatically (APG date-picker pattern), not just
+        // visually, so screen-reader users can identify the current date.
+        aria-current={state.isToday ? 'date' : undefined}
         disabled={isDisabled}
+        // Initial roving tab-stop seed; useGridFocus owns it after mount.
         tabIndex={isTabbableDay ? 0 : -1}
         onClick={() => !state.effectivelyDisabled && onDayClick(date)}
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
@@ -895,28 +1164,28 @@ function DayCell({
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,
             'in-range': state.isInRange ? 'in-range' : null,
+            // `marker` reflects the day's *actual* focus-ring treatment as a
+            // single compound state, so a theme can target exactly the states
+            // the ring is drawn under without needing `:not()` in the theme
+            // key. It is null unless a ring is shown:
+            //   'today-only'     → today, not single-selected, not in a range
+            //   'today-in-range' → today, not single-selected, inside a range
+            // `isSelected` here is single-select only (see computeDayCellState),
+            // so a today range endpoint still shows the today-in-range ring —
+            // `marker` mirrors the StyleX conditions below exactly, preserving
+            // the default rendering.
+            marker: markerState,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
+            interactionOverlayStyles.backgroundImage,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellStyles.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellTheme.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellStyles.dayTodayInRange,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellTheme.dayTodayInRange,
+            showsTodayRing && dayCellStyles.dayToday,
+            showsTodayRing && dayCellTheme.dayToday,
+            showsTodayInRangeRing && dayCellStyles.dayTodayInRange,
+            showsTodayInRangeRing && dayCellTheme.dayTodayInRange,
             endpoint && dayCellStyles.daySelected,
             endpoint && dayCellTheme.daySelected,
             state.effectivelyDisabled && dayCellStyles.dayDisabled,

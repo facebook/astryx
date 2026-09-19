@@ -61,6 +61,27 @@ const enterStart = stylex.keyframes({
   to: {opacity: 1, transform: 'translateX(0) scale(1)'},
 });
 
+// RTL: the horizontal entrance nudge is a physical translateX, so it must
+// mirror under RTL — a layer on the inline-end/start side must slide in from
+// the correct physical side following the reading flow. Only the horizontal
+// (translateX) keyframes need mirroring; the vertical enterAbove/enterBelow
+// (translateY) entrances are direction-neutral and are left as-is.
+const enterEndRtl = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform: `translateX(${spacingVars['--spacing-2']}) scale(0.95)`,
+  },
+  to: {opacity: 1, transform: 'translateX(0) scale(1)'},
+});
+
+const enterStartRtl = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform: `translateX(calc(-1 * ${spacingVars['--spacing-2']})) scale(0.95)`,
+  },
+  to: {opacity: 1, transform: 'translateX(0) scale(1)'},
+});
+
 const animationBase = {
   animationDuration: durationVars['--duration-fast-max'],
   animationTimingFunction: easeVars['--ease-standard'],
@@ -72,22 +93,40 @@ const animationBase = {
  *
  * Keyed by LayerPlacement ('above' | 'below' | 'start' | 'end')
  * for easy lookup: `layerAnimations[placement]`.
+ *
+ * Each entry disables its keyframe animation under
+ * `prefers-reduced-motion: reduce` so the layer appears instantly instead of
+ * translating/scaling in (infra-6).
  */
 export const layerAnimations = stylex.create({
   below: {
-    animationName: enterBelow,
+    animationName: {
+      default: enterBelow,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   above: {
-    animationName: enterAbove,
+    animationName: {
+      default: enterAbove,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   end: {
-    animationName: enterEnd,
+    animationName: {
+      default: enterEnd,
+      ':is([dir="rtl"] *)': enterEndRtl,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   start: {
-    animationName: enterStart,
+    animationName: {
+      default: enterStart,
+      ':is([dir="rtl"] *)': enterStartRtl,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
 });

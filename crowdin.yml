@@ -1,0 +1,31 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin CLI config for the astryx design system.
+#
+# Sources: packages/core/locales/en.json (react-intl / FormatJS shape:
+#   { "<key>": { "defaultMessage": "...", "description": "..." } })
+# Targets: packages/core/locales/<lang>.json, one file per translated language.
+#
+# `skip_untranslated_strings: true` — declared PER-FILE (inside the files:
+# block) so Crowdin's react_intl builder respects it. This strips untranslated
+# keys from within a downloaded locale file rather than emitting them as empty
+# `"": ""` pairs that pollute the diff. Crowdin does not allow combining
+# skip_untranslated_strings with skip_untranslated_files ("You cannot skip
+# strings and files at the same time"); the workflow handles the zero-percent
+# case by removing empty-object JSON files before opening the PR.
+#
+# Env vars come from the GitHub workflows that run the Crowdin CLI:
+#   CROWDIN_PROJECT_ID     — repo variable (public)
+#   CROWDIN_PERSONAL_TOKEN — repo secret
+
+project_id_env: CROWDIN_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+
+preserve_hierarchy: true
+commit_message: '[ci skip]'
+
+files:
+  - source: /packages/core/locales/en.json
+    translation: /packages/core/locales/%locale%.json
+    type: react_intl
+    skip_untranslated_strings: true

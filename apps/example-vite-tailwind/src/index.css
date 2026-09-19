@@ -1,7 +1,7 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 /*
- * Layer order for XDS + Tailwind coexistence in Vite.
+ * Layer order for Astryx + Tailwind coexistence in Vite.
  *
  * Desired priority (lowest → highest):
  *   reset → theme → base → astryx-base → astryx-theme → components → utilities

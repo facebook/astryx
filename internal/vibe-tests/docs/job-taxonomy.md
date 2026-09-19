@@ -8,7 +8,7 @@ When an LLM generates UI from a prompt, its output breaks down into distinct job
 
 | Source              | Description                                 |
 | ------------------- | ------------------------------------------- |
-| **AGENTS.md**       | Component catalog and XDS guidance          |
+| **AGENTS.md**       | Component catalog and Astryx guidance       |
 | **Design docs**     | principles.md, tokens.md - styling patterns |
 | **Component docs**  | Button.md, TextInput.md, etc.               |
 | **Prompt overhead** | Task instructions and persona               |
@@ -17,8 +17,8 @@ When an LLM generates UI from a prompt, its output breaks down into distinct job
 
 | Job                      | Description                                 | Typical % |
 | ------------------------ | ------------------------------------------- | --------- |
-| **Component Routing**    | Import statements for XDS components        | 3-10%     |
-| **Component Config**     | Props and attributes on XDS components      | 7-30%     |
+| **Component Routing**    | Import statements for Astryx components     | 3-10%     |
+| **Component Config**     | Props and attributes on Astryx components   | 7-30%     |
 | **Supplemental Styling** | StyleX blocks for layout/spacing gaps       | 10-27%    |
 | **Content Authoring**    | HTML structure, JSX elements, copy          | 15-27%    |
 | **Business Logic**       | useState, handlers, API calls, conditionals | 5-51%     |
@@ -28,11 +28,11 @@ When an LLM generates UI from a prompt, its output breaks down into distinct job
 
 ### 1. Component Routing (~3-10% of output tokens)
 
-**Import statements for XDS components**
+**Import statements for Astryx components**
 
 ```tsx
-import {XDSTextInput} from '@astryxdesign/core/TextInput';
-import {XDSButton} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
 ```
 
 - Requires: Understanding component catalog, matching intent to components
@@ -41,17 +41,17 @@ import {XDSButton} from '@astryxdesign/core/Button';
 
 ### 2. Component Configuration (~7-30% of output tokens)
 
-**Props and attributes on XDS components**
+**Props and attributes on Astryx components**
 
 ```tsx
-<XDSTextInput
+<TextInput
   label="Name"
   value={name}
   onChange={setName}
   isRequired
   placeholder="Enter your name"
 />
-<XDSButton variant="primary" disabled={!isFormValid}>
+<Button variant="primary" disabled={!isFormValid}>
 ```
 
 - Requires: Understanding component APIs, valid prop values
@@ -196,7 +196,7 @@ The aggregate command shows a complete breakdown of token usage:
 
 ### Input Token Categories
 
-- **AGENTS.md**: Always read (~173 tokens) - component catalog and XDS guidance
+- **AGENTS.md**: Always read (~173 tokens) - component catalog and Astryx guidance
 - **Design docs**: tokens.md (~897) and principles.md (~283) - styling patterns
 - **Component docs**: Varies by components used (300-2000 tokens each)
 - **Prompt overhead**: Task instructions and persona (~375 tokens)
@@ -206,7 +206,7 @@ The aggregate command shows a complete breakdown of token usage:
 Analyzed from generated code by parsing:
 
 - Import statements → Component Routing
-- XDS component JSX with props → Component Config
+- Astryx component JSX with props → Component Config
 - `stylex.create()` blocks → Supplemental Styling
 - HTML elements and structure → Content Authoring
 - State hooks, handlers, logic → Business Logic

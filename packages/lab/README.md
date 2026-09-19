@@ -12,11 +12,19 @@ Components in lab:
 - Compose with `@astryxdesign/core` components (use the theme, follow naming conventions)
 - Graduate to `@astryxdesign/core` after thorough engineering review
 
+See the **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** wiki for how a component moves from lab → core (and the promotion gates), and the **[Component Hardening Protocol](https://github.com/facebook/astryx/wiki/Component-Hardening-Protocol)** for the bar a component must clear to graduate.
+
 ## What's here vs what's in core
 
 **Lab:** Works, has basic props, maybe has stories. API might change. Not accessibility-hardened, not vibe-tested, not fully themed. **Canary-only — no stability promise.**
 
 **Core:** Full keyboard/a11y, hover guards, theming story, status states, spec compliance, vibe tested. Shipped to consumers on `latest`.
+
+## Promotion gate: accessibility
+
+The [Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist) is a hard requirement for graduating to core — every item, verified in the promotion PR, alongside the hardening bar linked above.
+
+Lab components get the same scan coverage as core (the `pr-a11y` axe audit and the weekly full scan run against lab too), but a11y findings on a lab component do not block lab merges — they block **promotion**. Iterate freely in lab; clear the checklist to graduate.
 
 ## Usage
 

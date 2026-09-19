@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TopNav',
@@ -17,7 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-top-nav', states: ['mode']},
-      {className: 'astryx-top-nav-item', states: ['mode']},
+      {className: 'astryx-top-nav-item', states: ['mode', 'selected']},
       {className: 'astryx-top-nav-heading'},
       {className: 'astryx-top-nav-mega-menu', states: ['mode']},
       {className: 'astryx-top-nav-mega-menu-item', states: ['mode']},
@@ -109,6 +109,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description: 'Accessible label for the navigation landmark, applied as aria-label on the <nav> element.',
+      default: "'Top navigation'",
     },
     {
       name: 'xstyle',
@@ -142,7 +143,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -162,7 +163,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Top navigation bar for app headers w/ slot-based layout+companion nav item components.',
   usage: {

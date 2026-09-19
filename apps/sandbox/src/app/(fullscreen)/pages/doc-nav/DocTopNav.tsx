@@ -19,7 +19,11 @@ export default function DocTopNav() {
     <TopNav
       label="Documentation navigation"
       heading={
-        <TopNavHeading heading="Astryx" href="/pages/doc-home/" as={Link} />
+        <TopNavHeading
+          heading="Astryx"
+          headingHref="/pages/doc-home/"
+          as={Link}
+        />
       }
       centerContent={
         <>

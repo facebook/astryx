@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
   group: 'Checkbox',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   props: [
     {
@@ -64,6 +64,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for the underlying checkbox input, useful for form submissions (submits "on" when checked).',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isReadOnly',
       type: 'boolean',
       description:
@@ -101,7 +113,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
@@ -109,11 +121,19 @@ export const docs = {
       description:
         'Status indicator. Displays a colored message box below the checkbox and sets aria-invalid for errors.',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
   ],
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox'},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
   usage: {
@@ -124,6 +144,7 @@ export const docs = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       { name: 'Checkbox', required: true, description: 'The check box itself: unchecked, checked, or indeterminate.' },
@@ -134,7 +155,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
@@ -146,6 +167,7 @@ export const docsZh = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
   props: [
@@ -163,6 +185,8 @@ export const docsZh = {
     },
     {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
     {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
+    {name: 'htmlName', type: 'string', description: '底层复选框输入的 HTML name 属性，用于表单提交（勾选时提交 "on"）。'},
+    {name: 'disabledMessage', type: 'string', description: 'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip: disabled controls swallow the hover events an external Tooltip needs.'},
     {name: 'isReadOnly', type: 'boolean', description: '复选框是否为只读。以完整不透明度显示当前状态但阻止交互。与 isDisabled 不同，只读复选框不会变暗。', default: 'false'},
     {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
     {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
@@ -184,12 +208,14 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox'},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {
@@ -200,6 +226,7 @@ export const docsDense = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
   propDescriptions: {
@@ -212,6 +239,7 @@ export const docsDense = {
     changeAction: 'async action; fires after onChange, shows spinner while pending',
     isLoading: 'shows spinner + prevents interaction',
     isDisabled: 'disable checkbox',
+    htmlName: 'HTML name attr for the checkbox; submits "on" when checked.',
     isOptional: 'mark field as optional (mutually exclusive w/ isRequired)',
     isRequired: 'mark field as required (mutually exclusive w/ isOptional)',
     size: 'sm (compact) or md (default)',

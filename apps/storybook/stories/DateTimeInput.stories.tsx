@@ -4,11 +4,22 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateTimeInput> = {
   title: 'Core/DateTimeInput',
   component: DateTimeInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date-time field that fits the pointer it is used with. On a mouse or trackpad it renders the existing side-by-side date and time inputs: the date half opens a calendar popover, and the time half accepts typed entry plus optional preset times.\n\n' +
+          "Where the primary pointer is a finger (`pointer: coarse`), the closed control still renders separate Date and Time segments; tapping either segment opens a bottom sheet directly to the matching section. A segmented Date/Time pill stays at the top of the sheet for switching; Date reuses Astryx's custom swipable month picker and month/year wheels, its Save date action advances to Time, and Time uses accessible hour/minute/second wheels with the final Save action. The public props are the same on both surfaces.\n\n" +
+          '**Seeing the touch surface:** open any story on a phone/tablet or in device emulation reporting a coarse pointer. No separate story is needed because the same component chooses the surface at runtime.',
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',
@@ -41,6 +52,11 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateTimeInput in Tooltip.',
+    },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -58,6 +74,12 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+    },
     numberOfMonths: {
       control: 'radio',
       options: [1, 2],
@@ -65,7 +87,8 @@ const meta: Meta<typeof DateTimeInput> = {
     },
     timeIncrement: {
       control: 'number',
-      description: 'Minutes to increment/decrement with arrow keys',
+      description:
+        'Desktop only: minutes to increment/decrement with arrow keys. Mobile touch uses wheels.',
     },
   },
 };
@@ -86,6 +109,23 @@ export const Default: Story = {
   },
 };
 
+export const NarrowContainer: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{width: '320px', maxWidth: '100%'}}>
+        <DateTimeInput {...args} value={value} onChange={setValue} />
+      </div>
+    );
+  },
+  args: {
+    label: 'Meeting time',
+    hasClear: true,
+  },
+};
+
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
@@ -95,6 +135,39 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event time',
+  },
+};
+
+export const NativePickerModes: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateTimeInput
+          label="nativePicker='touch' (default)"
+          description="Native date and compatible time controls on a coarse primary pointer"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <DateTimeInput
+          label="nativePicker='always'"
+          description="Native date and compatible time controls on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <DateTimeInput
+          label="nativePicker='never'"
+          description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
+        />
+      </div>
+    );
   },
 };
 
@@ -180,6 +253,50 @@ export const WithTimeIncrement: Story = {
   },
 };
 
+/**
+ * `timeOptionInterval` turns the time field into a combobox over a list of
+ * preset times at that cadence. Click the time field or press Alt+ArrowDown to
+ * open it; ArrowUp/ArrowDown move through the list, Enter picks, Escape closes.
+ *
+ * The list is a shortcut, not a restriction — a time between two options can
+ * still be typed, and with the list closed the arrow keys keep stepping by
+ * `timeIncrement` exactly as they do without this prop.
+ */
+export const WithTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    timeOptionInterval: 30,
+    description: 'Pick from half-hour slots, or type any time',
+  },
+};
+
+/**
+ * An hourly list — the 12 AM to 11 PM shape most scheduling flows want.
+ * `min` and `max` trim the list on the boundary date, so only bookable hours
+ * are offered.
+ */
+export const WithHourlyTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T13:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Office hours',
+    timeOptionInterval: 60,
+    min: '2026-03-15T09:00' as ISODateTimeString,
+    max: '2026-03-15T17:00' as ISODateTimeString,
+    description: 'Hourly slots, trimmed to 9 AM - 5 PM',
+  },
+};
+
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
@@ -217,6 +334,25 @@ export const Disabled: Story = {
   args: {
     label: 'Locked time',
     isDisabled: true,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the field to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the field stays focusable (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled DateTimeInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      undefined,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
   },
 };
 
@@ -269,6 +405,7 @@ export const TwoMonthCalendar: Story = {
   args: {
     label: 'Travel departure',
     numberOfMonths: 2,
+    nativePicker: 'never',
   },
 };
 
@@ -388,6 +525,48 @@ export const AllVariations: Story = {
           }}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the two segments precisely via `defineTheme`.
+ *
+ * Before the segment targets existed, the date and time wrappers were
+ * anonymous nodes with hashed atomic classes only, so a theme that restyles
+ * input geometry through the `text-input` / `date-input` / `time-input`
+ * targets could not reach them — DateTimeInput rendered visibly shorter than
+ * every other input under such a theme.
+ *
+ * `components['date-time-input-date-segment']` and its time twin scope
+ * overrides to one segment each, and both reflect `size` and `status` the same
+ * way the root does. Defaults are unchanged; this story only demonstrates the
+ * override channel.
+ */
+const segmentTheme = defineTheme({
+  name: 'date-time-input-segments-demo',
+  components: {
+    'date-time-input-date-segment': {
+      base: {borderColor: 'var(--color-accent)'},
+    },
+    'date-time-input-time-segment': {
+      base: {backgroundColor: 'var(--color-background-muted)'},
+    },
+  },
+});
+
+export const ThemedSegments: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>();
+    return (
+      <Theme theme={segmentTheme} mode="light">
+        <DateTimeInput
+          label="Themed segments"
+          description="Date segment gets an accent border; time segment a muted fill."
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
     );
   },
 };

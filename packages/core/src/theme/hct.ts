@@ -16,6 +16,8 @@
  * - Tone from L* (CIE Lightness, 0=black, 100=white)
  */
 
+import {parseHex, formatHex} from '../utils/color';
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -108,12 +110,8 @@ function labToXyz(L: number, a: number, b: number): [number, number, number] {
 // Tone <-> Y (CIE Luminance)
 // =============================================================================
 
-export function toneToY(tone: number): number {
+function toneToY(tone: number): number {
   return labFInv((tone + 16) / 116);
-}
-
-export function yToTone(y: number): number {
-  return 116 * labF(y) - 16;
 }
 
 // =============================================================================
@@ -121,21 +119,11 @@ export function yToTone(y: number): number {
 // =============================================================================
 
 function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '');
-  const full =
-    h.length === 3 ? h[0] + h[0] + h[1] + h[1] + h[2] + h[2] : h.slice(0, 6);
-  const n = parseInt(full, 16);
-  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map(c => c.toString(16).padStart(2, '0'))
-      .join('')
-      .toUpperCase()
-  );
+  const parsed = parseHex(hex);
+  if (parsed === null) {
+    return [0, 0, 0];
+  }
+  return [parsed.r, parsed.g, parsed.b];
 }
 
 // =============================================================================
@@ -181,7 +169,7 @@ export function hctToHex(hct: HCT): string {
   }
   if (chroma < 0.5) {
     const gray = toneToGray(tone);
-    return rgbToHex(gray, gray, gray);
+    return formatHex(gray, gray, gray);
   }
 
   let lo = 0;
@@ -241,7 +229,7 @@ function hctComponentToHex(
     return null;
   }
 
-  return rgbToHex(r, g, bVal);
+  return formatHex(r, g, bVal);
 }
 
 // =============================================================================

@@ -13,8 +13,8 @@ import {createRoot} from 'react-dom/client';
  * vite.config.report.ts.
  */
 import '@astryxdesign/core/reset.css';
-import 'xds-css';
-import 'xds-theme-css';
+import 'astryx-css';
+import 'astryx-theme-css';
 
 const Report = lazy(() =>
   import('./report/Report').then(m => ({default: m.Report})),

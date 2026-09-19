@@ -7,8 +7,8 @@
  * from package.json.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const OUT_DIR = path.resolve(__dirname, '..', 'src', 'generated');

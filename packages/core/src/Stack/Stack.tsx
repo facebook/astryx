@@ -9,13 +9,12 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /apps/storybook/stories/Stack.stories.tsx
- * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Stack/ (showcase blocks)
  */
 
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   stack,
   type StackCrossAlignment,
@@ -25,8 +24,20 @@ import {
   type SpacingStep,
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
+import {
+  paddingInlineStartStyles,
+  paddingInlineEndStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
+} from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+
+const overflowStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
 
 /**
  * Alignment values accepted by Stack.
@@ -39,7 +50,6 @@ import {themeProps} from '../utils/themeProps';
  *   `'start' | 'center' | 'end' | 'stretch'`
  */
 export type StackAlignment = StackMainAlignment | StackCrossAlignment;
-
 
 export interface StackProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -101,10 +111,79 @@ export interface StackProps extends BaseProps<HTMLElement> {
   height?: SizeValue;
 
   /**
+   * Maximum width of the stack container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  maxWidth?: SizeValue;
+
+  /**
+   * Minimum height of the stack container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  minHeight?: SizeValue;
+
+  /**
    * Spacing between items.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
   gap?: SpacingStep;
+
+  /**
+   * Inner padding on all sides, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   *
+   * Matches the `padding` prop on `Card`, `LayoutContent`, and `LayoutPanel`.
+   */
+  padding?: SpacingStep;
+
+  /**
+   * Inline (horizontal) padding, using the spacing scale.
+   * Overrides `padding` on the inline axis when both are set.
+   */
+  paddingInline?: SpacingStep;
+
+  /**
+   * Inline-start padding, using the spacing scale. Logical: the left edge in
+   * LTR, the right edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineStart?: SpacingStep;
+
+  /**
+   * Inline-end padding, using the spacing scale. Logical: the right edge in
+   * LTR, the left edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineEnd?: SpacingStep;
+
+  /**
+   * Block (vertical) padding, using the spacing scale.
+   * Overrides `padding` on the block axis when both are set.
+   */
+  paddingBlock?: SpacingStep;
+
+  /**
+   * Block-start (top) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockStart?: SpacingStep;
+
+  /**
+   * Block-end (bottom) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockEnd?: SpacingStep;
+
+  /**
+   * Enables scrollable overflow (`overflow: auto`) for the stack.
+   *
+   * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
+   * When the stack is itself a flex child that should scroll, pair it with
+   * a parent `StackItem size="fill" isScrollable` (StackItem applies the
+   * `min-height: 0` reset that flex scroll regions require).
+   * @default false
+   */
+  isScrollable?: boolean;
 
   /**
    * Whether items should wrap.
@@ -120,28 +199,6 @@ export interface StackProps extends BaseProps<HTMLElement> {
    * @default 'div'
    */
   as?: ElementType;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Content to render inside the stack.
@@ -180,8 +237,18 @@ export function Stack({
   justify,
   align,
   gap,
+  padding,
+  paddingInline,
+  paddingInlineStart,
+  paddingInlineEnd,
+  paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
+  isScrollable,
   width,
   height,
+  maxWidth,
+  minHeight,
   wrap,
   as: element = 'div',
   xstyle,
@@ -207,6 +274,15 @@ export function Stack({
       ? (resolvedVAlign as StackCrossAlignment | undefined)
       : (resolvedHAlign as StackCrossAlignment | undefined);
 
+  // Resolve padding to per-edge values. Most specific wins, per edge:
+  // edge prop -> axis prop -> `padding`.
+  const resolvedPaddingInlineStart =
+    paddingInlineStart ?? paddingInline ?? padding;
+  const resolvedPaddingInlineEnd = paddingInlineEnd ?? paddingInline ?? padding;
+  const resolvedPaddingBlockStart =
+    paddingBlockStart ?? paddingBlock ?? padding;
+  const resolvedPaddingBlockEnd = paddingBlockEnd ?? paddingBlock ?? padding;
+
   const stylexProps = stylex.props(
     ...stack({
       direction,
@@ -215,6 +291,15 @@ export function Stack({
       gap,
       wrap,
     }),
+    resolvedPaddingInlineStart != null &&
+      paddingInlineStartStyles[resolvedPaddingInlineStart],
+    resolvedPaddingInlineEnd != null &&
+      paddingInlineEndStyles[resolvedPaddingInlineEnd],
+    resolvedPaddingBlockStart != null &&
+      paddingBlockStartStyles[resolvedPaddingBlockStart],
+    resolvedPaddingBlockEnd != null &&
+      paddingBlockEndStyles[resolvedPaddingBlockEnd],
+    isScrollable && overflowStyles.scrollable,
     xstyle,
   );
 
@@ -225,6 +310,12 @@ export function Stack({
     }),
     ...(height != null && {
       height: typeof height === 'number' ? `${height}px` : height,
+    }),
+    ...(maxWidth != null && {
+      maxWidth: typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth,
+    }),
+    ...(minHeight != null && {
+      minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight,
     }),
   };
 

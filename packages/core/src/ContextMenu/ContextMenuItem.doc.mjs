@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ContextMenuItem',
@@ -35,6 +35,12 @@ export const docs = {
       description: 'StyleX styles for layout customization.',
     },
   ],
+  playground: {
+    defaults: {
+      label: 'Edit',
+      description: 'Modify this item',
+    },
+  },
 };
 
 export const docsZh = {

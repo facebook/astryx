@@ -4,7 +4,7 @@
 
 /**
  * @file Toolbar.tsx
- * @input Uses Section, SizeContext, useListFocus, StyleX, spacingVars, sizeVars
+ * @input Uses Section, SizeContext, useListFocus, useKeyboardHint, StyleX, spacingVars, sizeVars
  * @output Exports Toolbar component and ToolbarProps
  * @position Core implementation; consumed by index.ts
  *
@@ -13,10 +13,10 @@
  * - /packages/core/src/Toolbar/Toolbar.test.tsx
  * - /packages/core/src/Toolbar/index.ts
  * - /apps/storybook/stories/Toolbar.stories.tsx
- * - /packages/cli/templates/blocks/components/Toolbar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Toolbar/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useCallback, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SectionVariant} from '../Section/Section';
 import type {SpacingStep} from '../utils/types';
@@ -26,6 +26,7 @@ import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {Section} from '../Section/Section';
 import {useListFocus} from '../hooks/useListFocus';
+import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
@@ -227,18 +228,69 @@ export function Toolbar({
   className,
   style,
   ref,
+  onKeyDown: onKeyDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  role: _role,
+  'aria-label': _ariaLabel,
+  'aria-orientation': _ariaOrientation,
   ...props
 }: ToolbarProps) {
   const hasCenterContent = centerContent != null;
   const hasStartContent = startContent != null;
   const hasEndContent = endContent != null;
+  const hasBottomDivider = dividers?.includes('bottom') ?? false;
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
 
-  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
-    itemSelector: 'button, input, [tabindex="0"]',
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+    itemSelector: 'button, input, [tabindex]',
     orientation,
+    hasRovingTabIndex: true,
+    hasCaretGuard: true,
   });
+
+  const {
+    hintElement,
+    onKeyDown: onHintKeyDown,
+    onFocus: onHintFocus,
+    onBlur: onHintBlur,
+  } = useKeyboardHint({orientation});
+
+  const handleToolbarKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintKeyDown(e);
+      handleKeyDown(e);
+    },
+    [onKeyDownProp, onHintKeyDown, handleKeyDown],
+  );
+
+  const handleToolbarFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onFocusProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintFocus(e);
+      handleFocus(e);
+    },
+    [onFocusProp, onHintFocus, handleFocus],
+  );
+
+  const handleToolbarBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onBlurProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintBlur(e);
+    },
+    [onBlurProp, onHintBlur],
+  );
 
   return (
     <SizeProvider value={size}>
@@ -255,7 +307,9 @@ export function Toolbar({
           role="toolbar"
           aria-label={label}
           aria-orientation={orientation}
-          onKeyDown={handleKeyDown}
+          onKeyDown={handleToolbarKeyDown}
+          onFocus={handleToolbarFocus}
+          onBlur={handleToolbarBlur}
           {...mergeProps(
             themeProps('toolbar', {size}),
             stylex.props(
@@ -263,9 +317,15 @@ export function Toolbar({
               orientation === 'vertical' && styles.vertical,
               sizeStyles.base,
               dynamicStyles.gap(gapVar),
-              dynamicStyles.tabIndicatorBottom(
-                `calc(-1 * (${blockPaddingVarForSize[size]}${dividers?.includes('bottom') ? ' + 1px' : ''}))`,
-              ),
+              // Only drop the tab indicator through the toolbar's block padding
+              // onto the rail when a bottom divider is actually present.
+              // Without a divider, leave `--_tab-indicator-bottom` unset so a
+              // nested TabList's indicator keeps its own default (hugging the
+              // tab) instead of floating down into the toolbar's padding.
+              hasBottomDivider &&
+                dynamicStyles.tabIndicatorBottom(
+                  `calc(-1 * (${blockPaddingVarForSize[size]} + 1px))`,
+                ),
             ),
           )}
           {...props}>
@@ -320,6 +380,7 @@ export function Toolbar({
               )}
             </>
           )}
+          {hintElement}
         </div>
       </Section>
     </SizeProvider>

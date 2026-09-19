@@ -34,6 +34,10 @@ export const RATIO_OPTIONS = [
   {value: 1.618, label: '1.618 — Golden Ratio'},
 ];
 
+// Every preset keeps `radius === spacing` so nested corners stay concentric by
+// default: the radius scale steps by `base` per rung (inner ×1, element ×2,
+// container ×3) and one spacing step sits between rungs, so
+// `outer-radius − spacing-1 = inner-radius` only holds when the bases match. #958
 export const UNIFIED_PRESETS = {
   compact: {
     typeBase: 12,
@@ -60,7 +64,7 @@ export const UNIFIED_PRESETS = {
     typeBase: 18,
     typeRatio: 1.414,
     spacing: 8,
-    radius: 12,
+    radius: 8,
     sizeMd: 48,
   },
 } as const;
@@ -267,7 +271,7 @@ export const COMPONENT_VARS: Record<
 };
 
 // Maps component CSS var names to defineTheme() components entries.
-// Most use the derivedVarRegistry keys (which match XDS component selector keys).
+// Most use the derivedVarRegistry keys (which match Astryx component selector keys).
 // Some components set internal --_ vars via StyleX on a child element,
 // so we target the child class directly with the internal var name.
 export const COMPONENT_VAR_TO_OVERRIDE: Record<
@@ -279,7 +283,7 @@ export const COMPONENT_VAR_TO_OVERRIDE: Record<
   '--card-padding': [{component: 'card', cssProperty: 'padding'}],
   '--input-radius': [
     {component: 'text-input', cssProperty: '--_field-radius'},
-    {component: 'textarea', cssProperty: '--_field-radius'},
+    {component: 'text-area', cssProperty: '--_field-radius'},
     {component: 'selector', cssProperty: '--_field-radius'},
   ],
   '--banner-radius': [{component: 'banner', cssProperty: 'borderRadius'}],
@@ -297,7 +301,9 @@ export const COMPONENT_VAR_TO_OVERRIDE: Record<
   '--dropdown-padding': [{component: 'dropdown-menu', cssProperty: 'padding'}],
   '--section-padding': [{component: 'section', cssProperty: 'padding'}],
   '--popover-radius': [{component: 'popover', cssProperty: 'borderRadius'}],
-  '--hovercard-radius': [{component: 'hovercard', cssProperty: 'borderRadius'}],
+  '--hovercard-radius': [
+    {component: 'hover-card', cssProperty: 'borderRadius'},
+  ],
   '--composer-radius': [
     {component: 'chat-composer', cssProperty: '--_chat-composer-radius'},
   ],
@@ -322,9 +328,9 @@ export const ALL_COMPONENT_NAMES = [
   'chat-composer',
   'chat-message',
   'chat-message-bubble',
-  'checkbox',
+  'checkbox-indicator',
   'clickable-card',
-  'codeblock',
+  'code-block',
   'collapsible',
   'dialog',
   'divider',
@@ -332,14 +338,14 @@ export const ALL_COMPONENT_NAMES = [
   'empty-state',
   'field',
   'heading',
-  'hovercard',
+  'hover-card',
   'icon',
   'link',
   'list',
   'markdown',
   'popover',
-  'progressbar',
-  'radio',
+  'progress-bar',
+  'radio-indicator',
   'section',
   'segmented-control',
   'selector',
@@ -353,7 +359,7 @@ export const ALL_COMPONENT_NAMES = [
   'table',
   'text',
   'text-input',
-  'textarea',
+  'text-area',
   'toast',
   'token',
   'tooltip',

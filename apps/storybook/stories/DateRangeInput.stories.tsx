@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {DateRangeInput} from '@astryxdesign/core/DateRangeInput';
 import type {DateRange} from '@astryxdesign/core/DateRangeInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 function daysAgo(n: number): ISODateString {
   const d = new Date();
@@ -55,6 +56,11 @@ const meta: Meta<typeof DateRangeInput> = {
     isOptional: {control: 'boolean', description: 'Show optional indicator'},
     isRequired: {control: 'boolean', description: 'Mark as required'},
     isDisabled: {control: 'boolean', description: 'Disable the picker'},
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateRangeInput in Tooltip.',
+    },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -119,6 +125,24 @@ export const WithPresetsAndValue: Story = {
   },
 };
 
+export const WithDisabledPresets: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Constrained analytics period',
+    presets: defaultPresets,
+    maxRangeSpan: 1,
+  },
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<DateRange | null>(null);
@@ -140,6 +164,31 @@ export const WithMinMax: Story = {
     min: '2026-03-01' as ISODateString,
     max: '2026-06-30' as ISODateString,
     description: 'Available: Mar 1 – Jun 30, 2026',
+  },
+};
+
+export const MaxRangeSpan: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Reporting period',
+    maxRangeSpan: 7,
+    description: 'Pick a start date, then any end within a 7-day window',
+  },
+};
+
+export const RangeSpanBounds: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Stay',
+    minRangeSpan: 2,
+    maxRangeSpan: 30,
+    description: 'At least 2 and at most 30 days',
   },
 };
 
@@ -176,6 +225,23 @@ export const Disabled: Story = {
   args: {
     label: 'Locked range',
     isDisabled: true,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the field to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the field stays focusable (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled DateRangeInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Reporting period',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
   },
 };
 
@@ -308,6 +374,84 @@ export const AllVariations: Story = {
           status={{type: 'error', message: 'Date range is required'}}
         />
       </div>
+    );
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<DateRange | null>(null);
+    const [b, setB] = useState<DateRange | null>(null);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <DateRangeInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Please select a date range'}}
+        />
+        <DateRangeInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Please select a date range'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Theme the clear and calendar-toggle glyphs precisely via `defineTheme`.
+ * `components['input-clear-icon'].base` and
+ * `components['date-range-input-toggle-icon'].base` scope overrides to the
+ * icons themselves (via the `astryx-date-range-input-*-icon` targets), so a
+ * theme can recolor, hover-morph, and resize them — without a fragile
+ * descendant selector or raw CSS. Same-element rules in `@layer astryx-theme`
+ * win over each icon's own base color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'date-range-input-icon-demo',
+  components: {
+    'input-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'date-range-input-toggle-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange | null>({
+      start: daysAgo(7),
+      end: today(),
+    });
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <div style={{width: 320}}>
+          <DateRangeInput
+            label="Icons themed (12px clear w/ hover, 14px accent toggle)"
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        </div>
+      </Theme>
     );
   },
 };

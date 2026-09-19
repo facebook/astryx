@@ -6,9 +6,10 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
+import type {TextColor} from '../theme/types';
 
 describe('Text', () => {
   describe('rendering', () => {
@@ -20,6 +21,28 @@ describe('Text', () => {
     it('renders children correctly', () => {
       render(<Text type="body">Hello World</Text>);
       expect(screen.getByText('Hello World')).toBeInTheDocument();
+    });
+
+    it('keeps a forwarded ref attached across rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Text ref={ref} type="body">
+          Before
+        </Text>,
+      );
+
+      const element = screen.getByText('Before');
+      expect(ref).toHaveBeenLastCalledWith(element);
+      ref.mockClear();
+
+      rerender(
+        <Text ref={ref} type="body">
+          After
+        </Text>,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByText('After')).toBe(element);
     });
 
     it('renders as span by default', () => {
@@ -114,6 +137,16 @@ describe('Text', () => {
       expect(screen.getByText('Bold text')).toBeInTheDocument();
     });
 
+    it('reflects explicit size overrides for styling and theming', () => {
+      render(
+        <Text type="code" size="2xs">
+          Tiny code
+        </Text>,
+      );
+      const element = screen.getByText('Tiny code');
+      expect(element).toHaveAttribute('data-size', '2xs');
+    });
+
     it('accepts display prop', () => {
       render(
         <Text type="body" display="block">
@@ -191,11 +224,11 @@ describe('Text', () => {
     });
   });
 
-  it('renders astryx-* class names for theme targeting', () => {
+  it('renders the stable target and type data attribute for theme targeting', () => {
     render(<Text type="body">Themed Text</Text>);
     const element = screen.getByText('Themed Text');
     expect(element.className).toContain('astryx-text');
-    expect(element.className).toContain('body');
+    expect(element).toHaveAttribute('data-type', 'body');
   });
 });
 
@@ -205,12 +238,15 @@ describe('Text custom types', () => {
     const el = screen.getByText('Custom');
     expect(el).toBeInTheDocument();
     expect(el.className).toContain('astryx-text');
-    expect(el.className).toContain('hero');
+    expect(el).toHaveAttribute('data-type', 'hero');
   });
 
   it('applies primary color to custom types by default', () => {
     render(<Text type={'caption' as TextType}>Caption</Text>);
-    expect(screen.getByText('Caption').className).toContain('primary');
+    expect(screen.getByText('Caption')).toHaveAttribute(
+      'data-color',
+      'primary',
+    );
   });
 
   it('allows color override on custom types', () => {
@@ -219,6 +255,94 @@ describe('Text custom types', () => {
         Muted
       </Text>,
     );
-    expect(screen.getByText('Muted').className).toContain('secondary');
+    expect(screen.getByText('Muted')).toHaveAttribute(
+      'data-color',
+      'secondary',
+    );
+  });
+});
+
+describe('Text custom colors', () => {
+  it('reflects a custom color for theme CSS to target', () => {
+    // A theme adds a custom color through TextColorMap augmentation and
+    // defineTheme. The rendered element keeps the stable Text target and
+    // reflects the custom value as data-color so the generated theme selector
+    // can reach it without a collision-prone bare class.
+    render(<Text color={'brand' as TextColor}>Branded</Text>);
+    const el = screen.getByText('Branded');
+    expect(el.className).toContain('astryx-text');
+    expect(el).toHaveAttribute('data-color', 'brand');
+  });
+
+  it('does not crash on a custom color (falls back to the primary StyleX baseline)', () => {
+    // colorStyles has no entry for a custom color; the component must resolve a
+    // built-in baseline instead of indexing undefined. Built-in `primary` is
+    // the baseline, so both share its StyleX color class.
+    render(
+      <>
+        <Text color={'brand' as TextColor}>Custom</Text>
+        <Text color="primary">Builtin</Text>
+      </>,
+    );
+    const custom = screen.getByText('Custom');
+    const builtin = screen.getByText('Builtin');
+    // Neither throws, and the custom color reuses primary's baseline StyleX
+    // class (the real color comes from theme CSS via `data-color="brand"`).
+    const primaryAtomic = builtin.className
+      .split(/\s+/)
+      .filter(c => c.startsWith('x'));
+    expect(primaryAtomic.length).toBeGreaterThan(0);
+    for (const cls of primaryAtomic) {
+      expect(custom.className).toContain(cls);
+    }
+  });
+
+  it('still applies built-in colors directly', () => {
+    render(<Text color="accent">Accent</Text>);
+    expect(screen.getByText('Accent')).toHaveAttribute('data-color', 'accent');
+  });
+});
+
+// A truncated Text rendered its own Tooltip AND set `title` with the same
+// string, so the browser drew a second, unstyled tooltip on top of ours.
+describe('truncated text shows one tooltip, not two', () => {
+  function withOverflow() {
+    const proto = window.HTMLElement.prototype;
+    const original = {
+      scrollWidth: Object.getOwnPropertyDescriptor(proto, 'scrollWidth'),
+      offsetWidth: Object.getOwnPropertyDescriptor(proto, 'offsetWidth'),
+    };
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      get: () => 400,
+    });
+    Object.defineProperty(proto, 'offsetWidth', {
+      configurable: true,
+      get: () => 100,
+    });
+    return () => {
+      if (original.scrollWidth) {
+        Object.defineProperty(proto, 'scrollWidth', original.scrollWidth);
+      }
+      if (original.offsetWidth) {
+        Object.defineProperty(proto, 'offsetWidth', original.offsetWidth);
+      }
+    };
+  }
+
+  it('leaves the native title to the tooltip it already renders', () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <Text type="body" maxLines={1}>
+          A label far wider than the space it has been given
+        </Text>,
+      );
+      expect(
+        screen.getByText('A label far wider than the space it has been given'),
+      ).not.toHaveAttribute('title');
+    } finally {
+      restore();
+    }
   });
 });

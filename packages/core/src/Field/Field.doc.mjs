@@ -1,33 +1,53 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Field',
   displayName: 'Field',
   group: 'Field',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   playground: {
     defaults: {
       label: 'Email address',
-      children: {__element: 'TextInput', props: {label: 'Email', placeholder: 'you@example.com'}},
+      inputID: 'email-input',
+      description: 'Use Field for controls that do not already provide field under the hood.',
+      descriptionID: 'email-help',
+      children: {
+        __element: 'input',
+        props: {
+          id: 'email-input',
+          'aria-describedby': 'email-help',
+          placeholder: 'you@example.com',
+          type: 'email',
+        },
+      },
     },
   },
   theming: {
     targets: [
-      {className: 'astryx-field'},
+      {className: 'astryx-field', visualProps: ['layout']},
       {className: 'astryx-field-label'},
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
+      {
+        className: 'astryx-input-status-icon',
+        visualProps: ['size', 'status'],
+      },
+      {className: 'astryx-input-clear-button'},
+      {className: 'astryx-input-clear-icon'},
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
+      {name: '--_field-status-overlap', description: 'Amount an attached FieldStatus extends behind the lower half of the control. Set from the rendered control size.', default: 'calc(var(--size-element-md) / 2)', private: true},
+      {name: '--_input-clear-hit-inset', description: 'Outset of the clear (\u2715) button\'s invisible hit area, applied to a ::after overlay. 0 on a fine pointer; negative on a coarse one, which grows the 20px button to the 24px touch target without changing what is drawn.', default: '0px', private: true},
+      {name: '--_input-clear-hit-content', description: 'Whether the clear (\u2715) button\'s invisible hit overlay exists. `none` on a fine pointer, so no ::after is generated and hover still reaches the glyph; `""` on a coarse one, where the overlay provides the 24px touch target.', default: 'none', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
-  description: 'Form field wrapper that provides label, description, and optional/required indicators.',
+  description: 'Low-level form field wrapper for custom controls that need a label, description, and optional/required indicators.',
   props: [
     {
       name: 'label',
@@ -40,6 +60,17 @@ export const docs = {
       type: 'string',
       description: 'ID for the input element (used for the label htmlFor attribute).',
       required: true,
+    },
+    {
+      name: 'labelID',
+      type: 'string',
+      description: 'ID applied to the label element itself for group accessibility.',
+    },
+    {
+      name: 'isGroupLabel',
+      type: 'boolean',
+      description: 'Renders the label as a span for control groups (radiogroup, checkbox list).',
+      default: 'false',
     },
     {
       name: 'children',
@@ -84,7 +115,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'labelTooltip',
@@ -93,8 +124,8 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'FieldStatus',
-      description: 'Status indicator with type and optional message. When message is set, displays a colored status box.',
+      type: "{type: 'warning' | 'error' | 'success', message?: string, messageID?: string}",
+      description: 'Status indicator with type and optional message. When message is set, displays a colored status box. messageID is for wiring aria-describedby on the input.',
     },
     {
       name: 'statusVariant',
@@ -133,54 +164,84 @@ export const docs = {
     {name: 'FieldStatus'},
   ],
   usage: {
-    description: 'Field wraps any input control with a label, description, and validation status. Use it to build accessible forms with consistent labeling, optional/required indicators, and inline error, warning, or success feedback.',
+    description: 'Field is a low-level wrapper for custom, native, or third-party controls that do not already provide field label, description, and status UI. Use it when you need the Field shell around a control you own; use styled Astryx inputs like TextInput, Typeahead, and Select directly when they already expose label, description, and validation props.',
     bestPractices: [
+      { guidance: true, description: 'Wrap custom controls, native inputs, or third-party widgets that need labeling, helper text, optional/required indicators, or validation status.' },
       { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
-      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
-      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects, like format hints or constraints.' },
+      { guidance: true, description: 'Use inputID and descriptionID to connect the label and description to the inner control with htmlFor and aria-describedby.' },
+      { guidance: false, description: 'Nest Field around styled inputs such as TextInput, Typeahead, Select, DateInput, or TextArea; those components already render their own Field shell.' },
+      { guidance: false, description: 'Use the attached status variant on non-bordered controls such as sliders, switches, or checkboxes; use detached so the message does not overlap the control.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
-      { guidance: false, description: 'Use the detached status variant on bordered inputs; reserve it for checkboxes, switches, and sliders.' },
       { guidance: false, description: 'Hide the label without providing an alternative way for the user to understand the field purpose.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field. Always rendered for accessibility, optionally hidden visually.'},
       {name: 'Description', required: false, description: 'Helper text between the label and input explaining what to enter.'},
-      {name: 'Input slot', required: true, description: 'The input control wrapped by the field: TextInput, Select, DateInput, etc.'},
+      {name: 'Control slot', required: true, description: 'A custom, native, or third-party control that does not already render a field shell.'},
       {name: 'Status message', required: false, description: 'Inline validation feedback showing error, warning, or success with a message.'},
       {name: 'Optional/Required indicator', required: false, description: 'Badge next to the label showing whether the field is optional or required.'},
       {name: 'Label tooltip', required: false, description: 'Info icon at the end of the label with a tooltip explaining the field.'},
     ],
   },
+  examples: [
+    {
+      label: 'Wrap a custom control',
+      code: `
+function CustomSliderField() {
+  return (
+    <Field
+      label="Confidence"
+      inputID="confidence-slider"
+      description="Choose how strict the review should be."
+      descriptionID="confidence-help"
+      status={{type: 'success', message: 'Recommended default'}}
+      statusVariant="detached">
+      <input
+        id="confidence-slider"
+        type="range"
+        min={0}
+        max={100}
+        defaultValue={60}
+        aria-describedby="confidence-help"
+      />
+    </Field>
+  );
+}
+`,
+    },
+  ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'Field wraps any input control with a label, description, and validation status. Use it to build accessible forms with consistent labeling, optional/required indicators, and inline error, warning, or success feedback.',
+    description: 'Field is a low-level wrapper for custom, native, or third-party controls that do not already provide field label, description, and status UI. Use it when you need the Field shell around a control you own; use styled Astryx inputs like TextInput, Typeahead, and Select directly when they already expose label, description, and validation props.',
     bestPractices: [
+      { guidance: true, description: 'Wrap custom controls, native inputs, or third-party widgets that need labeling, helper text, optional/required indicators, or validation status.' },
       { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
-      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
-      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects, like format hints or constraints.' },
+      { guidance: true, description: 'Use inputID and descriptionID to connect the label and description to the inner control with htmlFor and aria-describedby.' },
+      { guidance: false, description: 'Nest Field around styled inputs such as TextInput, Typeahead, Select, DateInput, or TextArea; those components already render their own Field shell.' },
+      { guidance: false, description: 'Use the attached status variant on non-bordered controls such as sliders, switches, or checkboxes; use detached so the message does not overlap the control.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
-      { guidance: false, description: 'Use the detached status variant on bordered inputs; reserve it for checkboxes, switches, and sliders.' },
       { guidance: false, description: 'Hide the label without providing an alternative way for the user to understand the field purpose.' },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Form field wrapper providing label, description + optional/required indicators.',
+    'Low-level field shell for custom controls needing label/description/status.',
   usage: {
-    description: 'Field wraps input controls with label, description, and validation. Use for accessible forms with consistent labeling and inline feedback.',
+    description: 'Field wraps custom/native/third-party controls lacking field UI. Use TextInput, Typeahead, Select, DateInput, or TextArea directly when they already expose label/description/status props.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
-      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
-      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects: format hints or constraints.' },
+      { guidance: true, description: 'Wrap custom controls/widgets that need labeling, helper text, optional/required indicators, or validation status.' },
+      { guidance: true, description: 'Always provide a label; visually hide it only when context is clear.' },
+      { guidance: true, description: 'Wire inputID/descriptionID to htmlFor and aria-describedby on the inner control.' },
+      { guidance: false, description: 'Nest Field around styled inputs; it double-renders labels and status UI.' },
+      { guidance: false, description: 'Use attached status on sliders/switches/checkboxes; use detached so messages do not overlap.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
-      { guidance: false, description: 'Use the detached status variant on bordered inputs; reserve it for checkboxes, switches, and sliders.' },
-      { guidance: false, description: 'Hide the label without providing an alternative way for user to understand the field purpose.' },
+      { guidance: false, description: 'Hide the label without another way to understand field purpose.' },
     ],
   },
 };

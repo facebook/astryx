@@ -13,14 +13,15 @@ import {
   type ComponentType,
 } from 'react';
 import * as Core from '@astryxdesign/core';
+import {externalComponentPreviews} from '../../generated/componentPreviewRegistry';
 import type {ElementDescriptor} from '../../generated/componentRegistry';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyComponent = ComponentType<any>;
 
 export function getComponent(name: string): AnyComponent | null {
-  // Resolve by bare name first (canonical post un-prefix migration
-  // P2380608025), falling back to the legacy XDS-prefixed export.
+  // Resolve by bare name first (canonical post un-prefix
+  // migration), falling back to the legacy XDS-prefixed export.
   // Reads are wrapped because a strict module mock throws on undefined keys
   // rather than returning undefined.
   const readExport = (key: string): unknown => {
@@ -30,8 +31,14 @@ export function getComponent(name: string): AnyComponent | null {
       return undefined;
     }
   };
-  const value = readExport(name) ?? readExport(`XDS${name}`);
-  return typeof value === 'function' ? (value as AnyComponent) : null;
+  const value =
+    readExport(name) ??
+    readExport(`XDS${name}`) ??
+    externalComponentPreviews[name];
+  return typeof value === 'function' ||
+    (value != null && typeof value === 'object')
+    ? (value as AnyComponent)
+    : null;
 }
 
 export function isElementDescriptor(v: unknown): v is ElementDescriptor {

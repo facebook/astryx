@@ -105,7 +105,7 @@ function main() {
     const iterManifest = readJson<{config?: {target?: string}}>(manifestPath);
     const target = iterManifest.config?.target ?? 'astryx';
 
-    // Only XDS targets need import fixing
+    // Only Astryx targets need import fixing
     if (target !== 'astryx') {
       console.log(`  ⏭ ${iterationId} is ${target}, skipping`);
       continue;

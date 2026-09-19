@@ -4,9 +4,23 @@ astryx publishes its 12 public `@astryxdesign/*` packages to the public npm regi
 
 ### How it fits together
 
-- **Versioning is local and unchanged.** `pnpm run version-packages` (= `changeset version && format-changelogs`) only edits files and changelogs on disk. It needs no npm auth and is untouched by trusted publishing.
+- **Versioning is local and unchanged.** `pnpm run version-packages` (= `changeset version && promote-codemod-next && sync-internal-deps && format-changelogs`) only edits files, changelogs, and release-staged codemods on disk. It needs no npm auth and is untouched by trusted publishing.
 - **Publishing is pnpm-native and tokenless.** CI runs `pnpm publish ... --provenance --access public --no-git-checks` (not `changeset publish`, whose `npm whoami` precheck breaks under tokenless OIDC). pnpm natively fetches the OIDC token and attaches provenance.
 - **Trust is per-package.** npm allows exactly **one** trust configuration per package, registered against the **calling** workflow. Each of the 12 packages must be configured individually.
+
+### Version-package codemod promotion
+
+Core codemods for unreleased breaking changes are staged in
+`packages/cli/assets/codemods/transforms/next/`, not in a guessed future version
+folder. During the Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` immediately after `changeset version`, when
+`packages/core/package.json` contains the actual version being released.
+
+The promotion step copies every entry from `next` except `README.md` into
+`packages/cli/assets/codemods/transforms/v<released-version>/`, removes the
+promoted files from `next`, and registers the new version folder in
+`packages/cli/assets/codemods/registry.mjs`. Review those generated files in the
+Version Packages PR the same way you review changelog output.
 
 ### The publish workflow (`.github/workflows/deploy.yml`)
 
@@ -36,7 +50,7 @@ The publish step uses pnpm-native publishing and carries **no** `NODE_AUTH_TOKEN
 
 ### Version requirements
 
-- **pnpm:** the repo pins `pnpm@10.34.1` (the Lexical-proven known-good 10.x floor). pnpm 10.16+ supports OIDC + provenance, and the 10.x line shells out to `npm publish` so it never hit the pnpm 11.0–11.1.2 OIDC 404 regression. If you move to the 11.x line you must be on **pnpm ≥ 11.1.3**.
+- **pnpm:** the repo pins `pnpm@11.10.0`. The 11.x line must be **≥ 11.1.3**, which is where the pnpm 11.0–11.1.2 OIDC 404 regression was fixed (11.10.0 satisfies this). pnpm 10.16+ / 11.1.3+ both support OIDC + provenance. (Previously pinned to `pnpm@10.34.1`, the Lexical-proven known-good 10.x floor whose line shells out to `npm publish`; see the upgrade PR for the move to 11.x.)
 - **npm (in the runner):** Node 22.14+/24.x runners bundle npm ≥ 11.5.1, which is what the 10.x publish path needs. No action required in CI.
 - **npm (on the maintainer's machine, for setup only):** the setup script requires **npm ≥ 11.10** for `npm trust github`. Run `npm i -g npm@latest` before setup.
 

@@ -5,7 +5,7 @@
 /**
  * @file usePopover.tsx
  * @input Uses useLayer, useFocusTrap, React hooks
- * @output Exports usePopover hook for popover dialogs with focus trapping
+ * @output Exports the public usePopover hook with derived focus and guarded opening.
  * @position Higher-level layer utility; used by DatePicker, Combobox, etc.
  *
  * Combines popover layer behavior with focus trap for dialog-like popovers.
@@ -19,6 +19,7 @@ import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer, type ContextRenderProps} from '../Layer/useLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,6 +28,37 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
+import {rtlStyles} from '../utils';
+import {useTranslator} from '../i18n';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {mergeProps} from '../utils/mergeProps';
+import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
+
+const FALLBACK_CLOSE_SELECTOR = '[data-astryx-popover-fallback-close]';
+
+function attemptFocus(element: HTMLElement): boolean {
+  try {
+    element.focus();
+  } catch {
+    // Ignore non-focusable elements; the caller will try the next target.
+  }
+  return document.activeElement === element;
+}
+
+function focusFirstContentControl(container: HTMLElement): boolean {
+  const focusable = Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(element => element.closest(FALLBACK_CLOSE_SELECTOR) == null);
+  for (const element of focusable) {
+    if (attemptFocus(element)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -34,19 +66,22 @@ const styles = stylex.create({
   // Consumers that need a raw positioned layer should use useLayer instead.
   surface: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderRadius: radiusVars['--radius-container'],
+    '--_popover-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_popover-radius)',
     boxShadow: shadowVars['--shadow-low'],
   },
-  // Focus trap container
+  // Focus trap container. Shared :focus-visible styling keeps semantic focus
+  // placement independent of pointer/keyboard indication.
   contentWrapper: {
     position: 'relative',
   },
-  // Hidden close button wrapper - sr-only until focused, then positioned below popover
+  // Hidden close button wrapper - sr-only until focused, then positioned below
+  // popover. Inline-axis centering (+ the translateY(100%) that drops it below
+  // the surface) comes from rtlStyles.centerInline('100%') at the call site —
+  // it centers correctly in both LTR and RTL.
   closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
-    left: '50%',
-    transform: 'translate(-50%, 100%)',
     zIndex: 1,
     // sr-only by default
     width: {
@@ -104,10 +139,33 @@ export interface UsePopoverOptions {
   xstyle?: StyleXStyles;
 
   /**
+   * Additional class name applied to the painted popover surface.
+   */
+  className?: string;
+
+  /**
+   * Inline styles applied to the painted popover surface.
+   */
+  style?: React.CSSProperties;
+
+  /**
    * Whether clicking outside should dismiss the popover.
    * @default true
    */
   hasLightDismiss?: boolean;
+
+  /**
+   * Whether pressing Escape dismisses the popover.
+   *
+   * Takes effect together with `hasLightDismiss: false`: with light dismiss
+   * on, the native popover uses `popover="auto"`, whose browser-level light
+   * dismiss also closes on Escape, so Escape handling stays registered to
+   * keep topmost-only dismissal intact. Set both to `false` for
+   * explicit-dismiss-only surfaces like onboarding coachmarks.
+   *
+   * @default true
+   */
+  hasEscapeDismiss?: boolean;
 
   /**
    * Whether to automatically focus the first focusable element when opened.
@@ -130,9 +188,34 @@ export interface UsePopoverOptions {
 
   /**
    * Accessible label for the dialog.
-   * Required for screen readers to announce the dialog purpose.
+   * Required for screen readers to announce the dialog purpose
+   * (only applies when `role` is `'dialog'`).
    */
   dialogLabel?: string;
+
+  /**
+   * ARIA role stamped on the popover content wrapper.
+   *
+   * - `'dialog'` (default): the wrapper is a `role="dialog"` and, when
+   *   `isModal` is true, carries `aria-modal`. Use for genuine dialog content.
+   * - `'none'`: the wrapper carries no role or `aria-modal`, so the popup's own
+   *   content role (e.g. a child `role="listbox"` or `role="menu"`) is the
+   *   exposed semantics. Use for comboboxes, listboxes, and menus — their
+   *   trigger keeps DOM focus, so announcing an unnamed modal dialog around
+   *   them is incorrect.
+   *
+   * @default 'dialog'
+   */
+  role?: 'dialog' | 'none';
+
+  /**
+   * Whether the dialog is modal (`aria-modal`). Only applies when `role` is
+   * `'dialog'`. Set to `false` for non-modal dialogs that do not inert the rest
+   * of the page.
+   *
+   * @default true
+   */
+  isModal?: boolean;
 
   /**
    * Whether to apply the default popover surface (background, border-radius,
@@ -145,6 +228,23 @@ export interface UsePopoverOptions {
    * @default true
    */
   hasSurface?: boolean;
+
+  /**
+   * Theme-target name stamped on the popup SURFACE — the element that paints
+   * the background, radius and elevation — without the `astryx-` prefix
+   * (e.g. `'complex-selector-popup'`).
+   *
+   * The surface is created here, not by the calling component, so a component
+   * that wants its popup themeable cannot reach it on its own: a target it
+   * renders itself lands on its content INSIDE the surface, where a background
+   * or radius rule paints the wrong box. Name the surface through this option
+   * and document the class in the component's `theming.targets`.
+   *
+   * The canonical `astryx-popover` target and deprecated
+   * `astryx-popover-surface` compatibility alias are always present alongside
+   * any component-owned refinement target.
+   */
+  surfaceTarget?: string;
 }
 
 /**
@@ -215,7 +315,7 @@ export interface UsePopoverReturn {
    * ARIA attributes to spread on the trigger element
    */
   triggerProps: {
-    'aria-haspopup': 'dialog';
+    'aria-haspopup': 'dialog' | 'true';
     'aria-expanded': boolean;
     'aria-controls': string;
   };
@@ -228,7 +328,7 @@ export interface UsePopoverReturn {
  * - `useLayer` for popover positioning using CSS anchor positioning
  * - `useFocusTrap` for trapping focus within the popover content
  * - Auto-focus first element on open
- * - Escape key to close
+ * - Escape key to close (configurable via hasEscapeDismiss)
  * - Hidden close button that reveals on focus for accessibility
  *
  * The render function automatically wraps your content in a focus trap container
@@ -261,20 +361,30 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(
+function usePopoverImplementation(
   options: UsePopoverOptions = {},
 ): UsePopoverReturn {
   const {
     onShow,
     onHide,
     xstyle,
+    className,
+    style,
     hasLightDismiss = true,
+    hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
+    surfaceTarget,
     hasCloseButton = true,
-    closeButtonLabel = 'Close popover',
+    closeButtonLabel: closeButtonLabelFromProps,
     dialogLabel,
+    role = 'dialog',
+    isModal = true,
   } = options;
+
+  const t = useTranslator();
+  const closeButtonLabel =
+    closeButtonLabelFromProps ?? t('@astryx.popover.close');
 
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -290,25 +400,40 @@ export function usePopover(
     onHide,
   });
 
-  // Focus trap for the popover content
+  // Focus trap for the popover content. Escape stays registered while light
+  // dismiss is on (native popover="auto" closes on Escape regardless), so a
+  // host Dialog keeps deferring to this trap instead of double-dismissing.
   const {containerRef: contentRef, focusFirst} = useFocusTrap<HTMLDivElement>({
     isActive: layer.isOpen,
-    onEscape: layer.hide,
+    onEscape: hasEscapeDismiss || hasLightDismiss ? layer.hide : undefined,
   });
+
+  const focusInitialTarget = useCallback(() => {
+    const container = contentRef.current;
+    if (!container) {
+      return;
+    }
+    if (focusFirstContentControl(container)) {
+      return;
+    }
+    if (role === 'dialog') {
+      attemptFocus(container);
+      return;
+    }
+    focusFirst();
+  }, [contentRef, focusFirst, role]);
 
   // Auto-focus first element when popover opens (unless skipped)
   useEffect(() => {
     if (layer.isOpen && hasAutoFocus && !skipAutoFocusRef.current) {
       // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        focusFirst();
-      });
+      requestAnimationFrame(focusInitialTarget);
     }
-    // Reset the skip flag after the effect runs
+    // Reset the per-open focus preference after the popover closes.
     if (!layer.isOpen) {
       skipAutoFocusRef.current = false;
     }
-  }, [layer.isOpen, hasAutoFocus, focusFirst]);
+  }, [layer.isOpen, hasAutoFocus, focusInitialTarget]);
 
   // Combined ref for trigger element (layer anchor + our ref)
   const triggerRef = useCallback(
@@ -319,7 +444,7 @@ export function usePopover(
     [layer],
   );
 
-  // Show function with optional skipAutoFocus
+  // Show function with optional focus preservation
   const show = useCallback(
     (showOptions?: {skipAutoFocus?: boolean}) => {
       skipAutoFocusRef.current = showOptions?.skipAutoFocus ?? false;
@@ -328,7 +453,8 @@ export function usePopover(
     [layer],
   );
 
-  // Toggle function
+  // Toggle function. Opening delegates to show so every route inherits the
+  // same-gesture reopen guard owned by Layer.
   const toggle = useCallback(() => {
     if (layer.isOpen) {
       layer.hide();
@@ -339,36 +465,70 @@ export function usePopover(
 
   // ARIA attributes for the trigger
   const triggerProps = {
-    'aria-haspopup': 'dialog' as const,
+    'aria-haspopup':
+      role === 'dialog' ? ('dialog' as const) : ('true' as const),
     'aria-expanded': layer.isOpen,
     'aria-controls': layer.id,
   };
 
+  // Dev-time guardrail: a dialog popover should always be labeled.
+  useDevWarning(
+    'usePopover',
+    'role="dialog" without a `dialogLabel` renders an unnamed ' +
+      'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
+      'popups whose content already carries its own role.',
+    role === 'dialog' && !dialogLabel,
+  );
+
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+      // `mergeProps` is positional — a third OBJECT argument is read as
+      // `style`, not as more props — so the surface's classes are composed
+      // into one props object before merging with the StyleX result.
+      const surfaceProps = themeProps('popover', undefined, {
+        legacyNames: ['popover-surface'],
+      });
+      const surfaceClassName =
+        surfaceTarget != null && surfaceTarget !== 'popover'
+          ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
+          : surfaceProps.className;
+
       return layer.render(
-        <div
-          ref={contentRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={dialogLabel}
-          {...stylex.props(
-            styles.contentWrapper,
-            hasSurface && styles.surface,
-            xstyle,
-          )}>
-          {children}
-          {hasCloseButton && (
-            <div {...stylex.props(styles.closeButtonWrapper)}>
-              <Button
-                variant="secondary"
-                label={closeButtonLabel}
-                onClick={layer.hide}
-              />
-            </div>
-          )}
-        </div>,
+        <LayerDepthProvider>
+          <div
+            ref={contentRef}
+            role={role === 'dialog' ? 'dialog' : undefined}
+            aria-modal={role === 'dialog' && isModal ? true : undefined}
+            aria-label={role === 'dialog' ? dialogLabel : undefined}
+            tabIndex={role === 'dialog' ? -1 : undefined}
+            {...mergeProps(
+              {...surfaceProps, className: surfaceClassName},
+              focusOutlineProps.focusVisible(
+                styles.contentWrapper,
+                hasSurface && styles.surface,
+                xstyle,
+              ),
+              className,
+              style,
+            )}>
+            {children}
+            {hasCloseButton && (
+              <div
+                data-astryx-popover-fallback-close=""
+                {...stylex.props(
+                  styles.closeButtonWrapper,
+                  rtlStyles.centerInline('100%'),
+                )}>
+                <Button
+                  variant="secondary"
+                  label={closeButtonLabel}
+                  onClick={layer.hide}
+                />
+              </div>
+            )}
+          </div>
+        </LayerDepthProvider>,
         {...props, xstyle: props?.xstyle},
       );
     },
@@ -376,9 +536,14 @@ export function usePopover(
       layer,
       hasCloseButton,
       hasSurface,
+      surfaceTarget,
+      className,
+      style,
       closeButtonLabel,
       contentRef,
       dialogLabel,
+      role,
+      isModal,
       xstyle,
     ],
   );
@@ -395,4 +560,8 @@ export function usePopover(
     render,
     triggerProps,
   };
+}
+
+export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+  return usePopoverImplementation(options);
 }

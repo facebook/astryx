@@ -99,7 +99,7 @@ const styles = stylex.create({
   // the expected size and the column header sits at a consistent
   // baseline across all three feature columns.
   //
-  // Rendered as a raw <span> in the JSX because XDS has no
+  // Rendered as a raw <span> in the JSX because Astryx has no
   // primitive for "fixed-size inline-block decorative SVG wrapper"
   // (Icon is glyph-only and bound to its registry; Thumbnail
   // is chat-attachment chrome). The wrapper exists purely to reserve

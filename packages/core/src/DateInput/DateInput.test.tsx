@@ -9,10 +9,28 @@
  * SYNC: When DateInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
+import {Icon} from '../Icon';
+import {InputGroup} from '../InputGroup';
+import {InputGroupText} from '../InputGroup/InputGroupText';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('DateInput', () => {
   it('renders with label', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
@@ -89,14 +107,14 @@ describe('DateInput', () => {
 
   it('calendar button is focusable and clickable', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeDisabled();
   });
 
@@ -108,6 +126,67 @@ describe('DateInput', () => {
     fireEvent.change(input, {target: {value: 'invalid'}});
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('sets aria-invalid="true" when typed input is unparseable', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when typed input is a valid date', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('announces an alert message when typed input is invalid', () => {
+    // Scope to the component's own container: the embedded Calendar uses the
+    // shared `useAnnounce` hook, whose global polite/assertive live-region pair
+    // (both mounted on document.body by any announce) would otherwise make a
+    // document-wide `getByRole('alert')` ambiguous.
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Invalid date',
+    );
+  });
+
+  it('does not announce an alert message when input is valid', () => {
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(within(container).getByRole('alert')).toHaveTextContent('');
+    expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+  });
+
+  it('resolves the invalid-date announcement from the i18n catalog', () => {
+    const {container} = render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.dateInput.invalidDate': 'Ungültiges Datum'}}}>
+        <DateInput label="Date" onChange={() => {}} />
+      </InternationalizationProvider>,
+    );
+
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: {value: '13/45/2024'},
+    });
+
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Ungültiges Datum',
+    );
   });
 
   it('reverts to previous value on blur when input is invalid', async () => {
@@ -242,7 +321,7 @@ describe('DateInput', () => {
   it('disables input and button when isLoading is true', () => {
     render(<DateInput label="Date" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('shows spinner when isLoading is true', () => {
@@ -278,6 +357,28 @@ describe('DateInput', () => {
       'aria-expanded',
       'false',
     );
+  });
+
+  it('opens the calendar popover on ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens the calendar popover on Alt+ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown', altKey: true});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown when disabled', () => {
+    render(<DateInput label="Date" isDisabled onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('input has aria-haspopup="dialog"', () => {
@@ -413,7 +514,7 @@ describe('DateInput', () => {
 
   it('does not open popover when clicking calendar button while disabled', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     fireEvent.click(button);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
@@ -435,6 +536,27 @@ describe('DateInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
+  it('does not commit on a composing Enter (IME)', () => {
+    const onChange = vi.fn();
+    render(<DateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate fires before compositionend; it must not be read as
+    // "commit the typed date".
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still commits.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
   // --- Arrow-down opens calendar popover ---
 
   // Note: Tests involving popover rendering (show/hide with calendar)
@@ -451,23 +573,17 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Date'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Date')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is undefined', () => {
       render(<DateInput label="Date" onChange={() => {}} hasClear />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
       render(<DateInput label="Date" value="2026-01-15" onChange={() => {}} />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -480,9 +596,7 @@ describe('DateInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('calls onChange with undefined when clear is clicked', () => {
@@ -495,7 +609,7 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
+      fireEvent.click(getButton('Clear Date'));
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
@@ -584,5 +698,626 @@ describe('DateInput', () => {
       // Pending input should be cleared, showing the new formatted value
       expect(input).toHaveValue('March 20, 2026');
     });
+  });
+
+  describe('InputGroup', () => {
+    it('uses group ARIA and skips standalone Field chrome when grouped', () => {
+      render(
+        <InputGroup
+          label="Availability"
+          description="Choose a start date"
+          status={{type: 'error', message: 'Date is required'}}>
+          <InputGroupText>Starts</InputGroupText>
+          <DateInput label="Date" isLabelHidden onChange={() => {}} />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Availability'});
+      const input = screen.getByRole('combobox', {
+        name: 'Availability Date',
+      });
+
+      expect(document.querySelectorAll('.astryx-field')).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-labelledby');
+      expect(input.getAttribute('aria-labelledby')).toContain(
+        group.getAttribute('aria-labelledby'),
+      );
+      expect(input).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+      expect(input).not.toHaveAttribute('aria-invalid');
+      expect(screen.getByText('Date is required')).toBeInTheDocument();
+    });
+
+    it('preserves disabledMessage tooltip wiring when grouped', () => {
+      render(
+        <InputGroup label="Availability">
+          <InputGroupText>Starts</InputGroupText>
+          <DateInput
+            label="Date"
+            isLabelHidden
+            isDisabled
+            disabledMessage="Scheduling is locked"
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      const input = screen.getByRole('combobox', {name: 'Availability Date'});
+      const tooltip = screen.getByRole('tooltip', {hidden: true});
+
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+      expect(tooltip).toHaveTextContent('Scheduling is locked');
+      expect(getButton('Open calendar')).toBeDisabled();
+    });
+  });
+
+  describe('disabledMessage', () => {
+    // jsdom does not implement the Popover API used by the tooltip, so mock
+    // showPopover/hidePopover to toggle a `popover-open` attribute the tests
+    // can assert on.
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        this.setAttribute('popover-open', '');
+      });
+      HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+        this.removeAttribute('popover-open');
+      });
+    });
+
+    // jsdom popover content is in the DOM but not "visible" in the
+    // accessibility tree; use hidden: true to find it.
+    const h = {hidden: true} as const;
+
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const container = screen.getByRole('combobox')
+        .parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <DateInput label="Date" disabledMessage="You need the Editor role" />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(<DateInput label="Date" isDisabled />);
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the input focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+    });
+
+    it('links the reason tooltip from the input via aria-describedby', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks value changes and opening while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <DateInput
+          label="Date"
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, '2026-03-15');
+      expect(input).toHaveValue('');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(<DateInput label="Date" isDisabled />);
+      const input = screen.getByRole('combobox');
+      expect(input).toBeDisabled();
+      expect(input).not.toHaveAttribute('aria-disabled');
+    });
+  });
+
+  describe('format', () => {
+    it('defaults to the long-month date_long shape', () => {
+      // Non-breaking default: byte-identical to the historical hardcoded
+      // DATE_FORMAT_LONG rendering. `format` now defaults to 'date_long'.
+      render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the long-month shape for explicit format="date_long"', () => {
+      // Explicit date_long is identical to the unset default above and to the
+      // old hardcoded long-month output — real named parity with Timestamp.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_long"
+        />,
+      );
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the short-month shape for format="date"', () => {
+      // Same literal + same shape as <Timestamp format="date" />.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+    });
+
+    it('updates when the InternationalizationProvider locale changes (#5074)', () => {
+      const renderDateInput = (locale: 'en-US' | 'es-ES') => (
+        <InternationalizationProvider locale={locale}>
+          <DateInput
+            label="Date"
+            value="2026-01-25"
+            onChange={() => {}}
+            format="date_long"
+          />
+        </InternationalizationProvider>
+      );
+      const {rerender} = render(renderDateInput('en-US'));
+
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+
+      rerender(renderDateInput('es-ES'));
+      expect(
+        screen.getByDisplayValue('25 de enero de 2026'),
+      ).toBeInTheDocument();
+    });
+
+    it('renders the ISO shape for format="system_date"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="system_date"
+        />,
+      );
+      expect(screen.getByDisplayValue('2026-01-25')).toBeInTheDocument();
+    });
+
+    it('renders a weekday prefix for format="date_weekday"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_weekday"
+        />,
+      );
+      // 2026-01-25 is a Sunday; assert the weekday-prefixed shape without
+      // over-fitting locale punctuation.
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('Sun, Jan 25, 2026');
+    });
+
+    it('supports a custom function format', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format={iso => `custom:${iso}`}
+        />,
+      );
+      expect(screen.getByDisplayValue('custom:2026-01-25')).toBeInTheDocument();
+    });
+
+    it('does not apply format to in-progress typed input', async () => {
+      const user = userEvent.setup();
+      render(
+        <DateInput label="Date" onChange={() => {}} format="system_date" />,
+      );
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, 'January 25');
+      // While typing, the raw text is shown verbatim — not reformatted.
+      expect(input).toHaveValue('January 25');
+    });
+
+    it('recomputes the display in format on external value change', () => {
+      const {rerender} = render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+      rerender(
+        <DateInput
+          label="Date"
+          value="2026-03-10"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Mar 10, 2026')).toBeInTheDocument();
+    });
+  });
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.keyDown(screen.getByRole('combobox'), {key: 'ArrowDown'});
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} weekStartsOn={1} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} weekStartsOn="mon" />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
+});
+
+describe('DateInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
+
+describe('DateInput clear icon theme target', () => {
+  // Resolve the clear glyph span (the astryx-icon element inside the clear
+  // button), independent of the theme target class.
+  const getClearIcon = (): HTMLElement => {
+    const button = getButton('Clear Date');
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('clear icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // `defineTheme` — a button-level target could not reach the icon's own
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
+    const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
+    expect(icon).toHaveClass('astryx-date-input-clear-icon');
+    expect(icon).toHaveClass('astryx-icon');
+  });
+
+  it('keeps the clear button functional alongside the target', () => {
+    const onChange = vi.fn();
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    const clear = getButton('Clear Date');
+    expect(clear.tagName).toBe('BUTTON');
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
+    // The clear affordance now composes the shared InputClearButton (a ghost
+    // Button with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target plus the supported compatibility alias
+    // `astryx-date-input-clear-icon`. Aside from those target classes
+    // it matches the shared button's own `close`/`sm`/`secondary` glyph
+    // exactly, so the default look is defined in one place.
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
+    expect(icon).toHaveClass('astryx-date-input-clear-icon');
+
+    const {container: refContainer} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(
+          c =>
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-date-input-clear-icon',
+        )
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes date-input-clear-icon so a theme reaches the icon color, size, and hover', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
+    // (target lands on the icon element) plus this generation assertion (the
+    // theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'date-input-clear-icon-test',
+      components: {
+        'date-input-clear-icon': {
+          base: {
+            width: '12px',
+            height: '12px',
+            fontSize: '12px',
+            color: 'var(--color-icon-secondary)',
+            ':hover': {color: 'var(--color-icon-primary)'},
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-date-input-clear-icon {');
+    expect(css).toContain('width: 12px');
+    expect(css).toContain('height: 12px');
+    expect(css).toContain('.astryx-date-input-clear-icon:hover');
+    expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('DateInput calendar-toggle icon theme target', () => {
+  const iconIn = (button: HTMLElement): HTMLElement => {
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('toggle icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-date-input-toggle-icon target on the toggle glyph', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover) —
+    // and each open/closed state — via `defineTheme`. A button-level target
+    // could not reach the icon's own color/size.
+    expect(icon).toHaveClass('astryx-date-input-toggle-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    // Open/closed state is reflected so a theme can target each state alone.
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('reflects the expanded state on the toggle icon when the popover is open', async () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    // Capture the toggle before opening — its aria-label changes to the close
+    // label once open, but the element reference (and its icon) is stable.
+    const toggle = getButton('Open calendar');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(iconIn(toggle)).toHaveAttribute('data-state', 'expanded');
+    });
+  });
+
+  it('keeps the calendar-toggle button functional alongside the target', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const toggle = getButton('Open calendar');
+    expect(toggle.tagName).toBe('BUTTON');
+  });
+
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the toggle glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class + data-state are purely additive — they change nothing until
+    // a theme targets them.
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+
+    const {container: refContainer} = render(
+      <Icon icon="calendar" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    // Exclude the additive theme-target classes (the stable target + its
+    // reflected state class) so only the StyleX color/size classes remain.
+    const themeTargetClasses = new Set([
+      'astryx-date-input-toggle-icon',
+      'collapsed',
+      'expanded',
+    ]);
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => !themeTargetClasses.has(c))
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes date-input-toggle-icon so a theme reaches the icon size and per-state color', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above (target lands on the icon element) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'date-input-toggle-icon-test',
+      components: {
+        'date-input-toggle-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+          'state:expanded': {color: 'var(--color-icon-primary)'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-date-input-toggle-icon {');
+    expect(css).toContain('width: 14px');
+    expect(css).toContain('height: 14px');
+    expect(css).toContain(
+      '.astryx-date-input-toggle-icon[data-state="expanded"]',
+    );
+    expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('DateInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateInput label="Date" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-date-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
+    const root = container.querySelector('.astryx-date-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

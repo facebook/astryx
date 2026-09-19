@@ -17,7 +17,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts (exports if types change)
  * - /apps/storybook/stories/ToggleButton.stories.tsx
- * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
 import React, {useOptimistic, type ReactNode} from 'react';
@@ -25,6 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 
 import {Button, type ButtonSize} from '../Button';
+import type {Elevation} from '../utils/types';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -40,7 +41,25 @@ import {themeProps} from '../utils/themeProps';
  */
 const pressedStyles = stylex.create({
   background: {
-    backgroundColor: colorVars['--color-overlay-pressed'],
+    // forced-color-adjust must be `none` here: ToggleButton renders a <button>,
+    // and the UA keeps native form-control colors (ButtonFace surface) for it
+    // under forced colors, ignoring the authored Highlight fill — the label kept
+    // its HighlightText color, giving white text on a white surface. Opting the
+    // pressed button out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
+    backgroundColor: {
+      default: colorVars['--color-overlay-pressed'],
+      // Forced colors (Windows High Contrast) strips the painted pressed
+      // overlay, which would leave icon-only toggles with no pressed
+      // indication at all. Highlight/HighlightText is the platform convention
+      // for a selected/pressed control (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
 });
 
@@ -124,8 +143,19 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
   size?: ButtonSize;
 
   /**
+   * Resting elevation — the shadow depth the button sits at, mirroring
+   * Button's `elevation` for floating (FAB-style) toggle buttons.
+   * `none` is the default flat button. Applies inside a
+   * ToggleButtonGroup as well — grouped children retain their own
+   * elevation.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
+  /**
    * Whether the button is disabled.
-   * When used inside ToggleButtonGroup, the group's isDisabled overrides this.
+   * When used inside ToggleButtonGroup, a disabled group disables this button
+   * too, but an enabled group does not re-enable a button that disables itself.
    * @default false
    */
   isDisabled?: boolean;
@@ -213,6 +243,7 @@ export function ToggleButton({
   onPressedChange: onPressedChangeProp,
   pressedChangeAction,
   size: sizeProp,
+  elevation = 'none',
   isDisabled: isDisabledProp = false,
   isLoading = false,
   icon,
@@ -233,7 +264,13 @@ export function ToggleButton({
       ? group.selectedValues.has(value)
       : (isPressedProp ?? false);
   const size = sizeProp ?? group?.size ?? 'md';
-  const isDisabled = group?.isDisabled ?? isDisabledProp;
+  // Either source disabling this button is enough. `??` could not express that:
+  // the group always supplies a boolean (its own prop defaults to false), so the
+  // fallback never ran and an enabled group handed a member that had disabled
+  // itself its availability back. A group still disables everything it contains
+  // — that is the half `??` got right — but it cannot re-enable a member
+  // (family:buttons FR3).
+  const isDisabled = (group?.isDisabled ?? false) || isDisabledProp;
 
   // Track the pressed state optimistically so the button reflects the intended
   // state immediately while an async action is pending. The optimistic update
@@ -312,6 +349,7 @@ export function ToggleButton({
       label={label}
       variant="ghost"
       size={size}
+      elevation={elevation}
       isDisabled={isDisabled}
       isLoading={isLoading}
       isInterruptible
@@ -321,6 +359,7 @@ export function ToggleButton({
       tooltip={tooltip}
       {...themeProps('toggle-button', {
         isPressed: isPressed ? 'true' : 'false',
+        elevation,
       })}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}

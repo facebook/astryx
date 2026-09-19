@@ -13,18 +13,21 @@
  * - /packages/core/src/CheckboxList/CheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
  * - /apps/storybook/stories/CheckboxList.stories.tsx
- * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
+import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
+import {useTranslator} from '../i18n';
+import {ItemDescriptionContext} from '../Item/ItemDescriptionContext';
 
 // =============================================================================
 // Styles
@@ -46,18 +49,49 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    *
    * Accepts a plain string (single-line truncation applied automatically)
    * or a ReactNode for rich content (no truncation constraints —
-   * child components control their own text behavior).
+   * child components control their own text behavior). Links and buttons in
+   * the label keep their own behavior; only non-interactive row clicks
+   * delegate to the checkbox.
+   *
+   * A string names the checkbox directly. A ReactNode names it from its
+   * visible text through `aria-labelledby`; if that text is absent, pass
+   * `aria-label`. When visible text is present, an override must retain every
+   * visible word so speech-input users can say what they see.
    */
   label: ReactNode;
+  /**
+   * Plain-text accessible name for the checkbox, replacing the one derived
+   * from `label`.
+   *
+   * A string `label` names the checkbox directly, and a rich (ReactNode)
+   * `label` names it from its visible text through `aria-labelledby`. Pass
+   * `aria-label` when that text is absent. When visible text is present, the
+   * override must retain every visible word so speech-input users can say what
+   * they see. It replaces the derived name and applies to the checkbox control,
+   * not the row.
+   *
+   * @example
+   * ```
+   * <CheckboxListItem
+   *   label={<span>Pro plan <Badge label="Recommended" /></span>}
+   *   aria-label="Pro plan Recommended option"
+   *   value="pro"
+   * />
+   * ```
+   */
+  'aria-label'?: string;
   /**
    * Identity key for collection mode (REQUIRED inside CheckboxList).
    * Throws a runtime error if missing when used inside CheckboxList.
    */
   value?: string;
   /**
-   * Secondary text below the label.
+   * Secondary content below the label. Accepts a plain string or a ReactNode.
+   * Exposed as the checkbox's accessible description through
+   * `aria-describedby`, so assistive technology can tell it is the explanation
+   * for this choice rather than unrelated row text.
    */
-  description?: string;
+  description?: ReactNode;
   /**
    * Content rendered after the label area.
    */
@@ -96,6 +130,28 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
 // =============================================================================
 
 /**
+ * The row's visible description is the checkbox's accessible description. Item
+ * renders that element and owns its id, and publishes the id through
+ * ItemDescriptionContext; this reads it from inside the slot Item renders. The
+ * row cannot wrap the description in an id'd element instead — that turns a
+ * plain string into a ReactNode and drops the single-line truncation ListItem
+ * documents — and a public `descriptionId` prop would fail
+ * `spec:AST-002/DEC-1`, since the caller decides nothing Item cannot derive.
+ *
+ * This component owns `aria-describedby`, so the prop is omitted rather than
+ * accepted and overwritten: a caller passing one would otherwise lose the id
+ * silently.
+ */
+function DescribedCheckboxInput(
+  props: Omit<CheckboxInputProps, 'aria-describedby'>,
+) {
+  const describedBy = use(ItemDescriptionContext);
+  return (
+    <CheckboxInput {...props} aria-describedby={describedBy ?? undefined} />
+  );
+}
+
+/**
  * A checkbox item for use within CheckboxList (collection mode)
  * or List (standalone mode).
  *
@@ -117,6 +173,7 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
  */
 export function CheckboxListItem({
   label,
+  'aria-label': ariaLabel,
   value,
   description,
   endContent,
@@ -128,8 +185,10 @@ export function CheckboxListItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
+  const t = useTranslator();
   const ctx = use(CheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {
@@ -137,6 +196,21 @@ export function CheckboxListItem({
       'CheckboxListItem requires a `value` prop when used inside CheckboxList with a value array.',
     );
   }
+
+  // Accessible name for the checkbox. A string `label` (or an explicit
+  // `aria-label`) becomes the text of CheckboxInput's visually hidden
+  // `<label>`, which only accepts a string. A rich label instead names the
+  // checkbox from the visible label element through `aria-labelledby`, as
+  // RadioListItem does; the hidden label then carries only the generic word,
+  // which `aria-labelledby` outranks. Strings are left unwrapped on purpose:
+  // Item single-line-truncates a raw string label but not a node.
+  const isRichLabel = typeof label !== 'string';
+  const labelID = useId();
+  const namesFromVisibleLabel = isRichLabel && ariaLabel == null;
+
+  const checkboxLabel =
+    ariaLabel ??
+    (isRichLabel ? t('@astryx.checkboxList.item.checkbox') : label);
 
   // Density from list context for checkbox sizing
   const listCtx = use(ListContext);
@@ -168,6 +242,14 @@ export function CheckboxListItem({
   // Whether this item is interactive (has a toggle handler)
   const isInteractive = !effectiveReadOnly && (ctx != null || onCheck != null);
 
+  // The checkbox is the row's single keyboard control and action. The row is
+  // an enlarged click/tap target that delegates surface clicks to it via
+  // ListItem's `interactiveRef` (useClickableContainer), so each option is
+  // exactly one tab stop. Delegate whenever the row should respond to clicks:
+  // a toggleable item, or one carrying a consumer `onClick`.
+  const checkboxRef = useRef<HTMLInputElement | null>(null);
+  const hasRowInteraction = isInteractive || onClickProp != null;
+
   const handleToggle = () => {
     if (effectiveDisabled || effectiveReadOnly || isBusy) {
       return;
@@ -196,14 +278,16 @@ export function CheckboxListItem({
     <ListItem
       {...restProps}
       ref={ref}
-      label={label}
+      label={namesFromVisibleLabel ? <span id={labelID}>{label}</span> : label}
       description={description}
       endContent={endContent}
       isDisabled={effectiveDisabled}
-      onClick={isInteractive ? handleToggle : undefined}
-      aria-checked={
-        resolvedChecked === 'indeterminate' ? 'mixed' : resolvedChecked
-      }
+      // Delegate row clicks to the checkbox instead of wiring onClick (which
+      // would add an invisible row button = a second tab stop). The checkbox
+      // stays the option's sole focusable control (WCAG 4.1.2 / APG checkbox
+      // pattern). A consumer onClick rides on the checkbox itself (below), so
+      // it still fires for both direct and delegated (row-surface) clicks.
+      interactiveRef={hasRowInteraction ? checkboxRef : undefined}
       aria-busy={isBusy || undefined}
       xstyle={
         [
@@ -217,11 +301,14 @@ export function CheckboxListItem({
       className={className}
       style={style}
       startContent={
-        <CheckboxInput
-          label={typeof label === 'string' ? label : 'Checkbox'}
+        <DescribedCheckboxInput
+          ref={checkboxRef}
+          label={checkboxLabel}
+          aria-labelledby={namesFromVisibleLabel ? labelID : undefined}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
+          onClick={onClickProp}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
           isLoading={isBusy}

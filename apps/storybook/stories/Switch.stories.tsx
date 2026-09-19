@@ -36,6 +36,11 @@ const meta: Meta<typeof Switch> = {
       control: 'boolean',
       description: 'Whether the switch is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the switch is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the switch focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled Switch in Tooltip.',
+    },
     isOptional: {
       control: 'boolean',
       description: 'Whether the field is optional',
@@ -51,7 +56,7 @@ const meta: Meta<typeof Switch> = {
     },
     labelSpacing: {
       control: 'select',
-      options: ['default', 'spread'],
+      options: ['hug', 'spread'],
       description: 'Spacing behavior between label and switch',
     },
   },
@@ -537,5 +542,81 @@ export const StatusVariations: Story = {
         />
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the switch to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the switch stays focusable (toggling is still blocked).
+// Use disabledMessage instead of wrapping a disabled Switch in Tooltip: disabled
+// controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <Switch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Enable notifications',
+    isDisabled: true,
+    disabledMessage: 'Notifications are turned off org-wide',
+  },
+};
+
+// The owner changes the value, not the user. A settings page does this when a
+// saved value arrives, or when another control implies this one. The switch
+// still reports the new state, and is still operable afterwards.
+export const ControlledUpdate: Story = {
+  render: args => {
+    const [value, setValue] = useState(false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '12px',
+        }}>
+        <Switch
+          {...restArgs}
+          value={value}
+          onChange={checked => setValue(checked)}
+        />
+        <button type="button" onClick={() => setValue(true)}>
+          Turn on remotely
+        </button>
+      </div>
+    );
+  },
+  args: {
+    label: 'Sync photos',
+  },
+};
+
+// Waiting on the change it just started. The switch stays focusable and reports
+// itself busy, and activation is blocked until the change settles, so a second
+// press cannot queue a second change.
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <Switch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Sync photos',
+    isLoading: true,
   },
 };

@@ -18,12 +18,15 @@
  * Canonical order:
  *   1. columnSettings — column filtering (future: transformColumns)
  *   2. sort           — header cell sort controls
- *   3. selection      — checkbox column + row selection
- *   4. pagination     — pagination controls around the table
+ *   3. tree           — indent + expander on the tree column
+ *   4. selection      — checkbox column + row selection
+ *   5. pagination     — pagination controls around the table
  *
  * Rationale:
  * - columnSettings filters columns before sort/selection see them
  * - sort adds header cell UI before selection adds its header column
+ * - tree wraps the first *user* column before selection prepends its
+ *   checkbox column, so the expander never lands in the checkbox column
  * - selection adds its column after sort so the checkbox header
  *   doesn't get a sort button
  * - pagination wraps the table in context last (outermost provider)
@@ -35,6 +38,7 @@
 
 import {useRef} from 'react';
 import type {TablePlugin} from './types';
+import {devWarn} from '../utils/devWarning';
 
 // ======================================================================// Canonical Plugin Order
 // ======================================================================
@@ -42,10 +46,16 @@ import type {TablePlugin} from './types';
  * Canonical ordering for first-party plugin names.
  * Plugins are sorted by their position in this array.
  * Unknown names are appended after the known set.
+ *
+ * This decides LAYOUT — which column lands left of which, who wraps whom. It
+ * must never decide whether the table works: a plugin that renders in one
+ * order and crashes in the other is broken, and adding it here buys a lucky
+ * order rather than a fix.
  */
 const PLUGIN_ORDER: ReadonlyArray<string> = [
   'columnSettings',
   'sort',
+  'tree',
   'selection',
   'pagination',
 ];
@@ -108,8 +118,9 @@ function validatePlugin<T extends Record<string, unknown>>(
   // Warn about unknown keys (likely misspelled transform names)
   for (const key of keys) {
     if (!VALID_TRANSFORM_KEYS.has(key)) {
-      console.warn(
-        `[Table] Plugin "${name}" has unknown key "${key}". ` +
+      devWarn(
+        'Table',
+        `Plugin "${name}" has unknown key "${key}". ` +
           `Valid keys: ${[...VALID_TRANSFORM_KEYS].join(', ')}. ` +
           `This key will be ignored.`,
       );
@@ -121,8 +132,9 @@ function validatePlugin<T extends Record<string, unknown>>(
     if (VALID_TRANSFORM_KEYS.has(key)) {
       const value = (plugin as Record<string, unknown>)[key];
       if (value != null && typeof value !== 'function') {
-        console.warn(
-          `[Table] Plugin "${name}" has non-function value for "${key}" ` +
+        devWarn(
+          'Table',
+          `Plugin "${name}" has non-function value for "${key}" ` +
             `(got ${typeof value}). Transform will be skipped.`,
         );
       }
@@ -136,8 +148,9 @@ function validatePlugin<T extends Record<string, unknown>>(
       typeof (plugin as Record<string, unknown>)[key] === 'function',
   );
   if (!hasTransforms) {
-    console.warn(
-      `[Table] Plugin "${name}" has no transform methods. ` +
+    devWarn(
+      'Table',
+      `Plugin "${name}" has no transform methods. ` +
         `It will be included in the pipeline but won't do anything.`,
     );
   }

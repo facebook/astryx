@@ -1,6 +1,6 @@
 # Astryx
 
-This project uses Astryx (formerly XDS) components. Use the CLI to look up component props and usage before writing code:
+This project uses Astryx components. Use the CLI to look up component props and usage before writing code:
 
 ```bash
 npx astryx component --list              # list all available components

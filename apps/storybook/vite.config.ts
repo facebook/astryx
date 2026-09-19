@@ -12,7 +12,7 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import stylex from '@stylexjs/unplugin';
-import path from 'path';
+import path from 'node:path';
 
 const rootDir = path.resolve(__dirname, '../..');
 const coreRoot = path.resolve(__dirname, '../../packages/core/src');

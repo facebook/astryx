@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'LayoutPanel',
@@ -8,6 +8,24 @@ export const docs = {
   displayName: 'Layout Panel',
   isHiddenFromOverview: true,
   description: 'Sidebar for navigation, settings, or inspector panels.',
+  playground: {
+    defaults: {
+      children: 'Panel Content',
+      hasDivider: true,
+      width: 200,
+    },
+    wrapper: {
+      component: 'Layout',
+      slotProp: 'start',
+      props: {
+        content: {
+          __element: 'LayoutContent',
+          props: {},
+          children: 'Main content area',
+        },
+      },
+    },
+  },
   props: [
     {
       name: 'children',
@@ -19,6 +37,12 @@ export const docs = {
       type: 'boolean',
       description: 'Border on the appropriate edge.',
       default: 'false',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Internal padding using the spacing scale. Overrides the default padding from the layout container.',
     },
     {
       name: 'isScrollable',
@@ -35,6 +59,18 @@ export const docs = {
       name: 'role',
       type: 'AriaRole',
       description: 'ARIA landmark role.',
+    },
+    {
+      name: 'width',
+      type: 'number | string',
+      description:
+        'Width of the panel. Numbers are treated as pixels, strings are used as-is. Ignored when resizable is provided; the hook controls width.',
+    },
+    {
+      name: 'resizable',
+      type: 'ResizableProps',
+      description:
+        "Resize props from useResizable(). When provided, the hook drives the panel width and a ResizeHandle should be placed adjacent to the panel. Carries the region's axis ('horizontal' | 'vertical'), which must match the adjacent ResizeHandle's direction.",
     },
   ],
 };
@@ -57,6 +93,11 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '使用间距比例的内边距。覆盖布局容器的默认内边距。',
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
       description: '启用可滚动溢出。',
@@ -72,6 +113,18 @@ export const docsZh = {
       type: 'AriaRole',
       description: 'ARIA 地标角色。',
     },
+    {
+      name: 'width',
+      type: 'number | string',
+      description:
+        '面板宽度。数字按像素处理，字符串按原样使用。提供 resizable 时忽略，宽度由 hook 控制。',
+    },
+    {
+      name: 'resizable',
+      type: 'ResizableProps',
+      description:
+        "来自 useResizable() 的调整大小属性。提供时面板宽度由 hook 驱动，应在面板旁放置 ResizeHandle。其中携带区域的轴向（'horizontal' | 'vertical'），必须与相邻 ResizeHandle 的 direction 一致。",
+    },
   ],
 };
 
@@ -83,8 +136,14 @@ export const docsDense = {
   propDescriptions: {
     children: 'Panel content.',
     hasDivider: 'Border on appropriate edge.',
+    padding:
+      'Internal padding on spacing scale. Overrides layout container default.',
     isScrollable: 'Enable scrollable overflow.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
+    width:
+      'Panel width. Numbers = pixels, strings as-is. Ignored when resizable provided; hook controls width.',
+    resizable:
+      'Resize props from useResizable(). Hook drives panel width; place ResizeHandle adjacent.',
   },
 };

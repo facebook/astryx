@@ -4,19 +4,24 @@
 
 /**
  * @file InputGroupContext.ts
- * @input None (pure context definition)
+ * @input React createContext/use
  * @output Exports InputGroup context and useInputGroup hook
- * @position Shared context; consumed by input components for group-aware styling
+ * @position Shared context; consumed by input components for group-aware styling and ARIA associations
  */
 
 import {createContext, use} from 'react';
 
 export interface InputGroupContextValue {
   isInGroup: true;
+  /** ID of the group label element, for aria-labelledby composition. */
+  labelID: string;
+  /** IDs of helper/status text owned by the group, for aria-describedby composition. */
+  describedByIDs?: string;
 }
 
-export const InputGroupContext =
-  createContext<InputGroupContextValue | null>(null);
+export const InputGroupContext = createContext<InputGroupContextValue | null>(
+  null,
+);
 InputGroupContext.displayName = 'InputGroupContext';
 
 /**

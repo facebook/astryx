@@ -16,9 +16,9 @@
  *   node scripts/bundle-analysis.mjs --compare @chakra-ui/react  # whole-library
  */
 
-import {readdirSync, readFileSync, existsSync, statSync} from 'fs';
-import {join, dirname, resolve} from 'path';
-import {gzipSync} from 'zlib';
+import {readdirSync, readFileSync, existsSync, statSync} from 'node:fs';
+import {join, dirname, resolve} from 'node:path';
+import {gzipSync} from 'node:zlib';
 
 const DIST = join(import.meta.dirname, '..', 'packages', 'core', 'dist');
 

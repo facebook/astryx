@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   BellIcon,
   EnvelopeIcon,
@@ -36,6 +37,11 @@ const meta: Meta<typeof CheckboxInput> = {
     isDisabled: {
       control: 'boolean',
       description: 'Whether the checkbox is disabled',
+    },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip.',
     },
     isRequired: {
       control: 'boolean',
@@ -211,11 +217,7 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <CheckboxInput
-          label="Unchecked"
-          value={value1}
-          onChange={setValue1}
-        />
+        <CheckboxInput label="Unchecked" value={value1} onChange={setValue1} />
         <CheckboxInput label="Checked" value={value2} onChange={setValue2} />
         <CheckboxInput
           label="Indeterminate"
@@ -276,24 +278,28 @@ export const SizeComparison: Story = {
         }}>
         <CheckboxInput
           label="Medium size (default)"
+          data-testid="checkbox-md"
           value={value1}
           onChange={setValue1}
           size="md"
         />
         <CheckboxInput
           label="Small size"
+          data-testid="checkbox-sm"
           value={value2}
           onChange={setValue2}
           size="sm"
         />
         <CheckboxInput
           label="Medium size checked"
+          data-testid="checkbox-md"
           value={value3}
           onChange={setValue3}
           size="md"
         />
         <CheckboxInput
           label="Small size checked"
+          data-testid="checkbox-sm"
           value={value4}
           onChange={setValue4}
           size="sm"
@@ -466,4 +472,99 @@ export const StatusVariations: Story = {
       </div>
     );
   },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the checkbox to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the checkbox stays focusable (toggling is still
+// blocked). Use disabledMessage instead of wrapping a disabled CheckboxInput in
+// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<boolean | 'indeterminate'>(
+      args.value ?? false,
+    );
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <CheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Accept terms',
+    isDisabled: true,
+    disabledMessage: 'Terms are managed by your administrator',
+  },
+};
+
+// A theme can replace the checkbox visual outright: the indicator receives the
+// state, the CheckboxInput keeps the input, label, focus, and disabled
+// behavior. Hover and focus reach the indicator through the row's ancestor
+// marker, so a replacement never needs interaction props.
+const brandIndicatorTheme = defineTheme({
+  name: 'checkbox-indicator-demo',
+  indicators: {
+    checkbox: ({state, size, isDisabled}) => (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size === 'sm' ? 20 : 24,
+          height: size === 'sm' ? 20 : 24,
+          border: '1px solid currentColor',
+          borderRadius: 6,
+          color: '#7c3aed',
+          opacity: isDisabled ? 0.5 : 1,
+        }}>
+        {state === 'checked' ? '★' : state === 'indeterminate' ? '–' : ''}
+      </span>
+    ),
+  },
+});
+
+export const ThemedIndicator: Story = {
+  render: () => (
+    <Theme theme={brandIndicatorTheme} mode="light">
+      <div style={{display: 'grid', gap: 12}}>
+        <CheckboxInput label="Custom checked glyph" value={true} />
+        <CheckboxInput
+          label="Custom indeterminate glyph"
+          value="indeterminate"
+        />
+        <CheckboxInput label="Unchecked" value={false} />
+        <CheckboxInput label="Disabled" value={true} isDisabled />
+      </div>
+    </Theme>
+  ),
+};
+
+// Restyling without replacing: the indicator renders the
+// `checkbox-indicator` theme target, so ordinary component overrides reach it.
+const roundCheckboxTheme = defineTheme({
+  name: 'checkbox-round-demo',
+  components: {
+    'checkbox-indicator': {
+      base: {borderRadius: 'var(--radius-full)'},
+      checked: {
+        backgroundColor: 'var(--color-positive)',
+        borderColor: 'var(--color-positive)',
+      },
+    },
+  },
+});
+
+export const ThemedCheckboxTarget: Story = {
+  render: () => (
+    <Theme theme={roundCheckboxTheme} mode="light">
+      <div style={{display: 'grid', gap: 12}}>
+        <CheckboxInput label="Round, positive when checked" value={true} />
+        <CheckboxInput label="Unchecked" value={false} />
+      </div>
+    </Theme>
+  ),
 };

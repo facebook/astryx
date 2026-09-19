@@ -1,24 +1,70 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {readdirSync} from 'fs';
-import {resolve} from 'path';
+import {readdirSync} from 'node:fs';
+import {resolve} from 'node:path';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    // Force ESM resolution for @astryxdesign/core — the CJS dist has a bug where
-    // "use client" appears after Object.defineProperty(exports, "__esModule").
-    config.resolve.conditionNames = ['import', 'module', 'require', 'default'];
-
+  cacheComponents: true,
+  // A dynamic route segment can't carry a static extension, so the public
+  // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
+  async rewrites() {
+    return [{source: '/blog/:slug.txt', destination: '/blog/txt/:slug'}];
+  },
+  // The playground preview evaluates user-authored code, so it is the one
+  // route that must never be embeddable by another site and never a loader of
+  // third-party script. The origin check on its postMessage channel is the
+  // actual guard (playground/previewChannel.ts); these headers are the layer
+  // underneath it. 'unsafe-eval' is inherent — the route's whole job is
+  // compiling and running TSX in the browser. img/connect stay open so demo
+  // code can still fetch and show remote data; the allowed hosts are the ones
+  // the site itself loads (Google Fonts, Vercel analytics).
+  async headers() {
+    return [
+      {
+        // The playground page itself also refuses embedding: today the
+        // nested preview's own frame-ancestors already breaks any embedding
+        // chain, but that protection shouldn't hinge on a child frame's
+        // headers — the parent states it directly.
+        source: '/playground',
+        headers: [
+          {key: 'X-Frame-Options', value: 'SAMEORIGIN'},
+          {key: 'Content-Security-Policy', value: "frame-ancestors 'self'"},
+        ],
+      },
+      {
+        source: '/playground/preview',
+        headers: [
+          {key: 'X-Frame-Options', value: 'SAMEORIGIN'},
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "frame-ancestors 'self'",
+              "base-uri 'none'",
+              "object-src 'none'",
+              "form-action 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
+  webpack: config => {
     // Webpack's CSS @import resolver doesn't follow package.json "exports".
     // Map each theme's /theme.css subpath to the actual dist file.
     const themesDir = resolve(import.meta.dirname, '../../packages/themes');
     const themes = readdirSync(themesDir, {withFileTypes: true})
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
+      .filter(d => d.isDirectory())
+      .map(d => d.name);
     for (const t of themes) {
-      config.resolve.alias[`@astryxdesign/theme-${t}/theme.css`] =
-        resolve(themesDir, t, 'dist/theme.css');
+      config.resolve.alias[`@astryxdesign/theme-${t}/theme.css`] = resolve(
+        themesDir,
+        t,
+        'dist/theme.css',
+      );
     }
 
     return config;

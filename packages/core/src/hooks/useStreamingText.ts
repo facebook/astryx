@@ -4,14 +4,17 @@
 
 /**
  * @file useStreamingText.ts
- * @input Uses React useState, useEffect, useRef, useTheme
+ * @input Uses React useState, useEffect, useRef, useMediaQuery, useTheme
  * @output Exports useStreamingText hook for smooth text streaming
  * @position Core hook; smooths bursty streamed text into steady character reveal
  *
  * Decouples the arrival rate of streamed chunks from the display rate,
- * draining characters at a steady pace using requestAnimationFrame.
- * Advances on word/syntax boundaries to avoid slicing mid-markdown or
- * mid-word, preventing visual glitches when used with markdown renderers.
+ * draining characters at a steady pace using requestAnimationFrame. The
+ * reveal cadence advances by a fixed number of UTF-16 code units per tick;
+ * the rendered slice is then snapped back to the nearest grapheme cluster
+ * boundary (see snapToGraphemeBoundary) so a tick landing inside a
+ * surrogate pair, flag sequence, or ZWJ emoji doesn't render a lone
+ * surrogate or a partial glyph for one frame.
  *
  * Animation timing derives from Astryx motion tokens (via useTheme) when
  * an Theme provider is present. Falls back to sensible defaults when
@@ -23,6 +26,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMediaQuery} from './useMediaQuery';
 import {useTheme} from '../theme/useTheme';
 
 /**
@@ -67,15 +71,56 @@ const CHARS_PER_TICK = {
   instant: Infinity,
 } as const;
 
+// Reuse a single segmenter when the runtime supports Intl.Segmenter.
+// Granularity is fixed and locale doesn't affect grapheme-cluster
+// boundaries, so one instance is safe to share across calls.
+const graphemeSegmenter =
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
+    : null;
+
+function isLowSurrogate(codeUnit: number): boolean {
+  return codeUnit >= 0xdc00 && codeUnit <= 0xdfff;
+}
+
+/**
+ * Snap a UTF-16 code-unit offset down to the start of the grapheme cluster
+ * it falls inside, so slicing `text` at the returned offset never splits a
+ * surrogate pair, flag sequence, or ZWJ emoji mid-glyph. Offsets at the
+ * start/end of the string are returned unchanged (nothing to snap).
+ *
+ * Falls back to snapping off a lone low surrogate when `Intl.Segmenter` is
+ * unavailable — narrower than full grapheme-cluster awareness (a ZWJ
+ * sequence or flag pair can still split in that path), but it's what's
+ * achievable without a full grapheme-aware dependency, and it's strictly
+ * better than the unguarded default of never checking at all.
+ */
+export function snapToGraphemeBoundary(text: string, offset: number): number {
+  if (offset <= 0 || offset >= text.length) {
+    return offset;
+  }
+  if (graphemeSegmenter) {
+    // `containing` only returns undefined for an out-of-range index; offset
+    // is already guarded to [1, text.length - 1] above, so this is always
+    // defined at runtime — the `??` is to satisfy the type, which is wider.
+    return graphemeSegmenter.segment(text).containing(offset)?.index ?? offset;
+  }
+  return isLowSurrogate(text.charCodeAt(offset)) ? offset - 1 : offset;
+}
+
 /**
  * Smooths bursty streamed text into a steady character-by-character reveal.
  *
  * Returns a string that grows steadily toward `targetText`. When `isStreaming`
- * is false, returns the full `targetText` immediately.
+ * is false, returns the full `targetText` immediately. When the user prefers
+ * reduced motion, the progressive reveal is skipped entirely and the full
+ * `targetText` is returned immediately.
  *
- * The hook advances on word and syntax boundaries, avoiding slices inside
- * markdown markers like `**`, backticks, `[]()`, etc. This prevents visual
- * glitches when the output is rendered through a markdown parser.
+ * The reveal cadence itself advances by a fixed number of UTF-16 code units
+ * per tick, not on word or markdown-syntax boundaries — but the rendered
+ * slice is always snapped back to the nearest grapheme cluster boundary, so
+ * a tick landing mid-surrogate-pair or mid-emoji-sequence never renders a
+ * broken glyph.
  *
  * @example
  * ```
@@ -143,9 +188,17 @@ export function useStreamingText(
     }
   }
 
+  // Respect the user's reduced-motion preference — skip the progressive
+  // reveal and snap straight to the full text. Uses the package's SSR-safe
+  // useMediaQuery (useMediaQuery.ts) so the read stays in sync if the
+  // preference changes mid-stream.
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
+
   // Animation loop
   useEffect(() => {
-    if (!isStreaming || speed === 'instant') {
+    if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
       return;
     }
 
@@ -174,11 +227,11 @@ export function useStreamingText(
         rafRef.current = null;
       }
     };
-  }, [isStreaming, charsPerTick, tickMs, speed]);
+  }, [isStreaming, charsPerTick, tickMs, speed, prefersReducedMotion]);
 
-  if (!isStreaming || speed === 'instant') {
+  if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
     return targetText;
   }
 
-  return targetText.slice(0, displayedLen);
+  return targetText.slice(0, snapToGraphemeBoundary(targetText, displayedLen));
 }

@@ -4,9 +4,9 @@
 
 /**
  * @file Typeahead.tsx
- * @input Uses React, BaseTypeahead, Field, Token
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext
  * @output Exports Typeahead styled typeahead component
- * @position Styled wrapper; composes BaseTypeahead with Field
+ * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
  *
  * Owns the input wrapper (border, padding, status styles), selected value
  * token with spacing compensation, and edit mode behavior. Delegates
@@ -15,17 +15,24 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
  * - /apps/storybook/stories/Typeahead.stories.tsx
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {
   useCallback,
   useId,
   useRef,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+  useIsBusy,
+  type BusyIndicatorLane,
+} from './busyIndicatorLane';
 import {BaseTypeahead} from './BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {
@@ -36,16 +43,24 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Token} from '../Token';
+import {useTooltip} from '../Tooltip';
 import {renderIconSlot, type IconType} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
+import {Spinner} from '../Spinner';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -70,6 +85,13 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   isOptional?: boolean;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * Icon to display at the start of the input.
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
@@ -97,10 +119,40 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Explains why the input is disabled. When set together with `isDisabled`,
+   * the input shows a tooltip with this text on hover and keyboard focus, and
+   * the field stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Editing and selection
+   * stay blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Typeahead
+   *   label="Assignee"
+   *   searchSource={userSource}
+   *   value={assignee}
+   *   onChange={setAssignee}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
   /** Show clear button. @default true */
   hasClear?: boolean;
   /** Auto-focus on mount. @default false */
@@ -126,36 +178,97 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
 const styles = stylex.create({
   wrapper: {
     position: 'relative',
-    flexWrap: 'wrap',
+    // No `flexWrap`. The shared field base does not wrap and neither does
+    // TextInput; this field only ever holds one token, so there is no second
+    // row to wrap to. It also cannot wrap and keep its end controls in flow:
+    // flex moves an item to a new line rather than shrinking it, so a long
+    // value put the clear button and spinner on a row of their own (a 280px
+    // field grew to 46px tall). Unwrapped, the token ellipsizes instead.
     gap: spacingVars['--spacing-1'],
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
-  token: {
-    // Offset token so it sits 3px from the inner edge (4px from outer edge
-    // accounting for 1px border). Default inline padding is 8px, so
-    // -(8px - 3px) = -5px positions token equidistant from left edge as top.
-    margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
+  // The busy indicator and the clear button, at the field's inline end.
+  //
+  // In flow, as a flex child — an in-flow box takes up room, so the input
+  // cannot run underneath it and nothing has to be measured. That is
+  // TextInput's arrangement for the same two controls.
+  //
+  // The `auto` margin keeps them in the corner in the states where the
+  // content lane is not the only flexible item in the row (a start icon, a
+  // grouped row): `auto` gives free space to the margin rather than to a
+  // sibling, so it needs no sibling to exist.
+  endLane: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginInlineStart: 'auto',
   },
-  clearButton: {
-    position: 'absolute',
-    top: `calc((${sizeVars['--size-element-md']} - 20px) / 2 - 1px)`,
-    insetInlineEnd: `calc((${sizeVars['--size-element-md']} - 20px) / 2 - 1px)`,
-    height: '20px',
-  },
-  clearButtonSm: {
-    top: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
-    insetInlineEnd: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
-  },
-  inputHidden: {
-    width: 0,
+  // The field's content lane: the input, and the token painted over it.
+  //
+  // This is the box the value is allowed to occupy, and it is what makes the
+  // end lane's space its own — the lane is an ordinary flex item that ends
+  // exactly where `endLane` begins, so a value bounded by it can never reach
+  // the clear button or the spinner. Before it existed the token was
+  // positioned against the whole field, so a value longer than the input ran
+  // under the end controls and past the field's border (measured 33px of
+  // overlap and 4px outside the border at a 180px field).
+  //
+  // `flex: 1` with `min-width: 0` is TextInput's own arrangement for its
+  // input: the lane takes the free space so the end controls sit in the
+  // corner, and yields all of it when the field is narrow, so a narrow field
+  // never overflows. Stretched, so its padding box matches the field's
+  // content box in the block direction and the token keeps the vertical
+  // placement it has always had.
+  contentLane: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flex: 1,
     minWidth: 0,
-    flex: '0 0 0',
-    padding: 0,
+  },
+  // While a token shows, the input keeps its place in the row and its own
+  // intrinsic width — it is only made invisible and inert. That width is what
+  // sizes the field, exactly as it does for TextInput, so a Typeahead is as
+  // wide with a value as without one. Collapsing it to nothing instead left
+  // the field measuring the token: in any shrink-to-fit parent it snapped to
+  // the value's length (measured 199px to 57px, #5560), and block-level
+  // parents hid it because they fill their container whatever their content
+  // is, which is why no story caught it.
+  inputHidden: {
     opacity: 0,
+    // The token is painted over this space and owns the pointer; the input
+    // must not swallow clicks meant for it, or for the wrapper's own
+    // click-to-edit.
+    pointerEvents: 'none',
+  },
+  // Painted over the input rather than beside it. In flow the token would add
+  // its own width to the row, which is the same value-dependent sizing from
+  // the other direction — a long value would grow the field.
+  //
+  // Bounded by the content lane at both ends. `fit-content` shrink-wraps the
+  // label but resolves against the space left between the two insets, so a
+  // long value ellipsizes at the lane's edge instead of running under the end
+  // controls; the `auto` end margin is what keeps that pair of insets from
+  // being over-constrained, which would drop the end one and let the token
+  // overflow again. The negative inline start and the zero block start put it
+  // where it has always sat: the lane's padding box is the field's content
+  // box, 3px inside the field's own padding on both axes.
+  tokenOverlay: {
     position: 'absolute' as const,
+    insetBlockStart: 0,
+    insetInlineStart: `calc(-1 * (${spacingVars['--spacing-1']} - 1px))`,
+    insetInlineEnd: 0,
+    width: 'fit-content',
+    marginBlock: 0,
+    marginInlineStart: 0,
+    marginInlineEnd: 'auto',
   },
 });
 
@@ -190,6 +303,39 @@ const wrapperSizeStyles = stylex.create({
  * />
  * ```
  */
+
+/**
+ * The field's inline-end lane: the busy Spinner, then the clear button.
+ *
+ * A separate component so that subscribing to the busy state re-renders THIS
+ * and nothing else. Subscribing from `Typeahead` itself would re-render the
+ * whole field — and, in the Tokenizer that shares this design, every selected
+ * token — twice per search for one glyph.
+ *
+ * Renders nothing when there is neither a spinner nor a clear button, which is
+ * what keeps an empty flex item from taking a gap in the row.
+ */
+function EndLane({
+  lane,
+  loadingLabel,
+  clear,
+}: {
+  lane: BusyIndicatorLane;
+  loadingLabel: string;
+  clear: ReactNode;
+}) {
+  const isBusy = useIsBusy(lane);
+  if (!isBusy && clear == null) {
+    return null;
+  }
+  return (
+    <div {...stylex.props(styles.endLane)}>
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {clear}
+    </div>
+  );
+}
+
 export function Typeahead<T extends SearchableItem>({
   ref,
   label,
@@ -198,6 +344,7 @@ export function Typeahead<T extends SearchableItem>({
   isRequired = false,
   isOptional = false,
   status,
+  statusVariant = 'attached',
   startIcon,
   labelTooltip,
   searchSource,
@@ -207,8 +354,10 @@ export function Typeahead<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
+  disabledMessage,
   hasClear = true,
   hasAutoFocus,
   size: sizeProp,
@@ -221,16 +370,41 @@ export function Typeahead<T extends SearchableItem>({
   style,
   'data-testid': testId,
 }: TypeaheadProps<T>) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
+  const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputGroup = useInputGroup();
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const tokenRef = useRef<HTMLElement>(null);
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input wrapper (which already exists) and
+  // the input stays perceivable via aria-disabled + readOnly instead of the
+  // disabled attribute. Editing and selection stay blocked by the isDisabled
+  // guards (handleWrapperClick, handleEnterEditMode, and BaseTypeahead's own
+  // focus/change guards).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The wrapper div is not naturally focusable; focusin bubbles up from the
+    // input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   // Edit mode: when the user clicks the token to edit the selected value
+  // Reported by BaseTypeahead so the indicator can live in this field's own
+  // end lane, beside the clear button, rather than in the engine's row.
+  // The base owns the busy state; this field only paints it. Held in a store
+  // rather than this component's state so a search transition re-renders the
+  // one leaf that shows the Spinner, not the whole field. See
+  // busyIndicatorLane.tsx.
+  const busyLane = useMemo(() => createBusyIndicatorLane(), []);
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<T | null>(null);
 
@@ -313,6 +487,15 @@ export function Typeahead<T extends SearchableItem>({
   // Handle Escape during edit mode — restore token
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // BaseTypeahead invokes this external handler *before* its own IME
+      // guard, so we must guard here too: an IME candidate window uses Escape
+      // to cancel the pending composition, and that composing Escape fires
+      // before compositionend. Without this, a Korean/Japanese/Chinese user
+      // cancelling a candidate would instead exit edit mode and blur the
+      // field. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && editingValue) {
         e.preventDefault();
         setIsEditing(false);
@@ -335,15 +518,122 @@ export function Typeahead<T extends SearchableItem>({
     }
   }, [isDisabled, showToken, handleEnterEditMode]);
 
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ],
+    inputGroup,
+  );
 
   const sizeStyle = wrapperSizeStyles[size];
+
+  const typeaheadContent = (
+    <>
+      <div
+        ref={useMergedRefs(
+          wrapperRef,
+          disabledMessageTooltip.ref,
+          inputGroup ? ref : undefined,
+        )}
+        data-testid={testId}
+        onClick={handleWrapperClick}
+        onBlur={handleBlur}
+        {...mergeProps(
+          themeProps('typeahead', {size, status: status?.type}),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            sizeStyle,
+            status && inputStatusBorderStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            isDisabled && inputWrapperStyles.disabled,
+            inputGroup && groupStyles.inGroup,
+            inputGroup && xstyle,
+          ),
+          inputGroup ? className : undefined,
+          inputGroup ? style : undefined,
+        )}>
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
+        {/* The base reports its busy state through this lane, so the
+            indicator lands in the end controls below beside the clear button
+            rather than as a second one inside the base. */}
+        <BusyIndicatorLaneProvider value={busyLane}>
+          <div {...stylex.props(styles.contentLane)}>
+            {showToken && (
+              <Token
+                ref={tokenRef}
+                label={value.label}
+                size={size}
+                onClick={handleEnterEditMode}
+                isDisabled={isDisabled}
+                xstyle={styles.tokenOverlay}
+              />
+            )}
+            <BaseTypeahead
+              ref={inputRef}
+              searchSource={searchSource}
+              value={value}
+              onChange={handleChange}
+              renderItem={renderItem}
+              placeholder={showToken ? undefined : placeholder}
+              hasEntriesOnFocus={hasEntriesOnFocus}
+              maxMenuItems={maxMenuItems}
+              minQueryLength={minQueryLength}
+              emptySearchResultsText={emptySearchResultsText}
+              isDisabled={isDisabled}
+              hasAutoFocus={hasAutoFocus}
+              isFocusableDisabled={showsDisabledMessage}
+              inputId={inputId}
+              ariaDescribedBy={ariaDescribedBy}
+              ariaLabelledBy={ariaLabelledBy}
+              onChangeQuery={onChangeQuery}
+              onOpenChange={onOpenChange}
+              debounceMs={debounceMs}
+              anchorRef={wrapperRef}
+              onKeyDown={handleKeyDown}
+              inputXStyle={showToken ? styles.inputHidden : undefined}
+              // While the token is shown the input is invisible and inert behind
+              // it — take it out of the Tab order so keyboard users don't hit a
+              // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
+              // programmatically focusable: entering edit mode and clearing both
+              // refocus it once the token goes away.
+              inputTabIndex={showToken ? -1 : undefined}
+              size={size}
+            />
+          </div>
+        </BusyIndicatorLaneProvider>
+        <EndLane
+          lane={busyLane}
+          loadingLabel={t('@astryx.typeahead.loading')}
+          clear={
+            hasClear && value && !isDisabled ? (
+              <InputClearButton
+                label={t('@astryx.typeahead.clearSelection')}
+                onClick={e => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
+              />
+            ) : null
+          }
+        />
+      </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return typeaheadContent;
+  }
 
   return (
     <Field
@@ -365,73 +655,13 @@ export function Typeahead<T extends SearchableItem>({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}
       xstyle={xstyle}
       className={className}
       style={style}>
-      <div
-        ref={wrapperRef}
-        data-testid={testId}
-        onClick={handleWrapperClick}
-        onBlur={handleBlur}
-        {...mergeProps(
-          themeProps('typeahead', {size, status: status?.type}),
-          stylex.props(
-            inputWrapperStyles.base,
-            styles.wrapper,
-            sizeStyle,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            isDisabled && inputWrapperStyles.disabled,
-          ),
-        )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        {showToken && (
-          <Token
-            ref={tokenRef}
-            label={value.label}
-            size={size}
-            onClick={handleEnterEditMode}
-            isDisabled={isDisabled}
-            xstyle={styles.token}
-          />
-        )}
-        <BaseTypeahead
-          ref={inputRef}
-          searchSource={searchSource}
-          value={value}
-          onChange={handleChange}
-          renderItem={renderItem}
-          placeholder={showToken ? undefined : placeholder}
-          hasEntriesOnFocus={hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          emptySearchResultsText={emptySearchResultsText}
-          isDisabled={isDisabled}
-          hasAutoFocus={hasAutoFocus}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          onChangeQuery={onChangeQuery}
-          onOpenChange={onOpenChange}
-          debounceMs={debounceMs}
-          anchorRef={wrapperRef}
-          onKeyDown={handleKeyDown}
-          inputXStyle={showToken ? styles.inputHidden : undefined}
-          size={size}
-        />
-        {hasClear && value && !isDisabled && (
-          <InputClearButton
-            label="Clear selection"
-            onClick={e => {
-              e.stopPropagation();
-              handleClear();
-            }}
-            xstyle={[styles.clearButton, size === 'sm' && styles.clearButtonSm]}
-          />
-        )}
-      </div>
+      {typeaheadContent}
     </Field>
   );
 }

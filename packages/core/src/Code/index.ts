@@ -7,4 +7,4 @@
  * @position Entry point for @astryxdesign/core/Code subpath export
  */
 
-export {Code, type CodeProps} from './Code';
+export {Code, type CodeProps, type CodeColor, type CodeSize} from './Code';

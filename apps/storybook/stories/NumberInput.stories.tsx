@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {HashtagIcon, CurrencyDollarIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof NumberInput> = {
@@ -50,6 +51,16 @@ const meta: Meta<typeof NumberInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the input is read-only. The value still submits with the form but cannot be edited. Unlike isDisabled it is not dimmed and stays in the tab order.',
+    },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled NumberInput in Tooltip.',
+    },
     status: {
       control: 'object',
       description:
@@ -71,6 +82,19 @@ const meta: Meta<typeof NumberInput> = {
     step: {
       control: 'number',
       description: 'Step increment for the input',
+    },
+    formatValue: {
+      control: false,
+      description: 'Formats the committed value while the input is not focused',
+    },
+    isWheelEnabled: {
+      control: 'boolean',
+      description:
+        'Whether a wheel gesture over the focused input steps the value',
+    },
+    hasNumberSteppers: {
+      control: 'boolean',
+      description: 'Shows increment and decrement buttons',
     },
     units: {
       control: 'text',
@@ -99,6 +123,44 @@ export const Default: Story = {
   args: {
     label: 'Quantity',
     placeholder: 'Enter quantity',
+  },
+};
+
+export const PasteFormattedNumber: Story = {
+  render: () => {
+    const [enUS, setEnUS] = useState<number | null>(null);
+    const [deDE, setDeDE] = useState<number | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <div>
+          <NumberInput
+            label="Impressions (en-US)"
+            description="Paste 1,234,234,234 or $1,234.56, then blur"
+            placeholder="Paste a formatted number"
+            value={enUS}
+            onChange={setEnUS}
+            hasClear
+          />
+          <p data-testid="en-committed">Committed: {String(enUS)}</p>
+        </div>
+        <InternationalizationProvider locale="de-DE">
+          <div>
+            <NumberInput
+              label="Impressionen (de-DE)"
+              description="Paste 1.234.234.234 or 1,5"
+              placeholder="Paste a formatted number"
+              value={deDE}
+              onChange={setDeDE}
+              formatValue={value =>
+                new Intl.NumberFormat('de-DE').format(value)
+              }
+              hasClear
+            />
+            <p data-testid="de-committed">Committed: {String(deDE)}</p>
+          </div>
+        </InternationalizationProvider>
+      </div>
+    );
   },
 };
 
@@ -139,6 +201,74 @@ export const WithStep: Story = {
     min: 0,
     step: 0.01,
     startIcon: CurrencyDollarIcon,
+  },
+};
+
+export const FormattedDisplay: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1234.56);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Monthly revenue',
+    value: 1234.56,
+    min: 0,
+    step: 0.01,
+    description: 'Focus the input to edit the raw numeric value',
+    formatValue: value =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(value),
+  },
+};
+
+export const WithNumberSteppers: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 2);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    value: 2,
+    min: 0,
+    max: 10,
+    hasNumberSteppers: true,
+  },
+};
+
+export const WheelBehavior: Story = {
+  render: () => {
+    const [enabledValue, setEnabledValue] = useState<number | null>(2);
+    const [disabledValue, setDisabledValue] = useState<number | null>(2);
+    return (
+      <div
+        style={{
+          width: 360,
+          height: 260,
+          overflowY: 'auto',
+          padding: 16,
+          border: '1px solid #ccd3db',
+        }}>
+        <div style={{height: 140}}>Scroll down to the focused examples.</div>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          <NumberInput
+            label="Wheel stepping enabled (default)"
+            description="Focus, then use the wheel to change the value"
+            value={enabledValue}
+            onChange={setEnabledValue}
+          />
+          <NumberInput
+            label="Wheel stepping disabled"
+            description="Focused wheel gestures continue scrolling"
+            value={disabledValue}
+            onChange={setDisabledValue}
+            isWheelEnabled={false}
+          />
+        </div>
+        <div style={{height: 180}} />
+      </div>
+    );
   },
 };
 
@@ -232,11 +362,7 @@ export const AllVariations: Story = {
           onChange={setValue2}
           placeholder="Hidden label input"
         />
-        <NumberInput
-          label="With value"
-          value={value3}
-          onChange={setValue3}
-        />
+        <NumberInput label="With value" value={value3} onChange={setValue3} />
         <NumberInput
           label="Optional field"
           isOptional
@@ -301,6 +427,20 @@ export const RequiredField: Story = {
   },
 };
 
+// Read-only shows a value the user should see and send but not change. Unlike
+// a disabled field it is not dimmed, stays in the tab order, and still submits.
+export const ReadOnly: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1024);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Allocated storage (GB)',
+    isReadOnly: true,
+    value: 1024,
+  },
+};
+
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 100);
@@ -309,6 +449,24 @@ export const Disabled: Story = {
   args: {
     label: 'Locked Amount',
     isDisabled: true,
+    value: 100,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (editing is still blocked).
+// Use disabledMessage instead of wrapping a disabled NumberInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 100);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    isDisabled: true,
+    disabledMessage: 'Editing is locked while the order is processing',
     value: 100,
   },
 };
@@ -495,7 +653,12 @@ export const WithEventHandlers: Story = {
           onBlur={() => addEvent('onBlur')}
           onEnter={() => addEvent('onEnter')}
         />
-        <div style={{marginTop: '16px', fontSize: '12px', color: '#666'}}>
+        <div
+          style={{
+            marginTop: '16px',
+            fontSize: '12px',
+            color: 'var(--color-text-secondary)',
+          }}>
           <strong>Events:</strong>
           <ul style={{margin: '4px 0', paddingLeft: '20px'}}>
             {events.map((event, i) => (
@@ -516,9 +679,7 @@ export const WithEventHandlers: Story = {
 export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 42);
-    return (
-      <NumberInput {...args} value={value} onChange={setValue} hasClear />
-    );
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
   },
   args: {
     label: 'Quantity',
@@ -529,14 +690,37 @@ export const Clearable: Story = {
 export const ClearableWithUnits: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 75);
-    return (
-      <NumberInput {...args} value={value} onChange={setValue} hasClear />
-    );
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
   },
   args: {
     label: 'Progress',
     units: '%',
     min: 0,
     max: 100,
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<number | null>(-5);
+    const [b, setB] = useState<number | null>(-5);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <NumberInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Must be a positive number'}}
+        />
+        <NumberInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Must be a positive number'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
   },
 };

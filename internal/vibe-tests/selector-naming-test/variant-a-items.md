@@ -1,18 +1,18 @@
-# XDSSelector — Dropdown Selector Component
+# Selector — Dropdown Selector Component
 
 A dropdown selector for choosing from a list of items. Supports simple strings, rich items with icons/descriptions, sections, and dividers.
 
 ## Import
 
 ```tsx
-import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
+import {Selector, SelectorItem} from '@astryxdesign/core';
 ```
 
 ## Basic Usage
 
 ```tsx
 // Simple string items
-<XDSSelector
+<Selector
   label="Fruit"
   items={['Apple', 'Banana', 'Orange']}
   value={fruit}
@@ -21,7 +21,7 @@ import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 />
 
 // Rich items with icons and descriptions
-<XDSSelector
+<Selector
   label="Status"
   items={[
     { value: 'active', label: 'Active', icon: 'checkCircle' },
@@ -33,7 +33,7 @@ import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 />
 
 // Sections and dividers
-<XDSSelector
+<Selector
   label="Action"
   items={[
     { type: 'section', title: 'Edit', items: [
@@ -54,13 +54,13 @@ import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 ## Custom Item Rendering
 
 ```tsx
-<XDSSelector
+<Selector
   label="User"
   items={users.map(u => ({value: u.id, label: u.name, icon: 'user'}))}
   value={selectedUser}
   onChange={setSelectedUser}
   renderOption={item => (
-    <XDSSelectorItem
+    <SelectorItem
       icon={item.icon}
       label={item.label}
       description={item.email}
@@ -71,7 +71,7 @@ import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 
 ## Props
 
-### XDSSelector
+### Selector
 
 | Prop          | Type                                                          | Default     | Description                           |
 | ------------- | ------------------------------------------------------------- | ----------- | ------------------------------------- |
@@ -90,14 +90,14 @@ import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 | status        | { type: 'warning' \| 'error' \| 'success', message?: string } | —           | Validation status                     |
 | renderOption  | (item: ItemData) => ReactNode                                 | —           | Custom item renderer                  |
 
-### XDSSelectorItem (for custom rendering)
+### SelectorItem (for custom rendering)
 
-| Prop        | Type        | Description        |
-| ----------- | ----------- | ------------------ |
-| icon        | XDSIconType | Leading icon       |
-| label       | ReactNode   | Primary text       |
-| description | ReactNode   | Secondary text     |
-| children    | ReactNode   | Additional content |
+| Prop        | Type      | Description        |
+| ----------- | --------- | ------------------ |
+| icon        | IconType  | Leading icon       |
+| label       | ReactNode | Primary text       |
+| description | ReactNode | Secondary text     |
+| children    | ReactNode | Additional content |
 
 ### Item Types
 
@@ -106,7 +106,7 @@ type ItemData = {
   value: string;
   label?: string;
   disabled?: boolean;
-  icon?: XDSIconType;
+  icon?: IconType;
 };
 type Divider = {type: 'divider'};
 type Section = {type: 'section'; title?: string; items: ItemData[]};

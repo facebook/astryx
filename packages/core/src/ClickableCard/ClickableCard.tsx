@@ -12,8 +12,9 @@
  * - /packages/core/src/ClickableCard/ClickableCard.doc.mjs (props table, features)
  * - /packages/core/src/ClickableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with
@@ -31,16 +32,23 @@
 import {type ReactNode, type MouseEvent, useRef, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import type {SizeValue, SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {
+  borderVars,
+  colorVars,
+  durationVars,
+  easeVars,
+} from '../theme/tokens.stylex';
+import type {SizeValue, SpacingStep, Elevation} from '../utils/types';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
@@ -48,16 +56,12 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   interactive: {
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     color: 'inherit',
-    outlineOffset: '2px',
-  },
-  focusWithin: {
-    ':has(:focus-visible)': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
   // Hover overlay — guarded by @media (hover: hover) so touch devices
   // don't show a stuck hover state. Active/pressed state works everywhere.
@@ -66,7 +70,6 @@ const styles = stylex.create({
       content: '""',
       position: 'absolute',
       inset: 0,
-      borderRadius: 'inherit',
       pointerEvents: 'none',
       transitionProperty: 'background-color',
       transitionDuration: durationVars['--duration-fast'],
@@ -74,18 +77,50 @@ const styles = stylex.create({
       backgroundColor: 'transparent',
     },
     ':active::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
-        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
+    },
+  },
+  // Borderless variants (everything except `default`): drop the transparent
+  // 1px border Card applies. The overlay is inset to the padding box — inside
+  // that border — so a transparent border strip stays untinted on hover and
+  // reads as a faint ring. With no border, the overlay covers the full box
+  // edge-to-edge and the ring disappears.
+  borderless: {
+    borderWidth: 0,
+  },
+  // Bordered variant (`default`): draw the 1px border *within* the padding by
+  // subtracting the border width from every side. Total inset (border +
+  // padding) then equals the borderless variants' padding, so content geometry
+  // and outer dimensions stay identical across all variants. The border rests
+  // at the subtle token and emphasizes on hover.
+  bordered: {
+    borderColor: colorVars['--color-border'],
+    paddingInlineStart: `calc(var(--container-padding-inline-start) - ${borderVars['--border-width']})`,
+    paddingInlineEnd: `calc(var(--container-padding-inline-end) - ${borderVars['--border-width']})`,
+    paddingBlockStart: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,
+    paddingBlockEnd: `calc(var(--container-padding-block-end) - ${borderVars['--border-width']})`,
+    transitionProperty: 'border-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // Emphasize the bordered variant's border on hover. Guarded by
+  // @media (hover: hover) so touch devices don't get a stuck hover state.
+  borderedHoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        borderColor: colorVars['--color-border-emphasized'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -161,6 +196,13 @@ export interface ClickableCardProps extends BaseProps {
    */
   variant?: CardVariant;
 
+  /**
+   * Resting elevation — the shadow depth the card sits at. Often raised to
+   * signal that the whole card is clickable.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
   /** Width of the card. */
   width?: SizeValue;
 
@@ -217,6 +259,7 @@ export function ClickableCard({
   children,
   padding,
   variant = 'default',
+  elevation = 'none',
   width,
   height,
   maxWidth,
@@ -248,24 +291,33 @@ export function ClickableCard({
 
   const isLink = href != null;
 
+  // Only the `default` variant has a visible border. Card draws a transparent
+  // 1px border on every other variant purely to avoid layout jitter; we drop
+  // it here so the hover overlay covers the full box with no untinted ring.
+  const hasBorder = variant === 'default';
+
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      {...mergeProps(themeProps('clickable-card', {variant}), {
-        className: classNameProp,
+      elevation={elevation}
+      {...mergeProps(
+        themeProps('clickable-card', {variant}),
+        focusOutlineProps.focusWithin(),
+        classNameProp,
         style,
-      })}
+      )}
       xstyle={
         [
           styles.interactive,
-          styles.focusWithin,
+          hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
+          !isDisabled && hasBorder && styles.borderedHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,
         ] as unknown as StyleXStyles

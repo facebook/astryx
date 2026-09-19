@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Citation',
@@ -39,7 +39,7 @@ export const docs = {
         name: 'Icon',
         required: false,
         description:
-          'An optional favicon or source icon displayed before the label text. Only available in the label variant.',
+          'An optional source icon shown before the label text. Accepts a favicon/logo image URL (via source.src) or a React node such as an Astryx <Icon>. Only available in the label variant.',
       },
       {
         name: 'Label text',
@@ -56,12 +56,22 @@ export const docs = {
     ],
   },
 
+  // `source` is a custom object type the docsite preview cannot generate
+  // automatically; without these defaults the properties tab shows the
+  // missing-required-props placeholder instead of an interactive preview.
+  playground: {
+    defaults: {
+      source: {title: 'Astryx Design', url: 'https://example.com'},
+      number: 1,
+    },
+  },
+
   props: [
     {
       name: 'source',
       type: 'CitationSource',
       description:
-        'The citation source object containing title, url, and optional icon.',
+        'The citation source object containing title, url, an optional image src, and an optional icon node.',
       required: true,
     },
     {
@@ -78,9 +88,14 @@ export const docs = {
       default: "'label'",
     },
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-citation', visualProps: ['variant']},
+    ],
+  },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Inline reference to external source. Attribute info in AI responses, articles, or anywhere provenance needed.',
@@ -106,7 +121,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    source: 'citation source object with title, url, optional icon.',
+    source:
+      'citation source object with title, url, optional image src, and optional icon node.',
     number: 'display index for this citation.',
     variant: 'display style: label chip with source title or compact numbered badge.',
   },

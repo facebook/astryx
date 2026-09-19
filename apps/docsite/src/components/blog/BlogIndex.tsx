@@ -12,7 +12,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
-import {Grid} from '@astryxdesign/core/Grid';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import type {BlogPost, BlogPostType} from '../../lib/blog/schema';
@@ -23,6 +23,14 @@ const styles = stylex.create({
   typeFilter: {
     flexWrap: 'wrap',
     justifyContent: 'center',
+  },
+  // Responsive card grid. `min(320px, 100%)` clamps the track to the container
+  // so a 320px column never overflows a narrower viewport (e.g. small phones).
+  postGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))',
+    columnGap: spacingVars['--spacing-5'],
+    rowGap: spacingVars['--spacing-10'],
   },
 });
 
@@ -94,14 +102,11 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
           <VStack gap={10}>
             {featurePost ? <BlogCard post={featurePost} feature /> : null}
             {restPosts.length > 0 ? (
-              <Grid
-                columns={{minWidth: 320, repeat: 'fill'}}
-                gap={5}
-                rowGap={10}>
+              <div {...stylex.props(styles.postGrid)}>
                 {restPosts.map(post => (
                   <BlogCard key={post.slug} post={post} />
                 ))}
-              </Grid>
+              </div>
             ) : null}
           </VStack>
         )}

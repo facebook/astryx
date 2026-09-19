@@ -13,7 +13,7 @@
  * - /packages/core/src/Field/Field.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
  */
 
 import {type ReactNode, use} from 'react';
@@ -22,9 +22,11 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {FieldLabel} from './FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
-import {spacingVars, borderVars} from '../theme/tokens.stylex';
+import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
+import {spacingVars, borderVars, sizeVars} from '../theme/tokens.stylex';
 import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
@@ -33,6 +35,12 @@ const styles = stylex.create({
   container: {
     display: 'flex',
     flexDirection: 'column',
+    // The Field root owns the local stacking boundary (AST-027): the input
+    // wrapper's z-index (1, above the attached status box) and the attached
+    // status layer (-1) order parts inside this surface only. Without this,
+    // detached/tooltip fields — whose input wrapper renders outside the
+    // attached-status wrapper — compete with page-level stacking (#5689).
+    isolation: 'isolate',
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],
@@ -50,6 +58,20 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     isolation: 'isolate',
+    // Extend an attached FieldStatus behind the lower half of the control.
+    // Half-height is the maximum effective corner radius CSS can render, even
+    // when a theme uses a pill value such as --radius-full (9999px).
+    '--_field-status-overlap': {
+      default: `calc(${sizeVars['--size-element-md']} / 2)`,
+      ':has(> [data-size="sm"])': `calc(${sizeVars['--size-element-sm']} / 2)`,
+      ':has(> [data-size="lg"])': `calc(${sizeVars['--size-element-lg']} / 2)`,
+    },
+  },
+  attachedStatusLayer: {
+    // Keep the overlapping background below both Astryx inputs and custom
+    // controls. The isolated wrapper contains this negative stacking layer.
+    position: 'relative',
+    zIndex: -1,
   },
 });
 
@@ -99,9 +121,26 @@ export interface FieldProps extends Omit<
    */
   description?: string;
   /**
-   * ID for the input element (used for label's htmlFor attribute).
+   * ID of the input element this label points AT (used as the label's
+   * `htmlFor`). This is the id of the *control*, not of the label element —
+   * see `labelID` for the latter.
    */
   inputID: string;
+  /**
+   * The `id` applied TO the label element itself (distinct from `inputID`,
+   * which is the control the label points at). A grouping control
+   * (radiogroup, checkbox group) references this via `aria-labelledby` to take
+   * the label as its accessible name. Pair with `isGroupLabel`.
+   */
+  labelID?: string;
+  /**
+   * When the field wraps a group of controls rather than a single input, set
+   * this so the label renders as a non-`<label>` element (a `<span>`): a
+   * `<label>` semantically names one control and can't be associated with a
+   * group. Pair with `labelID` + `aria-labelledby` on the group.
+   * @default false
+   */
+  isGroupLabel?: boolean;
   /**
    * ID for the description element (use for aria-describedby on the input).
    */
@@ -138,9 +177,10 @@ export interface FieldProps extends Omit<
    * How the status message is rendered relative to the input.
    * - 'attached': Status sits directly below the input (default, for bordered inputs)
    * - 'detached': Status is a separate element below the field (for checkboxes, switches, sliders)
+   * - 'tooltip': No message box; the input surfaces status through a tooltip on its on-field icon
    * @default 'attached'
    */
-  statusVariant?: 'attached' | 'detached';
+  statusVariant?: FieldStatusVariant;
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field — label, control, and status — so
@@ -172,6 +212,8 @@ export function Field({
   isLabelHidden = false,
   description,
   inputID,
+  labelID,
+  isGroupLabel = false,
   descriptionID,
   isOptional = false,
   isRequired = false,
@@ -196,16 +238,18 @@ export function Field({
   const resolvedMessageID =
     status?.messageID ?? (status?.message ? `${inputID}-status` : undefined);
 
-  if (isOptional && isRequired) {
-    console.warn(
-      'Field: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
-    );
-  }
+  useDevWarning(
+    'Field',
+    'isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+    isOptional && isRequired,
+  );
 
   const labelNode = (
     <FieldLabel
       label={label}
       inputID={inputID}
+      labelID={labelID}
+      isGroupLabel={isGroupLabel}
       isLabelHidden={isLabelHidden}
       isDisabled={isDisabled}
       isOptional={isOptional}
@@ -217,14 +261,20 @@ export function Field({
     />
   );
 
-  const statusNode = status?.message ? (
-    <FieldStatus
-      type={status.type}
-      message={status.message}
-      id={resolvedMessageID}
-      variant={statusVariant}
-    />
-  ) : null;
+  // The 'tooltip' variant surfaces status through the input's on-field icon
+  // tooltip, so Field renders no message box for it.
+  const statusNode =
+    status?.message && statusVariant !== 'tooltip' ? (
+      <FieldStatus
+        type={status.type}
+        message={status.message}
+        id={resolvedMessageID}
+        variant={statusVariant}
+        xstyle={
+          statusVariant === 'attached' ? styles.attachedStatusLayer : undefined
+        }
+      />
+    ) : null;
 
   // ─── Horizontal-labels mode ───────────────────────────────────────────
   // Use display:contents so the parent grid's `auto 1fr` columns place
@@ -245,10 +295,7 @@ export function Field({
         <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
-            <Text
-              type="supporting"
-              display="block"
-              id={resolvedDescriptionID}>
+            <Text type="supporting" display="block" id={resolvedDescriptionID}>
               {description}
             </Text>
           )}

@@ -25,13 +25,16 @@ import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
+import {resolveTypeRefs, TypeRefText} from './TypeRefText';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
 import type {
   ElementDescriptor,
   PropDoc,
+  TypeDefinition,
 } from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
+import {useLiveNumberInput} from '@/lib/useLiveNumberInput';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -62,6 +65,35 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
     );
   }
   return type;
+}
+
+/**
+ * Type-column text for a prop. When the documented type references named
+ * types exported from the component's package (e.g. `SearchSource<T>`), each
+ * referenced name becomes an inline definition trigger; surrounding type
+ * syntax (generics punctuation, unions) stays plain text. Props with no
+ * resolved references keep the plain formatType rendering.
+ */
+function PropTypeText({
+  prop,
+  typeDefs,
+}: {
+  prop: PropDoc;
+  typeDefs: TypeDefinition[];
+}) {
+  const defs = resolveTypeRefs(prop.typeRefs, typeDefs);
+  if (defs.length === 0) {
+    return <>{formatType(prop.type, prop.default)}</>;
+  }
+
+  return (
+    <>
+      <TypeRefText type={prop.type} defs={defs} />
+      {prop.default != null && (
+        <span style={{opacity: 0.6}}> (default: {prop.default})</span>
+      )}
+    </>
+  );
 }
 
 function resolveSlotElement(
@@ -347,6 +379,31 @@ function SlotListControl({
   );
 }
 
+function NumberControl({
+  value,
+  isRequired,
+  onChange,
+}: {
+  value: number | null;
+  isRequired: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const liveNumber = useLiveNumberInput(value, onChange);
+  return (
+    <NumberInput
+      label=""
+      value={liveNumber.value}
+      placeholder={isRequired ? undefined : 'unset'}
+      hasClear={!isRequired}
+      onChange={liveNumber.handleChange}
+      onFocus={liveNumber.handleFocus}
+      onInput={liveNumber.handleInput}
+      onBlur={liveNumber.handleBlur}
+      onKeyDown={liveNumber.handleKeyDown}
+    />
+  );
+}
+
 function InlineControl({
   control,
   value,
@@ -435,12 +492,10 @@ function InlineControl({
       // lets the user return to the original unset render. Required numbers
       // keep their generated fallback and stay non-clearable.
       return (
-        <NumberInput
-          label=""
+        <NumberControl
           value={typeof value === 'number' ? value : null}
-          placeholder={prop.required ? undefined : 'unset'}
-          hasClear={!prop.required}
-          onChange={(next: number | null) => onChange(next ?? undefined)}
+          isRequired={!!prop.required}
+          onChange={next => onChange(next ?? undefined)}
         />
       );
     case 'element':
@@ -468,12 +523,14 @@ function InlineControl({
 
 function PropRow({
   prop,
+  typeDefs,
   knob,
   value,
   onChange,
   isMobile,
 }: {
   prop: PropDoc;
+  typeDefs: TypeDefinition[];
   knob?: KnobProp;
   value?: unknown;
   onChange?: (next: unknown) => void;
@@ -486,7 +543,7 @@ function PropRow({
           {prop.name}
         </Text>
         <Text type="code" display="block">
-          {formatType(prop.type, prop.default)}
+          <PropTypeText prop={prop} typeDefs={typeDefs} />
         </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary">
@@ -514,7 +571,7 @@ function PropRow({
       </div>
       <div style={{flex: 1}}>
         <Text type="code" display="block">
-          {formatType(prop.type, prop.default)}
+          <PropTypeText prop={prop} typeDefs={typeDefs} />
         </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary" style={{marginTop: 6}}>
@@ -538,6 +595,7 @@ function PropRow({
 
 interface PlaygroundPropsTableProps {
   props: PropDoc[];
+  typeDefs: TypeDefinition[];
   knobs: KnobProp[];
   state: Record<string, unknown>;
   onPropChange: (name: string, value: unknown) => void;
@@ -545,6 +603,7 @@ interface PlaygroundPropsTableProps {
 
 export function PlaygroundPropsTable({
   props,
+  typeDefs,
   knobs,
   state,
   onPropChange,
@@ -569,6 +628,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}
@@ -590,6 +650,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}

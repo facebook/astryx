@@ -9,7 +9,7 @@ tags:
   - 'Release'
   - 'AI'
   - 'Design systems'
-coverImage: '/astryx-og-banner.png'
+coverImage: '/images/Astryx-Banner.png'
 coverAlt: 'Introducing Astryx by Meta'
 relatedDocs:
   - title: 'Getting started'

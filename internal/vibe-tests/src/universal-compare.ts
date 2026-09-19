@@ -90,7 +90,7 @@ function winnerIcon(w: WinnerType): string {
     case 'html':
       return '🟡 HTML';
     case 'astryx-tailwind':
-      return '🟣 XDS+TW';
+      return '🟣 Astryx+TW';
     case 'tie':
       return '⚪ Tie';
   }
@@ -197,7 +197,7 @@ function toMarkdown(opts: {
   if (twData) {
     const twRow = dimOrder.map(d => twData.averages[d]).join(' | ');
     lines.push(
-      `| **XDS+TW** | \`${astryxTailwindId}\` | ${twData.overall} | ${twRow} |`,
+      `| **Astryx+TW** | \`${astryxTailwindId}\` | ${twData.overall} | ${twRow} |`,
     );
   }
 
@@ -229,7 +229,7 @@ function toMarkdown(opts: {
       parts.push(`HTML ${hWins}`);
     }
     if (twData) {
-      parts.push(`XDS+TW ${twWins}`);
+      parts.push(`Astryx+TW ${twWins}`);
     }
     parts.push(`Tie ${ties}`);
     lines.push(
@@ -247,7 +247,7 @@ function toMarkdown(opts: {
     dmParts.push(`HTML ${htmlData.darkModeRate}%`);
   }
   if (twData) {
-    dmParts.push(`XDS+TW ${twData.darkModeRate}%`);
+    dmParts.push(`Astryx+TW ${twData.darkModeRate}%`);
   }
   lines.push(`**Dark mode:** ${dmParts.join(' · ')}`);
 
@@ -380,7 +380,7 @@ async function main() {
     targetNames.push('HTML');
   }
   if (isFourWay) {
-    targetNames.push('XDS+TW');
+    targetNames.push('Astryx+TW');
   }
 
   const title = `📊 Universal Comparison: ${targetNames.join(' vs ')}`;
@@ -397,7 +397,7 @@ async function main() {
     targets.push({label: 'HTML', data: htmlData});
   }
   if (isFourWay && twData != null) {
-    targets.push({label: 'XDS+TW', data: twData});
+    targets.push({label: 'Astryx+TW', data: twData});
   }
 
   // Use markdown-style table for CLI (simpler than box-drawing for N targets)
@@ -527,13 +527,28 @@ async function main() {
       t => `${t.label} ${t.data.cost?.avgDocsRead ?? 0}`,
     );
     console.log(`   Avg docs read:    ${docsParts.join(' | ')}`);
-    const tokenParts = costTargets.map(t => {
-      const total =
-        (t.data.cost?.estimatedInputTokens ?? 0) +
-        (t.data.cost?.estimatedOutputTokens ?? 0);
-      return `${t.label} ~${total}`;
-    });
-    console.log(`   Est. tokens:      ${tokenParts.join(' | ')}`);
+    const usageComparable = costTargets.every(
+      target => target.data.cost?.usageComplete === true,
+    );
+    if (usageComparable) {
+      const tokenParts = costTargets.map(target => {
+        const total =
+          (target.data.cost?.inputTokens ?? 0) +
+          (target.data.cost?.outputTokens ?? 0);
+        return `${target.label} ${total}`;
+      });
+      console.log(`   Tokens:           ${tokenParts.join(' | ')}`);
+    } else {
+      const coverageParts = costTargets.map(target => {
+        const cost = target.data.cost;
+        const total =
+          (cost?.completeUsageRuns ?? 0) + (cost?.incompleteUsageRuns ?? 0);
+        return `${target.label} ${cost?.completeUsageRuns ?? 0}/${total}`;
+      });
+      console.log(
+        `   Tokens:           not comparable; complete runs ${coverageParts.join(' | ')}`,
+      );
+    }
   }
 
   // Per-prompt wins
@@ -552,7 +567,7 @@ async function main() {
       } else if (data.winner === 'html') {
         winCounts['HTML']++;
       } else if (data.winner === 'astryx-tailwind') {
-        winCounts['XDS+TW']++;
+        winCounts['Astryx+TW']++;
       } else {
         winCounts['Tie']++;
       }

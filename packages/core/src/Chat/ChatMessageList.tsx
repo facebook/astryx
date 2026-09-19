@@ -10,7 +10,8 @@
  *
  * Renders a container with role="log" for chat message histories.
  * Handles density context, configurable gap, empty state,
- * a spacer that pushes messages to the bottom, and an infinite scroll sentinel.
+ * a configurable spacer (align) that pushes messages to the bottom,
+ * and an infinite scroll sentinel.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * ChatLayout. When used standalone (without a layout), the list
@@ -19,7 +20,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageList/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatMessageList/ (block examples)
  */
 
 import {type ReactNode, useEffect, useMemo, useRef, useTransition} from 'react';
@@ -72,6 +73,38 @@ export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
    * be grouped) and row spacing should be tuned separately from density.
    */
   gap?: SpacingStep;
+
+  /**
+   * Vertical alignment of messages when the list is shorter than its
+   * container.
+   *
+   * - `'bottom'` (default): a spacer fills the free space and pushes
+   *   messages to the bottom, so a short conversation sits just above the
+   *   composer — the familiar messaging-app layout.
+   * - `'top'`: the spacer is omitted, so messages start at the top and grow
+   *   downward — better for document-style or log-style lists.
+   *
+   * This only changes the resting position of a non-full list. Once messages
+   * overflow the container the spacer collapses to zero in both modes, so
+   * ChatLayout auto-scroll-to-bottom behavior is identical either way.
+   *
+   * @default 'bottom'
+   */
+  align?: 'top' | 'bottom';
+
+  /**
+   * Whether an assistant message is actively streaming into the list.
+   *
+   * The list is a `role="log"` / `aria-live="polite"` region, so while a
+   * message streams in token-by-token, screen readers would otherwise
+   * re-announce the accumulating partial text on every mutation. Set
+   * `isStreaming` to `true` for the duration of a stream: it marks the log
+   * `aria-busy="true"` so assistive tech waits and announces the completed
+   * message once, when `isStreaming` returns to `false`.
+   *
+   * @default false
+   */
+  isStreaming?: boolean;
 }
 
 // =============================================================================
@@ -169,7 +202,8 @@ const gapStyles = stylex.create({
  *
  * Renders messages in a flex column with density-based spacing.
  * Override gap to tune row spacing separately from density.
- * A spacer pushes content to the bottom when the list isn't full.
+ * By default a spacer pushes content to the bottom when the list isn't full;
+ * set `align='top'` to start messages at the top instead.
  * Supports loading older messages via `scrollToTopAction`.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
@@ -190,11 +224,14 @@ export function ChatMessageList({
   scrollToTopAction,
   density = 'balanced',
   gap,
+  align = 'bottom',
+  isStreaming = false,
   xstyle,
   className,
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageListProps) {
   const layoutContext = useChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -249,9 +286,11 @@ export function ChatMessageList({
   return (
     <ChatListContext value={contextValue}>
       <div
+        {...rest}
         ref={ref}
         role="log"
         aria-live="polite"
+        aria-busy={isStreaming || undefined}
         tabIndex={0}
         data-testid={testId}
         {...mergeProps(
@@ -273,8 +312,11 @@ export function ChatMessageList({
             </div>
           )}
 
-          {/* Spacer pushes messages to bottom when list isn't full */}
-          <div {...stylex.props(styles.spacer)} aria-hidden />
+          {/* Spacer pushes messages to bottom when the list isn't full.
+              Omitted for top alignment so messages start at the top. */}
+          {align === 'bottom' && (
+            <div {...stylex.props(styles.spacer)} aria-hidden />
+          )}
 
           {/* Messages or empty state */}
           {hasChildren ? (

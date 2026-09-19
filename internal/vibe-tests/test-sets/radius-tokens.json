@@ -7,8 +7,8 @@
       "category": "radius-selection",
       "prompt": "Create a card component with rounded corners that contains a button. The card should have appropriate border radius for a container, and the button should have a smaller radius.",
       "expectedComponents": [
-        "XDSCard",
-        "XDSButton"
+        "Card",
+        "Button"
       ],
       "complexity": "simple",
       "followUps": [
@@ -21,8 +21,8 @@
       "category": "radius-selection",
       "prompt": "Build a modal dialog with rounded corners. Inside it, put a text input and a code block. The dialog should have container-level rounding, the input should have element-level rounding, and the code block should have subtle content-level rounding.",
       "expectedComponents": [
-        "XDSDialog",
-        "XDSTextInput"
+        "Dialog",
+        "TextInput"
       ],
       "complexity": "moderate",
       "followUps": [
@@ -33,9 +33,9 @@
     {
       "id": "rad-3",
       "category": "radius-theming",
-      "prompt": "Create a custom theme that makes all corners sharper \u2014 reduce all border radii. Use the XDS theme system with defineTheme.",
+      "prompt": "Create a custom theme that makes all corners sharper \u2014 reduce all border radii. Use the Astryx theme system with defineTheme.",
       "expectedComponents": [
-        "XDSTheme"
+        "Theme"
       ],
       "complexity": "moderate",
       "followUps": [
@@ -48,7 +48,7 @@
       "category": "radius-theming",
       "prompt": "I want to create a theme where cards have 16px border radius, buttons have 8px, and small elements like code blocks have 4px. Set this up with defineTheme.",
       "expectedComponents": [
-        "XDSTheme"
+        "Theme"
       ],
       "complexity": "simple",
       "followUps": [
@@ -61,9 +61,9 @@
       "category": "radius-composition",
       "prompt": "Build a pricing card that has a header section, a body with a list of features, and a footer with a CTA button. Apply appropriate border radius at each nesting level \u2014 the outer card should have the largest radius, and inner elements should have progressively smaller radii.",
       "expectedComponents": [
-        "XDSCard",
-        "XDSButton",
-        "XDSVStack"
+        "Card",
+        "Button",
+        "VStack"
       ],
       "complexity": "moderate",
       "followUps": [
@@ -76,8 +76,8 @@
       "category": "radius-composition",
       "prompt": "Create a nested layout: a page section with large rounded corners contains a card with medium rounded corners, which contains a form with inputs that have small rounded corners. Use CSS variables for the radius values.",
       "expectedComponents": [
-        "XDSCard",
-        "XDSTextInput"
+        "Card",
+        "TextInput"
       ],
       "complexity": "moderate",
       "followUps": [
@@ -90,8 +90,8 @@
       "category": "radius-selection",
       "prompt": "Build a notification toast that appears in the corner of the screen. It should have a dismiss button and an icon. What border radius should the toast use?",
       "expectedComponents": [
-        "XDSCard",
-        "XDSButton"
+        "Card",
+        "Button"
       ],
       "complexity": "simple",
       "followUps": [
@@ -104,9 +104,9 @@
       "category": "radius-selection",
       "prompt": "Create a user avatar component that's circular, a status badge that's pill-shaped, and a tooltip that has subtle rounding. Use the appropriate radius tokens for each.",
       "expectedComponents": [
-        "XDSAvatar",
-        "XDSBadge",
-        "XDSTooltip"
+        "Avatar",
+        "Badge",
+        "Tooltip"
       ],
       "complexity": "simple",
       "followUps": [
@@ -119,9 +119,9 @@
       "category": "radius-theming",
       "prompt": "Build a theme switcher that lets users choose between three radius styles: 'Sharp' (no rounding), 'Default' (standard rounding), and 'Soft' (extra rounding). Each option should preview how cards and buttons look.",
       "expectedComponents": [
-        "XDSTheme",
-        "XDSCard",
-        "XDSButton"
+        "Theme",
+        "Card",
+        "Button"
       ],
       "complexity": "complex",
       "followUps": [
@@ -134,8 +134,8 @@
       "category": "radius-composition",
       "prompt": "Create a dropdown menu that appears below a button. The dropdown should have the same border radius as cards/modals. Inside the dropdown, each menu item should have subtle rounding on hover.",
       "expectedComponents": [
-        "XDSDropdownMenu",
-        "XDSButton"
+        "DropdownMenu",
+        "Button"
       ],
       "complexity": "simple",
       "followUps": [
@@ -146,9 +146,9 @@
     {
       "id": "rad-11",
       "category": "radius-theming",
-      "prompt": "I'm using the XDS theme but I want to override just the radius tokens. Create a theme that keeps all default colors and spacing but makes corners more rounded \u2014 specifically, I want container-level elements to have 16px radius and interactive elements to have 12px radius.",
+      "prompt": "I'm using the Astryx theme but I want to override just the radius tokens. Create a theme that keeps all default colors and spacing but makes corners more rounded \u2014 specifically, I want container-level elements to have 16px radius and interactive elements to have 12px radius.",
       "expectedComponents": [
-        "XDSTheme"
+        "Theme"
       ],
       "complexity": "simple",
       "followUps": [
@@ -161,8 +161,8 @@
       "category": "radius-selection",
       "prompt": "Build a table with rounded outer corners but sharp inner cell borders. The table container should have container-level rounding, but cells should have no border radius.",
       "expectedComponents": [
-        "XDSTable",
-        "XDSCard"
+        "Table",
+        "Card"
       ],
       "complexity": "moderate",
       "followUps": [

@@ -41,6 +41,11 @@ const meta: Meta<typeof TimeInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled TimeInput in Tooltip.',
+    },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -58,6 +63,12 @@ const meta: Meta<typeof TimeInput> = {
     hasClear: {
       control: 'boolean',
       description: 'Whether to show a clear button',
+    },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        'Native browser/OS time picker on touch by default, native wherever compatible, or Astryx typed field everywhere',
     },
     increment: {
       control: 'number',
@@ -89,6 +100,39 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Meeting time',
+  },
+};
+
+export const NativePickerModes: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISOTimeString | undefined>(
+      '14:30' as ISOTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <TimeInput
+          label="nativePicker='touch' (default)"
+          description="Native picker on a coarse primary pointer; Astryx typed field on a fine pointer"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <TimeInput
+          label="nativePicker='always'"
+          description="Native picker wherever input type=time is compatible"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <TimeInput
+          label="nativePicker='never'"
+          description="Astryx typed field on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
+        />
+      </div>
+    );
   },
 };
 
@@ -205,6 +249,23 @@ export const Disabled: Story = {
   args: {
     label: 'Locked time',
     isDisabled: true,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the field to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the field stays focusable (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled TimeInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
+    return <TimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Start time',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
   },
 };
 
@@ -340,6 +401,35 @@ export const AllVariations: Story = {
             type: 'error',
             message: 'Invalid time selection',
           }}
+        />
+      </div>
+    );
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<ISOTimeString | undefined>(
+      '22:00' as ISOTimeString,
+    );
+    const [b, setB] = useState<ISOTimeString | undefined>(
+      '22:00' as ISOTimeString,
+    );
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <TimeInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Must be during business hours'}}
+        />
+        <TimeInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Must be during business hours'}}
+          statusVariant="detached"
         />
       </div>
     );

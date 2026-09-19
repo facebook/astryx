@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'FileInput',
   displayName: 'File Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {
@@ -78,7 +78,7 @@ export const docs = {
       name: 'isRequired',
       type: 'boolean',
       description:
-        'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
+        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (assistive tech does not reliably announce aria-required on the trigger). Mutually exclusive with isOptional.',
       default: 'false',
     },
     {
@@ -87,6 +87,12 @@ export const docs = {
       description:
         'Disables the input, preventing interaction and dimming the element.',
       default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (opening the file picker stays blocked). Use this instead of wrapping a disabled FileInput in Tooltip; disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'isLoading',
@@ -114,15 +120,29 @@ export const docs = {
         'Validation status: applies a colored border. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description:
         'Tooltip text displayed in an info icon at the end of the label.',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
   ],
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
@@ -135,6 +155,7 @@ export const docs = {
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory or folder uploads; that is not supported in v1."},
       {guidance: false, description: "Don't avoid dropzone mode unless space is constrained; drag-and-drop is the expected interaction for file uploads."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -150,7 +171,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'FileInput',
   displayName: 'File Input',
@@ -212,6 +233,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        '说明输入框被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（打开文件选择器仍被阻止）。请使用此属性，而不是用 Tooltip 包裹已禁用的 FileInput。',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description: '加载状态，显示旋转器并设置 aria-busy。',
@@ -233,10 +260,18 @@ export const docsZh = {
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description: '验证状态。',
     },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
   ],
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
@@ -248,6 +283,7 @@ export const docsZh = {
       {guidance: true, description: 'Add a description to communicate constraints.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
       {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain the disabled state; use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -259,7 +295,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'File input w/ input/dropzone modes, validation, label, description, status.',
   usage: {
@@ -272,6 +308,7 @@ export const docsDense = {
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
       {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain the disabled state; use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -293,12 +330,15 @@ export const docsDense = {
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
     isOptional: 'Shows "Optional" indicator.',
-    isRequired: 'Shows "Required" indicator+sets aria-required.',
+    isRequired: 'Shows "Required" indicator+SR-only trigger description.',
     isDisabled: 'Disables input, prevents interaction.',
+    disabledMessage:
+      'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps trigger focusable via aria-disabled (opening picker stays blocked). Use instead of wrapping a disabled FileInput in Tooltip.',
     isLoading: 'Loading state w/ spinner+aria-busy.',
     placeholder: 'Placeholder when no files selected.',
     mode: "Visual mode: 'input' (compact) or 'dropzone' (drag-and-drop).",
     status: 'Validation status; colored border. Message floats below.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',
   },
 };

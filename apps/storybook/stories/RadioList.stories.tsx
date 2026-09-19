@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
 
 const meta: Meta<typeof RadioList> = {
   title: 'Core/RadioList',
@@ -34,6 +36,11 @@ const meta: Meta<typeof RadioList> = {
     isDisabled: {
       control: 'boolean',
       description: 'Whether all radio items are disabled',
+    },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the group is disabled (whole-group state, not per item). With isDisabled, shows a tooltip on hover/keyboard focus and keeps the radios focusable via aria-disabled (selection stays blocked). Use this instead of wrapping a disabled RadioList in Tooltip.',
     },
     isRequired: {
       control: 'boolean',
@@ -93,6 +100,47 @@ export const WithDescription: Story = {
   args: {
     label: 'Notification preference',
     description: 'Choose how you would like to be notified',
+  },
+};
+
+export const RichContent: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'pro');
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem
+          label="Starter"
+          value="starter"
+          description={
+            <>
+              Free forever. <Link href="#pricing">Compare plans</Link>
+            </>
+          }
+        />
+        <RadioListItem
+          label={
+            <>
+              Pro <Link href="#pro-details">details</Link>{' '}
+              <Badge label="Popular" />
+            </>
+          }
+          aria-label="Pro"
+          value="pro"
+          description={
+            <>
+              $12 per seat. <Link href="#pricing">See what is included</Link>
+            </>
+          }
+          endContent={<span data-testid="radio-end-content">$12/mo</span>}
+        />
+      </RadioList>
+    );
+  },
+  args: {
+    label: 'Plan',
+    description:
+      'A ReactNode label or description can carry links and other rich content. Nested controls keep their own behavior without selecting the option.',
   },
 };
 
@@ -215,11 +263,7 @@ export const WithStartContent: Story = {
           value="email"
           startContent={<span>📧</span>}
         />
-        <RadioListItem
-          label="SMS"
-          value="sms"
-          startContent={<span>💬</span>}
-        />
+        <RadioListItem label="SMS" value="sms" startContent={<span>💬</span>} />
         <RadioListItem
           label="Push notification"
           value="push"
@@ -330,5 +374,30 @@ export const AllVariations: Story = {
         </RadioList>
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the group to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the radios stay focusable (selection is still blocked).
+// disabledMessage applies to the whole-group disabled state. Use it instead of
+// wrapping a disabled RadioList in Tooltip: disabled controls swallow the
+// pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'email');
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
+    );
+  },
+  args: {
+    label: 'Notification preference',
+    isDisabled: true,
+    disabledMessage: 'Upgrade your account to change preferences',
   },
 };

@@ -2,21 +2,30 @@
 
 'use client';
 
-import {useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useState} from 'react';
 import {usePathname} from 'next/navigation';
-import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import * as stylex from '@stylexjs/stylex';
+import {
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavRenderContext,
+  useTopNavRenderMode,
+} from '@astryxdesign/core/TopNav';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack} from '@astryxdesign/core/Layout';
-import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
-import {SearchPalette} from './SearchPalette';
-import {components} from '../generated/componentRegistry';
-import {packages} from '../generated/packageRegistry';
-import {docTopics} from '../generated/docsRegistry';
-import {templates} from '../generated/templateRegistry';
 import {useThemeMode} from '../app/providers';
 import {trackSearch, trackClickCta} from '../lib/analytics';
+
+const LazySearchPalette = lazy(() =>
+  import('./SearchPalette').then(module => ({default: module.SearchPalette})),
+);
 
 const GitHubIcon = ({
   width = 20,
@@ -35,10 +44,75 @@ const GitHubIcon = ({
   </svg>
 );
 
+// Responsive helpers. The desktop links and the mobile hamburger both live in
+// the DOM at all times; a pure CSS @media query decides which is visible so the
+// server-rendered HTML is correct on first paint (no post-hydration flip).
+const MOBILE_BREAKPOINT = '@media (max-width: 768px)';
+
+const styles = stylex.create({
+  desktopNav: {
+    display: {
+      default: 'flex',
+      [MOBILE_BREAKPOINT]: 'none',
+    },
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  mobileToggle: {
+    display: {
+      default: 'none',
+      [MOBILE_BREAKPOINT]: 'flex',
+    },
+    alignItems: 'center',
+  },
+  drawerItems: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  // Theme-toggle icons. Both Moon and Sun are always in the DOM; while the mode
+  // is still unresolved ('system'), a pure CSS prefers-color-scheme query decides
+  // which one shows so the first paint matches the OS — otherwise the icon starts
+  // as Moon (resolvedMode's 'light' default) and visibly swaps to Sun on a
+  // dark-OS machine after hydration. Once the mode resolves to a concrete value
+  // (OS-detected or a manual toggle) React forces the icon explicitly; for the
+  // OS-following case that matches what the media query already showed, so
+  // nothing visibly changes.
+  moonWhenSystem: {
+    display: {
+      default: 'inline-flex',
+      '@media (prefers-color-scheme: dark)': 'none',
+    },
+  },
+  sunWhenSystem: {
+    display: {
+      default: 'none',
+      '@media (prefers-color-scheme: dark)': 'inline-flex',
+    },
+  },
+  iconShown: {display: 'inline-flex'},
+  iconHidden: {display: 'none'},
+});
+
+// Primary navigation links, shared by the desktop bar and the mobile drawer.
+const NAV_ITEMS = [
+  {key: 'docs', label: 'Docs', href: '/docs/getting-started'},
+  {key: 'components', label: 'Components', href: '/components'},
+  {key: 'templates', label: 'Templates', href: '/templates'},
+  {key: 'themes', label: 'Themes', href: '/themes'},
+  {key: 'playground', label: 'Playground', href: '/playground'},
+] as const;
+
 export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [hasLoadedSearch, setHasLoadedSearch] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const {mode, toggleMode} = useThemeMode();
+  const {mode, themeMode, toggleMode} = useThemeMode();
+  // When AppShell owns the mobile drawer (docs, which has a sideNav) we defer
+  // to its single hamburger; otherwise we render our own.
+  const {isMobileNavEnabled, closeMobileNav} = useAppShellMobile();
+  const renderMode = useTopNavRenderMode();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -53,6 +127,7 @@ export function SharedTopNav() {
       ) {
         event.preventDefault();
         trackSearch({target: 'open'});
+        setHasLoadedSearch(true);
         setIsSearchOpen(true);
       }
     };
@@ -85,6 +160,17 @@ export function SharedTopNav() {
     return undefined;
   };
 
+  const navLinks = (onNavigate?: () => void) =>
+    NAV_ITEMS.map(item => (
+      <TopNavItem
+        key={item.key}
+        label={item.label}
+        href={item.href}
+        isSelected={getActiveItem() === item.key}
+        onClick={onNavigate}
+      />
+    ));
+
   return (
     <>
       <TopNav
@@ -104,33 +190,13 @@ export function SharedTopNav() {
           />
         }
         centerContent={
-          <>
-            <TopNavItem
-              label="Docs"
-              href="/docs/getting-started"
-              isSelected={getActiveItem() === 'docs'}
-            />
-            <TopNavItem
-              label="Components"
-              href="/components"
-              isSelected={getActiveItem() === 'components'}
-            />
-            <TopNavItem
-              label="Templates"
-              href="/templates"
-              isSelected={getActiveItem() === 'templates'}
-            />
-            <TopNavItem
-              label="Themes"
-              href="/themes"
-              isSelected={getActiveItem() === 'themes'}
-            />
-            <TopNavItem
-              label="Playground"
-              href="/playground"
-              isSelected={getActiveItem() === 'playground'}
-            />
-          </>
+          renderMode === 'drawer' ? (
+            // Bare items — AppShell's drawer supplies its own vertical list;
+            // the desktopNav wrapper would hide them (display:none) here.
+            <>{navLinks(closeMobileNav)}</>
+          ) : (
+            <div {...stylex.props(styles.desktopNav)}>{navLinks()}</div>
+          )
         }
         endContent={
           <HStack gap={2}>
@@ -143,6 +209,7 @@ export function SharedTopNav() {
                 icon={<Search size={20} />}
                 onClick={() => {
                   trackSearch({target: 'open'});
+                  setHasLoadedSearch(true);
                   setIsSearchOpen(true);
                 }}
               />
@@ -159,7 +226,30 @@ export function SharedTopNav() {
                 }
                 variant="ghost"
                 isIconOnly
-                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                icon={
+                  <>
+                    <Moon
+                      size={20}
+                      {...stylex.props(
+                        themeMode === 'system'
+                          ? styles.moonWhenSystem
+                          : mode === 'light'
+                            ? styles.iconShown
+                            : styles.iconHidden,
+                      )}
+                    />
+                    <Sun
+                      size={20}
+                      {...stylex.props(
+                        themeMode === 'system'
+                          ? styles.sunWhenSystem
+                          : mode === 'dark'
+                            ? styles.iconShown
+                            : styles.iconHidden,
+                      )}
+                    />
+                  </>
+                }
                 onClick={toggleMode}
               />
               <Button
@@ -188,17 +278,51 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
+            {!isMobileNavEnabled && (
+              <div {...stylex.props(styles.mobileToggle)}>
+                <Button
+                  label="Open menu"
+                  tooltip="Menu"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<Menu size={20} />}
+                  onClick={() => setIsMenuOpen(true)}
+                />
+              </div>
+            )}
           </HStack>
         }
       />
-      <SearchPalette
-        isOpen={isSearchOpen}
-        onOpenChange={setIsSearchOpen}
-        components={components}
-        packages={packages}
-        docTopics={docTopics}
-        templates={templates}
-      />
+      {hasLoadedSearch && (
+        <Suspense fallback={null}>
+          <LazySearchPalette
+            isOpen={isSearchOpen}
+            onOpenChange={setIsSearchOpen}
+          />
+        </Suspense>
+      )}
+      {!isMobileNavEnabled && (
+        <MobileNav
+          isOpen={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+          side="end"
+          label="Astryx navigation"
+          header={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }>
+          <TopNavRenderContext value="drawer">
+            <div {...stylex.props(styles.drawerItems)}>
+              {navLinks(() => setIsMenuOpen(false))}
+            </div>
+          </TopNavRenderContext>
+        </MobileNav>
+      )}
     </>
   );
 }

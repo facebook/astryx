@@ -6,8 +6,8 @@
  * props interfaces (require-base-props, require-ref-prop).
  */
 
-import {readFileSync} from 'fs';
-import {dirname, join} from 'path';
+import {readFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
 
 /**
  * Component props interfaces exempt from structural rules.
@@ -32,6 +32,7 @@ export const COMPONENT_RULE_ALLOWED = new Set([
   'LayerProviderProps',
   'LinkProviderProps',
   'MediaThemeProps',
+  'InternationalizationProviderProps',
   // Hook return-value / editor-config prop bags — not DOM-component props
   'OverlayContainerProps',
   'PowerSearchEditorProps',

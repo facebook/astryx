@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
-import {Analytics} from '@vercel/analytics/react';
+import {Analytics} from '@vercel/analytics/next';
+import {SpeedInsights} from '@vercel/speed-insights/next';
 import './globals.css';
 import {Providers} from './providers';
 // Public origin and identity live in lib/siteConfig so the sitemap and
@@ -25,7 +26,8 @@ import {
 // Default social card image: the launch banner that the announcement blog post
 // uses for its cover. Reusing the same branded banner keeps the shared-link
 // preview consistent with the launch creative across the site and the post.
-const OG_IMAGE = '/astryx-og-banner.png';
+const OG_IMAGE =
+  '/images/Astryx-Banner.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -39,6 +41,11 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
+  alternates: {
+    types: {
+      'application/rss+xml': '/rss.xml',
+    },
+  },
   verification: {
     google: '2R11kontqme-N-8WuDSR0MZ1YVbKX3IQg3OM08UO_e0',
   },
@@ -51,8 +58,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: OG_IMAGE,
-        width: 1200,
-        height: 675,
+        width: 2400,
+        height: 1260,
         alt: 'Astryx — an open source design system by Meta',
       },
     ],
@@ -86,6 +93,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       </head>
       <body>
         <Analytics />
+        <SpeedInsights />
         <Providers>{children}</Providers>
       </body>
     </html>

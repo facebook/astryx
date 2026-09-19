@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CommandPaletteItem',
@@ -50,6 +50,12 @@ export const docs = {
       description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
+  playground: {
+    defaults: {
+      value: 'go-home',
+      children: 'Go to Dashboard',
+    },
+  },
 };
 
 export const docsZh = {

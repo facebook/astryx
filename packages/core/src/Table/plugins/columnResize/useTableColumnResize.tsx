@@ -23,10 +23,7 @@ import type {
   ColumnWidth,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
-import {
-  observeResize,
-  unobserveResize,
-} from '../../../utils/sharedResizeObserver';
+import {observeResize} from '../../../utils/sharedResizeObserver';
 
 // =============================================================================
 // Config Type
@@ -207,7 +204,10 @@ const handleStyles = stylex.create({
     // Wide transparent hit area; the visible indicator uses ::after to span
     // the full handle height independently of the border box.
     width: '8px',
-    cursor: 'ew-resize',
+    cursor: {
+      default: 'ew-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
@@ -216,7 +216,8 @@ const handleStyles = stylex.create({
     // can't receive :hover directly.
     '--indicator-color': {
       default: 'transparent',
-      ':hover': colorVars['--color-accent'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-accent'],
       ':focus-visible': colorVars['--color-accent'],
     },
     '@media (pointer: coarse)': {
@@ -676,7 +677,9 @@ function ResizeHandle({
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-valuenow={currentWidth ?? undefined}
+      // A focusable role="separator" requires a numeric aria-valuenow, so fall
+      // back to the column's minWidth before the width has been measured.
+      aria-valuenow={currentWidth ?? minWidth}
       aria-valuemin={minWidth}
       aria-valuemax={maxWidth === Infinity ? undefined : maxWidth}
       aria-label={ariaLabel}
@@ -721,12 +724,12 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
   // --table-resize-height on the <table> element. This is initialized
   // entirely by the resize plugin — the base table has no knowledge of it.
   const observedTableRef = useRef<HTMLTableElement | null>(null);
+  const unobserveTableRef = useRef<(() => void) | null>(null);
 
   const measureRef = useCallback((el: HTMLDivElement | null) => {
-    if (observedTableRef.current) {
-      unobserveResize(observedTableRef.current);
-      observedTableRef.current = null;
-    }
+    unobserveTableRef.current?.();
+    unobserveTableRef.current = null;
+    observedTableRef.current = null;
     if (!el) {
       return;
     }
@@ -737,7 +740,7 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
     }
 
     if (table && typeof ResizeObserver !== 'undefined') {
-      observeResize(table, () => {
+      unobserveTableRef.current = observeResize(table, () => {
         const height = table.getBoundingClientRect().height;
         table.style.setProperty('--table-resize-height', `${height}px`);
       });
@@ -748,9 +751,8 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
   // Clean up observer on unmount
   useEffect(() => {
     return () => {
-      if (observedTableRef.current) {
-        unobserveResize(observedTableRef.current);
-      }
+      unobserveTableRef.current?.();
+      unobserveTableRef.current = null;
     };
   }, []);
 
@@ -855,7 +857,7 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
               {handle}
             </>
           ),
-          styles: [...props.styles, headerCellRelative.base],
+          xstyle: [...props.xstyle, headerCellRelative.base],
         };
       },
     }),
