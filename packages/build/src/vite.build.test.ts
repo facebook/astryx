@@ -138,7 +138,9 @@ function itSplitsCorrectly(get: () => Built) {
   // output means running the same pass, or the build quietly loses the prefixes
   // the original had.
   it('keeps the vendor prefixing StyleX applies', () => {
-    expect(get().css).toContain('-webkit-');
+    // `-webkit-box-orient` is authored in source, so only a prefix the pass
+    // adds shows that it ran.
+    expect(get().css).toContain('-webkit-user-select');
   });
 
   it('links the stylesheet from the page', () => {

@@ -388,6 +388,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      autoprefixer:
+        specifier: ^10.5.2
+        version: 10.5.2(postcss@8.5.25)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -684,6 +687,9 @@ importers:
         specifier: 'catalog:'
         version: 8.1.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)
     devDependencies:
+      enhanced-resolve:
+        specifier: ^5.21.6
+        version: 5.21.6
       esbuild:
         specifier: '>=0.28.1'
         version: 0.28.1
@@ -864,6 +870,9 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
+      next:
+        specifier: 16.3.0-preview.5
+        version: 16.3.0-preview.5(@babel/core@7.29.7)(@playwright/test@1.61.1)(@types/node@25.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
   packages/lab:
     dependencies:

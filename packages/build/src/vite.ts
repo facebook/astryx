@@ -489,15 +489,17 @@ function linkOrphanStylesheets(
  * anything replacing that output has to run the same pass or the build quietly
  * loses the vendor prefixes and lowering the original had.
  *
- * lightningcss ships with both Vite and the StyleX plugin, either of which must
- * be installed for this plugin to run at all. If it somehow is not resolvable,
- * the unprocessed CSS is correct — just less compatible — so this degrades
- * rather than failing the build.
+ * Both lightningcss and browserslist are resolved from @stylexjs/unplugin,
+ * which depends on them, so this runs the same pass StyleX did. If they are
+ * somehow not resolvable, the unprocessed CSS is correct — just less
+ * compatible — so this degrades rather than failing the build.
  */
 function postProcessCss(css: string, lightningcssOptions: unknown): string {
   if (!css) return css;
   try {
-    const require_ = createRequire(import.meta.url);
+    const require_ = createRequire(
+      createRequire(import.meta.url).resolve('@stylexjs/unplugin'),
+    );
     const {transform, browserslistToTargets} = require_('lightningcss');
     const browserslist = require_('browserslist');
     const {code} = transform({

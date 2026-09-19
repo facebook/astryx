@@ -8,6 +8,7 @@
  */
 
 import fs from 'node:fs/promises';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {transformAsync} from '@babel/core';
@@ -17,6 +18,9 @@ import {describe, expect, it} from 'vitest';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../../..');
 const SELECTOR_SOURCE = path.join(__dirname, 'Selector.tsx');
+// Babel looks a bare `next/babel` up from the cwd, the repo root, which does
+// not declare next. Resolve it from this package, which does.
+const NEXT_BABEL = createRequire(import.meta.url).resolve('next/babel');
 
 const EXPECTED_PADDING_DECLARATIONS = [
   'padding-block:calc((var(--size-element-sm) - var(--spacing-5) - 2 * var(--border-width)) / 2)',
@@ -38,7 +42,7 @@ describe('Selector source-build compatibility (#5464)', () => {
       configFile: false,
       envName: 'production',
       filename: SELECTOR_SOURCE,
-      presets: ['next/babel'],
+      presets: [NEXT_BABEL],
       plugins: [
         [
           stylexBabelPlugin,

@@ -17,7 +17,6 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
-const postcss = require('postcss');
 const babel = require('@babel/core');
 const stylexBabelPlugin = require('@stylexjs/babel-plugin');
 const {globSync} = require('fast-glob');
@@ -231,9 +230,9 @@ function createPlugin() {
             parts.push(`@layer ${layers.product} {\n${productCss}\n}`);
           }
 
-          const finalCss = parts.join('\n\n');
-          const parsed = await postcss.parse(finalCss, {from: fileName});
-          styleXAtRule.replaceWith(parsed);
+          // A string is parsed by the host's own postcss, so this plugin never
+          // needs a copy of its own.
+          styleXAtRule.replaceWith(parts.join('\n\n'));
           result.root = root;
 
           if (!shouldSkipTransformError) {

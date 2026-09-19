@@ -51,6 +51,7 @@
     "is-glob": "^4.0.0"
   },
   "devDependencies": {
+    "enhanced-resolve": "^5.21.6",
     "esbuild": "catalog:"
   },
   "peerDependenciesMeta": {
