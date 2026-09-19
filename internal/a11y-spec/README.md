@@ -62,6 +62,16 @@ src/
 | `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 | `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
+| `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics   | Selector and MultiSelector popup listbox, group, and option parts                |
+
+The `listbox` contract is a bounded semantic migration, not blanket APG
+interaction adoption. Its first bindings cover 21 existing scenarios across
+single/multiple selection, disabled options, groups, filtering, custom content,
+RTL, hidden labels, sheet presentations, loading, and select-all states.
+Trigger/search semantics, selection algorithms, keyboard/focus policy, empty
+representation, callbacks, forms, styling, and real-AT claims keep their named
+owners. The completeness exemptions make those limits visible rather than
+claiming whole-component conformance.
 
 The `radio-group` contract owns direct-group Tab entry/exit, Space, and adopted
 directional selection, including zero-selection entry. DropdownMenu radio roles
