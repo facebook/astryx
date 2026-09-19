@@ -33,9 +33,6 @@ export default function MultiSelectorColumnVisibilitySelector() {
         hasSelectAll
         hasSearch
         triggerDisplay="count"
-        formatValue={items =>
-          items.length === 1 ? '1 column shown' : `${items.length} columns shown`
-        }
         placeholder="Columns"
       />
     </div>

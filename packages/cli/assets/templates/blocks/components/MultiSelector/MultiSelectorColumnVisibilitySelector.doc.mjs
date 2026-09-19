@@ -7,7 +7,7 @@ export const doc = {
   name: 'MultiSelector — Column Visibility',
   displayName: 'MultiSelector — Column Visibility',
   description:
-    'Column visibility toggle with hidden label, search, select-all, and a formatted selection count ("4 columns shown").',
+    'Column visibility toggle with hidden label, search, select-all, and selection count.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['MultiSelector', 'Center'],
