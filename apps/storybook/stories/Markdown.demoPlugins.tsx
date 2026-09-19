@@ -105,3 +105,53 @@ export const markdownDemoPlugins = [
   createMarkdownPlugin<'demo-mentions', MentionNode>(mentionDefinition),
   createMarkdownPlugin<'demo-callouts', CalloutNode>(calloutDefinition),
 ] as const;
+
+interface DelayedValue<Value> {
+  read(): Value;
+}
+
+function createDelayedValue<Value>(
+  value: Value,
+  delayMs: number,
+): DelayedValue<Value> {
+  let resolved = false;
+  const promise = new Promise<void>(resolve => {
+    setTimeout(() => {
+      resolved = true;
+      resolve();
+    }, delayMs);
+  });
+  return {
+    read() {
+      if (!resolved) {
+        throw promise;
+      }
+      return value;
+    },
+  };
+}
+
+function DelayedMention({label}: {readonly label: DelayedValue<string>}) {
+  return <mark>@{label.read()}</mark>;
+}
+
+/** Creates a fresh demo plugin whose renderer suspends without blocking siblings. */
+export function createDelayedMarkdownDemoPlugin(delayMs = 3_000) {
+  const labels = new Map<string, DelayedValue<string>>();
+  return createMarkdownPlugin<'demo-mentions', MentionNode>({
+    ...mentionDefinition,
+    renderers: {
+      mention: {
+        render: ({node}) => {
+          let label = labels.get(node.data.label);
+          if (label == null) {
+            label = createDelayedValue(node.data.label, delayMs);
+            labels.set(node.data.label, label);
+          }
+          return <DelayedMention label={label} />;
+        },
+        toText: node => `@${node.data.label}`,
+      },
+    },
+  });
+}

@@ -1,13 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState, useEffect, useCallback} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
-import {markdownDemoPlugins} from './Markdown.demoPlugins';
+import {
+  createDelayedMarkdownDemoPlugin,
+  markdownDemoPlugins,
+} from './Markdown.demoPlugins';
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown',
@@ -496,4 +499,33 @@ export const SyntaxPlugins: Story = {
       </Markdown>
     </div>
   ),
+};
+
+export const SuspenseRenderer: Story = {
+  name: 'Plugin renderer with Suspense',
+  render: () => {
+    const [run, setRun] = useState(0);
+    const delayedPlugin = useMemo(
+      () => createDelayedMarkdownDemoPlugin(),
+      [run],
+    );
+
+    return (
+      <div style={{maxWidth: 680}}>
+        <div style={{marginBlockEnd: 12}}>
+          <Button
+            label="Replay delayed renderer"
+            variant="secondary"
+            size="sm"
+            onClick={() => setRun(value => value + 1)}
+          />
+        </div>
+        <Markdown key={run} plugins={[delayedPlugin]}>
+          {
+            'Before the async node.\n\nHello @{Ada}. This sibling Markdown renders immediately.\n\nAfter the async node.'
+          }
+        </Markdown>
+      </div>
+    );
+  },
 };

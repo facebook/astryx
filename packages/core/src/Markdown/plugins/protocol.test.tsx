@@ -8,7 +8,7 @@
  */
 
 import {renderToString} from 'react-dom/server';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {Markdown} from '../Markdown';
 import {
@@ -277,6 +277,53 @@ describe('Markdown plugin protocol', () => {
     );
     expect(screen.getByTestId('mention')).toHaveTextContent('@Ada');
     expect(screen.getByTestId('callout')).toHaveTextContent('Read this');
+  });
+
+  it('isolates a suspending renderer behind its node source', async () => {
+    let resolved = false;
+    let resolve: (() => void) | undefined;
+    const pending = new Promise<void>(done => {
+      resolve = () => {
+        resolved = true;
+        done();
+      };
+    });
+
+    function AsyncMention({label}: {readonly label: string}) {
+      if (!resolved) {
+        throw pending;
+      }
+      return <span data-testid="async-mention">@{label} loaded</span>;
+    }
+
+    const asyncMentionPlugin = createMarkdownPlugin<'mentions', MentionNode>({
+      ...mentionDefinition,
+      renderers: {
+        mention: {
+          render: ({node}) => <AsyncMention label={node.data.label} />,
+          toText: node => `@${node.data.label}`,
+        },
+      },
+    });
+
+    render(
+      <Markdown plugins={[asyncMentionPlugin]}>
+        {'Before @{Ada} after.'}
+      </Markdown>,
+    );
+
+    expect(screen.getByText('Before', {exact: false})).toBeInTheDocument();
+    expect(screen.getByText('@{Ada}', {exact: false})).toBeInTheDocument();
+    expect(screen.getByText('after.', {exact: false})).toBeInTheDocument();
+    expect(screen.queryByTestId('async-mention')).not.toBeInTheDocument();
+
+    await act(async () => resolve?.());
+
+    expect(await screen.findByTestId('async-mention')).toHaveTextContent(
+      '@Ada loaded',
+    );
+    expect(screen.getByText('Before', {exact: false})).toBeInTheDocument();
+    expect(screen.getByText('after.', {exact: false})).toBeInTheDocument();
   });
 
   it('rejects duplicate entries and contains invalid tokenizer output', () => {
