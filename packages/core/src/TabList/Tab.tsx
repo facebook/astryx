@@ -137,6 +137,15 @@ const styles = stylex.create({
       [stylex.when.ancestor(':hover', tabScope)]: {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
+      // Pressed: the same layer steps up to the pressed overlay, read off the
+      // tab the way the hover is, so a press paints on a finger too. Repeated
+      // inside the hover-capable branch so it outranks the hover rule there
+      // (a media-nested rule carries extra generated priority; see
+      // interactionOverlay.stylex.ts).
+      [stylex.when.ancestor(':active', tabScope)]: {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (hover: hover)': colorVars['--color-overlay-pressed'],
+      },
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],

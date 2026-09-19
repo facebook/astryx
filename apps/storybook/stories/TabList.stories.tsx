@@ -1039,3 +1039,25 @@ export const TabsPattern: Story = {
     );
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. The tab's hover surface steps up to the pressed overlay while the tab is pressed.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <TabList value={value} onChange={setValue}>
+        <Tab value="home" label="Home" />
+        <Tab value="projects" label="Projects — press and hold" />
+        <Tab value="settings" label="Settings" />
+      </TabList>
+    );
+  },
+};

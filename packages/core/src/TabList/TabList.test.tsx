@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {TabList} from './TabList';
 import type {TabListProps} from './TabList';
 import {Tab} from './Tab';
@@ -1513,5 +1514,24 @@ describe('TabList ARIA pattern — any other role', () => {
       'aria-current',
       'true',
     );
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the tab surface while the tab is pressed', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    // The hover surface is a child layer read off the tab; the press paints
+    // the same layer, so the assertion is on that layer.
+    const surface = tab.querySelector('span[aria-hidden="true"]');
+    if (surface == null) {
+      throw new Error('the tab has no hover surface to press');
+    }
+    expect(hasPressedArm(surface)).toBe(true);
   });
 });

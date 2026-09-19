@@ -345,3 +345,31 @@ export const FAQ: Story = {
     </CollapsibleGroup>
   ),
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. The disclosure row paints it across its width while pressed; it has no hover surface, so the press is the one background it paints. A disabled trigger never presses.",
+      },
+    },
+  },
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Details — press and hold">
+          <p {...stylex.props(styles.text)}>
+            The pressed overlay covers the trigger row.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Unavailable — no pressed state" isDisabled>
+          <p {...stylex.props(styles.text)}>Never opens.</p>
+        </Collapsible>
+      </Card>
+    </VStack>
+  ),
+};

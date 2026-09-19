@@ -288,6 +288,15 @@ const styles = stylex.create({
       },
     },
   },
+  // Pressed: the system's pressed overlay over the thumb's fill for as long
+  // as the thumb is being dragged. A slider is a drag, not a tap — the finger
+  // lands anywhere on the track and the thumb follows it — so the pressed
+  // paint follows the drag state the pointer handlers already keep, on a
+  // mouse and on a finger alike, rather than `:active` on the thumb itself
+  // (which a press on the track never activates).
+  thumbPressed: {
+    backgroundImage: `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+  },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
     cursor: 'default',
@@ -908,6 +917,7 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
+            !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             !isDisabled &&
               keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,

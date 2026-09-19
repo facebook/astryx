@@ -210,6 +210,17 @@ export const docs = {
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Track and thumb',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'The on and off tracks must each have at least 3:1 contrast with the surface behind them, and the thumb with its track. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     anatomy,
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
@@ -223,6 +234,11 @@ export const docs = {
         guidance: true,
         description:
           'Pair with a clear, concise label that describes the setting being controlled.',
+      },
+      {
+        guidance: true,
+        description:
+          'When a visible title elsewhere on the page already names the setting (a settings row), hide the switch label with isLabelHidden and pass aria-labelledby pointing at that title; a visible hint is linked with aria-describedby. Both land on the switch input itself, as does a caller id.',
       },
       {
         guidance: false,

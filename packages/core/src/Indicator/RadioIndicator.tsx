@@ -20,6 +20,8 @@ import {isRenderable, mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
 const styles = stylex.create({
   circle: {
     boxSizing: 'border-box',
@@ -40,6 +42,13 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // Pressed: the system's pressed overlay rides on top of the state fill,
+    // read off the same owner scope as the hover tint, so pressing the row
+    // (or the control) darkens the circle on a mouse and on a finger alike.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', indicatorScope)]: pressedImage,
+    },
   },
   unchecked: {
     borderColor: {

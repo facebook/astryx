@@ -15,6 +15,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -854,5 +855,21 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // The painted inner dot would be stripped to Canvas (invisible), making
     // checked and unchecked radios identical; CanvasText keeps it perceivable.
     expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the radio circle while the row is pressed', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    if (circle == null) {
+      throw new Error('the radio has no indicator to press');
+    }
+    expect(hasPressedArm(circle)).toBe(true);
   });
 });

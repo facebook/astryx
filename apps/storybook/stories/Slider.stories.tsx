@@ -270,3 +270,33 @@ export const DisabledWithMessage: Story = {
     disabledMessage: 'Volume is locked while sharing your screen',
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press anywhere on the track and drag: the thumb being dragged paints the system's `--color-overlay-pressed` layer over its fill for the whole drag, on a mouse and on a finger, and drops it on release. A slider is a drag, not a tap, so the pressed paint follows the drag state rather than `:active`.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState(40);
+    const [range, setRange] = useState<[number, number]>([20, 80]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <Slider
+          label="Volume — press and drag"
+          value={value}
+          onChange={setValue}
+        />
+        <Slider
+          label="Price range — only the dragged thumb presses"
+          value={range}
+          onChange={setRange}
+        />
+      </div>
+    );
+  },
+};

@@ -620,3 +620,31 @@ export const Loading: Story = {
     isLoading: true,
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. On the switch it tints the track and the thumb together, on top of the on/off fill and the hover tint, and never on a disabled switch.",
+      },
+    },
+  },
+  render: () => {
+    const [off, setOff] = useState(false);
+    const [on, setOn] = useState(true);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <Switch label="Off — press and hold" value={off} onChange={setOff} />
+        <Switch label="On — press and hold" value={on} onChange={setOn} />
+        <Switch
+          label="Disabled — no pressed state"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
+      </div>
+    );
+  },
+};

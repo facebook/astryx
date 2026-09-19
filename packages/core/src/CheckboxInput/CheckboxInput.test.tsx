@@ -15,6 +15,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
@@ -761,5 +762,20 @@ describe('label theme target', () => {
     const label = screen.getByText('Notify me').closest('label');
     expect(label).toHaveClass('astryx-field-label');
     expect(label).toHaveClass('astryx-checkbox-label');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the box while the row is pressed', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    if (box == null) {
+      throw new Error('the checkbox has no indicator to press');
+    }
+    // Read off the row's scope marker, the way the hover tint is: pressing
+    // the label, the box or the control itself all press the row.
+    expect(hasPressedArm(box)).toBe(true);
   });
 });

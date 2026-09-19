@@ -378,3 +378,24 @@ export const LinkVsButtonComparison: Story = {
     },
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. A link paints it behind its text while pressed; its hover stays the colour change.",
+      },
+    },
+  },
+  render: () => (
+    <Text>
+      Read the{' '}
+      <Link href="/docs" onClick={e => e.preventDefault()}>
+        documentation — press and hold
+      </Link>{' '}
+      or <Link onClick={() => {}}>open the panel (button form)</Link>.
+    </Text>
+  ),
+};

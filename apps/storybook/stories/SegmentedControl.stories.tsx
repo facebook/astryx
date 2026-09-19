@@ -244,3 +244,25 @@ export const DisabledWithMessage: Story = {
     );
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. An unselected segment takes the hover and pressed overlays; the selected segment keeps its raised surface.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('grid');
+    return (
+      <SegmentedControl value={value} onChange={setValue} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="board" label="Board" />
+      </SegmentedControl>
+    );
+  },
+};

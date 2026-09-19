@@ -122,6 +122,15 @@ const thumbOnSizeStyles = stylex.create({
   },
 });
 
+// The pressed overlay, painted as a gradient layer OVER the track's and
+// thumb's own fills so it composes with the on/off colors and the hover tint
+// instead of replacing them. Same token Button's overlay paints with. The
+// switch is a two-part control whose focusable input sits beside the track,
+// so the press is read off the shared scope marker (the row), the way the
+// hover tint already is: pressing the input, the track or the label all
+// activate the row.
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
 const labelWrapperSizeStyles = stylex.create({
   sm: {
     minHeight: 20,
@@ -207,6 +216,15 @@ const styles = stylex.create({
       default: null,
       '@media (forced-colors: active)': 'CanvasText',
     },
+    // Pressed: the overlay rides on top of the on/off fill. Gated like the
+    // hover tint so forced colors keeps its system-color track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
+    },
   },
   // The one ring in the system not drawn by focusOutlineStyles. The focusable
   // input is a sibling of the track, so the condition has to reach the shared
@@ -278,6 +296,16 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // Pressed: the same overlay as the track, so the whole control darkens
+    // under the finger rather than the thumb standing out against a darker
+    // track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
+    },
   },
   // The thumb fill lives on the on/off styles (not the shared thumb style)
   // because forced colors needs a per-state system color: CanvasText on the
@@ -489,9 +517,16 @@ export function Switch({
   className,
   style,
   ref,
+  id: idProp,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: SwitchProps) {
-  const id = useId();
+  const generatedID = useId();
+  // A caller's `id` names the control, not the field wrapper: it lands on the
+  // `<input role="switch">` (with the label's `htmlFor` following it), so a
+  // form or a test can address the switch the way it addresses any input.
+  const id = idProp ?? generatedID;
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
@@ -522,7 +557,13 @@ export function Switch({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` (a visible hint paragraph beside the
+  // switch) comes first, then the input's own ids — it used to ride `...rest`
+  // onto the field wrapper, where no assistive technology reads it.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -570,6 +611,11 @@ export function Switch({
         }}
         onFocus={onFocus}
         onBlur={onBlur}
+        // A visible element elsewhere on the page (a row title) can name the
+        // control; with `isLabelHidden` the sr-only label would otherwise be
+        // the only name. `aria-labelledby` wins over the label's `for`, which
+        // is the caller's intent when they pass it.
+        aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}

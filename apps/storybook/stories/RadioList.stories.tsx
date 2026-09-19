@@ -401,3 +401,32 @@ export const DisabledWithMessage: Story = {
     disabledMessage: 'Upgrade your account to change preferences',
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. Pressing anywhere on an option row tints its radio circle, selected or not; a disabled option never presses.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('email');
+    return (
+      <RadioList
+        label="Notification preference"
+        value={value}
+        onChange={setValue}>
+        <RadioListItem label="Email — selected, press and hold" value="email" />
+        <RadioListItem label="SMS — press and hold" value="sms" />
+        <RadioListItem
+          label="Push — disabled, no pressed state"
+          value="push"
+          isDisabled
+        />
+      </RadioList>
+    );
+  },
+};

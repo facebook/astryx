@@ -568,3 +568,41 @@ export const ThemedCheckboxTarget: Story = {
     </Theme>
   ),
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. Pressing the box, the label or anywhere on the row tints the box, unchecked and checked alike; a disabled checkbox never presses.",
+      },
+    },
+  },
+  render: () => {
+    const [unchecked, setUnchecked] = useState<boolean | 'indeterminate'>(
+      false,
+    );
+    const [checked, setChecked] = useState<boolean | 'indeterminate'>(true);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <CheckboxInput
+          label="Unchecked — press and hold"
+          value={unchecked}
+          onChange={setUnchecked}
+        />
+        <CheckboxInput
+          label="Checked — press and hold"
+          value={checked}
+          onChange={setChecked}
+        />
+        <CheckboxInput
+          label="Disabled — no pressed state"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
+      </div>
+    );
+  },
+};
