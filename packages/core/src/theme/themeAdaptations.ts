@@ -12,7 +12,12 @@
  * matching rule writes after the root theme and later matching writes win. Token
  * cycles are judged only after each reachable ordered cascade is complete.
  *
+ * Condition normalization, media-query compilation, and the width vocabulary
+ * live in ./adaptationConditions.ts so theme CSS and component adaptations
+ * (spec:AST-031) share one grammar; this module owns theme rule VALUES.
+ *
  * SYNC: When modified, update:
+ * - /packages/core/src/theme/adaptationConditions.ts (shared condition grammar)
  * - /packages/core/src/theme/defineTheme.ts (`DefineThemeInput.adaptations`)
  * - /packages/core/src/theme/generateThemeRules.ts (`generateAdaptationCSS`)
  * - /packages/core/src/AppShell/AppShell.tsx (named breakpoint consumption)
@@ -32,49 +37,38 @@ import {
   isReservedThemeLocalTokenName,
   resolveAdaptationLocalTokens,
 } from './localTokens';
+import {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  WIDTH_BREAKPOINT_NAMES,
+  assertAllowedKeys,
+  assertCompleteBreakpoints,
+  assertIncreasingBreakpoints,
+  assertRecord,
+  cloneData,
+  compileAdaptationConditionQuery,
+  isRecord,
+  normalizeAdaptationCondition,
+  normalizeBreakpointOverrides,
+  type ThemeAdaptationCondition,
+  type WidthBreakpoints,
+} from './adaptationConditions';
 
 // =============================================================================
 // Public authoring vocabulary
 // =============================================================================
 
-/** Fixed names for viewport-width tier start points. */
-export const WIDTH_BREAKPOINT_NAMES = ['sm', 'md', 'lg', 'xl', '2xl'] as const;
-
-/** One fixed viewport-width breakpoint name. */
-export type WidthBreakpointName = (typeof WIDTH_BREAKPOINT_NAMES)[number];
-
-/** A complete, validated map of viewport-width tier start points in CSS px. */
-export type WidthBreakpoints = Record<WidthBreakpointName, number>;
-
-/** The default Astryx viewport-width tier start points in CSS px. */
-export const DEFAULT_WIDTH_BREAKPOINTS: Readonly<WidthBreakpoints> =
-  Object.freeze({
-    sm: 640,
-    md: 768,
-    lg: 1024,
-    xl: 1280,
-    '2xl': 1536,
-  });
-
-/** Inclusive lower and exclusive upper edges for one width condition. */
-export interface ThemeAdaptationWidthCondition {
-  /** Match at and above this named point. */
-  from?: WidthBreakpointName;
-  /** Match strictly below this named point. */
-  below?: WidthBreakpointName;
-}
-
-/** Closed environmental condition vocabulary. Fields are ANDed. */
-export interface ThemeAdaptationCondition {
-  /** Viewport-width range, using named start points. */
-  width?: ThemeAdaptationWidthCondition;
-  /** Primary pointing-device precision. */
-  pointer?: 'coarse' | 'fine';
-  /** User contrast preference. */
-  contrast?: 'more' | 'less' | 'no-preference';
-  /** User reduced-motion preference. */
-  motion?: 'reduce' | 'no-preference';
-}
+// The width vocabulary and condition grammar are shared with component
+// adaptations; they are re-exported here so theme consumers keep one import.
+export {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  WIDTH_BREAKPOINT_NAMES,
+} from './adaptationConditions';
+export type {
+  ThemeAdaptationCondition,
+  ThemeAdaptationWidthCondition,
+  WidthBreakpointName,
+  WidthBreakpoints,
+} from './adaptationConditions';
 
 /** Typography overrides inside an adaptation rule. */
 export interface ThemeAdaptationTypographyConfig extends Omit<
@@ -157,64 +151,8 @@ export interface ResolvedThemeAdaptationRule {
 // Structural validation
 // =============================================================================
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function assertRecord(
-  value: unknown,
-  path: string,
-): asserts value is Record<string, unknown> {
-  if (!isRecord(value)) {
-    throw new Error(`${path} must be an object.`);
-  }
-}
-
-function assertAllowedKeys(
-  value: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  path: string,
-): void {
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) {
-      throw new Error(`${path}.${key} is not supported.`);
-    }
-  }
-}
-
-function cloneData<T>(value: T): T {
-  if (Array.isArray(value)) {
-    const cloned: unknown[] = [];
-    for (const item of value) {
-      cloned.push(cloneData(item));
-    }
-    return cloned as T;
-  }
-  if (isRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, nested]) => [key, cloneData(nested)]),
-    ) as T;
-  }
-  return value;
-}
-
-const BREAKPOINT_NAMES = new Set<string>(WIDTH_BREAKPOINT_NAMES);
 const ADAPTATION_KEYS = new Set(['widthBreakpoints', 'rules']);
 const RULE_KEYS = new Set(['when', 'value']);
-const CONDITION_AXES = [
-  'width',
-  'pointer',
-  'contrast',
-  'motion',
-] as const satisfies ReadonlyArray<keyof ThemeAdaptationCondition>;
-type UnhandledConditionAxis = Exclude<
-  keyof ThemeAdaptationCondition,
-  (typeof CONDITION_AXES)[number]
->;
-const CONDITION_KEYS: UnhandledConditionAxis extends never
-  ? ReadonlySet<keyof ThemeAdaptationCondition>
-  : never = new Set(CONDITION_AXES);
-const WIDTH_CONDITION_KEYS = new Set(['from', 'below']);
 const VALUE_KEYS = new Set([
   'typography',
   'color',
@@ -224,124 +162,6 @@ const VALUE_KEYS = new Set([
   'localTokens',
   'components',
 ]);
-
-function normalizeBreakpointOverrides(
-  value: unknown,
-  path: string,
-): Partial<WidthBreakpoints> {
-  assertRecord(value, path);
-  assertAllowedKeys(value, BREAKPOINT_NAMES, path);
-  const result: Partial<WidthBreakpoints> = {};
-  for (const name of WIDTH_BREAKPOINT_NAMES) {
-    const point = value[name];
-    if (point === undefined) {
-      continue;
-    }
-    if (typeof point !== 'number' || !Number.isFinite(point) || point <= 0) {
-      throw new Error(
-        `${path}.${name} must be a finite positive number of CSS pixels.`,
-      );
-    }
-    result[name] = point;
-  }
-  return result;
-}
-
-function assertCompleteBreakpoints(
-  value: unknown,
-  path: string,
-): WidthBreakpoints {
-  const overrides = normalizeBreakpointOverrides(value, path);
-  for (const name of WIDTH_BREAKPOINT_NAMES) {
-    if (overrides[name] === undefined) {
-      throw new Error(
-        `${path}.${name} is missing from the effective breakpoint map.`,
-      );
-    }
-  }
-  return overrides as WidthBreakpoints;
-}
-
-function assertIncreasingBreakpoints(
-  points: WidthBreakpoints,
-  path: string,
-): void {
-  let previous: WidthBreakpointName | undefined;
-  for (const name of WIDTH_BREAKPOINT_NAMES) {
-    if (previous !== undefined && points[name] <= points[previous]) {
-      throw new Error(
-        `${path} must be strictly increasing: ${name} (${points[name]}) is not above ${previous} (${points[previous]}).`,
-      );
-    }
-    previous = name;
-  }
-}
-
-function normalizeCondition(
-  value: unknown,
-  path: string,
-): ThemeAdaptationCondition {
-  assertRecord(value, path);
-  assertAllowedKeys(value, CONDITION_KEYS, path);
-  const defined = Object.fromEntries(
-    Object.entries(value).filter(([, nested]) => nested !== undefined),
-  );
-  if (Object.keys(defined).length === 0) {
-    throw new Error(`${path} must contain at least one condition.`);
-  }
-
-  const condition = cloneData(defined) as ThemeAdaptationCondition;
-  if (condition.width !== undefined) {
-    assertRecord(condition.width, `${path}.width`);
-    assertAllowedKeys(condition.width, WIDTH_CONDITION_KEYS, `${path}.width`);
-    if (
-      condition.width.from === undefined &&
-      condition.width.below === undefined
-    ) {
-      throw new Error(
-        `${path}.width must contain \`from\`, \`below\`, or both.`,
-      );
-    }
-    for (const edge of ['from', 'below'] as const) {
-      const name = condition.width[edge];
-      if (
-        name !== undefined &&
-        (typeof name !== 'string' || !BREAKPOINT_NAMES.has(name))
-      ) {
-        throw new Error(
-          `${path}.width.${edge} must be one of ${WIDTH_BREAKPOINT_NAMES.join(', ')}.`,
-        );
-      }
-    }
-  }
-
-  if (
-    condition.pointer !== undefined &&
-    condition.pointer !== 'coarse' &&
-    condition.pointer !== 'fine'
-  ) {
-    throw new Error(`${path}.pointer must be 'coarse' or 'fine'.`);
-  }
-  if (
-    condition.contrast !== undefined &&
-    condition.contrast !== 'more' &&
-    condition.contrast !== 'less' &&
-    condition.contrast !== 'no-preference'
-  ) {
-    throw new Error(
-      `${path}.contrast must be 'more', 'less', or 'no-preference'.`,
-    );
-  }
-  if (
-    condition.motion !== undefined &&
-    condition.motion !== 'reduce' &&
-    condition.motion !== 'no-preference'
-  ) {
-    throw new Error(`${path}.motion must be 'reduce' or 'no-preference'.`);
-  }
-
-  return condition;
-}
 
 function normalizeValue(value: unknown, path: string): ThemeAdaptationValue {
   assertRecord(value, path);
@@ -365,7 +185,7 @@ function normalizeRule(value: unknown, path: string): ThemeAdaptationRule {
     throw new Error(`${path}.value is required.`);
   }
   return {
-    when: normalizeCondition(value.when, `${path}.when`),
+    when: normalizeAdaptationCondition(value.when, `${path}.when`),
     value: normalizeValue(value.value, `${path}.value`),
   };
 }
@@ -608,42 +428,11 @@ function mediaQueryForCondition(
   condition: ThemeAdaptationCondition,
   points: WidthBreakpoints,
 ): string {
-  const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].when`;
-  const parts: string[] = [];
-
-  if (condition.width) {
-    const from = condition.width.from;
-    const below = condition.width.below;
-    if (
-      from !== undefined &&
-      below !== undefined &&
-      points[from] >= points[below]
-    ) {
-      throw new Error(
-        `${path}.width must resolve to \`from < below\`; ${from} is ${points[from]}px and ${below} is ${points[below]}px.`,
-      );
-    }
-    if (from !== undefined) {
-      parts.push(`(width >= ${points[from]}px)`);
-    }
-    if (below !== undefined) {
-      parts.push(`(width < ${points[below]}px)`);
-    }
-  }
-  if (condition.pointer !== undefined) {
-    parts.push(`(pointer: ${condition.pointer})`);
-  }
-  if (condition.contrast !== undefined) {
-    parts.push(`(prefers-contrast: ${condition.contrast})`);
-  }
-  if (condition.motion !== undefined) {
-    parts.push(`(prefers-reduced-motion: ${condition.motion})`);
-  }
-
-  if (parts.length === 0) {
-    throw new Error(`${path} must contain at least one concrete condition.`);
-  }
-  return parts.join(' and ');
+  return compileAdaptationConditionQuery(
+    condition,
+    points,
+    `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].when`,
+  );
 }
 
 type PointerEnvironment =
