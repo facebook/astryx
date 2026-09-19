@@ -47,7 +47,8 @@ src/
     ├── text-input.*         the native text-input pattern, same four files
     ├── modal-dialog.*       the native modal-dialog pattern, same four files
     ├── status-message.*     live-region and progress status mechanics
-    └── tabs.*               explicit horizontal ARIA Tabs semantics
+    ├── tabs.*               explicit horizontal ARIA Tabs semantics
+    └── disclosure.*         standalone disclosure state/content semantics
 ```
 
 ## The patterns
@@ -62,6 +63,14 @@ src/
 | `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 | `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
+| `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                       | Standalone Collapsible triggers and their controlled content                     |
+
+The disclosure contract owns only the disclosure-specific state, optional
+trigger-to-content relationship, synchronized visibility, and complete pointer,
+Enter, and Space transitions. Generic role, naming, focus navigation, and
+unavailable-button semantics remain in the existing `button` contract. This first
+migration binds standalone Collapsible states only; CollapsibleGroup coordination
+and Accordion, Table, and SideNav adoption remain outside this contract.
 
 The `radio-group` contract owns direct-group Tab entry/exit, Space, and adopted
 directional selection, including zero-selection entry. DropdownMenu radio roles

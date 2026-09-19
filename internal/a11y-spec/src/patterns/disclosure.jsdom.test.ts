@@ -3,84 +3,153 @@
 
 /**
  * @file disclosure.jsdom.test.ts
- * @input Uses the disclosure contract and real HTML fixtures
- * @output Positive and deliberately violating DOM proof through the public checker
- * @position Contract self-tests; no browser focus or visual claim.
+ * @input Uses the disclosure contract, shared fixtures, jsdom harness, and checker
+ * @output Completeness plus positive and negative DOM proof
+ * @position Contract self-tests; browser-only outcomes remain explicitly unrun.
  */
 
 import {afterEach, describe, expect, it} from 'vitest';
-import {checkAccessibilitySpec} from '../check';
-import {createJsdomHarness} from '../harness/jsdom';
+import {
+  citeSource,
+  describeExpectation,
+  requiredLayers,
+  unansweredDimensions,
+} from '../contract';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
+import {JSDOM_OBSERVES, createJsdomHarness} from '../harness/jsdom';
 import {DISCLOSURE_PATTERN} from './disclosure';
+import {
+  CONFORMING_FIXTURES,
+  CONTENT_SELECTOR,
+  DISCLOSURE_MUTATIONS,
+  SUBJECT_SELECTOR,
+  fixture,
+  type DisclosureFixture,
+} from './disclosure.fixtures';
+
+const observableHere = DISCLOSURE_PATTERN.expectations.filter(expectation =>
+  requiredLayers(expectation).every(layer => JSDOM_OBSERVES.includes(layer)),
+);
 
 afterEach(() => document.body.replaceChildren());
 
-async function checkExpanded(attribute: string, expanded = true) {
-  return checkAccessibilitySpec({
+async function resultsFor(target: DisclosureFixture) {
+  const container = document.createElement('div');
+  document.body.append(container);
+  const result = await checkAccessibilitySpec({
     spec: DISCLOSURE_PATTERN,
     binding: 'fixture',
-    state: 'expanded',
-    facts: {expanded},
+    state: target.id,
+    facts: target.facts,
     mount: async () => {
-      document.body.innerHTML = `<button type="button" ${attribute} aria-controls="content">Details</button><div id="content">Body</div>`;
-      return createJsdomHarness({subject: document.querySelector('button')!});
+      container.innerHTML = target.html;
+      const subject = container.querySelector(SUBJECT_SELECTOR);
+      const content = container.querySelector(CONTENT_SELECTOR);
+      if (subject == null || content == null) {
+        throw new Error(
+          `fixture "${target.id}" is missing its subject or content`,
+        );
+      }
+      return createJsdomHarness({subject, related: {content}});
     },
-    unmount: () => document.body.replaceChildren(),
+    unmount: () => {
+      container.innerHTML = '';
+    },
   });
+  return result.results;
 }
 
-describe('disclosure.state.expanded — WCAG 2.2 4.1.2', () => {
-  it('accepts an expanded disclosure with its state exposed', async () => {
-    const result = await checkExpanded('aria-expanded="true"');
-    expect(result.results[0]?.status).toBe('pass');
+function resultFor(
+  results: readonly ExpectationResult[],
+  id: string,
+): ExpectationResult {
+  const found = results.find(result => result.expectation === id);
+  if (found == null) {
+    throw new Error(`no result for ${id}`);
+  }
+  return found;
+}
+
+describe('disclosure contract — completeness', () => {
+  it('answers every completeness dimension', () => {
+    expect(unansweredDimensions(DISCLOSURE_PATTERN)).toEqual([]);
   });
 
-  it('detects an expanded disclosure with no expanded state', async () => {
-    const result = await checkExpanded('');
-    expect(result.results[0]?.status).toBe('fail');
-    expect(result.results[0]?.detail).toBe(
-      'the disclosure is expanded but aria-expanded is absent',
+  it('gives every expectation at least one deliberately violating fixture', () => {
+    const missing = DISCLOSURE_PATTERN.expectations
+      .filter(
+        expectation =>
+          (DISCLOSURE_MUTATIONS[expectation.id] ?? []).length === 0,
+      )
+      .map(expectation => expectation.id);
+    expect(missing).toEqual([]);
+  });
+
+  it('has an expectation for every mutation it records', () => {
+    const ids = new Set(
+      DISCLOSURE_PATTERN.expectations.map(expectation => expectation.id),
     );
+    expect(
+      Object.keys(DISCLOSURE_MUTATIONS).filter(id => !ids.has(id)),
+    ).toEqual([]);
+  });
+
+  it('names every fixture it records a mutation against', () => {
+    for (const fixtures of Object.values(DISCLOSURE_MUTATIONS)) {
+      for (const id of fixtures) {
+        expect(() => fixture(id)).not.toThrow();
+      }
+    }
   });
 });
 
-async function checkControls(id: string) {
-  return checkAccessibilitySpec({
-    spec: DISCLOSURE_PATTERN,
-    binding: 'fixture',
-    state: 'controlled-content',
-    facts: {expanded: true, controls: true},
-    only: ['disclosure.relationship.controls'],
-    mount: async () => {
-      document.body.innerHTML = `<button type="button" aria-expanded="true" aria-controls="${id}">Details</button><div id="content">Body</div><div id="other">Other content</div>`;
-      return createJsdomHarness({
-        subject: document.querySelector('button')!,
-        related: {content: document.getElementById('content')!},
-      });
-    },
-    unmount: () => document.body.replaceChildren(),
-  });
-}
-
-describe('disclosure.relationship.controls — WCAG 2.2 1.3.1', () => {
-  it('rejects a dangling extra target even when the content is also referenced', async () => {
-    const result = await checkControls('content missing');
-    expect(result.results[0]?.status).toBe('fail');
-    expect(result.results[0]?.detail).toBe(
-      'aria-controls includes a missing content target',
-    );
-  });
-
-  it('accepts the relationship to the actual content', async () => {
-    const result = await checkControls('content');
-    expect(result.results[0]?.status).toBe('pass');
-  });
-
-  it('rejects a relationship to unrelated content', async () => {
-    const result = await checkControls('other');
-    expect(result.results[0]?.status).toBe('fail');
-    expect(result.results[0]?.detail).toBe(
-      'aria-controls does not identify the disclosed content',
-    );
+describe('disclosure contract — the jsdom harness stays within its evidence boundary', () => {
+  it('runs DOM expectations and reports browser expectations as unrun', async () => {
+    const results = await resultsFor(fixture('conforming-closed'));
+    expect(results.some(result => result.status === 'pass')).toBe(true);
+    const above = results.filter(result => result.status === 'unrun');
+    expect(above.length).toBeGreaterThan(0);
+    for (const result of above) {
+      expect(result.missingLayers).toContain('real-browser');
+    }
   });
 });
+
+describe.each(observableHere.map(expectation => [expectation.id] as const))(
+  '%s',
+  id => {
+    const expectation = DISCLOSURE_PATTERN.expectations.find(
+      candidate => candidate.id === id,
+    )!;
+
+    it.each(CONFORMING_FIXTURES.map(name => [name] as const))(
+      'passes against %s (or does not apply to it)',
+      async name => {
+        const result = resultFor(await resultsFor(fixture(name)), id);
+        expect(
+          ['pass', 'not-applicable'],
+          `${id} against ${name}: ${result.detail ?? ''}`,
+        ).toContain(result.status);
+      },
+    );
+
+    it.each((DISCLOSURE_MUTATIONS[id] ?? []).map(name => [name] as const))(
+      'fails against %s, which removes its outcome',
+      async name => {
+        const result = resultFor(await resultsFor(fixture(name)), id);
+        expect(result.status, `${id} against ${name}`).toBe('fail');
+        expect(result.detail ?? '').not.toBe('');
+      },
+    );
+
+    it('carries its id and primary source into every result description', async () => {
+      const target = fixture(
+        DISCLOSURE_MUTATIONS[id]?.[0] ?? CONFORMING_FIXTURES[0]!,
+      );
+      const result = resultFor(await resultsFor(target), id);
+      expect(result.description).toContain(id);
+      expect(result.description).toContain(citeSource(expectation.sources[0]));
+      expect(describeExpectation(expectation)).toBe(result.description);
+    });
+  },
+);
