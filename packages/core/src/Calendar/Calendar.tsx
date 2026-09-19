@@ -30,6 +30,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
+import {Selector} from '../Selector';
 import {useAnnounce, useGridFocus} from '../hooks';
 import {
   useCalendarDays,
@@ -44,6 +45,7 @@ import {
 } from './styles';
 import {
   type PlainDate,
+  plainDateCreate,
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
@@ -174,6 +176,17 @@ interface CalendarBaseProps extends Omit<
   hasVariableRowCount?: boolean;
 
   /**
+   * Replace the static month/year caption with compact month and year
+   * pickers so the user can jump straight to a distant month instead of
+   * paging one month at a time. The year list derives from `min`/`max`
+   * (1900–2099 when unbounded, widened to include the visible year).
+   * Ignored when `numberOfMonths` is 2, where the caption labels both
+   * visible months.
+   * Default: false
+   */
+  hasMonthYearPickers?: boolean;
+
+  /**
    * First day of week. Accepts a number (0 = Sunday … 6 = Saturday) or a
    * three-letter day name ('sun'–'sat', case-insensitive) for readability.
    * Default: 0 (Sunday)
@@ -245,6 +258,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     hasOutsideDays = true,
     hasWeekNumbers = false,
     hasVariableRowCount = false,
+    hasMonthYearPickers = false,
     weekStartsOn: weekStartsOnProp = 0,
     xstyle,
     className,
@@ -386,6 +400,93 @@ export function Calendar({ref, ...props}: CalendarProps) {
         maxDate.month > lastVisibleMonth.month)
     );
   }, [max, baseMonth, numberOfMonths]);
+
+  // Month/year pickers replace the caption only in single-month view; a
+  // two-month view keeps the joined static label, which names both months.
+  const showsMonthYearPickers = hasMonthYearPickers && numberOfMonths === 1;
+
+  const minPd = useMemo(() => (min ? plainDateFromISO(min) : null), [min]);
+  const maxPd = useMemo(() => (max ? plainDateFromISO(max) : null), [max]);
+
+  // Options for the month picker: all twelve months of the visible year,
+  // disabling any month that falls entirely outside [min, max]. Labels use
+  // the same undefined-locale Intl formatting as the static caption so the
+  // two caption modes can never disagree on month names.
+  const monthPickerOptions = useMemo(() => {
+    if (!showsMonthYearPickers) {
+      return [];
+    }
+    return Array.from({length: 12}, (_, i) => {
+      const month = i + 1;
+      const beforeMin =
+        minPd !== null &&
+        (baseMonth.year < minPd.year ||
+          (baseMonth.year === minPd.year && month < minPd.month));
+      const afterMax =
+        maxPd !== null &&
+        (baseMonth.year > maxPd.year ||
+          (baseMonth.year === maxPd.year && month > maxPd.month));
+      return {
+        value: String(month),
+        label: plainDateFormat(plainDateCreate(baseMonth.year, month, 1), {
+          month: 'long',
+        }),
+        disabled: beforeMin || afterMax,
+      };
+    });
+  }, [showsMonthYearPickers, baseMonth.year, minPd, maxPd]);
+
+  // Options for the year picker. The range reuses the existing `min`/`max`
+  // bounds vocabulary rather than introducing a parallel one; without bounds
+  // it spans 1900–2099. Either way it is widened so the visible year is
+  // always present — a focus date outside the bounds must still label the
+  // header (the trigger would otherwise show the Selector placeholder) —
+  // with years outside [min, max] disabled rather than hidden.
+  const yearPickerOptions = useMemo(() => {
+    if (!showsMonthYearPickers) {
+      return [];
+    }
+    const fromYear = Math.min(minPd?.year ?? 1900, baseMonth.year);
+    const toYear = Math.max(maxPd?.year ?? 2099, baseMonth.year);
+    const years = [];
+    for (let year = fromYear; year <= toYear; year++) {
+      years.push({
+        value: String(year),
+        label: plainDateFormat(plainDateCreate(year, 1, 1), {year: 'numeric'}),
+        disabled:
+          (minPd !== null && year < minPd.year) ||
+          (maxPd !== null && year > maxPd.year),
+      });
+    }
+    return years;
+  }, [showsMonthYearPickers, baseMonth.year, minPd, maxPd]);
+
+  // Jump to an absolute month, clamping into the [min, max] month window
+  // (a year pick can land the current month out of range), routed through
+  // the same controlled/uncontrolled branch as navigateMonth.
+  const jumpToMonth = useCallback(
+    (year: number, month: number) => {
+      let target = plainDateCreate(year, month, 1);
+      if (minPd !== null) {
+        const minMonth = plainDateSetFirstOfMonth(minPd);
+        if (plainDateIsBefore(target, minMonth)) {
+          target = minMonth;
+        }
+      }
+      if (maxPd !== null) {
+        const maxMonth = plainDateSetFirstOfMonth(maxPd);
+        if (plainDateIsBefore(maxMonth, target)) {
+          target = maxMonth;
+        }
+      }
+      if (onFocusDateChange) {
+        onFocusDateChange(plainDateToISO(target));
+      } else {
+        setInternalFocusDate(target);
+      }
+    },
+    [minPd, maxPd, onFocusDateChange],
+  );
 
   // Navigation handlers
   const navigateMonth = useCallback(
@@ -540,9 +641,51 @@ export function Calendar({ref, ...props}: CalendarProps) {
           isIconOnly
         />
 
-        <span {...stylex.props(calendarStyles.monthYearLabel)}>
-          {monthYearLabel}
-        </span>
+        {showsMonthYearPickers ? (
+          <div {...stylex.props(calendarStyles.pickerGroup)}>
+            {/* Wrapper spans (not Selector props): Selector merges className
+                onto its trigger container but spreads data-* onto the inner
+                combobox button, which would scatter the theme target across
+                two elements. The wrapper keeps class + data-picker together
+                on one stable node. */}
+            <span
+              {...mergeProps(
+                themeProps('calendar-picker', {picker: 'month'}),
+                stylex.props(calendarStyles.pickerItem),
+              )}>
+              <Selector
+                label={t('@astryx.calendar.month')}
+                isLabelHidden
+                variant="ghost"
+                size="sm"
+                placement="below"
+                options={monthPickerOptions}
+                value={String(baseMonth.month)}
+                onChange={value => jumpToMonth(baseMonth.year, Number(value))}
+              />
+            </span>
+            <span
+              {...mergeProps(
+                themeProps('calendar-picker', {picker: 'year'}),
+                stylex.props(calendarStyles.pickerItem),
+              )}>
+              <Selector
+                label={t('@astryx.calendar.year')}
+                isLabelHidden
+                variant="ghost"
+                size="sm"
+                placement="below"
+                options={yearPickerOptions}
+                value={String(baseMonth.year)}
+                onChange={value => jumpToMonth(Number(value), baseMonth.month)}
+              />
+            </span>
+          </div>
+        ) : (
+          <span {...stylex.props(calendarStyles.monthYearLabel)}>
+            {monthYearLabel}
+          </span>
+        )}
 
         <Button
           {...themeProps('calendar-nav', {
