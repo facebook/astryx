@@ -8,25 +8,6 @@
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
-export type {
-  MarkdownPluginData,
-  MarkdownExtensionNode,
-  MarkdownTokenizerInput,
-  MarkdownTokenizeResult,
-  MarkdownSyntaxContribution,
-  MarkdownSyntaxCapability,
-  MarkdownTransformContext,
-  MarkdownTransform,
-  MarkdownExtensionRenderer,
-  MarkdownExtensionRenderers,
-  MarkdownSyntaxPluginDefinition,
-  MarkdownTransformPluginDefinition,
-  MarkdownPluginDefinition,
-  MarkdownPluginEntry,
-  MarkdownNodeOf,
-  MarkdownExtensionsOf,
-} from './plugins';
 export {visitMarkdownNodes} from './ast';
 export type {
   MarkdownAstPoint,

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file plugins.test.tsx
+ * @file protocol.test.tsx
  * @input Syntax, immutable transform, renderer, parser, and Outline plugin APIs
  * @output Regression coverage for ordering, typing, fallback, identity, and rendering
  * @position Focused acceptance tests for the core Markdown plugin protocol
@@ -10,22 +10,22 @@
 import {renderToString} from 'react-dom/server';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
-import {Markdown} from './Markdown';
+import {Markdown} from '../Markdown';
 import {
   createIncrementalState,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
-} from './parser';
-import type {InlineNode} from './parser';
-import {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
-import {visitMarkdownNodes} from './ast';
+} from '../parser';
+import type {InlineNode} from '../parser';
+import {createMarkdownPlugin, isMarkdownExtensionNode} from './protocol';
+import {visitMarkdownNodes} from '../ast';
 import type {
   MarkdownExtensionNode,
   MarkdownSyntaxPluginDefinition,
   MarkdownTransformPluginDefinition,
-} from './plugins';
-import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
+} from './protocol';
+import {parseOutlineFromMarkdown} from '../../Outline/parseOutlineFromMarkdown';
 
 type MentionNode = MarkdownExtensionNode<
   'mentions',
@@ -352,7 +352,7 @@ describe('Markdown plugin protocol', () => {
 
   it('accepts plugins created by a duplicate Core copy', async () => {
     vi.resetModules();
-    const duplicateCore = await import('./plugins');
+    const duplicateCore = await import('./protocol');
     const duplicatePlugin = duplicateCore.createMarkdownPlugin({
       name: 'duplicate-core-copy',
       apiVersion: 1,

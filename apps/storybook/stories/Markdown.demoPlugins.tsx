@@ -11,7 +11,7 @@ import {
   createMarkdownPlugin,
   type MarkdownExtensionNode,
   type MarkdownSyntaxPluginDefinition,
-} from '@astryxdesign/core/Markdown';
+} from '@astryxdesign/core/Markdown/plugins';
 
 type MentionNode = MarkdownExtensionNode<
   'demo-mentions',

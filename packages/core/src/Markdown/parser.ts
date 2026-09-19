@@ -24,7 +24,7 @@ import {
   isMarkdownPluginData,
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
-} from './plugins';
+} from './plugins/protocol';
 import type {
   MarkdownExtensionNode,
   MarkdownExtensionsOf,
@@ -32,7 +32,7 @@ import type {
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
-} from './plugins';
+} from './plugins/protocol';
 import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------

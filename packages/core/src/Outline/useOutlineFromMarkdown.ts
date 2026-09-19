@@ -16,7 +16,7 @@
 import {useMemo} from 'react';
 import {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
 import type {ParseOutlineFromMarkdownOptions} from './parseOutlineFromMarkdown';
-import type {MarkdownExtensionNode} from '../Markdown/plugins';
+import type {MarkdownExtensionNode} from '../Markdown/plugins/protocol';
 import type {OutlineItem} from './types';
 
 /** Extract a stable outline from a Markdown string. */

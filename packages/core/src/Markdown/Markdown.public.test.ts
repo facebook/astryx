@@ -2,28 +2,29 @@
 
 /**
  * @file Markdown.public.test.ts
- * @input Imports Markdown parser, plugin factory, visitor, and node types from the public barrel
+ * @input Imports Markdown parser, plugin factory, visitor, and node types from the public Markdown and plugin barrels
  * @output Compile-time compatibility coverage for legacy, math-enabled, and plugin results
- * @position Public API test guarding @astryxdesign/core/Markdown
+ * @position Public API test guarding @astryxdesign/core/Markdown and /Markdown/plugins
  */
 
 import {describe, expectTypeOf, it} from 'vitest';
 import {
   createIncrementalState,
-  createMarkdownPlugin,
-  isMarkdownExtensionNode,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
   visitMarkdownNodes,
 } from './index';
+import {createMarkdownPlugin, isMarkdownExtensionNode} from './plugins';
+import type {
+  MarkdownExtensionNode,
+  MarkdownSyntaxPluginDefinition,
+} from './plugins';
 import type {
   BlockNode,
   BlockNodeWithMath,
   InlineNode,
   InlineNodeWithMath,
-  MarkdownExtensionNode,
-  MarkdownSyntaxPluginDefinition,
   ParseOptions,
 } from './index';
 

@@ -107,6 +107,8 @@ const STATIC_EXPORTS = {
  *
  * See: https://github.com/facebook/astryx/issues/1977
  */
+const MODULE_SUBPATH_EXPORTS = ['Markdown/plugins'];
+
 const UTIL_SUBPATH_DIRS = [
   'Calendar',
   'Markdown',
@@ -175,6 +177,15 @@ function buildExports() {
     // Skip if already covered by static exports
     if (exports[key]) continue;
     exports[key] = makeExportEntry(dir);
+  }
+
+  // Explicit nested module entry points.
+  for (const modulePath of MODULE_SUBPATH_EXPORTS) {
+    exports[`./${modulePath}`] = {
+      source: `./src/${modulePath}/index.ts`,
+      types: `./dist/${modulePath}/index.d.ts`,
+      default: `./dist/${modulePath}/index.js`,
+    };
   }
 
   // Server-safe utility subpath exports

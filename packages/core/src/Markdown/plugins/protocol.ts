@@ -1,22 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file plugins.ts
+ * @file protocol.ts
  * @input Markdown plugin definitions, syntax tokenizers, immutable transforms, and renderers
  * @output Public plugin protocol plus validated internal preparation and execution
  * @position Shared Markdown extension boundary consumed by the parser and renderer
  */
 
 import type React from 'react';
-import {devError, warnOnce} from '../utils/devWarning';
-import {isSafeMarkdownParserUrl} from './url';
+import {devError, warnOnce} from '../../utils/devWarning';
+import {isSafeMarkdownParserUrl} from '../url';
 import type {
   MarkdownAstDataValue,
   MarkdownAstExtensionNode,
   MarkdownAstNodeBase,
   MarkdownAstPosition,
   MarkdownAstRoot,
-} from './ast';
+} from '../ast';
 
 export type MarkdownPluginData = MarkdownAstDataValue;
 

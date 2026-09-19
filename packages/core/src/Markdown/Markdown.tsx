@@ -69,12 +69,12 @@ import {
   markdownExtensionText,
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
-} from './plugins';
+} from './plugins/protocol';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
-} from './plugins';
+} from './plugins/protocol';
 import {sanitizeMarkdownUrl} from './url';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';

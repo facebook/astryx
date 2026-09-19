@@ -16,11 +16,11 @@ import {markdownAstText} from '../Markdown/ast';
 import {
   markdownExtensionText,
   prepareMarkdownPlugins,
-} from '../Markdown/plugins';
+} from '../Markdown/plugins/protocol';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
-} from '../Markdown/plugins';
+} from '../Markdown/plugins/protocol';
 import type {OutlineItem} from './types';
 
 /**

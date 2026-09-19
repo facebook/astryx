@@ -304,7 +304,8 @@ import {Text} from '@astryxdesign/core/Text';
     {
       label: 'Immutable transform plugin',
       code: `
-import {Markdown, createMarkdownPlugin} from '@astryxdesign/core/Markdown';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownPlugin} from '@astryxdesign/core/Markdown/plugins';
 
 const finalLabels = createMarkdownPlugin({
   name: 'final-labels',
