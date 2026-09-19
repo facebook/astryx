@@ -33,7 +33,7 @@ import {
 } from '../Typeahead/busyIndicatorLane';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
+import {TokenizerBaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {
   Field,
@@ -53,6 +53,7 @@ import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {
   colorVars,
   spacingVars,
@@ -360,6 +361,10 @@ const layerPlaceholderSizeStyles = stylex.create({
 // Sentinel prefix for creatable items — used to distinguish
 // "Create: X" suggestions from real search results.
 const CREATABLE_ID_PREFIX = '__xds_create__';
+const excludeSelected = <T extends SearchableItem>(
+  results: T[],
+  selectedIds: ReadonlySet<string>,
+): T[] => results.filter(item => !selectedIds.has(item.id));
 
 /**
  * Multi-select input with token chips and typeahead search.
@@ -612,19 +617,28 @@ export function Tokenizer<T extends SearchableItem>({
     () => new Set(value.map(item => item.id)),
     [value],
   );
+  const selectedIdsRef = useRef(selectedIds);
+  useIsomorphicLayoutEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
+  const projectCommittedResults = useCallback(
+    (results: T[]) => excludeSelected(results, selectedIds),
+    [selectedIds],
+  );
 
   const filteredSource: SearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        return results.filter(item => !selectedIds.has(item.id));
+        return excludeSelected(results, selectedIdsRef.current);
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
-        return results.filter(item => !selectedIds.has(item.id));
+        return excludeSelected(results, selectedIdsRef.current);
       },
+      cancel: () => searchSource.cancel?.(),
     }),
-    [searchSource, selectedIds],
+    [searchSource],
   );
 
   /**
@@ -642,7 +656,7 @@ export function Tokenizer<T extends SearchableItem>({
         return [];
       }
       const alreadyExists =
-        selectedIds.has(trimmed) ||
+        selectedIdsRef.current.has(trimmed) ||
         results.some(
           item => item.label.toLowerCase() === trimmed.toLowerCase(),
         );
@@ -657,15 +671,16 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds],
+    [hasCreate],
   );
 
   const emptySource: SearchSource<T> = useMemo(
     () => ({
       search: async () => [],
       bootstrap: async () => [],
+      cancel: () => searchSource.cancel?.(),
     }),
-    [],
+    [searchSource],
   );
 
   // Announce token add/remove politely via the persistent live region.
@@ -868,11 +883,16 @@ export function Tokenizer<T extends SearchableItem>({
           indicator lands in the end controls below beside the clear
           button rather than as a second one inside the base. */}
       <BusyIndicatorLaneProvider value={busyLane}>
-        <BaseTypeahead
+        <TokenizerBaseTypeahead
           ref={inputRef}
           searchSource={isAtMax ? emptySource : filteredSource}
           value={null}
           onChange={handleAdd}
+          tokenizerBehavior={{
+            projectResults: projectCommittedResults,
+            selectedCount: value.length,
+            maxEntries,
+          }}
           renderItem={renderItem}
           placeholder={value.length === 0 ? placeholder : ''}
           hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
