@@ -709,7 +709,7 @@ function findInlineMathEnd(text: string, start: number): number {
  * could execute arbitrary code when rendered as link hrefs or image srcs.
  * Returns true if the URL is safe to use, false otherwise.
  */
-function isSafeUrl(url: string): boolean {
+export function isSafeUrl(url: string): boolean {
   // Trim and collapse whitespace/control chars that browsers tolerate but
   // could bypass a naive prefix check (e.g. "java\nscript:alert(1)").
   // eslint-disable-next-line no-control-regex -- control chars are the bypass
@@ -718,7 +718,7 @@ function isSafeUrl(url: string): boolean {
   if (
     lower.startsWith('javascript:') ||
     lower.startsWith('vbscript:') ||
-    lower.startsWith('data:text/html')
+    lower.startsWith('data:')
   ) {
     return false;
   }
