@@ -49,7 +49,8 @@ src/
     ├── status-message.*     live-region and progress status mechanics
     ├── tabs.*               explicit horizontal ARIA Tabs semantics
     ├── listbox.*            listbox, group, and option semantics
-    └── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
+    ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
+    └── disclosure.*         standalone disclosure state/content semantics
 ```
 
 ## The patterns
@@ -66,6 +67,7 @@ src/
 | `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                    | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
 | `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics    | Selector and MultiSelector popup listbox, group, and option parts                |
 | `spinbutton`     | WCAG 2.2 semantics and [APG Spinbutton](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) | NumberInput                                                                      |
+| `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                        | Standalone Collapsible triggers and their controlled content                     |
 
 The `spinbutton` contract owns NumberInput's required role, persistent name,
 committed numeric value, optional bounds and formatted value text, disabled and
@@ -74,6 +76,13 @@ are recorded as advisory APG evidence because no current Astryx authority
 adopts those mechanics as a shared requirement. Typed draft parsing,
 formatting, commit/clamp policy, callbacks, optional buttons, and date/time
 segments keep their existing owners.
+
+The disclosure contract owns only the disclosure-specific state, optional
+trigger-to-content relationship, synchronized visibility, and complete pointer,
+Enter, and Space transitions. Generic role, naming, focus navigation, and
+unavailable-button semantics remain in the existing `button` contract. This first
+migration binds standalone Collapsible states only; CollapsibleGroup coordination
+and Accordion, Table, and SideNav adoption remain outside this contract.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across

@@ -2,91 +2,96 @@
 
 /**
  * @file disclosure.chromium.spec.ts
- * @input Uses Playwright, the disclosure contract, and native-button fixtures
- * @output Real-browser proof of complete disclosure transitions and their mutations
- * @position Contract fixtures, independent of any component implementation.
+ * @input Uses Playwright, the disclosure contract, shared fixtures, and Chromium harness
+ * @output Real-browser positive and deliberate-negative proof for every observable expectation
+ * @position Contract self-tests, independent of any component implementation.
  */
 
-import {expect, test} from '@playwright/test';
-import {checkAccessibilitySpec} from '../check';
-import {createChromiumHarness} from '../harness/chromium';
+import {expect, test, type CDPSession, type Page} from '@playwright/test';
+import {describeExpectation, requiredLayers} from '../contract';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
+import {
+  CHROMIUM_OBSERVES,
+  createChromiumHarness,
+  holdMotionStill,
+} from '../harness/chromium';
 import {DISCLOSURE_PATTERN} from './disclosure';
+import {
+  CONFORMING_FIXTURES,
+  CONTENT_SELECTOR,
+  DISCLOSURE_MUTATIONS,
+  SUBJECT_SELECTOR,
+  fixture,
+  type DisclosureFixture,
+} from './disclosure.fixtures';
 
-const toggle = `const open = this.getAttribute('aria-expanded') !== 'true'; this.setAttribute('aria-expanded', String(open)); document.getElementById('content').hidden = !open;`;
-const openOnly = `this.setAttribute('aria-expanded', 'true'); document.getElementById('content').hidden = false;`;
-const stateOnly = `this.setAttribute('aria-expanded', String(this.getAttribute('aria-expanded') !== 'true'));`;
-
-const fixtures = [
-  {
-    id: 'closed-round-trip',
-    expanded: false,
-    click: toggle,
-    keydown: '',
-    failure: null,
-  },
-  {
-    id: 'open-round-trip',
-    expanded: true,
-    click: toggle,
-    keydown: '',
-    failure: null,
-  },
-  {
-    id: 'one-way-open',
-    expanded: false,
-    click: openOnly,
-    keydown: '',
-    failure: 'click did not collapse the disclosure',
-  },
-  {
-    id: 'state-without-content',
-    expanded: false,
-    click: stateOnly,
-    keydown: '',
-    failure: 'click exposed expanded=true while its content stayed hidden',
-  },
-  {
-    id: 'space-unavailable',
-    expanded: false,
-    click: toggle,
-    keydown: "if (event.key === ' ') event.preventDefault();",
-    failure: 'Space did not expand the disclosure',
-  },
-  {
-    id: 'enter-unavailable',
-    expanded: false,
-    click: toggle,
-    keydown: "if (event.key === 'Enter') event.preventDefault();",
-    failure: 'Enter did not expand the disclosure',
-  },
-] as const;
-
-for (const fixture of fixtures) {
-  test(`disclosure.interaction.round-trip — ${fixture.id}`, async ({page}) => {
-    const cdp = await page.context().newCDPSession(page);
-    const result = await checkAccessibilitySpec({
-      spec: DISCLOSURE_PATTERN,
-      binding: 'fixture',
-      state: fixture.id,
-      facts: {expanded: fixture.expanded, controls: true, operable: true},
-      only: ['disclosure.interaction.round-trip'],
-      mount: async () => {
-        await page.setContent(
-          `<button type="button" aria-expanded="${fixture.expanded}" aria-controls="content" onclick="${fixture.click}" onkeydown="${fixture.keydown}">Details</button><div id="content" ${fixture.expanded ? '' : 'hidden'}>Body</div>`,
-        );
-        return createChromiumHarness({
-          page,
-          cdp,
-          subject: page.getByRole('button', {name: 'Details'}),
-          related: {content: page.locator('#content')},
-        });
-      },
-    });
-    expect(result.results[0]?.status).toBe(
-      fixture.failure === null ? 'pass' : 'fail',
-    );
-    if (fixture.failure !== null) {
-      expect(result.results[0]?.detail).toBe(fixture.failure);
-    }
-  });
+function fixturePage(html: string): string {
+  return `<!doctype html><html lang="en"><body>${html}<button type="button" id="after">After disclosure</button></body></html>`;
 }
+
+async function results(
+  page: Page,
+  cdp: CDPSession,
+  target: DisclosureFixture,
+  only?: readonly string[],
+): Promise<readonly ExpectationResult[]> {
+  const run = await checkAccessibilitySpec({
+    spec: DISCLOSURE_PATTERN,
+    binding: 'fixture',
+    state: target.id,
+    facts: target.facts,
+    only,
+    mount: async () => {
+      await page.setContent(fixturePage(target.html));
+      await holdMotionStill(page);
+      return createChromiumHarness({
+        page,
+        cdp,
+        subject: page.locator(SUBJECT_SELECTOR),
+        related: {content: page.locator(CONTENT_SELECTOR)},
+      });
+    },
+  });
+  return run.results;
+}
+
+test.describe('disclosure contract — conforming fixtures', () => {
+  for (const id of CONFORMING_FIXTURES) {
+    test(`${id}: every applicable expectation passes`, async ({page}) => {
+      const cdp = await page.context().newCDPSession(page);
+      const observed = await results(page, cdp, fixture(id));
+      expect(
+        observed
+          .filter(
+            result =>
+              result.status !== 'pass' && result.status !== 'not-applicable',
+          )
+          .map(result => `${result.expectation}: ${result.detail ?? ''}`),
+      ).toEqual([]);
+    });
+  }
+});
+
+test.describe('disclosure contract — deliberately violating fixtures', () => {
+  for (const expectation of DISCLOSURE_PATTERN.expectations) {
+    if (
+      !requiredLayers(expectation).every(layer =>
+        CHROMIUM_OBSERVES.includes(layer),
+      )
+    ) {
+      continue;
+    }
+    for (const fixtureId of DISCLOSURE_MUTATIONS[expectation.id] ?? []) {
+      test(`${describeExpectation(expectation)} — fails against ${fixtureId}`, async ({
+        page,
+      }) => {
+        const cdp = await page.context().newCDPSession(page);
+        const [result] = await results(page, cdp, fixture(fixtureId), [
+          expectation.id,
+        ]);
+        expect(result?.status, result?.detail ?? 'no result').toBe('fail');
+        expect(result?.detail ?? '').not.toBe('');
+      });
+    }
+  }
+});
