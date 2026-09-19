@@ -44,6 +44,7 @@ import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -324,6 +325,7 @@ export function Outline({
   'data-testid': testId,
   ...props
 }: OutlineProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.outline.label');
   const rootRef = useRef<HTMLElement | null>(null);
@@ -466,6 +468,7 @@ export function Outline({
                 aria-current={isActive ? 'location' : undefined}
                 onClick={handleClick(item.id)}
                 onKeyDown={handleKeyDown(item.id)}
+                {...pressable}
                 {...mergeProps(
                   themeProps('outline-item', {
                     active: isActive ? 'active' : null,

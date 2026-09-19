@@ -61,6 +61,7 @@ import {
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
@@ -1035,6 +1036,7 @@ function DayCell({
 }: DayCellProps) {
   const t = useTranslator();
   const locale = useLocale();
+  const pressable = usePressFeedback();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -1158,6 +1160,7 @@ function DayCell({
         onClick={() => !state.effectivelyDisabled && onDayClick(date)}
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
+        {...pressable}
         {...mergeProps(
           themeProps('calendar-day', {
             selected: endpoint ? 'selected' : null,
