@@ -33,6 +33,7 @@ import type {BaseProps} from '../BaseProps';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
@@ -145,6 +146,18 @@ const styles = stylex.create({
       [stylex.when.ancestor(':active', tabScope)]: {
         default: colorVars['--color-overlay-pressed'],
         '@media (hover: hover)': colorVars['--color-overlay-pressed'],
+        // Under a coarse pointer the touch press model writes `data-pressed`
+        // on the tab instead; see interactionOverlay.stylex.ts. The two arms
+        // below are nested in the same media so they outrank this drop.
+        '@media (pointer: coarse)': 'transparent',
+      },
+      [stylex.when.ancestor('[data-pressed="on"]', tabScope)]: {
+        default: null,
+        '@media (pointer: coarse)': colorVars['--color-overlay-pressed'],
+      },
+      [stylex.when.ancestor('[data-pressed="fading"]', tabScope)]: {
+        default: null,
+        '@media (pointer: coarse)': colorVars['--color-overlay-hover'],
       },
     },
     transitionProperty: 'background-color',
@@ -261,6 +274,7 @@ export function Tab({
   onClick,
   ...restProps
 }: TabProps) {
+  const pressable = usePressFeedback();
   const tabListCtx = useTabListContext();
   const LinkComponent = useLinkComponent(as);
 
@@ -327,6 +341,7 @@ export function Tab({
 
   const sharedProps = {
     ...restProps,
+    ...pressable,
     ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
     'data-tab-value': value,
