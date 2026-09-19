@@ -488,9 +488,10 @@ this flow passes the historical review benchmark and is enforced on pull request
   metadata.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head. Theme approval derives from the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`; record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  request head. Approval for every record kind derives from `.github/ENGOWNERS`;
+  current design and theme records and normative design assets additionally accept
+  `.github/DESIGNOWNERS`. Record metadata never self-authorizes. The workflow
+  enables auto-merge only for pure spec changes.
 
 ## Deciding specs
 
@@ -632,7 +633,7 @@ analysis already available to the reviewer.
 | --------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | INV1, INV6                        | `scripts/check-knowledge.test.mjs`                          | An unapproved current record or unmigrated active record passes                                                                                                                                       |
 | INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                     | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record                                                   |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                         |
 | INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
 | INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
 | INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
