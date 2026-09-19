@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterEach} from 'vitest';
 import {
   type PlainDate,
   plainDateCreate,
@@ -578,6 +578,42 @@ describe('plainDateGetWeekNumber', () => {
 
   it('returns week 1 for Jan 4 (always in ISO week 1)', () => {
     expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
+  });
+
+  // Regression: the week number must not depend on the host timezone's DST
+  // offset. Zones whose DST ends after New Year (southern hemisphere) used to
+  // add a phantom hour to the Thursday-vs-Jan-1 day count, and in years whose
+  // Jan 1 is a Friday that hour rounded a whole week up.
+  describe('DST independence', () => {
+    const originalTZ = process.env.TZ;
+
+    afterEach(() => {
+      if (originalTZ === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTZ;
+      }
+    });
+
+    it.each(['Australia/Sydney', 'Pacific/Auckland', 'America/Santiago'])(
+      'does not round week 14 up to 15 in %s (DST ends after New Year)',
+      zone => {
+        process.env.TZ = zone;
+        // 2021-01-01 is a Friday, so every ISO Thursday falls on a whole
+        // multiple of 7 days into the year. 2021-04-05..11 is ISO week 14.
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 5})).toBe(14);
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 8})).toBe(14);
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 11})).toBe(
+          14,
+        );
+      },
+    );
+
+    it('keeps late-December weeks correct in Australia/Sydney', () => {
+      process.env.TZ = 'Australia/Sydney';
+      // 2027-12-30 (Thursday) is ISO week 52, not 53.
+      expect(plainDateGetWeekNumber({year: 2027, month: 12, day: 30})).toBe(52);
+    });
   });
 });
 
