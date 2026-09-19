@@ -12,6 +12,7 @@ import {
   createDelayedMarkdownDemoPlugin,
   createSourceDecorationDemo,
   markdownDemoPlugins,
+  markdownFrontmatterDemo,
   markdownSemanticFenceDemoPlugin,
 } from './Markdown.demoPlugins';
 import {
@@ -683,6 +684,70 @@ export const NativeAndRemarkPlugins: Story = {
     await expect(
       remarkFirstPane.getByRole('link', {name: 'Authored link'}),
     ).toHaveFocus();
+  },
+};
+
+const fullStackFrontmatterSource = [
+  '---',
+  'title: Plugin rollout',
+  'status: ready',
+  '---',
+  '# Plugin rollout',
+  '',
+  'Hello @{Ada}. TODO tracks SPEC-4821.',
+  '',
+  '```diagram Release path',
+  'Author --> Review --> Publish',
+  '```',
+].join('\n');
+
+export const NativeFrontmatterWithFullStack: Story = {
+  name: 'Native frontmatter with full plugin stack',
+  render: () => {
+    const metadata = markdownFrontmatterDemo.parse(fullStackFrontmatterSource);
+    const {plugins: decorationPlugins} = createSourceDecorationDemo(
+      fullStackFrontmatterSource,
+      'Plugin rollout',
+    );
+    const plugins = [
+      markdownFrontmatterDemo.plugin,
+      ...markdownDemoPlugins,
+      markdownSemanticFenceDemoPlugin,
+      remarkSpecLinkPlugin,
+      ...decorationPlugins,
+    ];
+    const label =
+      metadata.status === 'match'
+        ? `${metadata.metadata.title} — ${metadata.metadata.status}`
+        : 'No document metadata';
+
+    return (
+      <div style={{maxWidth: 680}}>
+        <Text>Document metadata: {label}</Text>
+        <Markdown plugins={plugins}>{fullStackFrontmatterSource}</Markdown>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText('Document metadata: Plugin rollout — ready'),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('heading', {name: 'Plugin rollout'}),
+    ).toBeInTheDocument();
+    await expect(canvas.getByText('@Ada')).toBeInTheDocument();
+    await expect(canvas.getByText('TODO')).toBeInTheDocument();
+    await expect(canvas.getByRole('link', {name: 'SPEC-4821'})).toHaveAttribute(
+      'href',
+      '/specs/4821',
+    );
+    await expect(
+      canvas.getByRole('figure', {name: 'Release path'}),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText('title: Plugin rollout'),
+    ).not.toBeInTheDocument();
   },
 };
 

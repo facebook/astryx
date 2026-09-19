@@ -8,6 +8,7 @@
  */
 
 import {
+  createMarkdownFrontmatter,
   createMarkdownPlugin,
   createMarkdownFenceTransform,
   createMarkdownSourceDecoration,
@@ -175,6 +176,14 @@ const semanticFencePlugin = createMarkdownPlugin<
 });
 
 export const markdownSemanticFenceDemoPlugin = semanticFencePlugin;
+
+export const markdownFrontmatterDemo = createMarkdownFrontmatter({
+  name: 'demo-document-metadata',
+  parse: fields => ({
+    title: fields.title ?? 'Untitled',
+    status: fields.status ?? 'unknown',
+  }),
+});
 
 export const markdownDemoPlugins = [
   createMarkdownPlugin<'demo-mentions', MentionNode>(mentionDefinition),

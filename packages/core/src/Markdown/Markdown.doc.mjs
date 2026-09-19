@@ -270,6 +270,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
+      },
+      {
+        guidance: true,
+        description:
           "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
       },
       {
@@ -420,6 +425,26 @@ const readDecorations = createMarkdownPlugin({
 });
 
 <Markdown plugins={[searchHits, readDecorations]}>{source}</Markdown>;
+`,
+    },
+    {
+      label: 'Native frontmatter',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownFrontmatter} from '@astryxdesign/core/Markdown/plugins';
+
+const frontmatter = createMarkdownFrontmatter({
+  name: 'document-metadata',
+  parse: fields => ({
+    title: fields.title ?? 'Untitled',
+    draft: fields.draft === 'true',
+  }),
+});
+
+const source = '---\\ntitle: Release notes\\ndraft: true\\n---\\n# Shipped';
+const result = frontmatter.parse(source);
+
+<Markdown plugins={[frontmatter.plugin]}>{source}</Markdown>;
 `,
     },
     {
@@ -700,6 +725,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
+      },
+      {
+        guidance: true,
+        description:
           "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
       },
       {
@@ -768,6 +798,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use createMarkdownSourceDecoration to attach non-visual metadata — search hits, review annotations — to the blocks a source range touches, and getMarkdownSourceDecorations to read it back in a later plugin. Decorations appear on the settled document rather than on partial streaming chunks, and never change rendering, copyable text, accessible names, ids, focus order, or navigation.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
       },
       {
         guidance: true,

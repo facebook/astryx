@@ -27,6 +27,12 @@ export type {
   MarkdownSourceDecorationOptions,
   MarkdownSourceDecorationRange,
 } from './sourceDecoration';
+export {createMarkdownFrontmatter} from './frontmatter';
+export type {
+  MarkdownFrontmatter,
+  MarkdownFrontmatterOptions,
+  MarkdownFrontmatterParseResult,
+} from './frontmatter';
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,
