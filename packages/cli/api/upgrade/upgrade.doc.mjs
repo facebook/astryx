@@ -16,8 +16,9 @@ export const doc = {
   description:
     'Migrates project source from a previous Astryx version to the currently ' +
     'installed one by running the registered codemods, and compares the fully ' +
-    'rendered managed agent-docs block on every path, including same-Core ' +
-    'integration guidance changes. Dry-run previews without writing; `apply` ' +
+    'rendered managed agent-docs block on every migration path, including ' +
+    'same-Core integration guidance changes; list and registry-only modes do not ' +
+    'run migration reconciliation. Dry-run previews without writing; `apply` ' +
     'writes the prepared block only after selected codemods and hooks succeed. ' +
     'Core codemods run before ' +
     'the config is loaded so a config codemod can repair an otherwise-invalid ' +
@@ -68,7 +69,7 @@ export const doc = {
       name: 'options.integration',
       type: 'string[]',
       description:
-        'Explicit integration package names / file paths to process.',
+        'Explicit integration specifiers to process. Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.',
     },
     {
       name: 'options.path',

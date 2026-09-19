@@ -53,10 +53,10 @@ export const doc = {
         'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.',
     },
     {
-      flag: '--integration <package-or-file>',
+      flag: '--integration <package>',
       param: 'options.integration',
       description:
-        'Explicit integration package name or integration file path (repeatable)',
+        'Explicit integration specifier (repeatable). Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.',
       default: [],
     },
     {
