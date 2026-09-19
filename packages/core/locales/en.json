@@ -1123,6 +1123,10 @@
     "defaultMessage": "Read only",
     "description": "Screen-reader-only description appended to a read-only form control when the platform does not expose aria-readonly for that control's host element. Short state label, not an instruction."
   },
+  "@astryx.inputClearButton.clear": {
+    "defaultMessage": "Clear",
+    "description": "Visible tooltip on the shared clear button used by input components. Keep this concise; the button's separate accessible name identifies the field being cleared."
+  },
   "@astryx.input.statusButton.error": {
     "defaultMessage": "Error details",
     "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."

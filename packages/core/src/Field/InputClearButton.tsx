@@ -4,8 +4,9 @@
 
 /**
  * @file InputClearButton.tsx
- * @input Uses React, Button, Icon
- * @output Exports the public InputClearButton and an internal popup-aware variant.
+ * @input Uses React, Button, Icon, and useTranslator
+ * @output Exports the public InputClearButton and an internal popup-aware variant,
+ *   both with a localized generic Clear tooltip.
  * @position Shared primitive. Every input that renders a clear affordance —
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —
@@ -18,6 +19,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -66,6 +68,7 @@ const styles = stylex.create({
 });
 
 export interface InputClearButtonProps {
+  /** Contextual accessible name for the button, such as "Clear Search". */
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   xstyle?: stylex.StyleXStyles;
@@ -89,7 +92,7 @@ type InputClearButtonRenderProps = InputClearButtonProps &
     Pick<InternalInputClearButtonProps, 'onPointerDown' | 'onClickCapture'>
   >;
 
-function renderInputClearButton({
+function InputClearButtonImpl({
   label,
   onClick,
   onPointerDown,
@@ -97,6 +100,7 @@ function renderInputClearButton({
   xstyle,
   iconClassName,
 }: InputClearButtonRenderProps): ReactNode {
+  const t = useTranslator();
   const {className: iconTargetClassName} = themeProps('input-clear-icon');
   const {className: buttonTargetClassName} = themeProps('input-clear-button');
   return (
@@ -104,6 +108,7 @@ function renderInputClearButton({
       variant="ghost"
       size="sm"
       label={label}
+      tooltip={t('@astryx.inputClearButton.clear')}
       className={buttonTargetClassName}
       icon={
         <Icon
@@ -131,14 +136,14 @@ function renderInputClearButton({
 }
 
 export function InputClearButton(props: InputClearButtonProps): ReactNode {
-  return renderInputClearButton(props);
+  return <InputClearButtonImpl {...props} />;
 }
 
 /** Internal variant used while popup-aware clear behavior is rolled out. */
 export function InternalInputClearButton(
   props: InternalInputClearButtonProps,
 ): ReactNode {
-  return renderInputClearButton(props);
+  return <InputClearButtonImpl {...props} />;
 }
 
 InputClearButton.displayName = 'InputClearButton';
