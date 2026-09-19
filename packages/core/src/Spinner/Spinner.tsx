@@ -147,13 +147,14 @@ function registerSpinnerVars(): void {
 registerSpinnerVars();
 
 /**
- * Pin every ring's rotation to the document timeline's origin instead of its
- * own start time, so spinners mounted seconds apart turn in phase.
+ * Pin every ring's dash motion to the document timeline's origin instead of
+ * its own start time, so spinners mounted seconds apart stay in phase.
  *
  * Setting `startTime` is exact where arithmetic on a clock read is not: a
  * negative `animation-delay` computed at mount is only as good as the gap
  * between reading the clock and the frame the animation starts in, which at
- * 10x CPU throttling measured 116deg of drift.
+ * 10x CPU throttling measured 116deg of drift (from when this animated a
+ * literal rotation; the same drift risk applies to the dash offset now).
  *
  * Rings are collected and pinned in one frame because `getAnimations()`
  * resolves style and `startTime` dirties it again, so pinning them one at a
@@ -167,7 +168,9 @@ function pinRingsToTimelineOrigin(): void {
   flushScheduled = false;
   const animations: Animation[] = [];
   for (const svg of pendingRings) {
-    animations.push(...svg.getAnimations());
+    // The animation now runs on the arc <circle>, a descendant of the ring
+    // this ref sits on (#6253), so it needs subtree:true to be found here.
+    animations.push(...svg.getAnimations({subtree: true}));
   }
   pendingRings.clear();
   for (const animation of animations) {
@@ -205,9 +208,20 @@ function syncRotationPhase(
 // Animation
 // =============================================================================
 
-const rotation = stylex.keyframes({
-  '0%': {transform: 'rotate(0deg)'},
-  '100%': {transform: 'rotate(360deg)'},
+/**
+ * Moves the dash around a stationary circle instead of rotating the whole
+ * ring. WebKit re-antialiases a rotating stroked shape's rounded cap
+ * (`strokeLinecap: 'round'`, below) slightly differently at each intermediate
+ * angle, which reads as a visible wobble on iOS Safari independent of
+ * compositing (#6253) — confirmed by a real-device test against this exact
+ * fix, since `willChange`/layer promotion alone (the earlier fix for #3617)
+ * only smooths the rotation's motion, not the per-frame stroke rasterization.
+ * A static circle with an animated `stroke-dashoffset` never rotates, so
+ * WebKit never re-rasterizes the cap at an intermediate angle at all.
+ */
+const dashMotion = stylex.keyframes({
+  '0%': {strokeDashoffset: '0px'},
+  '100%': {strokeDashoffset: `calc(var(${RESOLVED_DIAMETER}) * -${PI})`},
 });
 
 // =============================================================================
@@ -271,7 +285,6 @@ const styles = stylex.create({
     // One expression, one source of truth, resolves in any layout.
     width: `var(${BOX_SIZE})`,
     height: `var(${BOX_SIZE})`,
-    willChange: 'transform',
     // The svg is sized in CSS (100% of the span) rather than from the size
     // constant, so one user unit is one CSS pixel AND the frame follows a
     // themed diameter: the span's box is `diameter + 2 x stroke`, both public
@@ -280,16 +293,6 @@ const styles = stylex.create({
     // diameter — an overflowing grid item aligns to start rather than centre,
     // which put the ring 1.5-3.3px off across the four sizes.
     overflow: 'visible',
-    // Slow the rotation dramatically under reduced-motion rather than freezing
-    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The role="status" + "Loading" label still convey busy state (obs-6).
-    animationDuration: {
-      default: durationVars['--duration-slow-min'],
-      '@media (prefers-reduced-motion: reduce)': '3s',
-    },
-    animationIterationCount: 'infinite',
-    animationName: rotation,
-    animationTimingFunction: 'linear',
   },
   circle: {
     fill: 'none',
@@ -327,6 +330,16 @@ const styles = stylex.create({
   // `0` the way the registered length pair guards against, so it needs no
   // registration.
   arc: {
+    // Slow the motion dramatically under reduced-motion rather than freezing
+    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
+    // The role="status" + "Loading" label still convey busy state (obs-6).
+    animationDuration: {
+      default: durationVars['--duration-slow-min'],
+      '@media (prefers-reduced-motion: reduce)': '3s',
+    },
+    animationIterationCount: 'infinite',
+    animationName: dashMotion,
+    animationTimingFunction: 'linear',
     stroke: 'var(--spinner-color)',
     transform: 'rotate(-90deg)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${PI} * var(--spinner-arc-fraction)) calc(var(${RESOLVED_DIAMETER}) * ${PI} * (1 - var(--spinner-arc-fraction)))`,
