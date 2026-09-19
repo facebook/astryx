@@ -42,18 +42,30 @@ export interface TableRowProps extends BaseProps<HTMLTableRowElement> {
   isHeaderRow?: boolean;
 }
 
+/**
+ * Zebra striping counts body rows — and a row-expansion panel is not one.
+ *
+ * The panel is appended as a sibling `<tr>` (see BaseTable's `afterRow`), so a
+ * plain `:nth-child(even)` counts it and every row below an open panel takes
+ * the opposite stripe: expanding one row repaints half the table. Counting
+ * `of :not([data-expansion-panel])` leaves the panel out of the sequence, so
+ * the rows keep their parity whatever is open, and the panel — which paints no
+ * background of its own by default — reads as its row's continuation.
+ */
+const NOT_PANEL_ROW = ':nth-child(even of :not([data-expansion-panel]))';
+
 const stripedRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
+      [NOT_PANEL_ROW]: colorVars['--color-background-muted'],
     },
     // Publish the row's current overlay color as an inheritable variable so
     // pinned/sticky cells (which paint an opaque background over the otherwise
     // transparent row) can replay the exact same striping. Unset on odd rows.
     '--table-row-overlay': {
       default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
+      [NOT_PANEL_ROW]: colorVars['--color-background-muted'],
     },
   },
 });
@@ -82,14 +94,14 @@ const stripedHoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
+      [NOT_PANEL_ROW]: colorVars['--color-background-muted'],
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     '--table-row-overlay': {
       default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
+      [NOT_PANEL_ROW]: colorVars['--color-background-muted'],
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
