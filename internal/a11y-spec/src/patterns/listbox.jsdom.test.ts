@@ -77,9 +77,17 @@ async function checkOption(selected: boolean, attribute: string) {
 }
 
 describe('listbox.option.selection-state — WCAG 2.2 4.1.2', () => {
-  it('accepts the implicit unselected state of an option', async () => {
-    const result = await checkOption(false, '');
+  it('accepts the explicit unselected state of an option', async () => {
+    const result = await checkOption(false, 'aria-selected="false"');
     expect(result.results[0]?.status).toBe('pass');
+  });
+
+  it('detects an unselected option that omits its state', async () => {
+    const result = await checkOption(false, '');
+    expect(result.results[0]?.status).toBe('fail');
+    expect(result.results[0]?.detail).toBe(
+      'the option is unselected but aria-selected is absent',
+    );
   });
 
   it('accepts the selected option', async () => {
@@ -159,26 +167,33 @@ describe('listbox.relationship.owned — WCAG 2.2 1.3.1', () => {
     ['dom', 'owns'],
     ['owns', 'dom'],
     ['owns', 'owns'],
-  ] as const)('accepts an indirect %s → %s group relationship', async (outer, inner) => {
-    const result = await checkAccessibilitySpec({
-      spec: LISTBOX_PATTERN,
-      binding: 'fixture',
-      state: 'indirect-owned-option',
-      facts: {part: 'option', multiple: false, ownerGroup: 'group'},
-      only: ['listbox.relationship.owned'],
-      mount: async () => {
-        const option = '<div id="option" role="option" aria-selected="false">Orange</div>';
-        const group = `<div id="group" role="group" aria-label="Citrus" ${inner === 'owns' ? 'aria-owns="option"' : ''}>${inner === 'dom' ? option : ''}</div>`;
-        document.body.innerHTML = `<div id="list" role="listbox" aria-label="Fruit" ${outer === 'owns' ? 'aria-owns="group"' : ''}>${outer === 'dom' ? group : ''}</div>${outer === 'owns' ? group : ''}${inner === 'owns' ? option : ''}`;
-        return createJsdomHarness({
-          subject: document.getElementById('option')!,
-          related: {listbox: document.getElementById('list')!, group: document.getElementById('group')!},
-        });
-      },
-      unmount: () => document.body.replaceChildren(),
-    });
-    expect(result.results[0]?.status).toBe('pass');
-  });
+  ] as const)(
+    'accepts an indirect %s → %s group relationship',
+    async (outer, inner) => {
+      const result = await checkAccessibilitySpec({
+        spec: LISTBOX_PATTERN,
+        binding: 'fixture',
+        state: 'indirect-owned-option',
+        facts: {part: 'option', multiple: false, ownerGroup: 'group'},
+        only: ['listbox.relationship.owned'],
+        mount: async () => {
+          const option =
+            '<div id="option" role="option" aria-selected="false">Orange</div>';
+          const group = `<div id="group" role="group" aria-label="Citrus" ${inner === 'owns' ? 'aria-owns="option"' : ''}>${inner === 'dom' ? option : ''}</div>`;
+          document.body.innerHTML = `<div id="list" role="listbox" aria-label="Fruit" ${outer === 'owns' ? 'aria-owns="group"' : ''}>${outer === 'dom' ? group : ''}</div>${outer === 'owns' ? group : ''}${inner === 'owns' ? option : ''}`;
+          return createJsdomHarness({
+            subject: document.getElementById('option')!,
+            related: {
+              listbox: document.getElementById('list')!,
+              group: document.getElementById('group')!,
+            },
+          });
+        },
+        unmount: () => document.body.replaceChildren(),
+      });
+      expect(result.results[0]?.status).toBe('pass');
+    },
+  );
 
   it('accepts an option contained by its listbox', async () => {
     const result = await checkOwnership(true);

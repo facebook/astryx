@@ -47,7 +47,8 @@ src/
     ├── text-input.*         the native text-input pattern, same four files
     ├── modal-dialog.*       the native modal-dialog pattern, same four files
     ├── status-message.*     live-region and progress status mechanics
-    └── tabs.*               explicit horizontal ARIA Tabs semantics
+    ├── tabs.*               explicit horizontal ARIA Tabs semantics
+    └── listbox.*            listbox, group, and option semantics
 ```
 
 ## The patterns
@@ -68,6 +69,10 @@ The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across
 single/multiple selection, disabled options, groups, filtering, custom content,
 RTL, hidden labels, sheet presentations, loading, and select-all states.
+Chromium records two exact existing failures: the no-search bottom-sheet
+listboxes for Selector and MultiSelector have no accessible name. Search-sheet
+variants and the other bound states pass; the exact failures remain visible debt
+under WCAG 2.2 4.1.2, not conformance or remediation.
 Trigger/search semantics, selection algorithms, keyboard/focus policy, empty
 representation, callbacks, forms, styling, and real-AT claims keep their named
 owners. The completeness exemptions make those limits visible rather than

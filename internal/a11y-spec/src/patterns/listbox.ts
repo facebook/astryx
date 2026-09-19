@@ -79,11 +79,7 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
           );
         }
         const attribute = facts.selectionAttribute ?? 'aria-selected';
-        const authored = await subject.attribute(attribute);
-        const selected =
-          authored === null && attribute === 'aria-selected'
-            ? 'false'
-            : authored;
+        const selected = await subject.attribute(attribute);
         if (selected !== String(facts.selected)) {
           throw new Error(
             `the option is ${facts.selected ? 'selected' : 'unselected'} but ${attribute} is ${selected ?? 'absent'}`,
@@ -169,7 +165,7 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
     {
       id: 'listbox.exposure.identity',
       outcome:
-        'The browser exposes each part with its role and identifying name.',
+        'The browser exposes each part with its role and any required identifying name.',
       sources: [NAME_ROLE_VALUE],
       covers: ['4.1.2-name-role-value'],
       appliesWhen: {
@@ -185,7 +181,7 @@ export const LISTBOX_PATTERN = definePattern<ListboxStateFacts>({
             `the browser exposes ${role ?? 'no role'} instead of ${facts.part}`,
           );
         }
-        if (name.trim() === '') {
+        if (facts.part !== 'group' && name.trim() === '') {
           throw new Error(
             `the browser exposes the ${facts.part} without an accessible name`,
           );

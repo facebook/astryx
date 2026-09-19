@@ -94,7 +94,9 @@ function scenarios(component: ListboxScenario['component']): ListboxScenario[] {
       id: `${prefix}-filtered`,
       options: groupedOptions,
       values: ['orange'],
-      expectedOptions: [{value: 'lemon', name: 'Lemon', disabled: false, group: 'Citrus'}],
+      expectedOptions: [
+        {value: 'lemon', name: 'Lemon', disabled: false, group: 'Citrus'},
+      ],
       groups: ['Citrus'],
       hasSearch: true,
       query: 'lem',
@@ -172,7 +174,13 @@ export function listboxParts(
     {
       role: 'listbox',
       state: `${scenario.id}:listbox`,
-      facts: {part: 'listbox', multiple, optionRelations: scenario.expectedOptions.map(option => `option:${option.value}`)},
+      facts: {
+        part: 'listbox',
+        multiple,
+        optionRelations: scenario.expectedOptions.map(
+          option => `option:${option.value}`,
+        ),
+      },
     },
     ...scenario.groups.map(name => ({
       role: 'group' as const,

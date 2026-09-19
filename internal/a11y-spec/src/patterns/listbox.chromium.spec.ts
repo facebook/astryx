@@ -25,9 +25,9 @@ const cases: ReadonlyArray<{
     failure: null,
   },
   {
-    id: 'named-group',
+    id: 'group-role',
     part: 'group',
-    html: '<div role="listbox" aria-label="Fruit"><div data-subject role="group" aria-label="Citrus"><div role="option" aria-selected="false">Orange</div></div></div>',
+    html: '<div role="listbox" aria-label="Fruit"><div data-subject role="group"><div role="option" aria-selected="false">Orange</div></div></div>',
     failure: null,
   },
   {

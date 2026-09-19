@@ -70,21 +70,38 @@ describe('MultiSelector Listbox semantic binding', () => {
         subject: () =>
           part.role === 'listbox'
             ? screen.getByRole('listbox', {hidden: true})
-            : within(screen.getByRole('listbox', {hidden: true})).getByRole(
-                part.role,
-                {name: part.name, hidden: true},
-              ),
+            : part.role === 'group'
+              ? within(
+                  screen.getByRole('listbox', {hidden: true}),
+                ).getAllByRole('group', {hidden: true})[
+                  scenario.groups.indexOf(part.name ?? '')
+                ]
+              : within(screen.getByRole('listbox', {hidden: true})).getByRole(
+                  'option',
+                  {name: part.name, hidden: true},
+                ),
         related: () => {
           const listbox = screen.getByRole('listbox', {hidden: true});
-          expect(within(listbox).getAllByRole('option', {hidden: true})).toHaveLength(scenario.expectedOptions.length);
+          expect(
+            within(listbox).getAllByRole('option', {hidden: true}),
+          ).toHaveLength(scenario.expectedOptions.length);
           return {
             listbox,
-            ...Object.fromEntries(scenario.expectedOptions.map(option => [
-              `option:${option.value}`, within(listbox).getByRole('option', {name: option.name, hidden: true}),
-            ])),
-            ...Object.fromEntries(scenario.groups.map(name => [
-              `group:${name}`, within(listbox).getByRole('group', {name, hidden: true}),
-            ])),
+            ...Object.fromEntries(
+              scenario.expectedOptions.map(option => [
+                `option:${option.value}`,
+                within(listbox).getByRole('option', {
+                  name: option.name,
+                  hidden: true,
+                }),
+              ]),
+            ),
+            ...Object.fromEntries(
+              scenario.groups.map((name, index) => [
+                `group:${name}`,
+                within(listbox).getAllByRole('group', {hidden: true})[index],
+              ]),
+            ),
           };
         },
         cleanup,
