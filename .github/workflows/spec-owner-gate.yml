@@ -44,7 +44,7 @@ on:
 permissions: {}
 
 env:
-  SPEC_OWNERS: cixzhang,imdreamrunner
+  SPEC_OWNERS: cixzhang,imdreamrunner,josephfarina
   REVIEW_LABEL: needs:spec-owner-review
   AUTO_MERGE_LABEL: spec-auto-merge
 
