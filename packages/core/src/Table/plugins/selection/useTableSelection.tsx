@@ -51,9 +51,18 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import {CheckboxInput} from '../../../CheckboxInput';
 import {mergeRefs} from '../../../utils';
-import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
+import type {
+  TablePlugin,
+  TableColumn,
+  BodyRowRenderProps,
+  ScrollWrapperRenderProps,
+} from '../../types';
 import {pixel} from '../../columnUtils';
 import {useTranslator} from '../../../i18n';
+import {
+  TableBulkActionsToolbar,
+  type TableBulkActionsConfig,
+} from './TableBulkActionsToolbar';
 
 // =============================================================================
 // Config Type
@@ -103,6 +112,14 @@ export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
    * ```
    */
   hasRowHighlight?: boolean;
+  /**
+   * Optional bulk-selection toolbar. The default fixed layout renders in flow as
+   * a borderless full-bleed band. `layout: 'floating'` renders a rounded,
+   * elevated bar 16px above the table without shifting it. Both layouts place
+   * actions first and selection status plus clear-selection controls last. Omit
+   * for the default selection behaviour with no toolbar.
+   */
+  bulkActions?: TableBulkActionsConfig;
 }
 
 // =============================================================================
@@ -399,6 +416,41 @@ export function useTableSelection<T extends Record<string, unknown>>(
 
       transformColumns(columns: TableColumn<T>[]) {
         return [selectionColumn, ...columns];
+      },
+
+      // Bulk-selection toolbar. The toolbar node is injected into the scroll
+      // wrapper's `beforeTable` slot only when `bulkActions` is configured;
+      // otherwise this transform is absent and the layout is untouched (zero
+      // regression for consumers that do not opt in). The toolbar renders
+      // nothing while no rows are selected, so an always-injected node has no
+      // visual or layout cost, and it can play its own exit transition when a
+      // selection clears rather than vanishing.
+      transformScrollWrapper(props: ScrollWrapperRenderProps) {
+        const {bulkActions} = store.getConfig();
+        if (bulkActions == null) {
+          return props;
+        }
+        const toolbar = <TableBulkActionsToolbar config={bulkActions} />;
+        if (bulkActions.layout === 'floating') {
+          return {
+            ...props,
+            beforeScrollArea: (
+              <>
+                {props.beforeScrollArea}
+                {toolbar}
+              </>
+            ),
+          };
+        }
+        return {
+          ...props,
+          beforeTable: (
+            <>
+              {props.beforeTable}
+              {toolbar}
+            </>
+          ),
+        };
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {

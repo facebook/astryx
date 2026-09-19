@@ -37,6 +37,7 @@ export {TableFooter} from './TableFooter';
 export {TableContext} from './TableContext';
 export {useTableSelection} from './plugins/selection';
 export {useTableSelectionState} from './plugins/selection';
+export {TableBulkActionsToolbar} from './plugins/selection';
 export {useTableSortable} from './plugins/sortable';
 export {useTableSortableState} from './plugins/sortable';
 export {useTablePagination, paginateData} from './plugins/pagination';
@@ -95,6 +96,11 @@ export type {TableBodyProps} from './TableBody';
 export type {TableFooterProps} from './TableFooter';
 export type {TableContextValue} from './TableContext';
 export type {UseTableSelectionConfig} from './plugins/selection';
+export type {
+  TableBulkAction,
+  TableBulkActionsConfig,
+  TableBulkActionsLayout,
+} from './plugins/selection';
 export type {
   UseTableSelectionStateConfig,
   UseTableSelectionStateResult,
