@@ -37,6 +37,10 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'astryx-clickable-card', visualProps: ['variant']}],
+    vars: [
+      {name: '--_press-overlay', description: 'Fill of the ::after interaction overlay: transparent at rest, the hover overlay token on hover (hover-capable pointers), the pressed overlay token while pressed (`:active` on a mouse; `data-pressed="on"` written by the touch press controller under a finger) and the hover token for the release fade. Set on the card element by its own interaction arms.', default: 'transparent', private: true},
+      {name: '--_press-overlay-transition', description: 'Duration of the overlay\'s background-color transition: the fast duration token, except 0s while a believed touch press paints so it lands on the first frame.', default: 'var(--duration-fast)', private: true},
+    ],
   },
   playground: {
     defaults: {

@@ -111,3 +111,21 @@ export {rtlStyles} from './rtlStyles';
 export {focusOutlineStyles, focusOutlineProps} from './focusOutline.stylex';
 
 export {isImeKeyEvent} from './ime';
+
+// The touch press model: the marker a pressable surface carries, the attribute
+// the controller writes, and the controller itself, for a local component that
+// paints its own press (see hooks/usePressFeedback).
+export {
+  installPressFeedback,
+  pressableProps,
+  PRESSABLE_ATTRIBUTE,
+  PRESSED_ATTRIBUTE,
+} from './pressFeedback';
+export {
+  PRESS_FADE_MS,
+  PRESS_FLASH_MS,
+  PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
+  PRESS_SLOP_PX,
+} from './pressGesture';
+export type {PressPaint} from './pressGesture';

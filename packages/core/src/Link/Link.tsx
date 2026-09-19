@@ -46,6 +46,7 @@ import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 /**
@@ -316,6 +317,10 @@ export function Link({
   ref,
   ...props
 }: LinkProps) {
+  // Constant marker props; the hook's only effect is installing the shared
+  // document controller once, so the link's output stays a pure function of
+  // its props.
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const newTabLabel = newTabLabelFromProps ?? t('@astryx.link.newTab');
   const LinkComponent = useLinkComponent(as);
@@ -359,6 +364,7 @@ export function Link({
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
         onClick={onClick}
+        {...(isDisabled ? undefined : pressable)}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
@@ -423,6 +429,7 @@ export function Link({
         target={target}
         rel={rel}
         onClick={onClick}
+        {...(isDisabled ? undefined : pressable)}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}

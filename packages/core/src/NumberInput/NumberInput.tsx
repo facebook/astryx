@@ -52,6 +52,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -561,6 +562,7 @@ export function NumberInput({
   ref,
   ...rest
 }: NumberInputProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -966,6 +968,7 @@ export function NumberInput({
           <button
             type="button"
             tabIndex={-1}
+            {...pressable}
             disabled={isDisabled || isReadOnly || !canIncrement}
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}
@@ -989,6 +992,7 @@ export function NumberInput({
           <button
             type="button"
             tabIndex={-1}
+            {...pressable}
             disabled={isDisabled || isReadOnly || !canDecrement}
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}

@@ -49,6 +49,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 const styles = stylex.create({
   root: {
@@ -320,6 +321,7 @@ export function Collapsible({
   style,
   ...props
 }: CollapsibleProps) {
+  const pressable = usePressFeedback();
   // Build the config for the hook
   const collapsibleConfig =
     controlledIsOpen !== undefined
@@ -405,6 +407,7 @@ export function Collapsible({
         // the system-wide disabled convention (never native `disabled`, which
         // would swallow events like a wrapping tooltip's hover).
         tabIndex={isDisabled ? -1 : undefined}
+        {...(isDisabled ? undefined : pressable)}
         {...mergeProps(
           themeProps('collapsible-trigger', {
             density: density ?? undefined,

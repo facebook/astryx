@@ -59,6 +59,7 @@ import {
   themeProps,
 } from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -1004,6 +1005,7 @@ export function Step({
   'data-testid': dataTestId,
   ...rest
 }: StepProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const ctx = useStepperInternalContext();
   const {
@@ -1601,6 +1603,7 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              {...pressable}
               {...stylex.props(
                 styles.otInteractive,
                 interactionOverlayStyles.backgroundColor,
@@ -1691,6 +1694,7 @@ export function Step({
             type="button"
             onClick={handleClick}
             aria-label={stepAriaLabel}
+            {...pressable}
             {...stylex.props(
               styles.otInteractive,
               interactionOverlayStyles.backgroundColor,
@@ -1750,6 +1754,7 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              {...pressable}
               {...stylex.props(
                 styles.buttonReset,
                 interactionOverlayStyles.backgroundColor,

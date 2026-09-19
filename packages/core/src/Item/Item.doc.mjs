@@ -17,7 +17,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item', visualProps: ['density', 'align'], states: ['unread']},
     ],
     vars: [
       {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
@@ -48,6 +48,8 @@ export const docs = {
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
         {name: 'isHighlighted', type: 'boolean', description: 'Highlighted state (hover/keyboard focus appearance).', default: 'false'},
         {name: 'isSelected', type: 'boolean', description: 'Selected state.', default: 'false'},
+        {name: 'isUnread', type: 'boolean', description: 'Unread emphasis for a row standing for something not yet seen (an inbox row): the label takes the semibold weight and the description the primary text color. The row ground is the theme\'s, through the unread state of the item target, so an app paints its own unread tint without a call-site color.', default: 'false'},
+        {name: 'swipeActions', type: '{leading: ItemSwipeAction; trailing?: ItemSwipeAction}', description: 'Swipe actions for touch. Drag the row sideways to reveal a labelled panel (label, optional icon, onAction, tone: accent | success | warning | error) behind it; release past the commit point (a third of the row, 72 to 160 px) or fling to fire it and the row slides out. Touch only; every action must also be reachable by pointer and keyboard elsewhere. Wraps the row in a plain clipping container; ref, role and every other attribute still land on the row.'},
         {name: 'isDisabled', type: 'boolean', description: 'Disabled state.', default: 'false'},
         {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization. Must be a stylex.create() value.'},

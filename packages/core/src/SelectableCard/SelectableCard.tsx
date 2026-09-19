@@ -47,6 +47,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -68,9 +69,42 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  // Hover overlay — guarded by @media (hover: hover) so touch devices
-  // don't show a stuck hover state. Active/pressed state works everywhere.
+  // Hover and pressed overlay. Hover is guarded by @media (hover: hover) so
+  // touch devices don't show a stuck hover state; the press has two arms,
+  // `:active` for a mouse and `data-pressed` for a finger.
   overlay: {
+    // The `::after` layer paints whatever `--_press-overlay` says, and the
+    // interaction arms set that variable on the element itself. Setting the
+    // pseudo-element's colour from compound keys (`:active::after`) would
+    // leave the touch arms unable to outrank the mouse arm: a pseudo-element
+    // key carries the highest generated priority, and the `data-pressed`
+    // attribute the touch press model writes must win over `:active`, which
+    // still matches under a finger (see interactionOverlay.stylex.ts). Same
+    // enabled guard as the shared overlay utility.
+    '--_press-overlay': {
+      default: 'transparent',
+      ':where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        ':active': {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+        '@media (hover: hover)': {
+          default: null,
+          ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+            colorVars['--color-overlay-hover'],
+          ':active': colorVars['--color-overlay-pressed'],
+        },
+        '[data-pressed="on"]': colorVars['--color-overlay-pressed'],
+        '[data-pressed="fading"]': colorVars['--color-overlay-hover'],
+      },
+    },
+    // A believed touch press paints on the first frame; the release and the
+    // mouse states keep the fast fade.
+    '--_press-overlay-transition': {
+      default: durationVars['--duration-fast'],
+      '[data-pressed="on"]': '0s',
+    },
     '::after': {
       content: '""',
       position: 'absolute',
@@ -78,19 +112,9 @@ const styles = stylex.create({
       borderRadius: 'inherit',
       pointerEvents: 'none',
       transitionProperty: 'background-color',
-      transitionDuration: durationVars['--duration-fast'],
+      transitionDuration: 'var(--_press-overlay-transition)',
       transitionTimingFunction: easeVars['--ease-standard'],
-      backgroundColor: 'transparent',
-    },
-    ':active::after': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
-  },
-  hoverOnPointer: {
-    '@media (hover: hover)': {
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
+      backgroundColor: 'var(--_press-overlay)',
     },
   },
   disabled: {
@@ -315,6 +339,7 @@ export function SelectableCard({
   style,
   ...props
 }: SelectableCardProps) {
+  const pressable = usePressFeedback();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const interactiveRef = useRef<HTMLInputElement | null>(null);
 
@@ -364,6 +389,7 @@ export function SelectableCard({
   return (
     <Card
       ref={useMergedRefs(ref, containerRef)}
+      {...(isDisabled ? undefined : pressable)}
       width={width}
       height={height}
       maxWidth={maxWidth}
@@ -384,7 +410,6 @@ export function SelectableCard({
           styles.interactive,
           isSelected && selectedStyleForVariant(variant),
           !isDisabled && styles.overlay,
-          !isDisabled && styles.hoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,
         ] as unknown as StyleXStyles

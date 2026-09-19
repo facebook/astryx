@@ -47,12 +47,20 @@ import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+
+// The touch press's paint and its release step: the system's pressed and
+// hover overlay tokens as gradient layers, in the shape
+// interactionOverlay.stylex.ts paints with.
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
+
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -72,6 +80,10 @@ const styles = stylex.create({
   },
   // The owner paints this layer over the resolved indicator, so a theme
   // replacement cannot accidentally drop the component's pressed contract.
+  // Two pointers, two press models (see interactionOverlay.stylex.ts): a
+  // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
+  // touch press controller writes `data-pressed` on the row, which this layer
+  // reads off the same scope marker as the hover tint.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -81,8 +93,24 @@ const styles = stylex.create({
       pointerEvents: 'none',
       backgroundColor: {
         default: 'transparent',
-        [stylex.when.ancestor(':active', indicatorScope)]:
-          colorVars['--color-overlay-pressed'],
+        [stylex.when.ancestor(':active', indicatorScope)]: {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+      },
+      // The touch press, as an image layer over the colour: an image change is
+      // discrete, so no transition can delay the onset. Coarse pointers only,
+      // like the drop above.
+      backgroundImage: {
+        default: null,
+        [stylex.when.ancestor('[data-pressed="on"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': pressedImage,
+        },
+        [stylex.when.ancestor('[data-pressed="fading"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': hoverImage,
+        },
       },
     },
   },
@@ -306,6 +334,9 @@ export function CheckboxInput({
   'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxInputProps) {
+  // The row is the pressable: the overlay's pressed arm reads the row's
+  // scope marker, the way the indicator's hover tint does.
+  const pressable = usePressFeedback();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -407,6 +438,7 @@ export function CheckboxInput({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
+        {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,

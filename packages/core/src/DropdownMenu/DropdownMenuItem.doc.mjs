@@ -46,6 +46,23 @@ export const docs = {
       default: 'true',
     },
     {
+      name: 'href',
+      type: 'string',
+      description:
+        'Destination for a navigation row. The row renders as a real link (an anchor with the menu role, through the LinkProvider component), so a modifier or middle click opens it in a new tab, the address shows in the status bar and can be copied, and a plain click navigates and closes the menu. onClick still fires first. A disabled row keeps its element but drops the address.',
+    },
+    {
+      name: 'target',
+      type: "'_blank' | '_self'",
+      description: 'Link target. Only used with href.',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description:
+        'Link relationship. Automatically includes noopener noreferrer when target is _blank. Only used with href.',
+    },
+    {
       name: 'variant',
       type: "'default' | 'destructive'",
       description:

@@ -24,7 +24,9 @@ import {
   spacingVars,
   durationVars,
   easeVars,
+  fontWeightVars,
   typeScaleVars,
+  typographyVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
@@ -37,6 +39,9 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useSwipeAction, type SwipeActionDirection} from './useSwipeAction';
 
 // =============================================================================
 // Types
@@ -44,6 +49,46 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 export type ItemAlign = 'center' | 'start';
 export type ItemDensity = 'compact' | 'balanced' | 'spacious';
+
+/** The tone of a revealed swipe panel: a state colour, never decoration. */
+export type ItemSwipeActionTone = 'accent' | 'success' | 'warning' | 'error';
+
+export interface ItemSwipeAction {
+  /** The panel's verb, e.g. "Archive": what releasing here will do. */
+  label: ReactNode;
+  /** The verb's glyph, drawn beside the label. */
+  icon?: ReactNode;
+  /** Fired once, after the row has slid out. */
+  onAction: () => void;
+  /** @default 'accent' */
+  tone?: ItemSwipeActionTone;
+}
+
+export interface ItemSwipeActions {
+  /** Revealed by a drag toward the inline end (rightward in LTR). */
+  leading: ItemSwipeAction;
+  /** Revealed by a drag toward the inline start; omitted, that drag is not this row's gesture. */
+  trailing?: ItemSwipeAction;
+}
+
+const swipeToneStyles = stylex.create({
+  accent: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
+  success: {
+    backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-on-success'],
+  },
+  warning: {
+    backgroundColor: colorVars['--color-warning'],
+    color: colorVars['--color-on-warning'],
+  },
+  error: {
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
+  },
+});
 
 export interface ItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
@@ -169,6 +214,28 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * @default false
    */
   isSelected?: boolean;
+
+  /**
+   * Unread emphasis, for a row that stands for something the person has not
+   * seen yet (an inbox row). The label takes the semibold weight and the
+   * description the primary text colour; the row's ground is left to the
+   * theme through the `unread` state of the `item` target, so an app paints
+   * its own unread tint without a call-site colour.
+   * @default false
+   */
+  isUnread?: boolean;
+
+  /**
+   * Swipe actions for touch: drag the row sideways and a labelled panel is
+   * revealed behind it; release past the commit point (a third of the row,
+   * within 72–160 px) or fling to fire it, and the row slides out. Touch
+   * only, and each action must exist somewhere a pointer and a keyboard can
+   * reach it: the gesture is an accelerator for a verb the row already has,
+   * never the only way to reach one. With this set the row is wrapped in a
+   * plain container that clips the slide; `ref`, `role` and every other
+   * attribute still land on the row itself.
+   */
+  swipeActions?: ItemSwipeActions;
 
   /**
    * Disabled state.
@@ -297,6 +364,65 @@ const styles = stylex.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  // Unread: the weight says it; the ground is the theme's (`item` target,
+  // `unread` state), so no row colour is decided here.
+  unreadLabel: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  unreadDescription: {
+    color: `var(--_item-description-color, ${colorVars['--color-text-primary']})`,
+  },
+  // Swipe actions. The container clips the slide and owns the gesture; the
+  // row translates inside it; the panel behind is exactly as wide as the
+  // row has moved, so nothing needs an opaque cover.
+  swipeContainer: {
+    position: 'relative',
+    // `pan-y` lets the browser keep scrolling the list vertically while the
+    // row owns horizontal movement, without fighting the scroller from a
+    // passive listener.
+    touchAction: 'pan-y',
+  },
+  swipeContainerActive: {
+    overflow: 'hidden',
+  },
+  swipePanel: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+    paddingInline: spacingVars['--spacing-3'],
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    whiteSpace: 'nowrap',
+    // Below the commit point the panel is provisional; past it, it reads as
+    // "let go now".
+    opacity: 0.7,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  swipePanelArmed: {
+    opacity: 1,
+  },
+  swipePanelLeading: {
+    insetInlineStart: 0,
+    justifyContent: 'flex-start',
+  },
+  swipePanelTrailing: {
+    insetInlineEnd: 0,
+    justifyContent: 'flex-end',
+  },
+  swipePanelContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
     // item) can recolor the label by setting --_item-label-color.
@@ -399,7 +525,9 @@ export function Item({
   rel: relFromProps,
   isHighlighted = false,
   isSelected = false,
+  isUnread = false,
   isDisabled = false,
+  swipeActions,
   xstyle,
   className,
   style,
@@ -407,6 +535,7 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
+  const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -481,6 +610,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isUnread && styles.unreadLabel,
           isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
@@ -494,6 +624,7 @@ export function Item({
           id={hasRenderableDescription ? descriptionID : undefined}
           {...stylex.props(
             styles.description,
+            isUnread && styles.unreadDescription,
             isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
@@ -587,9 +718,51 @@ export function Item({
 
   const mergedRef = useMergedRefs(ref, containerRef);
 
-  return (
-    <Component
-      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
+  // Swipe actions: the gesture lives on a wrapper that clips the slide, the
+  // row itself translates, and the panel behind grows to the revealed width.
+  const swipeContainerRef = useRef<HTMLElement | null>(null);
+  const swipeRowRef = useRef<HTMLElement | null>(null);
+  const swipePanelRef = useRef<HTMLElement | null>(null);
+  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const hasSwipe = swipeActions != null && !isDisabled;
+  const swipe = useSwipeAction({
+    isEnabled: hasSwipe,
+    onCommit: () => swipeActions?.leading.onAction(),
+    onCommitTrailing:
+      swipeActions?.trailing != null
+        ? () => swipeActions.trailing?.onAction()
+        : undefined,
+    isReducedMotion,
+    containerRef: swipeContainerRef,
+    rowRef: swipeRowRef,
+    onReveal: width => {
+      if (swipePanelRef.current != null) {
+        swipePanelRef.current.style.width = `${width}px`;
+      }
+    },
+  });
+  const swipeRef = useMergedRefs(
+    (isDelegate ? mergedRef : ref) as React.Ref<HTMLElement>,
+    swipeActions != null ? swipeRowRef : undefined,
+  );
+
+  // A row with a parent-supplied role and an `href` is the link itself. The
+  // role owner (a menu) handles keyboard access, so no invisible inner anchor
+  // is rendered; the root has to be the anchor for the address to reach the
+  // browser at all (modifier and middle clicks open it in a new tab, the
+  // status bar shows it, "copy link" works), through the LinkProvider's
+  // component so client-side routing applies.
+  const isLinkRoot = hasParentRole && !isDelegate && href != null;
+  const Root: React.ElementType = isLinkRoot ? LinkComponent : Component;
+
+  const row = (
+    <Root
+      ref={swipeRef as React.Ref<never>}
+      // A disabled link row keeps its element but drops the address, the way
+      // Link does, so the browser cannot follow it.
+      {...(isLinkRoot
+        ? {href: isDisabled ? undefined : href, target, rel}
+        : undefined)}
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -601,8 +774,13 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
-        themeProps('item', {density, align}),
+        themeProps('item', {
+          density,
+          align,
+          unread: isUnread ? 'unread' : null,
+        }),
         focusOutlineProps.focusWithin(
           styles.root,
           densityStyles[density],
@@ -631,7 +809,51 @@ export function Item({
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
       </ItemDescriptionContext>
-    </Component>
+    </Root>
+  );
+
+  if (swipeActions == null) {
+    return row;
+  }
+
+  const revealed: ItemSwipeAction | undefined =
+    swipe.state.direction === 'trailing'
+      ? swipeActions.trailing
+      : swipeActions.leading;
+  const isSwiping = swipe.state.phase !== 'idle';
+  const direction: SwipeActionDirection = swipe.state.direction;
+
+  return (
+    <div
+      ref={swipeContainerRef as React.Ref<HTMLDivElement>}
+      {...stylex.props(
+        styles.swipeContainer,
+        isSwiping && styles.swipeContainerActive,
+      )}
+      {...(hasSwipe ? swipe.handlers : undefined)}>
+      {/* Always in the tree while swipeable, at zero width until a drag reveals
+          it: the gesture writes the width per frame, and a panel mounted
+          mid-drag would paint its full label for a frame first. */}
+      {hasSwipe && revealed != null ? (
+        <div
+          ref={swipePanelRef as React.Ref<HTMLDivElement>}
+          aria-hidden="true"
+          {...stylex.props(
+            styles.swipePanel,
+            direction === 'trailing'
+              ? styles.swipePanelTrailing
+              : styles.swipePanelLeading,
+            swipeToneStyles[revealed.tone ?? 'accent'],
+            swipe.state.isArmed && styles.swipePanelArmed,
+          )}>
+          <span {...stylex.props(styles.swipePanelContent)}>
+            {revealed.icon}
+            {revealed.label}
+          </span>
+        </div>
+      ) : null}
+      {row}
+    </div>
   );
 }
 

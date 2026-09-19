@@ -36,6 +36,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 // =============================================================================
 // Styles
@@ -190,6 +191,7 @@ export function TopNavMegaMenuItem({
   as,
   tabIndex,
 }: TopNavMegaMenuItemProps) {
+  const pressable = usePressFeedback();
   const renderMode = useTopNavRenderMode();
   const LinkComponent = useLinkComponent(as);
   const {closeMobileNav} = useAppShellMobile();
@@ -208,6 +210,7 @@ export function TopNavMegaMenuItem({
       <Element
         ref={ref}
         href={href}
+        {...pressable}
         onClick={handleDrawerClick}
         {...elementProps}
         {...mergeProps(
@@ -239,6 +242,7 @@ export function TopNavMegaMenuItem({
     <Element
       ref={ref}
       href={href}
+      {...pressable}
       onClick={onClick}
       tabIndex={tabIndex}
       {...mergeProps(

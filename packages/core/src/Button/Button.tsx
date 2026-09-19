@@ -49,6 +49,7 @@ import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -99,7 +100,14 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
+      // A mouse press. Under a coarse pointer `:active` is not a press (it
+      // paints on the touch and outlives a scroll), so the touch press model
+      // writes `data-pressed` instead; see interactionOverlay.stylex.ts.
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-pressed="on"]': 'scale(0.98)',
     },
   },
   inactive: {
@@ -108,6 +116,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-pressed="on"]': 'none',
     },
   },
   disabled: {
@@ -120,6 +129,7 @@ const styles = stylex.create({
     backgroundImage: {
       default: 'none',
       ':active': 'none',
+      '[data-pressed="on"]': 'none',
     },
   },
   iconOnly: {
@@ -554,6 +564,7 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const pressFeedback = usePressFeedback();
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
@@ -763,6 +774,7 @@ export function Button({
         target={target}
         rel={rel}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
@@ -779,6 +791,7 @@ export function Button({
         type={type}
         disabled={useAriaDisabled ? undefined : buttonDisabled}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}

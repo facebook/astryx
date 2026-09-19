@@ -37,6 +37,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 /**
  * NavItem styles with hover/selected states
@@ -71,6 +72,14 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-neutral'],
       },
       ':active': colorVars['--color-neutral'],
+      // The touch press model writes these instead of `:active`; the selected
+      // item keeps its fill under a finger the way it does under a mouse.
+      '[data-pressed="on"]': colorVars['--color-neutral'],
+      '[data-pressed="fading"]': colorVars['--color-neutral'],
+    },
+    backgroundImage: {
+      default: null,
+      '[data-pressed="on"]': 'none',
     },
   },
   iconOnly: {
@@ -185,6 +194,7 @@ export function TopNavItem({
   ref,
   ...props
 }: TopNavItemProps) {
+  const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent(as);
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -221,6 +231,7 @@ export function TopNavItem({
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
+        {...pressable}
         {...mergeProps(
           themeProps('top-nav-item', {
             mode: 'drawer',
@@ -259,6 +270,7 @@ export function TopNavItem({
       aria-current={isSelected ? 'page' : undefined}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : undefined}
+      {...pressable}
       {...mergeProps(
         themeProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,

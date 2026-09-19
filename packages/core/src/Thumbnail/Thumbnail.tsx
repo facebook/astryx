@@ -45,6 +45,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
@@ -164,11 +165,43 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
-  // Hover/pressed overlay — the exact same treatment as ClickableCard and
+  // Hover and pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
   // shifting shadow or opacity. Guarded by @media (hover: hover) so touch
   // devices don't show a stuck hover state; active/pressed works everywhere.
   overlay: {
+    // The `::after` layer paints whatever `--_press-overlay` says, and the
+    // interaction arms set that variable on the element itself. Setting the
+    // pseudo-element's colour from compound keys (`:active::after`) would
+    // leave the touch arms unable to outrank the mouse arm: a pseudo-element
+    // key carries the highest generated priority, and the `data-pressed`
+    // attribute the touch press model writes must win over `:active`, which
+    // still matches under a finger (see interactionOverlay.stylex.ts). Same
+    // enabled guard as the shared overlay utility.
+    '--_press-overlay': {
+      default: 'transparent',
+      ':where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        ':active': {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+        '@media (hover: hover)': {
+          default: null,
+          ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+            colorVars['--color-overlay-hover'],
+          ':active': colorVars['--color-overlay-pressed'],
+        },
+        '[data-pressed="on"]': colorVars['--color-overlay-pressed'],
+        '[data-pressed="fading"]': colorVars['--color-overlay-hover'],
+      },
+    },
+    // A believed touch press paints on the first frame; the release and the
+    // mouse states keep the fast fade.
+    '--_press-overlay-transition': {
+      default: durationVars['--duration-fast'],
+      '[data-pressed="on"]': '0s',
+    },
     '::after': {
       content: '""',
       position: 'absolute',
@@ -176,19 +209,9 @@ const styles = stylex.create({
       borderRadius: 'inherit',
       pointerEvents: 'none',
       transitionProperty: 'background-color',
-      transitionDuration: durationVars['--duration-fast'],
+      transitionDuration: 'var(--_press-overlay-transition)',
       transitionTimingFunction: easeVars['--ease-standard'],
-      backgroundColor: 'transparent',
-    },
-    ':active::after': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
-  },
-  hoverOnPointer: {
-    '@media (hover: hover)': {
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
+      backgroundColor: 'var(--_press-overlay)',
     },
   },
   interactiveButton: {
@@ -304,6 +327,7 @@ export function Thumbnail({
   ref,
   ...props
 }: ThumbnailProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
 
   // Track the exact src that failed (rather than a boolean) so a changed src
@@ -410,12 +434,12 @@ export function Thumbnail({
       )}
       {...props}>
       <div
+        {...(isInteractive ? pressable : undefined)}
         {...mergeProps(
           focusOutlineProps.focusWithin(
             styles.imageContainer,
             isInteractive && styles.interactive,
             isInteractive && styles.overlay,
-            isInteractive && styles.hoverOnPointer,
           ),
           isHoverReveal ? getContainerProps() : {},
         )}>
