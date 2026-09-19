@@ -873,6 +873,93 @@ describe('Tokenizer', () => {
       expect(screen.queryByText('Create "existing"')).not.toBeInTheDocument();
     });
 
+    it('does not show Create option for an already-selected label whose id differs from it', async () => {
+      // Real selections usually carry an opaque id (`u1` under the label
+      // "Alice"). The duplicate check used to compare the typed text against
+      // selected ids only, and the search results could not catch the match
+      // because filteredSource had already removed the selected item — so
+      // typing the label of an existing token offered "Create", which added a
+      // duplicate token under a new id.
+      const source: SearchSource = {
+        search: (query: string) =>
+          [{id: 'u1', label: 'Alice'}].filter(u =>
+            u.label.toLowerCase().includes(query.toLowerCase()),
+          ),
+        bootstrap: () => [],
+      };
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[{id: 'u1', label: 'Alice'}]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "Alice"')).not.toBeInTheDocument();
+    });
+
+    it('does not add a duplicate token when a stale Create entry is committed', async () => {
+      // The guard in handleAdd must apply the same label check: a Create
+      // entry rendered before the selection changed still commits through
+      // here, and an opaque id must not let a same-label token through.
+      const source: SearchSource = {
+        search: (query: string) =>
+          // A label that contains the query but is not exactly it, so the
+          // Create entry for the query itself is legitimately offered.
+          [{id: 'u2', label: 'Alice Smith'}].filter(u =>
+            u.label.toLowerCase().includes(query.toLowerCase()),
+          ),
+        bootstrap: () => [],
+      };
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      // The Create entry exists while the selection is empty...
+      expect(screen.queryByText('Create "Alice"')).toBeInTheDocument();
+      // ...then the selection gains Alice (under an opaque id) before the
+      // entry is committed.
+      rerender(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[{id: 'u1', label: 'Alice'}]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      fireEvent.click(screen.getByText('Create "Alice"'));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('does not show Create option when hasCreate is false', async () => {
       render(
         <Tokenizer

@@ -613,6 +613,18 @@ export function Tokenizer<T extends SearchableItem>({
     [value],
   );
 
+  // Selected labels, lowercased, for the Create entry's duplicate check. The
+  // typed text is a label, not an id: real selections usually carry an opaque
+  // id (`usr_123` under the label "Alice"), so comparing the text against ids
+  // alone misses an already-tokenized label — and the search results cannot
+  // catch it either, because filteredSource has already removed the selected
+  // item from them. The result was a "Create Alice" entry that, when picked,
+  // added a second "Alice" token under a different id.
+  const selectedLabels = useMemo(
+    () => new Set(value.map(item => item.label.toLowerCase())),
+    [value],
+  );
+
   const filteredSource: SearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
@@ -643,6 +655,7 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const alreadyExists =
         selectedIds.has(trimmed) ||
+        selectedLabels.has(trimmed.toLowerCase()) ||
         results.some(
           item => item.label.toLowerCase() === trimmed.toLowerCase(),
         );
@@ -657,7 +670,7 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds],
+    [hasCreate, selectedIds, selectedLabels],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -691,7 +704,13 @@ export function Tokenizer<T extends SearchableItem>({
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) {
+        // Same domain fix as createEntries: the created value names itself by
+        // label, so a selection carrying an opaque id with that label is also a
+        // duplicate, not just one whose id happens to equal the text.
+        if (
+          selectedIds.has(createdValue) ||
+          selectedLabels.has(createdValue.toLowerCase())
+        ) {
           return;
         }
         const base = {id: createdValue, label: createdValue};
@@ -709,7 +728,16 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(newItems, {item, type: 'add'});
       announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
+    [
+      value,
+      onChange,
+      isAtMax,
+      selectedIds,
+      selectedLabels,
+      hasCreate,
+      announce,
+      t,
+    ],
   );
 
   // Handle removing an item. Single removal path: both Backspace on an empty
