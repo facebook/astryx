@@ -25,7 +25,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {loadModuleWithParser} from '../../foundation/fs/module-loader.mjs';
+import {importUserModule} from '../../foundation/fs/module-loader.mjs';
 import {parseCodemod} from '../../authoring/codemod/parse.mjs';
 import {semverCompare} from '../../foundation/env/semver.mjs';
 
@@ -55,8 +55,17 @@ function collectCodemodFiles(versionDir) {
       }
       const ext = path.extname(entry.name);
       if (!CODEMOD_EXTENSIONS.includes(ext)) continue;
+
       const rel = path.relative(versionDir, full);
-      const id = rel.slice(0, rel.length - ext.length).split(path.sep).join('/');
+      if (rel.split(path.sep).includes('__tests__')) continue;
+
+      const baseName = path.basename(entry.name, ext);
+      if (baseName.endsWith('.test') || baseName.endsWith('.spec')) continue;
+
+      const id = rel
+        .slice(0, rel.length - ext.length)
+        .split(path.sep)
+        .join('/');
       out.push({id, file: full});
     }
   }
@@ -124,9 +133,12 @@ export async function discoverIntegrationCodemods(loadedIntegrations = []) {
         }
         idToVersion.set(id, version);
 
-        const codemod = await loadModuleWithParser(file, parseCodemod, {
-          label,
-        });
+        const mod = await importUserModule(file);
+        if (mod?.default === undefined) {
+          continue;
+        }
+
+        const codemod = parseCodemod(mod.default, label);
 
         const entry = {
           id,
