@@ -151,6 +151,12 @@ export type ChatComposerTrigger = {
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
   menuLabel?: string;
+  /**
+   * Whether the search query can contain spaces (e.g. for multi-word mentions like "@Jane Doe"
+   * or candidate browsing with "@ "). When false, the menu closes on the first space.
+   * @default false
+   */
+  allowSpaces?: boolean;
 };
 
 export interface ChatComposerInputProps extends Omit<
