@@ -9,8 +9,8 @@
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
  * @input Template metadata, selected index, open state, and navigation callbacks.
- * @output A responsive dialog with immediate selected previews, selection-scoped
- * pending navigation, and template actions.
+ * @output A responsive dialog with immediate selected previews while open,
+ * selection-scoped pending navigation, and template actions.
  * @position Shared preview controller for the templates gallery.
  *
  * The header surfaces template metadata (name, description) on
@@ -498,11 +498,11 @@ export function TemplatePreviewDialog({
             <div {...stylex.props(styles.body)} ref={hostRef}>
               {isOpen && (
                 <TemplatePreviewSurface
-                  key={deferredCurrent.slug}
-                  slug={deferredCurrent.slug}
+                  key={previewCurrent.slug}
+                  slug={previewCurrent.slug}
                 />
               )}
-              {isPending && (
+              {isPreviewPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
                   <Skeleton width="100%" height="100%" />
                 </div>

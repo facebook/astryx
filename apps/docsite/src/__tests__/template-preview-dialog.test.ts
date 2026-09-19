@@ -5,7 +5,7 @@
 /**
  * @file Template preview selection and transition regressions.
  * @input Mounted TemplatePreviewDialog with real React scheduling and mocked UI.
- * @output Records every committed visible preview, including intermediate slugs.
+ * @output Records every committed visible preview and verifies close stays responsive.
  * @position Docsite regression coverage for gallery preview selection and navigation.
  */
 
@@ -230,20 +230,15 @@ describe('template preview selection', () => {
     expect(screen.getByTestId('pending-preview')).not.toBeNull();
     expect(screen.getByTestId('preview').textContent).toBe('template-a');
     fireEvent.click(screen.getByRole('button', {name: 'Close preview'}));
-    expect(
-      screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
-        ?.hidden,
-    ).toBe(true);
+    expect(screen.getByRole('dialog', {hidden: true}).hidden).toBe(true);
+    expect(screen.queryByTestId('preview')).toBeNull();
     await act(async () => {
       ready = true;
       resolve();
       await navigation;
     });
-    expect(screen.getByTestId('preview').textContent).toBe('template-b');
-    expect(
-      screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
-        ?.hidden,
-    ).toBe(true);
+    expect(screen.getByRole('dialog', {hidden: true}).hidden).toBe(true);
+    expect(screen.queryByTestId('preview')).toBeNull();
   });
 
   it('opens C after closing a pending A-to-B navigation', async () => {
