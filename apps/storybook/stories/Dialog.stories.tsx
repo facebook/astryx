@@ -169,6 +169,55 @@ export const WithSubtitle: Story = {
   render: () => <SubtitleModalExample />,
 };
 
+function HeaderActionsModalExample({subtitle}: {subtitle?: string}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open Modal with Header Actions"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen} width={520}>
+        <Layout
+          header={
+            <DialogHeader
+              title="Q3 forecast"
+              subtitle={subtitle}
+              onOpenChange={setIsOpen}
+              endContent={
+                <HStack gap={2}>
+                  <Button label="Export" variant="secondary" />
+                  <Button label="Share" variant="secondary" />
+                </HStack>
+              }
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Labelled actions stay inside the header padding while the close
+                button remains optically aligned with the title.
+              </Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const WithHeaderActions: Story = {
+  render: () => <HeaderActionsModalExample />,
+};
+
+export const WithSubtitleAndHeaderActions: Story = {
+  render: () => (
+    <HeaderActionsModalExample subtitle="Draft — last saved 2 minutes ago" />
+  ),
+};
+
 /**
  * Custom width example
  */

@@ -186,18 +186,26 @@ describe('DialogHeader', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders endContent alongside close button', () => {
-    render(
+  it('renders endContent and the close button in separate action areas', () => {
+    const {container} = render(
       <DialogHeader
         title="Title"
         onOpenChange={() => {}}
         endContent={<button type="button">Custom Action</button>}
       />,
     );
-    expect(
-      screen.getByRole('button', {name: 'Custom Action'}),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
+    const header = container.querySelector('.astryx-dialog-header');
+    const titleBlock = screen.getByRole('heading', {level: 2}).parentElement;
+    const customAction = screen.getByRole('button', {name: 'Custom Action'});
+    const endActions = customAction.parentElement;
+    const closeButton = screen.getByRole('button', {name: /close/i});
+
+    expect(header).not.toBeNull();
+    expect(endActions?.parentElement).toBe(header);
+    expect(closeButton.parentElement).toBe(header);
+    expect(endActions).not.toBe(closeButton.parentElement);
+    expect(titleBlock?.nextElementSibling).toBe(endActions);
+    expect(endActions?.nextElementSibling).toBe(closeButton);
   });
 
   it('renders startContent before the title', () => {
