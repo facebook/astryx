@@ -184,5 +184,9 @@
   {
     "component": "core/StatusDot",
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Kbd",
+    "reason": "Kbd renders spoken key labels for assistive tech and, for its arrow keys, literal Unicode glyphs (←/↑/→/↓) as plain <kbd> text, not an SVG icon the D1 detector can classify or mirror. These glyphs depict a physical keyboard key (\"the Left arrow key\"), not a navigational previous/next affordance, so they must stay physically left/right regardless of reading direction — mirroring them would show the wrong physical key. Kbd has no positioned, ordered, scrolling, dragging, or overlay element and no directional keyboard behavior of its own; every story renders only static combos."
   }
 ]
