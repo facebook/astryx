@@ -1,5 +1,23 @@
 # @xds/core
 
+# 0.6.3
+
+#### Fixes
+
+- Make overflowing BottomSheet text keyboard reachable with a named scroll-body tab stop. Add shared focus-time keyboard delegation to `useScrollableArea`: forward Tab may enter the first native link/button directly, while inputs, composite widgets, and nested scroll owners retain the viewport stop. Reverse traversal skips the delegated viewport; pointer/programmatic focus and content changes never trigger delegation. Sheet scroll containment now applies only while content overflows and uses the shared `contain` policy, which permits native edge feedback. (#6301)
+- PowerSearch: switching the field or operator while the value menu is open now shows the new field's options instead of the old ones. (#6357)
+- Keep a ToggleButton's own `isDisabled` when its ToggleButtonGroup does not disable anything. The group always supplies an `isDisabled` boolean, so the previous `??` fallback never ran and an enabled group re-enabled a member that had disabled itself — the member selected on click, and a member carrying a `tooltip` stayed operable while looking unavailable. A disabled group still disables every member; it just cannot re-enable one. (#6356)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @jiunshinn
+- @nynexman4464
+
+---
+
 # 0.6.2
 
 #### New Features

@@ -1,5 +1,9 @@
 # @xds/cli
 
+# 0.6.3
+
+---
+
 # 0.6.2
 
 #### New Features
