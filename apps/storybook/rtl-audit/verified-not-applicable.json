@@ -184,5 +184,9 @@
   {
     "component": "core/StatusDot",
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard renders content in normal flow inside a symmetric Card, with a hidden native <button> or <a> providing the accessible role. Its hover and active overlay is a `position: absolute; inset: 0` pseudo-element covering all four edges equally; the source uses no physical left/right positioning, offset, or directional glyph anywhere; and its interaction is native click/Enter/Space activation via useClickableContainer, not an inline-direction key. Every current story therefore has no component-owned visual or behavioral RTL difference for the audit to measure."
   }
 ]
