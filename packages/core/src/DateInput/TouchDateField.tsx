@@ -4,7 +4,7 @@
 
 /**
  * @file TouchDateField.tsx
- * @input Uses React, Field, BottomSheet, Button, Icon, Calendar hooks, MonthScroller, MonthYearWheels
+ * @input Uses React, Field, BottomSheet, Calendar hooks, month navigation and focus recovery
  * @output Exports TouchDateField — the touch surface behind DateInput
  * @position Internal component; consumed by DateInput.tsx
  *
@@ -73,6 +73,7 @@ import {
 } from '../Field';
 import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useDisabledFocusRecovery} from '../hooks/useDisabledFocusRecovery';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useLocale, useTranslator} from '../i18n';
@@ -822,6 +823,21 @@ export function TouchDateField({
   // available. A greyed chevron sitting there permanently reads as broken.
   const canStepBack = monthIndex > minMonthIndex;
   const canStepForward = monthIndex < maxMonthIndex;
+  const titleRef = useRef<HTMLButtonElement>(null);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  const monthReceiver = () =>
+    isSheetOpen && !isWheelOpen ? titleRef.current : null;
+  const previousFocus = useDisabledFocusRecovery(
+    !canStepBack,
+    previousRef,
+    monthReceiver,
+  );
+  const nextFocus = useDisabledFocusRecovery(
+    !canStepForward,
+    nextRef,
+    monthReceiver,
+  );
 
   // One month either way, clamped to the reachable range. Goes through the
   // same scrollToMonth the swipe settles on, so the arrows and the gesture
@@ -949,6 +965,7 @@ export function TouchDateField({
           // toggle icon are the documented targets, and nothing has asked to
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
+          ref={titleRef}
           data-title="month-year"
           {...stylex.props(
             styles.title,
@@ -994,6 +1011,8 @@ export function TouchDateField({
               !canStepBack && styles.monthArrowUnavailable,
             ]}
             isDisabled={!canStepBack}
+            ref={previousRef}
+            {...previousFocus}
             onClick={() => stepMonth(-1)}
             label={t('@astryx.calendar.previousMonth')}
             icon={
@@ -1010,6 +1029,8 @@ export function TouchDateField({
               !canStepForward && styles.monthArrowUnavailable,
             ]}
             isDisabled={!canStepForward}
+            ref={nextRef}
+            {...nextFocus}
             onClick={() => stepMonth(1)}
             label={t('@astryx.calendar.nextMonth')}
             icon={
