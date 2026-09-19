@@ -246,8 +246,15 @@ const dynamicStyles = stylex.create({
 // Close timing
 // =============================================================================
 
-/** Longest the drawer will wait before closing, however long the hold is. */
-const MAX_CLOSE_DELAY_MS = 250;
+/**
+ * Longest the drawer will wait before closing, however long the hold is.
+ *
+ * Exported so `AppShell` can defer hiding this drawer's `Activity` boundary
+ * by at least this long too (`ACTIVITY_HIDE_BUFFER_MS` in AppShell.tsx) —
+ * otherwise Activity's `display: none !important` lands before this delay's
+ * own scheduled `dialog.close()` has a chance to run (#5701).
+ */
+export const MAX_CLOSE_DELAY_MS = 250;
 /** Fraction of the hold to close at, so the close never lands on its boundary. */
 const CLOSE_WITHIN_HOLD = 0.6;
 

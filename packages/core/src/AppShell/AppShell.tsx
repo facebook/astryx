@@ -43,6 +43,7 @@ import {LayoutHeader} from '../Layout/LayoutHeader';
 import {LayoutPanel} from '../Layout/LayoutPanel';
 import {LayoutContent} from '../Layout/LayoutContent';
 import {MobileNavToggle} from '../MobileNav/MobileNavToggle';
+import {MAX_CLOSE_DELAY_MS as MOBILE_NAV_MAX_CLOSE_DELAY_MS} from '../MobileNav/MobileNav';
 import {SideNavRenderContext} from '../SideNav/SideNavRenderContext';
 import {TopNavRenderContext} from '../TopNav/TopNavRenderContext';
 import {TopNavMobileContentContext} from '../TopNav/TopNavMobileContentContext';
@@ -80,6 +81,20 @@ const ActivityWrapper = HasActivity
 // =============================================================================
 
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
+
+/**
+ * Extra time, on top of MobileNav's own worst-case close delay, that
+ * AppShell waits before flipping its `Activity` boundary to `'hidden'`.
+ *
+ * React's `Activity` hides its subtree with `display: none !important`
+ * synchronously in the same commit as the mode flip, and re-runs the
+ * cleanup of every effect inside it — which would otherwise clear
+ * MobileNav's own scheduled `dialog.close()` before it fires, or cut off
+ * its slide-out CSS transition before it plays (#5701). Waiting strictly
+ * longer than MobileNav's own cap, rather than the same duration, means
+ * this never turns into a race decided by browser timer-firing order.
+ */
+const ACTIVITY_HIDE_BUFFER_MS = 50;
 
 // =============================================================================
 // Types
@@ -522,6 +537,32 @@ export function AppShell({
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 
+  // Drives the mobile nav's `Activity` boundary below, deliberately not the
+  // same value as `isMobileNavOpen`: opening flips this immediately, but
+  // closing holds it `true` for a beat first, so MobileNav's own close
+  // effect gets a real chance to run its slide-out transition and schedule
+  // its delayed `dialog.close()` before Activity hides the subtree (#5701).
+  const [isMobileNavActivityVisible, setIsMobileNavActivityVisible] =
+    useState(isMobileNavOpen);
+  useEffect(() => {
+    if (!HasActivity) {
+      return;
+    }
+    if (isMobileNavOpen) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- reopening must cancel a pending hide and become visible immediately, not on a later render
+      setIsMobileNavActivityVisible(true);
+      return;
+    }
+    const delayMs = window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches
+      ? 0
+      : MOBILE_NAV_MAX_CLOSE_DELAY_MS + ACTIVITY_HIDE_BUFFER_MS;
+    const timeout = setTimeout(() => {
+      setIsMobileNavActivityVisible(false);
+    }, delayMs);
+    return () => clearTimeout(timeout);
+  }, [isMobileNavOpen]);
+
   const mobileNavOnOpenChange = mobileNavConfig?.onOpenChange;
   const setMobileNavOpen = useCallback(
     (open: boolean) => {
@@ -854,7 +895,8 @@ export function AppShell({
           !mobileNavDisabled &&
           mobileNavReactNode == null &&
           !mobileNavConfigContent && (
-            <ActivityWrapper mode={isMobileNavOpen ? 'visible' : 'hidden'}>
+            <ActivityWrapper
+              mode={isMobileNavActivityVisible ? 'visible' : 'hidden'}>
               {/* SideNav drawer — always mounted so presence detection works.
                 Hidden when TopNav owns the drawer (combined mode passes
                 sideNav via TopNav's mobile content context instead). */}
