@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  createEvent,
+  act,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
@@ -78,8 +84,9 @@ describe('Button', () => {
   it('shows isLoading state with spinner', () => {
     render(<Button label="Submit" isLoading />);
     const button = screen.getByRole('button');
-    // Button should be disabled when loading
-    expect(button).toBeDisabled();
+    // Busy is aria-disabled (focusable), not native disabled — see #4871.
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button.className).toContain('styles.inactive');
     expect(button.className).not.toContain('styles.disabled');
   });
@@ -94,7 +101,7 @@ describe('Button', () => {
 
   it('sets aria-busy synchronously while clickAction is pending', async () => {
     // The spinner reveal is visually delayed (CSS animation-delay), but the
-    // loading DOM state — aria-busy and disabled — must not be delayed.
+    // loading DOM state — aria-busy and aria-disabled — must not be delayed.
     const user = userEvent.setup();
     let resolveAction: (() => void) | undefined;
     const clickAction = vi.fn(
@@ -108,7 +115,9 @@ describe('Button', () => {
 
     await user.click(button);
     expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toBeDisabled();
+    // Busy is aria-disabled (focusable), not native disabled — see #4871.
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
 
     await act(async () => {
       resolveAction?.();
@@ -116,6 +125,7 @@ describe('Button', () => {
     });
     expect(button).not.toHaveAttribute('aria-busy', 'true');
     expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute('aria-disabled');
   });
 
   it('renders the loading spinner with the inherit shade for every variant (#2717)', () => {
@@ -261,9 +271,10 @@ describe('Button', () => {
     );
     // endContent should still be in the DOM
     expect(screen.getByTestId('end')).toBeInTheDocument();
-    // Button should be disabled and have aria-busy
+    // Busy is aria-disabled (focusable), not native disabled — see #4871.
     const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
@@ -467,6 +478,57 @@ describe('Button', () => {
     expect(handleKeyDown).toHaveBeenCalledTimes(1);
   });
 
+  it('uses aria-disabled instead of disabled while isLoading, so the button stays focusable (#4871)', () => {
+    render(<Button label="Save" isLoading />);
+    const button = screen.getByRole('button');
+    // Native disabled would move focus to <body> the moment the action
+    // starts, losing the keyboard user's place — busy must stay
+    // aria-disabled + focusable per the "Disabled vs Busy" convention.
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    button.focus();
+    expect(button).toHaveFocus();
+  });
+
+  it('does not fire onClick while aria-disabled via isLoading', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<Button label="Save" isLoading onClick={handleClick} />);
+    await user.click(screen.getByRole('button'));
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('suppresses activation keys but passes other keys while aria-disabled via isLoading', async () => {
+    const user = userEvent.setup();
+    const handleKeyDown = vi.fn();
+    render(<Button label="Save" isLoading onKeyDown={handleKeyDown} />);
+    const button = screen.getByRole('button');
+    button.focus();
+    await user.keyboard('{Enter}');
+    expect(handleKeyDown).not.toHaveBeenCalled();
+
+    await user.keyboard('{Escape}');
+    expect(handleKeyDown).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps native disabled (not aria-disabled) when isDisabled and not busy, even without a tooltip', () => {
+    render(<Button label="Save" isDisabled />);
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('disabled');
+    expect(button).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('keeps native disabled when isDisabled and isLoading are both true (isDisabled wins)', () => {
+    render(<Button label="Save" isDisabled isLoading />);
+    const button = screen.getByRole('button');
+    // "isDisabled behavior unchanged: that stays native disabled" — busy-only
+    // aria-disabled is only for the case where busy is the SOLE reason the
+    // button can't be clicked, not when it's also genuinely isDisabled.
+    expect(button).toHaveAttribute('disabled');
+    expect(button).not.toHaveAttribute('aria-disabled');
+  });
+
   it('has a live region that announces loading state', () => {
     const {rerender} = render(<Button label="Submit" />);
     const button = screen.getByRole('button');
@@ -537,8 +599,6 @@ describe('Button', () => {
   });
 
   it('exposes aria-busy on the link-rendered button while loading', () => {
-    // Non-interruptible loading disables the button, which falls back to
-    // <button> rendering — so an anchor only shows loading when interruptible.
     render(
       <Button
         label="Docs"
@@ -555,5 +615,37 @@ describe('Button', () => {
     render(<Button label="Docs" href="https://example.com" />);
     const link = screen.getByRole('link');
     expect(link).not.toHaveAttribute('aria-busy');
+  });
+
+  it('stays an anchor while busy-only, not a disabled <button> fallback (#4871)', () => {
+    // Non-interruptible busy is exactly the isBusyOnlyDisabled case: not
+    // isDisabled, blocked only because a fire-once action is in flight.
+    // Swapping the element to <button disabled> here would drop focus the
+    // same way the native disabled attribute did (credit @AKnassa, #4879).
+    render(<Button label="Docs" href="https://example.com" isLoading />);
+    const link = screen.getByRole('link', {name: 'Docs'});
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', 'https://example.com');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(link).not.toHaveAttribute('disabled');
+  });
+
+  it('keeps a busy-only anchor focusable and guards its navigation', () => {
+    render(<Button label="Docs" href="https://example.com" isLoading />);
+    const link = screen.getByRole('link', {name: 'Docs'});
+    link.focus();
+    expect(link).toHaveFocus();
+
+    const event = createEvent.click(link);
+    fireEvent(link, event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('falls back to <button disabled> for a truly disabled href Button', () => {
+    render(<Button label="Docs" href="https://example.com" isDisabled />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    const button = screen.getByRole('button', {name: 'Docs'});
+    expect(button).toBeDisabled();
   });
 });
