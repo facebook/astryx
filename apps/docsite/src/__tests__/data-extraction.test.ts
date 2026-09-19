@@ -245,6 +245,7 @@ describe('componentRegistry', () => {
     expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
       'Chart',
       'ChartAxis',
+      'ChartGrid',
       'ChartSwatch',
     ]);
     expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
