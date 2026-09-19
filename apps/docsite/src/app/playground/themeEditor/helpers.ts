@@ -64,6 +64,69 @@ export function getTokenLabel(tokenName: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/** How many component names fit on the row before "+N more" takes over. */
+const SUMMARY_LIMIT = 3;
+
+/**
+ * Phrase which components a spacing token moves, for the editor's token rows.
+ *
+ * `components` are moved by any change to the token; `viaProps` are moved only
+ * where a spacing prop selects that rung, so the two are never merged into one
+ * count — a token with no default usage at all is a genuinely useful signal.
+ *
+ * Data comes from src/generated/spacingUsage.ts, derived from component source
+ * at build time (see scripts/generate-spacing-usage.mjs). The parameter is
+ * typed inline rather than importing the generated module's type, so this
+ * module and its tests never require `pnpm generate` to have run; the call
+ * site still checks the contract structurally. Returns null when there is
+ * nothing to say, so callers can skip the row entirely.
+ *
+ * `detail` paragraphs are separated with `\n\n`; the tooltip that renders
+ * them uses `whiteSpace: 'pre-line'` to keep the break visible.
+ */
+export function summarizeSpacingUsage(
+  usage: {components: string[]; viaProps: string[]} | undefined,
+): {summary: string; detail: string} | null {
+  if (!usage) {
+    return null;
+  }
+  const {components, viaProps} = usage;
+  if (components.length === 0 && viaProps.length === 0) {
+    return null;
+  }
+
+  const plural = (n: number) => (n === 1 ? 'component' : 'components');
+
+  if (components.length === 0) {
+    return {
+      summary: 'Only via spacing props',
+      detail: [
+        'No component uses this step by default.',
+        `Reachable on ${viaProps.length} ${plural(viaProps.length)} ` +
+          `when a spacing prop selects it: ${viaProps.join(', ')}.`,
+      ].join('\n\n'),
+    };
+  }
+
+  const paragraphs = [
+    `Moves ${components.length} ${plural(components.length)} by default: ` +
+      `${components.join(', ')}.`,
+  ];
+  if (viaProps.length > 0) {
+    paragraphs.push(
+      `Reachable on ${viaProps.length} more ${plural(viaProps.length)} ` +
+        `when a spacing prop selects it: ${viaProps.join(', ')}.`,
+    );
+  }
+
+  const shown = components.slice(0, SUMMARY_LIMIT);
+  const rest = components.length - shown.length;
+  return {
+    summary: rest > 0 ? `${shown.join(', ')} +${rest} more` : shown.join(', '),
+    detail: paragraphs.join('\n\n'),
+  };
+}
+
 /**
  * Build the `--spacing-*` token ramp from a base step: each token is
  * `round(base × step)px`. Token keys derive from the step (e.g. 0.5 → "0-5").
