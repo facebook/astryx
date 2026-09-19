@@ -23,6 +23,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {InteractivePreviewStage} from '../components/component-detail/InteractivePreview';
 import {pickPrimaryProps} from '../components/component-detail/interactiveState';
+import {docs as layoutFooterDocs} from '../../../../packages/core/src/Layout/LayoutFooter.doc.mjs';
 
 vi.mock('@stylexjs/stylex', () => ({
   create: (styles: unknown) => styles,
@@ -158,6 +159,29 @@ function MockTokenizer({
   );
 }
 
+// Mirrors the real Layout's slot routing: `children` and `content` land in
+// the content region, `footer` in the footer region.
+function MockLayout({
+  children,
+  content,
+  footer,
+}: {
+  children?: ReactNode;
+  content?: ReactNode;
+  footer?: ReactNode;
+}) {
+  return createElement(
+    'div',
+    null,
+    createElement('main', null, content ?? children),
+    footer != null ? createElement('footer', null, footer) : null,
+  );
+}
+
+function MockLayoutFooter({children}: {children?: ReactNode}) {
+  return createElement('div', null, children);
+}
+
 vi.mock('@astryxdesign/core', () => ({
   Button: MockButton,
   Card: Box,
@@ -165,6 +189,9 @@ vi.mock('@astryxdesign/core', () => ({
   DropdownMenu: MockDropdownMenu,
   DropdownMenuRadioGroup: MockRadioGroup,
   DropdownMenuRadioItem: MockRadioItem,
+  Layout: MockLayout,
+  LayoutContent: Box,
+  LayoutFooter: MockLayoutFooter,
   Text: Box,
   Tokenizer: MockTokenizer,
   VStack: Box,
@@ -308,5 +335,24 @@ describe('InteractivePreviewStage', () => {
 
     expect(screen.queryByText('Design')).not.toBeInTheDocument();
     expect(screen.getByText('Engineering')).toBeInTheDocument();
+  });
+
+  it('renders the LayoutFooter preview in the Layout footer slot, below a content region', () => {
+    const {playground} = layoutFooterDocs;
+    render(
+      createElement(InteractivePreviewStage, {
+        name: 'LayoutFooter',
+        state: {...playground.defaults},
+        knobs: [],
+        playground,
+      }),
+    );
+
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toHaveTextContent('Footer Content');
+    // Passing the component as `children` would put it here instead.
+    const content = screen.getByRole('main');
+    expect(content).not.toHaveTextContent('Footer Content');
+    expect(content).toHaveTextContent('Main content area');
   });
 });

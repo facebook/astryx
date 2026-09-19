@@ -8,6 +8,35 @@ export const docs = {
   displayName: 'Layout Footer',
   isHiddenFromOverview: true,
   description: 'Bottom bar for action bars, pagination, and status bars.',
+  playground: {
+    defaults: {
+      children: 'Footer Content',
+      hasDivider: true,
+    },
+    wrapper: {
+      component: 'Layout',
+      // Route through the footer slot (children would land in the content
+      // slot), and give the scaffold a content region tall and wide enough
+      // that the footer visibly docks at the bottom of the stage.
+      slotProp: 'footer',
+      props: {
+        height: 'auto',
+        content: {
+          __element: 'LayoutContent',
+          props: {},
+          children: {
+            __element: 'Center',
+            props: {minHeight: 160, width: 360},
+            children: {
+              __element: 'Text',
+              props: {color: 'secondary'},
+              children: 'Main content area',
+            },
+          },
+        },
+      },
+    },
+  },
   props: [
     {
       name: 'children',
