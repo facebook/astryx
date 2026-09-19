@@ -368,6 +368,109 @@ describe('ComplexSelector', () => {
   });
 });
 
+describe('ComplexSelector hasClear', () => {
+  it('renders no clear button by default, or without a trigger label, or disabled', () => {
+    const {rerender} = render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Clear Fruit blend'}),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <ComplexSelector label="Fruit blend" value={undefined} hasClear>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Clear Fruit blend'}),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasClear
+        isDisabled>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Clear Fruit blend'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('sits between the spinner and the chevron', () => {
+    const {container} = render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasClear
+        isLoading>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    const row = container.querySelector('.astryx-complex-selector')!;
+    const children = Array.from(row.children);
+    const clear = screen.getByRole('button', {name: 'Clear Fruit blend'});
+    const chevron = row.querySelector(
+      '.astryx-complex-selector-indicator-icon',
+    )!;
+    const spinner = row.querySelector('[role="status"], .astryx-spinner')!;
+    expect(children.indexOf(spinner)).toBeLessThan(children.indexOf(clear));
+    expect(children.indexOf(clear)).toBeLessThan(children.indexOf(chevron));
+  });
+
+  it('calls onClear without opening the popup', async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const onOpenChange = vi.fn();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasClear
+        onClear={onClear}
+        onOpenChange={onOpenChange}>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Clear Fruit blend'}));
+
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    expect(screen.getByRole('button', {name: 'Fruit blend'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('falls back to onChange(undefined) when onClear is not given', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasClear
+        onChange={onChange}>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Clear Fruit blend'}));
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
 describe('ComplexSelector popup theme target', () => {
   it('puts astryx-complex-selector-popup on the surface that paints, not the content box', async () => {
     const user = userEvent.setup();

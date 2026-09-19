@@ -29,6 +29,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
+import {InputClearButton} from '../Field/InputClearButton';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
@@ -257,6 +258,14 @@ export interface ComplexSelectorProps<Value> extends Omit<
   isDisabled?: boolean;
   /** Shows loading state on the trigger. */
   isLoading?: boolean;
+  /**
+   * Shows a clear button between the loading spinner and the chevron while
+   * `triggerLabel` is set, as `Selector`'s `hasClear` does. Activating it
+   * calls `onClear`, or `onChange(undefined)` when `onClear` is not given.
+   */
+  hasClear?: boolean;
+  /** Called when the clear button is activated. */
+  onClear?: () => void;
   /** Validation status. */
   status?: ComplexSelectorStatus;
   /** Status placement. */
@@ -335,6 +344,8 @@ export function ComplexSelector<Value>({
   isRequired = false,
   isDisabled = false,
   isLoading = false,
+  hasClear = false,
+  onClear,
   status,
   statusVariant = 'attached',
   labelTooltip,
@@ -530,6 +541,21 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
+        {hasClear && triggerLabel != null && !isDisabled && (
+          <InputClearButton
+            label={t('@astryx.selector.clearLabel', {label})}
+            // The trigger container's own click opens the popover; clearing
+            // must not.
+            onClick={event => {
+              event.stopPropagation();
+              if (onClear) {
+                onClear();
+              } else {
+                onChange?.(undefined as Value);
+              }
+            }}
+          />
+        )}
         <Icon
           icon="chevronDown"
           size="sm"
