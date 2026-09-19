@@ -15,7 +15,7 @@ export const docs = {
     {
       name: 'options.itemSelector',
       type: 'string',
-      description: 'Selector for visible treeitems within the tree, in DOM order.',
+      description: 'Selector for visible treeitems within the tree, in DOM order. The same selector resolves which item owns focus on a key press (the nearest matching ancestor of the active element), so a host whose items are not role="treeitem" — a treegrid\'s rows — passes its own selector and composes the whole keyboard model.',
       default: "'[role=\"treeitem\"]'",
       required: false,
     },
@@ -100,7 +100,7 @@ export const docs = {
       { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus); those traversals differ from a tree.' },
     ],
   },
-  relatedComponents: ['TreeList'],
+  relatedComponents: ['TreeList', 'Table'],
   relatedHooks: ['useListFocus', 'useGridFocus', 'useFocusTrap'],
   importPath: '@astryxdesign/core/hooks',
   category: 'focus',
@@ -112,7 +112,7 @@ export const docsDense = {
     'Manages roving-tabindex focus + WAI-ARIA tree keyboard model. ArrowUp/Down/Home/End roam linearly over visible treeitems (skip disabled); ArrowRight/Left carry tree semantics (expand/collapse, move to first-child/parent). Enter/Space activate; printable chars trigger typeahead.',
   paramDescriptions: {
     options: 'config for tree focus behavior.',
-    'options.itemSelector': 'selector for visible treeitems in DOM order.',
+    'options.itemSelector': 'selector for visible treeitems in DOM order; also resolves the focused item (nearest matching ancestor), so non-treeitem hosts (treegrid rows) pass their own.',
     'options.isItemDisabled': 'predicate: is treeitem disabled (skipped in nav). Defaults to data-tree-disabled / aria-disabled.',
     'options.getLevel': 'reads 1-based nesting level. Defaults to aria-level attr.',
     'options.onToggleExpand': 'expand/collapse treeitem by id (ArrowRight collapsed parent, ArrowLeft expanded parent, Enter/Space parent w/o own action).',
