@@ -241,6 +241,10 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
     height: '100%',
+    // ResizeHandle's overlay mode expects its parent to clip, so its wider
+    // hit-area target (offset past the visible bar for easier grabbing)
+    // doesn't bleed into an ancestor's scrollable overflow (#6177).
+    overflow: 'clip',
   },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
