@@ -26,10 +26,14 @@
  * DOM elements and no central element tracking. Each subscription
  * self-cleans when the row disconnects.
  *
- * Because the background is an inline style, it outranks anything
- * userland can layer on with StyleX. `hasRowHighlight: false` is the
- * supported way to reclaim the row background; `aria-selected` is
- * unaffected by it.
+ * The selected state is published on the `astryx-table-row` theming target
+ * (state class + data attribute, derived from themeProps) on the same
+ * imperative path, so a theme can key off it. The wash itself resolves
+ * through the `--table-row-selected-background` var, so a theme can
+ * retint it. Because the background is an inline style it still outranks
+ * anything userland can layer on with StyleX — `hasRowHighlight: false`
+ * remains the way to reclaim the row background entirely; `aria-selected`
+ * is unaffected by it.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/useTableSelection.doc.mjs (config prop table)
@@ -50,7 +54,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import {CheckboxInput} from '../../../CheckboxInput';
-import {mergeRefs} from '../../../utils';
+import {mergeRefs, themeProps} from '../../../utils';
 import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
 import {pixel} from '../../columnUtils';
 import {useTranslator} from '../../../i18n';
@@ -91,7 +95,10 @@ export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
    * Paint checked rows with the accent wash. Set false when the surrounding
    * UI already uses row background to mean something else — a row that is
    * open in a detail panel, for instance. The wash is an inline style, so
-   * it cannot be overridden from userland; this flag is the way off it.
+   * it cannot be overridden from userland; this flag is the way off it. A
+   * theme that only wants a different colour can retint the wash in place
+   * by setting `--table-row-selected-background` on the `table-row`
+   * selected target, without turning it off.
    *
    * Only the background is dropped. `aria-selected` is still set on checked
    * rows either way, so the selection stays legible to screen readers.
@@ -145,7 +152,10 @@ function createSelectionStore<T extends Record<string, unknown>>(
  * Apply or remove selection styling on a <tr> element.
  *
  * `aria-selected` tracks selection on its own: it is the semantic half of
- * the state and stays correct whether or not the row is painted.
+ * the state and stays correct whether or not the row is painted. The
+ * `selected` class and `data-selected` attribute are the theming half —
+ * same imperative path, same conditions — so a theme can key off a checked
+ * row (`table-row` + `selected`) whether or not it is painted.
  */
 function applyRowSelectionStyle(
   el: HTMLTableRowElement,
@@ -156,6 +166,18 @@ function applyRowSelectionStyle(
     el.setAttribute('aria-selected', 'true');
   } else {
     el.removeAttribute('aria-selected');
+  }
+  // The theming surface comes from themeProps so it stays in step with how
+  // every other component publishes state (class token + data attribute),
+  // never a hand-authored one. Toggling imperatively keeps the fine-grained
+  // path: no row re-renders to carry it.
+  for (const className of selectedRowStateClasses) {
+    el.classList.toggle(className, isSelected);
+  }
+  if (isSelected && selectedRowDataAttribute != null) {
+    el.setAttribute('data-selected', selectedRowDataAttribute);
+  } else {
+    el.removeAttribute('data-selected');
   }
   // Written on every pass, not just when painting: the flag can flip while a
   // row is already selected, and the wash has to come back off.
@@ -320,7 +342,34 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 // Styles
 // =============================================================================
 
-const selectedBgColor = colorVars['--color-accent-muted'];
+/**
+ * The wash painted on checked rows. Resolves through a themeable var — the
+ * same contract as `--table-sticky-background` in useTableStickyColumns — so
+ * a theme can retint the selection (`table-row` + `selected` sets
+ * `--table-row-selected-background`) instead of only opting out of it. The
+ * same value publishes as the row overlay, so a themed wash runs under
+ * pinned columns too. Defaults to the accent token.
+ */
+const selectedBgColor = `var(--table-row-selected-background, ${colorVars['--color-accent-muted']})`;
+
+/**
+ * The selected state as published on the row's theming target. Selection is
+ * runtime state, so it rides the one `astryx-table-row` target (class token
+ * + data attribute from themeProps, like `calendar-day`'s selected) rather
+ * than a separate `-selected` element or a hand-authored attribute. Derived
+ * once here; the per-row ref writes the delta on top of the stable base.
+ */
+const SELECTED_ROW_STATE = 'selected';
+const tableRowBaseClassName = themeProps('table-row').className;
+const selectedRowStateProps = themeProps('table-row', {
+  selected: SELECTED_ROW_STATE,
+});
+/** The state classes `selected` adds on top of the stable base class. */
+const selectedRowStateClasses = selectedRowStateProps.className
+  .split(' ')
+  .filter(className => className !== tableRowBaseClassName);
+/** The `data-selected` value themeProps reflects for the selected state. */
+const selectedRowDataAttribute = selectedRowStateProps['data-selected'];
 
 /**
  * The row's current fill, republished for pinned cells to read. Declared as a
