@@ -16,6 +16,9 @@
  */
 
 import {discoverAll, pkgOf} from '../../foundation/discovery/template-adapter.mjs';
+import {isResolvableComponentName} from '../../foundation/discovery/component-discovery.mjs';
+import {loadIntegrationsSafely} from '../component/_adapter.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {templateList} from './list/list.mjs';
@@ -40,6 +43,8 @@ export {
   findShowcase,
   extractComponents,
 } from '../../foundation/discovery/template-adapter.mjs';
+
+export {isResolvableComponentName} from '../../foundation/discovery/component-discovery.mjs';
 
 /**
  * @typedef {import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
@@ -120,12 +125,35 @@ export async function template(name, options = {}) {
   }
   const match = candidates[0];
 
+  // Per-name exact resolvability, checked only for the selected template's
+  // names (a handful of filesystem probes each). This never builds the
+  // whole-workspace doc index, so cold show/skeleton stays fast.
+  // Integrations are loaded exactly like `astryx component` does.
+  /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */
+  let integrations = [];
+  try {
+    integrations = await loadIntegrationsSafely(cwd);
+  } catch {
+    // Unloadable projects fall back to core-only resolution; the failure
+    // is surfaced on the discover/doctor paths.
+  }
+  const coreDir = findCoreDir(cwd);
+  const isResolvable =
+    coreDir === null
+      ? null
+      : /** @param {string} name */ name =>
+          isResolvableComponentName(name, {
+            coreDir,
+            loadedIntegrations: integrations ?? [],
+            cwd,
+          });
+
   if (skeleton) {
-    return templateSkeleton(match, templates);
+    return templateSkeleton(match, templates, isResolvable);
   }
 
   if (show || !targetPath) {
-    return templateShow(match);
+    return templateShow(match, isResolvable);
   }
 
   return templateCopy(match, {targetPath, cwd, overwrite});
