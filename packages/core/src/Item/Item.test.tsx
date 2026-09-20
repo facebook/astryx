@@ -768,7 +768,7 @@ describe('swipeActions', () => {
     touch(container, 'pointerMove', 130);
     touch(container, 'pointerUp', 130);
     expect(onAction).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(250));
+    void act(() => vi.advanceTimersByTime(250));
     expect(onAction).toHaveBeenCalledTimes(1);
     // Settled: the row is back and nothing is clipping.
     expect(row.style.transform).toBe('');
@@ -781,7 +781,7 @@ describe('swipeActions', () => {
     touch(container, 'pointerMove', 40);
     touch(container, 'pointerMove', 60);
     touch(container, 'pointerUp', 60);
-    act(() => vi.advanceTimersByTime(250));
+    void act(() => vi.advanceTimersByTime(250));
     expect(onAction).not.toHaveBeenCalled();
     expect(isClipping(container)).toBe(false);
   });
@@ -793,7 +793,7 @@ describe('swipeActions', () => {
     touch(container, 'pointerMove', 120, 200);
     expect(isClipping(container)).toBe(false);
     touch(container, 'pointerUp', 120, 200);
-    act(() => vi.advanceTimersByTime(250));
+    void act(() => vi.advanceTimersByTime(250));
     expect(onAction).not.toHaveBeenCalled();
   });
 
@@ -813,7 +813,7 @@ describe('swipeActions', () => {
     expect(panelFor('Delete')).toBeInTheDocument();
     touch(withTrailing.container, 'pointerMove', 60);
     touch(withTrailing.container, 'pointerUp', 60);
-    act(() => vi.advanceTimersByTime(250));
+    void act(() => vi.advanceTimersByTime(250));
     expect(onTrailing).toHaveBeenCalledTimes(1);
   });
 
@@ -823,7 +823,7 @@ describe('swipeActions', () => {
     fireEvent.pointerDown(container, {...mouse, clientX: 10});
     fireEvent.pointerMove(container, {...mouse, clientX: 200});
     fireEvent.pointerUp(container, {...mouse, clientX: 200});
-    act(() => vi.advanceTimersByTime(250));
+    void act(() => vi.advanceTimersByTime(250));
     expect(isClipping(container)).toBe(false);
     expect(onAction).not.toHaveBeenCalled();
   });
