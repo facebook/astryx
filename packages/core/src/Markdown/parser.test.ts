@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   createIncrementalState,
+  isSafeUrl,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
@@ -155,6 +156,39 @@ describe('parseInline', () => {
         content: '![xss](data:text/html,<script>alert(1)</script>)',
       },
     ]);
+  });
+
+  it('rejects data:image/svg+xml and other data: links (XSS prevention)', () => {
+    const linkResult = parseInline(
+      '[x](data:image/svg+xml,<svg onload=alert(1)>)',
+    );
+    expect(linkResult).toEqual([
+      {
+        type: 'text',
+        content: '[x](data:image/svg+xml,<svg onload=alert(1)>)',
+      },
+    ]);
+
+    const imgResult = parseInline('![x](data:image/png;base64,AAAA)');
+    expect(imgResult).toEqual([
+      {
+        type: 'text',
+        content: '![x](data:image/png;base64,AAAA)',
+      },
+    ]);
+  });
+
+  it('isSafeUrl rejects javascript, vbscript, and all data: schemes', () => {
+    expect(isSafeUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeUrl('vbscript:MsgBox(1)')).toBe(false);
+    expect(isSafeUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
+    expect(isSafeUrl('data:image/svg+xml,<svg onload=alert(1)>')).toBe(false);
+    expect(isSafeUrl('data:image/png;base64,AAAA')).toBe(false);
+    expect(isSafeUrl('data:text/plain;charset=utf-8,hello')).toBe(false);
+    expect(isSafeUrl('https://example.com')).toBe(true);
+    expect(isSafeUrl('http://example.com')).toBe(true);
+    expect(isSafeUrl('/relative/path')).toBe(true);
+    expect(isSafeUrl('#anchor')).toBe(true);
   });
 
   it('allows normal http/https links', () => {
