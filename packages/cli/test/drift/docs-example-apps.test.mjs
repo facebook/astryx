@@ -15,12 +15,15 @@
  * actually carries one, i.e. depends on a `@stylexswc/*` compiler. The unit is
  * the sentence, not the prose block: a block may legitimately recommend SWC and
  * then name a Babel example for a different purpose, and saying so is what a
- * correction looks like.
+ * correction looks like. Both ends of the pipeline are checked — the doc source
+ * and what the shipped CLI actually prints.
  *
  * @position packages/cli/test/drift — colocated-docs drift harness
  */
 
+import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {describe, it, expect} from 'vitest';
@@ -28,6 +31,7 @@ import {describe, it, expect} from 'vitest';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '../../../..');
 const DOCS_DIR = path.join(REPO_ROOT, 'packages/cli/assets/docs');
+const BIN = path.join(REPO_ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 
 const EXAMPLE_APP = /apps\/(example-[a-z0-9-]+)/g;
 const SWC_SCOPE = '@stylexswc/';
@@ -68,12 +72,49 @@ function proseBlocks(doc) {
 }
 
 /** @returns {boolean} whether an example app compiles StyleX through SWC. */
-function carriesSwcTransform(app) {
-  const pkgPath = path.join(REPO_ROOT, 'apps', app, 'package.json');
+function carriesSwcTransform(app, root = REPO_ROOT) {
+  const pkgPath = path.join(root, 'apps', app, 'package.json');
   if (!fs.existsSync(pkgPath)) return false;
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
   const deps = {...pkg.dependencies, ...pkg.devDependencies};
   return Object.keys(deps).some(name => name.startsWith(SWC_SCOPE));
+}
+
+/**
+ * The rule itself, over one body of text. Sentence-scoped so that a correction
+ * ("the repo ships no SWC example app: `apps/x` is the Babel one") reads as a
+ * correction rather than as the defect it describes.
+ *
+ * @param {string} text
+ * @param {string} where label used in the report
+ * @param {(app: string) => boolean} hasSwc
+ * @returns {string[]} one message per app offered as SWC that carries none
+ */
+function badSwcCitations(text, where, hasSwc = carriesSwcTransform) {
+  const wrong = [];
+  for (const sentence of text.split(/(?<=\.)\s+/)) {
+    if (!SWC_CLAIM.test(sentence) || DISCLAIMED.test(sentence)) continue;
+    for (const [, app] of sentence.matchAll(EXAMPLE_APP)) {
+      if (!hasSwc(app)) {
+        wrong.push(
+          `${where}: offers apps/${app} as an SWC configuration, but ` +
+            `that app declares no ${SWC_SCOPE}* compiler`,
+        );
+      }
+    }
+  }
+  return wrong;
+}
+
+/** Writes `apps/<name>/package.json` under a throwaway root. @returns {string} */
+function fixtureRoot(apps) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-docs-apps-'));
+  for (const [name, pkg] of Object.entries(apps)) {
+    const dir = path.join(root, 'apps', name);
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg));
+  }
+  return root;
 }
 
 describe('shipped docs vs the example apps they cite', () => {
@@ -81,24 +122,23 @@ describe('shipped docs vs the example apps they cite', () => {
     const docs = await collectShippedDocs();
     expect(docs.length).toBeGreaterThan(0);
 
-    const wrong = [];
-    for (const {file, doc} of docs) {
-      for (const text of proseBlocks(doc)) {
-        for (const sentence of text.split(/(?<=\.)\s+/)) {
-          if (!SWC_CLAIM.test(sentence) || DISCLAIMED.test(sentence)) continue;
-          for (const [, app] of sentence.matchAll(EXAMPLE_APP)) {
-            if (!carriesSwcTransform(app)) {
-              wrong.push(
-                `${file}: offers apps/${app} as an SWC configuration, but ` +
-                  `that app declares no ${SWC_SCOPE}* compiler`,
-              );
-            }
-          }
-        }
-      }
-    }
+    const wrong = docs.flatMap(({file, doc}) =>
+      proseBlocks(doc).flatMap(text => badSwcCitations(text, file)),
+    );
 
     expect(wrong).toEqual([]);
+  });
+
+  it('renders no such citation through `astryx docs styling`', () => {
+    // The doc source is the input; this is the output a reader actually gets.
+    const res = spawnSync('node', [BIN, 'docs', 'styling'], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/@stylexswc\/nextjs-plugin/);
+
+    expect(badSwcCitations(res.stdout, 'astryx docs styling')).toEqual([]);
   });
 
   it('(control) reads the example apps that back the claim', () => {
@@ -113,5 +153,76 @@ describe('shipped docs vs the example apps they cite', () => {
     expect(apps).toContain('example-nextjs-stylex');
     expect(carriesSwcTransform('example-nextjs-stylex')).toBe(false);
     expect(carriesSwcTransform('example-does-not-exist')).toBe(false);
+  });
+
+  it('(control) reads an SWC compiler from either dependency field', () => {
+    // Controls for the scope test itself: `@stylexjs/` and `@stylexswc/` differ
+    // by two characters, and the whole rule rests on telling them apart.
+    const root = fixtureRoot({
+      'example-swc-dep': {dependencies: {'@stylexswc/nextjs-plugin': '^0.7.0'}},
+      'example-swc-dev': {
+        devDependencies: {'@stylexswc/rs-compiler': '^0.7.0'},
+      },
+      'example-babel': {devDependencies: {'@stylexjs/babel-plugin': '^0.19.0'}},
+      'example-empty': {name: 'no deps at all'},
+    });
+
+    expect(carriesSwcTransform('example-swc-dep', root)).toBe(true);
+    expect(carriesSwcTransform('example-swc-dev', root)).toBe(true);
+    expect(carriesSwcTransform('example-babel', root)).toBe(false);
+    expect(carriesSwcTransform('example-empty', root)).toBe(false);
+  });
+
+  it('(control) checks every app a sentence names, not just the first', () => {
+    const hasSwc = app => app === 'example-swc';
+    const both =
+      'Use SWC: see apps/example-swc and apps/example-babel for the setup.';
+
+    expect(badSwcCitations(both, 'fixture', hasSwc)).toEqual([
+      'fixture: offers apps/example-babel as an SWC configuration, but ' +
+        'that app declares no @stylexswc/* compiler',
+    ]);
+    expect(
+      badSwcCitations('Use SWC: see apps/example-swc.', 'fixture', hasSwc),
+    ).toEqual([]);
+  });
+
+  it('(control) scans prose only, and no other block type cites an app as SWC', async () => {
+    // `proseBlocks` drops tables, lists and code, so a citation in a table cell
+    // is invisible to the rule. That is a bounded gap only while no non-prose
+    // block makes the claim — which is what the second half asserts, over the
+    // live corpus.
+    const docs = await collectShippedDocs();
+    const nonProse = docs.flatMap(({file, doc}) =>
+      (doc.sections ?? []).flatMap(section =>
+        (section.content ?? [])
+          .filter(block => block?.type !== 'prose')
+          .map(block => ({file, text: JSON.stringify(block)})),
+      ),
+    );
+    expect(nonProse.length).toBeGreaterThan(0);
+
+    const escaped = nonProse.flatMap(({file, text}) =>
+      badSwcCitations(text, `${file} (non-prose)`),
+    );
+    expect(escaped).toEqual([]);
+  });
+
+  it('(control) is sentence-scoped, so a split claim and a bare "not" slip through', () => {
+    // Both are known limits of the rule, pinned so a future widening is a
+    // deliberate edit to this file rather than a silent behaviour change.
+    const hasSwc = () => false;
+
+    const split = 'The working path is SWC. See apps/example-babel.';
+    expect(badSwcCitations(split, 'fixture', hasSwc)).toEqual([]);
+
+    const incidental =
+      'Do not skip this: apps/example-babel is the complete SWC setup.';
+    expect(badSwcCitations(incidental, 'fixture', hasSwc)).toEqual([]);
+
+    // The same claim without the incidental disclaimer word IS caught, so the
+    // two cases above are about the disclaimer heuristic, not a dead rule.
+    const plain = 'apps/example-babel is the complete SWC setup.';
+    expect(badSwcCitations(plain, 'fixture', hasSwc)).toHaveLength(1);
   });
 });
