@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Markdown: add an immutable source-decoration helper
+[feat] Markdown: add an immutable source-decoration helper (#6344)
 
 Use `createMarkdownSourceDecoration()` to attach non-visual metadata to every block a validated UTF-16 source range touches, and `getMarkdownSourceDecorations()` to read it back in a later plugin. It works through `<Markdown>` and Outline with no extra parser options, resolves independently of the order earlier transforms left blocks in, and appears on the settled document rather than on partial streaming chunks, so a decoration never appears and then vanishes. Metadata lives in one versioned Astryx-owned envelope that never merges foreign node data. Rendered output, copyable text, accessible names, heading ids, focus order, navigation, and source provenance are unchanged.
 

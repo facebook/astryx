@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Markdown: add the core plugin protocol
+[feat] Markdown: add the core plugin protocol (#6340)
 
 Use `createMarkdownPlugin()` and Markdown's `plugins` prop to compose bounded
 source syntax, immutable typed AST transforms, and extension renderers. Import
