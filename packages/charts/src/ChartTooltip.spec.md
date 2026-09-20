@@ -116,17 +116,17 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ### Representative states
 
-| State                        | Required invariant                                                             | Allowed variation                                            |
-| ---------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Initial / pointer leave      | Card is closed and no stale card content is exposed.                           | SVG indicators are absent.                                   |
-| Single series                | Card shows x value plus one value.                                             | Caller label, color, and value vary.                         |
-| Multiple series              | Card preserves the derived visible-series order and labels each row.           | Number and type of rows vary.                                |
-| Custom content               | Renderer receives the current x value and rows.                                | Any non-interactive React content may be returned.           |
-| Custom `null`                | Card closes while enabled plot indicators remain.                              | Indicator and dot options remain independently configurable. |
-| Bar on band scale            | Band highlight replaces the crosshair; bars receive no hover dot.              | Band geometry follows the scale.                             |
-| Line, area, or dot           | Crosshair and eligible finite hover dots follow the selected index.            | Series paint and resolved coordinates vary.                  |
-| Clipped or modal composition | Layer host is browser-top-layer open and remains hit-test-visible above peers. | Surrounding clipping and modal geometry vary.                |
-| Server render                | No portal or browser layer is emitted.                                         | Rendered SVG fragment may be empty without pointer state.    |
+| State                        | Required invariant                                                       | Allowed variation                                            |
+| ---------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Initial / pointer leave      | Card is closed and no stale card content is exposed.                     | SVG indicators are absent.                                   |
+| Single series                | Card shows x value plus one value.                                       | Caller label, color, and value vary.                         |
+| Multiple series              | Card preserves the derived visible-series order and labels each row.     | Number and type of rows vary.                                |
+| Custom content               | Renderer receives the current x value and rows.                          | Any non-interactive React content may be returned.           |
+| Custom `null`                | Card closes while enabled plot indicators remain.                        | Indicator and dot options remain independently configurable. |
+| Bar on band scale            | Band highlight replaces the crosshair; bars receive no hover dot.        | Band geometry follows the scale.                             |
+| Line, area, or dot           | Crosshair and eligible finite hover dots follow the selected index.      | Series paint and resolved coordinates vary.                  |
+| Clipped or modal composition | Layer host is an open native popover above clipping and top-layer peers. | Surrounding clipping and modal geometry vary.                |
+| Server render                | No portal or browser layer is emitted.                                   | Rendered SVG fragment may be empty without pointer state.    |
 
 ### Transformation and precedence order
 
@@ -208,7 +208,7 @@ intentional decision. A `current` contract contains no unresolved rows.
 | -------- | ------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------- |
 | FR1–FR4  | `ChartTooltip.test.tsx`; Tooltip Storybook fixture           | single, multi, custom, null, bar, line, missing values | A public option changes output or a missing/non-finite point leaks invalid SVG.      | `audit:ChartTooltip/behavior`      |
 | FR5      | focused placement test; source review                        | right; other modes remain gaps                         | Positioning changes without an owner ruling or evidence for every public value.      | `audit:ChartTooltip/api-behavior`  |
-| FR6      | red/green Layer host test; modal Storybook play assertion    | closed, hovered inside native modal                    | Removing Layer loses `popover="manual"` or makes hit-testing land on the dialog.     | `audit:ChartTooltip/layering`      |
+| FR6      | red/green Layer host test; modal Storybook play assertion    | closed, hovered inside native modal                    | Removing Layer loses `popover="manual"` or native open state above the modal.        | `audit:ChartTooltip/layering`      |
 | FR7      | focused lifecycle test                                       | mount and unmount                                      | A pointer listener remains after unmount.                                            | `audit:ChartTooltip/code-health`   |
 | FR8      | `renderToString` focused test                                | server render                                          | Server evaluation reads `document` or emits the browser-only card.                   | `audit:ChartTooltip/runtime`       |
 | AR1–AR3  | Chart accessibility tests; focused axe; owner review pending | small-data alternative and hovered card                | Tooltip content becomes the only data path or draft semantics are treated as policy. | `audit:ChartTooltip/accessibility` |

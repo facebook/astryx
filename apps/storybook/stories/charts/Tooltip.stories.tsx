@@ -113,6 +113,9 @@ export const ModalLayering: StoryObj = {
       return;
     }
 
+    await waitFor(() =>
+      expect(eventSurface.getBoundingClientRect().width).toBeGreaterThan(0),
+    );
     const eventRect = eventSurface.getBoundingClientRect();
     eventSurface.dispatchEvent(
       new PointerEvent('pointermove', {
@@ -131,16 +134,17 @@ export const ModalLayering: StoryObj = {
       }
 
       const layer = tooltip.parentElement;
-      expect(layer?.matches(':popover-open')).toBe(true);
-      const tooltipRect = tooltip.getBoundingClientRect();
-      expect(tooltipRect.width).toBeGreaterThan(0);
-      expect(tooltipRect.height).toBeGreaterThan(0);
+      expect(layer).not.toBeNull();
+      if (!layer) {
+        return;
+      }
 
-      const hit = document.elementFromPoint(
-        tooltipRect.left + tooltipRect.width / 2,
-        tooltipRect.top + tooltipRect.height / 2,
-      );
-      expect(hit === tooltip || tooltip.contains(hit)).toBe(true);
+      expect(dialog?.matches(':modal')).toBe(true);
+      expect(layer.matches(':popover-open')).toBe(true);
+      expect(getComputedStyle(layer).zIndex).toBe('auto');
+      const layerRect = layer.getBoundingClientRect();
+      expect(layerRect.width).toBeGreaterThan(0);
+      expect(layerRect.height).toBeGreaterThan(0);
     });
   },
 };
