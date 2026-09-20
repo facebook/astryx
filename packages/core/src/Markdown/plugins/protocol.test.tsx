@@ -291,6 +291,8 @@ describe('Markdown plugin protocol', () => {
 
     function AsyncMention({label}: {readonly label: string}) {
       if (!resolved) {
+        // React Suspense requires throwing the pending thenable.
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw pending;
       }
       return <span data-testid="async-mention">@{label} loaded</span>;
