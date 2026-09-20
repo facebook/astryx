@@ -766,16 +766,34 @@ describe('label theme target', () => {
 });
 
 describe('pressed state', () => {
-  it('paints the pressed overlay on the box while the row is pressed', () => {
+  it('paints the pressed overlay over the indicator while the row is pressed', () => {
     const {container} = render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     const box = container.querySelector('.astryx-checkbox-indicator');
-    if (box == null) {
-      throw new Error('the checkbox has no indicator to press');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper to press');
     }
-    // Read off the row's scope marker, the way the hover tint is: pressing
-    // the label, the box or the control itself all press the row.
-    expect(hasPressedArm(box)).toBe(true);
+    // The owner paints over the resolved indicator, so the treatment survives a
+    // theme replacement that does not forward style props.
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled checkbox', () => {
+    const {container} = render(
+      <CheckboxInput
+        label="Unavailable"
+        value={false}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
   });
 });

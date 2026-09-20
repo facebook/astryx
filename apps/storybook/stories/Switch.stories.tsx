@@ -627,7 +627,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. On the switch it tints the track and the thumb together, on top of the on/off fill and the hover tint, and never on a disabled switch.",
+          "Press and hold an enabled switch to paint the system's `--color-overlay-pressed` layer on its track and thumb together. The disabled example remains visually unchanged and cannot toggle.",
       },
     },
   },

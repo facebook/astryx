@@ -236,11 +236,6 @@ export const docs = {
           'Pair with a clear, concise label that describes the setting being controlled.',
       },
       {
-        guidance: true,
-        description:
-          'When a visible title elsewhere on the page already names the setting (a settings row), hide the switch label with isLabelHidden and pass aria-labelledby pointing at that title; a visible hint is linked with aria-describedby. Both land on the switch input itself, as does a caller id.',
-      },
-      {
         guidance: false,
         description:
           'Use for options that require a form submission to take effect; use a checkbox instead.',

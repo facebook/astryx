@@ -277,7 +277,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press anywhere on the track and drag: the thumb being dragged paints the system's `--color-overlay-pressed` layer over its fill for the whole drag, on a mouse and on a finger, and drops it on release. A slider is a drag, not a tap, so the pressed paint follows the drag state rather than `:active`.",
+          "Press and drag to paint the system's `--color-overlay-pressed` layer on only the thumb being dragged. The disabled example remains visually unchanged and its value cannot move.",
       },
     },
   },
@@ -295,6 +295,12 @@ export const PressedState: Story = {
           label="Price range — only the dragged thumb presses"
           value={range}
           onChange={setRange}
+        />
+        <Slider
+          label="Unavailable — no pressed state"
+          value={60}
+          onChange={() => {}}
+          isDisabled
         />
       </div>
     );

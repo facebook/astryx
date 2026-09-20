@@ -352,7 +352,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. The disclosure row paints it across its width while pressed; it has no hover surface, so the press is the one background it paints. A disabled trigger never presses.",
+          "Press and hold the enabled trigger to paint the system's `--color-overlay-pressed` layer across its row. The disabled trigger remains visually unchanged and cannot expand or collapse.",
       },
     },
   },

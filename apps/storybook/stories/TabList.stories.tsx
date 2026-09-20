@@ -1046,7 +1046,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. The tab's hover surface steps up to the pressed overlay while the tab is pressed.",
+          "Press and hold an enabled tab to paint the system's `--color-overlay-pressed` layer on its surface. The disabled tab remains visually unchanged and cannot change selection.",
       },
     },
   },
@@ -1057,6 +1057,11 @@ export const PressedState: Story = {
         <Tab value="home" label="Home" />
         <Tab value="projects" label="Projects — press and hold" />
         <Tab value="settings" label="Settings" />
+        <Tab
+          value="unavailable"
+          label="Unavailable — no pressed state"
+          aria-disabled="true"
+        />
       </TabList>
     );
   },

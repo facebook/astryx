@@ -575,7 +575,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. Pressing the box, the label or anywhere on the row tints the box, unchecked and checked alike; a disabled checkbox never presses.",
+          "Press and hold an enabled row to paint the system's `--color-overlay-pressed` layer on its indicator. Checked and unchecked indicators both respond; the disabled example remains visually unchanged.",
       },
     },
   },

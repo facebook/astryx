@@ -1534,4 +1534,50 @@ describe('pressed state', () => {
     }
     expect(hasPressedArm(surface)).toBe(true);
   });
+
+  it('does not activate a disabled button tab or call its handler', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <TabList value="home" onChange={onChange}>
+        <Tab value="home" label="Home" />
+        <Tab
+          value="settings"
+          label="Settings"
+          aria-disabled="true"
+          onClick={onClick}
+        />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    await user.click(tab);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('removes navigation from a disabled link tab', () => {
+    const onChange = vi.fn();
+    const {container} = render(
+      <LinkProvider component={CustomLink}>
+        <TabList value="home" onChange={onChange}>
+          <Tab value="home" label="Home" />
+          <Tab
+            value="settings"
+            label="Settings"
+            href="/settings"
+            aria-disabled="true"
+          />
+        </TabList>
+      </LinkProvider>,
+    );
+    const tab = container.querySelector('a');
+    if (tab == null) {
+      throw new Error('the disabled link tab did not render an anchor');
+    }
+    expect(tab).not.toHaveAttribute('data-custom-link');
+    expect(tab).not.toHaveAttribute('href');
+    fireEvent.click(tab);
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

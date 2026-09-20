@@ -251,7 +251,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. An unselected segment takes the hover and pressed overlays; the selected segment keeps its raised surface.",
+          "Press and hold an unselected item to see the system's `--color-overlay-pressed` layer. The selected item keeps its raised surface, and the disabled item remains visually unchanged and cannot be selected.",
       },
     },
   },
@@ -259,9 +259,14 @@ export const PressedState: Story = {
     const [value, setValue] = useState('grid');
     return (
       <SegmentedControl value={value} onChange={setValue} label="View mode">
-        <SegmentedControlItem value="grid" label="Grid" />
-        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="grid" label="Grid — selected" />
+        <SegmentedControlItem value="list" label="List — press and hold" />
         <SegmentedControlItem value="board" label="Board" />
+        <SegmentedControlItem
+          value="unavailable"
+          label="Unavailable — no pressed state"
+          isDisabled
+        />
       </SegmentedControl>
     );
   },

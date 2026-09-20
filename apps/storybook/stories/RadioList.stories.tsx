@@ -408,7 +408,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold to see the pressed overlay: the system's `--color-overlay-pressed` layer, the same token Button paints. It answers a mouse press today; a finger gets the delayed press model once the touch press controller lands. Pressing anywhere on an option row tints its radio circle, selected or not; a disabled option never presses.",
+          "Press and hold an enabled option row to paint the system's `--color-overlay-pressed` layer on its indicator. Selected and unselected indicators both respond; the disabled example and the SMS row's nested link remain visually independent and cannot change selection.",
       },
     },
   },
@@ -420,7 +420,18 @@ export const PressedState: Story = {
         value={value}
         onChange={setValue}>
         <RadioListItem label="Email — selected, press and hold" value="email" />
-        <RadioListItem label="SMS — press and hold" value="sms" />
+        <RadioListItem
+          label={
+            <>
+              <span data-testid="radio-row-press-target">
+                SMS — press and hold
+              </span>{' '}
+              <Link href="#details">Details — independent link</Link>
+            </>
+          }
+          aria-label="SMS — press and hold"
+          value="sms"
+        />
         <RadioListItem
           label="Push — disabled, no pressed state"
           value="push"

@@ -738,85 +738,21 @@ describe('Switch', () => {
   });
 
   describe('rest forwarding', () => {
-    it('forwards data-testid and aria-* to the root element', () => {
+    it('forwards data-testid, id, and aria-* to the root element', () => {
       const {container} = render(
         <Switch
           label="Notifications"
           value={false}
           onChange={() => {}}
           data-testid="my-switch"
+          id="switch-1"
           aria-label="Toggle notifications"
         />,
       );
       const root = container.querySelector('[data-testid="my-switch"]');
       expect(root).not.toBeNull();
+      expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
-    });
-
-    it('puts a caller id on the input, with the label following it', () => {
-      // The id names the control, the way it does on any form input: a
-      // wrapper div with an id is not something a form or a test can toggle.
-      render(
-        <Switch
-          label="Notifications"
-          value={false}
-          onChange={() => {}}
-          data-testid="my-switch"
-          id="switch-1"
-        />,
-      );
-      const input = screen.getByRole('switch');
-      expect(input).toHaveAttribute('id', 'switch-1');
-      expect(screen.getByTestId('my-switch')).not.toHaveAttribute('id');
-      expect(
-        screen.getByText('Notifications').closest('label'),
-      ).toHaveAttribute('for', 'switch-1');
-    });
-
-    it('lets a visible element elsewhere name the control (aria-labelledby)', () => {
-      // A settings row already shows its title; with the switch's own label
-      // hidden, the row title must be the name assistive technology reads.
-      render(
-        <>
-          <h3 id="row-title">Pin this view</h3>
-          <Switch
-            label="Pin"
-            isLabelHidden
-            value={false}
-            onChange={() => {}}
-            aria-labelledby="row-title"
-          />
-        </>,
-      );
-      const input = screen.getByRole('switch');
-      expect(input).toHaveAttribute('aria-labelledby', 'row-title');
-      expect(input).toHaveAccessibleName('Pin this view');
-    });
-
-    it('lets a visible hint describe the control (aria-describedby), keeping its own ids', () => {
-      render(
-        <>
-          <p id="hint">Applies to every repository.</p>
-          <Switch
-            label="Repository rules"
-            description="Sent with each request"
-            value={false}
-            onChange={() => {}}
-            aria-describedby="hint"
-          />
-        </>,
-      );
-      const input = screen.getByRole('switch');
-      const describedBy = input.getAttribute('aria-describedby') ?? '';
-      const ids = describedBy.split(/\s+/);
-      expect(ids[0]).toBe('hint');
-      expect(ids).toHaveLength(2);
-      expect(document.getElementById(ids[1])).toHaveTextContent(
-        'Sent with each request',
-      );
-      expect(input).toHaveAccessibleDescription(
-        'Applies to every repository. Sent with each request',
-      );
     });
   });
 

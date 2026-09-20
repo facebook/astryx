@@ -859,7 +859,7 @@ describe('forced colors (WCAG 1.4.11)', () => {
 });
 
 describe('pressed state', () => {
-  it('paints the pressed overlay on the radio circle while the row is pressed', () => {
+  it('paints the pressed overlay over the radio indicator while the row is pressed', () => {
     const {container} = render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
@@ -867,9 +867,24 @@ describe('pressed state', () => {
       </RadioList>,
     );
     const circle = container.querySelector('.astryx-radio-indicator');
-    if (circle == null) {
-      throw new Error('the radio has no indicator to press');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper to press');
     }
-    expect(hasPressedArm(circle)).toBe(true);
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled radio', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Unavailable" value="b" isDisabled />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
   });
 });

@@ -800,7 +800,18 @@ jobs:
       # Chromium guards for the same reason they are: pr-a11y is the blocking
       # job that runs whenever components change.
       - name: Run accessibility spec-test contracts
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm test:a11y-contract
+
+      - name: Upload pressed-state pixel evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/pressed-state-evidence/
+          retention-days: 30
+          if-no-files-found: error
 
   # Build package test owner. The plugin's production CSS partition is a Build
   # integration contract: source inspection cannot prove which declaration

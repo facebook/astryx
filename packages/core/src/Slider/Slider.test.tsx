@@ -1185,6 +1185,39 @@ describe('pressed state', () => {
     expect(declaresPressedOverlay(end)).toBe(false);
   });
 
+  it('keeps a direct press on the visible upper thumb when range values coincide', () => {
+    render(
+      <Slider
+        label="Price"
+        value={[50, 50] as [number, number]}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const [start, end] = screen.getAllByRole('slider');
+    const trackContainer = screen.getByRole('group');
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(end, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(declaresPressedOverlay(start)).toBe(false);
+  });
+
   it('does not press a disabled slider', () => {
     render(<Slider label="Volume" value={50} isDisabled onChange={vi.fn()} />);
     const thumb = screen.getByRole('slider');

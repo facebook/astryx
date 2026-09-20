@@ -517,16 +517,9 @@ export function Switch({
   className,
   style,
   ref,
-  id: idProp,
-  'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: SwitchProps) {
-  const generatedID = useId();
-  // A caller's `id` names the control, not the field wrapper: it lands on the
-  // `<input role="switch">` (with the label's `htmlFor` following it), so a
-  // form or a test can address the switch the way it addresses any input.
-  const id = idProp ?? generatedID;
+  const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
@@ -557,13 +550,7 @@ export function Switch({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
-  // A consumer's own `aria-describedby` (a visible hint paragraph beside the
-  // switch) comes first, then the input's own ids — it used to ride `...rest`
-  // onto the field wrapper, where no assistive technology reads it.
   const describedByParts: string[] = [];
-  if (ariaDescribedByProp) {
-    describedByParts.push(ariaDescribedByProp);
-  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -611,11 +598,6 @@ export function Switch({
         }}
         onFocus={onFocus}
         onBlur={onBlur}
-        // A visible element elsewhere on the page (a row title) can name the
-        // control; with `isLabelHidden` the sr-only label would otherwise be
-        // the only name. `aria-labelledby` wins over the label's `for`, which
-        // is the caller's intent when they pass it.
-        aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}
