@@ -30,7 +30,11 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
-import {hasPressedArm} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -768,6 +772,26 @@ describe('Switch', () => {
       }
       expect(hasPressedArm(track)).toBe(true);
       expect(hasPressedArm(thumb)).toBe(true);
+    });
+
+    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
+      const {container} = render(
+        <Switch label="Notifications" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      const row = track?.closest('[data-astryx-pressable]');
+      if (track == null || thumb == null || row == null) {
+        throw new Error('the switch has no pressable row, track or thumb');
+      }
+      // The controller writes the row; the row owns the strength and its
+      // release, and the two parts paint the pressed token at that strength
+      // on both touch arms, so they fade together.
+      expect(hasReleaseFade(row)).toBe(true);
+      for (const part of [track, thumb]) {
+        expect(readsPressStrength(part, '[data-pressed="on"]')).toBe(true);
+        expect(readsPressStrength(part)).toBe(true);
+      }
     });
   });
 

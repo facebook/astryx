@@ -43,6 +43,7 @@
     "guard:theme-layers": "node .github/scripts/theme-layer-cascade.js",
     "guard:disabled-hover": "node .github/scripts/disabled-hover-audit.js",
     "guard:pressed-overlay": "node .github/scripts/pressed-overlay-cascade.js",
+    "guard:press-release-fade": "node .github/scripts/press-release-fade.js",
     "guard:disabled-cursor": "node .github/scripts/disabled-cursor-audit.js",
     "storybook": "pnpm -F @astryxdesign/storybook dev",
     "storybook:build": "pnpm -F @astryxdesign/storybook build",

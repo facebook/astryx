@@ -47,12 +47,22 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  interactionOverlayStyles,
+  pressVars,
+} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
 // =============================================================================
+
+// The touch press's paint: the pressed token at the strength the card's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release). Same shape as
+// `pressedOverlayColor` in interactionOverlay.stylex.ts, rebuilt here because
+// StyleX resolves imported `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
 
 const styles = stylex.create({
   interactive: {
@@ -95,15 +105,22 @@ const styles = stylex.create({
             colorVars['--color-overlay-hover'],
           ':active': colorVars['--color-overlay-pressed'],
         },
-        '[data-pressed="on"]': colorVars['--color-overlay-pressed'],
-        '[data-pressed="fading"]': colorVars['--color-overlay-hover'],
+        // The touch arms paint through the press's strength, which the
+        // card's `pressedAlpha` arms own: 1 on the first frame of a believed
+        // press, then 1 → 0 over the release. The `::after` inherits the
+        // resolved colour and repaints with it on every frame of the fade.
+        '[data-pressed="on"]': pressedOverlayColor,
+        '[data-pressed="fading"]': pressedOverlayColor,
       },
     },
-    // A believed touch press paints on the first frame; the release and the
-    // mouse states keep the fast fade.
+    // A believed touch press paints on the first frame, and the release is the
+    // strength's own animation, so neither may pass through the layer's colour
+    // transition (it would fade the onset in, and drag behind the release).
+    // The mouse states keep the fast fade.
     '--_press-overlay-transition': {
       default: durationVars['--duration-fast'],
       '[data-pressed="on"]': '0s',
+      '[data-pressed="fading"]': '0s',
     },
     '::after': {
       content: '""',
@@ -410,6 +427,9 @@ export function SelectableCard({
           styles.interactive,
           isSelected && selectedStyleForVariant(variant),
           !isDisabled && styles.overlay,
+          // The touch press's strength and release, on the element the
+          // controller writes to; the `::after` above paints off it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
           isDisabled && styles.disabled,
           xstyleProp,
         ] as unknown as StyleXStyles

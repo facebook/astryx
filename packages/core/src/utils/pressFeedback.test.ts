@@ -2,15 +2,28 @@
 
 /**
  * @file pressFeedback.test.ts
- * @input pressFeedback.ts and pressGesture.ts
+ * @input pressFeedback.ts, pressGesture.ts and interactionOverlay.stylex.ts
  * @output Unit tests for the DOM half of the touch press model: one delegated
  *   controller, one attribute, and the two properties a per-element hook
  *   would give away — that the paint belongs to the element the finger landed
- *   on and that a list pays nothing per row for it
+ *   on and that a list pays nothing per row for it — plus the CSS arms the
+ *   attribute drives: the release runs on the machine's own clock
  * @position Testing; validates pressFeedback.ts in jsdom
  */
 
+import * as stylex from '@stylexjs/stylex';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  durationToMs,
+  hasReleaseFade,
+  readsPressStrength,
+  rulesDeclaredFor,
+  rulesWithSelector,
+} from '../__tests__/pressState';
+import {
+  interactionOverlayStyles,
+  PRESS_RELEASE_DURATION,
+} from './interactionOverlay.stylex';
 import {
   installPressFeedback,
   PRESSABLE_ATTRIBUTE,
@@ -455,5 +468,70 @@ describe('what the list pays for it', () => {
     expect(pressedRow()).toBe(-1);
     // Re-install for afterEach's release.
     release = installPressFeedback();
+  });
+});
+
+describe('the release fades (FR9): the arms the controller writes to', () => {
+  // The CSS half of the model, asserted off the StyleX dev runtime's injected
+  // rules the way the component tests do. jsdom runs no animation, so what is
+  // held here is the declaration: which arm animates, on which clock, and
+  // what the paint reads.
+  const variants = [
+    'backgroundColor',
+    'backgroundImage',
+    'backgroundImageOnNeutral',
+    'pressedBackgroundColor',
+  ] as const;
+
+  function surface(
+    style: (typeof interactionOverlayStyles)[keyof typeof interactionOverlayStyles],
+  ): HTMLElement {
+    const element = pressable('button');
+    element.className = stylex.props(style).className ?? '';
+    document.body.appendChild(element);
+    return element;
+  }
+
+  it("runs the release animation on the fading arm, for the machine's clock, on every variant", () => {
+    for (const variant of variants) {
+      expect(hasReleaseFade(surface(interactionOverlayStyles[variant])), variant).toBe(true);
+    }
+    expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(true);
+  });
+
+  it("the CSS clock IS the machine's clock (StyleX cannot read the constant, so this holds them equal)", () => {
+    expect(durationToMs(PRESS_RELEASE_DURATION)).toBe(PRESS_FADE_MS);
+  });
+
+  it("paints both touch arms as the pressed token at the press's strength, and declares the strength 1 on both", () => {
+    for (const variant of variants) {
+      const element = surface(interactionOverlayStyles[variant]);
+      expect(readsPressStrength(element, '[data-pressed="on"]'), variant).toBe(true);
+      expect(readsPressStrength(element), variant).toBe(true);
+      // The fading arm declares 1, like the on arm: only the animation moves
+      // the strength, so nothing a composer transitions changes at the lift.
+      for (const arm of ['[data-pressed="on"]', '[data-pressed="fading"]']) {
+        expect(
+          rulesWithSelector(element, arm).some(rule =>
+            /--astryx-press-alpha:\s*1\b/.test(rule),
+          ),
+          `${variant} ${arm}`,
+        ).toBe(true);
+      }
+      // ...and lands on nothing, not on the hover strength: under a finger
+      // there is no hover.
+      expect(
+        rulesWithSelector(element, '[data-pressed="fading"]').some(rule =>
+          rule.includes('--color-overlay-hover'),
+        ),
+        variant,
+      ).toBe(false);
+    }
+  });
+
+  it('pressedAlpha owns the strength and the release and paints nothing itself', () => {
+    const element = surface(interactionOverlayStyles.pressedAlpha);
+    expect(rulesDeclaredFor(element).some(rule => rule.includes('background'))).toBe(false);
+    expect(readsPressStrength(element)).toBe(false);
   });
 });

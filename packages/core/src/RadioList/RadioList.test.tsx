@@ -15,7 +15,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {hasPressedArm} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -886,5 +890,29 @@ describe('pressed state', () => {
       throw new Error('the radio has no indicator wrapper');
     }
     expect(hasPressedArm(wrapper)).toBe(false);
+  });
+
+  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    const row = circle?.closest('[data-astryx-pressable]');
+    if (wrapper == null || row == null) {
+      throw new Error('the radio has no pressable row or indicator wrapper');
+    }
+    // The controller writes the row; the row owns the strength and its
+    // release, and the owner-drawn layer over the circle paints the pressed
+    // token at that strength on both touch arms.
+    expect(hasReleaseFade(row)).toBe(true);
+    expect(readsPressStrength(wrapper, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(wrapper)).toBe(true);
+    // The row itself paints nothing under a finger, as under a mouse: only
+    // the circle answers.
+    expect(readsPressStrength(row, '[data-pressed="on"]')).toBe(false);
   });
 });

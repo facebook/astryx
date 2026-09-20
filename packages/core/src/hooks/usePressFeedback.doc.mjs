@@ -21,7 +21,7 @@ export const docs = {
       name: 'pressableProps',
       type: "{'data-astryx-pressable': ''}",
       description:
-        'The marker attribute to spread on the element that paints the press. The controller writes `data-pressed="on"` on it while a touch press is believed and `data-pressed="fading"` for the release; your styles paint the pressed overlay off those arms and keep `:active` for a mouse.',
+        'The marker attribute to spread on the element that paints the press. The controller writes `data-pressed="on"` on it while a touch press is believed and `data-pressed="fading"` for the release; your styles paint the pressed overlay off those arms — the pressed token at the press\'s strength, `var(--astryx-press-alpha)`, which `interactionOverlayStyles.pressedAlpha` (from `@astryxdesign/core/utils`) sets to 1 while on and fades 1 → 0 over the release — and keep `:active` for a mouse.',
     },
   ],
   usage: {
@@ -31,7 +31,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Spread the result on the element whose background paints the press, and style `[data-pressed="on"]` as the full pressed overlay with no transition and `[data-pressed="fading"]` as its exit.',
+          'Spread the result on the element whose background paints the press, compose `interactionOverlayStyles.pressedAlpha` on it, and paint both `[data-pressed="on"]` and `[data-pressed="fading"]` as a background image of the pressed token at the press\'s strength: `color-mix(in srgb, var(--color-overlay-pressed) calc(var(--astryx-press-alpha) * 100%), transparent)`. The strength is 1 on the first frame of a believed press and animates to 0 over the release, so the same declaration is the instant onset and the fade.',
       },
       {
         guidance: true,
@@ -63,7 +63,7 @@ export const docsDense = {
   paramDescriptions: {},
   returnDescriptions: {
     pressableProps:
-      'marker attribute to spread on the painting element; style [data-pressed="on"] and [data-pressed="fading"], keep :active for mouse.',
+      'marker attribute to spread on the painting element; compose interactionOverlayStyles.pressedAlpha there, paint [data-pressed="on"] and [data-pressed="fading"] as the pressed token at var(--astryx-press-alpha) strength, keep :active for mouse.',
   },
   usage: {
     description:
@@ -72,7 +72,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Spread on the painting element; style the two data-pressed arms; drop :active under @media (pointer: coarse).',
+          'Spread on the painting element; compose pressedAlpha; paint both data-pressed arms through var(--astryx-press-alpha); drop :active under @media (pointer: coarse).',
       },
       {
         guidance: false,

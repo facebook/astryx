@@ -12,7 +12,11 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {hasPressedArm} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {TabList} from './TabList';
 import type {TabListProps} from './TabList';
 import {Tab} from './Tab';
@@ -1579,5 +1583,25 @@ describe('pressed state', () => {
     expect(tab).not.toHaveAttribute('href');
     fireEvent.click(tab);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('fades the touch press out from the tab, with the surface reading its strength', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    const surface = tab.querySelector('span[aria-hidden="true"]');
+    if (surface == null) {
+      throw new Error('the tab has no hover surface to press');
+    }
+    // The controller writes the tab; the tab owns the strength and its
+    // release, and the surface paints the pressed token at that strength on
+    // both touch arms.
+    expect(hasReleaseFade(tab)).toBe(true);
+    expect(readsPressStrength(surface, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(surface)).toBe(true);
   });
 });

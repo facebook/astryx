@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ClickableCard} from './ClickableCard';
+import {hasReleaseFade, readsPressStrength} from '../__tests__/pressState';
 
 describe('ClickableCard', () => {
   it('renders children', () => {
@@ -236,5 +237,34 @@ describe('ClickableCard', () => {
         none.firstElementChild!.className,
       );
     });
+  });
+});
+
+describe('ClickableCard pressed state (touch)', () => {
+  it('fades the touch press out on the card, whose overlay layer reads its strength', () => {
+    const {container} = render(
+      <ClickableCard label="Test card" onClick={() => {}}>
+        <span>Content</span>
+      </ClickableCard>,
+    );
+    const card = container.querySelector('[data-astryx-pressable]');
+    if (card == null) {
+      throw new Error('the card carries no pressable marker');
+    }
+    // The controller writes the card; the card owns the strength and its
+    // release, and `--_press-overlay` (what the `::after` paints) is the
+    // pressed token at that strength on both touch arms.
+    expect(hasReleaseFade(card)).toBe(true);
+    expect(readsPressStrength(card, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(card)).toBe(true);
+  });
+
+  it('carries none of it when disabled', () => {
+    const {container} = render(
+      <ClickableCard label="Test card" onClick={() => {}} isDisabled>
+        <span>Content</span>
+      </ClickableCard>,
+    );
+    expect(container.querySelector('[data-astryx-pressable]')).toBeNull();
   });
 });
