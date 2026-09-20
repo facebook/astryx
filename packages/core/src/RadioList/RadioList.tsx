@@ -30,6 +30,7 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {mergeProps, composeEventHandlers} from '../utils';
 import {joinAriaIDs} from '../utils/inputAria';
 import type {BaseProps} from '../BaseProps';
@@ -78,9 +79,10 @@ const styles = stylex.create({
 });
 
 export interface RadioListProps extends Omit<
-  BaseProps<HTMLElement>,
+  BaseProps<HTMLDivElement>,
   'onChange'
 > {
+  /** Ref forwarded to the semantic radiogroup element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the radio group (always rendered for accessibility).
@@ -155,8 +157,8 @@ export interface RadioListProps extends Omit<
   size?: RadioListSize;
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
-   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * (e.g. `'100%'`). Sizes the whole field so its label, control, and status stay
+   * aligned; use `xstyle`/`className`/`style` for broader presentation changes.
    */
   width?: SizeValue;
   /**
@@ -164,7 +166,7 @@ export interface RadioListProps extends Omit<
    */
   labelTooltip?: string;
   /**
-   * Test ID for the outer container.
+   * Test ID for the radiogroup element.
    */
   'data-testid'?: string;
   /**
@@ -207,6 +209,10 @@ export function RadioList({
   xstyle,
   className,
   style,
+  hidden,
+  inert,
+  dir,
+  'aria-hidden': ariaHidden,
   'data-testid': dataTestId,
   htmlName,
   children,
@@ -244,6 +250,11 @@ export function RadioList({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const mergedGroupRef = useMergedRefs(
+    ref,
+    groupRef,
+    disabledMessageTooltip.ref,
+  );
 
   const contextValue = useMemo<RadioListContextValue>(
     () => ({
@@ -352,8 +363,6 @@ export function RadioList({
 
   return (
     <Field
-      ref={ref}
-      data-testid={dataTestId}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -375,19 +384,18 @@ export function RadioList({
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
+      hidden={hidden}
+      inert={inert}
+      dir={dir}
+      aria-hidden={ariaHidden}
       width={width}
       xstyle={xstyle}
       className={className}
       style={style}>
       <div
         {...restProps}
-        ref={el => {
-          groupRef.current = el;
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, so attaching
-          // unconditionally is safe.
-          disabledMessageTooltip.ref(el);
-        }}
+        ref={mergedGroupRef}
+        data-testid={dataTestId}
         role="radiogroup"
         aria-labelledby={
           // Caller ids are additive, ahead of the component-owned label id.

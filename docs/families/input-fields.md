@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-09
 owners: [cixzhang, imdreamrunner]
-review_triggers: [behavior, layout, theming, accessibility]
+review_triggers: [behavior, layout, theming, accessibility, public-api]
 verified_by:
   [
     packages/core/src/Field/Field.test.tsx,
@@ -89,6 +89,10 @@ another implementation helper.
 - `Field` owns the standalone label, description, status placement, and explicit
   `width` seam. A member omits its nested Field when a supported InputGroup owns
   the group label and supporting text.
+- `architecture:public-component-api/INV5` owns the shared input target split. For
+  members that expose those surfaces, this family identifies the field
+  presentation and primary semantic control or group; it does not invent a third
+  pass-through target.
 - `FormLayout` owns outer arrangement, spacing, direction, and form-level
   optionality. It does not redefine a member's internal control geometry.
 - `InputGroup` owns the fixed row height, connected outer surface, edge alignment,
@@ -110,18 +114,19 @@ another implementation helper.
 
 ## Canonical concepts
 
-| Concept           | Values or states                                               | Default semantics                                                                                                    | Stability                                            |
-| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                                      |
-| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                                 |
-| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below              |
-| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                                 |
-| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
-| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed                   |
-| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001                        |
-| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                          |
-| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                 | approved family rule where exposed                   |
-| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input | approved family rule                                 |
+| Concept            | Values or states                                               | Default semantics                                                                                                    | Stability                                            |
+| ------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| field shell        | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                                      |
+| field size         | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                                 |
+| inline size        | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below              |
+| end controls       | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                                 |
+| grouped row        | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
+| public DOM targets | field presentation and primary semantic control or group       | Styling, width, and field-wide structure affect the complete field; ref, test ID, remaining DOM/ARIA, and events affect the semantic control | approved family rule                                 |
+| disabled reason    | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed                   |
+| input busy         | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001                        |
+| source busy        | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                          |
+| Transition Action  | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                 | approved family rule where exposed                   |
+| status placement   | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input | approved family rule                                 |
 
 ## Cross-component invariants
 
@@ -175,6 +180,17 @@ another implementation helper.
   `detached` or a component-owned placement. Direct FieldStatus continues to
   support only `attached` and `detached`; Field consumes `tooltip` before
   rendering it.
+- **FR9 — Public DOM targets follow function.** Where a member exposes the shared
+  styling and DOM surface, `xstyle`, `className`, `style`, dedicated `width`, and
+  field-wide structural props (`hidden`, `inert`, `dir`, and `aria-hidden`) apply
+  to the complete field presentation so label, control, description, and status
+  remain one unit. A containing layout may still own inline size. `ref`,
+  `data-testid`, remaining neutral data/ARIA/DOM props, and event handlers apply to
+  the member's primary semantic control or group. Component-owned roles, names, descriptions, states, and required behavior win
+  collisions; consumer handlers compose in the order promised by the component.
+  A member with multiple peer semantic controls or no stable primary semantic
+  target exposes a smaller explicit per-target API instead of routing broad
+  `BaseProps` to an arbitrary wrapper.
 
 ## Allowed component variation
 
@@ -216,6 +232,7 @@ another implementation helper.
 | Admitted member / InputGroup                               | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow                                |
 | Member with `disabledMessage`                              | Reason is reachable; mutation remains blocked                                                    | Component owns the focus target and Tooltip composition                                                       |
 | Member / validation status                                 | Detached and tooltip are available; attached is default only when supported                      | Component owns whether its control safely satisfies attached eligibility                                      |
+| Member / public DOM targeting                              | Styling and width preserve one field presentation; semantic props reach the control              | Component chooses its stable presentation and primary semantic targets under FR9                              |
 
 ## Adoption and exceptions
 
@@ -239,6 +256,14 @@ another implementation helper.
 
 ### Implementation gaps
 
+- **Public DOM targeting:** current members use incompatible routing. TextInput,
+  TextArea, and NumberInput already split presentation styling from semantic-control
+  props. DateInput, DateRangeInput, and DateTimeInput send neutral props to wrappers;
+  TimeInput, Typeahead, Tokenizer, and MultiSelector drop part of their advertised
+  surface; Selector uses separate styling, test-ID, and semantic targets. These are
+  conformance and compatibility gaps under FR9, not alternate family semantics.
+  Migrate each component atomically with focused target, composition, and unchanged-
+  behavior evidence; do not move released props between elements silently.
 - **Typeahead state geometry:** current main removes the intrinsic-width input
   from layout when a selected Token is shown, so a content-sized parent can
   collapse the field onto the value. Its clear control is separately positioned,
@@ -304,6 +329,7 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                                       | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract                                                                |
 | FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                                           | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry                                                                  |
 | FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                           | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                           |
+| FR9      | Focused DOM-target, ref, styling, event-composition, and collision tests for each supported rendering path                            | native control, semantic group, composed trigger, grouped mode, and representative unchanged consumer usage                       | A prop reaches the wrong element, is dropped, overwrites owned semantics, or styling/width stops treating the field as one layout unit                                     |
 
 ## Decision links
 
@@ -379,13 +405,38 @@ Rejected: a permanent hard-coded allowlist, a Tokenizer-only exception, allowing
 context consumption without a complete grouped adaptation, or forcing standalone
 multiline/multi-token inputs into single-line presentation.
 
+### DEC-6 — Input public DOM targets split by function
+
+**Decider:** `cixzhang`, `2026-09-19`
+
+An input presents one field to the builder even when it renders a field shell,
+painted wrapper, and semantic control as separate elements. Styling inputs,
+dedicated `width`, and field-wide structural props (`hidden`, `inert`, `dir`, and
+`aria-hidden`) therefore target the complete field presentation; a containing
+layout may still own inline size. The ref, test ID, remaining neutral DOM/data/ARIA
+props, and event handlers target the primary semantic control or group.
+
+This split keeps layout customization attached to the complete labeled field while
+focus, measurement, test selection, accessibility metadata, and interaction attach
+to the element that actually represents the value. Component-owned semantics and
+required behavior retain precedence; consumer handlers compose according to the
+component's documented cancellation contract.
+
+Rejected: routing every prop to Field, because semantic props and refs then miss the
+control; routing every prop to the control, because layout styling no longer treats
+the labeled field as one unit; or choosing targets independently per prop without a
+family rule.
+
 ## Open questions
 
 None.
 
 ## Content boundary
 
-This record owns only cross-component field behavior. Component props,
-selection/search algorithms, visual target maps, implementation mechanisms,
-current audit results, and product-specific compositions remain with their
-component, architecture, design, audit, or callsite owners.
+This record owns cross-component field behavior, including the functional public
+DOM target categories in FR9. It does not expand membership to labeled-control
+components excluded above; those components still follow
+`architecture:public-component-api/INV5`. Component props, exact DOM anatomy,
+selection/search algorithms, theme target maps, implementation mechanisms, current
+audit results, and product-specific compositions remain with their component,
+architecture, design, audit, or callsite owners.

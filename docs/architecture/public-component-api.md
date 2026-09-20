@@ -101,12 +101,20 @@ guidance owns the process used to propose and test APIs.
 - **INV4 — New props express caller-owned intent.** New public props follow
   `spec:AST-002/DEC-1`. A component keeps a decision internal when it can derive
   the correct result from state, content, layout, context, or platform behavior.
-- **INV5 — Accepted consumer props are preserved.** For a DOM-owning component,
-  supported DOM, data, ARIA, style, class, and event inputs reach the element that
-  owns the contract. Component-owned accessibility and behavior cannot be
-  accidentally overwritten.
+- **INV5 — Accepted consumer props are preserved and target by function.** A
+  DOM-owning component with one public DOM surface routes supported DOM, data,
+  ARIA, style, class, event, and ref inputs to that contract element. An input or
+  control that owns both a field presentation root and a distinct primary semantic
+  control or group uses the input target split: `xstyle`, `className`, `style`, a
+  dedicated `width`, and field-wide structural props (`hidden`, `inert`, `dir`,
+  and `aria-hidden`) target the complete field presentation. The containing layout
+  may still own its inline size. `ref`, `data-testid`, remaining neutral
+  data/ARIA/DOM props, and event handlers target the primary semantic control or
+  group. An input with multiple peer semantic controls or no stable primary semantic target exposes a smaller explicit per-target API instead
+  of routing broad `BaseProps` to an arbitrary wrapper. Component-owned
+  accessibility and behavior cannot be accidentally overwritten.
 - **INV6 — Styling inputs combine.** `xstyle`, `className`, and `style` compose in
-  their documented order instead of replacing one another.
+  their documented order on the styling target instead of replacing one another.
 - **INV7 — Event handlers compose deliberately.** Consumer handlers and built-in
   behavior use the shared cancellation contract. A consumer can cancel built-in
   behavior only where that public API promises cancellation.
@@ -141,9 +149,13 @@ public promises until promotion.
 ## Change coupling
 
 - Adding or changing an exported prop, supporting type, context member, hook
-  return, operation signature, default, package entry point, ref target, or
-  intentional observable contract triggers public-API review. A top-level export
+  return, operation signature, default, package entry point, ref target, prop target,
+  or intentional observable contract triggers public-API review. A top-level export
   need not change for a reachable supporting contract to change.
+- Moving an existing ref, styling input, test ID, DOM/ARIA prop, or event handler
+  between rendered elements is an observable compatibility change. Each component
+  migration requires focused evidence for the new target and representative legacy
+  usage; a family ruling does not silently make the move backward-compatible.
 - Each review compares declarations and reachable exports from merge-base to head
   and from current main to the synthetic merge. The generated surface manifest
   inventories evidence and maps each row to its canonical component, family,
@@ -200,7 +212,7 @@ copy the component matrix.
 | INV1, INV8              | Export, public-subpath, prop, and ref checks                                 | A promised component/type cannot be imported or its ref cannot reach the contract element                                |
 | INV2                    | Naming and logical-direction lint/tests                                      | Equivalent concepts use conflicting names or physical direction leaks into public API                                    |
 | INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                  | A prop combines unrelated axes or exposes a derivable implementation choice                                              |
-| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                             |
+| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | A consumer prop misses its functional target, component semantics are clobbered, or handlers fail to compose             |
 | INV9                    | Published-surface, Changeset, migration, and public-type checks              | A released API changes without explicit compatibility evidence                                                           |
 | INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                 |
 | INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it |

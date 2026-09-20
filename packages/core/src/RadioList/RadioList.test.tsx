@@ -12,6 +12,7 @@
  * SYNC: When RadioList.tsx or RadioListItem.tsx changes, update tests to match new behavior
  */
 
+import {createRef} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -244,7 +245,8 @@ describe('RadioList', () => {
         <RadioListItem label="Option A" value="a" />
       </RadioList>,
     );
-    expect(screen.getByTestId('my-radio-list')).toBeInTheDocument();
+    const group = screen.getByRole('radiogroup');
+    expect(screen.getByTestId('my-radio-list')).toBe(group);
   });
 
   it('supports data-testid on RadioListItem', () => {
@@ -873,6 +875,59 @@ describe('RadioList pass-through props', () => {
     const group = screen.getByRole('radiogroup');
     expect(group).toHaveAttribute('id', 'pref-group');
     expect(group).toHaveAttribute('data-form-section', 'prefs');
+  });
+
+  it('routes the ref to the radiogroup and styling to the field', () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <RadioList
+        ref={ref}
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        className="custom-field"
+        style={{marginTop: 4}}>
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+
+    const group = screen.getByRole('radiogroup');
+    expect(ref.current).toBe(group);
+    expect(group).not.toHaveClass('custom-field');
+
+    const field = group.closest('.custom-field');
+    expect(field).not.toBeNull();
+    expect(field).toHaveStyle({marginTop: '4px'});
+    expect(field).toContainElement(screen.getByText('Preference'));
+  });
+
+  it('routes field-wide structural props to the complete field', () => {
+    render(
+      <RadioList
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        className="custom-field"
+        data-testid="preference-group"
+        hidden
+        inert
+        dir="rtl"
+        aria-hidden>
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+
+    const group = screen.getByTestId('preference-group');
+    const field = group.closest('.custom-field');
+    expect(field).not.toBeNull();
+    expect(field).toHaveAttribute('hidden');
+    expect(field).toHaveAttribute('inert');
+    expect(field).toHaveAttribute('dir', 'rtl');
+    expect(field).toHaveAttribute('aria-hidden', 'true');
+    expect(group).not.toHaveAttribute('hidden');
+    expect(group).not.toHaveAttribute('inert');
+    expect(group).not.toHaveAttribute('dir');
+    expect(group).not.toHaveAttribute('aria-hidden');
   });
 
   it('runs a consumer onFocus alongside the built-in focus handling', () => {
