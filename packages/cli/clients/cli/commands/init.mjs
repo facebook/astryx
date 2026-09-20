@@ -19,6 +19,7 @@ import {logger} from '../../../api/logger.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
 import {doc as initCommand} from './init.doc.mjs';
 import {doc as initFn} from '../../../api/init/init.doc.mjs';
 
@@ -45,8 +46,11 @@ export function registerInit(program) {
         if (json) jsonOut(receipt);
       } catch (err) {
         const e = /** @type {import('../../../api/error.mjs').AstryxError} */ (err);
-        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        return cliError(e.message, {suggestions: e.suggestions, code: e.code});
       }
+      // Setup writes files; there is nothing to look up. The receipt says what
+      // landed.
+      return NO_RESULT_SET;
     },
   });
 }

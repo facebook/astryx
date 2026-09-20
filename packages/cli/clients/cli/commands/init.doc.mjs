@@ -16,8 +16,9 @@ export const doc = {
   summary: 'Initialize the design system in your project',
   description:
     'Non-interactive project setup (no prompts, so it behaves the same for humans, ' +
-    'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs and ' +
-    'prints getting-started guidance; features/--all add theme and page-building ' +
+    'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
+    'including guidance from configured integrations, and prints getting-started ' +
+    'guidance; features/--all add theme and page-building ' +
     'guidance and can scaffold a starter template.',
   fn: 'init',
   options: [
@@ -40,9 +41,9 @@ export const doc = {
     {
       flag: '--agent <tool>',
       param: 'options.agent',
-      choices: ['claude', 'cursor', 'codex', 'hermes', 'all'],
+      choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
       description:
-        'Target AI tool for agent docs: claude, cursor, codex, hermes, all',
+        'Target AI tool for agent docs: claude, cursor, codex, hermes, muse, all',
     },
     {
       flag: '--agent-docs-path <path...>',

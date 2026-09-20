@@ -25,7 +25,7 @@ import {
   formatCliCommand,
 } from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {recordResultSummary} from '../../../foundation/debug/index.mjs';
+import {resultSetOf} from '../../../foundation/debug/index.mjs';
 import {emit, section, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -74,16 +74,32 @@ export function registerSearch(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
-      recordResultSummary(result.data.results);
-      if (json) return jsonOut(result);
+      // The reported count is the number of MATCHES, not the number that
+      // survived `--limit`. Reporting `results.length` would file the cap as
+      // the answer, so "20 matches" and "200 matches, showing 20" would be the
+      // same row in every usage query. The delivered payload stays bounded.
+      const answered = resultSetOf(result.data.results, {
+        count: result.data.matchCount,
+        empty: result.data.matchCount === 0,
+        // Nothing matched, so the results cannot say what was searched for —
+        // the `--type` filter can, and an open search really did span them all.
+        fallbackKind: options.type ?? 'mixed',
+      });
+
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();
-      const {query: q, results} = result.data;
+      const {query: q, matchCount, results} = result.data;
 
       // No matches is a valid, successful outcome — clean message, exit 0.
       if (results.length === 0) {
@@ -91,7 +107,7 @@ export function registerSearch(program) {
           text(`No results for "${q}".`),
           text(`Try a broader term, or browse: ${run} component --list`),
         );
-        return;
+        return answered;
       }
 
       // The text view is just a projection of the JSON: one record per result,
@@ -110,10 +126,18 @@ export function registerSearch(program) {
           ]
         : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
 
+      // The heading mirrors the JSON: `matchCount` is what matched, and the
+      // records below are the slice `--limit` allowed. Saying only "(20)" when
+      // 57 matched reads as "that is all there is".
       emit(
-        section(`Results for "${q}" (${results.length})`),
+        section(
+          matchCount > results.length
+            ? `Results for "${q}" (${results.length} of ${matchCount})`
+            : `Results for "${q}" (${results.length})`,
+        ),
         records(results, {fields, format: {command: formatCliCommand}}),
       );
+      return answered;
     },
   });
 }

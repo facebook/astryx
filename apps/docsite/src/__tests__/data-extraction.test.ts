@@ -11,6 +11,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
+import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
   components,
@@ -19,9 +20,15 @@ import {
 } from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {
+  templateMetadata,
+  templateMetadataCount,
+} from '../generated/templateMetadataRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
+import {TEMPLATE_COMPONENTS} from '../components/templateComponents';
 import {exampleRegistry} from '../generated/exampleRegistry';
 import {normalizeComponentCategory} from '../lib/componentCategories';
 
@@ -30,6 +37,15 @@ const REPO_ROOT = path.resolve(
   '../../../..',
 );
 const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+const COMPONENT_REGISTRY_PATH = new URL(
+  '../generated/componentRegistry.ts',
+  import.meta.url,
+);
+const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
+  COMPONENT_REGISTRY_PATH,
+  'utf-8',
+);
+const CONFIGURED_CANARY_PACKAGES = new Set(docsiteConfig.integrations);
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -94,20 +110,26 @@ function getComponentDocCompletenessIssues(
 // ── Package Registry ───────────────────────────────────────────────────
 
 describe('packageRegistry', () => {
-  it('discovers installed packages (private and uninstalled excluded)', () => {
+  it('discovers installed stable packages and canary-only integrations', () => {
     const names = packages.map(p => p.name);
     expect(names).toContain('@astryxdesign/core');
     expect(names).toContain('@astryxdesign/cli');
     expect(names).toContain('@astryxdesign/theme-neutral');
     expect(names).toContain('@astryxdesign/theme-gothic');
     expect(names).toContain('@astryxdesign/theme-stone');
+    expect(names).toContain('@astryxdesign/lab');
+    expect(names).toContain('@astryxdesign/charts');
+    expect(names).toContain('@astryxdesign/richtext');
+    expect(names).toContain('@astryxdesign/vega');
     expect(names).not.toContain('@astryxdesign/theme-default');
     expect(names).not.toContain('@astryxdesign/theme-brutalist');
     expect(names).not.toContain('@astryxdesign/theme-chocolate');
     expect(names).not.toContain('@astryxdesign/theme-daily');
-    expect(names).not.toContain('@astryxdesign/lab');
     expect(names).not.toContain('@astryxdesign/build');
-    expect(packages.length).toBeGreaterThanOrEqual(5);
+    expect(packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name)).toEqual(
+      [...CONFIGURED_CANARY_PACKAGES].sort(),
+    );
+    expect(packages.length).toBeGreaterThanOrEqual(9);
   });
 
   it('only includes packages listed in docsite dependencies', () => {
@@ -129,8 +151,33 @@ describe('packageRegistry', () => {
       expect(pkg.displayName).toBeTruthy();
       expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/);
       expect(pkg.packagePath).toBeTruthy();
+      expect(typeof pkg.canaryOnly).toBe('boolean');
       expect(typeof pkg.hasReadme).toBe('boolean');
       expect(typeof pkg.hasChangelog).toBe('boolean');
+    }
+  });
+
+  it('generates CSS imports for every canary component package that exports CSS', () => {
+    const css = fs.readFileSync(
+      path.join(REPO_ROOT, 'apps/docsite/src/generated/package-styles.css'),
+      'utf-8',
+    );
+    const expectedImports = packages
+      .filter(pkg => pkg.canaryOnly && components[pkg.name]?.length > 0)
+      .flatMap(pkg => {
+        const manifest = JSON.parse(
+          fs.readFileSync(
+            path.join(REPO_ROOT, pkg.packagePath, 'package.json'),
+            'utf-8',
+          ),
+        );
+        return Object.keys(manifest.exports ?? {})
+          .filter(subpath => subpath.endsWith('.css'))
+          .map(subpath => `@import "${pkg.name}/${subpath.slice(2)}";`);
+      });
+
+    for (const expectedImport of expectedImports) {
+      expect(css).toContain(expectedImport);
     }
   });
 
@@ -156,7 +203,9 @@ describe('packageRegistry', () => {
       if (pkg.hasChangelog) {
         expect(pkg.changelog).toBeTruthy();
         expect(typeof pkg.changelog).toBe('string');
-        expect(pkg.changelog!.length).toBeGreaterThan(50);
+        expect(pkg.changelog!.length).toBeGreaterThan(
+          pkg.name === '@astryxdesign/richtext' ? 0 : 50,
+        );
       } else {
         expect(pkg.changelog).toBeNull();
       }
@@ -173,9 +222,94 @@ describe('packageRegistry', () => {
 // ── Component Registry ─────────────────────────────────────────────────
 
 describe('componentRegistry', () => {
+  it('derives playground types from the CLI authoring contract', () => {
+    const playground: NonNullable<ComponentEntry['playground']> = {
+      wrapper: {component: 'Layout', slotProp: 'start'},
+    };
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      "from '@astryxdesign/cli/authoring'",
+    );
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      'export type PlaygroundConfig = ComponentPlaygroundConfig;',
+    );
+    expect(playground.wrapper?.slotProp).toBe('start');
+  });
+
   it('discovers components in @astryxdesign/core', () => {
     expect(components['@astryxdesign/core']).toBeDefined();
     expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
+  });
+
+  it('discovers CLI-configured canary package components', () => {
+    expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
+    expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
+      'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
+      'ChartSwatch',
+    ]);
+    expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
+      ['RichTextEditor'],
+    );
+    expect(components['@astryxdesign/vega'].map(comp => comp.name)).toEqual([
+      'VegaChart',
+    ]);
+
+    for (const packageName of [
+      '@astryxdesign/lab',
+      '@astryxdesign/charts',
+      '@astryxdesign/richtext',
+      '@astryxdesign/vega',
+    ]) {
+      expect(
+        components[packageName].every(comp => !comp.isReady),
+        packageName,
+      ).toBe(true);
+    }
+    expect(components['@astryxdesign/core'].every(comp => comp.isReady)).toBe(
+      true,
+    );
+  });
+
+  it('groups every chart-family component under Charts', () => {
+    const chartComponents = [
+      ...(components['@astryxdesign/charts'] ?? []),
+      ...(components['@astryxdesign/lab'] ?? []).filter(comp =>
+        comp.name.startsWith('Chart'),
+      ),
+    ];
+    expect(chartComponents.length).toBeGreaterThan(2);
+    expect(chartComponents.every(comp => comp.group === 'Charts')).toBe(true);
+    expect(
+      chartComponents.every(comp => comp.category === 'Data Visualization'),
+    ).toBe(true);
+  });
+
+  it('keeps every Lab chat component in the Chat family and category', () => {
+    const chatComponents = (components['@astryxdesign/lab'] ?? []).filter(
+      comp => comp.name.startsWith('Chat'),
+    );
+    expect(chatComponents.length).toBeGreaterThan(4);
+    expect(chatComponents.every(comp => comp.group === 'Chat')).toBe(true);
+    expect(chatComponents.every(comp => comp.category === 'Chat')).toBe(true);
+  });
+
+  it('generates lazy previews for every non-core component', () => {
+    const externalNames = Object.entries(components).flatMap(
+      ([packageName, entries]) =>
+        packageName === '@astryxdesign/core'
+          ? []
+          : entries.map(component => component.name),
+    );
+    expect(Object.keys(externalComponentPreviews).sort()).toEqual(
+      externalNames.sort(),
+    );
+    expect(
+      Object.values(externalComponentPreviews).every(
+        component => component != null && typeof component === 'object',
+      ),
+    ).toBe(true);
   });
 
   it('component count matches sum of all packages', () => {
@@ -196,6 +330,7 @@ describe('componentRegistry', () => {
         expect(typeof comp.description).toBe('string');
         expect(Array.isArray(comp.keywords)).toBe(true);
         expect(typeof comp.hidden).toBe('boolean');
+        expect(typeof comp.isReady).toBe('boolean');
         // parentDoc is string | null
         expect(
           comp.parentDoc === null || typeof comp.parentDoc === 'string',
@@ -286,6 +421,38 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('DropdownMenuRadioGroup declares a menu wrapper and radio choices for its preview (#5888)', () => {
+    const core = components['@astryxdesign/core'];
+    const radioGroup = core.find(c => c.name === 'DropdownMenuRadioGroup');
+
+    expect(radioGroup).toBeDefined();
+    // The menu opens on first load so both choices are visible immediately;
+    // the preview bridges DropdownMenu's `onOpenChange` back to this prop so
+    // selecting still closes the menu and the trigger reopens it.
+    expect(radioGroup!.playground?.wrapper).toMatchObject({
+      component: 'DropdownMenu',
+      props: {
+        button: {label: 'Sort'},
+        presentation: 'popover',
+        isMenuOpen: true,
+      },
+    });
+    expect(radioGroup!.playground?.defaults).toMatchObject({
+      value: 'newest',
+      label: 'Sort by',
+      children: [
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'newest', label: 'Newest'},
+        },
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'oldest', label: 'Oldest'},
+        },
+      ],
+    });
+  });
+
   it('Citation satisfies its required source prop via playground defaults', () => {
     const core = components['@astryxdesign/core'];
     const citation = core.find(c => c.name === 'Citation');
@@ -295,6 +462,57 @@ describe('componentRegistry', () => {
     expect(citation!.playground?.defaults).toMatchObject({
       source: {title: 'Astryx Design', url: 'https://example.com'},
       number: 1,
+    });
+  });
+
+  it('PowerSearch supplies representative config and filters playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const powerSearch = core.find(c => c.name === 'PowerSearch');
+    expect(powerSearch).toBeDefined();
+    expect(powerSearch!.playground?.defaults).toMatchObject({
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            operators: [
+              {
+                key: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {key: 'title'},
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    });
+  });
+
+  it('Tokenizer satisfies its required value prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const tokenizer = core.find(c => c.name === 'Tokenizer');
+    expect(tokenizer).toBeDefined();
+    // `value` is an array of custom items the preview cannot auto-generate;
+    // without this default the properties tab has no interactive preview.
+    expect(tokenizer!.playground?.defaults).toMatchObject({
+      label: 'Tags',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
     });
   });
 
@@ -320,6 +538,76 @@ describe('componentRegistry', () => {
     });
     expect(layoutHeader!.playground?.wrapper).toMatchObject({
       component: 'Layout',
+    });
+  });
+
+  it('Grid declares playground children so the preview is not empty (#5892)', () => {
+    const core = components['@astryxdesign/core'];
+    const grid = core.find(c => c.name === 'Grid');
+    expect(grid).toBeDefined();
+    expect(grid!.playground?.defaults).toMatchObject({
+      columns: 3,
+      gap: 2,
+      children: expect.arrayContaining([
+        expect.objectContaining({__element: 'Card'}),
+      ]),
+    });
+  });
+
+  it('GridSpan declares a playground wrapper for realistic preview geometry (#5893)', () => {
+    const core = components['@astryxdesign/core'];
+    const gridSpan = core.find(c => c.name === 'GridSpan');
+    expect(gridSpan).toBeDefined();
+    expect(gridSpan!.playground?.wrapper).toMatchObject({
+      component: 'Grid',
+      props: {columns: 3, gap: 2},
+    });
+    expect(gridSpan!.playground?.defaults).toMatchObject({
+      columns: 2,
+      children: expect.any(String),
+    });
+  });
+
+  it.each(['Stack', 'HStack', 'VStack'])(
+    '%s declares playground children so the preview is not empty (#5894, #5898, #5900)',
+    name => {
+      const core = components['@astryxdesign/core'];
+      const entry = core.find(c => c.name === name);
+      expect(entry).toBeDefined();
+      expect(entry!.playground?.defaults).toMatchObject({
+        gap: 2,
+        children: expect.arrayContaining([
+          expect.objectContaining({__element: 'Card'}),
+        ]),
+      });
+    },
+  );
+
+  it('StackItem declares a playground wrapper for realistic preview geometry (#5899)', () => {
+    const core = components['@astryxdesign/core'];
+    const stackItem = core.find(c => c.name === 'StackItem');
+    expect(stackItem).toBeDefined();
+    expect(stackItem!.playground?.wrapper).toMatchObject({
+      component: 'HStack',
+      props: {gap: 2, width: 300},
+    });
+    expect(stackItem!.playground?.defaults).toMatchObject({
+      size: 'fill',
+      children: expect.objectContaining({__element: 'Card'}),
+    });
+  });
+
+  it('LayoutPanel declares a playground wrapper in start slot so hasDivider preview is not 0px (#5897)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutPanel = core.find(c => c.name === 'LayoutPanel');
+    expect(layoutPanel).toBeDefined();
+    expect(layoutPanel!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutPanel!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'start',
     });
   });
 
@@ -479,6 +767,13 @@ describe('componentRegistry', () => {
     }
   });
 
+  it('has globally unique component route names', () => {
+    const names = Object.values(components)
+      .flat()
+      .map(component => component.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
   it('known compound docs are expanded, not emitted as single entries', () => {
     const core = components['@astryxdesign/core'];
     const names = core.map(c => c.name);
@@ -586,7 +881,9 @@ describe('blockRegistry', () => {
       expect(block.aspectRatio).not.toBeNaN();
       expect(Array.isArray(block.componentsUsed)).toBe(true);
       expect(block.category).toBeDefined();
-      expect(typeof block.exampleFor).toBe('string');
+      expect(
+        block.exampleFor === null || typeof block.exampleFor === 'string',
+      ).toBe(true);
     }
   });
 
@@ -613,8 +910,20 @@ describe('blockRegistry', () => {
     expect(buttonShowcase).toBeDefined();
   });
 
-  it('every block has exampleFor set', () => {
-    const missing = blocks.filter(b => !b.exampleFor);
+  it('discovers the Charts-owned showcase through its CLI integration', () => {
+    const chartShowcase = blocks.find(
+      block => block.isShowcase && block.exampleFor === 'Chart',
+    );
+    expect(chartShowcase).toMatchObject({
+      displayName: 'Chart',
+      sourcePackage: '@astryxdesign/charts',
+      aspectRatio: 1.6,
+    });
+    expect(chartShowcase?.source).toContain("from '@astryxdesign/charts'");
+  });
+
+  it('showcases always declare component ownership', () => {
+    const missing = blocks.filter(b => b.isShowcase && !b.exampleFor);
     expect(missing.map(b => b.dirName)).toEqual([]);
   });
 
@@ -622,10 +931,12 @@ describe('blockRegistry', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     const seen = new Map<string, string[]>();
     for (const s of showcases) {
-      if (!seen.has(s.exampleFor)) {
-        seen.set(s.exampleFor, []);
+      expect(s.exampleFor).not.toBeNull();
+      const owner = s.exampleFor!;
+      if (!seen.has(owner)) {
+        seen.set(owner, []);
       }
-      seen.get(s.exampleFor)!.push(s.dirName);
+      seen.get(owner)!.push(s.dirName);
     }
     const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);
     // Some components may legitimately have multiple showcases, but flag them
@@ -670,6 +981,17 @@ describe('templateRegistry', () => {
   it('discovers page templates', () => {
     expect(templateCount).toBeGreaterThan(10);
     expect(templates.length).toBe(templateCount);
+    expect(templateMetadataCount).toBe(templateCount);
+    expect(templateMetadata).toHaveLength(templateCount);
+  });
+
+  it('keeps source out of the metadata-only registry', () => {
+    expect(templateMetadata.map(template => template.slug)).toEqual(
+      templates.map(template => template.slug),
+    );
+    for (const template of templateMetadata) {
+      expect(template).not.toHaveProperty('source');
+    }
   });
 
   it('templates have required fields', () => {
@@ -685,6 +1007,27 @@ describe('templateRegistry', () => {
     const slugs = templates.map(t => t.slug);
     expect(slugs).toContain('dashboard');
     expect(slugs).toContain('settings');
+  });
+
+  it('surfaces all dashboard templates with live previews', () => {
+    const dashboards = templates.filter(template =>
+      template.category.startsWith('Dashboard'),
+    );
+
+    expect(dashboards.map(template => template.slug).sort()).toEqual([
+      'dashboard',
+      'dashboard-alert-rail',
+      'dashboard-cohort-funnel',
+      'dashboard-comparison',
+      'dashboard-composition',
+      'dashboard-progress',
+      'dashboard-scorecard',
+    ]);
+    for (const template of dashboards) {
+      expect(template.isReady).toBe(true);
+      expect(template.isHiddenFromOverview).toBe(false);
+      expect(TEMPLATE_COMPONENTS[template.slug]).toBeDefined();
+    }
   });
 
   it('no duplicate template slugs', () => {
@@ -797,6 +1140,9 @@ describe('showcaseRegistry', () => {
     expect(showcaseRegistry['Dialog']).toBeDefined();
     expect(showcaseRegistry['Table']).toBeDefined();
     expect(showcaseRegistry['Card']).toBeDefined();
+    expect(showcaseRegistry['Chart']).toBeDefined();
+    expect(showcaseRegistry['ChartBar']).toBeDefined();
+    expect(showcaseRegistry['RichTextEditor']).toBeDefined();
   });
 
   it('no duplicate keys (one showcase per component)', () => {
@@ -978,6 +1324,19 @@ describe('Card playground defaults', () => {
     expect(typeof defaults!.isSelected).toBe('boolean');
     expect(defaults!.children).toBeTruthy();
     expect(typeof defaults!.children).toBe('object');
+  });
+});
+
+describe('CheckIndicator playground defaults (#5890)', () => {
+  it('starts the Properties preview in its visible checked state', () => {
+    const checkIndicator = Object.values(components)
+      .flat()
+      .find(component => component.name === 'CheckIndicator');
+
+    expect(checkIndicator).toBeDefined();
+    expect(checkIndicator!.playground?.defaults).toMatchObject({
+      state: 'checked',
+    });
   });
 });
 

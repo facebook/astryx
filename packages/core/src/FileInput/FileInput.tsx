@@ -5,7 +5,7 @@
 /**
  * @file FileInput.tsx
  * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
- * @output Exports FileInput component, FileInputProps, FileInputStatus
+ * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -589,7 +589,16 @@ export function FileInput({
       onChange(null);
       if (inputRef.current) {
         inputRef.current.value = '';
-        inputRef.current.focus();
+        const targetInput = inputRef.current;
+        if (e.detail === 0) {
+          targetInput.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            targetInput.focus({preventScroll: true});
+          });
+        }
       }
     },
     [onChange],
@@ -698,7 +707,12 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="md" color="secondary" />
+        <Icon
+          icon="arrowUp"
+          size="md"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span {...stylex.props(styles.placeholderText)}>
           {isDragOver ? t('@astryx.fileInput.dropHint') : displayPlaceholder}
         </span>
@@ -719,7 +733,12 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="sm" color="secondary" />
+        <Icon
+          icon="arrowUp"
+          size="sm"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span
           {...stylex.props(
             hasFiles ? styles.fileNameText : styles.placeholderText,

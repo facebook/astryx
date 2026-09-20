@@ -27,11 +27,17 @@
  * @typedef {object} TemplateListEntry
  * @property {string} id - Stable template id (relative path under the templates root, minus the .doc.* suffix).
  * @property {string} name
+ * @property {string} [displayName]
  * @property {string} description
  * @property {'page' | 'block'} type
  * @property {string} package - Owning package; core (built-in) templates report '@astryxdesign/core'.
  * @property {string} [category] - Optional grouping/category label.
  * @property {string[]} [componentsUsed] - Component display names the template composes.
+ * @property {number} [aspectRatio] - Block preview width/height ratio.
+ * @property {string} [exampleFor] - Component documented by a block.
+ * @property {string[]} [alsoExampleFor] - Additional component pages that receive this example.
+ * @property {string[]} [alsoShowcaseFor] - Additional component pages that reuse this showcase.
+ * @property {boolean} [isShowcase] - Whether a block is the component's primary showcase.
  * @property {boolean} isReady
  * @property {boolean} [scaffold]
  */

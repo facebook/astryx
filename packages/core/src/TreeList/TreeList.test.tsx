@@ -865,7 +865,7 @@ describe('TreeList', () => {
       const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-chevron {');
       expect(css).toContain('color: var(--color-accent)');
-      expect(css).toContain('.astryx-tree-list-chevron.expanded');
+      expect(css).toContain('.astryx-tree-list-chevron[data-state="expanded"]');
       expect(css).toContain('color: var(--color-text-primary)');
     });
   });
@@ -923,7 +923,9 @@ describe('TreeList', () => {
       const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-item-label {');
       expect(css).toContain('color: var(--color-text-primary)');
-      expect(css).toContain('.astryx-tree-list-item-label.selected');
+      expect(css).toContain(
+        '.astryx-tree-list-item-label[data-selected="selected"]',
+      );
       expect(css).toContain('font-weight: var(--font-weight-bold)');
     });
   });
@@ -1161,5 +1163,99 @@ describe('TreeList', () => {
     expect(document.activeElement).toBe(
       screen.getByText('Cherry').closest('li'),
     );
+  });
+
+  it('lets a consumer prevent built-in TreeList keyboard navigation while receiving root div as event.currentTarget', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
+    render(
+      <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={event => {
+          capturedCurrentTarget = event.currentTarget;
+          event.preventDefault();
+        }}
+      />,
+    );
+
+    const items = screen.getAllByRole('treeitem');
+    items[0].focus();
+    fireEvent.keyDown(items[0], {key: 'ArrowDown'});
+
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    expect(items[0]).toHaveFocus();
+    expect(items[0]).toHaveAttribute('tabindex', '0');
+    expect(items[1]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('fires non-canceling consumer onKeyDown with root div as event.currentTarget while built-in navigation works', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLDivElement>) => {
+      capturedCurrentTarget = event.currentTarget;
+    });
+    render(
+      <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={onKeyDown}
+      />,
+    );
+
+    const items = screen.getAllByRole('treeitem');
+    items[0].focus();
+    fireEvent.keyDown(items[0], {key: 'ArrowDown'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    expect(items[1]).toHaveFocus();
+    expect(items[1]).toHaveAttribute('tabindex', '0');
+  });
+
+  it('does not trigger built-in tree navigation when keydown originates inside the header slot', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLDivElement>) => {
+      capturedCurrentTarget = event.currentTarget;
+    });
+
+    render(
+      <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
+        header={<button type="button">Header Action</button>}
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={onKeyDown}
+      />,
+    );
+
+    const headerButton = screen.getByRole('button', {name: 'Header Action'});
+    headerButton.focus();
+    fireEvent.keyDown(headerButton, {key: 'ArrowDown'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    // Focus remains on header button, internal tree navigation was not triggered
+    expect(document.activeElement).toBe(headerButton);
+    const items = screen.getAllByRole('treeitem');
+    expect(items[0]).toHaveAttribute('tabindex', '0');
   });
 });

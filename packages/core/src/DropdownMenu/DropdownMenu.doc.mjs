@@ -200,7 +200,8 @@ export const docs = {
     {
       name: 'isMenuOpen',
       type: 'boolean',
-      description: 'Controlled open state for the menu.',
+      description:
+        'Controlled open state for the menu. Mounting with true renders the menu open without moving focus into it; focus moves to the first item only when the menu opens after mount.',
     },
     {
       name: 'onOpenChange',
@@ -230,7 +231,8 @@ export const docs = {
     {
       name: 'onClick',
       type: '() => void',
-      description: 'Callback fired when the trigger button is clicked.',
+      description:
+        'Callback fired for accepted trigger activation. The trailing click from the same press that light-dismissed the menu is ignored.',
     },
     {
       name: 'hasChevron',

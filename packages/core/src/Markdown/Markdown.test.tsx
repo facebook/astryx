@@ -1,10 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  expectTypeOf,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import type {ComponentProps, ReactNode} from 'react';
 import {Markdown} from './Markdown';
-import type {MarkdownInlinePlugin} from './Markdown';
+import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {ParseOptions} from './index';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
@@ -481,11 +491,98 @@ describe('Markdown', () => {
     expect(cursor).not.toBeInTheDocument();
   });
 
+  // A reader watching a reply arrive sees the DOM, not the parsed nodes.
+  // A `\|` is literal text, so the line must stay legible as it streams;
+  // the parser once classified it as an unfinished table header and held
+  // the whole line back, blanking the message.
+  describe('streamed text containing an escaped pipe', () => {
+    // Reduced motion makes the reveal synchronous, so each render shows
+    // exactly the prefix under test rather than a rAF-driven fraction.
+    beforeEach(() => {
+      stubMatchMedia({reduceMotion: true});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** The text of each rendered block, in document order. */
+    function blockTexts(container: HTMLElement): string[] {
+      const doc = container.querySelector('[role="document"]')!;
+      return Array.from(doc.children).map(block =>
+        (block.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+    }
+
+    it('shows every prefix of the line, escaped pipe rendered literally', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const {container, rerender} = render(
+        <Markdown isStreaming>{text.slice(0, 1)}</Markdown>,
+      );
+
+      for (let length = 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        // Every `\|` reads as one literal pipe, and no backslash survives.
+        expect(blockTexts(container)).toEqual([
+          prefix.replace(/\\\|/g, '|').trim(),
+        ]);
+      }
+    });
+
+    it('shows every prefix below settled content, both kept on screen', () => {
+      const settled = 'Intro\n\n';
+      const text = `${settled}Costs 5 \\| 10 per unit`;
+      const {container, rerender} = render(
+        <Markdown isStreaming>{settled}</Markdown>,
+      );
+
+      for (let length = settled.length + 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        const tail = text.slice(settled.length, length).replace(/\\\|/g, '|');
+        // The settled paragraph stays on screen and the tail is legible.
+        expect(blockTexts(container)).toEqual(['Intro', tail.trim()]);
+      }
+    });
+
+    it('renders the finished line as one paragraph with the literal pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>{'Costs 5 \\| 10 per unit'}</Markdown>,
+      );
+
+      const paragraphs = container.querySelectorAll('[role="paragraph"]');
+      expect(paragraphs).toHaveLength(1);
+      expect(paragraphs[0].textContent).toBe('Costs 5 | 10 per unit');
+      // Prose, not a table: no cell was ever split out of it.
+      expect(container.querySelector('table')).toBeNull();
+    });
+
+    it('still renders a real streamed table containing an escaped pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>
+          {'| Col1 | Col2 |\n| --- | --- |\n| a \\| b | c |'}
+        </Markdown>,
+      );
+
+      const cells = container.querySelectorAll('tbody td');
+      expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+        'a | b',
+        'c',
+      ]);
+    });
+  });
+
   it('applies compact density', () => {
     const {container} = render(
       <Markdown density="compact">{'Hello'}</Markdown>,
     );
-    expect(container.firstElementChild!.className).toContain('compact');
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-density',
+      'compact',
+    );
   });
 
   it('supports data-testid', () => {
@@ -526,6 +623,53 @@ describe('Markdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+
+  it('preserves dollar-delimited text when no math renderer is supplied', () => {
+    const {container} = render(
+      <Markdown>{'Total $5 and formula $x_1 + *y*$.'}</Markdown>,
+    );
+    expect(container.textContent).toBe('Total $5 and formula $x_1 + y$.');
+    expect(container.querySelector('em')).toHaveTextContent('y');
+    expect(container.querySelector('[role="math"]')).toBeNull();
+  });
+
+  it('passes inline and display expressions to the custom math renderer', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    function MathRenderer({value, display}: MathRendererProps) {
+      const Tag = display === 'block' ? 'div' : 'span';
+      return (
+        <Tag
+          role="math"
+          aria-label={`Formula: ${value}`}
+          data-testid={`${display}-math`}>
+          {value}
+        </Tag>
+      );
+    }
+
+    render(
+      <Markdown components={{math: MathRenderer}}>
+        {'Inline $x_1 + *y*$ here.\n\n$$\n\\sum_i x_i\n$$'}
+      </Markdown>,
+    );
+
+    expect(screen.getByTestId('inline-math')).toHaveTextContent('x_1 + *y*');
+    expect(screen.getByTestId('block-math')).toHaveTextContent('\\sum_i x_i');
+    expect(screen.getAllByRole('math')).toHaveLength(2);
+  });
+
+  it('exports the math renderer and parser option types', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    expectTypeOf<MathRendererProps>().toEqualTypeOf<{
+      value: string;
+      display: 'inline' | 'block';
+    }>();
+    expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });
 });
 
@@ -577,6 +721,54 @@ describe('inlinePlugins', () => {
       'https://issues.example.com/browse/PROJ-123',
     );
     expect(link!.textContent).toBe('PROJ-123');
+  });
+
+  it('autolinks generic prefixed-number entities without rewriting source', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const {container} = render(
+      <Markdown inlinePlugins={[entityPlugin]}>
+        {'See DOC-2048, but keep `DOC-9999` literal.'}
+      </Markdown>,
+    );
+    const link = screen.getByTestId('entity-link');
+    expect(link).toHaveAttribute('href', '/entities/DOC-2048');
+    expect(link).toHaveTextContent('DOC-2048');
+    expect(container.querySelector('code')).toHaveTextContent('DOC-9999');
+    expect(
+      container.querySelectorAll('[data-testid="entity-link"]'),
+    ).toHaveLength(1);
+  });
+
+  it('keeps math opaque to entity plugins while transforming surrounding prose', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b(DOC-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const MathRenderer: NonNullable<MarkdownComponents['math']> = ({value}) => (
+      <span role="math">{value}</span>
+    );
+    render(
+      <Markdown
+        components={{math: MathRenderer}}
+        inlinePlugins={[entityPlugin]}>
+        {'DOC-1 and $DOC-2 + x$ and `DOC-3`'}
+      </Markdown>,
+    );
+    expect(screen.getAllByTestId('entity-link')).toHaveLength(1);
+    expect(screen.getByTestId('entity-link')).toHaveTextContent('DOC-1');
+    expect(screen.getByRole('math')).toHaveTextContent('DOC-2 + x');
+    expect(screen.getByText('DOC-3').tagName).toBe('CODE');
   });
 
   it('supports multiple plugins', () => {

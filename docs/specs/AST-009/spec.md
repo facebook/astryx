@@ -18,6 +18,33 @@ affects_consumer_docs: []
 
 # Assistive-technology verification system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": [
+      "FR1",
+      "FR2",
+      "FR3",
+      "FR4",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR9",
+      "FR10",
+      "FR11",
+      "FR12",
+      "FR13",
+      "FR14",
+      "FR15",
+      "FR16"
+    ]
+  }
+}
+```
+
 ## Intent
 
 People who depend on assistive technology should get the AT-specific focus and announcement outcome Astryx claims, not only plausible test-DOM markup. Astryx uses real AT/browser checks when that outcome depends on how AT exposes or announces focus, AT-specific focus order, announcement behavior, virtual-cursor entry, or a known AT/browser divergence.

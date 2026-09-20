@@ -2,7 +2,10 @@
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 import {z} from 'zod';
 import {
   findPresentFiles,
@@ -60,6 +63,95 @@ describe('importUserModule', () => {
     const mod = await importUserModule(file);
     expect(mod.default).toEqual({answer: 42});
     expect(mod.named).toBe('hi');
+  });
+
+  it.each(['mjs', 'js', 'ts'])(
+    'freshly reloads a changed .%s module while normal loading stays cached',
+    async extension => {
+      const file = path.join(tmpDir, `fresh.${extension}`);
+      fs.writeFileSync(file, `export default {answer: 1};\n`);
+      const first = await importUserModule(file);
+      expect(first.default).toEqual({answer: 1});
+
+      fs.writeFileSync(file, `export default {answer: 2};\n`);
+      const fresh = await importUserModule(file, {fresh: true});
+      expect(fresh.default).toEqual({answer: 2});
+    },
+  );
+
+  const probeFreshJavaScript = (dir, firstSource, secondSource) => {
+    const file = path.join(dir, 'fresh.js');
+    fs.writeFileSync(file, firstSource);
+    const loaderUrl = pathToFileURL(
+      path.join(process.cwd(), 'packages/cli/foundation/fs/module-loader.mjs'),
+    ).href;
+    const output = execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import fs from 'node:fs';
+import {importUserModule} from ${JSON.stringify(loaderUrl)};
+const first = await importUserModule(process.env.TEST_MODULE);
+fs.writeFileSync(process.env.TEST_MODULE, ${JSON.stringify(secondSource)});
+const fresh = await importUserModule(process.env.TEST_MODULE, {fresh: true});
+process.stdout.write(JSON.stringify({first: first.default?.answer, fresh: fresh.default?.answer}));`,
+      ],
+      {
+        encoding: 'utf-8',
+        env: {...process.env, TEST_MODULE: file},
+      },
+    );
+    return JSON.parse(output);
+  };
+
+  it('freshly reloads a changed CommonJS .js module in a real Node process', () => {
+    const commonjsDir = path.join(tmpDir, 'commonjs');
+    fs.mkdirSync(commonjsDir);
+    fs.writeFileSync(
+      path.join(commonjsDir, 'package.json'),
+      JSON.stringify({type: 'commonjs'}),
+    );
+    expect(
+      probeFreshJavaScript(
+        commonjsDir,
+        `module.exports = {answer: 1};\n`,
+        `module.exports = {answer: 2};\n`,
+      ),
+    ).toEqual({first: 1, fresh: 2});
+  });
+
+  it('freshly reloads a changed ESM .js module in a real Node process', () => {
+    const esmDir = path.join(tmpDir, 'esm');
+    fs.mkdirSync(esmDir);
+    fs.writeFileSync(
+      path.join(esmDir, 'package.json'),
+      JSON.stringify({type: 'module'}),
+    );
+    expect(
+      probeFreshJavaScript(
+        esmDir,
+        `export default {answer: 1};\n`,
+        `export default {answer: 2};\n`,
+      ),
+    ).toEqual({first: 1, fresh: 2});
+  });
+
+  it('defaults .js to CommonJS when no package.json exists', () => {
+    const noPackageDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-commonjs-no-package-'),
+    );
+    try {
+      expect(
+        probeFreshJavaScript(
+          noPackageDir,
+          `module.exports = {answer: 1};\n`,
+          `module.exports = {answer: 2};\n`,
+        ),
+      ).toEqual({first: 1, fresh: 2});
+    } finally {
+      fs.rmSync(noPackageDir, {recursive: true, force: true});
+    }
   });
 });
 

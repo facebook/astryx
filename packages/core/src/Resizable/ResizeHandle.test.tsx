@@ -33,7 +33,7 @@ function Harness({
   handleProps?: Partial<ResizeHandleProps>;
 }) {
   const region = useResizable(
-    config ?? {defaultSize: 200, minSizePx: 100, maxSizePx: 400},
+    config ?? {defaultSize: 200, minSize: 100, maxSize: 400},
   );
   return (
     <ResizeHandle resizable={region.props} label="Resize" {...handleProps} />
@@ -143,8 +143,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           direction: 'vertical',
         }}
         handleProps={{direction: 'vertical'}}
@@ -186,8 +186,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -207,8 +207,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -228,8 +228,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -467,8 +467,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           direction,
         }}
         handleProps={{direction, pillPlacement: 'start'}}

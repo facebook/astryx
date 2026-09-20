@@ -5,10 +5,14 @@ import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
 const {
+  OWNER_COMMAND_PREFIXES,
   canonicalRunUrl,
+  describeOwnerCommandProblem,
+  isDispatchableOwnerCommand,
   newestGateRun,
   parseCanonicalRunId,
   parseOwnerCommand,
+  parseOwnerCommandIntent,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -344,7 +348,7 @@ describe('spec owner decision', () => {
         {...trusted, target_url: 'https://example.com/forged'},
         {...trusted, description: 'owner says ready'},
       ],
-      {repository, headSha: head},
+      {repository, headSha: head, owners: ['cixzhang']},
     );
 
     expect(attestations).toEqual([
@@ -489,5 +493,215 @@ describe('spec owner decision', () => {
       9007199254740993n,
     );
     expect(newestGateRun(statuses, repository)?.runId).toBe(9007199254740993n);
+  });
+
+  it('accepts a ready marker only from a current design owner', () => {
+    const repository = 'facebook/astryx';
+    const marker = login => ({
+      context: `spec-owner-ready/${login}`,
+      state: 'success',
+      description: 'Owner ready at 2026-08-30T10:00:00.000Z.',
+      target_url: canonicalRunUrl(repository, '42', '1'),
+      creator: {login: 'github-actions[bot]'},
+    });
+    const statuses = [marker('ernestt'), marker('imdreamrunner')];
+
+    // imdreamrunner is a spec owner and a design *approver*, but not a design
+    // owner. A marker they published — including one predating the rule that
+    // only design owners self-attest — is not evidence for any group.
+    expect(
+      parseReadyAttestations(statuses, {
+        repository,
+        headSha: head,
+        owners: ['ernestt', 'rubyycheung'],
+      }).map(attestation => attestation.owner),
+    ).toEqual(['ernestt']);
+
+    // A handle removed from DESIGNOWNERS stops counting immediately.
+    expect(
+      parseReadyAttestations(statuses, {
+        repository,
+        headSha: head,
+        owners: ['rubyycheung'],
+      }),
+    ).toEqual([]);
+    expect(
+      parseReadyAttestations(statuses, {repository, headSha: head}),
+    ).toEqual([]);
+  });
+
+  it('does not let a stale ready marker approve the design group', () => {
+    const repository = 'facebook/astryx';
+    const designApprovers = ['cixzhang', 'imdreamrunner', 'ernestt'];
+    const stale = [
+      {
+        context: 'spec-owner-ready/imdreamrunner',
+        state: 'success',
+        description: 'Owner ready at 2026-09-04T05:54:18.000Z.',
+        target_url: canonicalRunUrl(repository, '42', '1'),
+        creator: {login: 'github-actions[bot]'},
+      },
+    ];
+
+    expect(
+      resolveOwnerDecision({
+        owners: designApprovers,
+        headSha: head,
+        reviews: [],
+        comments: [],
+        readyAttestations: parseReadyAttestations(stale, {
+          repository,
+          headSha: head,
+          owners: ['ernestt', 'rubyycheung'],
+        }),
+      }).approved,
+    ).toBe(false);
+  });
+
+  describe('recognizing a command that does not decide the gate', () => {
+    it('recognizes the owner-command shape whatever it names', () => {
+      expect(parseOwnerCommandIntent('/approve-spec')).toEqual({
+        verb: 'approve',
+        argument: '',
+      });
+      expect(parseOwnerCommandIntent(`/revoke-spec ${head}  `)).toEqual({
+        verb: 'revoke',
+        argument: head,
+      });
+      expect(parseOwnerCommandIntent('/approve-spec abc1234 thanks')).toEqual({
+        verb: 'approve',
+        argument: 'abc1234 thanks',
+      });
+    });
+
+    it.each([
+      undefined,
+      '',
+      'Looks good to me',
+      '/approve-specs abc',
+      '/approve-spec-now',
+      `Please run /approve-spec ${head}`,
+      `  /approve-spec ${head}`,
+      `\t/approve-spec ${head}`,
+      `/APPROVE-SPEC ${head}`,
+      `> /approve-spec ${head}`,
+    ])('does not read %s as an owner command', body => {
+      expect(parseOwnerCommandIntent(body)).toBe(null);
+    });
+
+    it('refuses to decide on a comment the workflow trigger would drop', () => {
+      // resolveOwnerDecision reads every comment on the pull request, not just
+      // the one that started the run. A comment GitHub's `startsWith` filter
+      // never dispatches must not become approval evidence either.
+      for (const body of [
+        `  /approve-spec ${head}`,
+        `/APPROVE-SPEC ${head}`,
+        `> /approve-spec ${head}`,
+      ]) {
+        expect(isDispatchableOwnerCommand(body)).toBe(false);
+        expect(parseOwnerCommand(body, head)).toBe(null);
+        expect(
+          resolveOwnerDecision({
+            reviews: [],
+            comments: [{user: owner, body, created_at: '2026-08-30T10:00:00Z'}],
+            owners: ['cixzhang'],
+            headSha: head,
+          }).approved,
+        ).toBe(false);
+      }
+    });
+
+    it('admits exactly what the workflow trigger admits', () => {
+      // The trigger is `startsWith(github.event.comment.body, '<prefix>')`:
+      // the raw body, untrimmed and case-sensitive.
+      const triggerAdmits = body =>
+        OWNER_COMMAND_PREFIXES.some(prefix => String(body).startsWith(prefix));
+
+      for (const body of [
+        `/approve-spec ${head}`,
+        '/approve-spec',
+        '/revoke-spec',
+        `/revoke-spec ${head}`,
+        '/approve-spec abc1234',
+        '/approve-spec-now',
+        `  /approve-spec ${head}`,
+        `/APPROVE-SPEC ${head}`,
+        'Looks good to me',
+        '',
+      ]) {
+        expect(isDispatchableOwnerCommand(body), body).toBe(
+          triggerAdmits(body),
+        );
+      }
+    });
+
+    it('explains each way a recognized command misses the head', () => {
+      const stale = '1111111111111111111111111111111111111111';
+      expect(
+        describeOwnerCommandProblem(
+          parseOwnerCommandIntent('/approve-spec'),
+          head,
+        ),
+      ).toContain('did not name a commit');
+      expect(
+        describeOwnerCommandProblem(
+          parseOwnerCommandIntent('/approve-spec abc1234'),
+          head,
+        ),
+      ).toContain('full 40-character commit SHA');
+      expect(
+        describeOwnerCommandProblem(
+          parseOwnerCommandIntent(`/approve-spec ${stale}`),
+          head,
+        ),
+      ).toContain('1111111');
+    });
+
+    it('accepts a commit SHA in either casing', () => {
+      const upper = head.toUpperCase();
+
+      // A SHA copied from a UI that renders it uppercase is the same commit.
+      // The validator and the parser must agree, or the gate reports no
+      // problem while silently ignoring the command.
+      expect(parseOwnerCommand(`/approve-spec ${upper}`, head)).toBe(true);
+      expect(parseOwnerCommand(`/revoke-spec ${upper}`, head)).toBe(false);
+      expect(
+        describeOwnerCommandProblem(
+          parseOwnerCommandIntent(`/approve-spec ${upper}`),
+          head,
+        ),
+      ).toBe(null);
+      expect(parseOwnerCommand(`/approve-spec ${head}`, upper)).toBe(true);
+    });
+
+    it('agrees with the help validator on every recognized command', () => {
+      const stale = '1111111111111111111111111111111111111111';
+
+      for (const body of [
+        `/approve-spec ${head}`,
+        `/approve-spec ${head.toUpperCase()}`,
+        `/revoke-spec ${head}`,
+        '/approve-spec',
+        '/approve-spec abc1234',
+        `/approve-spec ${stale}`,
+        `/approve-spec ${stale.toUpperCase()}`,
+        `/approve-spec ${head} please`,
+      ]) {
+        const intent = parseOwnerCommandIntent(body);
+        const decided = parseOwnerCommand(body, head) !== null;
+        const problem = describeOwnerCommandProblem(intent, head);
+        // Exactly one of the two is true: the command decides the gate, or
+        // the gate can say why it did not.
+        expect(decided, body).toBe(problem === null);
+      }
+    });
+
+    it('reports no problem for the exact form the gate accepts', () => {
+      const intent = parseOwnerCommandIntent(`/approve-spec ${head}`);
+
+      expect(describeOwnerCommandProblem(intent, head)).toBe(null);
+      expect(parseOwnerCommand(`/approve-spec ${head}`, head)).toBe(true);
+      expect(describeOwnerCommandProblem(null, head)).toBe(null);
+    });
   });
 });

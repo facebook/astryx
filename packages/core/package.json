@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.5.2",
+  "version": "0.6.2",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -434,6 +434,11 @@
       "types": "./dist/Resizable/index.d.ts",
       "default": "./dist/Resizable/index.js"
     },
+    "./ScrollableArea": {
+      "source": "./src/ScrollableArea/index.ts",
+      "types": "./dist/ScrollableArea/index.d.ts",
+      "default": "./dist/ScrollableArea/index.js"
+    },
     "./Section": {
       "source": "./src/Section/index.ts",
       "types": "./dist/Section/index.d.ts",
@@ -681,15 +686,18 @@
     "react-dom": ">=19.0.0"
   },
   "devDependencies": {
+    "@astryxdesign/a11y-spec": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
-    "@babel/cli": "^8.0.4",
-    "@babel/core": "^7.29.7",
-    "@babel/preset-react": "^8.0.1",
-    "@babel/preset-typescript": "^7.29.7",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/preset-react": "catalog:",
+    "@babel/preset-typescript": "catalog:",
+    "@heroicons/react": "^2.2.0",
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/dom": "^10.0.0",
-    "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.3.2"
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/babel__core": "^7.20.5"
   },
   "dependencies": {
     "intl-messageformat": "^11.2.9"

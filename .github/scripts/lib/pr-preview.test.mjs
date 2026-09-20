@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import fs from 'node:fs';
+import {createRequire} from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import yaml from 'yaml';
 
 import {
   PR_ANALYSIS_MARKER,
@@ -20,6 +22,19 @@ const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
 const PAGES = 'c'.repeat(40);
 const INDEX = 'd'.repeat(64);
+const ROOT = path.resolve(import.meta.dirname, '../../..');
+const REQUIRE = createRequire(import.meta.url);
+const ASYNC_FUNCTION = Object.getPrototypeOf(async function () {}).constructor;
+const PR_COMMENT_WORKFLOW = yaml.parse(
+  fs.readFileSync(path.join(ROOT, '.github/workflows/pr-comment.yml'), 'utf8'),
+);
+const RESOLVE_SCRIPT = PR_COMMENT_WORKFLOW.jobs.resolve.steps.find(
+  step => step.name === 'Resolve trusted PR identity',
+).with.script;
+const EXECUTABLE_RESOLVE_SCRIPT = RESOLVE_SCRIPT.replace(
+  /const \{pathToFileURL\} = require\('node:url'\);\nconst \{resolveWorkflowRunPullRequest\} = await import\([\s\S]*?\n\);/,
+  'const resolveWorkflowRunPullRequest = injectedResolve;',
+);
 const roots = [];
 
 function identity(overrides = {}) {
@@ -236,6 +251,109 @@ describe('trusted PR preview identity', () => {
       head: 'cixzhang:fix-failed-ci-preview-links',
       per_page: 100,
     });
+  });
+
+  it('skips a stale rerun when no open pull request remains', async () => {
+    const value = identity();
+    const {github} = githubFixture({value});
+    github.rest.pulls.list.mockResolvedValue({data: []});
+
+    await expect(
+      resolveWorkflowRunPullRequest({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        run: sourceRun(value),
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it('skips a stale rerun whose directly referenced pull request is closed', async () => {
+    const value = identity();
+    const {github} = githubFixture({value});
+    github.rest.pulls.get.mockResolvedValue({
+      data: {...pull(value), state: 'closed'},
+    });
+    const run = {
+      ...sourceRun(value),
+      pull_requests: [{number: value.prNumber}],
+    };
+
+    await expect(
+      resolveWorkflowRunPullRequest({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        run,
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it('executes the stale workflow path without classifying or publishing it', async () => {
+    const value = identity();
+    const {github} = githubFixture({value});
+    const resolve = vi.fn(async () => null);
+    const core = {notice: vi.fn(), setOutput: vi.fn()};
+    const previousWorkspace = process.env.GITHUB_WORKSPACE;
+    process.env.GITHUB_WORKSPACE = ROOT;
+
+    try {
+      await new ASYNC_FUNCTION(
+        'require',
+        'context',
+        'github',
+        'core',
+        'injectedResolve',
+        EXECUTABLE_RESOLVE_SCRIPT,
+      )(
+        REQUIRE,
+        {
+          repo: {owner: 'facebook', repo: 'astryx'},
+          payload: {workflow_run: sourceRun(value)},
+        },
+        github,
+        core,
+        resolve,
+      );
+    } finally {
+      if (previousWorkspace === undefined) delete process.env.GITHUB_WORKSPACE;
+      else process.env.GITHUB_WORKSPACE = previousWorkspace;
+    }
+
+    expect(EXECUTABLE_RESOLVE_SCRIPT).not.toBe(RESOLVE_SCRIPT);
+    expect(resolve).toHaveBeenCalledWith({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      run: sourceRun(value),
+    });
+    expect(core.notice).toHaveBeenCalledWith(
+      expect.stringContaining('no open pull request remains'),
+    );
+    expect(core.setOutput).toHaveBeenCalledWith('valid', 'false');
+    expect(github.rest.pulls.get).not.toHaveBeenCalled();
+    expect(github.paginate).not.toHaveBeenCalled();
+  });
+
+  it('keeps every write-capable job behind the valid identity output', () => {
+    const writeCapableJobs = Object.entries(PR_COMMENT_WORKFLOW.jobs)
+      .filter(([, job]) =>
+        Object.values(job.permissions ?? {}).some(value => value === 'write'),
+      )
+      .map(([name]) => name);
+
+    expect(writeCapableJobs).toEqual([
+      'invalidate',
+      'spec-only-visual',
+      'spec-only-reconcile',
+      'deploy-preview',
+      'comment',
+    ]);
+    for (const name of writeCapableJobs) {
+      expect(PR_COMMENT_WORKFLOW.jobs[name].if, name).toContain(
+        "needs.resolve.outputs.valid == 'true'",
+      );
+    }
   });
 
   it.each([

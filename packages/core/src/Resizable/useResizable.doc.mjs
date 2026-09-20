@@ -51,18 +51,6 @@ export const docs = {
       default: "'horizontal'",
     },
     {
-      name: 'minSizePx',
-      type: 'number',
-      description:
-        'Deprecated. Use minSize, which also accepts a percentage. Supplying both is a type error; if untyped code supplies both, minSize wins.',
-    },
-    {
-      name: 'maxSizePx',
-      type: 'number',
-      description:
-        'Deprecated. Use maxSize, which also accepts a percentage. Explicit Infinity remains valid.',
-    },
-    {
       name: 'collapsible',
       type: 'boolean',
       description:

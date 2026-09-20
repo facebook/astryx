@@ -989,6 +989,16 @@ describe('SideNav resizable', () => {
     ).toBeInTheDocument();
   });
 
+  it('clips the overlay drag handle within the resizable nav bounds', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    const nav = screen.getByRole('navigation');
+    const container = nav.parentElement;
+    const handle = screen.getByTestId('astryx-sidenav-resize-handle');
+
+    expect(container).toContainElement(handle);
+    expect(getComputedStyle(container!).overflow).toBe('clip');
+  });
+
   it('does not render drag handle without resizable', () => {
     render(<SideNav>Content</SideNav>);
     expect(
@@ -1136,6 +1146,88 @@ describe('SideNavItem (collapsed)', () => {
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveAttribute('aria-label', 'Settings');
+  });
+
+  describe('consumer aria-label (#5641)', () => {
+    it('keeps a consumer aria-label on the collapsed link, instead of falling back to label', () => {
+      renderCollapsed(
+        <SideNavItem
+          label="Home"
+          icon={StubIcon}
+          href="/home"
+          aria-label="Open Home, 3 items need attention"
+        />,
+      );
+      expect(screen.getByRole('link')).toHaveAttribute(
+        'aria-label',
+        'Open Home, 3 items need attention',
+      );
+    });
+
+    it('keeps a consumer aria-label on the collapsed button, instead of falling back to label', () => {
+      renderCollapsed(
+        <SideNavItem
+          label="Home"
+          icon={StubIcon}
+          aria-label="Open Home, 3 items need attention"
+        />,
+      );
+      expect(screen.getByRole('button')).toHaveAttribute(
+        'aria-label',
+        'Open Home, 3 items need attention',
+      );
+    });
+
+    it('keeps a consumer aria-label on the collapsed popover trigger, instead of falling back to label', () => {
+      renderCollapsed(
+        <SideNavItem
+          label="Settings"
+          icon={StubIcon}
+          data-testid="parent"
+          aria-label="Settings, 2 updates available">
+          <SideNavItem label="General" />
+        </SideNavItem>,
+      );
+      expect(screen.getByTestId('parent')).toHaveAttribute(
+        'aria-label',
+        'Settings, 2 updates available',
+      );
+    });
+
+    it('falls back to label when a consumer aria-label is empty or whitespace', () => {
+      const {rerender} = renderCollapsed(
+        <SideNavItem
+          label="Dashboard"
+          icon={StubIcon}
+          href="/dashboard"
+          aria-label=""
+        />,
+      );
+      expect(screen.getByRole('link')).toHaveAttribute(
+        'aria-label',
+        'Dashboard',
+      );
+
+      rerender(
+        <SideNavCollapseContext value={COLLAPSED_CONTEXT}>
+          <SideNavItem label="Dashboard" icon={StubIcon} aria-label="   " />
+        </SideNavCollapseContext>,
+      );
+      expect(screen.getByRole('button')).toHaveAttribute(
+        'aria-label',
+        'Dashboard',
+      );
+    });
+
+    it('still falls back to label when no consumer aria-label is given', () => {
+      renderCollapsed(
+        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+      );
+      expect(screen.getByRole('link')).toHaveAttribute(
+        'aria-label',
+        'Dashboard',
+      );
+    });
   });
 
   it('opens popover on click showing children in expanded form', async () => {

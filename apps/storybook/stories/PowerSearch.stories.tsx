@@ -274,6 +274,11 @@ const fullConfig: PowerSearchConfig = {
             isFutureAllowed: false,
           },
         },
+        {
+          key: 'between',
+          label: 'is between',
+          value: {type: 'date_range'},
+        },
       ],
     },
     {
@@ -728,10 +733,19 @@ export const WithDateFilters: Story = {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
       {
         field: 'created',
-        operator: 'after',
+        operator: 'between',
         value: {
-          type: 'date_absolute',
-          unixSeconds: Math.floor(new Date('2025-01-15').getTime() / 1000),
+          type: 'date_range',
+          value: {
+            start: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+            },
+            end: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-07T00:00:00Z') / 1000,
+            },
+          },
         },
       },
     ]);

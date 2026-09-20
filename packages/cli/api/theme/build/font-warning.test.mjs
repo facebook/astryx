@@ -118,6 +118,28 @@ describe('collectUnloadedFonts', () => {
     ).toEqual(['Orbitron', 'Bungee']);
   });
 
+  it('collects families from serialized adaptation typography', () => {
+    expect(
+      collectUnloadedFonts({
+        typography: {
+          body: {family: 'Revision Webfont', fallbacks: 'sans-serif'},
+          heading: {family: 'Display Face', fallbacks: 'Georgia, serif'},
+        },
+      }),
+    ).toEqual(['Revision Webfont', 'Display Face']);
+  });
+
+  it('ignores serialized fallbacks that have no family', () => {
+    expect(
+      collectUnloadedFonts({
+        typography: {
+          body: {fallbacks: 'Phantom Serif'},
+          heading: {family: 'Display Face', fallbacks: 'Georgia, serif'},
+        },
+      }),
+    ).toEqual(['Display Face']);
+  });
+
   it('matches known system families case-insensitively', () => {
     expect(
       collectUnloadedFonts({

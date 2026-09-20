@@ -4,12 +4,13 @@ import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
-import type {TemplateEntry} from '../generated/templateRegistry';
+import type {TemplateMetadataEntry} from '../generated/templateMetadataRegistry';
 import {flattenComponentSidebarEntries} from './componentSidebarData';
 
 export interface SearchItemAuxiliaryData {
   group: string;
   keywords: string[];
+  isReady: boolean;
 }
 
 export interface SearchItem extends SearchableItem<SearchItemAuxiliaryData> {
@@ -22,7 +23,7 @@ interface SearchPaletteDataInput {
   components: Record<string, ComponentEntry[]>;
   packages: PackageMeta[];
   docTopics: DocTopic[];
-  templates: TemplateEntry[];
+  templates: TemplateMetadataEntry[];
 }
 
 function uniqueKeywords(keywords: Array<string | null | undefined>): string[] {
@@ -65,10 +66,13 @@ export function buildSearchPaletteItems({
       id: entry.href,
       label: entry.displayName,
       auxiliaryData: {
-        group: 'Component',
+        group: entry.isReady ? 'Component' : 'Canary component',
+        isReady: entry.isReady,
         keywords: uniqueKeywords([
           entry.name,
           entry.displayName,
+          entry.packageName,
+          entry.isReady ? null : 'canary',
           comp?.moduleName,
           ...(comp?.keywords ?? []),
         ]),
@@ -89,7 +93,8 @@ export function buildSearchPaletteItems({
         : `/docs/${pkg.name.replace('@astryxdesign/', '')}`,
       label: pkg.displayName,
       auxiliaryData: {
-        group: 'Package',
+        group: pkg.canaryOnly ? 'Canary package' : 'Package',
+        isReady: !pkg.canaryOnly,
         keywords: uniqueKeywords([pkg.name, pkg.displayName]),
       },
     });
@@ -101,6 +106,7 @@ export function buildSearchPaletteItems({
       label: doc.title,
       auxiliaryData: {
         group: doc.category === 'guide' ? 'Guide' : 'Foundations',
+        isReady: true,
         keywords: uniqueKeywords([doc.topic, doc.title, doc.category]),
       },
     });
@@ -112,6 +118,7 @@ export function buildSearchPaletteItems({
       label: tmpl.name,
       auxiliaryData: {
         group: 'Template',
+        isReady: true,
         keywords: uniqueKeywords([tmpl.slug, tmpl.name, tmpl.category]),
       },
     });

@@ -15,11 +15,19 @@ it governs. Consumer documentation remains in component `.doc.mjs` files and
 - `templates/knowledge/`: authoring templates. Templates never live among records.
 - `schemas/knowledge/`: versioned structural requirements for templates and records.
 
-Component contracts are direct children of their Core or Lab component root and
-use `<PublicName>.spec.md`. `<PublicName>` normally matches the root directory;
+Component contracts live beside the public component in every component-bearing
+package registered by `scripts/component-packages.cjs`:
+
+- directory-layout packages (`core`, `lab`) use
+  `packages/<package>/src/<ComponentRoot>/<PublicName>.spec.md`;
+- flat packages (`charts`, `richtext`, `vega`) use
+  `packages/<package>/src/<PublicName>.spec.md`.
+
+In a directory-layout package, `<PublicName>` normally matches the root directory;
 a public member such as `NavMenu/NavHeadingMenu.spec.md` is valid only when an
 exact top-level or full inline consumer-doc entry in that root declares the same
-public name. A flat filename and matching `component:` id alone are not enough.
+public name. In a flat package, the public named export and matching TSX module
+define the component boundary.
 
 Independently contractible public hooks, plugins, utilities, and subsystems use
 `kind: module` records named `<PublicName>.spec.md` at least one directory below
@@ -53,6 +61,14 @@ Every knowledge record declares `authority: draft | current | archived`.
   through GitHub review. When an approver is also the PR author, they comment
   `/approve-spec <full-head-sha>`. Any new commit invalidates that approval.
 - Only `current` documents guide implementation and review.
+- A specification describes durable ideal behavior independently of any one pull
+  request. Pull requests and issues may appear only as clearly non-authoritative
+  examples, historical evidence, or references. A specification never exists to
+  approve, reject, classify, designate, or authorize a particular pull request.
+- Before creating or materially expanding a record, search current records and
+  open pull requests by canonical owner/id, affected paths and exported symbols,
+  and semantic behavior terms. Extend or project the existing canonical owner by
+  default; create a new record only for a distinct fact boundary and explain why.
 - Current records rely only on other current records. `modules` and
   `parent_component` are structural ownership links, so they may connect active
   draft/current records without making draft behavior authoritative. Other draft
@@ -79,6 +95,17 @@ aligned. They are intentionally separate:
 Published schema versions may extend an earlier schema. The checker composes the
 chain and tracks the latest version that defines each record kind. A new kind is
 therefore additive; changing an existing kind migrates only that kind.
+
+An optional `review-applicability:v1` JSON block can route selected claims from a
+record as cross-cutting review baselines. This is an independently versioned
+metadata overlay, like `anatomy-theming:v1`, so adding it does not change a
+record kind's required shape or migrate records that do not opt in. The block
+must declare `scope: "global"` and map each semantic trigger to one or more exact
+claim ids from the same record. Validation rejects malformed, empty, duplicate,
+or stale claim routes. Routing requires the reviewed head, verifies the supplied
+base authority commit is its `origin/main` merge base, includes only
+`authority: current` records, and returns only the matched claims; draft records
+and nonmatching routes are omitted.
 
 New record kinds should prefer one typed relationship list over parallel fields.
 If `system-spec` receives a future schema revision, replace its legacy

@@ -527,6 +527,8 @@ export default defineConfig(
         structuredClone: 'readonly',
         fetch: 'readonly',
         AbortController: 'readonly',
+        ReadableStream: 'readonly',
+        DOMException: 'readonly',
       },
     },
     rules: {

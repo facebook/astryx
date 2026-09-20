@@ -4,8 +4,8 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, parser AST types
- * @output Exports Markdown component and MarkdownProps
+ * @input Markdown string, parser AST types, optional custom renderers
+ * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
 
@@ -57,7 +57,13 @@ import {
   slugify,
   uniqueSlug,
 } from './parser';
-import type {BlockNode, InlineNode, IncrementalState} from './parser';
+import type {
+  BlockNodeWithMath,
+  InlineNodeWithMath,
+  IncrementalState,
+  MathParseOptions,
+  ParseOptions,
+} from './parser';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -70,7 +76,7 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 /**
  * A plugin that transforms text patterns into custom React elements
  * inside Markdown. Applied to parsed text nodes only — code blocks,
- * inline code, and other non-prose contexts are unaffected.
+ * inline code, math, and other non-prose contexts are unaffected.
  *
  * Follows Lexical's TextMatchTransformer architecture:
  * - `pattern` for initial regex matching
@@ -102,6 +108,14 @@ export type MarkdownSource = CitationSource;
 export interface MarkdownComponents {
   code?: React.ComponentType<{code: string; language?: string}>;
   inlineCode?: React.ComponentType<{children: string}>;
+  /**
+   * Renders opt-in `$…$` and `$$…$$` math. Supplying this renderer enables
+   * math parsing; Astryx passes the raw expression and does not execute it.
+   */
+  math?: React.ComponentType<{
+    value: string;
+    display: 'inline' | 'block';
+  }>;
   citation?: React.ComponentType<{
     source: CitationSource;
     number: number;
@@ -183,7 +197,7 @@ export interface MarkdownProps extends BaseProps<HTMLElement> {
   components?: Partial<MarkdownComponents>;
   /**
    * Plugins that transform text patterns into custom React elements.
-   * Applied to text nodes after parsing — code blocks and inline code
+   * Applied to text nodes after parsing — code blocks, inline code, and math
    * are unaffected. Patterns are matched in order; first match wins
    * for overlapping ranges.
    */
@@ -473,7 +487,7 @@ interface StreamingCursor {
  * Count the total text characters in inline nodes without rendering.
  * Used to advance the cursor past a block that will be faded as a whole unit.
  */
-function countInlineTextLength(nodes: InlineNode[]): number {
+function countInlineTextLength(nodes: InlineNodeWithMath[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -482,6 +496,9 @@ function countInlineTextLength(nodes: InlineNode[]): number {
         break;
       case 'code':
         len += node.content.length;
+        break;
+      case 'math':
+        len += node.value.length;
         break;
       case 'image':
         len += node.alt.length;
@@ -506,7 +523,7 @@ function countInlineTextLength(nodes: InlineNode[]): number {
 /**
  * Count total text characters in a block node tree.
  */
-function countBlockTextLength(nodes: BlockNode[]): number {
+function countBlockTextLength(nodes: BlockNodeWithMath[]): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -516,6 +533,9 @@ function countBlockTextLength(nodes: BlockNode[]): number {
         break;
       case 'codeblock':
         len += node.content.length;
+        break;
+      case 'math':
+        len += node.value.length;
         break;
       case 'blockquote':
         len += countBlockTextLength(node.children);
@@ -748,7 +768,7 @@ function getCitationNumber(ctx: CitationContext, sourceId: string): number {
 }
 
 function renderInline(
-  node: InlineNode,
+  node: InlineNodeWithMath,
   index: number,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -846,6 +866,14 @@ function renderInline(
         <Code key={index}>{node.content}</Code>
       );
       return codeEl;
+    }
+    case 'math': {
+      const MathComp = components?.math;
+      if (MathComp == null) {
+        return wrapTextWithFade(`$${node.value}$`, cursor, index);
+      }
+      cursor.offset += node.value.length;
+      return <MathComp key={index} value={node.value} display="inline" />;
     }
     case 'link': {
       const safeHref = sanitizeUrl(node.href);
@@ -984,7 +1012,7 @@ function renderInline(
 // ---------------------------------------------------------------------------
 
 function getElementSpacing(
-  node: BlockNode,
+  node: BlockNodeWithMath,
   density: 'default' | 'compact',
 ): StyleXStyles {
   const compact = density === 'compact';
@@ -1002,6 +1030,7 @@ function getElementSpacing(
         ? styles.spacingParagraphCompact
         : styles.spacingParagraphDefault;
     case 'codeblock':
+    case 'math':
       return compact
         ? styles.spacingCodeblockCompact
         : styles.spacingCodeblockDefault;
@@ -1029,8 +1058,8 @@ function getElementSpacing(
  * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
  */
 function computeTableColumnMinWidths(node: {
-  headers: {children: InlineNode[]}[];
-  rows: {children: InlineNode[]}[][];
+  headers: {children: InlineNodeWithMath[]}[];
+  rows: {children: InlineNodeWithMath[]}[][];
 }): number[] {
   return node.headers.map((h, colIdx) => {
     let maxLen = countInlineTextLength(h.children);
@@ -1047,7 +1076,7 @@ function computeTableColumnMinWidths(node: {
 }
 
 function renderBlock(
-  node: BlockNode,
+  node: BlockNodeWithMath,
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
@@ -1061,7 +1090,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<BlockNode, string>,
+  headingIdMap?: ReadonlyMap<BlockNodeWithMath, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1212,6 +1241,18 @@ function renderBlock(
           />
         </div>
       );
+    }
+    case 'math': {
+      cursor.offset += node.value.length;
+      const MathComp = components?.math;
+      if (MathComp == null) {
+        return (
+          <div key={index} role="paragraph">
+            {`$$${node.value}$$`}
+          </div>
+        );
+      }
+      return <MathComp key={index} value={node.value} display="block" />;
     }
     case 'blockquote': {
       const BlockquoteComp = components?.blockquote;
@@ -1637,8 +1678,13 @@ export function Markdown({
     [sources],
   );
 
-  const parseOptions = useMemo(
+  const hasMathRenderer = components?.math != null;
+  const legacyParseOptions = useMemo<ParseOptions>(
     () => ({sourceIds, autolink}),
+    [sourceIds, autolink],
+  );
+  const mathParseOptions = useMemo<MathParseOptions>(
+    () => ({sourceIds, autolink, math: true}),
     [sourceIds, autolink],
   );
 
@@ -1646,15 +1692,20 @@ export function Markdown({
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useStreamingText(children, isStreaming);
 
-  const incrementalStateRef = useRef<IncrementalState>(
-    createIncrementalState(),
+  const incrementalStateRef = useRef<IncrementalState<boolean>>(
+    createIncrementalState<boolean>(),
   );
-  // Reset incremental cache when the autolink option toggles — cached
-  // settled blocks were parsed with the previous setting.
+  // Reset incremental cache when parser-affecting component options toggle —
+  // cached settled blocks were parsed with the previous setting.
   const prevAutolinkRef = useRef(autolink);
-  if (prevAutolinkRef.current !== autolink) {
-    incrementalStateRef.current = createIncrementalState();
+  const prevMathRef = useRef(hasMathRenderer);
+  if (
+    prevAutolinkRef.current !== autolink ||
+    prevMathRef.current !== hasMathRenderer
+  ) {
+    incrementalStateRef.current = createIncrementalState<boolean>();
     prevAutolinkRef.current = autolink;
+    prevMathRef.current = hasMathRenderer;
   }
 
   const blocks = useMemo(() => {
@@ -1663,18 +1714,35 @@ export function Markdown({
     }
     if (isStreaming) {
       if (smoothedText === '') {
-        incrementalStateRef.current = createIncrementalState();
+        incrementalStateRef.current = createIncrementalState<boolean>();
         return [];
       }
-      const input = trimStreamingArtifacts(smoothedText);
-      return parseMarkdownIncremental(
-        input,
-        incrementalStateRef.current,
-        parseOptions,
-      );
+      const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
+      const input = trimStreamingArtifacts(smoothedText, options);
+      return hasMathRenderer
+        ? parseMarkdownIncremental(
+            input,
+            incrementalStateRef.current as IncrementalState<true>,
+            mathParseOptions,
+          )
+        : parseMarkdownIncremental(
+            input,
+            incrementalStateRef.current as IncrementalState<false>,
+            legacyParseOptions,
+          );
     }
-    return parseMarkdown(children, parseOptions);
-  }, [display, smoothedText, children, isStreaming, parseOptions]);
+    return hasMathRenderer
+      ? parseMarkdown(children, mathParseOptions)
+      : parseMarkdown(children, legacyParseOptions);
+  }, [
+    display,
+    smoothedText,
+    children,
+    isStreaming,
+    hasMathRenderer,
+    mathParseOptions,
+    legacyParseOptions,
+  ]);
 
   // Assign each top-level heading the slug that parseOutlineFromMarkdown
   // would derive for it, so Outline hash links built from the same source
@@ -1686,7 +1754,7 @@ export function Markdown({
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<BlockNode, string>();
+    const map = new Map<BlockNodeWithMath, string>();
     const counts = new Map<string, number>();
     for (const block of blocks) {
       if (block.type === 'heading') {
@@ -1701,9 +1769,22 @@ export function Markdown({
     if (display !== 'inline') {
       return [];
     }
-    const input = isStreaming ? trimStreamingArtifacts(smoothedText) : children;
-    return parseInline(input, parseOptions);
-  }, [display, smoothedText, children, isStreaming, parseOptions]);
+    const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
+    const input = isStreaming
+      ? trimStreamingArtifacts(smoothedText, options)
+      : children;
+    return hasMathRenderer
+      ? parseInline(input, mathParseOptions)
+      : parseInline(input, legacyParseOptions);
+  }, [
+    display,
+    smoothedText,
+    children,
+    isStreaming,
+    hasMathRenderer,
+    mathParseOptions,
+    legacyParseOptions,
+  ]);
 
   // Track recent boundaries for stacked fade-in animation.
   // The number of spans needed = ceil(animationDuration / tickInterval).
@@ -1719,8 +1800,8 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<BlockNode[]>([]);
-  const prevInlineNodesRef = useRef<InlineNode[]>([]);
+  const prevBlocksRef = useRef<BlockNodeWithMath[]>([]);
+  const prevInlineNodesRef = useRef<InlineNodeWithMath[]>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {

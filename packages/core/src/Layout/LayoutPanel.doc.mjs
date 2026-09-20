@@ -8,6 +8,24 @@ export const docs = {
   displayName: 'Layout Panel',
   isHiddenFromOverview: true,
   description: 'Sidebar for navigation, settings, or inspector panels.',
+  playground: {
+    defaults: {
+      children: 'Panel Content',
+      hasDivider: true,
+      width: 200,
+    },
+    wrapper: {
+      component: 'Layout',
+      slotProp: 'start',
+      props: {
+        content: {
+          __element: 'LayoutContent',
+          props: {},
+          children: 'Main content area',
+        },
+      },
+    },
+  },
   props: [
     {
       name: 'children',

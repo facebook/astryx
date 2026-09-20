@@ -24,10 +24,16 @@ export {
 } from './parser';
 export type {
   BlockNode,
+  BlockNodeWithMath,
+  MathBlockNode,
   InlineNode,
+  InlineNodeWithMath,
+  MathInlineNode,
   SourceRange,
   ListItemNode,
   TableCellNode,
   TableAlignment,
+  ParseOptions,
+  MathParseOptions,
   IncrementalState as IncrementalParseState,
 } from './parser';

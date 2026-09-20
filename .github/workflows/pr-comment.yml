@@ -53,6 +53,7 @@ jobs:
       run_attempt: ${{ steps.identity.outputs.run_attempt }}
       source_conclusion: ${{ steps.identity.outputs.source_conclusion }}
       spec_only: ${{ steps.identity.outputs.spec_only }}
+      tooling_only: ${{ steps.identity.outputs.tooling_only }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v7
@@ -74,6 +75,13 @@ jobs:
               ...context.repo,
               run: context.payload.workflow_run,
             });
+            if (identity === null) {
+              core.notice(
+                `Skipping source run ${context.payload.workflow_run.id}: no open pull request remains for this head.`,
+              );
+              core.setOutput('valid', 'false');
+              return;
+            }
             const path = require('node:path');
             const {classifyChanges} = require(path.join(
               process.env.GITHUB_WORKSPACE,
@@ -103,13 +111,15 @@ jobs:
             core.setOutput('run_attempt', String(identity.sourceRunAttempt));
             core.setOutput('source_conclusion', identity.sourceConclusion);
             core.setOutput('spec_only', String(changeScope.specOnly));
+            core.setOutput('tooling_only', String(changeScope.toolingOnly));
 
   invalidate:
     needs: resolve
     if: >-
       (github.event.action == 'requested' || github.event.action == 'in_progress') &&
       needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only != 'true'
+      needs.resolve.outputs.spec_only != 'true' &&
+      needs.resolve.outputs.tooling_only != 'true'
     runs-on: ubuntu-slim
     permissions:
       pull-requests: write
@@ -145,7 +155,8 @@ jobs:
     if: >-
       github.event.action == 'completed' &&
       needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only == 'true'
+      (needs.resolve.outputs.spec_only == 'true' ||
+      needs.resolve.outputs.tooling_only == 'true')
     runs-on: ubuntu-slim
     permissions:
       statuses: write
@@ -161,7 +172,7 @@ jobs:
             await github.rest.repos.createCommitStatus({
               owner, repo, sha: process.env.HEAD_SHA,
               context: 'visual-acceptance', state: 'success',
-              description: 'Spec-only change — no visual scope.',
+              description: 'Classified change — no visual scope.',
             });
 
   spec-only-reconcile:
@@ -169,7 +180,8 @@ jobs:
     if: >-
       github.event.action == 'completed' &&
       needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only == 'true'
+      (needs.resolve.outputs.spec_only == 'true' ||
+      needs.resolve.outputs.tooling_only == 'true')
     runs-on: ubuntu-slim
     permissions:
       actions: read
@@ -219,7 +231,7 @@ jobs:
               },
               createIfMissing: false,
               fallbackMessage:
-                'The current change only updates durable specifications. Preview links are not shown.',
+                'The current change has no preview-producing surface. Preview links are not shown.',
             });
 
   deploy-preview:
@@ -227,7 +239,8 @@ jobs:
     if: >-
       github.event.action == 'completed' &&
       needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only != 'true'
+      needs.resolve.outputs.spec_only != 'true' &&
+      needs.resolve.outputs.tooling_only != 'true'
     permissions:
       actions: read
       contents: write
@@ -253,7 +266,8 @@ jobs:
       always() &&
       github.event.action == 'completed' &&
       needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only != 'true'
+      needs.resolve.outputs.spec_only != 'true' &&
+      needs.resolve.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       pull-requests: write

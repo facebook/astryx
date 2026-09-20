@@ -35,6 +35,7 @@ describe('registerDocs', () => {
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('principles');
     expect(output).toContain('tokens');
+    expect(output).not.toContain('shadcn-compatibility');
   });
 
   it('errors for unknown topic', async () => {

@@ -23,6 +23,7 @@ import {jsonOut} from '../../../../foundation/response/json.mjs';
 import {emit, section, text, list, record, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {defineCommand} from '../../lib/define-command.mjs';
+import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
 import {findRelatedBlocks} from '../../../../api/template/template.mjs';
@@ -47,6 +48,42 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  */
 
 /**
+ * What the run answered with, read off the response the api returned.
+ *
+ * Naming a component resolves it or fails, so every detail view is a direct
+ * match of exactly one component. `--blocks` is the exception, twice over: it
+ * answers with the block templates that USE the component, so the set it
+ * reports is theirs — and a list of those has nothing to direct-match, since
+ * the thing that resolved (the component) is not the thing being counted.
+ *
+ * @param {ComponentResult} result
+ * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  switch (result.type) {
+    case 'component.list': {
+      const count = Object.values(result.data.components).reduce(
+        (total, items) => total + items.length,
+        0,
+      );
+      return resultSet({count, resultKind: 'component'});
+    }
+    case 'component.detail':
+    case 'component.detail.props':
+    case 'component.detail.source':
+    case 'component.detail.showcase':
+      return resultSet({count: 1, resultKind: 'component', directMatch: true});
+    case 'component.detail.blocks': {
+      const {showcase, examples, related} = result.data;
+      return resultSet({
+        count: (showcase ? 1 : 0) + examples.length + related.length,
+        resultKind: 'template',
+      });
+    }
+  }
+}
+
+/**
  * @param {import('commander').Command} program
  */
 export function registerComponent(program) {
@@ -67,13 +104,12 @@ export function registerComponent(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
-        return;
+        return cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
       }
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
-      // validate-integration. Best-effort; suppressed in --json mode.
+      // doctor integration validate. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(project.loadedIntegrations, {json});
@@ -98,11 +134,14 @@ export function registerComponent(program) {
         }));
       } catch (e) {
         const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       // ── Text output ────────────────────────────────────────────
       // The api layer already resolved against core (result exists), so core is
@@ -166,7 +205,10 @@ export function registerComponent(program) {
           }
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
           const importCell = item => {
-            const importPath = resolveImportPath(coreDir, item.name);
+            // Use a precomputed import when the API supplies one (integration
+            // components carry it); only fall back to the core resolver for
+            // core components.
+            const importPath = item.import ?? resolveImportPath(coreDir, item.name);
             const qualify =
               item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
@@ -192,7 +234,7 @@ export function registerComponent(program) {
 
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          const importHint = result.data.import;
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
@@ -253,6 +295,7 @@ export function registerComponent(program) {
           break;
         }
       }
+      return answered;
     },
   });
 }

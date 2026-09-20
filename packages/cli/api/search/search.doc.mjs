@@ -53,7 +53,7 @@ export const doc = {
     {
       type: 'search',
       description:
-        'The query echoed back plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).',
+        'The query echoed back, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit` (domain, name, score, reason, description, follow-up command, and import path where relevant).',
     },
   ],
   throws: [

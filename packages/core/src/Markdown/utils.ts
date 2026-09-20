@@ -16,9 +16,15 @@ export {
 
 export type {
   InlineNode,
+  InlineNodeWithMath,
+  MathInlineNode,
   BlockNode,
+  BlockNodeWithMath,
+  MathBlockNode,
   ListItemNode,
   TableCellNode,
   TableAlignment,
+  ParseOptions,
+  MathParseOptions,
   IncrementalState,
 } from './parser';
