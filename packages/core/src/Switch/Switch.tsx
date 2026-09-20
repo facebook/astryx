@@ -43,6 +43,10 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
+import {
+  interactionOverlayStyles,
+  pressVars,
+} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -131,8 +135,13 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-// The release steps down through the hover strength before clearing.
-const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
+// The touch press's paint: the pressed token at the strength the row's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
+// the track and the thumb. Same shape as `pressedOverlayImage` in
+// interactionOverlay.stylex.ts, rebuilt here because StyleX resolves imported
+// `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -238,14 +247,14 @@ const styles = stylex.create({
         default: null,
         '@media (forced-colors: none)': {
           default: null,
-          '@media (pointer: coarse)': pressedImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
       [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,
-          '@media (pointer: coarse)': hoverImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
     },
@@ -338,14 +347,14 @@ const styles = stylex.create({
         default: null,
         '@media (forced-colors: none)': {
           default: null,
-          '@media (pointer: coarse)': pressedImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
       [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,
-          '@media (pointer: coarse)': hoverImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
     },
@@ -740,6 +749,9 @@ export function Switch({
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the track and thumb inherit and paint it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         {' '}
         {labelPosition === 'start' ? (

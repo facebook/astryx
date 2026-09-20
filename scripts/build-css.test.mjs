@@ -5,7 +5,9 @@
  * Integration test for build-css.mjs
  *
  * Validates that astryx.css contains expected @media wrappers and
- * prefers-reduced-motion rules.
+ * prefers-reduced-motion rules, and that the touch press's release ships as a
+ * real fade: the press strength is a registered `<number>` the fading arm
+ * animates on the machine's own clock (utils/interactionOverlay.stylex.ts).
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -13,6 +15,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
+import {PRESS_FADE_MS} from '../packages/core/src/utils/pressGesture.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -212,5 +215,72 @@ describe('build-css astryx.css', () => {
         () => false,
       ),
     ).resolves.toBe(false);
+  });
+
+  describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
+    /** `.2s`, `200ms`, `0.2s` → 200. */
+    const toMs = value => {
+      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      return match == null
+        ? Number.NaN
+        : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    };
+    const lines = () => astryxCss.split('\n');
+
+    it('registers the press strength as an interpolable number, once', () => {
+      // The pressed overlay is a gradient layer, and gradients do not
+      // interpolate; the registered number the layer reads does. This is the
+      // declaration that makes the release a fade rather than a step.
+      const registrations =
+        astryxCss.match(/@property --astryx-press-alpha \{[^}]*\}/g) ?? [];
+      expect(registrations).toHaveLength(1);
+      expect(registrations[0]).toContain('syntax: "<number>"');
+      expect(registrations[0]).toContain('initial-value: 0');
+      expect(astryxCss).toMatch(/:root[^{]*\{--astryx-press-alpha:0;?\}/);
+    });
+
+    it("animates the strength 1 → 0 on the fading arm, on the machine's own clock", () => {
+      const keyframes = astryxCss.match(
+        /@keyframes ([\w-]+)\{from\{--astryx-press-alpha:1;?\}to\{--astryx-press-alpha:0;?\}\}/,
+      );
+      expect(keyframes).not.toBeNull();
+      const fading = lines().filter(line =>
+        line.includes('[data-pressed="fading"]'),
+      );
+      expect(
+        fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
+      ).toBe(true);
+      const durations = fading
+        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => toMs(match[1]));
+      // One clock, the one the controller removes the attribute on.
+      expect(durations).toEqual([PRESS_FADE_MS]);
+      // The onset is instant: nothing animates on the on arm.
+      const on = lines().filter(line => line.includes('[data-pressed="on"]'));
+      expect(on.length).toBeGreaterThan(0);
+      expect(on.some(line => line.includes('animation'))).toBe(false);
+    });
+
+    it('paints every touch arm through the strength, and lands the release on nothing', () => {
+      const paints = lines().filter(
+        line =>
+          /\[data-pressed="(?:on|fading)"\]/.test(line) &&
+          line.includes('--color-overlay-'),
+      );
+      // Every overlay variant, the cards' `--_press-overlay`, and the
+      // ancestor-scoped paints (switch, the checkbox and radio overlays, tab):
+      // twelve lines today, fewer than the arms because StyleX deduplicates
+      // identical rules. A regex that stopped matching would fall well below
+      // this floor.
+      expect(paints.length).toBeGreaterThanOrEqual(10);
+      for (const line of paints) {
+        expect(line).toContain('var(--color-overlay-pressed)');
+        expect(line).toContain('var(--astryx-press-alpha)');
+        // Not the hover strength: under a finger there is no hover to land
+        // on, and a paint that stepped there would still have to step off.
+        expect(line).not.toContain('--color-overlay-hover');
+      }
+    });
   });
 });

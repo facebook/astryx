@@ -46,6 +46,10 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {
+  interactionOverlayStyles,
+  pressVars,
+} from '../utils/interactionOverlay.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -55,11 +59,13 @@ import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 
-// The touch press's paint and its release step: the system's pressed and
-// hover overlay tokens as gradient layers, in the shape
-// interactionOverlay.stylex.ts paints with.
-const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
+// The touch press's paint: the pressed token at the strength the row's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
+// the indicator wrapper's overlay layer. Same shape as `pressedOverlayImage`
+// in interactionOverlay.stylex.ts, rebuilt here because StyleX resolves
+// imported `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
 
 const styles = stylex.create({
   container: {
@@ -99,17 +105,18 @@ const styles = stylex.create({
         },
       },
       // The touch press, as an image layer over the colour: an image change is
-      // discrete, so no transition can delay the onset. Coarse pointers only,
-      // like the drop above.
+      // discrete, so no transition can delay the onset, and the strength the
+      // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
+      // what moves. Coarse pointers only, like the drop above.
       backgroundImage: {
         default: null,
         [stylex.when.ancestor('[data-pressed="on"]', indicatorScope)]: {
           default: null,
-          '@media (pointer: coarse)': pressedImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
         [stylex.when.ancestor('[data-pressed="fading"]', indicatorScope)]: {
           default: null,
-          '@media (pointer: coarse)': hoverImage,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
     },
@@ -445,6 +452,10 @@ export function CheckboxInput({
           // Hover and focus reach the checkbox visual through this ancestor
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the layer over the checkbox box inherits
+          // and paints it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         <div
           {...stylex.props(
