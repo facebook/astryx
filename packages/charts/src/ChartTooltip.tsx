@@ -185,10 +185,11 @@ export function ChartTooltip({
     mode: 'fixed',
   });
   // Whether the card is currently suppressed (no content, or a custom `render`
-  // opted out by returning null). positionCard reads this so a same-index
-  // pointer move — which repositions the card without a React commit — can't
-  // re-reveal a card the visibility effect below has hidden.
-  const cardHiddenRef = useRef(false);
+  // opted out by returning null). Start closed; once present content opens the
+  // Layer, a content-bearing index change keeps it open while React swaps the
+  // content. positionCard also reads this so a same-index pointer move cannot
+  // re-reveal a suppressed card before the visibility effect confirms content.
+  const cardHiddenRef = useRef(true);
 
   // The Layer host must remain in the chart's nearest HTML subtree so nested
   // Theme and MediaTheme scopes keep applying. The portal crosses only the SVG
@@ -276,10 +277,13 @@ export function ChartTooltip({
       const newIndex = e.nearest?.dataIndex ?? null;
       if (newIndex !== currentIndex) {
         currentIndex = newIndex;
-        // Keep a newly selected index closed until React resolves its final
-        // content. The visibility effect reopens only after confirming the
-        // datum exists and a custom renderer did not return null.
-        cardHiddenRef.current = true;
+        // Keep a closed/suppressed card closed until React resolves content.
+        // Do not preemptively close an already-visible card for another index:
+        // the visibility effect closes absent content after commit, while
+        // content-bearing transitions keep the same Layer continuously open.
+        if (newIndex == null) {
+          cardHiddenRef.current = true;
+        }
         setHoveredIndex(newIndex);
       }
       positionCard(e);

@@ -44,7 +44,7 @@ const meta: Meta<typeof Chart> = {
 };
 export default meta;
 
-function TooltipChart() {
+function TooltipChart({showLineDots = false}: {showLineDots?: boolean}) {
   const locale = useLocale();
   return (
     <Chart
@@ -53,7 +53,11 @@ function TooltipChart() {
       series={[
         bar('revenue', {color: '#3b82f6', label: 'Revenue', stack: 'x'}),
         bar('costs', {color: '#ef4444', label: 'Costs', stack: 'x'}),
-        line('trend', {color: '#f59e0b', label: 'Trend'}),
+        line('trend', {
+          color: '#f59e0b',
+          label: 'Trend',
+          dots: showLineDots,
+        }),
       ]}
       tooltip
       grid={<ChartGrid />}
@@ -96,7 +100,7 @@ function ModalLayeringFixture() {
           ref={dialogRef}
           aria-label="Chart tooltip layering test"
           {...stylex.props(styles.modal)}>
-          <TooltipChart />
+          <TooltipChart showLineDots />
         </dialog>
       </MediaTheme>
     </Theme>
@@ -106,8 +110,9 @@ function ModalLayeringFixture() {
 /**
  * Keeps the chart inside nested Theme/MediaTheme scopes and a native modal,
  * then opens its tooltip after the modal. The play assertions prove the host
- * stays in those scopes and becomes a later browser top-layer entry rather
- * than a high-z-index body portal hidden behind the dialog.
+ * stays in those scopes, remains continuously open across content-bearing
+ * points, and becomes a later browser top-layer entry rather than a high-z-index
+ * portal hidden behind the dialog.
  */
 export const ModalLayering: StoryObj = {
   render: () => <ModalLayeringFixture />,
@@ -119,48 +124,76 @@ export const ModalLayering: StoryObj = {
       canvasElement.querySelector<SVGRectElement>(
         'svg rect[fill="transparent"]',
       );
-    await waitFor(() => expect(getEventSurface()).not.toBeNull());
+    const getTooltip = () =>
+      document.querySelector<HTMLElement>('[role="tooltip"]');
+    await waitFor(() => {
+      expect(getEventSurface()).not.toBeNull();
+      expect(getTooltip()).not.toBeNull();
+    });
     const eventSurface = getEventSurface();
-    if (!eventSurface) {
-      throw new Error('Chart event surface did not render');
+    const tooltip = getTooltip();
+    if (!eventSurface || !tooltip) {
+      throw new Error('Chart event surface or tooltip did not render');
     }
 
-    await waitFor(() =>
-      expect(eventSurface.getBoundingClientRect().width).toBeGreaterThan(0),
-    );
-    const eventRect = eventSurface.getBoundingClientRect();
-    eventSurface.dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        clientX: eventRect.left + eventRect.width / 2,
-        clientY: eventRect.top + eventRect.height / 2,
-        pointerType: 'mouse',
-      }),
-    );
+    const layer = tooltip.parentElement;
+    if (!layer) {
+      throw new Error('Chart tooltip Layer host did not render');
+    }
+    const toggleStates: string[] = [];
+    const recordToggle = (event: Event) => {
+      toggleStates.push((event as ToggleEvent).newState);
+    };
+    layer.addEventListener('beforetoggle', recordToggle);
 
     await waitFor(() => {
-      const tooltip = document.querySelector<HTMLElement>('[role="tooltip"]');
-      expect(tooltip).not.toBeNull();
-      if (!tooltip) {
-        return;
-      }
-
-      const layer = tooltip.parentElement;
-      expect(layer).not.toBeNull();
-      if (!layer) {
-        return;
-      }
-
-      expect(dialog?.matches(':modal')).toBe(true);
-      expect(layer.matches(':popover-open')).toBe(true);
+      expect(eventSurface.getBoundingClientRect().width).toBeGreaterThan(0);
       expect(
-        layer.closest('[data-astryx-theme="chart-tooltip-modal-test"]'),
-      ).not.toBeNull();
-      expect(layer.closest('[data-astryx-media="dark"]')).not.toBeNull();
-      expect(getComputedStyle(layer).zIndex).toBe('auto');
-      const layerRect = layer.getBoundingClientRect();
-      expect(layerRect.width).toBeGreaterThan(0);
-      expect(layerRect.height).toBeGreaterThan(0);
+        canvasElement.querySelectorAll<SVGCircleElement>(
+          'svg g[clip-path] circle',
+        ).length,
+      ).toBeGreaterThanOrEqual(2);
     });
+    const points = canvasElement.querySelectorAll<SVGCircleElement>(
+      'svg g[clip-path] circle',
+    );
+    const eventRect = eventSurface.getBoundingClientRect();
+    const moveTo = (point: SVGCircleElement) => {
+      const pointRect = point.getBoundingClientRect();
+      eventSurface.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: pointRect.left + pointRect.width / 2,
+          clientY: eventRect.top + eventRect.height / 2,
+          pointerType: 'mouse',
+        }),
+      );
+    };
+
+    moveTo(points[0]);
+    await waitFor(() => {
+      expect(tooltip.textContent).toContain('Jan');
+      expect(layer.matches(':popover-open')).toBe(true);
+    });
+    expect(toggleStates).toEqual(['open']);
+
+    moveTo(points[1]);
+    await waitFor(() => {
+      expect(tooltip.textContent).toContain('Feb');
+      expect(layer.matches(':popover-open')).toBe(true);
+    });
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    expect(toggleStates).toEqual(['open']);
+    expect(dialog?.matches(':modal')).toBe(true);
+    expect(
+      layer.closest('[data-astryx-theme="chart-tooltip-modal-test"]'),
+    ).not.toBeNull();
+    expect(layer.closest('[data-astryx-media="dark"]')).not.toBeNull();
+    expect(getComputedStyle(layer).zIndex).toBe('auto');
+    const layerRect = layer.getBoundingClientRect();
+    expect(layerRect.width).toBeGreaterThan(0);
+    expect(layerRect.height).toBeGreaterThan(0);
+    layer.removeEventListener('beforetoggle', recordToggle);
   },
 };
