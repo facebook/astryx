@@ -14,6 +14,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, act} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {ChartTooltip} from './ChartTooltip';
 import {ChartProvider} from './ChartContext';
@@ -121,13 +122,15 @@ const pointerLeave: ChartPointerEvent = {
 };
 
 const card = () => document.querySelector('[role="tooltip"]') as HTMLElement;
+const layerHost = () => card().parentElement as HTMLElement;
 
 describe('ChartTooltip card', () => {
-  it('portals an initially empty tooltip card into document.body', () => {
+  it('portals the tooltip through a fixed Layer host in document.body', () => {
     const harness = makeHarness();
     const {container} = renderTooltip(harness);
     expect(card()).not.toBeNull();
-    expect(card().parentElement).toBe(document.body);
+    expect(layerHost()).toHaveAttribute('popover', 'manual');
+    expect(layerHost().parentElement).toBe(document.body);
     // The card lives outside the chart subtree.
     expect(container.querySelector('[role="tooltip"]')).toBeNull();
     expect(card().textContent).toBe('');
@@ -172,10 +175,10 @@ describe('ChartTooltip card', () => {
     renderTooltip(harness);
 
     harness.dispatch(hoverAt(0));
-    expect(card().style.display).toBe('block');
+    expect(layerHost().style.display).toBe('block');
 
     harness.dispatch(pointerLeave);
-    expect(card().style.display).toBe('none');
+    expect(layerHost().style.display).toBe('none');
   });
 
   it('pins the card beside the hovered point for placement="right"', () => {
@@ -185,8 +188,8 @@ describe('ChartTooltip card', () => {
     harness.dispatch(hoverAt(1));
     // jsdom rects are zero, so left = svgLeft(0) + margin.left(48) + px(250)
     // + the 8px gap.
-    expect(card().style.display).toBe('block');
-    expect(card().style.left).toBe('306px');
+    expect(layerHost().style.display).toBe('block');
+    expect(layerHost().style.left).toBe('306px');
   });
 
   it('hides the card when the hovered index no longer exists in data', () => {
@@ -200,7 +203,7 @@ describe('ChartTooltip card', () => {
       active: false,
     });
     expect(card().textContent).toBe('');
-    expect(card().style.display).toBe('none');
+    expect(layerHost().style.display).toBe('none');
   });
 });
 
@@ -266,7 +269,38 @@ describe('ChartTooltip custom render', () => {
     renderTooltip(harness, {render: () => null});
     harness.dispatch(hoverAt(1));
     expect(card().textContent).toBe('');
-    expect(card().style.display).toBe('none');
+    expect(layerHost().style.display).toBe('none');
+  });
+});
+
+describe('ChartTooltip server rendering', () => {
+  it('omits the browser-only layer without a document', () => {
+    const harness = makeHarness();
+    const documentDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'document',
+    );
+
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      const markup = renderToString(
+        <ChartProvider value={harness.ctx}>
+          <svg>
+            <g>
+              <ChartTooltip series={[makeSeries()]} />
+            </g>
+          </svg>
+        </ChartProvider>,
+      );
+      expect(markup).not.toContain('role="tooltip"');
+    } finally {
+      if (documentDescriptor) {
+        Object.defineProperty(globalThis, 'document', documentDescriptor);
+      }
+    }
   });
 });
 
