@@ -10,13 +10,11 @@
  * `Markdown.fr23.bench.ts` as a dedicated Node process, one section size at
  * a time, and only asserts on what that process reports.
  *
- * It has to work that way. The ratio is sensitive to two things a test
- * runner cannot hold still: other Vitest files competing for the machine,
- * and engine state — polymorphic call sites through the parser — left by
- * every other plugin configuration the worker already exercised. The same
- * code measured ~1.17 alone and up to ~1.54 beside the rest of the suite.
- * A fresh process with nothing else in it removes both, so the number the
- * budget is applied to reflects the helpers rather than the scheduler.
+ * A fresh process isolates engine state left by other plugin configurations,
+ * but it still shares CPU and memory with other Vitest workers. CI and Deploy
+ * exclude this file from the parallel UI suite, then run it alone after those
+ * workers exit, as the spec's isolated-process-and-runner protocol requires.
+ * Local measurements need the same isolation from other test and build work.
  *
  * The timed region inside that process is the spec's protocol, unsmoothed:
  * ten untimed warmups, then one median of nine alternating paired rounds,

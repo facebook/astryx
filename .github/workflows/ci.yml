@@ -266,7 +266,12 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm lab:readiness:check
 
-      - run: pnpm vitest run --project ui
+      # A child process isolates engine state, not CPU or memory contention.
+      # FR23 must wait until the other UI workers have exited (AST-036).
+      - name: Run UI tests and isolated Markdown benchmark
+        run: |
+          pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts
+          pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
   test-node:

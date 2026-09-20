@@ -7,10 +7,10 @@
  * @position Benchmark body for Markdown.fr23.perf.test.ts; not a test itself
  *
  * Run as its own process, one measurement at a time, by
- * `Markdown.fr23.perf.test.ts`. Nothing else may execute here: the ratio is
- * sensitive both to other work competing for the machine and to engine state
- * left behind by other plugin configurations in the same process, and this
- * file exists so neither can reach it.
+ * `Markdown.fr23.perf.test.ts`. The fresh process isolates engine state left
+ * behind by other plugin configurations. The harness must also run separately
+ * from other tests: a child process still shares machine resources, and CPU
+ * time does not remove cache or memory-bandwidth contention.
  *
  * The timed region is exactly the spec's protocol — ten untimed warmups,
  * then nine alternating paired rounds averaging 20 iterations a side,
