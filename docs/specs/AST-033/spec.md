@@ -18,6 +18,17 @@ affects_consumer_docs: [docsite]
 
 # Docsite interaction and product-data contract
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "docsite": ["DEC-1", "DEC-2", "DEC-3", "DEC-5", "FR3", "FR8", "FR13"]
+  }
+}
+```
+
 ## Intent
 
 People using the Astryx Docsite should see truthful projections of the owning

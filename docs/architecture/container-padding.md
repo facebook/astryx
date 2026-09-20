@@ -41,6 +41,17 @@ deciding_specs: [spec:AST-025/DEC-2]
 
 # Container padding architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layout": ["INV1", "INV3", "INV6", "INV8"]
+  }
+}
+```
+
 ## Purpose
 
 Padded containers and their descendants need one shared account of the inset at

@@ -19,6 +19,17 @@ affects_consumer_docs:
 
 # Safe navigation destinations
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "navigation": ["FR2", "FR3", "FR4", "FR6", "FR7", "FR8", "DEC-1", "DEC-2"]
+  }
+}
+```
+
 ## Intent
 
 A person activating an Astryx link should get the same destination safety no

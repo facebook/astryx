@@ -3,15 +3,21 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
   composeKnowledgeSchemas,
+  collectGlobalReviewMatches,
   discoverKnowledgeRecords,
+  extractKnowledgeClaims,
   parseAnatomyThemingBlock,
   parseKnowledgeDocument,
+  parseReviewApplicabilityBlock,
+  routeGlobalReviewBaselinesAtRevision,
   validateAnatomyThemingMap,
   validateDelegations,
   validateKnowledgeRoot,
+  validateReviewApplicability,
   validateSchemaEvolution,
 } from './check-knowledge.mjs';
 
@@ -290,9 +296,293 @@ function writeButtonDoc(directory) {
   return content;
 }
 
+function reviewApplicabilityBlock(triggers, scope = 'global') {
+  return `<!-- review-applicability:v1 -->\n\`\`\`json\n${JSON.stringify(
+    {scope, triggers},
+    null,
+    2,
+  )}\n\`\`\``;
+}
+
+function withReviewApplicability(record, triggers, scope = 'global') {
+  const lines = record.split('\n');
+  const titleIndex = lines.findIndex(line => line.startsWith('# '));
+  lines.splice(
+    titleIndex + 1,
+    0,
+    '',
+    reviewApplicabilityBlock(triggers, scope),
+  );
+  return lines.join('\n');
+}
+
+function withSystemClaims(record) {
+  return record.replace(
+    '## Requirements\n\nBody.',
+    '## Requirements\n\n- **FR1 — Public API stays stable.** Callers keep the same contract.\n\n- **FR2 — Evidence stays scoped.** Tests prove only this claim.',
+  );
+}
+
+function commitFixture(root, message) {
+  execFileSync('git', ['init', '-q'], {cwd: root});
+  execFileSync('git', ['config', 'user.name', 'Fixture'], {cwd: root});
+  execFileSync('git', ['config', 'user.email', 'fixture@example.com'], {
+    cwd: root,
+  });
+  execFileSync('git', ['add', '.'], {cwd: root});
+  execFileSync('git', ['commit', '-q', '-m', message], {cwd: root});
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+}
+
 afterEach(() => {
   for (const root of roots.splice(0))
     fs.rmSync(root, {recursive: true, force: true});
+});
+
+describe('global review applicability', () => {
+  const currentRecord = withSystemClaims(systemSpecRecord());
+
+  it('parses explicit trigger-to-claim routing', () => {
+    const record = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+      testing: ['FR2'],
+    });
+    const parsed = parseReviewApplicabilityBlock(record);
+    expect(parsed.problems).toEqual([]);
+    expect(parsed.config).toEqual({
+      scope: 'global',
+      triggers: {'public-api': ['FR1'], testing: ['FR2']},
+    });
+    expect(extractKnowledgeClaims(record)).toEqual(
+      new Map([
+        ['FR1', 'Public API stays stable.'],
+        ['FR2', 'Evidence stays scoped.'],
+      ]),
+    );
+    expect(validateReviewApplicability(parsed.config, record)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'global routing without claims',
+      {scope: 'global', triggers: {'public-api': []}},
+      /non-empty claim list/,
+    ],
+    [
+      'a stale claim reference',
+      {scope: 'global', triggers: {'public-api': ['FR99']}},
+      /references missing claim "FR99"/,
+    ],
+    [
+      'a duplicate trigger and claim pair',
+      {scope: 'global', triggers: {'public-api': ['FR1', 'FR1']}},
+      /repeats claim "FR1"/,
+    ],
+    [
+      'a malformed trigger',
+      {scope: 'global', triggers: {'Public API': ['FR1']}},
+      /must use lower-kebab-case/,
+    ],
+    [
+      'an unsupported trigger',
+      {scope: 'global', triggers: {'unknown-area': ['FR1']}},
+      /is not a supported semantic trigger/,
+    ],
+    [
+      'an unsupported scope',
+      {scope: 'component', triggers: {'public-api': ['FR1']}},
+      /scope must be "global"/,
+    ],
+  ])('rejects %s', (_name, config, expected) => {
+    expect(
+      validateReviewApplicability(config, currentRecord).join('\n'),
+    ).toMatch(expected);
+  });
+
+  it('rejects duplicate JSON object keys before parsing can overwrite them', () => {
+    const record = currentRecord.replace(
+      '# Fixture system spec',
+      '# Fixture system spec\n\n<!-- review-applicability:v1 -->\n```json\n{"scope":"global","triggers":{"public-api":["FR1"],"public-api":["FR2"]}}\n```',
+    );
+    expect(parseReviewApplicabilityBlock(record).problems.join('\n')).toMatch(
+      /repeats JSON field "public-api"/,
+    );
+  });
+
+  it('keeps the canonical claim title when a verification table repeats its id', () => {
+    const record = `${currentRecord}\n| Contract | Verification |\n| --- | --- |\n| FR1 | A test file, not the claim. |\n`;
+    expect(extractKnowledgeClaims(record).get('FR1')).toBe(
+      'Public API stays stable.',
+    );
+  });
+
+  it('does not treat a verification-table reference as a claim definition', () => {
+    const record = withReviewApplicability(
+      `${currentRecord.replace(
+        '- **FR1 — Public API stays stable.** Callers keep the same contract.\n\n',
+        '',
+      )}\n| Contract | Verification |\n| --- | --- |\n| FR1 | A test file, not the claim. |\n`,
+      {'public-api': ['FR1']},
+    );
+    const parsed = parseReviewApplicabilityBlock(record);
+    expect(
+      validateReviewApplicability(parsed.config, record).join('\n'),
+    ).toMatch(/references missing claim "FR1"/);
+  });
+
+  it('keeps legacy records with no applicability block valid', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', currentRecord);
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('fails knowledge validation for malformed global routing', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(
+      root,
+      'AST-900',
+      withReviewApplicability(currentRecord, {'public-api': ['FR99']}),
+    );
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /references missing claim "FR99"/,
+    );
+  });
+
+  it('routes only matching claims from current records', () => {
+    const record = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+      testing: ['FR2'],
+    });
+    const matches = collectGlobalReviewMatches(
+      [{path: 'docs/specs/AST-900/spec.md', content: record}],
+      ['public-api'],
+      'a'.repeat(40),
+    );
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      recordId: 'spec:AST-900',
+      path: 'docs/specs/AST-900/spec.md',
+      trigger: 'public-api',
+      claimId: 'FR1',
+      claim: 'Public API stays stable.',
+      authorityCommit: 'a'.repeat(40),
+    });
+    expect(matches[0].matchReason).toContain('public-api');
+    expect(matches[0].matchReason).toContain('spec:AST-900/FR1');
+    expect(matches[0].recordDigest).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('omits nonmatching and draft records', () => {
+    const current = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+    });
+    const draft = withReviewApplicability(
+      currentRecord.replace('authority: current', 'authority: draft'),
+      {testing: ['FR2']},
+    );
+    expect(
+      collectGlobalReviewMatches(
+        [
+          {path: 'docs/specs/AST-900/spec.md', content: current},
+          {path: 'docs/specs/AST-901/spec.md', content: draft},
+        ],
+        ['testing'],
+        'b'.repeat(40),
+      ),
+    ).toEqual([]);
+  });
+
+  it('pins routing to the reviewed head base and rejects self-authorization', () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', currentRecord);
+    const baseWithoutRouting = commitFixture(
+      root,
+      'base without global routing',
+    );
+    execFileSync(
+      'git',
+      ['update-ref', 'refs/remotes/origin/main', baseWithoutRouting],
+      {cwd: root},
+    );
+
+    fs.writeFileSync(
+      path.join(root, 'docs/specs/AST-900/spec.md'),
+      withReviewApplicability(currentRecord, {'public-api': ['FR1']}),
+    );
+    execFileSync('git', ['add', '.'], {cwd: root});
+    execFileSync('git', ['commit', '-q', '-m', 'head adds global routing'], {
+      cwd: root,
+    });
+    const proposedHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+
+    expect(
+      routeGlobalReviewBaselinesAtRevision(
+        root,
+        baseWithoutRouting,
+        proposedHead,
+        ['public-api'],
+      ),
+    ).toEqual([]);
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, proposedHead, [
+        'public-api',
+      ]),
+    ).toThrow(/origin\/main merge base/);
+
+    execFileSync(
+      'git',
+      ['update-ref', 'refs/remotes/origin/main', proposedHead],
+      {
+        cwd: root,
+      },
+    );
+    fs.writeFileSync(path.join(root, 'README.md'), '# Reviewed change\n');
+    execFileSync('git', ['add', '.'], {cwd: root});
+    execFileSync('git', ['commit', '-q', '-m', 'later review head'], {
+      cwd: root,
+    });
+    const laterHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+    expect(
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, laterHead, [
+        'public-api',
+      ]),
+    ).toHaveLength(1);
+  });
+
+  it('sorts multiple matches deterministically', () => {
+    const first = withReviewApplicability(
+      withSystemClaims(systemSpecRecord({id: 'spec:AST-902'})),
+      {testing: ['FR2'], 'public-api': ['FR1']},
+    );
+    const second = withReviewApplicability(
+      withSystemClaims(systemSpecRecord({id: 'spec:AST-901'})),
+      {'public-api': ['FR1']},
+    );
+    const matches = collectGlobalReviewMatches(
+      [
+        {path: 'docs/specs/AST-902/spec.md', content: first},
+        {path: 'docs/specs/AST-901/spec.md', content: second},
+      ],
+      ['testing', 'public-api'],
+      'c'.repeat(40),
+    );
+    expect(
+      matches.map(row => `${row.recordId}:${row.trigger}:${row.claimId}`),
+    ).toEqual([
+      'spec:AST-901:public-api:FR1',
+      'spec:AST-902:public-api:FR1',
+      'spec:AST-902:testing:FR2',
+    ]);
+  });
 });
 
 describe('schema evolution', () => {

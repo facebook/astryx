@@ -33,6 +33,12 @@ Product behavior remains owned by the applicable current component, module,
 family, design, theme, architecture, or system record. API caller burden follows
 `spec:AST-002`.
 
+Reviews also load any `current` cross-cutting claims whose machine-readable global
+route matches the change's semantic triggers. The direct component, module, or
+family owner still resolves the exact delta first; a global route contributes only
+its listed claim and never grants authority to the rest of that record. Review
+receipts identify the matched record, claim, trigger, and reason.
+
 ## Keep the intent atomic
 
 Before requesting review, partition every observable delta:

@@ -20,6 +20,17 @@ affects_consumer_docs:
 
 # Scrollable container behavior system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "scrolling": ["FR1", "FR12", "FR13", "FR14", "FR15", "FR16", "FR18"]
+  }
+}
+```
+
 ## Intent
 
 People should be able to reach and scroll overflowing content, continue scrolling
