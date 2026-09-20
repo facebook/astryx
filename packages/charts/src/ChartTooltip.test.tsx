@@ -170,15 +170,22 @@ describe('ChartTooltip card', () => {
   });
 
   it('reveals the card on hover and hides it again when the pointer leaves', () => {
+    const showSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    const hideSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const harness = makeHarness({svgRef: {current: svgEl}});
-    renderTooltip(harness);
 
-    harness.dispatch(hoverAt(0));
-    expect(layerHost().style.display).toBe('block');
+    try {
+      renderTooltip(harness);
+      harness.dispatch(hoverAt(0));
+      expect(showSpy).toHaveBeenCalledOnce();
 
-    harness.dispatch(pointerLeave);
-    expect(layerHost().style.display).toBe('none');
+      harness.dispatch(pointerLeave);
+      expect(hideSpy).toHaveBeenCalledOnce();
+    } finally {
+      showSpy.mockRestore();
+      hideSpy.mockRestore();
+    }
   });
 
   it('pins the card beside the hovered point for placement="right"', () => {
@@ -188,22 +195,33 @@ describe('ChartTooltip card', () => {
     harness.dispatch(hoverAt(1));
     // jsdom rects are zero, so left = svgLeft(0) + margin.left(48) + px(250)
     // + the 8px gap.
-    expect(layerHost().style.display).toBe('block');
     expect(layerHost().style.left).toBe('306px');
   });
 
   it('hides the card when the hovered index no longer exists in data', () => {
+    const hideSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const harness = makeHarness({svgRef: {current: svgEl}});
-    renderTooltip(harness);
-    harness.dispatch({
-      x: 0,
-      y: 0,
-      nearest: {px: 50, py: 120, py0: 200, dataIndex: 99, seriesKey: 'sales'},
-      active: false,
-    });
-    expect(card().textContent).toBe('');
-    expect(layerHost().style.display).toBe('none');
+
+    try {
+      renderTooltip(harness);
+      harness.dispatch({
+        x: 0,
+        y: 0,
+        nearest: {
+          px: 50,
+          py: 120,
+          py0: 200,
+          dataIndex: 99,
+          seriesKey: 'sales',
+        },
+        active: false,
+      });
+      expect(card().textContent).toBe('');
+      expect(hideSpy).toHaveBeenCalledOnce();
+    } finally {
+      hideSpy.mockRestore();
+    }
   });
 });
 
@@ -264,12 +282,18 @@ describe('ChartTooltip custom render', () => {
   });
 
   it('hides the card when the custom render opts out by returning null', () => {
+    const hideSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const harness = makeHarness({svgRef: {current: svgEl}});
-    renderTooltip(harness, {render: () => null});
-    harness.dispatch(hoverAt(1));
-    expect(card().textContent).toBe('');
-    expect(layerHost().style.display).toBe('none');
+
+    try {
+      renderTooltip(harness, {render: () => null});
+      harness.dispatch(hoverAt(1));
+      expect(card().textContent).toBe('');
+      expect(hideSpy).toHaveBeenCalledOnce();
+    } finally {
+      hideSpy.mockRestore();
+    }
   });
 });
 
