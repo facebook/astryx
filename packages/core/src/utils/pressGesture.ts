@@ -61,7 +61,13 @@ export const PRESS_SLOP_PX = 10;
  */
 export const PRESS_FLASH_MS = 100;
 
-/** How long the paint takes to leave after a release: UIKit's deselect crossfade. */
+/**
+ * How long the paint takes to leave after a release: UIKit's deselect crossfade.
+ *
+ * SYNC: the CSS release animation runs on the same clock,
+ * `PRESS_RELEASE_DURATION` in interactionOverlay.stylex.ts (StyleX cannot read
+ * this constant); pressFeedback.test.ts holds the two equal.
+ */
 export const PRESS_FADE_MS = 200;
 
 /**

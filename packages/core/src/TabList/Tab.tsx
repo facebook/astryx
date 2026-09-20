@@ -33,6 +33,10 @@ import type {BaseProps} from '../BaseProps';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
+import {
+  interactionOverlayStyles,
+  pressVars,
+} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -99,6 +103,14 @@ export interface TabProps extends BaseProps<HTMLButtonElement> {
 // Styles
 // =============================================================================
 
+// The touch press's paint: the pressed token at the strength the tab's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
+// the hover layer. Same shape as `pressedOverlayImage` in
+// interactionOverlay.stylex.ts, rebuilt here because StyleX resolves imported
+// `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
+
 const styles = stylex.create({
   base: {
     position: 'relative',
@@ -147,17 +159,24 @@ const styles = stylex.create({
         default: colorVars['--color-overlay-pressed'],
         '@media (hover: hover)': colorVars['--color-overlay-pressed'],
         // Under a coarse pointer the touch press model writes `data-pressed`
-        // on the tab instead; see interactionOverlay.stylex.ts. The two arms
-        // below are nested in the same media so they outrank this drop.
+        // on the tab instead, and paints as an image below.
         '@media (pointer: coarse)': 'transparent',
       },
+    },
+    // The touch press, as an image layer over the colour: an image change is
+    // discrete, so the layer's colour transition cannot fade the onset in,
+    // and the strength the tab's `pressedAlpha` arms own (1 while on, 1 → 0
+    // over the release) is what moves. Coarse pointers only, like the colour
+    // arms above; see interactionOverlay.stylex.ts.
+    backgroundImage: {
+      default: null,
       [stylex.when.ancestor('[data-pressed="on"]', tabScope)]: {
         default: null,
-        '@media (pointer: coarse)': colorVars['--color-overlay-pressed'],
+        '@media (pointer: coarse)': pressedOverlayImage,
       },
       [stylex.when.ancestor('[data-pressed="fading"]', tabScope)]: {
         default: null,
-        '@media (pointer: coarse)': colorVars['--color-overlay-hover'],
+        '@media (pointer: coarse)': pressedOverlayImage,
       },
     },
     transitionProperty: 'background-color',
@@ -379,6 +398,9 @@ export function Tab({
         isSelected && styles.selected,
         isFill && layoutStyles.fill,
         !isDisabled && tabScope,
+        // The touch press's strength and release live on the tab the
+        // controller writes to; the hover layer inherits and paints it.
+        !isDisabled && interactionOverlayStyles.pressedAlpha,
         xstyle,
       ),
       className,
