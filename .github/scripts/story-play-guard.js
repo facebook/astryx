@@ -42,8 +42,8 @@ const TARGETS = [
     component: 'ChartTooltip',
     story: 'charts-chrome-tooltip--modal-layering',
     guards:
-      'native modal and ChartTooltip popover are simultaneously open with ' +
-      'nonzero top-layer geometry',
+      'ChartTooltip stays in nested Theme/MediaTheme scope while its popover ' +
+      'opens above a native modal with nonzero geometry',
   },
   {
     component: 'TabList',

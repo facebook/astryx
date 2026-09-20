@@ -67,7 +67,7 @@ export const docs = {
         name: 'Layer host',
         required: true,
         description:
-          'Layer host that uses the browser top layer when the Popover API is available and otherwise keeps the card visible through Layer’s reduced fallback.',
+          'Layer host mounted under the chart’s nearest HTML container so nested Theme and MediaTheme scopes remain inherited. It uses the browser top layer when the Popover API is available and otherwise keeps the card visible through Layer’s reduced fallback.',
       },
       {
         name: 'Tooltip card',

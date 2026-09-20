@@ -173,6 +173,7 @@ export function ChartTooltip({
   } = useChart();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [cardPosition, setCardPosition] = useState({x: 0, y: 0});
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const lastPointerEventRef = useRef<ChartPointerEvent | null>(null);
   const {
@@ -188,6 +189,14 @@ export function ChartTooltip({
   // pointer move — which repositions the card without a React commit — can't
   // re-reveal a card the visibility effect below has hidden.
   const cardHiddenRef = useRef(false);
+
+  // The Layer host must remain in the chart's nearest HTML subtree so nested
+  // Theme and MediaTheme scopes keep applying. The portal crosses only the SVG
+  // boundary; browser top-layer promotion remains Layer's responsibility.
+  useEffect(() => {
+    const nextTarget = svgRef.current?.parentElement ?? null;
+    setPortalTarget(current => (current === nextTarget ? current : nextTarget));
+  }, [svgRef, width]);
 
   // Stable Set of resolved series keys — used by deriveTooltipSeriesValues.
   // Recomputed only when the resolved map identity changes (per layout pass).
@@ -267,10 +276,10 @@ export function ChartTooltip({
       const newIndex = e.nearest?.dataIndex ?? null;
       if (newIndex !== currentIndex) {
         currentIndex = newIndex;
-        // Optimistically treat a real index as showable; the visibility effect
-        // re-hides it after commit if there's no content (for example, a custom
-        // `render` returning null).
-        cardHiddenRef.current = newIndex == null;
+        // Keep a newly selected index closed until React resolves its final
+        // content. The visibility effect reopens only after confirming the
+        // datum exists and a custom renderer did not return null.
+        cardHiddenRef.current = true;
         setHoveredIndex(newIndex);
       }
       positionCard(e);
@@ -405,6 +414,11 @@ export function ChartTooltip({
     hoveredIndex == null ||
     datum == null ||
     (render != null && cardContent == null);
+  const hasNativePopover =
+    typeof HTMLElement !== 'undefined' &&
+    typeof HTMLElement.prototype.showPopover === 'function';
+  const shouldHideLayerHost =
+    isCardHidden || (!hasNativePopover && !isLayerOpen);
 
   // Synchronize the shared Layer's native Popover state after React commits the
   // new card body. The second positioning pass measures that final body; later
@@ -445,22 +459,25 @@ export function ChartTooltip({
     <>
       {hoverIndicatorElement}
       {dots}
-      {createPortal(
-        renderLayer(
-          <div ref={cardRef} role="tooltip">
-            {cardContent}
-          </div>,
-          {
-            x: cardPosition.x,
-            y: cardPosition.y,
-            // Native popovers are hidden by the browser before showPopover().
-            // Layer's reduced fallback needs an explicit initial closed state.
-            style: isLayerOpen ? undefined : {display: 'none'},
-            xstyle: styles.card,
-          },
-        ),
-        document.body,
-      )}
+      {portalTarget
+        ? createPortal(
+            renderLayer(
+              <div ref={cardRef} role="tooltip">
+                {cardContent}
+              </div>,
+              {
+                x: cardPosition.x,
+                y: cardPosition.y,
+                // Native Popover keeps a closed host out of layout itself, so
+                // remove our guard before showPopover() measures it. Layer's
+                // reduced fallback needs the explicit closed display state.
+                style: shouldHideLayerHost ? {display: 'none'} : undefined,
+                xstyle: styles.card,
+              },
+            ),
+            portalTarget,
+          )
+        : null}
     </>
   );
 }

@@ -12,7 +12,7 @@ import {
   ChartAxis,
   currency,
 } from '@astryxdesign/charts';
-import {useLocale} from '@astryxdesign/core';
+import {defineTheme, MediaTheme, Theme, useLocale} from '@astryxdesign/core';
 import {
   colorVars,
   radiusVars,
@@ -31,6 +31,11 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-surface'],
   },
+});
+
+const modalLayeringTheme = defineTheme({
+  name: 'chart-tooltip-modal-test',
+  tokens: {'--color-accent': '#7c3aed'},
 });
 
 const meta: Meta<typeof Chart> = {
@@ -85,19 +90,24 @@ function ModalLayeringFixture() {
   }, []);
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-label="Chart tooltip layering test"
-      {...stylex.props(styles.modal)}>
-      <TooltipChart />
-    </dialog>
+    <Theme theme={modalLayeringTheme} mode="light">
+      <MediaTheme mode="dark">
+        <dialog
+          ref={dialogRef}
+          aria-label="Chart tooltip layering test"
+          {...stylex.props(styles.modal)}>
+          <TooltipChart />
+        </dialog>
+      </MediaTheme>
+    </Theme>
   );
 }
 
 /**
- * Keeps the chart inside a native modal and opens its tooltip after the modal.
- * The play assertion proves the tooltip is a later browser top-layer entry,
- * rather than a high-z-index body portal hidden behind the dialog.
+ * Keeps the chart inside nested Theme/MediaTheme scopes and a native modal,
+ * then opens its tooltip after the modal. The play assertions prove the host
+ * stays in those scopes and becomes a later browser top-layer entry rather
+ * than a high-z-index body portal hidden behind the dialog.
  */
 export const ModalLayering: StoryObj = {
   render: () => <ModalLayeringFixture />,
@@ -143,6 +153,10 @@ export const ModalLayering: StoryObj = {
 
       expect(dialog?.matches(':modal')).toBe(true);
       expect(layer.matches(':popover-open')).toBe(true);
+      expect(
+        layer.closest('[data-astryx-theme="chart-tooltip-modal-test"]'),
+      ).not.toBeNull();
+      expect(layer.closest('[data-astryx-media="dark"]')).not.toBeNull();
       expect(getComputedStyle(layer).zIndex).toBe('auto');
       const layerRect = layer.getBoundingClientRect();
       expect(layerRect.width).toBeGreaterThan(0);

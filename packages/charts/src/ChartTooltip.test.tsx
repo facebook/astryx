@@ -16,6 +16,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, act} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {scaleLinear, scaleBand} from 'd3-scale';
+import {MediaTheme, Theme, defineTheme} from '@astryxdesign/core';
 import {ChartTooltip} from './ChartTooltip';
 import {ChartProvider} from './ChartContext';
 import type {
@@ -30,6 +31,15 @@ const DATA = [
   {month: 'Feb', sales: 7, profit: 2},
   {month: 'Mar', sales: 5, profit: 4},
 ];
+
+const OUTER_THEME = defineTheme({
+  name: 'chart-tooltip-outer-test',
+  tokens: {'--color-accent': '#112233'},
+});
+const INNER_THEME = defineTheme({
+  name: 'chart-tooltip-inner-test',
+  tokens: {'--color-accent': '#445566'},
+});
 
 const SALES_POINTS: ResolvedPoint[] = [
   {px: 50, py: 120, py0: 200, dataIndex: 0},
@@ -98,7 +108,7 @@ function renderTooltip(
 ) {
   return render(
     <ChartProvider value={harness.ctx}>
-      <svg>
+      <svg ref={harness.ctx.svgRef}>
         <g>
           <ChartTooltip series={[makeSeries()]} {...props} />
         </g>
@@ -125,15 +135,45 @@ const card = () => document.querySelector('[role="tooltip"]') as HTMLElement;
 const layerHost = () => card().parentElement as HTMLElement;
 
 describe('ChartTooltip card', () => {
-  it('portals the tooltip through a fixed Layer host in document.body', () => {
+  it('portals the fixed Layer host to the nearest chart HTML container', () => {
     const harness = makeHarness();
     const {container} = renderTooltip(harness);
+    const svg = container.querySelector('svg');
+
     expect(card()).not.toBeNull();
     expect(layerHost()).toHaveAttribute('popover', 'manual');
-    expect(layerHost().parentElement).toBe(document.body);
-    // The card lives outside the chart subtree.
-    expect(container.querySelector('[role="tooltip"]')).toBeNull();
+    expect(layerHost().parentElement).toBe(svg?.parentElement);
+    // The card keeps local CSS inheritance without becoming invalid SVG.
+    expect(svg?.contains(card())).toBe(false);
     expect(card().textContent).toBe('');
+  });
+
+  it('keeps the Layer host inside nested Theme and MediaTheme scopes', () => {
+    const harness = makeHarness();
+    const {container} = render(
+      <Theme theme={OUTER_THEME}>
+        <Theme theme={INNER_THEME}>
+          <MediaTheme mode="dark">
+            <ChartProvider value={harness.ctx}>
+              <svg ref={harness.ctx.svgRef}>
+                <g>
+                  <ChartTooltip series={[makeSeries()]} />
+                </g>
+              </svg>
+            </ChartProvider>
+          </MediaTheme>
+        </Theme>
+      </Theme>,
+    );
+
+    const innerTheme = container.querySelector(
+      '[data-astryx-theme="chart-tooltip-inner-test"]',
+    );
+    const mediaTheme = container.querySelector('[data-astryx-media="dark"]');
+    expect(innerTheme).not.toBeNull();
+    expect(mediaTheme).not.toBeNull();
+    expect(innerTheme?.contains(layerHost())).toBe(true);
+    expect(mediaTheme?.contains(layerHost())).toBe(true);
   });
 
   it('shows the hovered x value and the bare value for a single series', () => {
@@ -185,6 +225,38 @@ describe('ChartTooltip card', () => {
     } finally {
       showSpy.mockRestore();
       hideSpy.mockRestore();
+    }
+  });
+
+  it('measures native Popover geometry after revealing the first card', () => {
+    const showSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    const widthSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.hasAttribute('popover') && this.style.display !== 'none'
+          ? 120
+          : 0;
+      });
+    const heightSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.hasAttribute('popover') && this.style.display !== 'none'
+          ? 40
+          : 0;
+      });
+    const harness = makeHarness();
+
+    try {
+      renderTooltip(harness, {placement: 'left'});
+      harness.dispatch(hoverAt(1));
+
+      expect(showSpy).toHaveBeenCalledOnce();
+      // svgLeft(0) + marginLeft(48) + px(250) - width(120) - gap(8)
+      expect(layerHost().style.left).toBe('170px');
+    } finally {
+      showSpy.mockRestore();
+      widthSpy.mockRestore();
+      heightSpy.mockRestore();
     }
   });
 
@@ -251,10 +323,10 @@ describe('ChartTooltip card', () => {
     expect(layerHost().style.left).toBe('306px');
   });
 
-  it('hides the card when the hovered index no longer exists in data', () => {
+  it('does not open the card when the hovered index no longer exists in data', () => {
+    const showSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
     const hideSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
-    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const harness = makeHarness({svgRef: {current: svgEl}});
+    const harness = makeHarness();
 
     try {
       renderTooltip(harness);
@@ -271,8 +343,10 @@ describe('ChartTooltip card', () => {
         active: false,
       });
       expect(card().textContent).toBe('');
-      expect(hideSpy).toHaveBeenCalledOnce();
+      expect(showSpy).not.toHaveBeenCalled();
+      expect(hideSpy).not.toHaveBeenCalled();
     } finally {
+      showSpy.mockRestore();
       hideSpy.mockRestore();
     }
   });
@@ -334,17 +408,19 @@ describe('ChartTooltip custom render', () => {
     ]);
   });
 
-  it('hides the card when the custom render opts out by returning null', () => {
+  it('never opens the card when the custom render opts out with null', () => {
+    const showSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
     const hideSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
-    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const harness = makeHarness({svgRef: {current: svgEl}});
+    const harness = makeHarness();
 
     try {
       renderTooltip(harness, {render: () => null});
       harness.dispatch(hoverAt(1));
       expect(card().textContent).toBe('');
-      expect(hideSpy).toHaveBeenCalledOnce();
+      expect(showSpy).not.toHaveBeenCalled();
+      expect(hideSpy).not.toHaveBeenCalled();
     } finally {
+      showSpy.mockRestore();
       hideSpy.mockRestore();
     }
   });
