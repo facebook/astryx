@@ -40,6 +40,13 @@ export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export {
+  ChatActivityGroup,
+  type ChatActivityGroupProps,
+  type ChatActivityItem,
+  type ChatActivityToolItem,
+  type ChatActivityReasoningItem,
+} from './ChatActivityGroup/ChatActivityGroup';
 export * from './Chat';
 
 // Drawer — experimental overlay panel
