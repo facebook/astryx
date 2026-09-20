@@ -12,7 +12,7 @@
 import {createContext} from 'react';
 
 export interface MetadataListLabelConfig {
-  position: 'start' | 'top';
+  position?: 'start' | 'top';
   width?: number | string;
 }
 
