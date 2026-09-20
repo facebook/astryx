@@ -132,6 +132,11 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
+      "aliases": []
+    },
+    {
       "name": "component-chat-composer",
       "path": "components/chat-composer",
       "aliases": []

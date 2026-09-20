@@ -248,6 +248,7 @@ describe('componentRegistry', () => {
       'ChartGrid',
       'ChartLegend',
       'ChartSwatch',
+      'ChartTooltip',
     ]);
     expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
       ['RichTextEditor'],
