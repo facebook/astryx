@@ -1632,7 +1632,17 @@ export function Selector<T extends SelectorOptionType>(
       ref={listboxRef}
       id={listboxId}
       role="listbox"
-      aria-labelledby={triggerId}
+      // The bottom sheet is a modal layer, so Chromium drops the trigger
+      // outside it from the accessibility tree and a reference to it yields
+      // no name. Name only this no-search sheet directly from the component's
+      // label; the searchable sheet and the popovers keep the trigger
+      // relationship.
+      aria-label={
+        surface.activePresentation === 'bottom-sheet' ? label : undefined
+      }
+      aria-labelledby={
+        surface.activePresentation === 'bottom-sheet' ? undefined : triggerId
+      }
       aria-activedescendant={
         surface.isOpen && highlightedIndex >= 0
           ? getItemId(highlightedIndex)
