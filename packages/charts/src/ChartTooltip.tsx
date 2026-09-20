@@ -177,6 +177,7 @@ export function ChartTooltip({
   const lastPointerEventRef = useRef<ChartPointerEvent | null>(null);
   const {
     hide: hideLayer,
+    isOpen: isLayerOpen,
     render: renderLayer,
     show: showLayer,
   } = useLayer({
@@ -246,8 +247,8 @@ export function ChartTooltip({
         }
       }
 
-      // Clamp to the viewport so the card remains fully visible for every
-      // placement (pinned placements and the near-edge `auto` flip alike).
+      // Clamp the card coordinates to the viewport. Oversized custom content
+      // keeps its caller-owned dimensions and may extend past the far edge.
       x = Math.max(gap, Math.min(x, viewportWidth - cardWidth - gap));
       y = Math.max(gap, Math.min(y, viewportHeight - cardHeight - gap));
 
@@ -452,6 +453,9 @@ export function ChartTooltip({
           {
             x: cardPosition.x,
             y: cardPosition.y,
+            // Native popovers are hidden by the browser before showPopover().
+            // Layer's reduced fallback needs an explicit initial closed state.
+            style: isLayerOpen ? undefined : {display: 'none'},
             xstyle: styles.card,
           },
         ),

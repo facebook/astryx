@@ -39,6 +39,13 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'ChartTooltip',
+    story: 'charts-chrome-tooltip--modal-layering',
+    guards:
+      'native modal and ChartTooltip popover are simultaneously open with ' +
+      'nonzero top-layer geometry',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

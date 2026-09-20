@@ -19,7 +19,7 @@ export const docs = {
 
   usage: {
     description:
-      'ChartTooltip shows grouped values for the chart position nearest the pointer. Use the Chart tooltip prop for the standard integration, or compose ChartTooltip inside Chart when you need to configure its content, indicators, or placement.',
+      'ChartTooltip shows grouped values for the chart position nearest the pointer. Use Chart’s tooltip prop or its configuration object for the standard integration; direct composition remains available when you need explicit child composition.',
     bestPractices: [
       {
         guidance: true,
@@ -67,7 +67,7 @@ export const docs = {
         name: 'Layer host',
         required: true,
         description:
-          'Browser top-layer host that keeps the card above clipping and modal stacking contexts.',
+          'Layer host that uses the browser top layer when the Popover API is available and otherwise keeps the card visible through Layer’s reduced fallback.',
       },
       {
         name: 'Tooltip card',
@@ -85,7 +85,7 @@ export const docs = {
         name: 'Hover indicator',
         required: false,
         description:
-          'Band highlight for bar charts or a vertical crosshair for other chart marks.',
+          'Band highlight for bar series on a band scale, or a vertical crosshair otherwise.',
       },
       {
         name: 'Hover dot',
@@ -129,7 +129,7 @@ export const docs = {
       name: 'placement',
       type: "'auto' | 'right' | 'left' | 'top'",
       description:
-        'Positions the card from the hovered x coordinate. Auto starts on the right and flips left near the viewport edge; every placement is clamped to the viewport. The current vertical origin is the top of the plot.',
+        'Selects one of the shipped placement algorithms. The current implementation positions from the hovered x coordinate and the plot top; whether placement should instead be point-relative on both axes remains unresolved. Custom renderers own their content sizing.',
       default: "'auto'",
     },
   ],

@@ -188,6 +188,59 @@ describe('ChartTooltip card', () => {
     }
   });
 
+  it('keeps the non-Popover fallback hidden until hover', () => {
+    const showDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'showPopover',
+    );
+    const hideDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'hidePopover',
+    );
+    Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const harness = makeHarness({svgRef: {current: svgEl}});
+
+    try {
+      renderTooltip(harness);
+      expect(layerHost().style.display).toBe('none');
+
+      harness.dispatch(hoverAt(0));
+      expect(layerHost().style.display).not.toBe('none');
+
+      harness.dispatch(pointerLeave);
+      expect(layerHost().style.display).toBe('none');
+    } finally {
+      if (showDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          'showPopover',
+          showDescriptor,
+        );
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
+      }
+      if (hideDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          'hidePopover',
+          hideDescriptor,
+        );
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'hidePopover');
+      }
+    }
+  });
+
   it('pins the card beside the hovered point for placement="right"', () => {
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const harness = makeHarness({svgRef: {current: svgEl}});

@@ -105,12 +105,14 @@ export const ModalLayering: StoryObj = {
     const dialog = canvasElement.querySelector('dialog');
     await waitFor(() => expect(dialog?.matches(':modal')).toBe(true));
 
-    const eventSurface = canvasElement.querySelector<SVGRectElement>(
-      'svg rect[fill="transparent"]',
-    );
-    expect(eventSurface).not.toBeNull();
+    const getEventSurface = () =>
+      canvasElement.querySelector<SVGRectElement>(
+        'svg rect[fill="transparent"]',
+      );
+    await waitFor(() => expect(getEventSurface()).not.toBeNull());
+    const eventSurface = getEventSurface();
     if (!eventSurface) {
-      return;
+      throw new Error('Chart event surface did not render');
     }
 
     await waitFor(() =>
