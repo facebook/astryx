@@ -80,6 +80,17 @@ describe('Markdown', () => {
       }
     });
 
+    it('keeps citation markers out of released heading ids', () => {
+      render(
+        <Markdown sources={{cite: {title: 'Citation'}}}>
+          {'# Before [cite] after'}
+        </Markdown>,
+      );
+      expect(
+        screen.getByRole('heading', {name: /Before.*after/}),
+      ).toHaveAttribute('id', 'before-after');
+    });
+
     it('passes the generated id to a custom heading component', () => {
       const received: (string | undefined)[] = [];
       render(

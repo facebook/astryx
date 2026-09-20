@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-15
+approved_at: 2026-09-19
 owners: [cixzhang]
 review_triggers: [api, theming]
 verified_by:
@@ -158,6 +158,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR20 | `parseMarkdownAst()` and `parseInlineAst()` return the canonical tree and accept the same options and plugin list as the component; `@astryxdesign/core/Markdown/parser` exposes parsing, canonical AST types, and plugin admission with no client boundary. `createMarkdownPlugin()` infers the extension-node union, so no callsite needs explicit type arguments, and a declaration that yields no usable extension type is a type error rather than a silent `never`.                                                                             |
 | FR21 | A transform runs again for every streamed update and must be idempotent and convergent; transforms whose effect requires complete input use the final-input signal. Semantically equal plugin lists reuse prepared work whether or not the array reference is stable, and development reports one diagnostic when a recreated list prevents reuse.                                                                                                                                                                                                    |
 | FR22 | An extension renderer may opt into the Markdown-owned extension theme target so themes reach plugin output. Opting out leaves output untargeted. The target adds no default styling or anatomy beyond the block spacing and content width Core already applies.                                                                                                                                                                                                                                                                                       |
+| FR23 | Markdown owns an explicit supported dialect rather than claiming full CommonMark or GFM conformance. Adjacent compatible ordered or unordered items remain one list regardless of task-marker presence; each item independently preserves its checked state or ordinary list-item semantics, including at nested levels. The default grammar keeps its released task-list and table support, while `autolink: 'gfm'` adds only the documented autolink behavior and does not toggle any other syntax.                                                 |
 
 ### Allowed variation
 
@@ -185,7 +186,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | Default block content  | Every parsed block uses its corresponding current Markdown target.                                                                                      | Block count, order, density, content width, and alignment.                                      |
 | Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                     | Replacement structure and styling.                                                              |
 | Ordered/unordered list | List carries `markdown-list`.                                                                                                                           | Marker kind, start value, item count, and nested content.                                       |
-| Task list              | The outer List part carries `markdown-list`.                                                                                                            | Checked values and item content.                                                                |
+| Task list              | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.        | Checked values, item content, and adjacent plain items.                                         |
 | Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                                                         | Source and alternative text.                                                                    |
 | Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                     | Alternative text shown by the fallback.                                                         |
 | Inline display         | Document carries `markdown`; no block target renders.                                                                                                   | Inline text, links, code, citations, plugins, and opt-in inline math.                           |
@@ -318,6 +319,7 @@ and this change preserves the existing spelling exactly.
 | FR17–FR18              | container parse/validation, ownership, and dependency tests                | leaf/container declarations, nested containers, foreign read/remove/mint/edit, unmet/misordered dependencies               | Plugin-built parsed children, invalid content, lost fallback children, foreign mint/edit, or generic ownership codes.                                |
 | FR19                   | diagnostic-channel tests in development and production                     | every phase, advisory reports, rate suppression, no handler, malformed list, duplicate Core, version skew                  | A silent production failure, document content in a diagnostic, or one entrypoint throwing where another recovers.                                    |
 | FR20–FR22              | canonical/server imports, inference, streaming, preparation, theming tests | server imports, no explicit type args, chunk boundaries, recreated lists, themed/unthemed extensions                       | Client references, explicit-type workarounds, oscillation, per-render re-preparation, or unreachable opted-in output.                                |
+| FR23                   | parser, renderer, nesting, and public option tests                         | task-only, plain-only, and mixed ordered/unordered lists at top level and nested; autolink omitted/enabled                 | A mixed list splits or loses order/state, a plain item becomes a checkbox, or `autolink: 'gfm'` changes non-autolink syntax.                         |
 | Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`          | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                   | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                              |
 | Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance               | Inert expression strings and renderer-owned semantics                                                                      | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                        |
 
@@ -378,6 +380,15 @@ Markdown parses every extension container's inner span itself and validates chil
 Markdown also owns the protocol's observability and entry surface: `onPluginDiagnostic` makes every failure visible in production without carrying document content, admission failures degrade instead of throwing at any entrypoint, canonical parse entrypoints and a server-safe parser entry exist beside the released projection, extension types are inferred, and extension output may opt into one theme target without becoming default anatomy.
 
 This projects `spec:AST-036/DEC-5` through `DEC-11` into the component owner in FR17–FR22. It rejects leaf-only extensions, plugin-authored parsed children, independent document shells, development-only or free-text diagnostics, parsers reachable only through a client barrel, required hand-written extension aliases, and default anatomy for plugin output.
+
+### DEC-4 — Own an explicit Markdown dialect, not a profile switch
+
+**Reference:** `component:Markdown/DEC-4`
+**Decider:** `cixzhang`, `2026-09-19`
+
+Markdown's released grammar is an explicit Astryx-owned subset. Task-list markers are item semantics inside the ordinary ordered or unordered list structure, so mixed task and plain items stay in one compatible list and each item retains its own state at every nesting level. Released table and task-list syntax remains enabled by default. The optional `autolink: 'gfm'` value adds only the documented autolink behavior; it neither enables another syntax feature nor changes list structure.
+
+This keeps documents stable as Astryx adds or declines individual ecosystem features. It rejects a blanket CommonMark or GFM conformance claim, aggregate all-task/all-plain classification, an implicit whole-grammar mode switch, and silently enabling future GFM features under the existing autolink option.
 
 ## Open questions
 

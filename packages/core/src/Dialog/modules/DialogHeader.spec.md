@@ -60,20 +60,20 @@ Consumer migration instructions belong in consumer docs and release notes.
 No component prop changes. This contract adds three public theming surfaces for
 existing anatomy.
 
-| Concept            | Closed values or states           | Meaning                                                 | Default                      | Owner                        | Stability |
-| ------------------ | --------------------------------- | ------------------------------------------------------- | ---------------------------- | ---------------------------- | --------- |
-| Header row target  | present                           | Styles the row that arranges title content and controls | Existing row visuals         | `module:Dialog/DialogHeader` | stable    |
-| Title block target | present                           | Styles the title/subtitle grouping element              | Existing title stack visuals | `module:Dialog/DialogHeader` | stable    |
-| Close icon target  | present when close action renders | Styles the close glyph itself                           | Existing medium Icon visuals | `module:Dialog/DialogHeader` | stable    |
+| Concept | Closed values or states | Meaning | Default | Owner | Stability |
+| --- | --- | --- | --- | --- | --- |
+| Header row target | present | Styles the row that arranges title content and controls | Existing row visuals | `module:Dialog/DialogHeader` | stable |
+| Title block target | present | Styles the title/subtitle grouping element | Existing title stack visuals | `module:Dialog/DialogHeader` | stable |
+| Close icon target | present when close action renders | Styles the close glyph itself | Existing medium Icon visuals | `module:Dialog/DialogHeader` | stable |
 
 ## Behavioral contract
 
-| ID  | Invariant                                                                                                             | Basis                                     | Review state |
-| --- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------ |
-| FR1 | The header row MUST carry `dialog-header` on the element that applies its row layout and gap.                         | Current implementation and owner decision | settled      |
-| FR2 | The title block MUST carry `dialog-header-title-block` on the element that applies its title/subtitle layout and gap. | Current implementation and owner decision | settled      |
-| FR3 | The rendered close Icon MUST carry `dialog-header-close-icon` on the glyph element that applies icon presentation.    | Current implementation and owner decision | settled      |
-| FR4 | Omitting `onOpenChange` MUST continue to omit the close action and its optional close-icon anatomy.                   | Released behavior                         | settled      |
+| ID | Invariant | Basis | Review state |
+| --- | --- | --- | --- |
+| FR1 | The header row MUST carry `dialog-header` on the element that applies its row layout and gap. | Current implementation and owner decision | settled |
+| FR2 | The title block MUST carry `dialog-header-title-block` on the element that applies its title/subtitle layout and gap. | Current implementation and owner decision | settled |
+| FR3 | The rendered close Icon MUST carry `dialog-header-close-icon` on the glyph element that applies icon presentation. | Current implementation and owner decision | settled |
+| FR4 | Omitting `onOpenChange` MUST continue to omit the close action and its optional close-icon anatomy. | Released behavior | settled |
 
 ### Transformation and precedence order
 
@@ -92,11 +92,11 @@ existing anatomy.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                | Representation authority        | Module contract |
-| ---------------- | ----------------------------------------------------------------- | ------------------------------- | --------------- |
-| Header row       | Owns arrangement and spacing among title content and controls.    | This module                     | FR1             |
-| Title block      | Owns title/subtitle grouping and spacing.                         | This module                     | FR2             |
-| Close icon       | Owns the close glyph's visual box inside the Button-owned action. | This module with Icon rendering | FR3, FR4        |
+| Anatomy or state | Design requirement | Representation authority | Module contract |
+| --- | --- | --- | --- |
+| Header row | Owns arrangement and spacing among title content and controls. | This module | FR1 |
+| Title block | Owns title/subtitle grouping and spacing. | This module | FR2 |
+| Close icon | Owns the close glyph's visual box inside the Button-owned action. | This module with Icon rendering | FR3, FR4 |
 
 ### Theming anatomy
 
@@ -124,11 +124,11 @@ existing anatomy.
 
 ## Verification map
 
-| Contract            | Verification                                                                            | Representative states                        | Mutation or failure expectation                                           |
-| ------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| FR1–FR3             | `DialogHeader.test.tsx`, target inventory, generated probe theme, and source inspection | title only, title/subtitle, close action     | A target is missing, undocumented, or moved away from its owning painter. |
-| FR4                 | Existing close-button presence tests                                                    | with and without `onOpenChange`              | The optional target renders without the optional close action.            |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                           | all three module anatomy entries and targets | Anatomy, docs, runtime targets, and the module map drift.                 |
+| Contract | Verification | Representative states | Mutation or failure expectation |
+| --- | --- | --- | --- |
+| FR1–FR3 | `DialogHeader.test.tsx`, target inventory, generated probe theme, and source inspection | title only, title/subtitle, close action | A target is missing, undocumented, or moved away from its owning painter. |
+| FR4 | Existing close-button presence tests | with and without `onOpenChange` | The optional target renders without the optional close action. |
+| Theming anatomy map | `scripts/check-knowledge.mjs` | all three module anatomy entries and targets | Anatomy, docs, runtime targets, and the module map drift. |
 
 ## Decision log
 
