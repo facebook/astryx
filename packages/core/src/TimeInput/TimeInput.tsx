@@ -147,7 +147,7 @@ export type {
 } from '../Field';
 
 export interface TimeInputProps extends Omit<
-  BaseProps,
+  BaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the input element */
@@ -318,8 +318,8 @@ export interface TimeInputProps extends Omit<
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
-   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * (e.g. `'100%'`). Sizes the whole field so its label, control, and status stay
+   * aligned; use `xstyle`/`className`/`style` for broader presentation changes.
    */
   width?: SizeValue;
   /**
@@ -371,6 +371,10 @@ export function TimeInput({
   xstyle,
   className,
   style,
+  hidden,
+  inert,
+  dir,
+  'aria-hidden': ariaHidden,
   ref,
   id: idProp,
   'aria-labelledby': ariaLabelledByProp,
@@ -681,6 +685,10 @@ export function TimeInput({
         // unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
+      hidden={inputGroup ? hidden : undefined}
+      inert={inputGroup ? inert : undefined}
+      dir={inputGroup ? dir : undefined}
+      aria-hidden={inputGroup ? ariaHidden : undefined}
       onClick={usesNativeTimePicker ? undefined : handleWrapperClick}
       onMouseUp={usesNativeTimePicker ? undefined : handleWrapperMouseUp}
       {...mergeProps(
@@ -697,10 +705,10 @@ export function TimeInput({
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          inputGroup && xstyle,
         ),
-        className,
-        style,
+        inputGroup ? className : undefined,
+        inputGroup ? style : undefined,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       {inputGroup && description && (
@@ -832,7 +840,14 @@ export function TimeInput({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}>
+      hidden={hidden}
+      inert={inert}
+      dir={dir}
+      aria-hidden={ariaHidden}
+      width={width}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       {inputWrapper}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

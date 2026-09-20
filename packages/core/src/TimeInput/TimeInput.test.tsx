@@ -11,12 +11,17 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
 import type {ISOTimeString} from '../utils';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+const testStyles = stylex.create({
+  field: {paddingTop: 7},
+});
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -711,6 +716,67 @@ describe('TimeInput pass-through props', () => {
     const input = screen.getByLabelText('Time');
     expect(input).toHaveAttribute('data-tracking', 'meeting-time');
     expect(input).toHaveAttribute('data-analytics-id', 'start-time');
+  });
+
+  it('routes semantic props to the input and field-wide props to Field', () => {
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        className="custom-field"
+        style={{marginTop: 4}}
+        xstyle={testStyles.field}
+        data-testid="time-control"
+        hidden
+        inert
+        dir="rtl"
+        aria-hidden
+      />,
+    );
+
+    const input = screen.getByTestId('time-control');
+    const field = input.closest('.custom-field');
+    expect(field).not.toBeNull();
+    expect(field).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(field!).paddingTop).toBe('7px');
+    expect(field).toHaveAttribute('hidden');
+    expect(field).toHaveAttribute('inert');
+    expect(field).toHaveAttribute('dir', 'rtl');
+    expect(field).toHaveAttribute('aria-hidden', 'true');
+    expect(input).not.toHaveAttribute('hidden');
+    expect(input).not.toHaveAttribute('inert');
+    expect(input).not.toHaveAttribute('dir');
+    expect(input).not.toHaveAttribute('aria-hidden');
+    expect(getComputedStyle(input).paddingTop).not.toBe('7px');
+  });
+
+  it('keeps field-wide props on the control wrapper inside InputGroup', () => {
+    render(
+      <InputGroup label="Schedule">
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          className="custom-field"
+          style={{marginTop: 4}}
+          xstyle={testStyles.field}
+          data-testid="time-control"
+          hidden
+          dir="rtl"
+          aria-hidden
+        />
+      </InputGroup>,
+    );
+
+    const input = screen.getByTestId('time-control');
+    const wrapper = input.closest('.custom-field');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(wrapper!).paddingTop).toBe('7px');
+    expect(wrapper).toHaveAttribute('hidden');
+    expect(wrapper).toHaveAttribute('dir', 'rtl');
+    expect(wrapper).toHaveAttribute('aria-hidden', 'true');
+    expect(input).not.toHaveClass('custom-field');
+    expect(getComputedStyle(input).paddingTop).not.toBe('7px');
   });
 
   it('runs a consumer onKeyDown for keys the component does not consume', () => {
