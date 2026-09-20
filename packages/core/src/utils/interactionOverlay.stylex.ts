@@ -152,23 +152,45 @@ const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 
 /**
  * The touch press's strength and its release, on the element the controller
- * writes to. Spread into every variant below; `pressedAlpha` is this alone.
+ * writes to. Every variant below carries both, as `[PRESS_ALPHA]:
+ * pressStrength` and `...pressReleaseAnimation`; `pressedAlpha` is the pair
+ * alone.
+ *
+ * Both objects are written with literal keys, and the strength's own key is
+ * spelled inside each variant rather than here, on purpose. StyleX reads a
+ * `stylex.create` call from the raw AST, so a computed key written inside
+ * the call is still a computed key when it evaluates it. An object hoisted
+ * out of the call has been through every other Babel plugin by the time the
+ * spread is resolved, and a preset that lowers ES2015 (`next/babel` under
+ * the default browserslist: apps/sandbox, and a consumer's source build) has
+ * rewritten its computed keys into `_defineProperty` helper calls the
+ * evaluator cannot follow, failing the build with "Referenced constant is
+ * not defined". Literal keys survive the lowering; `PRESS_ALPHA` cannot be
+ * one, since the variable's name is generated, so it stays at each use. The
+ * literal keys equal PRESSED_ON and PRESSED_FADING above.
  */
-const touchPress = {
-  [PRESS_ALPHA]: {
+const pressStrength = {
+  default: null,
+  '[data-pressed="on"]': 1,
+  '[data-pressed="fading"]': 1,
+};
+const pressReleaseAnimation = {
+  animationName: {default: null, '[data-pressed="fading"]': pressRelease},
+  animationDuration: {
     default: null,
-    [PRESSED_ON]: 1,
-    [PRESSED_FADING]: 1,
+    '[data-pressed="fading"]': PRESS_RELEASE_DURATION,
   },
-  animationName: {default: null, [PRESSED_FADING]: pressRelease},
-  animationDuration: {default: null, [PRESSED_FADING]: PRESS_RELEASE_DURATION},
-  animationTimingFunction: {default: null, [PRESSED_FADING]: RELEASE_EASE},
-  animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
+  animationTimingFunction: {
+    default: null,
+    '[data-pressed="fading"]': RELEASE_EASE,
+  },
+  animationFillMode: {default: null, '[data-pressed="fading"]': 'both'},
 };
 
 export const interactionOverlayStyles = stylex.create({
   backgroundColor: {
-    ...touchPress,
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
     backgroundColor: {
       default: 'transparent',
       [ENABLED]: {
@@ -200,7 +222,8 @@ export const interactionOverlayStyles = stylex.create({
     },
   },
   backgroundImage: {
-    ...touchPress,
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
     backgroundImage: {
       default: null,
       [ENABLED]: {
@@ -220,7 +243,8 @@ export const interactionOverlayStyles = stylex.create({
     },
   },
   backgroundImageOnNeutral: {
-    ...touchPress,
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
     backgroundImage: {
       default: neutralImage,
       [ENABLED]: {
@@ -246,7 +270,8 @@ export const interactionOverlayStyles = stylex.create({
    * never had. Same enabled guard and the same two pointers as above.
    */
   pressedBackgroundColor: {
-    ...touchPress,
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
     backgroundColor: {
       default: null,
       [ENABLED]: {
@@ -280,6 +305,7 @@ export const interactionOverlayStyles = stylex.create({
    * the paint fade as one.
    */
   pressedAlpha: {
-    ...touchPress,
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
   },
 });
