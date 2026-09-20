@@ -424,6 +424,9 @@ export function routeGlobalReviewBaselinesAtRevision(
       `review head must be the full resolved commit ${resolvedHead}.`,
     );
   }
+  if (resolvedCommit === resolvedHead) {
+    throw new Error('review head must differ from its base authority commit.');
+  }
   const expectedBase = execFileSync(
     'git',
     ['-C', root, 'merge-base', 'origin/main', resolvedHead],
