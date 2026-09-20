@@ -5,7 +5,8 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; modifier-only key presses do not restore the thumb focus ring
+ * @output Exports Slider and its props; explicit endpoints remain selectable with off-grid steps, and arrow keys visit adjacent steps
+ * Modifier-only key presses do not restore the thumb focus ring.
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -393,6 +394,20 @@ function snapToStep(val: number, min: number, step: number): number {
   return Number(snapped.toFixed(precision));
 }
 
+/** Select the nearest step or explicit endpoint, preferring max on a tie. */
+function getNearestStep(
+  val: number,
+  min: number,
+  max: number,
+  step: number,
+): number {
+  const bounded = clamp(val, min, max);
+  const snapped = clamp(snapToStep(bounded, min, step), min, max);
+  // The final interval can be shorter than step; max remains selectable even
+  // when rounding to the step grid would move an endpoint back into the range.
+  return max - bounded <= Math.abs(snapped - bounded) ? max : snapped;
+}
+
 function getPercent(val: number, min: number, max: number): number {
   if (max === min) {
     return 0;
@@ -601,7 +616,7 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       percent = clamp(percent, 0, 1);
       const raw = min + percent * (max - min);
-      return clamp(snapToStep(raw, min, step), min, max);
+      return getNearestStep(raw, min, max, step);
     },
     [min, max, step, isHorizontal],
   );
@@ -625,7 +640,7 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
+      const clamped = getNearestStep(newVal, min, max, step);
 
       if (isRange) {
         const currentValues = [...values] as [number, number];
@@ -770,16 +785,23 @@ export function Slider({ref, ...props}: SliderProps) {
         setKeyboardFocusThumb(thumbIndex);
       }
       const currentVal = values[thumbIndex];
+      const snapped = snapToStep(currentVal, min, step);
       let newVal: number;
 
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowUp':
-          newVal = currentVal + step;
+          newVal =
+            snapped > currentVal
+              ? snapped
+              : snapToStep(currentVal + step, min, step);
           break;
         case 'ArrowLeft':
         case 'ArrowDown':
-          newVal = currentVal - step;
+          newVal =
+            snapped < currentVal
+              ? snapped
+              : snapToStep(currentVal - step, min, step);
           break;
         case 'PageUp':
           newVal = currentVal + step * 10;
@@ -798,7 +820,7 @@ export function Slider({ref, ...props}: SliderProps) {
       }
 
       e.preventDefault();
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
+      const clamped = getNearestStep(newVal, min, max, step);
       updateValue(thumbIndex, newVal);
 
       // Compute exact post-update values so onChangeEnd reports the correct
