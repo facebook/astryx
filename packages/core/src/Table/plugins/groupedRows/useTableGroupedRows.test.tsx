@@ -123,12 +123,18 @@ describe('useTableGroupedRows', () => {
     expect(coreToggle).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('sets aria-expanded on the header row reflecting collapse state', () => {
+  it('keeps expansion state on the button instead of the semantic row', () => {
     render(<Harness initialCollapsed={new Set(['Core'])} />);
     const rows = screen.getAllByRole('row');
     // rows[1] = Core header (collapsed), rows[2] = Infra header (expanded).
-    expect(rows[1]).toHaveAttribute('aria-expanded', 'false');
-    expect(rows[2]).toHaveAttribute('aria-expanded', 'true');
+    expect(rows[1]).not.toHaveAttribute('aria-expanded');
+    expect(rows[2]).not.toHaveAttribute('aria-expanded');
+    expect(
+      within(rows[1]).getByRole('button', {name: 'Expand group Core'}),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      within(rows[2]).getByRole('button', {name: 'Collapse group Infra'}),
+    ).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('respects groupOrder in the flattened data', () => {

@@ -5,7 +5,7 @@
 /**
  * @file useTableGroupedRows.tsx
  * @input React, StyleX, Icon, Table types + the flat data array
- * @output Exports useTableGroupedRows hook + config/result types
+ * @output Exports useTableGroupedRows hook + config/result types with button-owned disclosure state
  * @position Grouped-rows plugin; consumed by Table via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -408,9 +408,10 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             ...props.htmlProps,
             // Convenience: clicking anywhere on the row toggles it. The chevron
             // button below is the accessible, keyboard-operable control, so the
-            // row keeps its implicit `row` role (no role override here).
+            // row keeps its implicit `row` role and does not duplicate the
+            // button's disclosure state, because aria-expanded is invalid on a
+            // semantic row.
             onClick: toggle,
-            'aria-expanded': !collapsed,
           },
           xstyle: [...props.xstyle, styles.headerRow],
           children: (
