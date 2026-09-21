@@ -125,9 +125,12 @@ jobs:
   # and by the RTL roster. `analyze-pr.js` still decides which changed components
   # each downstream audit receives. When those projections disagree the audits
   # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
+  # Spec-only changes keep only the trusted scope classifier and the
+  # knowledge validator below. Unrelated component discovery must not take a
+  # runner or fan out into visual, accessibility, or RTL work.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -213,7 +216,7 @@ jobs:
   # build-storybook + build-sandbox below.
   test-ui:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
@@ -276,7 +279,7 @@ jobs:
 
   test-node:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -324,7 +327,7 @@ jobs:
   # item through the exact pinned ShadCN client and compiles every written source.
   registry-contract:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     timeout-minutes: 30
     permissions:
@@ -388,7 +391,7 @@ jobs:
   # projects their combined result without creating another surface lane.
   test:
     needs: [check-scope, test-ui, test-node, test-build, registry-contract]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -415,7 +418,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -1253,8 +1256,8 @@ jobs:
 
   # Stable required context joining the five package shards above.
   pr-rtl:
-    needs: [check-components, pr-rtl-shard]
-    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' }}
+    needs: [check-scope, check-components, pr-rtl-shard]
+    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:

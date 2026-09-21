@@ -17,6 +17,8 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -32,6 +34,8 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -98,21 +102,68 @@ describe('spec-only workflow contract', () => {
     }
   });
 
-  it('keeps required CI names green while skipping heavy work', () => {
+  it('routes spec-only changes without unrelated CI commands', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
       'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
     );
     expect(ci).toContain('spec_only: ${{ steps.scope.outputs.spec_only }}');
-    expect(ci).toContain('node scripts/check-knowledge.mjs');
-    expect(ci).toContain("needs.check-scope.outputs.spec_only != 'true'");
-    expect(ci).toContain('build:');
-    expect(ci).toContain('docsite-test:');
-    expect(ci).toContain('test:');
+
+    const jobBlock = name => {
+      const start = ci.indexOf(`  ${name}:`);
+      expect(start, name).toBeGreaterThanOrEqual(0);
+      const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
+      return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
+    };
+    const unrelatedJobs = [
+      'check-components',
+      'test-ui',
+      'test-node',
+      'registry-contract',
+      'test',
+      'build-storybook',
+      'pr-rtl',
+    ];
+    for (const job of unrelatedJobs) {
+      expect(jobBlock(job), job).toContain(
+        "needs.check-scope.outputs.spec_only != 'true'",
+      );
+    }
+    expect(jobBlock('build')).toContain(
+      "needs.build-storybook.result != 'skipped'",
+    );
+
+    const docsite = jobBlock('docsite-test');
+    expect(docsite).toContain("needs.check-scope.outputs.spec_only == 'true'");
+    expect(docsite).toContain('node scripts/check-knowledge.mjs');
 
     const lint = read('.github/workflows/lint.yml');
-    expect(lint).toContain("steps.scope.outputs.spec_only == 'true'");
-    expect(lint).toContain('node scripts/check-knowledge.mjs');
+    expect(lint).toContain('.github/scripts/change-scope.cjs');
+    expect(lint).not.toContain('node scripts/check-knowledge.mjs');
+
+    for (const workflow of [
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
+    ]) {
+      const source = read(workflow);
+      expect(source, workflow).toContain(
+        "if: steps.scope.outputs.spec_only == 'true'",
+      );
+      const expensiveSteps = source
+        .split(/\n      - /)
+        .slice(1)
+        .filter(step =>
+          /(?:github\/actions\/setup|pnpm|playwright|cli-smoke-test|dependency-check)/.test(
+            step,
+          ),
+        );
+      expect(expensiveSteps.length, workflow).toBeGreaterThan(0);
+      for (const step of expensiveSteps) {
+        expect(step, `${workflow}: ${step.slice(0, 60)}`).toContain(
+          "steps.scope.outputs.spec_only != 'true'",
+        );
+      }
+    }
   });
 
   it('sets up dependencies before spec validation and skips heavy spec-only work', () => {

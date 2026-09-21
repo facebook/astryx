@@ -212,11 +212,14 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
-  it('keeps specialized lanes as explicit successful no-audit classifications', () => {
+  it('skips component discovery for spec-only changes and classifies other lightweight lanes', () => {
     const classification = workflow.jobs['check-components'];
-    expect(classification.if).toBe("github.event_name == 'pull_request'");
+    expect(classification.if).toContain("github.event_name == 'pull_request'");
+    expect(classification.if).toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
     const commands = runLines(classification);
-    for (const lane of ['docsite_only', 'spec_only', 'tooling_only']) {
+    for (const lane of ['docsite_only', 'tooling_only']) {
       expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
     }
     expect(commands).toContain('has_components=false');

@@ -48,10 +48,6 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate spec records
-        if: steps.scope.outputs.spec_only == 'true'
-        run: node scripts/check-knowledge.mjs
-
       - name: Skip full lint for lightweight docs
         if: steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.spec_only == 'true'
         run: echo "Lightweight documentation PR — skipping full lint"
