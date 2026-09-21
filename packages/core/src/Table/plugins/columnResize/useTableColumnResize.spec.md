@@ -146,10 +146,12 @@ remain in `useTableColumnResize.doc.mjs`.
 - **PR1 — Disclosure costs no render.** Entering or leaving the header MUST NOT set
   React state or rerender the Table. Disclosure is a declarative style state.
   FR10's scroll gate is the one permitted exception to the no-listener rule: the
-  module MAY attach a single passive scroll listener on the scroll region, and it
-  MUST write its scroll state straight to the DOM as an attribute that CSS reads.
-  That listener MUST NOT set React state or rerender the Table, and no other
-  listener or timer may be added for disclosure.
+  module MAY attach a single passive scroll listener on the scroll region, plus the
+  settle signal that tells it when to reopen — `scrollend` where the browser has
+  it, otherwise one debounced timer. It MUST write its scroll state straight to the
+  DOM, as an attribute or an inline custom property that CSS reads, and MUST NOT
+  set React state or rerender the Table. No other listener or timer may be added
+  for disclosure.
 - **PR2 — One measurement path.** Indicator extent reuses the module's existing
   shared resize observation of the table. Disclosure adds no observer, and extent
   measurement MUST NOT observe anything whose size the indicator itself changes.
@@ -201,16 +203,19 @@ without a target of its own.
   slots, and the scroll region this contract's FR2 protects. Table's aggregate
   record does not own column-resize anatomy, which is why this boundary is separate.
 - The sticky-columns plugin (`useTableStickyColumns`, no record of its own yet)
-  composes with this module on the same header cell, and the two are
-  order-dependent. Both contribute `position` through the header cell's `xstyle` — this module appends `relative` so its absolute boundary
-  control anchors, sticky appends `sticky` — so the later plugin's value wins and
-  composition order decides whether a pinned column actually pins. Sticky MUST
-  resolve after this module. Neither plugin appears in Table's canonical name
-  sequence today, so that order is a companion change to `component:Table` FR9; this
-  record only names the dependency. A second coupling stays open: sticky computes
-  its cumulative pin offsets from declared column widths while a drag writes
-  rendered pixel widths to the DOM, so pin offsets go stale after a resize. Neither
-  record contracts that reconciliation yet.
+  composes with this module on the same header cell. Both contribute `position` —
+  this module appends `relative` so its absolute boundary control anchors, sticky
+  needs `sticky` to pin — and while both went through the cell's `xstyle`, the
+  later plugin's value won and composition order decided whether a pinned column
+  actually pinned. Ordering is not the fix: `component:Table` owns plugin order and
+  treats it as a layout decision, never a correctness one, so a pair that works in
+  one order and breaks in the other is a defect in the pair. Sticky therefore
+  writes `position` inline alongside the offsets it already wrote there, which
+  outranks either plugin's classes and makes the composition order-independent. A
+  second coupling stays open: sticky computes its cumulative pin offsets from
+  declared column widths while a drag writes rendered pixel widths to the DOM, so
+  pin offsets go stale after a resize. Neither record contracts that reconciliation
+  yet.
 - `architecture:interaction-modality` owns hover capability versus modality history
   and the visibility rules for the shared focus indicator. FR6 and AR3 apply those
   rules; they do not restate them.
