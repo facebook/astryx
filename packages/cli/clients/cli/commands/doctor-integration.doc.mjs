@@ -14,7 +14,7 @@ export const doc = {
   description:
     'The integration-authoring diagnostics group. Validate a manifest and all ' +
     'contributions with `validate`, or check templates, components, and docs ' +
-    'against built-in Core identities before publishing.',
+    'against built-in Core identities before publishing. Theme catalogs are checked by validate.',
   subcommands: ['validate', 'templates', 'components', 'docs'],
   examples: [
     {

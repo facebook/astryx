@@ -132,8 +132,8 @@ export const docs = {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
       },
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {
         className: 'astryx-progressbar',
         visualProps: ['variant'],
@@ -297,8 +297,8 @@ export const docsZh = {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
       },
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {
         className: 'astryx-progressbar',
         visualProps: ['variant'],

@@ -50,9 +50,29 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/dashboard/page'),
   ),
+  'dashboard-alert-rail': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-alert-rail/page'),
+  ),
+  'dashboard-cohort-funnel': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-cohort-funnel/page'),
+  ),
+  'dashboard-comparison': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-comparison/page'),
+  ),
   'dashboard-composition': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/dashboard-composition/page'),
+  ),
+  'dashboard-progress': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-progress/page'),
+  ),
+  'dashboard-scorecard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-scorecard/page'),
   ),
   'detail-page': lazy(
     () =>

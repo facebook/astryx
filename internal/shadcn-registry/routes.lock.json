@@ -112,8 +112,28 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-axis",
+      "path": "components/charts/chart-axis",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-grid",
+      "path": "components/charts/chart-grid",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-legend",
+      "path": "components/charts/chart-legend",
+      "aliases": []
+    },
+    {
       "name": "component-charts-chart-swatch",
       "path": "components/charts/chart-swatch",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
       "aliases": []
     },
     {
@@ -792,6 +812,11 @@
       "aliases": []
     },
     {
+      "name": "component-scrollable-area",
+      "path": "components/scrollable-area",
+      "aliases": []
+    },
+    {
       "name": "component-section",
       "path": "components/section",
       "aliases": []
@@ -1409,6 +1434,11 @@
     {
       "name": "example-center-vertical-horizontal-center",
       "path": "examples/center/vertical-horizontal-center",
+      "aliases": []
+    },
+    {
+      "name": "example-chart-trend-comparison",
+      "path": "examples/chart/trend-comparison",
       "aliases": []
     },
     {
@@ -3691,6 +3721,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-scrollable-area",
+      "path": "hooks/use-scrollable-area",
+      "aliases": []
+    },
+    {
       "name": "hook-use-streaming-text",
       "path": "hooks/use-streaming-text",
       "aliases": []
@@ -3848,6 +3883,11 @@
     {
       "name": "showcase-banner-statuses",
       "path": "showcases/banner/statuses",
+      "aliases": []
+    },
+    {
+      "name": "showcase-base-typeahead-custom-search-bar",
+      "path": "showcases/base-typeahead/custom-search-bar",
       "aliases": []
     },
     {

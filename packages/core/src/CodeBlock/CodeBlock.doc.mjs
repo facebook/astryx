@@ -151,8 +151,8 @@ export const docs = {
       {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
       {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
       {className: 'astryx-code-block-copy-button'},
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block'},
       {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block-header'},
       {className: 'astryx-codeblock-title', visualProps: ['size', 'language'], deprecatedFor: 'code-block-title'},

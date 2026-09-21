@@ -40,6 +40,17 @@ deciding_specs:
 
 # Theme compilation
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+  }
+}
+```
+
 This record defines how one theme definition becomes usable styles.
 
 ## Purpose
@@ -117,14 +128,17 @@ Platform-specific details stay inside that compiler.
 - **INV10 — Shared intent keeps the same meaning.** A token or supported component
   override means the same thing across outputs. Platform-only features have an
   explicit support boundary.
-- **INV11 — Theme-local names remain exact.** For an enrolled theme, the compiler
-  emits the normalized `localTokens` map beside portable declarations without
-  rewriting names or values. Runtime and static output use the same rules, and
-  invalid enrolled input is rejected before either path writes partial CSS.
+- **INV11 — Theme-local names remain exact and prefix-independent.** For an enrolled
+  theme, the compiler emits the normalized `localTokens` map beside portable
+  declarations without rewriting names or values. A prefix neither grants nor
+  restricts ownership. Exact references to effective enrolled declarations retain
+  owner, lineage, collision, and cycle validation; non-exact references remain
+  external. Runtime and static output use the same rules, and invalid enrolled input
+  is rejected before either path writes partial CSS.
 - **INV12 — Adaptation order is observable.** Root declarations emit first,
-  adaptation blocks remain separate in authored order, and media-surface
-  overrides emit last. Duplicate conditions and later root-restoring writes are
-  preserved exactly; runtime and static output use the same blocks.
+  adaptation blocks remain separate in authored order, and media-surface overrides
+  emit last. Duplicate conditions and later root-restoring writes are preserved
+  exactly; runtime and static output use the same blocks.
 
 This record does not own:
 
@@ -210,11 +224,12 @@ This record does not own:
 
 ## Deciding specs
 
-AST-006 decisions 2 and 4 establish exact local-token output and atomic shared
-validation for enrolled themes. AST-012 decisions 3 and 4 establish ordered
-adaptation blocks and source/built metadata parity. The system owner separately
-selected one definition with platform-specific outputs and the guaranteed,
-best-effort, public-semantic, and private implementation tiers.
+AST-006 decisions 2 and 4, as amended on 2026-09-12, establish
+prefix-independent local-token names and atomic shared validation for enrolled themes.
+AST-012 decisions 3 and 4 establish ordered adaptation blocks and source/built metadata
+parity. The system owner separately selected one definition with platform-specific
+outputs and the guaranteed, best-effort, public-semantic, and private implementation
+tiers.
 
 ## Verification
 
@@ -232,8 +247,15 @@ best-effort, public-semantic, and private implementation tiers.
 
 ## Known conformance and verification gaps
 
-The invariants above are the approved current contract. The following shipped
-behavior does not yet conform and must not be treated as enforcement:
+Prefix-independent `localTokens` key acceptance is accepted but unshipped. The current
+compiler still requires the original theme-derived prefix and uses that prefix to
+classify local references. Until implementation lands, INV11's prefix-independent
+clauses are current authority but not enforcement; exact-name emission and the existing
+enrollment, owner, lineage, collision, cycle, and legacy-unenrolled behavior remain
+shipped.
+
+The remaining invariants above describe the approved current contract. The following
+shipped behavior does not yet conform and must not be treated as enforcement:
 
 - **Private author input is not rejected end to end.** `themeBuild` reports direct
   `--_*` values as errors in its receipt/log, but continues compiling and emits

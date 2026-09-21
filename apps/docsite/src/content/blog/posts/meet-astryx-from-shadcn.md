@@ -1,6 +1,6 @@
 ---
 title: 'Meet people where they already build'
-description: 'An experiment that lets shadcn users install Astryx components, examples, blocks, and pages without giving up the Astryx package or CLI.'
+description: 'A compatibility path for shadcn users to install Astryx components, examples, blocks, and pages without giving up the Astryx package or CLI.'
 date: '2026-09-02'
 type: 'engineering'
 draft: true
@@ -30,7 +30,7 @@ shadcn has a [Registry protocol](https://ui.shadcn.com/docs/registry). A registr
 Astryx can do the same thing.
 
 ```bash
-npx shadcn@latest add <registry-origin>/templates/dashboard.json
+npx shadcn@4.19.0 add <registry-origin>/templates/dashboard.json
 ```
 
 The important bit is what happens after that command. Astryx does not become a pile of copied component source. The command installs the real `@astryxdesign/core` package. The dashboard code it copies imports `Card`, `Table`, `Button`, `ProgressBar`, and everything else from that package.
@@ -45,6 +45,8 @@ This splits the catalog into two useful kinds of install:
 - An **example, block, or page** entry copies editable application code that imports the package.
 
 That distinction matters. Copying a complete Button implementation into every app makes upgrades harder and lets every copy drift. Copying a dashboard that uses the published Button is normal application development. The design system stays a dependency. The page stays yours.
+
+Copied compositions include a small adjacent Astryx receipt. After you update the Astryx packages, `astryx upgrade --registry` previews changes against the installed base and the matching registry release. Add `--apply` to update unchanged files and merge non-overlapping edits. Conflicts leave your file untouched with a separate review file.
 
 Deep customization still exists, but it remains explicit through `astryx swizzle`. A normal registry install does not cross that line for you.
 
@@ -66,16 +68,17 @@ The two paths can sit next to each other:
 
 ```bash
 # I know the exact item and already use shadcn
-npx shadcn@latest add <registry-origin>/examples/button/variants.json
+npx shadcn@4.19.0 add <registry-origin>/examples/button/variants.json
 
 # I need help finding and maintaining the right pieces
 astryx build "analytics dashboard with filters"
 astryx doctor
-astryx upgrade --apply
+astryx upgrade --registry
+astryx upgrade --registry --apply
 ```
 
 ## Why bother?
 
 Incremental adoption is the point. A team can try one Astryx block inside its current app. It can add a full page when that is useful. It does not need to declare a migration project or learn a new tool before seeing value.
 
-If the experiment holds up, Astryx gets a wider front door without giving up the package boundary or the richer CLI experience. We meet people where they already build, and give them a reason to come further in.
+Astryx gets a wider front door without giving up the package boundary or the richer CLI experience. We meet people where they already build, and give them a reason to come further in.

@@ -20,10 +20,15 @@ import {
 } from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {
+  templateMetadata,
+  templateMetadataCount,
+} from '../generated/templateMetadataRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
+import {TEMPLATE_COMPONENTS} from '../components/templateComponents';
 import {exampleRegistry} from '../generated/exampleRegistry';
 import {normalizeComponentCategory} from '../lib/componentCategories';
 
@@ -239,7 +244,11 @@ describe('componentRegistry', () => {
     expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
     expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
       'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
       'ChartSwatch',
+      'ChartTooltip',
     ]);
     expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
       ['RichTextEditor'],
@@ -600,6 +609,20 @@ describe('componentRegistry', () => {
     expect(layoutPanel!.playground?.wrapper).toMatchObject({
       component: 'Layout',
       slotProp: 'start',
+    });
+  });
+
+  it('LayoutFooter declares a playground wrapper in footer slot so preview is not empty (#5895)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutFooter = core.find(c => c.name === 'LayoutFooter');
+    expect(layoutFooter).toBeDefined();
+    expect(layoutFooter!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutFooter!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'footer',
     });
   });
 
@@ -973,6 +996,17 @@ describe('templateRegistry', () => {
   it('discovers page templates', () => {
     expect(templateCount).toBeGreaterThan(10);
     expect(templates.length).toBe(templateCount);
+    expect(templateMetadataCount).toBe(templateCount);
+    expect(templateMetadata).toHaveLength(templateCount);
+  });
+
+  it('keeps source out of the metadata-only registry', () => {
+    expect(templateMetadata.map(template => template.slug)).toEqual(
+      templates.map(template => template.slug),
+    );
+    for (const template of templateMetadata) {
+      expect(template).not.toHaveProperty('source');
+    }
   });
 
   it('templates have required fields', () => {
@@ -988,6 +1022,27 @@ describe('templateRegistry', () => {
     const slugs = templates.map(t => t.slug);
     expect(slugs).toContain('dashboard');
     expect(slugs).toContain('settings');
+  });
+
+  it('surfaces all dashboard templates with live previews', () => {
+    const dashboards = templates.filter(template =>
+      template.category.startsWith('Dashboard'),
+    );
+
+    expect(dashboards.map(template => template.slug).sort()).toEqual([
+      'dashboard',
+      'dashboard-alert-rail',
+      'dashboard-cohort-funnel',
+      'dashboard-comparison',
+      'dashboard-composition',
+      'dashboard-progress',
+      'dashboard-scorecard',
+    ]);
+    for (const template of dashboards) {
+      expect(template.isReady).toBe(true);
+      expect(template.isHiddenFromOverview).toBe(false);
+      expect(TEMPLATE_COMPONENTS[template.slug]).toBeDefined();
+    }
   });
 
   it('no duplicate template slugs', () => {

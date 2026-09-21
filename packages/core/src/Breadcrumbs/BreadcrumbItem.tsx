@@ -96,8 +96,9 @@ export interface BreadcrumbItemProps extends Omit<
   onClick?: (e: MouseEvent<HTMLElement>) => void;
   /**
    * Marks this item as the current page. Renders as a span with aria-current="page".
-   * If not set on any item, the last item is auto-detected as current.
-   * @default false
+   * When omitted, the last item is auto-detected as current if no item is
+   * explicitly current. Pass `false` to opt this item out of auto-detection.
+   * @default undefined
    */
   isCurrent?: boolean;
   /**
@@ -395,8 +396,7 @@ export function BreadcrumbItem({
             menu={menu}
             menuSize={resolvedMenuSize}
             variant={ctx.variant}
-            isCurrent
-            label={children}>
+            isCurrent>
             {content}
           </BreadcrumbMenuTrigger>
         ) : (
@@ -439,8 +439,7 @@ export function BreadcrumbItem({
           ref={contentRef}
           menu={menu}
           menuSize={resolvedMenuSize}
-          variant={ctx.variant}
-          label={children}>
+          variant={ctx.variant}>
           {content}
         </BreadcrumbMenuTrigger>
       ) : href != null ? (
@@ -493,8 +492,6 @@ interface BreadcrumbMenuTriggerProps {
   ref: React.Ref<HTMLElement>;
   /** The link-styled label content rendered inside the trigger button. */
   children: ReactNode;
-  /** Accessible name for the menu surface (the crumb's label). */
-  label: ReactNode;
   menu: DropdownMenuOption[] | ReactNode;
   menuSize: DropdownMenuSize;
   variant: BreadcrumbsVariant;
@@ -511,20 +508,17 @@ interface BreadcrumbMenuTriggerProps {
 function BreadcrumbMenuTrigger({
   ref,
   children,
-  label,
   menu,
   menuSize,
   variant,
   isCurrent = false,
 }: BreadcrumbMenuTriggerProps) {
   const menuId = useId();
+  const triggerId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isSupporting = variant === 'supporting';
 
   const popover = usePopover({
-    onHide: useCallback(() => {
-      buttonRef.current?.focus();
-    }, []),
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
@@ -637,6 +631,7 @@ function BreadcrumbMenuTrigger({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         {...popover.triggerProps}
+        id={triggerId}
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-current={isCurrent ? 'page' : undefined}
@@ -670,7 +665,7 @@ function BreadcrumbMenuTrigger({
           ref={listRef}
           id={menuId}
           role="menu"
-          aria-label={typeof label === 'string' ? label : undefined}
+          aria-labelledby={triggerId}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('breadcrumb-menu'),

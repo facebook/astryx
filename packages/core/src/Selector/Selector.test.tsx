@@ -3032,8 +3032,8 @@ describe('Selector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name rides along for a
-    // deprecation window.
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-selector-clear-icon');
@@ -3060,8 +3060,8 @@ describe('Selector clear icon theme target', () => {
   it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
     // The clear affordance now composes the shared InputClearButton (a ghost
     // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target and — for a deprecation window — the
-    // original `astryx-selector-clear-icon`. Aside from those target classes
+    // `astryx-input-clear-icon` target plus the supported compatibility alias
+    // `astryx-selector-clear-icon`. Aside from those target classes
     // it matches the shared button's own `close`/`sm`/`secondary` glyph
     // exactly, so the default look is defined in one place.
     render(

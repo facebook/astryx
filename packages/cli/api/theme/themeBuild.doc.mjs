@@ -73,7 +73,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}, and validation warnings—including exact canonical replacements for deprecated component target keys. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',

@@ -17,9 +17,19 @@ nested `AGENTS.md`.
   `packages/cli/assets/docs/`.
 - Contributors: read `CONTRIBUTING.md` and the relevant guidance linked from
   `docs/README.md`.
-- Component work: read the component's `{Name}.spec.md` when one exists, then
-  any `module:*` records it lists for the public module being changed, followed by
-  consumer docs, tests, and implementation.
+- Pull requests: choose one primary intent and use its template under
+  `.github/PULL_REQUEST_TEMPLATE/`; read `docs/contributing/pull-requests.md`
+  before opening or reviewing a mixed change.
+- Component work: derive the review's semantic triggers, load matching `current`
+  global baseline claims with `node scripts/review-global-baselines.mjs
+--authority-commit <base-sha> --review-head <head-sha> --triggers
+<comma-separated-triggers>`, then read
+  the component's `{Name}.spec.md` when one exists and any `module:*` records it
+  lists. Load global records before narrower owners, but resolve the direct
+  component or family owner first when it governs the exact delta. A global
+  route exposes only the listed claim; it never makes the whole record govern
+  the component or change. Preserve each matched record, claim, trigger, and
+  match reason in the review receipt.
 - Cross-component work: read the relevant contract under `docs/families/`,
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.

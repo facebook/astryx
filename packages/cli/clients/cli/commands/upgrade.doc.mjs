@@ -13,18 +13,20 @@ export const doc = {
   name: 'upgrade',
   displayName: 'astryx upgrade',
   namespace: 'cli',
-  summary: 'Run codemods to migrate between versions',
+  summary: 'Migrate versions and update ShadCN-copied compositions',
   description:
     'Migrates project source from a previous Astryx version to the installed one by ' +
     'running the registered codemods, and refreshes the fully rendered managed ' +
     'agent-docs block when Core or configured integration guidance changes. ' +
-    'Dry-run by default; --apply writes the block after selected codemods and hooks succeed.',
+    'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
+    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
   fn: 'upgrade',
   options: [
     {
       flag: '--from <version>',
       param: 'options.from',
-      description: 'Previous version before the dependency upgrade',
+      description:
+        'Previous version before the dependency upgrade; required unless --list or --registry is set',
     },
     {
       flag: '--apply',
@@ -70,6 +72,13 @@ export const doc = {
       default: false,
     },
     {
+      flag: '--registry',
+      param: 'options.registry',
+      description:
+        'Only reconcile ShadCN-copied compositions; --from is not required',
+      default: false,
+    },
+    {
       flag: '--list',
       param: 'options.list',
       description: 'List available codemods',
@@ -78,13 +87,17 @@ export const doc = {
   ],
   examples: [
     {label: 'List available codemods', cli: 'astryx upgrade --list --json'},
+    {
+      label: 'Update ShadCN-copied compositions',
+      cli: 'astryx upgrade --registry --apply',
+    },
     {label: 'Apply a migration', cli: 'astryx upgrade --from 0.1.0 --apply'},
   ],
   exitCodes: [
     {code: 0, when: 'success (including dry-run previews)'},
     {
       code: 1,
-      when: 'missing or invalid --from, a --path escape, an unknown codemod, or a codemod failure',
+      when: 'missing or invalid --from, a --path escape, an unknown codemod, a codemod failure, or unresolved registry items',
     },
   ],
   related: ['init', 'doctor'],

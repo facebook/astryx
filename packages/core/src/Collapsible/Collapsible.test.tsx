@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {Collapsible} from './Collapsible';
 import {CollapsibleGroup} from './CollapsibleGroup';
 
@@ -613,5 +614,25 @@ describe('Collapsible', () => {
       const {chevronIndex, labelIndex} = triggerParts('inner');
       expect(chevronIndex).toBeGreaterThan(labelIndex);
     });
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the trigger row while it is pressed', () => {
+    render(
+      <Collapsible trigger="Details">
+        <p>Body</p>
+      </Collapsible>,
+    );
+    expect(hasPressedArm(screen.getByRole('button'))).toBe(true);
+  });
+
+  it('does not press a disabled trigger', () => {
+    render(
+      <Collapsible trigger="Details" isDisabled>
+        <p>Body</p>
+      </Collapsible>,
+    );
+    expect(hasPressedArm(screen.getByRole('button'))).toBe(false);
   });
 });

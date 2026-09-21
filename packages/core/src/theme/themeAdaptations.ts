@@ -27,11 +27,7 @@ import type {MotionScaleConfig} from './expandMotionScale';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
-import {
-  assertNoTokenCycles,
-  isReservedThemeLocalTokenName,
-  resolveAdaptationLocalTokens,
-} from './localTokens';
+import {assertNoTokenCycles, resolveAdaptationLocalTokens} from './localTokens';
 
 // =============================================================================
 // Public authoring vocabulary
@@ -928,9 +924,12 @@ export function resolveThemeAdaptationRules(
     }
 
     for (const name of Object.keys(rule.value.tokens ?? {})) {
-      if (isReservedThemeLocalTokenName(name)) {
+      if (
+        rootLocalTokens &&
+        Object.prototype.hasOwnProperty.call(rootLocalTokens, name)
+      ) {
         throw new Error(
-          `defineTheme("${themeName}").adaptations.rules[${index}].value.tokens["${name}"] uses the reserved --astryx-theme-* namespace; write it through value.localTokens instead.`,
+          `defineTheme("${themeName}").adaptations.rules[${index}].value.tokens["${name}"] matches an enrolled theme-local declaration; write it through value.localTokens instead.`,
         );
       }
     }
@@ -940,8 +939,6 @@ export function resolveThemeAdaptationRules(
       index,
       rule.value.localTokens,
       rootLocalTokens,
-      resolved.tokens,
-      resolved.components,
     );
 
     return {

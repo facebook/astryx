@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {themeDataAttributes, themeProps} from './themeProps';
 
 describe('themeProps', () => {
@@ -8,19 +8,38 @@ describe('themeProps', () => {
     expect(themeProps('card').className).toBe('astryx-card');
   });
 
-  it('does not emit bare prop-value classes', () => {
+  it('continues to emit released bare prop and state classes through 0.7.0', () => {
     expect(
       themeProps('button', {variant: 'secondary', size: 'sm'}).className,
-    ).toBe('astryx-button');
-    expect(themeProps('heading', {level: 1}).className).toBe('astryx-heading');
+    ).toBe('astryx-button secondary sm');
+    expect(themeProps('switch', {checked: 'checked'}).className).toBe(
+      'astryx-switch checked',
+    );
+  });
+
+  it('prefixes numeric compatibility classes with the prop name', () => {
+    expect(themeProps('heading', {level: 1}).className).toBe(
+      'astryx-heading level-1',
+    );
+    expect(themeProps('heading', {level: '3'}).className).toBe(
+      'astryx-heading level-3',
+    );
+  });
+
+  it('skips nullish compatibility classes', () => {
+    expect(
+      themeProps('button', {variant: 'primary', size: undefined}).className,
+    ).toBe('astryx-button primary');
   });
 
   it('continues to emit deprecated target-name aliases when requested', () => {
     expect(
-      themeProps('progress-bar', undefined, {
-        legacyNames: ['progressbar'],
-      }).className,
-    ).toBe('astryx-progress-bar astryx-progressbar');
+      themeProps(
+        'progress-bar',
+        {variant: 'positive'},
+        {legacyNames: ['progressbar']},
+      ).className,
+    ).toBe('astryx-progress-bar positive astryx-progressbar');
   });
 
   it('reflects visual props as data attributes', () => {
@@ -45,9 +64,9 @@ describe('themeProps', () => {
     });
   });
 
-  it('returns the target class and data attributes together', () => {
+  it('returns compatibility classes and canonical data attributes together', () => {
     expect(themeProps('button', {variant: 'primary', size: 'sm'})).toEqual({
-      className: 'astryx-button',
+      className: 'astryx-button primary sm',
       'data-variant': 'primary',
       'data-size': 'sm',
     });

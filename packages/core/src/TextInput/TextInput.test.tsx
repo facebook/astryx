@@ -2,7 +2,8 @@
 
 /**
  * @file TextInput.test.tsx
- * @input Uses vitest, @testing-library/react, TextInput component
+ * @input Uses vitest, @testing-library/react, TextInput component, and the
+ *   shared declaredValue StyleX read-back helper
  * @output Unit tests for TextInput component behavior
  * @position Testing; validates TextInput.tsx implementation
  *
@@ -13,6 +14,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {declaredValue} from '../__tests__/stylexDeclarations';
 import {InputGroup} from '../InputGroup';
 import {TextInput} from './TextInput';
 
@@ -560,6 +562,51 @@ describe('TextInput', () => {
       expect(handleEnter).toHaveBeenCalledTimes(1);
     });
 
+    it('does not call onEnter when Enter commits an IME conversion', () => {
+      // The browser fires this composing keydown for the Enter that commits an
+      // IME candidate (isComposing: true, or the legacy keyCode 229) before
+      // compositionend writes the conversion. It must NOT trigger onEnter —
+      // submit/save actions would fire before the user intends to submit.
+      // See utils/ime.ts and #6082.
+      const handleEnter = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleEnter).not.toHaveBeenCalled();
+      fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+      expect(handleEnter).not.toHaveBeenCalled();
+
+      // A real, non-composing Enter after composition ends still submits.
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('still calls onKeyDown for composing keydowns', () => {
+      // onKeyDown is the raw escape hatch: it keeps receiving IME keydowns so
+      // consumers with custom composition handling are unaffected by the
+      // onEnter guard.
+      const handleKeyDown = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onKeyDown={handleKeyDown}
+          onEnter={() => {}}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
+    });
+
     it('does not call onEnter for other keys', async () => {
       const user = userEvent.setup();
       const handleEnter = vi.fn();
@@ -1019,3 +1066,69 @@ describe('TextInput readonly theme state', () => {
     expect(root).not.toHaveAttribute('data-readonly');
   });
 });
+
+describe('TextInput clear button focus behavior', () => {
+  it('synchronously restores focus to the input on keyboard activation (detail === 0)', () => {
+    const handleChange = vi.fn();
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    clearButton.focus();
+    expect(document.activeElement).toBe(clearButton);
+
+    // Keyboard activation (e.g. Enter / Space on focused button yields detail 0)
+    fireEvent.click(clearButton, {detail: 0});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    // Must be synchronously focused without waiting for animation frames
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+    const handleChange = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    // Pointer activation (detail > 0)
+    fireEvent.click(clearButton, {detail: 1});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    expect(rafSpy).toHaveBeenCalled();
+    rafSpy.mockRestore();
+  });
+});
+
+describe('TextInput text size', () => {
+  it('renders the theme body size outside the iOS zoom gate', () => {
+    // The 16px floor rides `@supports (-webkit-touch-callout: none)` inside
+    // `@media (pointer: coarse)` — iOS Safari is the browser that zooms on
+    // focus under 16px, so the floor targets it alone instead of every
+    // coarse pointer. jsdom's CSSOM drops at-rule-wrapped declarations it
+    // cannot parse, so the gate itself is pinned against the sources in
+    // inputFontFloor.test.ts; what this asserts is the visible result off
+    // the gate: the plain token size, not a floor.
+    render(<TextInput label="Name" value="" onChange={() => {}} />);
+    expect(declaredValue(screen.getByLabelText('Name'), 'font-size')).toBe(
+      'var(--text-body-size)',
+    );
+  });
+});
+

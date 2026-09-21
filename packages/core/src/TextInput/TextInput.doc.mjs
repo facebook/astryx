@@ -74,7 +74,8 @@ export const docs = {
     {
       name: 'onEnter',
       type: '() => void',
-      description: 'Callback fired when the user presses the Enter key.',
+      description:
+        'Callback fired when the user presses the Enter key. IME-safe: Enter used to commit a Japanese/Chinese/Korean conversion does not fire it.',
     },
     {
       name: 'onKeyDown',

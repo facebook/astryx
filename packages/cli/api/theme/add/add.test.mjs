@@ -28,6 +28,7 @@ describe('themeAdd (api/theme/add)', () => {
     const result = await themeAdd('neutral', {cwd: tmpDir});
     expect(result.type).toBe('theme.add');
     expect(result.data.slug).toBe('neutral');
+    expect(result.data.package).toBe('@astryxdesign/cli');
     expect(result.data.outputDir).toBe(path.join('src', 'themes', 'neutral'));
     expect(result.data.files.length).toBeGreaterThan(0);
     for (const f of result.data.files) {

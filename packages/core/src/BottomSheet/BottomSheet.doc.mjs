@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file BottomSheet.doc.mjs
+ * @input BottomSheet props, sheet anatomy, and focus-time keyboard scrolling behavior
+ * @output Consumer documentation and examples for BottomSheet
+ * @position CLI and rendered component documentation
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
 const anatomy = [
   {
@@ -130,7 +137,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
+        "Sheet content in a scrollable area. The named body is keyboard reachable while overflowing. Forward Tab entry may move directly to the first native link or button; input controls, composite widgets, and nested scroll areas retain the body stop. Shift+Tab from a delegated first child skips the body. Fitting content adds no body stop. The internal observed content box preserves block flow and percentage heights. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
       required: true,
     },
     {

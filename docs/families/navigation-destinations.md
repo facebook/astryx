@@ -47,6 +47,17 @@ deciding_specs: [spec:AST-005/DEC-1, spec:AST-005/DEC-2]
 
 # Navigation destinations contract
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "navigation": ["FR1", "FR3", "FR4", "FR5"]
+  }
+}
+```
+
 ## Intent
 
 People should receive the same safe navigation behavior from every Astryx

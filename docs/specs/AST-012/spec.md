@@ -25,6 +25,17 @@ affects_consumer_docs: [theme, AppShell]
 
 # Theme adaptations
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["FR4", "FR5", "FR6", "FR7"]
+  }
+}
+```
+
 ## Intent
 
 Themes should express opt-in token and component adaptations for environmental

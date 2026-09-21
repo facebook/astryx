@@ -154,7 +154,8 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
 
   /**
    * Whether the button is disabled.
-   * When used inside ToggleButtonGroup, the group's isDisabled overrides this.
+   * When used inside ToggleButtonGroup, a disabled group disables this button
+   * too, but an enabled group does not re-enable a button that disables itself.
    * @default false
    */
   isDisabled?: boolean;
@@ -263,7 +264,13 @@ export function ToggleButton({
       ? group.selectedValues.has(value)
       : (isPressedProp ?? false);
   const size = sizeProp ?? group?.size ?? 'md';
-  const isDisabled = group?.isDisabled ?? isDisabledProp;
+  // Either source disabling this button is enough. `??` could not express that:
+  // the group always supplies a boolean (its own prop defaults to false), so the
+  // fallback never ran and an enabled group handed a member that had disabled
+  // itself its availability back. A group still disables everything it contains
+  // — that is the half `??` got right — but it cannot re-enable a member
+  // (family:buttons FR3).
+  const isDisabled = (group?.isDisabled ?? false) || isDisabledProp;
 
   // Track the pressed state optimistically so the button reflects the intended
   // state immediately while an async action is pending. The optimistic update

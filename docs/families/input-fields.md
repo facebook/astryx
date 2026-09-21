@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-09
+approved_at: 2026-09-20
 owners: [cixzhang, imdreamrunner]
 review_triggers: [behavior, layout, theming, accessibility]
 verified_by:
@@ -18,6 +18,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/core/src/Typeahead/Typeahead.test.tsx,
     packages/core/src/Tokenizer/Tokenizer.test.tsx,
+    packages/core/src/inputFontFloor.test.ts,
   ]
 members:
   [
@@ -110,18 +111,19 @@ another implementation helper.
 
 ## Canonical concepts
 
-| Concept           | Values or states                                               | Default semantics                                                                                                    | Stability                                  |
-| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                            |
-| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                       |
-| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below    |
-| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                       |
+| Concept           | Values or states                                               | Default semantics                                                                                                    | Stability                                            |
+| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                                      |
+| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                                 |
+| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below              |
+| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                                 |
 | grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
-| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed         |
-| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001              |
-| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                |
-| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                 | approved family rule where exposed         |
-| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input | approved family rule                       |
+| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed                   |
+| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001                        |
+| focus-zoom floor  | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing  | approved family rule                                 |
+| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                          |
+| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                 | approved family rule where exposed                   |
+| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input | approved family rule                                 |
 
 ## Cross-component invariants
 
@@ -175,6 +177,12 @@ another implementation helper.
   `detached` or a component-owned placement. Direct FieldStatus continues to
   support only `attached` and `detached`; Field consumes `tooltip` before
   rendering it.
+- **FR9 — The focus-zoom floor is iOS-specific.** A text-entry control that uses
+  the family focus-zoom guard MUST resolve its editable text to at least 16 CSS
+  px on the supported iOS touch path. Android, desktop touch, and other non-iOS
+  coarse-pointer environments MUST keep the active theme's type scale rather
+  than inheriting the iOS floor. The platform-detection mechanism remains an
+  implementation detail, but it MUST preserve those observable outcomes.
 
 ## Allowed component variation
 
@@ -202,40 +210,51 @@ another implementation helper.
 - **AV6 — Attached-status support.** A member that cannot satisfy FR8 keeps
   attached unavailable rather than approximating the overlap. It still offers
   detached and tooltip through the family status contract.
+- **AV7 — Platform detection.** Implementations may use any supported capability
+  test that identifies the iOS touch path without applying the floor to non-iOS
+  coarse pointers. This contract does not require a particular CSS query,
+  browser string, or shared helper.
 
 ## Representative matrix
 
-| Member and state                                       | Shared invariant                                                            | Deliberate variation                                                        |
-| ------------------------------------------------------ | --------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| TextInput / empty, valued, or input-busy               | Stable inline size; in-flow end controls do not overlap text                | Native input and optional clear/status controls                             |
-| Selector / placeholder or selected                     | End controls and grouped row remain bounded                                 | Standalone inline size may follow displayed content under DEC-1             |
-| Typeahead / empty, selected, or source-busy            | Stable inline size and one non-overlapping end area, standalone and grouped | Editable input becomes a selected Token; source busy is BaseTypeahead-owned |
-| Tokenizer / standalone tokens, source-busy, and endContent | Stable inline size and clear content/end-control separation | Standalone tokens may wrap and grow the field in the block axis |
-| Tokenizer / admitted InputGroup mode                    | Group height, connected surface, semantics, and keyboard behavior remain coherent | Grouped default uses a single-line overflow treatment; caller-selected supported overflow may vary within FR3 |
-| ComplexSelector / placeholder, selected, or input-busy  | Stable field surface and non-overlapping Spinner/disclosure | Caller owns rich popup content; no shipped InputGroup support |
-| Admitted member / InputGroup                            | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow |
-| Member with `disabledMessage`                          | Reason is reachable; mutation remains blocked                               | Component owns the focus target and Tooltip composition                     |
-| Member / validation status                             | Detached and tooltip are available; attached is default only when supported | Component owns whether its control safely satisfies attached eligibility    |
+| Member and state                                           | Shared invariant                                                                                 | Deliberate variation                                                                                          |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| TextInput / empty, valued, or input-busy                   | Stable inline size; in-flow end controls do not overlap text                                     | Native input and optional clear/status controls                                                               |
+| Selector / placeholder or selected                         | End controls and grouped row remain bounded                                                      | Standalone inline size may follow displayed content under DEC-1                                               |
+| Typeahead / empty, selected, or source-busy                | Stable inline size and one non-overlapping end area, standalone and grouped                      | Editable input becomes a selected Token; source busy is BaseTypeahead-owned                                   |
+| Tokenizer / standalone tokens, source-busy, and endContent | Stable inline size and clear content/end-control separation                                      | Standalone tokens may wrap and grow the field in the block axis                                               |
+| Tokenizer / admitted InputGroup mode                       | Group height, connected surface, semantics, and keyboard behavior remain coherent                | Grouped default uses a single-line overflow treatment; caller-selected supported overflow may vary within FR3 |
+| ComplexSelector / placeholder, selected, or input-busy     | Stable field surface and non-overlapping Spinner/disclosure                                      | Caller owns rich popup content; no shipped InputGroup support                                                 |
+| Admitted member / InputGroup                               | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow                                |
+| Member with `disabledMessage`                              | Reason is reachable; mutation remains blocked                                                    | Component owns the focus target and Tooltip composition                                                       |
+| Member / validation status                                 | Detached and tooltip are available; attached is default only when supported                      | Component owns whether its control safely satisfies attached eligibility                                      |
+| Floored text entry / iOS touch                             | Editable text resolves to at least 16 CSS px and focus does not trigger browser zoom             | Theme size may already satisfy the floor                                                                      |
+| Floored text entry / non-iOS coarse pointer                | The active theme's type scale remains in force                                                   | Platform and input hardware may vary                                                                          |
 
 ## Adoption and exceptions
 
 ### Current shipped facts
 
-| Component       | Current adoption                                                                                                           | Recorded exception                                                                 |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| TextInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                               |
-| TextArea        | Field, FormLayout, size, width, `isLoading`, `changeAction`, status, and disabled reason; block-axis growth                | not InputGroup-compatible                                                          |
-| NumberInput     | Field, FormLayout, InputGroup, size, width, clear, status, and disabled reason                                             | no shipped `isLoading` or `changeAction`                                           |
-| DateInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                               |
-| DateRangeInput  | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                          |
-| DateTimeInput   | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                          |
-| TimeInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                               |
-| FileInput       | Field, FormLayout, width, `isLoading`, `changeAction`, clear, status, and disabled reason                                  | no public `size`; compact and dropzone modes are component-owned                   |
-| Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                       |
-| MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                       |
-| ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                               |
-| Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned       |
+| Component       | Current adoption                                                                                                           | Recorded exception                                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| TextInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
+| TextArea        | Field, FormLayout, size, width, `isLoading`, `changeAction`, status, and disabled reason; block-axis growth                | not InputGroup-compatible                                                                                                                       |
+| NumberInput     | Field, FormLayout, InputGroup, size, width, clear, status, and disabled reason                                             | no shipped `isLoading` or `changeAction`                                                                                                        |
+| DateInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
+| DateRangeInput  | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                                                                                       |
+| DateTimeInput   | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                                                                                       |
+| TimeInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
+| FileInput       | Field, FormLayout, width, `isLoading`, `changeAction`, clear, status, and disabled reason                                  | no public `size`; compact and dropzone modes are component-owned                                                                                |
+| Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                                                                                    |
+| MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                                                                                    |
+| ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                                                                                            |
+| Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned                                                                    |
 | Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | Not InputGroup-compatible on current main; DEC-5 approves admission after the grouped adaptation lands; no family `isLoading` or `changeAction` |
+
+The current text-entry controls that already carry a 16px anti-zoom floor apply it
+only on iOS. This includes input-family members and the existing shared or
+higher-level text-entry collaborators covered by the family-wide source guard;
+DEC-6 does not require unrelated components to add a new floor.
 
 ### Implementation gaps
 
@@ -294,16 +313,17 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 
 ## Verification map
 
-| Contract | Verification                                                                                                                          | Representative members and states                                                                               | Mutation or failure expectation                                                                                   |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| FR1      | Real-Chromium before/after inline-size measurements in block, flex-item, inline-block, grid auto-track, and explicit-width containers | TextInput baseline; Selector exception; Typeahead empty/selected/source-busy; Tokenizer zero/one/many tokens    | Value or busy state changes the field's outer inline size outside a recorded exception                            |
-| FR2      | Real-Chromium content-box/control-box overlap matrix at narrow supported widths and LTR/RTL                                           | clear, Spinner, status, disclosure, Tokenizer `endContent`; alone and combined                                  | Content, caret, or pointer hit area intersects a rendered end control, or stale reserve remains after it unmounts |
-| FR3      | InputGroup unit tests plus rendered size/height, surface/focus-ownership, overflow, and interaction checks | every admitted member; Tokenizer zero/one/many tokens, focused/unfocused, explicit/default overflow; mismatched child/group sizes | A child keeps competing outer geometry, expands or adds a row, loses connected focus/border ownership, or changes naming, keyboard, focus, editing, or selection semantics |
-| FR4      | Keyboard, pointer, and accessibility-tree tests                                                                                       | each member that exposes `disabledMessage`                                                                      | Reason becomes unreachable, or the disabled control mutates/activates                                             |
-| FR5      | Selector and MultiSelector interaction and announcement tests from AST-001                                                            | populated options while input-busy; explicit source-pending; completed empty                                    | Input busy suppresses supplied options or substitutes for source state                                            |
-| FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                     | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract       |
-| FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                         | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry         |
-| FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                           | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements     | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                  |
+| Contract | Verification                                                                                                                          | Representative members and states                                                                                                 | Mutation or failure expectation                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Real-Chromium before/after inline-size measurements in block, flex-item, inline-block, grid auto-track, and explicit-width containers | TextInput baseline; Selector exception; Typeahead empty/selected/source-busy; Tokenizer zero/one/many tokens                      | Value or busy state changes the field's outer inline size outside a recorded exception                                                                                     |
+| FR2      | Real-Chromium content-box/control-box overlap matrix at narrow supported widths and LTR/RTL                                           | clear, Spinner, status, disclosure, Tokenizer `endContent`; alone and combined                                                    | Content, caret, or pointer hit area intersects a rendered end control, or stale reserve remains after it unmounts                                                          |
+| FR3      | InputGroup unit tests plus rendered size/height, surface/focus-ownership, overflow, and interaction checks                            | every admitted member; Tokenizer zero/one/many tokens, focused/unfocused, explicit/default overflow; mismatched child/group sizes | A child keeps competing outer geometry, expands or adds a row, loses connected focus/border ownership, or changes naming, keyboard, focus, editing, or selection semantics |
+| FR4      | Keyboard, pointer, and accessibility-tree tests                                                                                       | each member that exposes `disabledMessage`                                                                                        | Reason becomes unreachable, or the disabled control mutates/activates                                                                                                      |
+| FR5      | Selector and MultiSelector interaction and announcement tests from AST-001                                                            | populated options while input-busy; explicit source-pending; completed empty                                                      | Input busy suppresses supplied options or substitutes for source state                                                                                                     |
+| FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                                       | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract                                                                |
+| FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                                           | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry                                                                  |
+| FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                           | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                           |
+| FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                           | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                        |
 
 ## Decision links
 
@@ -378,6 +398,24 @@ InputGroup branch.
 Rejected: a permanent hard-coded allowlist, a Tokenizer-only exception, allowing
 context consumption without a complete grouped adaptation, or forcing standalone
 multiline/multi-token inputs into single-line presentation.
+
+### DEC-6 — The 16px focus-zoom floor applies only on iOS
+
+**Decider:** `cixzhang`, `2026-09-20`
+
+Text-entry controls that carry the anti-zoom safeguard resolve editable text to at
+least 16 CSS px on the supported iOS touch path. Other coarse-pointer platforms
+keep the active theme's type scale because they do not share the iOS focus-zoom
+behavior this safeguard addresses.
+
+The contract owns the observable platform outcomes, not a particular feature
+query or source pattern. Existing shared and higher-level text-entry surfaces may
+reuse the family rule without becoming input-family members, and this decision
+does not require unrelated controls to adopt a new floor.
+
+Rejected: applying the 16px floor to every coarse pointer. Pointer precision does
+not establish the iOS browser behavior and inflates text on Android and
+input-capable touch laptops without preventing a corresponding zoom failure.
 
 ## Open questions
 

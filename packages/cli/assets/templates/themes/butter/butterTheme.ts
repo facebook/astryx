@@ -424,12 +424,12 @@ export const butterTheme = defineTheme({
 
     // Progress bar — white track in light, warm brown in dark. Vivid
     // semantic fills match the banner colors (Success / Warning / Error).
-    'progressbar-track': {
+    'progress-bar-track': {
       base: {
         backgroundColor: 'light-dark(#e5e3d4, #725538)',
       },
     },
-    'progressbar-fill': {
+    'progress-bar-fill': {
       'variant:success': {
         backgroundColor: '#91D143',
       },
@@ -473,7 +473,7 @@ export const butterTheme = defineTheme({
       'status:warning': {'--color-warning': '#ffc502'},
       'status:error': {'--color-error': '#fc473b'},
     },
-    textarea: {
+    'text-area': {
       base: {
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',

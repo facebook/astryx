@@ -11,10 +11,10 @@
  *
  * Pipeline (--apply): detect installed core → run CORE codemods (before
  * Project.load, so a core CONFIG codemod can repair an otherwise-invalid
- * config) → load config → discover + run INTEGRATION codemods → post-codemod
- * hooks → render + refresh agent docs from final post-upgrade state.
- * Integration DISCOVERY errors skip that integration; execution errors abort
- * before the agent-doc write.
+ * config) → load config → discover + run INTEGRATION codemods → reconcile
+ * ShadCN-copied compositions → post-codemod hooks → render + refresh agent docs
+ * from final post-upgrade state. Integration DISCOVERY errors skip that
+ * integration; execution errors abort before the agent-doc write.
  */
 
 import * as path from 'node:path';
@@ -33,6 +33,10 @@ import {
   selectIntegrationCodemodsFor,
   runIntegrationCodemodsStep,
 } from '../_adapter.mjs';
+import {
+  logRegistryCompositionSummary,
+  reconcileRegistryCompositions,
+} from '../registry/registry.mjs';
 import {
   statusUpToDate,
   statusNoCodemods,
@@ -87,11 +91,32 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
   const targetVersion = installed.version;
 
+  const reconcileCompositions = async () => {
+    if (options.codemod) return null;
+    const result = await reconcileRegistryCompositions(
+      {apply, path: path_},
+      {
+        cwd,
+        expectedVersion:
+          installed.packageName === '@astryxdesign/core'
+            ? targetVersion
+            : undefined,
+        requireExpectedVersion: true,
+      },
+    );
+    if (result.summary.found > 0) {
+      logRegistryCompositionSummary(result.summary);
+      return result;
+    }
+    return null;
+  };
+
   logger.log(`From version: ${currentVersion}`);
   logger.log(`Installed target: ${targetVersion} (${installed.packageName})`);
 
   // Up-to-date check — no codemods will run, safe to render agent docs now.
   if (!options.force && semverGte(currentVersion, targetVersion)) {
+    const registryResult = await reconcileCompositions();
     const agentDocsPlan = await prepareAgentDocsRefresh({
       cwd,
       installedVersion: targetVersion,
@@ -104,6 +129,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       from: currentVersion,
       to: targetVersion,
       agentDocs,
+      ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
     });
   }
 
@@ -214,6 +240,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   if (versionManifests.length === 0 && !hasIntegrationCodemods) {
+    const registryResult = await reconcileCompositions();
     // No codemods in range — safe to render agent docs from current state.
     const agentDocsPlan = await prepareAgentDocsRefresh({
       cwd,
@@ -227,6 +254,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       from: currentVersion,
       to: targetVersion,
       agentDocs,
+      ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
     });
   }
 
@@ -244,7 +272,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   /**
-   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
+   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
    */
   const receipt = {
     from: currentVersion,
@@ -269,12 +297,19 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     });
   }
 
+  const registryResult = await reconcileCompositions();
+
   const mergedFilesChanged = (coreResult?.totalFilesChanged ?? 0) + (integrationResult?.totalFilesChanged ?? 0);
   const mergedTransformsApplied = (coreResult?.totalTransformsApplied ?? 0) + (integrationResult?.totalTransformsApplied ?? 0);
-  const mergedWrittenFiles = [...(coreResult?.writtenFiles ?? []), ...(integrationResult?.writtenFiles ?? [])];
+  const mergedWrittenFiles = [
+    ...(coreResult?.writtenFiles ?? []),
+    ...(integrationResult?.writtenFiles ?? []),
+    ...(registryResult?.writtenFiles ?? []),
+  ];
   const mergedErrors = [...(coreResult?.errors ?? []), ...(integrationResult?.errors ?? [])];
+  const registryFilesChanged = registryResult?.writtenFiles.length ?? 0;
 
-  if (postCodemodHooks.length > 0 && mergedFilesChanged > 0) {
+  if (postCodemodHooks.length > 0 && (mergedFilesChanged > 0 || registryFilesChanged > 0)) {
     const files = uniqueFiles(mergedWrittenFiles).map(file => path.relative(cwd, file));
     try {
       await runPostCodemodHooks(postCodemodHooks, {packageDir: cwd, files, apply: apply || false});
@@ -290,6 +325,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   receipt.filesChanged = mergedFilesChanged;
   receipt.transformsApplied = mergedTransformsApplied;
   receipt.errors = mergedErrors;
+  if (registryResult) receipt.registryCompositions = registryResult.summary;
 
   if (receipt.errors?.length > 0) {
     const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
@@ -310,7 +346,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   receipt.agentDocs = completedAgentDocs;
   receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
 
-  logger.log((apply ? 'Upgrade complete' : 'Dry run complete') + '\n');
+  const registryOk = receipt.registryCompositions?.ok ?? true;
+  logger.log(
+    registryOk
+      ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
+      : 'Upgrade finished with unresolved registry items\n',
+  );
   return {
     type: 'upgrade.run',
     data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (/** @type {unknown} */ (receipt)),

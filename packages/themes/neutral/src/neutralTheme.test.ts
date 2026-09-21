@@ -310,7 +310,9 @@ describe('neutral theme-local status mappings', () => {
     expect(neutralTheme.components?.badge?.['variant:info']).toMatchObject({
       backgroundColor: statusFill.accent,
     });
-    expect(neutralTheme.components?.statusdot?.['variant:success']).toEqual({
+    expect(
+      neutralTheme.components?.['status-dot']?.['variant:success'],
+    ).toEqual({
       backgroundColor: statusFill.success,
     });
     expect(
@@ -319,7 +321,9 @@ describe('neutral theme-local status mappings', () => {
     expect(
       neutralTheme.components?.['step-indicator']?.['status:warning'],
     ).toEqual({'--color-warning': statusFill.warning});
-    expect(neutralTheme.components?.progressbar?.['variant:accent']).toEqual({
+    expect(
+      neutralTheme.components?.['progress-bar']?.['variant:accent'],
+    ).toEqual({
       '--color-accent': statusFill.accent,
     });
   });
