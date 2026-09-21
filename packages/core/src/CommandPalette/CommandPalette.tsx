@@ -170,6 +170,26 @@ function buildSelectableItems(items: SearchableItem[]): SelectorOptionData[] {
   return result;
 }
 
+/**
+ * O(1) value → index lookup over selectable items, used by the delegated
+ * mouseover handler (#6077). The index is built once per results change;
+ * each hover then pays a Map probe instead of a linear findIndex scan,
+ * so cost no longer scales with list size. Keeps the first occurrence of
+ * duplicate values to match the previous findIndex behavior.
+ */
+function createValueLookup<T extends {value: string}>(
+  items: ReadonlyArray<T>,
+): (value: string) => number | undefined {
+  const indexByValue = new Map<string, number>();
+  for (let i = 0; i < items.length; i++) {
+    const value = items[i].value;
+    if (!indexByValue.has(value)) {
+      indexByValue.set(value, i);
+    }
+  }
+  return value => indexByValue.get(value);
+}
+
 interface RendererProps<T extends SearchableItem> {
   items: T[];
   value: string;
@@ -318,6 +338,11 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     [optimisticResults],
   );
 
+  const valueLookup = useMemo(
+    () => createValueLookup(selectableItems),
+    [selectableItems],
+  );
+
   const handleClose = useCallback(() => {
     // Invalidate any in-flight search. Most sources don't implement cancel(),
     // and a response that resolves after close would still pass runSearch's
@@ -421,11 +446,25 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
 
           // When opening with a preselected value, highlight it once
           // bootstrap results arrive. No value → highlight stays at -1
-          // and ArrowDown naturally moves to the first item.
+          // and ArrowDown naturally moves to the first item. Inline previews
+          // take the hover-aware path so the initial highlight does not
+          // scrollIntoView the surrounding page (#6077).
           if (isBootstrap && value != null && value !== '') {
             const selectedIdx = items.findIndex(item => item.id === value);
             if (selectedIdx >= 0) {
-              combobox.setHighlightedIndex(selectedIdx);
+              if (isInline) {
+                // `items` is the fresh bootstrap result; the closure's
+                // selectableItems may still be empty at commit time.
+                const selectedItem = items[selectedIdx];
+                if (selectedItem) {
+                  combobox.onItemMouseEnter(
+                    {value: selectedItem.id},
+                    selectedIdx,
+                  );
+                }
+              } else {
+                combobox.setHighlightedIndex(selectedIdx);
+              }
             }
           }
         }
@@ -436,6 +475,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       searchResults,
       startTransition,
       value,
+      isInline,
       combobox,
       setOptimisticResults,
       announce,
@@ -485,6 +525,32 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       combobox.onKeyDown(e);
     },
     [combobox, handleClose, selectableItems, selectItem],
+  );
+
+  // Hover highlight is owned here by a single delegated handler on the list
+  // container: it routes to useCombobox's hover-aware path, which moves the
+  // highlight without scrolling (#6077) — a stationary pointer cannot
+  // re-highlight and auto-scroll in a runaway loop. Keeping it off the public
+  // context preserves CommandPaletteContextValue's setHighlightedIndex shape;
+  // disabled items are skipped via aria-disabled (selectableItems carries no
+  // disabled info). Use mouseover so moves between options bubble to the list;
+  // mouseenter only runs when the pointer enters the list from outside.
+  const handleListMouseOver = useCallback(
+    (e: React.MouseEvent) => {
+      const option = (e.target as HTMLElement).closest?.('[role="option"]');
+      if (!option || option.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+      const itemValue = option.getAttribute('data-value');
+      if (itemValue == null) {
+        return;
+      }
+      const index = valueLookup(itemValue);
+      if (index !== undefined) {
+        combobox.onItemMouseEnter(selectableItems[index], index);
+      }
+    },
+    [combobox, selectableItems, valueLookup],
   );
 
   const contextValue = useMemo(
@@ -584,7 +650,9 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
           }
           content={
             <LayoutContent padding={0}>
-              <CommandPaletteList>{listContent}</CommandPaletteList>
+              <CommandPaletteList onMouseOver={handleListMouseOver}>
+                {listContent}
+              </CommandPaletteList>
             </LayoutContent>
           }
           footer={

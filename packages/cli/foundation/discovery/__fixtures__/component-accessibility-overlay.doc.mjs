@@ -18,13 +18,42 @@ export const docs = {
         description: 'Provide an accessible name.',
       },
     ],
-    anatomy: [
+    accessibilityThemeCoverage: [
       {
-        name: 'Base-only anatomy',
-        required: true,
-        description: 'This must not leak into translated output.',
+        theme: 'Fixture',
+        tables: [
+          {
+            modes: [
+              {mode: 'Light', results: []},
+              {mode: 'Dark', results: []},
+            ],
+          },
+        ],
+        notMeasured: ['Decorative track — Not part of the contrast audit.'],
       },
     ],
+    anatomy: [
+      {
+        name: 'Track',
+        required: true,
+        description: 'The rail that shows the current on/off state.',
+      },
+      {
+        name: 'Thumb',
+        required: true,
+        description: 'The control that moves along the track.',
+      },
+    ],
+  },
+  props: [],
+};
+
+export const docsZh = {
+  name: 'AccessibilityOverlayFixture',
+  displayName: 'Accessibility Overlay Fixture',
+  category: 'Test',
+  usage: {
+    description: 'Translated full-doc description.',
   },
   props: [],
 };

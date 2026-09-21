@@ -173,6 +173,12 @@ export const categories: SandboxCategory[] = [
     description: 'Theme palette previews and design token references.',
     pages: [
       {
+        name: 'Theme Family Artifacts',
+        href: '/pages/theme-family/',
+        description:
+          'One generated CSS/ESM family with attribute switching, nested descendants, sibling isolation, and cascade-order evidence',
+      },
+      {
         name: 'Neutral Palette',
         href: '/pages/neutral-palette/',
         description:
@@ -208,6 +214,18 @@ export const categories: SandboxCategory[] = [
         description:
           'Generate and explore color palettes from an accent color or image',
       },
+      {
+        name: 'Palette Generator Lab',
+        href: '/pages/palette-generator/',
+        description:
+          'Compare experimental OKLCH and HCT-like ramps with profiles, anchors, custom stops, and separate dark-mode generation',
+      },
+      {
+        name: 'Mobile Spacing',
+        href: '/pages/mobile-spacing/',
+        description:
+          'Draft mobile semantic spacing preview with real component scale comparisons',
+      },
     ],
   },
   {
@@ -226,6 +244,12 @@ export const categories: SandboxCategory[] = [
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',
+      },
+      {
+        name: 'Markdown Perf',
+        href: '/pages/markdown-perf/',
+        description:
+          'Compare complete Markdown rendering with bursty streaming performance and animation',
       },
       {
         name: 'Table Lab',

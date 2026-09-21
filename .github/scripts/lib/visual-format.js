@@ -30,8 +30,8 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
     ? ` <a href="${safeReportUrl}" target="_blank" rel="noopener noreferrer">View the report</a>`
     : '';
   const acceptanceCommand =
-    verdict.context?.runId && verdict.context?.runAttempt
-      ? `\n\nTo accept these exact frames: \`/accept-visual ${num(verdict.context.runId)}/${num(verdict.context.runAttempt)} <reason>\``
+    safeReportUrl && verdict.context?.runId && verdict.context?.runAttempt
+      ? `\n\nA repository maintainer can accept these exact frames: \`/accept-visual ${num(verdict.context.runId)}/${num(verdict.context.runAttempt)} <why every changed frame is correct>\``
       : '';
   const reportBase = safeReportUrl
     ? `${safeReportUrl.replace(/\/+$/, '')}/`
@@ -53,11 +53,15 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
   if (!verdict.changes || verdict.changes.length === 0) {
     if (added.length > 0 || removed.length > 0) {
       const frames = imageBase
-        ? [...added.map(key => ({key, kind: 'after'})), ...removed.map(key => ({key, kind: 'before'}))]
+        ? [
+            ...added.map(key => ({key, kind: 'after'})),
+            ...removed.map(key => ({key, kind: 'before'})),
+          ]
             .slice(0, 3)
             .map(({key, kind}) => {
               const safeKey = encodeURIComponent(String(key));
-              const label = kind === 'after' ? 'Added — After' : 'Removed — Before';
+              const label =
+                kind === 'after' ? 'Added — After' : 'Removed — Before';
               return `<p><b>${label}</b><br><img src="${imageBase}${kind}/${safeKey}.png" width="300" alt="${label} visual regression frame"></p>`;
             })
             .join('\n')

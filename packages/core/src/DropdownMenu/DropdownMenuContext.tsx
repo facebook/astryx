@@ -18,7 +18,7 @@ import {createContext, use} from 'react';
 export type DropdownMenuSize = 'sm' | 'md' | 'lg';
 
 export interface DropdownMenuContextValue {
-  /** Close the menu and return focus to trigger */
+  /** Close the menu; keyboard dismissal returns focus to the trigger. */
   closeMenu: () => void;
   /** Menu size derived from button size */
   menuSize: DropdownMenuSize;

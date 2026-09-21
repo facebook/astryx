@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider component, SliderProps, SliderSingleProps, SliderRangeProps, SliderBaseProps
+ * @output Exports Slider and its props; modifier-only key presses do not restore the thumb focus ring
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -17,7 +17,6 @@
  */
 
 import {
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -46,7 +45,7 @@ import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
@@ -289,6 +288,15 @@ const styles = stylex.create({
       },
     },
   },
+  // Pressed: the system's pressed overlay over the thumb's fill for as long
+  // as the thumb is being dragged. A slider is a drag, not a tap — the finger
+  // lands anywhere on the track and the thumb follows it — so the pressed
+  // paint follows the drag state the pointer handlers already keep, on a
+  // mouse and on a finger alike, rather than `:active` on the thumb itself
+  // (which a press on the track never activates).
+  thumbPressed: {
+    backgroundImage: `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+  },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
     cursor: 'default',
@@ -508,9 +516,7 @@ export function Slider({ref, ...props}: SliderProps) {
     null,
   );
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const handleThumbFocus = useCallback(
     (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
@@ -704,17 +710,25 @@ export function Slider({ref, ...props}: SliderProps) {
       const newVal = markEl
         ? Number(markEl.dataset.markValue)
         : getValueFromPosition(e.clientX, e.clientY);
-      const thumbIndex = getClosestThumb(newVal);
+      const track = trackRef.current;
+      const thumbs = track?.querySelectorAll<HTMLElement>('[role="slider"]');
+      const pressedThumb = (e.target as Element).closest<HTMLElement>(
+        '[role="slider"]',
+      );
+      const pressedThumbIndex =
+        pressedThumb == null || thumbs == null
+          ? -1
+          : Array.from(thumbs).indexOf(pressedThumb);
+      // A direct thumb press owns that thumb even when range values coincide.
+      // Track and mark presses still choose the nearest value.
+      const thumbIndex =
+        pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
       updateValue(thumbIndex, newVal);
 
-      // Focus the closest thumb
-      const track = trackRef.current;
-      if (track) {
-        const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
-        thumbs[thumbIndex]?.focus();
-      }
+      // Focus the thumb that owns this drag.
+      thumbs?.[thumbIndex]?.focus();
       // Also clear it explicitly: focusing an already-focused thumb fires no
       // focus event, so a thumb the user had tabbed to would keep its ring
       // through the drag.
@@ -759,9 +773,17 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       // Unlike a text field, a thumb has no caret to show where input is
       // going, so a keypress after a mouse drag must bring the ring back.
-      // Ask the utility rather than assuming: a modifier chord (⌘R, ⌃C) is
-      // not navigation and must not re-ring a thumb the mouse is holding.
-      if (getInteractionModality() === 'keyboard') {
+      // Bare Shift changes shared modality to keyboard, but is not itself
+      // navigation for the thumb. Check this event's modifier flags too: a
+      // later chord must not restore the ring using that keyboard history.
+      // Shift+Tab and Shift+Arrow still count because their key is not Shift.
+      if (
+        e.key !== 'Shift' &&
+        !e.metaKey &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        getInteractionModality() === 'keyboard'
+      ) {
         setKeyboardFocusThumb(thumbIndex);
       }
       const currentVal = values[thumbIndex];
@@ -903,6 +925,7 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
+            !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             !isDisabled &&
               keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
@@ -1024,12 +1047,18 @@ export function Slider({ref, ...props}: SliderProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          {...stylex.props(
-            styles.trackContainer,
-            isHorizontal
-              ? styles.trackContainerHorizontal
-              : styles.trackContainerVertical,
-            isDisabled && styles.trackContainerDisabled,
+          {...mergeProps(
+            themeProps('slider-control', {
+              orientation,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.trackContainer,
+              isHorizontal
+                ? styles.trackContainerHorizontal
+                : styles.trackContainerVertical,
+              isDisabled && styles.trackContainerDisabled,
+            ),
           )}>
           {/* Background track */}
           <div

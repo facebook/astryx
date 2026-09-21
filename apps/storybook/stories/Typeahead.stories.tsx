@@ -24,6 +24,45 @@ const fruitSource: SearchSource = {
   bootstrap: () => fruits.slice(0, 5),
 };
 
+/**
+ * A value longer than the input's own width — the case that used to collapse
+ * the field onto its value, and then to run under the clear button.
+ */
+const longFruit: SearchableItem = {
+  id: '9',
+  label: 'Elderberry and Blackcurrant Preserve',
+};
+
+const longFruitSource: SearchSource = {
+  search: (query: string) =>
+    [...fruits, longFruit].filter(f =>
+      f.label.toLowerCase().includes(query.toLowerCase()),
+    ),
+  bootstrap: () => [longFruit, ...fruits.slice(0, 4)],
+};
+
+/**
+ * A remote source, near enough. The busy state only exists between the
+ * keystroke and the response, so a synchronous source never shows it — which
+ * is why the indicator went unexercised long enough to ship as a clock.
+ */
+const slowFruitSource: SearchSource = {
+  search: (query: string) =>
+    new Promise(resolve => {
+      setTimeout(
+        () =>
+          resolve(
+            fruits.filter(f =>
+              f.label.toLowerCase().includes(query.toLowerCase()),
+            ),
+          ),
+        1200,
+      );
+    }),
+  bootstrap: () =>
+    new Promise(resolve => setTimeout(() => resolve(fruits.slice(0, 5)), 1200)),
+};
+
 const meta: Meta<typeof Typeahead> = {
   title: 'Core/Typeahead',
   component: Typeahead,
@@ -264,4 +303,114 @@ export const StatusVariantComparison: Story = {
       </div>
     );
   },
+};
+
+export const Loading: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{width: 320}}>
+        <Typeahead
+          label="Fruit"
+          placeholder="Type to search…"
+          searchSource={slowFruitSource}
+          value={value}
+          onChange={setValue}
+          hasClear
+          debounceMs={0}
+        />
+      </div>
+    );
+  },
+  name: 'Loading (async source)',
+};
+
+/**
+ * The two cases no Typeahead story covered, which is why a bug this visible
+ * survived: a value selected, and a parent that is sized by its content.
+ *
+ * Every other story renders in a fixed-width container, and a block-level
+ * parent fills its container whatever its content is — so both hid a field
+ * that sized itself to its value. Here the field is a flex item, so it is
+ * shrink-to-fit: a table cell, an inline toolbar, a floated column.
+ *
+ * Left, a long value: it must not widen the field, and it must ellipsize
+ * before the clear button rather than under it. Right, an empty field for
+ * comparison — the two must be the same width.
+ */
+export const SelectedValueInAContentSizedParent: Story = {
+  render: () => {
+    const [a, setA] = useState<SearchableItem | null>(longFruit);
+    const [b, setB] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{display: 'flex', alignItems: 'flex-start', gap: 16}}>
+        <Typeahead
+          label="Selected"
+          searchSource={longFruitSource}
+          value={a}
+          onChange={setA}
+          hasClear
+        />
+        <Typeahead
+          label="Empty"
+          placeholder="Type to search…"
+          searchSource={longFruitSource}
+          value={b}
+          onChange={setB}
+          hasClear
+        />
+      </div>
+    );
+  },
+  name: 'Selected value in a content-sized parent',
+};
+
+/**
+ * One field with a selected value and a clear button — the two ends of the
+ * content lane. The token opens the lane and the clear button closes it, so
+ * under RTL they must swap sides: this is the story the RTL audit measures as
+ * a D2 layout-order-flip.
+ *
+ * A single field on purpose. The comparison story next to it renders two, and
+ * the audit's selectors would match across both.
+ */
+export const LogicalOrder: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(longFruit);
+    return (
+      <div style={{width: 320}}>
+        <Typeahead
+          label="Fruit"
+          searchSource={longFruitSource}
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </div>
+    );
+  },
+  name: 'Logical order',
+};
+
+/**
+ * The inline-end lane, populated at rest, for the RTL audit's D4 pass.
+ *
+ * The lane holds the busy Spinner, and the busy state only exists between a
+ * keystroke and its response — nothing the audit can hold still. A selected
+ * value with `hasClear` puts the same lane on screen with no interaction, so
+ * the audit measures the geometry the indicator lands in.
+ */
+export const RtlEndLane: Story = {
+  render: () => (
+    <div style={{width: 320}}>
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />
+    </div>
+  ),
+  name: 'RTL end lane (selected + clear)',
 };

@@ -3,7 +3,7 @@
 /**
  * @file Slider.test.tsx
  * @input Uses vitest, @testing-library/react, userEvent, Slider component
- * @output Unit tests for Slider component behavior
+ * @output Unit tests for Slider behavior and modifier-only focus-ring suppression
  * @position Testing; validates Slider.tsx implementation
  *
  * SYNC: When Slider.tsx changes, update tests to match new behavior
@@ -13,10 +13,14 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {declaresPressedOverlay} from '../__tests__/pressState';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {
+  __resetInteractionModalityForTest,
+  getInteractionModality,
+} from '../utils/interactionModality';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -133,6 +137,24 @@ describe('Slider', () => {
       expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
     },
   );
+
+  it('reflects orientation and disabled state on the interactive control target', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        orientation="vertical"
+        valueDisplay="text"
+        isDisabled
+      />,
+    );
+    const control = screen.getByRole('slider').parentElement;
+    expect(control).not.toBeNull();
+    expect(control).toHaveClass('astryx-slider-control');
+    expect(control).toHaveAttribute('data-orientation', 'vertical');
+    expect(control).toHaveAttribute('data-disabled', 'disabled');
+    expect(control).not.toContainElement(screen.getByText('50'));
+  });
 
   it('range mode sets correct aria values on both thumbs', () => {
     render(
@@ -980,6 +1002,78 @@ describe('Slider', () => {
       expect(isRinged(thumb)).toBe(false);
     });
 
+    it('leaves the ring off for a bare Shift press after a mouse drag', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(getInteractionModality()).toBe('keyboard');
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it.each([
+      ['Meta', {metaKey: true}],
+      ['Alt', {altKey: true}],
+      ['Control', {ctrlKey: true}],
+    ])(
+      'leaves the ring off for %s and its chord after bare Shift',
+      (key, flags) => {
+        render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+        const thumb = screen.getByRole('slider');
+        grabTrack(thumb);
+        fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+        fireEvent.keyUp(thumb, {key: 'Shift'});
+        fireEvent.keyDown(thumb, {key, ...flags});
+        expect(isRinged(thumb)).toBe(false);
+        fireEvent.keyDown(thumb, {key: 'c', ...flags});
+        expect(getInteractionModality()).toBe('keyboard');
+        expect(isRinged(thumb)).toBe(false);
+      },
+    );
+
+    it('restores the ring and changes value for Shift+Arrow after bare Shift', () => {
+      const onChange = vi.fn();
+      render(<Slider label="Volume" value={50} onChange={onChange} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      onChange.mockClear();
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(isRinged(thumb)).toBe(false);
+      expect(onChange).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(thumb, {key: 'ArrowRight', shiftKey: true});
+      expect(isRinged(thumb)).toBe(true);
+      expect(onChange).toHaveBeenCalledWith(51);
+    });
+
+    it('preserves an existing keyboard ring when Shift is pressed', async () => {
+      const user = userEvent.setup();
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      await user.tab();
+      const thumb = screen.getByRole('slider');
+
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(isRinged(thumb)).toBe(true);
+    });
+
+    it('rings when Shift+Tab returns to a mouse-focused thumb', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <Slider label="Volume" value={50} onChange={vi.fn()} />
+          <button type="button">After slider</button>
+        </>,
+      );
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      expect(isRinged(thumb)).toBe(false);
+      await user.click(screen.getByRole('button', {name: 'After slider'}));
+
+      await user.tab({shift: true});
+      expect(thumb).toHaveFocus();
+      expect(isRinged(thumb)).toBe(true);
+    });
+
     it('drops the ring on blur', async () => {
       const user = userEvent.setup();
       render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
@@ -1006,5 +1100,132 @@ describe('Slider', () => {
       expect(isRinged(thumbs[1])).toBe(true);
       expect(isRinged(thumbs[0])).toBe(false);
     });
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the thumb for as long as it is dragged, from wherever the press lands', () => {
+    render(
+      <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
+    );
+    const thumb = screen.getByRole('slider');
+    const trackContainer = thumb.parentElement!;
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    expect(declaresPressedOverlay(thumb)).toBe(false);
+    // A slider is a drag: the press lands on the track, not the thumb, and
+    // the thumb follows it. The pressed paint follows the drag.
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 20,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(true);
+    fireEvent.pointerMove(trackContainer, {
+      clientX: 120,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(true);
+    fireEvent.pointerUp(trackContainer, {
+      clientX: 120,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(false);
+  });
+
+  it('paints only the thumb being dragged in a range slider', () => {
+    render(
+      <Slider
+        label="Price"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const [start, end] = screen.getAllByRole('slider');
+    // In range mode the control is the group; each thumb sits in its own
+    // value-tooltip wrapper.
+    const trackContainer = screen.getByRole('group');
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 170,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(declaresPressedOverlay(start)).toBe(false);
+    fireEvent.pointerUp(trackContainer, {
+      clientX: 170,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(false);
+  });
+
+  it('keeps a direct press on the visible upper thumb when range values coincide', () => {
+    render(
+      <Slider
+        label="Price"
+        value={[50, 50] as [number, number]}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const [start, end] = screen.getAllByRole('slider');
+    const trackContainer = screen.getByRole('group');
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(end, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(declaresPressedOverlay(start)).toBe(false);
+  });
+
+  it('does not press a disabled slider', () => {
+    render(<Slider label="Volume" value={50} isDisabled onChange={vi.fn()} />);
+    const thumb = screen.getByRole('slider');
+    fireEvent.pointerDown(thumb.parentElement!, {
+      clientX: 20,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(false);
   });
 });

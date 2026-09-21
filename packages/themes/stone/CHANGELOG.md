@@ -1,5 +1,68 @@
 # @xds/theme-stone
 
+# 0.6.2
+
+---
+
+# 0.6.1
+
+#### Fixes
+
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration. (#6126)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Stone theme: move `--color-text-secondary` to the canonical T40/T70 pair so normal secondary text meets WCAG AA across the theme's light and dark consumer surfaces (#5505) (#5509)
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
 # 0.5.0
 
 ---

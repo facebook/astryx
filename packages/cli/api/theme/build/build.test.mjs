@@ -23,7 +23,10 @@ import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
 } from '@astryxdesign/core/theme';
-import {themeBuild} from './build.mjs';
+import {
+  themeBuild,
+  validateComponentOverridesAgainstRegistry,
+} from './build.mjs';
 
 // `themeBuild` captures core's generator once at module load. Wrap the two
 // CSS-emitting exports in vi.fn (call-through by default) so the receipt tests
@@ -82,6 +85,95 @@ describe('themeBuild() — receipt', () => {
         fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel))),
       ).toBe(true);
     }
+  });
+
+  it('emits local tokens and preserves enrollment metadata in the built module', async () => {
+    const themeFile = path.join(tmpDir, 'local-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'local-theme',
+        localTokens: {
+          '--ac-selection-ink': ['#0077b6', '#48cae4'],
+        },
+        components: {
+          badge: {
+            'variant:info': {
+              backgroundColor: 'var(--ac-selection-ink)',
+            },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('local-theme.mjs', {}, {cwd: tmpDir});
+    const css = fs.readFileSync(path.join(tmpDir, 'local-theme.css'), 'utf8');
+    const built = fs.readFileSync(path.join(tmpDir, 'local-theme.js'), 'utf8');
+
+    expect(result?.data.tokenCount).toBe(1);
+    expect(css).toContain('--ac-selection-ink: light-dark(#0077b6, #48cae4);');
+    expect(built).toContain('localTokens: {');
+    expect(built).toContain('__localTokenOwners: {');
+    expect(built).toContain('__localTokenLineage: ["local-theme"]');
+  });
+
+  it.each(['VAR', 'vAr'])(
+    'rejects local-token cycles using %s() before writing outputs',
+    async functionName => {
+      const themeFile = path.join(tmpDir, 'cyclic-local-theme.mjs');
+      fs.writeFileSync(
+        themeFile,
+        `export default {
+          name: 'cyclic-local-theme',
+          localTokens: {
+            '--astryx-theme-cyclic-local-theme-color-a': '${functionName}(--astryx-theme-cyclic-local-theme-color-b)',
+            '--astryx-theme-cyclic-local-theme-color-b': '${functionName}(--astryx-theme-cyclic-local-theme-color-a)',
+          },
+        };\n`,
+      );
+
+      await expect(
+        themeBuild('cyclic-local-theme.mjs', {}, {cwd: tmpDir}),
+      ).rejects.toThrow(/cycle detected/);
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.css'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.js'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.d.ts'))).toBe(
+        false,
+      );
+    },
+  );
+
+  it('rejects cross-map duplicate token names before writing outputs', async () => {
+    const themeFile = path.join(tmpDir, 'duplicate-local-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'duplicate-local-theme',
+        tokens: {
+          '--astryx-theme-duplicate-local-theme-color-accent': '#0077b6',
+        },
+        localTokens: {
+          '--astryx-theme-duplicate-local-theme-color-accent': '#48cae4',
+        },
+      };\n`,
+    );
+
+    await expect(
+      themeBuild('duplicate-local-theme.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toThrow(/both tokens and localTokens/);
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.css'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.js'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.d.ts'))).toBe(
+      false,
+    );
   });
 
   it('is silent by default (noopLogger) — no console output for a scripted caller', async () => {
@@ -226,7 +318,7 @@ describe('themeBuild() — check mode', () => {
 describe('themeBuild() — component override validation', () => {
   it('accepts documented state keys without an "Unknown prop" warning', async () => {
     // The state-key syntax the Theming Infrastructure wiki documents —
-    // `radio: {checked}`, `calendar-day: {today, selected}` — is declared in
+    // `radio-indicator: {checked}`, `calendar-day: {today, selected}` — is declared in
     // each component's doc under `theming.targets[].states`, not
     // `visualProps`. `loadKnownComponents()` read only `visualProps`, so every
     // one of these warned "Unknown prop": documented syntax that looked broken.
@@ -237,7 +329,7 @@ describe('themeBuild() — component override validation', () => {
         name: 'states',
         tokens: {'--color-bg': '#0a0a0a'},
         components: {
-          radio: {
+          'radio-indicator': {
             checked: {borderColor: 'var(--color-accent)'},
             'checked+disabled': {opacity: '0.5'},
           },
@@ -284,15 +376,81 @@ describe('themeBuild() — component override validation', () => {
       `export default {
         name: 'bogus',
         tokens: {'--color-bg': '#0a0a0a'},
-        components: {radio: {notAState: {opacity: '0.5'}}},
+        components: {'radio-indicator': {notAState: {opacity: '0.5'}}},
       };\n`,
     );
 
     const result = await themeBuild('bogus.mjs', {}, {cwd: tmpDir});
 
     expect(result?.data.warnings).toEqual([
-      expect.stringContaining('Unknown prop "notAState" on component "radio"'),
+      expect.stringContaining(
+        'Unknown prop "notAState" on component "radio-indicator"',
+      ),
     ]);
+  });
+
+  it('warns with the exact replacement for deprecated root and media targets', () => {
+    const registry = {
+      propsByKey: {
+        'old-target': ['variant'],
+        'new-target': ['variant'],
+      },
+      deprecatedByKey: {'old-target': 'new-target'},
+    };
+
+    expect(
+      validateComponentOverridesAgainstRegistry(
+        {
+          components: {
+            'old-target': {base: {color: 'red'}},
+            'new-target': {base: {color: 'blue'}},
+          },
+          onDark: {
+            components: {
+              'old-target': {'variant:quiet': {color: 'pink'}},
+            },
+          },
+          adaptations: {
+            rules: [
+              {
+                when: {contrast: 'more'},
+                value: {
+                  components: {
+                    'old-target': {'variant:loud': {color: 'purple'}},
+                  },
+                },
+              },
+            ],
+          },
+        },
+        registry,
+      ),
+    ).toEqual([
+      'Deprecated component target "old-target". Use "new-target" instead.',
+      'Deprecated component target "old-target" in onDark. Use "new-target" instead.',
+      'Deprecated component target "old-target" in adaptation rule 1. Use "new-target" instead.',
+    ]);
+  });
+
+  it('warns with the exact replacement for a supported deprecated target', async () => {
+    const themeFile = path.join(tmpDir, 'deprecated-target.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'deprecated-target',
+        tokens: {},
+        components: {progressbar: {base: {color: 'red'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('deprecated-target.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toContain(
+      'Deprecated component target "progressbar". Use "progress-bar" instead.',
+    );
+    expect(
+      fs.readFileSync(path.join(tmpDir, 'deprecated-target.css'), 'utf8'),
+    ).toContain('.astryx-progressbar');
   });
 });
 
@@ -456,6 +614,55 @@ describe('themeBuild() — extends', () => {
     expect(css).toContain('--radius-element: 6px;');
   });
 
+  it('preserves local-token enrollment when extending a built theme module', async () => {
+    fs.writeFileSync(
+      path.join(extDir, 'local-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';
+      export const localBaseTheme = defineTheme({
+        name: 'local-base',
+        localTokens: {
+          '--astryx-theme-local-base-color-status-fill': ['#123456', '#abcdef'],
+        },
+        components: {
+          badge: {
+            base: {
+              backgroundColor: 'var(--astryx-theme-local-base-color-status-fill)',
+            },
+          },
+        },
+      });\n`,
+    );
+    await themeBuild('local-base.mjs', {}, {cwd: extDir});
+
+    fs.writeFileSync(
+      path.join(extDir, 'local-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';
+      import {localBaseTheme} from './local-base.js';
+      export const localChildTheme = defineTheme({
+        name: 'local-child',
+        extends: localBaseTheme,
+        localTokens: {
+          '--astryx-theme-local-base-color-status-fill': '#654321',
+          '--astryx-theme-local-child-color-surface-raised': '#fedcba',
+        },
+      });\n`,
+    );
+
+    await themeBuild('local-child.mjs', {}, {cwd: extDir});
+    const css = fs.readFileSync(path.join(extDir, 'local-child.css'), 'utf8');
+    const built = fs.readFileSync(path.join(extDir, 'local-child.js'), 'utf8');
+
+    expect(css).toContain(
+      '--astryx-theme-local-base-color-status-fill: #654321;',
+    );
+    expect(css).toContain(
+      '--astryx-theme-local-child-color-surface-raised: #fedcba;',
+    );
+    expect(built).toContain(
+      '__localTokenLineage: ["local-base","local-child"]',
+    );
+  });
+
   it('resolves extends on a plain object theme file (no defineTheme call)', async () => {
     fs.writeFileSync(path.join(extDir, 'ext-base.mjs'), BASE_SOURCE);
     fs.writeFileSync(
@@ -495,5 +702,147 @@ describe('themeBuild() — extends', () => {
     await expect(
       themeBuild('ext-broken.mjs', {}, {cwd: extDir}),
     ).rejects.toThrow(/extends/);
+  });
+});
+
+// =============================================================================
+// Theme name → valid JS identifier contract (deterministic from theme.name)
+// =============================================================================
+
+describe('themeBuild() — theme name identifier sanitization', () => {
+  /**
+   * Write a theme source with a given theme name and return the generated JS
+   * and declarations. The identifier is derived only from theme.name.
+   */
+  async function buildNamed(themeName) {
+    const themeFile = path.join(
+      tmpDir,
+      `src-${themeName.replace(/[^a-z0-9]/gi, '')}.mjs`,
+    );
+    // Use a default export so no source export name is available — the
+    // identifier must come purely from toIdentifier(themeName) + 'Theme'.
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: '${themeName}', tokens: { '--color-bg': '#000' } };\n`,
+    );
+    await themeBuild(path.basename(themeFile), {}, {cwd: tmpDir});
+    const js = fs.readFileSync(path.join(tmpDir, `${themeName}.js`), 'utf8');
+    const dts = fs.readFileSync(path.join(tmpDir, `${themeName}.d.ts`), 'utf8');
+    return {js, dts};
+  }
+
+  // -- Core bug: hyphen followed by digit -----------------------------------
+
+  it('chaos-07 → chaos07Theme (the motivating bug)', async () => {
+    const {js, dts} = await buildNamed('chaos-07');
+    expect(js).toContain('export const chaos07Theme = {');
+    expect(js).not.toMatch(/export const chaos-07/);
+    expect(dts).toContain('export declare const chaos07Theme: DefinedTheme;');
+    // Must parse as valid JS
+    expect(() => new Function(js.replace(/^export /gm, ''))).not.toThrow();
+  });
+
+  // -- Dot separator --------------------------------------------------------
+
+  it('brand.v2 → brandV2Theme', async () => {
+    const {js, dts} = await buildNamed('brand.v2');
+    expect(js).toContain('export const brandV2Theme = {');
+    expect(dts).toContain('export declare const brandV2Theme: DefinedTheme;');
+  });
+
+  it('ui.dark.3 → uiDark3Theme', async () => {
+    const {js, dts} = await buildNamed('ui.dark.3');
+    expect(js).toContain('export const uiDark3Theme = {');
+    expect(dts).toContain('export declare const uiDark3Theme: DefinedTheme;');
+  });
+
+  // -- Underscore preserved (already valid) ---------------------------------
+
+  it('my_theme → my_themeTheme (underscore preserved)', async () => {
+    const {js, dts} = await buildNamed('my_theme');
+    expect(js).toContain('export const my_themeTheme = {');
+    expect(dts).toContain('export declare const my_themeTheme: DefinedTheme;');
+  });
+
+  // -- Mixed separators -----------------------------------------------------
+
+  it('neo_wave-2.x → neo_wave2XTheme (underscore kept, others camelCased)', async () => {
+    const {js, dts} = await buildNamed('neo_wave-2.x');
+    expect(js).toContain('export const neo_wave2XTheme = {');
+    expect(dts).toContain(
+      'export declare const neo_wave2XTheme: DefinedTheme;',
+    );
+  });
+
+  // -- Multiple and consecutive separators ----------------------------------
+
+  it('a-1-b → a1BTheme', async () => {
+    const {js, dts} = await buildNamed('a-1-b');
+    expect(js).toContain('export const a1BTheme = {');
+    expect(dts).toContain('export declare const a1BTheme: DefinedTheme;');
+  });
+
+  it('my--theme → myThemeTheme (consecutive hyphens)', async () => {
+    const {js, dts} = await buildNamed('my--theme');
+    expect(js).toContain('export const myThemeTheme = {');
+    expect(dts).toContain('export declare const myThemeTheme: DefinedTheme;');
+  });
+
+  it('trailing- → trailingTheme (trailing separator stripped)', async () => {
+    const {js, dts} = await buildNamed('trailing-');
+    expect(js).toContain('export const trailingTheme = {');
+    expect(dts).toContain('export declare const trailingTheme: DefinedTheme;');
+  });
+
+  it('neon-green-42 → neonGreen42Theme', async () => {
+    const {js, dts} = await buildNamed('neon-green-42');
+    expect(js).toContain('export const neonGreen42Theme = {');
+    expect(dts).toContain(
+      'export declare const neonGreen42Theme: DefinedTheme;',
+    );
+  });
+
+  // -- JS and d.ts agree on every case --------------------------------------
+
+  it('JS, d.ts, and install example agree', async () => {
+    const {js, dts} = await buildNamed('dark-v2');
+    const jsMatch = js.match(/export const (\w+) = \{/);
+    const dtsMatch = dts.match(/export declare const (\w+): DefinedTheme;/);
+    expect(jsMatch?.[1]).toBe('darkV2Theme');
+    expect(dtsMatch?.[1]).toBe('darkV2Theme');
+    // Import example in JSDoc
+    expect(js).toContain("import { darkV2Theme } from './dark-v2'");
+  });
+
+  // -- Check mode -----------------------------------------------------------
+
+  it('check mode agrees with the deterministic identifier', async () => {
+    await buildNamed('wave-99');
+    // Source file was written by buildNamed; re-run in check mode
+    const checkResult = await themeBuild(
+      path.basename(
+        fs.readdirSync(tmpDir).find(f => f.startsWith('src-wave99')),
+      ),
+      {check: true},
+      {cwd: tmpDir},
+    );
+    expect(checkResult?.data.upToDate).toBe(true);
+  });
+
+  // -- Reserved words are safe via the Theme suffix -------------------------
+
+  it('reserved word "for" → forTheme (safe)', async () => {
+    const {js, dts} = await buildNamed('for');
+    expect(js).toContain('export const forTheme = {');
+    expect(dts).toContain('export declare const forTheme: DefinedTheme;');
+    expect(() => new Function(js.replace(/^export /gm, ''))).not.toThrow();
+  });
+
+  // -- Simple name (no separators) is unchanged -----------------------------
+
+  it('ocean → oceanTheme (no-op sanitization)', async () => {
+    const {js, dts} = await buildNamed('ocean');
+    expect(js).toContain('export const oceanTheme = {');
+    expect(dts).toContain('export declare const oceanTheme: DefinedTheme;');
   });
 });

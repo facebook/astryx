@@ -74,6 +74,12 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+    },
     numberOfMonths: {
       control: 'radio',
       options: [1, 2],
@@ -129,6 +135,39 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event time',
+  },
+};
+
+export const NativePickerModes: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateTimeInput
+          label="nativePicker='touch' (default)"
+          description="Native date and compatible time controls on a coarse primary pointer"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <DateTimeInput
+          label="nativePicker='always'"
+          description="Native date and compatible time controls on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <DateTimeInput
+          label="nativePicker='never'"
+          description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
+        />
+      </div>
+    );
   },
 };
 
@@ -366,6 +405,7 @@ export const TwoMonthCalendar: Story = {
   args: {
     label: 'Travel departure',
     numberOfMonths: 2,
+    nativePicker: 'never',
   },
 };
 

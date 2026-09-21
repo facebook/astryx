@@ -347,6 +347,22 @@
     "defaultMessage": "Slide {current, number} of {total, number}",
     "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
   },
+  "@astryx.chart.label": {
+    "defaultMessage": "Chart",
+    "description": "Generic screen-reader name for a Chart with no primary series and no consumer-supplied title. Noun (a data visualization), not a verb."
+  },
+  "@astryx.chart.labelWithSeries": {
+    "defaultMessage": "Chart of {series} by {xKey}",
+    "description": "Generated screen-reader name for a Chart without a consumer-supplied title. `{series}` is a locale-formatted list of series labels; `{xKey}` is the consumer's horizontal data-field name."
+  },
+  "@astryx.chart.dataTableCaption": {
+    "defaultMessage": "{label} data",
+    "description": "Screen-reader-only caption for the small-data table that mirrors a Chart. `{label}` is the Chart's resolved accessible name."
+  },
+  "@astryx.chartLegend.label": {
+    "defaultMessage": "Chart legend",
+    "description": "Screen-reader-only accessible name for the list of series labels and swatches rendered by ChartLegend."
+  },
   "@astryx.chat.status.sending": {
     "defaultMessage": "Sending",
     "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."
@@ -377,7 +393,7 @@
   },
   "@astryx.checkboxList.item.checkbox": {
     "defaultMessage": "Checkbox",
-    "description": "Screen-reader-only last-ditch fallback name for a checkbox inside a list item when no label is provided. Should almost never render — consumers should supply a real label."
+    "description": "Localized hidden text used internally when a rich visible label names the checkbox through aria-labelledby. It does not become the computed name; callers must provide aria-label when rich content has no text."
   },
   "@astryx.commandPalette.emptySearch": {
     "defaultMessage": "No results",
@@ -415,6 +431,10 @@
     "defaultMessage": "Menu",
     "description": "Screen-reader-only fallback name for a dropdown menu popover. Very generic; consumers usually override. Noun (\"a menu\"), not the imperative."
   },
+  "@astryx.dropdownMenu.back": {
+    "defaultMessage": "Back",
+    "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -426,6 +446,18 @@
   "@astryx.lightbox.next": {
     "defaultMessage": "Next",
     "description": "Screen-reader-only label on the right-arrow button in a Lightbox (navigates to next media item). Pairs with `lightbox.previous`."
+  },
+  "@astryx.chatTypingIndicator.one": {
+    "defaultMessage": "{name} is typing…",
+    "description": "Politely announced status naming the single person currently typing in a chat. `name` is a display name supplied by the app. Present-progressive form; the trailing ellipsis is the single … character."
+  },
+  "@astryx.chatTypingIndicator.many": {
+    "defaultMessage": "{names} are typing…",
+    "description": "Politely announced status when more than one person is typing in a chat. `names` is already joined for the locale by Intl.ListFormat, so translations must not add their own conjunction — place `{names}` where the joined list belongs."
+  },
+  "@astryx.chatTypingIndicator.others": {
+    "defaultMessage": "{count, number} {count, plural, one {other} other {others}}",
+    "description": "Overflow element for the chat typing status when three or more people type: the first name is shown and the rest collapse into this phrase, which is then joined to the name by Intl.ListFormat. Renders as the last list item, e.g. \"Ana and 2 others\"."
   },
   "@astryx.listInput.emptyTitle": {
     "defaultMessage": "No {itemName}s yet",
@@ -891,6 +923,10 @@
     "defaultMessage": "Invalid time",
     "description": "Screen-reader-only live-region alert in TimeInput / DateTimeInput when the typed time cannot be parsed. \"Time\" = clock time (HH:MM). The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
   },
+  "@astryx.timeInput.openPicker": {
+    "defaultMessage": "Open {label}",
+    "description": "Aria label for the clock button that opens TimeInput's browser/OS time picker. `{label}` is the field label, for example `Start time`."
+  },
   "@astryx.topNav.heading.dialogLabel": {
     "defaultMessage": "Navigation menu",
     "description": "Screen-reader-only accessible name for the dropdown dialog opened from a TopNavHeading's overflow menu. Kept separate from the SideNav sibling."
@@ -910,6 +946,10 @@
   "@astryx.button.loading": {
     "defaultMessage": "Loading",
     "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
+  },
+  "@astryx.spinner.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
   },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
@@ -950,6 +990,22 @@
   "@astryx.chatToolCalls.error": {
     "defaultMessage": "Error: {message}",
     "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.status.pending": {
+    "defaultMessage": "Pending",
+    "description": "Screen-reader-only status label for a tool call that is waiting to begin."
+  },
+  "@astryx.chatToolCalls.status.running": {
+    "defaultMessage": "Running",
+    "description": "Screen-reader-only status label for a tool call that is currently running."
+  },
+  "@astryx.chatToolCalls.status.complete": {
+    "defaultMessage": "Complete",
+    "description": "Screen-reader-only status label for a tool call that completed successfully."
+  },
+  "@astryx.chatToolCalls.status.error": {
+    "defaultMessage": "Failed",
+    "description": "Screen-reader-only status label for a failed tool call when no error detail is supplied."
   },
   "@astryx.chatToolCalls.groupLabel": {
     "defaultMessage": "{count} tool calls",
@@ -1063,6 +1119,10 @@
     "defaultMessage": "Clear all {label}",
     "description": "Screen-reader-only label on the X that clears every selected value from a MultiSelector. Example: `Clear all Countries`. `{label}` is typically already plural in English."
   },
+  "@astryx.input.readOnly": {
+    "defaultMessage": "Read only",
+    "description": "Screen-reader-only description appended to a read-only form control when the platform does not expose aria-readonly for that control's host element. Short state label, not an instruction."
+  },
   "@astryx.input.statusButton.error": {
     "defaultMessage": "Error details",
     "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."
@@ -1146,6 +1206,14 @@
   "@astryx.stepper.label": {
     "defaultMessage": "Progress",
     "description": "Screen-reader-only fallback name for the Stepper's ordered list of steps, describing the sequence as a whole (e.g. `Progress`). Used as the aria-label when the consumer does not pass a `label`. Singular per ARIA convention."
+  },
+  "@astryx.stepper.previousStep": {
+    "defaultMessage": "Previous step",
+    "description": "Accessible name and tooltip for the button that moves a Stepper back one step. Only rendered when the stepper is narrow enough that step labels have collapsed, and only when the stepper is navigable at all."
+  },
+  "@astryx.stepper.nextStep": {
+    "defaultMessage": "Next step",
+    "description": "Accessible name and tooltip for the button that moves a Stepper forward one step. Counterpart to `stepper.previousStep`; keep the two parallel."
   },
   "@astryx.step.goToStep": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}",

@@ -3,7 +3,7 @@
 /**
  * @file PowerSearchValueEditor.test.tsx
  * @input Uses vitest, @testing-library/react, PowerSearchValueEditor
- * @output Unit tests for PowerSearch editor bugs #1103, #1106, #1107
+ * @output Unit tests for PowerSearch value editors, including date-range ordering
  * @position Testing; validates PowerSearchValueEditor.tsx
  */
 
@@ -246,9 +246,125 @@ describe('numeric editor commit timing', () => {
   });
 });
 
-// =============================================================================
-// #1106 — EntityListEditor drops photo, no renderItem
-// =============================================================================
+describe('DateRangeEditor', () => {
+  it('uses one ordered range picker for reverse endpoint selection', () => {
+    const onChange = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'date_range'}}
+        filterValue={{
+          type: 'date_range',
+          value: {
+            start: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+            },
+            end: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-07T00:00:00Z') / 1000,
+            },
+          },
+        }}
+        onChange={onChange}
+        config={stubConfig}
+      />,
+    );
+
+    const calendarTriggers = screen.getAllByRole('button', {
+      name: 'Open calendar',
+    });
+    expect(calendarTriggers).toHaveLength(1);
+    fireEvent.click(calendarTriggers[0]);
+
+    const later = document.querySelector<HTMLButtonElement>(
+      'button[data-date="2026-01-20"]',
+    );
+    const earlier = document.querySelector<HTMLButtonElement>(
+      'button[data-date="2026-01-10"]',
+    );
+    expect(later).not.toBeNull();
+    expect(earlier).not.toBeNull();
+    fireEvent.click(later!);
+    fireEvent.click(earlier!);
+
+    expect(onChange).toHaveBeenCalledWith({
+      type: 'date_range',
+      value: {
+        start: {
+          type: 'ABSOLUTE',
+          unixSeconds: Date.parse('2026-01-10T00:00:00Z') / 1000,
+        },
+        end: {
+          type: 'ABSOLUTE',
+          unixSeconds: Date.parse('2026-01-20T00:00:00Z') / 1000,
+        },
+      },
+    });
+  });
+
+  it('renders an absolute-to-now range without changing the filter', () => {
+    const nowSpy = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-01-20T12:00:00Z'));
+    const onChange = vi.fn();
+    try {
+      render(
+        <PowerSearchValueEditor
+          operatorValue={{type: 'date_range'}}
+          filterValue={{
+            type: 'date_range',
+            value: {
+              start: {
+                type: 'ABSOLUTE',
+                unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+              },
+              end: {type: 'NOW'},
+            },
+          }}
+          onChange={onChange}
+          config={stubConfig}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {name: /^date range:/i}),
+      ).toHaveTextContent('Jan 5 – Jan 20');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('renders a relative-to-now range without changing the filter', () => {
+    const nowSpy = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-01-20T12:00:00Z'));
+    const onChange = vi.fn();
+    try {
+      render(
+        <PowerSearchValueEditor
+          operatorValue={{type: 'date_range'}}
+          filterValue={{
+            type: 'date_range',
+            value: {
+              start: {type: 'RELATIVE', backValue: 10, unit: 'day'},
+              end: {type: 'NOW'},
+            },
+          }}
+          onChange={onChange}
+          config={stubConfig}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {name: /^date range:/i}),
+      ).toHaveTextContent('Jan 10 – Jan 20');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+});
 
 describe('EntityListEditor (#1106)', () => {
   const entitiesWithPhoto: PowerSearchEntity[] = [

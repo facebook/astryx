@@ -104,7 +104,7 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(ratioVar(element)).toBe(ratioValue(1));
-    expect(element.className).toContain('ellipse');
+    expect(element).toHaveAttribute('data-shape', 'ellipse');
   });
 
   it('ellipse respects a non-square ratio (oval)', () => {
@@ -116,7 +116,7 @@ describe('AspectRatio', () => {
     const element = screen.getByTestId('aspect-ratio');
     // Ratio is preserved — the ellipse does not force 1:1.
     expect(ratioVar(element)).toBe(ratioValue(16 / 9));
-    expect(element.className).toContain('ellipse');
+    expect(element).toHaveAttribute('data-shape', 'ellipse');
   });
 
   it('defaults to the rectangle shape', () => {
@@ -127,7 +127,7 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(ratioVar(element)).toBe(ratioValue(1));
-    expect(element.className).toContain('rectangle');
+    expect(element).toHaveAttribute('data-shape', 'rectangle');
     // No ellipse border-radius when shape is the default rectangle
     expect(element.style.borderRadius).toBe('');
   });

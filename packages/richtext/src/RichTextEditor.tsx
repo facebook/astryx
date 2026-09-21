@@ -4,8 +4,9 @@
 
 /**
  * @file RichTextEditor.tsx
- * @input Uses React, useId, Lexical (lexical + @lexical/react), Field,
- *   VisuallyHidden, useInputStatusIcon, mergeProps, design tokens
+ * @input Uses React, useId, Lexical (lexical + @lexical/react, composed through
+ *   LexicalExtensionComposer), Field, VisuallyHidden, useInputStatusIcon,
+ *   mergeProps, design tokens
  * @output Exports an accessibly labelled RichTextEditor component with a flush
  *   top toolbar slot and configurable editable-surface minimum height, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
@@ -58,10 +59,7 @@ import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 
-import {
-  LexicalComposer,
-  type InitialConfigType,
-} from '@lexical/react/LexicalComposer';
+import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
@@ -83,10 +81,12 @@ import {DEFAULT_NODES} from './editorNodes';
 import {
   BLUR_COMMAND,
   COMMAND_PRIORITY_LOW,
+  defineExtension,
   KEY_DOWN_COMMAND,
   KEY_ESCAPE_COMMAND,
   KEY_TAB_COMMAND,
   mergeRegister,
+  type AnyLexicalExtension,
   type EditorState,
   type Klass,
   type LexicalEditor,
@@ -526,17 +526,35 @@ export const RichTextEditor = forwardRef<
   // isn't running the transform in this repo, so this isn't auto-memoized.)
   const markdownTransformers = useMemo(() => [...transformers], [transformers]);
 
-  const initialConfig: InitialConfigType = {
-    namespace,
-    theme: themeRef.current,
-    editable,
-    editorState: defaultValue ?? undefined,
-    nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
-    onError(error: Error) {
-      // Surface errors to the host app rather than swallowing them.
-      throw error;
-    },
-  };
+  // The extension replaces LexicalComposer's `initialConfig`: it carries the
+  // same editor configuration (namespace, theme, nodes, editability, initial
+  // state) in the shape LexicalBuilder consumes.
+  //
+  // LexicalExtensionComposer re-creates the editor whenever the extension's
+  // identity changes, whereas LexicalComposer read `initialConfig` exactly once
+  // on mount. Build it on first render and keep it, so the editor's lifetime —
+  // and the content it holds — is unaffected by later renders (a consumer
+  // passing an inline `nodes={[...]}` array would otherwise blow away the
+  // editor's content on every render).
+  const extensionRef = useRef<AnyLexicalExtension | null>(null);
+  if (extensionRef.current === null) {
+    extensionRef.current = defineExtension({
+      name: '@astryxdesign/richtext/RichTextEditor',
+      namespace,
+      theme: themeRef.current,
+      editable,
+      nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
+      // `undefined` (not `null`) leaves Lexical's default initializer in place,
+      // which seeds the empty document with one paragraph — what
+      // LexicalComposer did when no `editorState` was given. `null` would mean
+      // "start from a genuinely empty root".
+      $initialEditorState: defaultValue ?? undefined,
+      onError(error: Error) {
+        // Surface errors to the host app rather than swallowing them.
+        throw error;
+      },
+    });
+  }
 
   const hasTabEscapeHint = editable && tabEscapeHint !== '';
   const hasToolbar = toolbar != null && typeof toolbar !== 'boolean';
@@ -606,7 +624,9 @@ export const RichTextEditor = forwardRef<
           className,
           style,
         )}>
-        <LexicalComposer initialConfig={initialConfig}>
+        <LexicalExtensionComposer
+          extension={extensionRef.current}
+          contentEditable={null}>
           {hasToolbar ? toolbar : null}
           <div
             {...stylex.props(
@@ -664,7 +684,7 @@ export const RichTextEditor = forwardRef<
               <div {...stylex.props(styles.statusIcon)}>{statusIcon}</div>
             )}
           </div>
-        </LexicalComposer>
+        </LexicalExtensionComposer>
         {hasTabEscapeHint && (
           <VisuallyHidden id={tabEscapeHintID}>{tabEscapeHint}</VisuallyHidden>
         )}

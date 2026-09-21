@@ -34,6 +34,8 @@ const COMPONENT_FILE = 'packages/core/src/Calendar/Calendar.tsx';
 const INFRA_FILE = 'packages/core/src/utils/plainDate.ts';
 const DATE_PARSER_INFRA_FILE = 'packages/core/src/utils/dateParser.ts';
 const COLLATOR_INFRA_FILE = 'packages/core/src/i18n/useCollator.ts';
+const RELATIVE_TIME_INFRA_FILE =
+  'packages/core/src/Timestamp/formatRelativeTime.ts';
 const NUMBER_PARSER_INFRA_FILE =
   'packages/core/src/NumberInput/numberParser.ts';
 const NUMBER_PARSER_TEST_ORACLE_FILE =
@@ -127,6 +129,10 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `new Intl.Collator(locale, options);`,
       filename: COLLATOR_INFRA_FILE,
+    },
+    {
+      code: `new Intl.RelativeTimeFormat(locale, {style: 'narrow'});`,
+      filename: RELATIVE_TIME_INFRA_FILE,
     },
     {
       code: `new Intl.NumberFormat(locale).formatToParts(12345.6);`,
@@ -262,6 +268,11 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `new Intl.NumberFormat().formatToParts(1);`,
       filename: NUMBER_PARSER_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `new Intl.RelativeTimeFormat();`,
+      filename: RELATIVE_TIME_INFRA_FILE,
       errors: [ambientIntlInImplementation],
     },
     {

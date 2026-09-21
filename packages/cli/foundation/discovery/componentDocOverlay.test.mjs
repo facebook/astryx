@@ -90,7 +90,7 @@ describe('translated component docs never drop a prop', () => {
   }
 });
 
-describe('the reported symptom', () => {
+describe('full component-doc overlays', () => {
   it('astryx component Button --zh still lists isInterruptible and isIconOnly', async () => {
     const docPath = path.join(CORE_SRC, 'Button', 'Button.doc.mjs');
     const zh = await loadDocs(docPath, {zh: true});
@@ -120,7 +120,40 @@ describe('the reported symptom', () => {
 
     expect(english.usage.accessibility.length).toBeGreaterThan(0);
     expect(dense.usage.accessibility).toEqual(english.usage.accessibility);
+    expect(dense.usage.accessibilityThemeCoverage).toEqual(
+      english.usage.accessibilityThemeCoverage,
+    );
+    expect(dense.usage.accessibilityThemeCoverage[0].notMeasured).toContain(
+      'Decorative track — Not part of the contrast audit.',
+    );
     expect(dense.usage.bestPractices).toBeUndefined();
-    expect(dense.usage.anatomy).toBeUndefined();
+    expect(dense.usage.anatomy).toEqual(english.usage.anatomy);
+  });
+
+  it('inherits canonical anatomy when a full docsZh usage omits it', async () => {
+    const docPath = path.join(
+      import.meta.dirname,
+      '__fixtures__',
+      'component-accessibility-overlay.doc.mjs',
+    );
+    const english = await loadDocs(docPath);
+    const zh = await loadDocs(docPath, {zh: true});
+
+    expect(zh.usage.description).toBe('Translated full-doc description.');
+    expect(zh.usage.anatomy).toEqual(english.usage.anatomy);
+    expect(zh.usage.bestPractices).toBeUndefined();
+  });
+
+  it('keeps explicit localized anatomy from a full docsZh usage', async () => {
+    const docPath = path.join(
+      import.meta.dirname,
+      '__fixtures__',
+      'component-anatomy-override.doc.mjs',
+    );
+    const mod = await import(pathToFileURL(docPath).href);
+    const zh = await loadDocs(docPath, {zh: true});
+
+    expect(zh.usage.anatomy).toEqual(mod.docsZh.usage.anatomy);
+    expect(zh.usage.anatomy).not.toEqual(mod.docs.usage.anatomy);
   });
 });

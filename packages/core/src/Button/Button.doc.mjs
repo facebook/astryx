@@ -23,6 +23,62 @@ export const docs = {
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
       {guidance: false, description: 'Use a button for navigation. If it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
+    accessibility: [
+      {
+        name: 'Text label',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'Button text must have at least 4.5:1 contrast with the button background in every state. For Hover and Pointer down, measure the final background after the overlay is applied.',
+      },
+      {
+        name: 'Essential icon or spinner arc',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Icon only', 'Loading'],
+        description:
+          'An icon used instead of text must have at least 3:1 contrast with the button background. The moving spinner arc must also meet 3:1. An icon beside a visible label does not need its own check.',
+      },
+      {
+        name: 'Badge text',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'Badge text inside a button must have at least 4.5:1 contrast with the Badge background. Check all 14 built-in Badge colors in Rest, Hover, and Pointer down on page and surface backgrounds. This covers 336 pairs per mode. Check custom end content separately.',
+      },
+      {
+        name: 'Visible control boundary',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1 if needed',
+        states: ['Rest'],
+        description:
+          'The button edge needs 3:1 contrast only when users need it to see the control. A text-only button can rely on its label.',
+      },
+      {
+        name: 'Keyboard focus indicator',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Focus visible'],
+        description:
+          'The focus outline needs at least 3:1 contrast with the area around the button. Check every style. Destructive buttons use a red outline.',
+      },
+      {
+        name: 'Disabled appearance',
+        category: 'Color contrast',
+        criterion: '1.4.3 and 1.4.11 exceptions',
+        requirement: 'Not required',
+        states: ['Disabled'],
+        description:
+          'Disabled controls do not need to meet these contrast ratios.',
+      },
+    ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
       {name: 'Label', required: true, description: 'The visible text describing the action. Also used as the accessible name.'},

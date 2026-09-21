@@ -58,6 +58,7 @@ jobs:
             const {pathToFileURL} = require('node:url');
             const {
               isVisualAcceptanceEndpointMaintainer,
+              visualAcceptanceEvidencePath,
               visualAcceptanceIdentity,
             } = await import(
               pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/visual-gate/authorization.mjs`).href,
@@ -81,7 +82,7 @@ jobs:
             const body = context.payload.comment.body.trim();
             const match = body.match(/^\/accept-visual\s+(\d+)\/(\d+)\s+([\s\S]+)$/);
             if (!match) {
-              refuse('copy the exact `/accept-visual <run>/<attempt> <reason>` command from the report.');
+              refuse('copy the exact maintainer-only `/accept-visual <run>/<attempt> <why every changed frame is correct>` command from the latest report.');
               return;
             }
             const runId = Number(match[1]);
@@ -104,7 +105,25 @@ jobs:
               .sort((a, b) => b.id - a.id)[0];
             if (!latestCI || latestCI.id !== runId || latestCI.run_attempt !== runAttempt ||
                 latestCI.status !== 'completed') {
-              refuse('that evidence is not from the latest completed CI attempt for this head.');
+              refuse('that command is not from the latest completed CI attempt for this head. Wait for the latest report and copy its command.');
+              return;
+            }
+            const evidencePath = visualAcceptanceEvidencePath({
+              pr: number,
+              head: pr.head.sha,
+              run: runId,
+              attempt: runAttempt,
+            });
+            try {
+              await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: evidencePath,
+                ref: 'gh-pages',
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              refuse('trusted visual evidence is not published yet. Wait for the latest PR report; if it does not appear, rerun CI and use its new command.');
               return;
             }
             let identity = visualAcceptanceIdentity();
@@ -307,9 +326,9 @@ jobs:
             const {owner, repo} = context.repo;
             await github.rest.repos.createCommitStatus({
               owner, repo, sha: process.env.HEAD_SHA, context: 'visual-acceptance', state: 'failure',
-              description: 'Visual acceptance could not be recorded.',
+              description: 'Visual acceptance hit an infrastructure error.',
             });
             await github.rest.issues.createComment({
               owner, repo, issue_number: Number(process.env.PR_NUMBER),
-              body: 'Visual acceptance could not be recorded. See this workflow run for the rejected invariant or infrastructure error.',
+              body: 'Visual acceptance hit an infrastructure error. Retry only after the latest PR report shows a maintainer command; if no report appears, rerun CI. See this workflow run for details.',
             });

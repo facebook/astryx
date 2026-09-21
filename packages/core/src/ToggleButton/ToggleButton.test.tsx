@@ -24,6 +24,54 @@ import {
 // =============================================================================
 
 describe('ToggleButton', () => {
+  describe('elevation', () => {
+    it('reflects the elevation prop as a theme attribute', () => {
+      const attrFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <ToggleButton
+            label="Filter"
+            isPressed={false}
+            onPressedChange={() => {}}
+            elevation={elevation}
+          />,
+        );
+        return container
+          .querySelector('button')!
+          .getAttribute('data-elevation');
+      };
+      expect(attrFor('none')).toBe('none');
+      expect(attrFor('low')).toBe('low');
+      expect(attrFor('med')).toBe('med');
+      expect(attrFor('high')).toBe('high');
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container} = render(
+        <ToggleButton
+          label="Filter"
+          isPressed={false}
+          onPressedChange={() => {}}
+        />,
+      );
+      expect(container.querySelector('button')).toHaveAttribute(
+        'data-elevation',
+        'none',
+      );
+    });
+
+    it('is retained inside a ToggleButtonGroup — grouped children keep their own elevation', () => {
+      const {container} = render(
+        <ToggleButtonGroup label="View" value={null} onChange={() => {}}>
+          <ToggleButton label="Card" value="card" elevation="high" />
+        </ToggleButtonGroup>,
+      );
+      expect(container.querySelector('button')).toHaveAttribute(
+        'data-elevation',
+        'high',
+      );
+    });
+  });
+
   it('renders with label as visible text', () => {
     render(
       <ToggleButton
@@ -519,6 +567,139 @@ describe('ToggleButtonGroup (multiple)', () => {
       'aria-pressed',
       'false',
     );
+  });
+});
+
+// =============================================================================
+// Disabled state — family:buttons FR3 (disabled means non-operable)
+// =============================================================================
+
+/**
+ * Two ways a ToggleButton becomes unavailable, and the rule that binds them:
+ * a group disables everything it contains, and a member can disable itself
+ * while the group stays enabled. Neither source may cancel the other out.
+ *
+ * The tooltip cases are here at the attribute and callback level only. A
+ * tooltip'd disabled toggle carries `aria-disabled` instead of the native
+ * `disabled` attribute, so whether a REAL mouse press is refused is an engine
+ * fact that jsdom's synthetic click cannot settle — that half lives in
+ * ./__tests__/ToggleButton.a11y.chromium.spec.ts.
+ */
+describe('disabled state', () => {
+  it('keeps a member disabled when the group disables nothing', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButtonGroup value={null} onChange={handleChange} label="View mode">
+        <ToggleButton value="list" label="List" isDisabled />
+        <ToggleButton value="grid" label="Grid" />
+      </ToggleButtonGroup>,
+    );
+
+    expect(screen.getByRole('button', {name: 'List'})).toBeDisabled();
+
+    await user.click(screen.getByRole('button', {name: 'List'}));
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the rest of an enabled group selectable', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButtonGroup value={null} onChange={handleChange} label="View mode">
+        <ToggleButton value="list" label="List" isDisabled />
+        <ToggleButton value="grid" label="Grid" />
+      </ToggleButtonGroup>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Grid'})).toBeEnabled();
+
+    await user.click(screen.getByRole('button', {name: 'Grid'}));
+    expect(handleChange).toHaveBeenCalledWith('grid');
+  });
+
+  it('still disables a member that says nothing when the group is disabled', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButtonGroup
+        value={null}
+        onChange={handleChange}
+        label="View mode"
+        isDisabled>
+        <ToggleButton value="list" label="List" />
+      </ToggleButtonGroup>,
+    );
+
+    expect(screen.getByRole('button', {name: 'List'})).toBeDisabled();
+
+    await user.click(screen.getByRole('button', {name: 'List'}));
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps a tooltip-bearing disabled member focusable but inert', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButtonGroup value={null} onChange={handleChange} label="View mode">
+        <ToggleButton
+          value="list"
+          label="List"
+          tooltip="List view is unavailable for this dataset"
+          isDisabled
+        />
+      </ToggleButtonGroup>,
+    );
+
+    const member = screen.getByRole('button', {name: 'List'});
+    // The tooltip is the disabled reason, so the control stays reachable to
+    // read it: aria-disabled rather than the native attribute, which would
+    // take it out of the tab order along with its own explanation.
+    expect(member).toHaveAttribute('aria-disabled', 'true');
+    expect(member).not.toBeDisabled();
+
+    await user.click(member);
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('does not toggle a standalone disabled toggle that carries a tooltip', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButton
+        label="Bold"
+        tooltip="Formatting is locked for this document"
+        isPressed={false}
+        onPressedChange={handleChange}
+        isDisabled
+      />,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Bold'});
+    expect(toggle).toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(toggle);
+    expect(handleChange).not.toHaveBeenCalled();
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('still toggles an enabled toggle that carries the same tooltip', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <ToggleButton
+        label="Bold"
+        tooltip="Bold the selected text"
+        isPressed={false}
+        onPressedChange={handleChange}
+      />,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Bold'});
+    expect(toggle).not.toHaveAttribute('aria-disabled');
+
+    await user.click(toggle);
+    expect(handleChange).toHaveBeenCalledWith(true, expect.anything());
   });
 });
 

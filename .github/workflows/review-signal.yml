@@ -30,9 +30,7 @@
 # design label is advisory and does not). Both are cleared when an entitled
 # owner approves (code → CODEOWNER; design → DESIGNOWNER
 # or CODEOWNER). Code detection is path-based and deterministic; design adds a
-# content-based diff score (deterministic too — same diff, same score). The
-# Copilot reviewer reads these labels to focus its review (see
-# .github/copilot-instructions.md).
+# content-based diff score (deterministic too — same diff, same score).
 #
 # HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
 # When code review is needed it's set to `pending`, which blocks a required
@@ -58,7 +56,7 @@ name: Review signal
 
 on:
   pull_request_target:
-    branches: ["main"]
+    branches: ['main']
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   pull_request_review:
     types: [submitted]
@@ -70,7 +68,7 @@ on:
   workflow_dispatch:
     inputs:
       pr:
-        description: "PR number to re-flag (blank = all open PRs)"
+        description: 'PR number to re-flag (blank = all open PRs)'
         required: false
         type: string
 
@@ -83,9 +81,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CODE_LABEL: "needs:code-review"
-  DESIGN_LABEL: "needs:design-review"
-  COMMUNITY_LABEL: "community"
+  CODE_LABEL: 'needs:code-review'
+  DESIGN_LABEL: 'needs:design-review'
+  COMMUNITY_LABEL: 'community'
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -217,6 +215,11 @@ jobs:
             const allFiles = await github.paginate(github.rest.pulls.listFiles, {
               owner, repo, pull_number: pr.number, per_page: 100,
             });
+            if (allFiles.length !== pr.changed_files) {
+              throw new Error(
+                `GitHub returned ${allFiles.length} of ${pr.changed_files} changed files; refusing to classify an incomplete PR.`,
+              );
+            }
             // lab is the canary-only staging area — new components are EXPECTED
             // to develop and harden there before promotion. Skip the entire
             // packages/lab/** folder for ALL signal detection (code and design)
@@ -487,9 +490,9 @@ jobs:
               }
             }
 
-            // No explanatory comment is posted here on purpose. The label is the
-            // mechanical signal; the Copilot reviewer reads it and explains why
-            // review is needed with actual judgment — better than a static one.
+            // No explanatory comment is posted here on purpose. The label and
+            // status are the mechanical signals; reviews provide judgment
+            // separately rather than through a static workflow comment.
 
             // --- The blocking gate: a "review-required" COMMIT STATUS. ---
             // We use a commit STATUS (not a check run) for two reasons:

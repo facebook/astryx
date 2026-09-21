@@ -1,5 +1,66 @@
 # @xds/build
 
+# 0.6.2
+
+---
+
+# 0.6.1
+
+---
+
+# 0.6.0
+
+#### Fixes
+
+- `withAstryx()` refuses a Turbopack config instead of building an unstyled app. Every alias the helper installs lives in `nextConfig.webpack`, which Turbopack never calls, so the app resolved `@astryxdesign/*` to dist while PostCSS compiled the library from source — disjoint class names, an exit code of 0, and an unstyled page. It now throws, naming both ways out: `--webpack`, or drop the helper and consume the pre-built package. Also warns when the merged alias map claims none of the packages, which reaches the same unstyled state by another route. (#6109)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @joaodotwork
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- `withAstryx()` now resolves an app's own `@astryxdesign/*` imports to the packages' `source` entries. The scoped webpack rule only governs requests issued from inside `node_modules`, so app code resolved the library through `default` to `dist` while PostCSS compiled it from source — the two emit disjoint class names and the app rendered unstyled without erroring. (#5932)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @PRIEYAN
+
+---
+
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Vite build: Astryx and product styles are split into their own cascade layers, so a theme's component overrides apply in a production build (#5410)
+  StyleX emits every rule it collects into one top-level `@layer priority1…priorityN`. The dev server re-served those partitioned by source file — Astryx's own styles into `astryx-base`, the app's into `product` — but a build did neither, so the priority layers landed outside the `@layer reset, astryx-base, astryx-theme, product` order and outranked all of it. Every `components: {…}` override a theme set — a colour, a radius, a public custom property — was silently dropped in the built app while working in dev.
+
+  The build now runs the same partition the dev server does, from the same helper, so the promised order holds in both: Astryx's styles are overridable by a theme, and an app's own styles still outrank everything.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.5.0
 
 ---
