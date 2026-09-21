@@ -944,7 +944,9 @@ describe('derived var expansion', () => {
     expect(baseRule).toBeDefined();
     expect(baseRule).toContain('padding-inline: var(--spacing-3)');
     expect(baseRule).toContain('--_item-inset-inline: var(--spacing-3)');
-    const spaciousRule = rules.find(r => r.includes('.astryx-item.spacious'));
+    const spaciousRule = rules.find(r =>
+      r.includes('.astryx-item[data-density="spacious"]'),
+    );
     expect(spaciousRule).toBeDefined();
     expect(spaciousRule).toContain('--_item-inset-inline: var(--spacing-4)');
   });
