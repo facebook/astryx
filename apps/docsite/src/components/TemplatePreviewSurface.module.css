@@ -1,14 +1,15 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
-/* The preview "window". A fixed-height frame (flex-filled by the dialog)
-   that contains the live template. Fill-mode templates scroll their own
-   content region; auto-height templates can still fall back to this frame. */
+/* The preview "window". It preserves the 1440×900 aspect ratio while fitting
+   the dialog body's available width and height. Fill-mode templates scroll
+   their own content region; auto-height templates can still use this frame. */
 .frame {
   position: relative;
-  width: 100%;
-  max-width: 1600px;
+  width: min(100%, 1440px);
+  max-height: 900px;
+  aspect-ratio: 16 / 10;
   margin-inline: auto;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   /* The frame is the single scroll container. Fill-mode templates fit the
      frame exactly and scroll their own content region internally (no frame
