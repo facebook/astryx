@@ -6,10 +6,12 @@
 #   { "<key>": { "defaultMessage": "...", "description": "..." } })
 # Targets: packages/core/locales/<lang>.json, one file per translated language.
 #
-# `skip_untranslated_strings: true` — declared PER-FILE (inside the files:
-# block) so Crowdin's react_intl builder respects it. This strips untranslated
-# keys from within a downloaded locale file rather than emitting them as empty
-# `"": ""` pairs that pollute the diff. Crowdin does not allow combining
+# `skip_untranslated_strings: true` below is PER-FILE (inside the files:
+# block), so it applies when the Crowdin CLI runs directly against this
+# config. Crowdin's native GitHub integration does not read this per-file
+# setting for its own exports — for those to skip untranslated keys the
+# same way, the project's own "Skip untranslated strings" export setting
+# must stay enabled in Crowdin. Crowdin does not allow combining
 # skip_untranslated_strings with skip_untranslated_files ("You cannot skip
 # strings and files at the same time"); a zero-percent locale can still land
 # as an empty `{}` file, which the Crowdin Translations Validation workflow
@@ -17,10 +19,13 @@
 #
 # This file is also read by Crowdin's native GitHub integration, which
 # commits translations directly (no commit_message override, so those
-# commits run through normal CI instead of skipping it).
+# commits run through normal CI instead of skipping it). Connecting that
+# integration included a one-time import of the repository's existing
+# translations — a setup step, already complete, that is not part of
+# ongoing operation.
 #
 # Env vars come from the GitHub workflow that sets file-level context; the
-# native integration authenticates via its own GitHub App installation:
+# native integration authenticates through its own GitHub OAuth integration:
 #   CROWDIN_PROJECT_ID     — repo variable (public)
 #   CROWDIN_PERSONAL_TOKEN — repo secret
 
