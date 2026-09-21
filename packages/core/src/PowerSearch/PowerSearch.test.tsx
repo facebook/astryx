@@ -3,7 +3,7 @@
 /**
  * @file PowerSearch.test.tsx
  * @input Uses vitest, @testing-library/react, PowerSearch
- * @output Integration tests for PowerSearch component
+ * @output Integration tests for PowerSearch, including user-driven filter removal
  * @position Testing; validates PowerSearch.tsx
  *
  * SYNC: When PowerSearch.tsx changes, update tests to match
@@ -163,6 +163,86 @@ describe('PowerSearch', () => {
     });
 
     expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
+  it('clears all added filters with one press', async () => {
+    const user = userEvent.setup();
+    render(<PowerSearchWrapper config={config} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    await user.type(input, 'status open');
+    await user.click(
+      await screen.findByRole('option', {name: 'Status is Open', hidden: true}),
+    );
+    await user.type(input, 'title login');
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Title contains "login"',
+        hidden: true,
+      }),
+    );
+
+    await user.type(input, 'status closed');
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Status is Closed',
+        hidden: true,
+      }),
+    );
+    expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(3);
+
+    await user.click(screen.getByRole('button', {name: 'Clear all'}));
+
+    expect(screen.queryAllByRole('button', {name: /^Remove /})).toHaveLength(0);
+    expect(
+      screen.queryByRole('button', {name: 'Clear all'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('removes only the selected filter', async () => {
+    const user = userEvent.setup();
+    render(<PowerSearchWrapper config={config} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    await user.type(input, 'status open');
+    await user.click(
+      await screen.findByRole('option', {name: 'Status is Open', hidden: true}),
+    );
+    await user.type(input, 'title login');
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Title contains "login"',
+        hidden: true,
+      }),
+    );
+
+    await user.click(
+      screen.getAllByRole('button', {name: 'Remove Status: is'})[0],
+    );
+
+    expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(1);
+    expect(screen.getByText('login')).toBeInTheDocument();
+  });
+
+  it('Backspace on an empty input removes only the last filter', async () => {
+    const user = userEvent.setup();
+    render(<PowerSearchWrapper config={config} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    await user.type(input, 'status open');
+    await user.click(
+      await screen.findByRole('option', {name: 'Status is Open', hidden: true}),
+    );
+    await user.type(input, 'title login');
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Title contains "login"',
+        hidden: true,
+      }),
+    );
+
+    await user.click(input);
+    await user.keyboard('{Backspace}');
+
+    expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(1);
+    expect(screen.getByText('Open')).toBeInTheDocument();
   });
 
   describe('token value truncation (#4759)', () => {
