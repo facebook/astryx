@@ -2,7 +2,8 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Stop `useTableColumnResize` handles from adding stray vertical scroll
+[fix] Stop `useTableColumnResize` handles from adding stray vertical scroll (#6194)
+@ernestt
 
 The resize handles span the whole table so their indicator line reads down
 through the body rows. They were given the table's full height but hung from a
@@ -18,5 +19,3 @@ its cell's content box, and the header's vertical centring shifts that box by an
 amount that depends on how tall each header's own content is — so the largest is
 published: a handle can stop a fraction short of the last row without anyone
 noticing, but it cannot hang past it.
-
-@ernestt
