@@ -3,7 +3,7 @@
 /**
  * @file PowerSearch.test.tsx
  * @input Uses vitest, @testing-library/react, PowerSearch
- * @output Integration tests for PowerSearch, including user-driven filter removal
+ * @output Integration tests for PowerSearch component
  * @position Testing; validates PowerSearch.tsx
  *
  * SYNC: When PowerSearch.tsx changes, update tests to match
@@ -165,7 +165,7 @@ describe('PowerSearch', () => {
     expect(screen.getByRole('combobox')).toHaveFocus();
   });
 
-  it('clears all added filters with one press', async () => {
+  it('clears all added filters when the clear button is clicked', async () => {
     const user = userEvent.setup();
     render(<PowerSearchWrapper config={config} />);
     const input = screen.getByRole('combobox', {name: 'Search'});
@@ -188,6 +188,7 @@ describe('PowerSearch', () => {
         hidden: true,
       }),
     );
+
     expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(3);
 
     await user.click(screen.getByRole('button', {name: 'Clear all'}));
@@ -198,7 +199,7 @@ describe('PowerSearch', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('removes only the selected filter', async () => {
+  it('clicking the remove button on a filter removes only that filter', async () => {
     const user = userEvent.setup();
     render(<PowerSearchWrapper config={config} />);
     const input = screen.getByRole('combobox', {name: 'Search'});
@@ -213,6 +214,8 @@ describe('PowerSearch', () => {
         hidden: true,
       }),
     );
+
+    expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(2);
 
     await user.click(
       screen.getAllByRole('button', {name: 'Remove Status: is'})[0],
@@ -237,6 +240,8 @@ describe('PowerSearch', () => {
         hidden: true,
       }),
     );
+
+    expect(screen.getAllByRole('button', {name: /^Remove /})).toHaveLength(2);
 
     await user.click(input);
     await user.keyboard('{Backspace}');
