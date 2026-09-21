@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 phase: proposed
-owners: [joeyfarina, cixzhang]
+owners: [josephfarina, cixzhang]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
@@ -247,7 +247,7 @@ integration API requires migration because the single-writer shape has not shipp
 ### DEC-1 — Handlers compose additively; no single-writer selection
 
 **Reference:** `spec:AST-031/DEC-1`
-**Decider:** `joeyfarina`, `2026-09-10`
+**Decider:** `josephfarina`, `2026-09-10`
 
 Every configured handler runs. The previous model selected one writer based on
 target ownership, which meant an integration could not observe reports about
@@ -261,7 +261,7 @@ routing.
 ### DEC-2 — No general opt-out mechanism for runtime features
 
 **Reference:** `spec:AST-031/DEC-2`
-**Decider:** `joeyfarina`, `2026-09-10`
+**Decider:** `josephfarina`, `2026-09-10`
 
 The `debug` feature's existing `inheritDebug` switch remains a compatibility
 exception owned by that feature. It does not establish a general
@@ -276,7 +276,7 @@ from receiving an explicit report.
 ### DEC-3 — Target selection uses component ownership, not handler count
 
 **Reference:** `spec:AST-031/DEC-3`
-**Decider:** `joeyfarina`, `2026-09-10`
+**Decider:** `josephfarina`, `2026-09-10`
 
 The target package for a gap report is the package that owns the component. When
 multiple packages claim the same component name, the CLI requires an explicit
