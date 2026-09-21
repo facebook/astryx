@@ -74,8 +74,6 @@ const stickyHeaderStyles = stylex.create({
     overflowY: 'auto',
   },
   headerCell: {
-    position: 'sticky',
-    insetBlockStart: 0,
     // Header cells are transparent by default, so rows would show through the
     // pinned row as they pass under it. Shares `--table-sticky-background` with
     // useTableStickyColumns so a table using both keeps one opaque surface
@@ -84,12 +82,6 @@ const stickyHeaderStyles = stylex.create({
     backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
     // padding-box keeps the base off the cell's collapsed divider border.
     backgroundClip: 'padding-box',
-    // Above unpinned body cells, and above the body cells that
-    // useTableStickyColumns pins at 1. Deliberately below the 3 that plugin
-    // gives its own header cells: where a pinned column crosses the pinned
-    // header, that corner has to win on both axes, and letting the higher value
-    // stand is what keeps it there.
-    zIndex: 2,
   },
 });
 
@@ -198,6 +190,23 @@ export function useTableStickyHeader<T extends Record<string, unknown>>(
       transformHeaderCell(props: HeaderCellRenderProps): HeaderCellRenderProps {
         return {
           ...props,
+          htmlProps: {
+            ...props.htmlProps,
+            style: {
+              ...props.htmlProps.style,
+              // These composition-critical properties are inline so a later
+              // plugin class (notably column resize's relative positioning)
+              // cannot disable pinning. Preserve a higher existing tier so the
+              // sticky-column corner remains above both header and body runs in
+              // either plugin order.
+              position: 'sticky',
+              insetBlockStart: 0,
+              zIndex:
+                typeof props.htmlProps.style?.zIndex === 'number'
+                  ? Math.max(props.htmlProps.style.zIndex, 2)
+                  : (props.htmlProps.style?.zIndex ?? 2),
+            },
+          },
           xstyle: [...props.xstyle, stickyHeaderStyles.headerCell],
         };
       },

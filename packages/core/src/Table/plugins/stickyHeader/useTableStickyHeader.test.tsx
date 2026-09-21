@@ -6,12 +6,10 @@
  * @output Functional tests for sticky-header pinning, composition, and cleanup
  * @position Test file; validates the height cap, header pinning, composition
  *
- * Note: `position: sticky`, the background and the z-index are applied via
- * StyleX (compiled to classNames), which jsdom does not resolve to
- * `element.style`. The height cap is the one value the plugin writes as an
- * inline style, so that is asserted directly; the StyleX-applied rules are
- * asserted by class identity — every header cell carries the same plugin class,
- * and it is absent when the plugin is not installed.
+ * Positioning and stacking tiers are inline because they are composition-critical
+ * and must outrank classes from plugins that run later. The opaque background and
+ * background clip remain StyleX classes, so jsdom covers their presence by class
+ * identity while real-browser coverage owns their computed paint.
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -19,6 +17,7 @@ import {render, screen} from '@testing-library/react';
 import {Table} from '../../Table';
 import {useTableStickyHeader} from './useTableStickyHeader';
 import {useTableStickyColumns} from '../stickyColumns';
+import {useTableColumnResize} from '../columnResize';
 import {pixel} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 
@@ -152,29 +151,45 @@ describe('useTableStickyHeader', () => {
     expect(pinned.length).toBeGreaterThan(bare.length);
   });
 
-  it('composes with useTableStickyColumns in either plugin order', () => {
+  it('keeps sticky positioning and corner tiers in either plugin order, even with resize last', () => {
     function Harness({headerFirst}: {headerFirst: boolean}) {
       const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
       const stickyColumns = useTableStickyColumns<Row>({startKeys: ['name']});
+      const columnResize = useTableColumnResize<Row>({});
       return (
         <Table
           data={data}
           columns={columns}
           plugins={
             headerFirst
-              ? {stickyHeader, stickyColumns}
-              : {stickyColumns, stickyHeader}
+              ? {stickyHeader, stickyColumns, columnResize}
+              : {stickyColumns, stickyHeader, columnResize}
           }
         />
       );
     }
 
     for (const headerFirst of [true, false]) {
-      const {unmount} = render(<Harness headerFirst={headerFirst} />);
+      const {container, unmount} = render(
+        <Harness headerFirst={headerFirst} />,
+      );
+      const headers = headerCells();
+      const firstBodyCell = screen.getAllByRole('cell')[0];
 
-      // The corner cell keeps the column plugin's inline offset, so both
-      // plugins reached it rather than one replacing the other's work.
-      expect(headerCells()[0].style.insetInlineStart).toBe('0px');
+      // The intersection stays above the ordinary header and pinned body run.
+      // Inline styles also outrank columnResize's later `position: relative`
+      // class, so the resize handle cannot disable either sticky axis.
+      expect(headers[0].style.position).toBe('sticky');
+      expect(headers[0].style.insetBlockStart).toBe('0');
+      expect(headers[0].style.insetInlineStart).toBe('0px');
+      expect(headers[0].style.zIndex).toBe('3');
+      expect(headers[1].style.position).toBe('sticky');
+      expect(headers[1].style.zIndex).toBe('2');
+      expect(firstBodyCell.style.position).toBe('sticky');
+      expect(firstBodyCell.style.zIndex).toBe('1');
+      expect(container.querySelectorAll('[role="separator"]')).not.toHaveLength(
+        0,
+      );
       expect(getScrollWrapper().style.maxHeight).toBe('480px');
 
       unmount();
