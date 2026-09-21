@@ -281,11 +281,31 @@ export function plainDateSetEndOfWeekExclusive(
   return plainDateAddDays(plainDateSetStartOfWeek(pd, weekStartsOn), 7);
 }
 
+/**
+ * A UTC midnight for a calendar date. Like `plainDateToDate`, it uses
+ * `setUTCFullYear` rather than the `Date` constructor or `Date.UTC`, which read
+ * years 0-99 as 1900-1999.
+ */
+function utcDate(year: number, month: number, day: number): Date {
+  const d = new Date(0);
+  d.setUTCFullYear(year, month - 1, day);
+  return d;
+}
+
+/**
+ * ISO 8601 week number. A `PlainDate` carries no timezone, so this does all
+ * arithmetic in UTC rather than through `plainDateToDate`'s local `Date` —
+ * a local Date's millisecond distance across a DST boundary is not an exact
+ * multiple of 24h, which corrupted the day-count division below in any zone
+ * that observes DST (e.g. Sydney/Auckland/Santiago, where DST ends after New
+ * Year: every Thursday from a Friday-starting year reports one week high;
+ * see #6364).
+ */
 export function plainDateGetWeekNumber(pd: PlainDate): number {
-  const d = plainDateToDate(pd);
-  const dayNum = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = plainDateToDate({year: d.getFullYear(), month: 1, day: 1});
+  const d = utcDate(pd.year, pd.month, pd.day);
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = utcDate(d.getUTCFullYear(), 1, 1);
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
