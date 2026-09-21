@@ -141,9 +141,9 @@ const MODALITY_ICON: Record<Modality, IconType> = {
 };
 
 /**
- * Tooltip copy. The glyphs are small and several are near-neighbours — a
- * waveform and a film frame are not self-evident at 20px — so each names
- * itself on hover rather than asking the reader to infer it.
+ * Tooltip and accessible-name copy. The glyphs are small and several are
+ * near-neighbours — a waveform and a film frame are not self-evident at 20px —
+ * so the rail explains every slot on hover, focus, and touch.
  */
 const MODALITY_LABEL: Record<Modality, string> = {
   text: 'Text',
@@ -680,8 +680,10 @@ const styles = stylex.create({
   // family and not `--color-accent-muted`, because a theme is free to run a
   // monochrome accent — the bundled neutral theme does — and the mark has to
   // stay a hue rather than collapse into another grey band. The wash is a
-  // second encoding, not the only one: winners stay semibold, so the ranking
-  // survives for readers who cannot separate the hues and in a greyscale print.
+  // second encoding, not the only one: winners stay semibold, and supporting
+  // units move to primary text so normal-weight copy keeps AA contrast on the
+  // dark neutral blue wash. The ranking therefore also survives for readers
+  // who cannot separate the hues and in a greyscale print.
   best: {
     backgroundColor: colorVars['--color-background-blue'],
     boxSizing: 'content-box',
@@ -689,6 +691,21 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+  },
+  // Keep the card inside the content lane so Table's own wrapper, rather than
+  // an outer page surface, owns horizontal overflow and sticky positioning.
+  tableFrame: {
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+  },
+  // #6222 pins the plugin-owned chevron while preserving custom headers'
+  // full-row layout. Pin this template's heading after that 16px control and
+  // its two 4px gutters, so both remain visible without overlapping.
+  groupHeading: {
+    position: 'sticky',
+    insetInlineStart: spacingVars['--spacing-6'],
+    width: 'fit-content',
   },
 });
 
@@ -775,43 +792,49 @@ function ModelHeader({
 }
 
 /**
- * The four modality slots, lit or dimmed. Rendering all four every time is the
- * point: a reader comparing five columns is looking for the shape of the row,
- * and a list that only prints what is supported makes them count glyphs.
+ * The five modality slots, lit or dimmed. Rendering every slot in a stable
+ * order makes the rail comparable across columns; one focusable trigger keeps
+ * the full explanation available to keyboard and touch users without adding
+ * five tab stops to every cell.
  */
 function ModalityRail({supported}: {supported: Modality[]}) {
-  const spoken = supported.length
-    ? MODALITY_ORDER.filter(m => supported.includes(m))
-        .map(m => MODALITY_LABEL[m])
-        .join(', ')
-    : 'None';
+  const explanation = MODALITY_ORDER.map(modality => {
+    const name = MODALITY_LABEL[modality];
+    return `${name}: ${supported.includes(modality) ? 'supported' : 'not supported'}`;
+  }).join('; ');
+
   return (
-    <HStack gap={3} vAlign="center" hAlign="end" height={CELL_CONTENT_HEIGHT}>
-      {MODALITY_ORDER.map(modality => {
-        const has = supported.includes(modality);
-        const name = MODALITY_LABEL[modality];
-        return (
-          <Tooltip
-            key={modality}
-            content={has ? name : `${name} — not supported`}>
-            {/* Wrapped rather than bare: Tooltip's own wrapper is
-                display:contents, so it anchors to whatever element the child
-                renders, and an <svg> cannot be a popover source. The glyphs
-                stay decorative — naming all five slots per cell would make a
-                screen reader read the unsupported ones too, and would double
-                up with the tooltip, so the row is summarised once below. */}
-            <HStack width={20} height={20} hAlign="center" vAlign="center">
+    <Tooltip
+      content={explanation}
+      hasHoverIndication={false}
+      touchTrigger="tap">
+      <HStack
+        gap={3}
+        vAlign="center"
+        hAlign="end"
+        height={CELL_CONTENT_HEIGHT}
+        tabIndex={0}
+        role="group"
+        aria-label="Model modalities">
+        {MODALITY_ORDER.map(modality => {
+          const has = supported.includes(modality);
+          return (
+            <HStack
+              key={modality}
+              width={20}
+              height={20}
+              hAlign="center"
+              vAlign="center">
               <Icon
                 icon={MODALITY_ICON[modality]}
                 size="md"
                 color={has ? 'primary' : 'disabled'}
               />
             </HStack>
-          </Tooltip>
-        );
-      })}
-      <VisuallyHidden>{spoken}</VisuallyHidden>
-    </HStack>
+          );
+        })}
+      </HStack>
+    </Tooltip>
   );
 }
 
@@ -1309,9 +1332,13 @@ export default function ModelComparisonTemplate() {
                 {number}
                 {/* Same size as the figure it qualifies, held apart by colour
                     rather than scale — `large` is semibold by default, which
-                    would have the unit shouting over the number. */}
+                    would have the unit shouting over the number. Highlighted
+                    units use primary text to retain AA contrast on the wash. */}
                 {row.unit != null && (
-                  <Text type="large" weight="normal" color="secondary">
+                  <Text
+                    type="large"
+                    weight="normal"
+                    color={isBest ? 'primary' : 'secondary'}>
                     {row.unit}
                   </Text>
                 )}
@@ -1331,21 +1358,11 @@ export default function ModelComparisonTemplate() {
     collapsedGroups,
     onToggleGroup: toggleGroup,
     getRowKey: row => row.id,
-    // A group header is one cell spanning every column, so the sticky-columns
-    // plugin has nothing to pin it to and the label scrolls off with the rest
-    // of the row — leaving a blank band. Sticking the label itself to the
-    // scrollport edge keeps each section named at any scroll position.
-    //
-    // SYNC: this reaches only as far as the label. The collapse chevron is the
-    // plugin's own and cannot be pinned from out here, so it is still stranded
-    // off-screen on a table scrolled sideways. Once `useTableGroupedRows` pins
-    // its own wrapper these three declarations become redundant — verified
-    // against that change — and should come out.
+    // A group header is one cell spanning every column. The grouped-row plugin
+    // pins its own chevron without constraining custom content; this heading
+    // pins beside that control so both remain reachable while scrolling.
     renderGroupHeader: groupKey => (
-      <HStack
-        gap={2}
-        vAlign="center"
-        style={{position: 'sticky', insetInlineStart: 0, width: 'fit-content'}}>
+      <HStack gap={2} vAlign="center" xstyle={styles.groupHeading}>
         {/* Sized as a heading rather than bold body text: these are the only
             landmarks in a long matrix, and the criteria count they used to
             carry was a number nobody acts on.
@@ -1415,7 +1432,7 @@ export default function ModelComparisonTemplate() {
               `--container-padding-inline-*` and inset the first and last
               columns' contents by it. That is what makes the two outer
               gutters equal without either column knowing about the other. */}
-          <Card padding={5}>
+          <Card padding={5} xstyle={styles.tableFrame}>
             <Table<SpecRow>
               data={grouped.data}
               columns={columns}
