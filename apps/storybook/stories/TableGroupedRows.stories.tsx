@@ -5,6 +5,8 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
   useTableGroupedRows,
+  useTableStickyHeader,
+  useTableStickyColumns,
   proportional,
   pixel,
 } from '@astryxdesign/core/Table';
@@ -143,6 +145,96 @@ export const CustomOrderAndHeader: Story = {
         hasHover
         plugins={{grouped: grouped.plugin}}
       />
+    );
+  },
+};
+
+// =============================================================================
+// Sticky group headings
+//
+// Needs more rows than the sample set above: a heading only has somewhere to
+// pin once its own section is taller than the scrollport.
+// =============================================================================
+
+const TEAMS = ['Design Systems', 'Infra', 'Growth', 'Payments'];
+const ROLES = ['Engineer', 'Senior Eng', 'Staff Eng', 'Manager', 'PM'];
+
+const staff: Person[] = Array.from({length: 48}, (_, index) => ({
+  id: String(index + 1),
+  name: `Person ${String(index + 1).padStart(2, '0')}`,
+  team: TEAMS[Math.floor(index / 12)],
+  role: ROLES[index % ROLES.length],
+}));
+
+// Wider than the container the composition story puts it in, so there is
+// something to scroll sideways past the pinned column.
+const wideColumns: TableColumn<Person>[] = [
+  {key: 'name', header: 'Name', width: pixel(200)},
+  {key: 'team', header: 'Team', width: pixel(180)},
+  {key: 'role', header: 'Role', width: pixel(180)},
+];
+
+/**
+ * `hasStickyGroupHeaders` pins each heading to the top of the scrollport while
+ * its section is on screen, so scrolling deep into a long group never loses
+ * which group it is. The heading needs somewhere to pin, which is what
+ * `useTableStickyHeader`'s `maxHeight` gives it — and with that plugin
+ * installed the heading comes to rest below the header row rather than over
+ * it, because the header publishes its measured height for it to clear.
+ */
+export const StickyGroupHeadings: Story = {
+  render: () => {
+    const {collapsedGroups, onToggleGroup} = useCollapsed();
+    const grouped = useTableGroupedRows<Person>({
+      data: staff,
+      groupBy: p => p.team,
+      collapsedGroups,
+      onToggleGroup,
+      getRowKey: p => p.id,
+      hasStickyGroupHeaders: true,
+    });
+    const stickyHeader = useTableStickyHeader<Person>({maxHeight: 320});
+    return (
+      <Table
+        data={grouped.data}
+        columns={columns}
+        idKey={grouped.idKey}
+        hasHover
+        plugins={{grouped: grouped.plugin, stickyHeader}}
+      />
+    );
+  },
+};
+
+/**
+ * All three at once. Scrolling down pins the header row and the heading under
+ * it; scrolling sideways holds the `Name` column and keeps the heading's label
+ * at the start edge. The heading stays above the pinned column as rows pass
+ * beneath, and below the pinned header rather than covering it.
+ */
+export const StickyGroupHeadingsWithStickyColumn: Story = {
+  render: () => {
+    const {collapsedGroups, onToggleGroup} = useCollapsed();
+    const grouped = useTableGroupedRows<Person>({
+      data: staff,
+      groupBy: p => p.team,
+      collapsedGroups,
+      onToggleGroup,
+      getRowKey: p => p.id,
+      hasStickyGroupHeaders: true,
+    });
+    const stickyHeader = useTableStickyHeader<Person>({maxHeight: 320});
+    const stickyColumns = useTableStickyColumns<Person>({startKeys: ['name']});
+    return (
+      <div style={{maxWidth: 420}}>
+        <Table
+          data={grouped.data}
+          columns={wideColumns}
+          idKey={grouped.idKey}
+          hasHover
+          plugins={{grouped: grouped.plugin, stickyHeader, stickyColumns}}
+        />
+      </div>
     );
   },
 };
