@@ -22,6 +22,7 @@ import type {
   HeaderRowRenderProps,
   TableColumn,
   ColumnWidth,
+  ScrollWrapperRenderProps,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
 import {observeResize} from '../../../utils/sharedResizeObserver';
@@ -88,6 +89,13 @@ export interface UseTableColumnResizeConfig {
 const FALLBACK_MIN_WIDTH = 50;
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
+/**
+ * How long after the last scroll event the disclosure gate stays closed, where
+ * `scrollend` is unavailable. Long enough to bridge the gaps between events in
+ * a momentum scroll, short enough that a deliberate hover right after one is
+ * not left waiting.
+ */
+const SCROLL_SETTLE_MS = 120;
 
 // =============================================================================
 // Width Helpers
@@ -230,15 +238,34 @@ const handleStyles = stylex.create({
      * element's own :hover a plain same-element override — an ancestor
      * selector would outrank it and the handle under the pointer would never
      * reach accent.
+     *
+     * The pointer arm passes through the same `--resize-hint-gate` as the row
+     * hint: horizontal scrolling drags columns under a still pointer, so a
+     * boundary arriving beneath it mid-scroll is no more intentional than the
+     * row-level reveal (FR10). Focus-visible is ungated — focus is always
+     * deliberate.
      */
     '--indicator-color': {
       default: 'var(--resize-hint, transparent)',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-        colorVars['--color-accent'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': `var(--resize-hint-gate, ${colorVars['--color-accent']})`,
       ':focus-visible': colorVars['--color-accent'],
     },
+    /*
+     * Pointer capability gates the REVEAL, not the control (DEC-3). The
+     * handle stays rendered and focusable wherever any input can drive it, so
+     * a coarse-primary device with a keyboard keeps its tab stop, its
+     * accessible name, and arrow-key resize (FR6, FR8, AR6).
+     *
+     * What coarse pointers lose is pointer interaction: dragging a hairline
+     * boundary by finger is a non-goal (DEC-4), and an invisible 8px strip
+     * that swallows touches on the header is worse than no target at all.
+     * `pointer-events: none` removes it from touch without removing it from
+     * the accessibility tree the way `display: none` did. The hover reveal is
+     * already gated separately on the header row, so at rest there is nothing
+     * drawn here to explain.
+     */
     '@media (pointer: coarse)': {
-      display: 'none',
+      pointerEvents: 'none',
     },
   },
   /**
@@ -268,7 +295,16 @@ const handleStyles = stylex.create({
  * Publishes the hint colour the handles read at rest. Hover has to be caught
  * on the row so that entering the header anywhere reveals every boundary, not
  * only the cell under the pointer. Pointer-only — there is no hover to lead
- * with on touch, where the handles are `display:none` regardless.
+ * with on touch, and the handles ignore touch there regardless.
+ *
+ * `--resize-hint-gate` is the scroll gate (FR10): the scroll listener sets it
+ * to `transparent` on the scroll wrapper while the region is moving, which
+ * wins here because a set custom property beats the fallback arm of `var()`.
+ * Hover keeps resolving underneath — the gate just hides its result until the
+ * region settles, so nothing has to be recomputed when it clears.
+ *
+ * Focus is deliberately absent: focusing a boundary emphasizes that one
+ * boundary and never raises this row-level hint (FR9, DEC-5).
  */
 const headerRowStyles = stylex.create({
   base: {
@@ -276,8 +312,7 @@ const headerRowStyles = stylex.create({
       default: 'transparent',
       '@media (hover: hover)': {
         default: 'transparent',
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-border'],
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))': `var(--resize-hint-gate, ${colorVars['--color-border']})`,
       },
     },
   },
@@ -817,6 +852,74 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
     };
   }, []);
 
+  /*
+   * Scroll gate (FR10). A pointer that ends up over a header because the
+   * columns moved under it has not asked for anything, so disclosure holds
+   * while the region scrolls and resumes once it settles.
+   *
+   * This runs entirely outside React: the listener writes `--resize-hint-gate`
+   * straight onto the scroll wrapper, where it inherits down to the header row
+   * and the handles, and clears it on settle. No state, no rerender, no
+   * observer — PR1's one permitted listener, plus the `scrollend` signal that
+   * tells it when to stop.
+   *
+   * `scrollend` is the correct settle signal but is not everywhere yet, so a
+   * single shared timeout stands in where it is missing. Only one of the two
+   * paths is ever armed.
+   */
+  const gateCleanupRef = useRef<(() => void) | null>(null);
+
+  const attachScrollGate = useCallback((el: HTMLDivElement | null) => {
+    gateCleanupRef.current?.();
+    gateCleanupRef.current = null;
+    if (!el) {
+      return;
+    }
+
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    const supportsScrollEnd = 'onscrollend' in el;
+
+    const clear = () => {
+      el.style.removeProperty('--resize-hint-gate');
+    };
+
+    const onScroll = () => {
+      // Idempotent: setting the same value on every scroll tick costs a style
+      // recalc the scroll itself already pays for, and never a React render.
+      el.style.setProperty('--resize-hint-gate', 'transparent');
+      if (supportsScrollEnd) {
+        return;
+      }
+      if (settleTimer != null) {
+        clearTimeout(settleTimer);
+      }
+      settleTimer = setTimeout(clear, SCROLL_SETTLE_MS);
+    };
+
+    el.addEventListener('scroll', onScroll, {passive: true});
+    if (supportsScrollEnd) {
+      el.addEventListener('scrollend', clear, {passive: true});
+    }
+
+    gateCleanupRef.current = () => {
+      el.removeEventListener('scroll', onScroll);
+      if (supportsScrollEnd) {
+        el.removeEventListener('scrollend', clear);
+      }
+      if (settleTimer != null) {
+        clearTimeout(settleTimer);
+      }
+      clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      gateCleanupRef.current?.();
+      gateCleanupRef.current = null;
+    };
+  }, []);
+
   return useMemo(
     (): TablePlugin<T> => ({
       transformTableContext(children) {
@@ -828,6 +931,25 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
       },
       transformHeaderRow(props: HeaderRowRenderProps): HeaderRowRenderProps {
         return {...props, xstyle: [...props.xstyle, headerRowStyles.base]};
+      },
+      transformScrollWrapper(
+        props: ScrollWrapperRenderProps,
+      ): ScrollWrapperRenderProps {
+        // Compose with any ref a prior plugin (e.g. sticky columns,
+        // virtualization) already set on the scroll container.
+        const existingRef = props.htmlProps.ref;
+        const mergedRef = (node: HTMLDivElement | null) => {
+          attachScrollGate(node);
+          if (typeof existingRef === 'function') {
+            existingRef(node);
+          } else if (existingRef != null) {
+            existingRef.current = node;
+          }
+        };
+        return {
+          ...props,
+          htmlProps: {...props.htmlProps, ref: mergedRef},
+        };
       },
       transformHeaderCell(
         props: HeaderCellRenderProps,
@@ -925,6 +1047,13 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
         };
       },
     }),
-    [columnWidths, globalMinWidth, maxWidth, resizableColumns, measureRef],
+    [
+      columnWidths,
+      globalMinWidth,
+      maxWidth,
+      resizableColumns,
+      measureRef,
+      attachScrollGate,
+    ],
   );
 }

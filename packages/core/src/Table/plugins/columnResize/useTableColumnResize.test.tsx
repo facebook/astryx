@@ -773,4 +773,134 @@ describe('useTableColumnResize', () => {
       expect(handles).toHaveLength(2);
     });
   });
+
+  // ===========================================================================
+  // Disclosure — scroll gate (FR10), focus scope (FR9)
+  // ===========================================================================
+
+  describe('disclosure', () => {
+    /**
+     * The gate lives on the scroll wrapper as an inline custom property that
+     * the header row and handles inherit. Asserting the property directly is
+     * the only honest check in JSDOM: the reveal itself is a CSS media/hover
+     * resolution that no JSDOM computed style will report.
+     */
+    function getScrollWrapper(container: HTMLElement): HTMLElement {
+      const table = container.querySelector('table');
+      const wrapper = table?.closest('div[class]');
+      if (!wrapper) {
+        throw new Error('scroll wrapper not found');
+      }
+      return wrapper as HTMLElement;
+    }
+
+    it('closes the disclosure gate while the region scrolls', () => {
+      const {container} = render(<ResizeTable columns={pixelColumns} />);
+      const wrapper = getScrollWrapper(container);
+
+      expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe('');
+
+      fireEvent.scroll(wrapper);
+
+      expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe(
+        'transparent',
+      );
+    });
+
+    it('reopens the gate once scrolling settles', () => {
+      const {container} = render(<ResizeTable columns={pixelColumns} />);
+      const wrapper = getScrollWrapper(container);
+
+      fireEvent.scroll(wrapper);
+      expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe(
+        'transparent',
+      );
+
+      fireEvent(wrapper, new Event('scrollend'));
+
+      expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe('');
+    });
+
+    it('falls back to a settle timeout where scrollend is unsupported', () => {
+      vi.useFakeTimers();
+      // Force the fallback path: the gate probes for `onscrollend` when the
+      // ref attaches, so the property has to be gone before the first render.
+      // Take the descriptor rather than reading the value — the accessor is a
+      // real getter and throws when invoked on the prototype itself.
+      const proto = window.HTMLElement.prototype;
+      const descriptor = Object.getOwnPropertyDescriptor(proto, 'onscrollend');
+      if (descriptor) {
+        // @ts-expect-error — deleting a DOM accessor for the duration of one test
+        delete proto.onscrollend;
+      }
+
+      try {
+        const {container} = render(<ResizeTable columns={pixelColumns} />);
+        const wrapper = getScrollWrapper(container);
+
+        fireEvent.scroll(wrapper);
+        expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe(
+          'transparent',
+        );
+
+        // Still closed part-way through the settle window.
+        vi.advanceTimersByTime(60);
+        expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe(
+          'transparent',
+        );
+
+        vi.advanceTimersByTime(120);
+        expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe('');
+      } finally {
+        if (descriptor) {
+          Object.defineProperty(proto, 'onscrollend', descriptor);
+        }
+        vi.useRealTimers();
+      }
+    });
+
+    it('scrolling does not rerender the Table', () => {
+      const renderSpy = vi.fn();
+
+      function CountingResizeTable() {
+        renderSpy();
+        const resizePlugin = useTableColumnResize<TestItem>({
+          columns: pixelColumns as TableColumn<Record<string, unknown>>[],
+        });
+        return (
+          <Table
+            data={testData}
+            columns={pixelColumns}
+            idKey="id"
+            plugins={{resize: resizePlugin}}
+          />
+        );
+      }
+
+      const {container} = render(<CountingResizeTable />);
+      const wrapper = getScrollWrapper(container);
+      const before = renderSpy.mock.calls.length;
+
+      fireEvent.scroll(wrapper);
+      fireEvent.scroll(wrapper);
+      fireEvent(wrapper, new Event('scrollend'));
+
+      expect(renderSpy.mock.calls.length).toBe(before);
+    });
+
+    it('focusing a handle leaves the gate and the row hint alone', () => {
+      const {container} = render(<ResizeTable columns={pixelColumns} />);
+      const wrapper = getScrollWrapper(container);
+      const [first] = getResizeHandles();
+
+      first.focus();
+      expect(first).toHaveFocus();
+
+      // Focus is deliberate: it must not trip the scroll gate, and it must not
+      // publish a row-level hint — only the focused boundary is emphasized.
+      expect(wrapper.style.getPropertyValue('--resize-hint-gate')).toBe('');
+      const headerRow = container.querySelector('thead tr') as HTMLElement;
+      expect(headerRow.style.getPropertyValue('--resize-hint')).toBe('');
+    });
+  });
 });
