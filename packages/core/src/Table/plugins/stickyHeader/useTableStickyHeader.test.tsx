@@ -3,7 +3,7 @@
 /**
  * @file useTableStickyHeader.test.tsx
  * @input useTableStickyHeader, Table, React testing utilities
- * @output Functional tests for the sticky-header plugin
+ * @output Functional tests for sticky-header pinning, composition, and cleanup
  * @position Test file; validates the height cap, header pinning, composition
  *
  * Note: `position: sticky`, the background and the z-index are applied via
@@ -235,6 +235,28 @@ describe('useTableStickyHeader', () => {
     render(<Table data={data} columns={columns} />);
 
     expect(publishedHeight()).toBe('');
+    rect.mockRestore();
+  });
+
+  it('clears the published height when the sticky-header plugin is removed', () => {
+    const rect = mockLayoutHeight(44);
+    function Harness({enabled}: {enabled: boolean}) {
+      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      return (
+        <Table
+          data={data}
+          columns={columns}
+          plugins={enabled ? {stickyHeader} : undefined}
+        />
+      );
+    }
+    const {rerender} = render(<Harness enabled />);
+    const wrapper = getScrollWrapper();
+    expect(wrapper.style.getPropertyValue(HEIGHT_VAR)).toBe('44px');
+
+    rerender(<Harness enabled={false} />);
+
+    expect(wrapper.style.getPropertyValue(HEIGHT_VAR)).toBe('');
     rect.mockRestore();
   });
 

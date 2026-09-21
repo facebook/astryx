@@ -5,7 +5,7 @@
 /**
  * @file useTableStickyHeader.tsx
  * @input React, StyleX, theme tokens, Table types, browser computed styles
- * @output Exports useTableStickyHeader hook and UseTableStickyHeaderConfig type
+ * @output Exports useTableStickyHeader and its config; owns published height cleanup
  * @position Sticky-header plugin; consumed by Table via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -152,7 +152,10 @@ export function useTableStickyHeader<T extends Record<string, unknown>>(
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
     resizeObserver?.observe(head);
     update();
-    detachRef.current = () => resizeObserver?.disconnect();
+    detachRef.current = () => {
+      resizeObserver?.disconnect();
+      el.style.removeProperty(HEADER_HEIGHT_VAR);
+    };
   }, []);
 
   return useMemo<TablePlugin<T>>(
