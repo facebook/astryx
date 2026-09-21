@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Let a TreeList item carry a class on its row
+[feat] Let a TreeList item carry a class on its row (#6238)
 
 `TreeListItemData` gains `className`, applied to the item's row element.
 
