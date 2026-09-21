@@ -4,7 +4,7 @@
 
 /**
  * @file DialogHeader.tsx
- * @input Uses React, useEffect, useRef, LayoutHeader, Button, Icon, Heading, Text, DialogContext
+ * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, mergeProps, themeProps
  * @output Exports DialogHeader component and DialogHeaderProps
  * @position Dialog header component; used with Dialog and Layout
  *
@@ -25,6 +25,8 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import type {BaseProps} from '../BaseProps';
+import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 import {useDialogContext} from './DialogContext';
 import {useTranslator} from '../i18n';
 
@@ -41,6 +43,9 @@ const styles = stylex.create({
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   titleWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0'],
     flex: 1,
     minWidth: 0,
     // Visual centering: align title center with close button center
@@ -161,11 +166,19 @@ export function DialogHeader({
       className={className}
       style={style}
       {...rest}>
-      <div {...stylex.props(styles.container)}>
+      <div
+        {...mergeProps(
+          themeProps('dialog-header'),
+          stylex.props(styles.container),
+        )}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
-        <div {...stylex.props(styles.titleWrapper)}>
+        <div
+          {...mergeProps(
+            themeProps('dialog-header-title-block'),
+            stylex.props(styles.titleWrapper),
+          )}>
           <Heading
             ref={titleRef}
             id={titleId}
@@ -192,7 +205,13 @@ export function DialogHeader({
                 variant="ghost"
                 label={t('@astryx.dialog.close')}
                 tooltip={t('@astryx.dialog.close')}
-                icon={<Icon icon="close" color="inherit" />}
+                icon={
+                  <Icon
+                    icon="close"
+                    color="inherit"
+                    {...themeProps('dialog-header-close-icon')}
+                  />
+                }
                 onClick={() => {
                   onOpenChange?.(false);
                 }}

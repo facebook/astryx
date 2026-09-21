@@ -1,5 +1,37 @@
 # @xds/cli
 
+# 0.6.2
+
+#### New Features
+
+- Add `muse` preset to `astryx init --agent` targeting `AGENTS.md` for Muse Code. (#6045)
+- Build one keyed artifact trio for a selected theme family (#6268)
+
+#### Fixes
+
+- doctor: range-check every peer against the project's own node_modules, so a peer that is only reachable from the ambient environment no longer reads as installed (#5327)
+  `checkPeerDeps` resolved each peer with `require.resolve(name, {paths: [cwd]})`. Node folds `NODE_PATH` into that lookup regardless of `paths`, so a peer merely reachable from the ambient environment resolved, and doctor reported nothing while the project itself was missing it. It now walks the project's own `node_modules` and reads each `package.json` off disk, so a missing peer is reported and an installed one is checked against the declared range.
+
+  Yarn Plug'n'Play projects have no `node_modules` for that walk to find, so the lookup asks the PnP runtime when the walk comes up empty. PnP resolves from the project's own dependency graph and ignores `NODE_PATH`, which keeps the answer project-local. A PnP project now gets its peers range-checked too — previously `require.resolve` could confirm a peer was present there but not read its version, because Core does not export `./package.json`.
+
+- Component loader now reads default-export `.doc.mjs` files (the shape `integration add component` writes), fixing a crash where `component` and `search` could not load generated docs. Human `component` detail and list views now use the API-resolved import specifier instead of recomputing from core, so integration components report their package-authored import. `pack --check` now reports an error when a component doc cannot be loaded instead of silently approving. (#6291)
+- Fix `theme build` emitting invalid JS identifiers for theme names containing hyphens or dots followed by digits. The output identifier is now derived deterministically from `theme.name` by camelCasing across `-` and `.` separators (underscores are preserved as valid identifier characters). Names like `chaos-07` correctly produce `chaos07Theme` instead of the unparseable `chaos-07Theme`. (#6289)
+- Make staged writes portable across filesystems that reject hard links.
+  The create-only publisher now falls back from `linkSync` to `copyFileSync` with `COPYFILE_EXCL` for `EPERM` and `EXDEV`, while preserving no-clobber, concurrent-creator safety, compare-and-swap replacements, symlink rejection, rollback, and temporary-file cleanup. (#6287)
+- theme build: only treat a core the theme's own node_modules chain can reach as one a CommonJS dependency could reach, so an ambient-only core no longer fails the build with ERR_CORE_INCOMPATIBLE (#5327)
+  `patchCommonJs` required `@astryxdesign/core` from the theme file to see whether it could wrap `defineTheme` for `.cjs` dependencies. `require` folds `NODE_PATH` in, and pnpm's isolated layout puts every package in `node_modules/.pnpm/node_modules`, so a core no dependency of the theme could reach answered that lookup. Wrapping it fails on a `require(esm)` namespace, and the reported coverage gap then rejected any theme whose lineage was unobserved. The lookup now walks the theme's own `node_modules` chain first, the same way `doctor` resolves peers.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @Han5991
+- @josephfarina
+- @oliprovscode
+
+---
+
 # 0.6.1
 
 #### New Features
@@ -12,10 +44,12 @@
   An explicit `astryx.config` entry keeps its precedence and its position, and a dependency whose manifest fails to load is dropped quietly rather than reported as the consuming project's problem.
 
   `astryx doctor` gains an `implicit-integrations` line naming each integration linked this way, the package.json field that declared it, and what it contributes — so an author can answer "why can the CLI see this?" without reading the CLI's source, and an unused-dependency check has something to read that says the dependency is load-bearing. The line is always informational, so the doctor CI gate is unaffected.
+
 - Replace executable gap-report writers with composable handlers. (#6200)
   Gap reports now fan out to every configured handler — project config first, then each loaded integration in config order — instead of selecting one writer. Each handler gets its own report copy and an abort signal under a 30 s budget. A failed handler cannot stop later handlers, and the aggregate receipt shows every outcome.
 
   Public types: `GapReportHandler` replaces `GapReportWriter`; the handler receives a normalized `GapReport` event and returns a strict `GapReportHandlerReceipt`. Project config gains a `gapReport` field; the integration named export uses the same type.
+
 - Add integration authoring and packed-package verification. `astryx integration add <kind> <name>` and the per-kind `integrationAddComponent`, `integrationAddDoc`, `integrationAddTemplate`, `integrationAddCodemod`, `integrationAddAgentDoc`, and `integrationAddTheme` APIs write complete contributions. Existing component, docs, template, and theme commands see the package being authored without publishing it first. `astryx integration pack --check` proves the same contributions survive the npm tarball and that packed components remain available through their public imports. Doctor now names source-only components, unreachable metadata, codemods outside a version folder, and invalid version folders. (#6245)
 - Remove the prefix requirement from theme-local tokens (#6285)
 - Add upgrade receipts and safe three-way reconciliation for ShadCN-copied compositions. (#6228)
@@ -490,7 +524,7 @@ Thanks to everyone who contributed to this release:
 
 - Bottom Sheet showcase block: the filter checkboxes are interactive again (#5157).
   `CheckboxInput` is fully controlled — `value` is required and the input only moves when the owner updates it. The showcase passed a literal `value={false}` with no `onChange`, so the three filters ("In stock", "On sale", "Free shipping") rendered but could never be toggled: on the docs site the first thing a reader tries in a Bottom Sheet does nothing, and anyone copying the block inherits three dead controls. Each filter now has its own `useState` and `onChange`, matching the checkbox wiring already used in the Bottom Sheet Switcher showcase.
-- An integration whose manifest fails to load is no longer silent. A manifest that throws on import — the common case being one still calling a `create*` authoring factory, removed in 0.3.0 — contributes nothing, and the CLI treated that as if the package had never been configured: `astryx discover` answered `No integrations configured.` while `astryx.config.mjs` plainly configured one, and no command said a word. The only way to find out was to already suspect it and run `validate-integration` by name. Meta's internal `@nest/xds-meta` sat invisible to CLI discovery for a week that way, and the app team's conclusion was that the components did not exist (#5119).
+- An integration whose manifest fails to load is no longer silent. A manifest that throws on import — the common case being one still calling a `create*` authoring factory, removed in 0.3.0 — contributes nothing, and the CLI treated that as if the package had never been configured: `astryx discover` answered `No integrations configured.` while `astryx.config.mjs` plainly configured one, and no command said a word. The only way to find out was to already suspect it and run `validate-integration` by name. A configured integration could remain invisible to CLI discovery, leading an app team to conclude that its components did not exist (#5119).
   The load error now counts as an integration issue, so the existing one-line stderr nudge fires on `component`, `template` and `upgrade`, and `discover` — the command whose whole job is listing integrations — nudges too, as does `search`. `discover` also stops reporting `configured: false` for a project that configured an integration that failed to load; the empty state now distinguishes "you configured nothing" from "what you configured contributed nothing", which is the distinction `meta.configured` was introduced to carry.
 
   Nothing becomes fatal: the warning is best-effort, stderr-only, suppressed under `--json`, and never changes an exit code. Broken contributions are still skipped exactly as before.

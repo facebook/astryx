@@ -19,6 +19,17 @@ affects_consumer_docs: [release-process, templates]
 
 # Published compatibility and breaking-change classification system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "compatibility": ["DEC-1", "FR3", "FR4", "FR5", "FR12"]
+  }
+}
+```
+
 ## Intent
 
 Give contributors and reviewers one rule for deciding whether a change is

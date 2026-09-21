@@ -30,6 +30,17 @@ deciding_specs: []
 
 # Interaction modality architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "interaction": ["INV1", "INV2", "INV3", "INV4", "INV7", "INV8"]
+  }
+}
+```
+
 ## Purpose
 
 Astryx components behave predictably when people move between keyboard, pointer,

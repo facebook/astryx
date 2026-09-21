@@ -4,7 +4,8 @@
  * @file ci-test-routing.test.mjs
  *
  * The contract between `vitest.config.ts` and the CI jobs that run it, in both
- * workflows that run the suite.
+ * workflows that run the suite. FR23 must run after the other UI workers exit
+ * so its helper-overhead measurement does not compete with unrelated tests.
  *
  * This repo has now lost test coverage to routing twice. First a suite
  * belonged to no Vitest project, so `pnpm test` never collected it. Then the
@@ -110,6 +111,24 @@ describe.each(Object.entries(WORKFLOWS))(
       }
     });
 
+    it('runs FR23 only after the parallel UI suite has exited', () => {
+      const benchmark = 'packages/core/src/Markdown/Markdown.fr23.perf.test.ts';
+      const job = workflow.jobs['test-ui'];
+      const suites = job.steps.filter(step =>
+        step.run?.includes('--project ui'),
+      );
+
+      // One conditional step preserves the existing scope gate for both runs.
+      // Exact foreground commands also reject backgrounding or ignored exits.
+      expect(suites).toHaveLength(1);
+      expect(suites[0].run.trim().split('\n')).toEqual([
+        `pnpm vitest run --project ui --exclude ${benchmark}`,
+        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+      ]);
+      expect(job['continue-on-error']).not.toBe(true);
+      expect(suites[0]['continue-on-error']).not.toBe(true);
+    });
+
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
       // the wall.
@@ -131,12 +150,26 @@ describe.each(Object.entries(WORKFLOWS))(
 
     it('fails the join when any lane fails', () => {
       // `needs` alone does not fail a job whose `if` is `always()`; the join
-      // has to assert the results it waited for.
-      const join = runLines(workflow.jobs.test);
-      for (const lane of lanes) {
-        expect(join, `join does not assert ${lane}`).toContain(
-          `needs.${lane}.result }}" = "success"`,
+      // has to pass every result to its fail-closed contract.
+      const join = workflow.jobs.test;
+      if (file === 'ci.yml') {
+        const contract = join.steps.find(step =>
+          step.run?.includes('.github/scripts/ci-test-join.mjs'),
         );
+        expect(contract).toBeDefined();
+        for (const lane of lanes) {
+          const key = `${lane.replaceAll('-', '_').toUpperCase()}_RESULT`;
+          expect(contract.env[key], `join does not pass ${lane}`).toContain(
+            `needs.${lane}.result`,
+          );
+        }
+      } else {
+        const commands = runLines(join);
+        for (const lane of lanes) {
+          expect(commands, `join does not assert ${lane}`).toContain(
+            `needs.${lane}.result }}" = "success"`,
+          );
+        }
       }
     });
 

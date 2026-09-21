@@ -47,6 +47,18 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it('keeps projected settled-list identity when a following block settles too', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. a\n\nTail', state);
+    const result = parseMarkdownIncremental(
+      '1. a\n\n1. b\n\nAfter\n\nTail',
+      state,
+    );
+
+    expect(state.settledBlocks).toEqual(parseMarkdown(state.settledText));
+    expect(result[0]).toBe(state.settledBlocks[0]);
+  });
+
   it('joins loose ) ordered list across streamed chunks', () => {
     const text = '1) apple\n\n1) banana\n\n1) cherry\n';
     const {final} = simulateStreaming(text, 5);

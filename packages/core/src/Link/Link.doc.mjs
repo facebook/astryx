@@ -164,6 +164,17 @@ export const docs = {
     },
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Link text',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'Link text must have at least 4.5:1 contrast with the background behind it. For Pointer down, measure against the pressed overlay the link paints behind its text.',
+      },
+    ],
     description:
       'A styled anchor for inline and standalone text navigation. Supports external links, underline variants, tooltips, and custom link components for router integration. Use it for navigating between pages or to external URLs.',
     bestPractices: [

@@ -14,6 +14,13 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DialogHeader} from './DialogHeader';
 import {LayoutDividerContext} from '../Layout/LayoutDividerContext';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 
 describe('DialogHeader', () => {
   it('renders the title', () => {
@@ -54,6 +61,48 @@ describe('DialogHeader', () => {
   it('renders close button when onOpenChange is provided', () => {
     render(<DialogHeader title="Title" onOpenChange={() => {}} />);
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
+  });
+
+  it('exposes theme targets for the header row, title block, and close icon', () => {
+    const {container} = render(
+      <DialogHeader
+        title="Title"
+        subtitle="Subtitle"
+        onOpenChange={() => {}}
+      />,
+    );
+
+    expect(container.querySelector('.astryx-dialog-header')).not.toBeNull();
+    expect(screen.getByRole('heading', {level: 2}).parentElement).toHaveClass(
+      'astryx-dialog-header-title-block',
+    );
+
+    const closeIcon = screen
+      .getByRole('button', {name: /close/i})
+      .querySelector('.astryx-dialog-header-close-icon');
+    expect(closeIcon).toHaveClass('astryx-icon');
+  });
+
+  it('lets themes set the two internal gaps and close-icon size', () => {
+    const theme = defineTheme({
+      name: 'dialog-header-targets-test',
+      components: {
+        'dialog-header': {base: {gap: '8px'}},
+        'dialog-header-title-block': {base: {gap: '4px'}},
+        'dialog-header-close-icon': {
+          base: {width: '16px', height: '16px', fontSize: '16px'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+
+    expect(css).toContain('.astryx-dialog-header {');
+    expect(css).toContain('gap: 8px');
+    expect(css).toContain('.astryx-dialog-header-title-block {');
+    expect(css).toContain('gap: 4px');
+    expect(css).toContain('.astryx-dialog-header-close-icon {');
+    expect(css).toContain('width: 16px');
+    expect(css).toContain('height: 16px');
   });
 
   it('does not render close button when onOpenChange is not provided', () => {
