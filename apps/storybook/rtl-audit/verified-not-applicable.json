@@ -190,6 +190,15 @@
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
   },
   {
+    "component": "core/ChatComposerDrawer",
+    "reason": "ChatComposerDrawer uses normal block and flex flow with logical inline spacing and symmetric top corners. Its collapse handle is horizontal and centered, the disclosure action moves only on the block axis, and its count, attachment, vertical expand/collapse, and caller-owned child content add no component-owned left/right glyph, physical inline positioning, order, horizontal scrolling or dragging, overlay placement, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerDrawer.stories.tsx": "sha256:115ecc61625c065ffcb02d35c7aeb2a399c8ba1a30a8cd637bdd4adf58185b80",
+      "packages/core/src/Chat/ChatComposerDrawer.tsx": "sha256:a8d11adc40decad25688b33a16b562e168c831933ec4387084c00530fcb94600",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
     "component": "core/ChatComposer",
     "reason": "ChatComposer arranges caller-owned slots in normal flex and block flow using logical inline properties. Its owned send, stop, status, attachment, microphone, and mention glyphs are direction-neutral; it has no component-owned left/right glyph, physical inline positioning, horizontal scroll or drag behavior, overlay placement, or horizontal keyboard interaction to mirror. Text editing and bidirectional content remain native to the default contenteditable surface or the caller-supplied custom input.",
     "evidence": {

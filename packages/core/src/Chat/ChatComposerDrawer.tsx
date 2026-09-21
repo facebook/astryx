@@ -13,6 +13,10 @@
  *   the content region (disclosure pattern).
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatComposerDrawer.test.tsx
+ * - /packages/core/src/Chat/ChatComposerDrawer.doc.mjs
+ * - /packages/core/src/Chat/ChatComposerDrawer.spec.md
+ * - /apps/storybook/stories/ChatComposerDrawer.stories.tsx
  * - /packages/core/src/Chat/index.ts (exports)
  * - /packages/cli/assets/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
@@ -32,6 +36,7 @@ import {Badge} from '../Badge';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
@@ -72,7 +77,9 @@ export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
    * @example
    * ```
    * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <ChatComposerDrawer xstyle={styles.wrapper} />
+   * <ChatComposerDrawer xstyle={styles.wrapper}>
+   *   <AttachmentThumbnail />
+   * </ChatComposerDrawer>
    * ```
    */
   xstyle?: StyleXStyles;
@@ -274,7 +281,7 @@ export function ChatComposerDrawer({
       {...htmlProps}>
       {canCollapse && (
         <div
-          {...stylex.props(
+          {...focusOutlineProps.focusVisible(
             styles.toggleRow,
             isCollapsed && styles.toggleCollapsed,
             stylex.defaultMarker(),
@@ -314,6 +321,10 @@ export function ChatComposerDrawer({
 
       <div
         id={contentId}
+        // The 0fr row keeps the collapse animation in place. `inert` also
+        // removes visually hidden descendants from keyboard and assistive-
+        // technology navigation until the drawer expands again.
+        inert={canCollapse && isCollapsed ? true : undefined}
         {...stylex.props(
           styles.contentGrid,
           canCollapse && isCollapsed && styles.contentGridCollapsed,
