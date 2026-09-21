@@ -288,6 +288,15 @@ const styles = stylex.create({
       },
     },
   },
+  // Pressed: the system's pressed overlay over the thumb's fill for as long
+  // as the thumb is being dragged. A slider is a drag, not a tap — the finger
+  // lands anywhere on the track and the thumb follows it — so the pressed
+  // paint follows the drag state the pointer handlers already keep, on a
+  // mouse and on a finger alike, rather than `:active` on the thumb itself
+  // (which a press on the track never activates).
+  thumbPressed: {
+    backgroundImage: `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+  },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
     cursor: 'default',
@@ -701,17 +710,25 @@ export function Slider({ref, ...props}: SliderProps) {
       const newVal = markEl
         ? Number(markEl.dataset.markValue)
         : getValueFromPosition(e.clientX, e.clientY);
-      const thumbIndex = getClosestThumb(newVal);
+      const track = trackRef.current;
+      const thumbs = track?.querySelectorAll<HTMLElement>('[role="slider"]');
+      const pressedThumb = (e.target as Element).closest<HTMLElement>(
+        '[role="slider"]',
+      );
+      const pressedThumbIndex =
+        pressedThumb == null || thumbs == null
+          ? -1
+          : Array.from(thumbs).indexOf(pressedThumb);
+      // A direct thumb press owns that thumb even when range values coincide.
+      // Track and mark presses still choose the nearest value.
+      const thumbIndex =
+        pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
       updateValue(thumbIndex, newVal);
 
-      // Focus the closest thumb
-      const track = trackRef.current;
-      if (track) {
-        const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
-        thumbs[thumbIndex]?.focus();
-      }
+      // Focus the thumb that owns this drag.
+      thumbs?.[thumbIndex]?.focus();
       // Also clear it explicitly: focusing an already-focused thumb fires no
       // focus event, so a thumb the user had tabbed to would keep its ring
       // through the drag.
@@ -908,6 +925,7 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
+            !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             !isDisabled &&
               keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
@@ -1029,12 +1047,18 @@ export function Slider({ref, ...props}: SliderProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          {...stylex.props(
-            styles.trackContainer,
-            isHorizontal
-              ? styles.trackContainerHorizontal
-              : styles.trackContainerVertical,
-            isDisabled && styles.trackContainerDisabled,
+          {...mergeProps(
+            themeProps('slider-control', {
+              orientation,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.trackContainer,
+              isHorizontal
+                ? styles.trackContainerHorizontal
+                : styles.trackContainerVertical,
+              isDisabled && styles.trackContainerDisabled,
+            ),
           )}>
           {/* Background track */}
           <div

@@ -9,7 +9,14 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-08-30
 owners: [cixzhang]
-applies_to: [AGENTS.md, docs/, packages/core/src/, packages/lab/src/]
+applies_to:
+  [
+    AGENTS.md,
+    .github/PULL_REQUEST_TEMPLATE/,
+    docs/,
+    packages/core/src/,
+    packages/lab/src/,
+  ]
 verified_by:
   [
     scripts/check-knowledge.test.mjs,
@@ -20,6 +27,25 @@ deciding_specs: []
 ---
 
 # Knowledge contracts and decisions
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "specification": [
+      "INV9",
+      "INV11",
+      "INV14",
+      "INV16",
+      "INV18",
+      "INV20",
+      "DEC-9"
+    ]
+  }
+}
+```
 
 ## Purpose
 
@@ -153,12 +179,92 @@ Every record is either:
   is removed or split before review asks the primary change to carry new authority.
   A specification is the path for an intentional durable decision, not the default
   remedy for unrelated scope discovered during review.
+- **INV16 — Specs govern; generated review context only informs.** Committed current
+  component, module, family, design, theme, architecture, and system records own
+  intended product behavior. Reviewer-generated summaries, sections, checklists,
+  tests, screenshots, measurements, and recommendations are context or evidence
+  only. They may prove conformance, contradiction, or an implementation defect;
+  they MUST NOT invent direction, authorize a delta, reverse a human hold, or
+  upgrade the authority result.
+- **INV17 — Missing review context stays problem-bound.** Review reads the pull
+  request and current authority first, then fills only missing context. It traces
+  why the problem occurs, why it harms the affected task, and why the harm matters;
+  maps the proposed solution and each primary or supporting delta back to that
+  problem; and identifies independently removable tagalongs. Product impact remains
+  owned by the applicable product record. Review may explain who is affected, in
+  what supported state, and what the change enables or prevents, but that generated
+  explanation remains context until a current canonical owner records the behavior.
+- **INV18 — Product contracts preserve implementation freedom.** Component, module,
+  family, design, theme, and system specifications own observable inputs, outputs,
+  states, guarantees, failures, compatibility, and caller-visible ownership. A new
+  or materially amended requirement MUST NOT prescribe internal modules, files,
+  function names, algorithms, data structures, storage layouts, manifests,
+  journals, locks, transaction protocols, or CI job/workflow topology unless that
+  exact mechanism is itself an intentional public contract. Internal ownership,
+  seams, and mechanisms belong in an architecture record. A verification map names
+  evidence sufficient to prove a claim; it does not authorize the implementation or
+  CI structure that produces it. Existing current records continue to govern their
+  explicit claims until their human owner deliberately migrates them; this invariant
+  does not silently invalidate or reinterpret those records.
+- **INV19 — Automated spec review informs a human decision.** A pull request whose
+  primary intent creates, amends, adopts, or supersedes a product contract receives
+  written advisory analysis before the named human owner decides it. The analysis
+  identifies the canonical knowledge owner, applicable current claims, overlapping
+  current and open work, ownership collisions or missing owners, claim-scope gaps,
+  behavior-versus-architecture leakage, and exact claims to keep, remove, move, or
+  clarify. Automation may report contradictions, evidence gaps, and proposed edits;
+  it MUST NOT approve, adopt, ratify, or make the contract current. A human approval
+  remains required even when the advisory analysis finds no defect.
+- **INV20 — Global review routing is explicit and claim-scoped.** A cross-cutting
+  baseline participates without a component backlink only when its
+  `review-applicability:v1` block declares `scope: "global"` and maps a semantic
+  trigger to exact claim ids in that same record. Review loads matching current
+  global claims before narrower records, then resolves the direct component,
+  module, or family owner first when it governs the delta. The marker never makes
+  the whole record, adjacent claims, drafts, or proposed-head authority govern.
+  Every routed match records the base authority commit, record digest, record id,
+  path, trigger, claim id, claim title, and deterministic match reason.
+
+## Global review applicability
+
+Use this optional block only when named claims apply across otherwise unrelated
+component owners. Ordinary component, module, family, design, architecture, theme,
+and system records remain unmarked.
+
+<!-- review-applicability-example:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "public-api": ["FR1", "DEC-2"],
+    "accessibility": ["AR1"]
+  }
+}
+```
+
+In an opted-in record, replace the example marker with
+`review-applicability:v1`. Trigger names use this closed vocabulary:
+`accessibility`, `behavior`, `compatibility`, `component-slots`, `docsite`,
+`interaction`, `layering`, `layout`, `motion`, `navigation`, `platform`,
+`public-api`, `react-runtime`, `responsive`, `scrolling`, `specification`,
+`styling`, `testing`, `theming`, `tokens`, and `visual`. Every trigger has a
+non-empty list of unique claim ids, and each id resolves to an explicit numbered
+claim in that record. The checked-in validator rejects unsupported triggers,
+malformed blocks, missing or duplicate claims, and empty routing.
+`scripts/review-global-baselines.mjs` requires both the exact reviewed head and
+its full base authority commit, verifies that commit is the head's `origin/main`
+merge base, and emits deterministically sorted match rows. It therefore cannot
+read a proposed head as its own authority. Consumers load those rows before narrow lookup, preserve their
+provenance in a review receipt, and apply only the cited claim after the direct
+owner has been resolved.
 
 ## Writing specifications and contracts
 
-These rules guide writing. They do not permit semantic compaction. They come from
-directional evidence and project-owner judgment; the agent benchmark did not
-measure human readability, so this is not a quantified readability claim.
+These rules preserve semantic fidelity while putting the decisions a reader needs
+first. They are authoring guidance, not a quantified claim about human readability.
+They apply prospectively to new or materially revised architecture, component, and
+module specifications; they do not require historical rewrites.
 
 Before writing:
 
@@ -169,12 +275,49 @@ Before writing:
    new record only when the fact has a distinct owner and explain that boundary in
    the pull-request summary.
 
-Then write the contract:
+Begin each component or module contract with this reader-first projection after its
+title:
+
+| Area                    | Contract                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | State the exact public API, concept, or syntax delta; write `None` when none changes.                                           |
+| Behavior                | State the observable governing behavior, including the decisive default, boundary, or precedence rule.                          |
+| End-user impact         | Name who is affected, in what state, and what improves, worsens, or remains unchanged.                                          |
+| Builder impact          | Name migration work and every new caller choice; write `None` when there is no new burden.                                      |
+| Compatibility/readiness | State default compatibility, additive/breaking status, authority and implementation state, and material evidence still pending. |
+| Review checks           | List the few concrete conditions that make an implementation or proposal rejectable under this contract.                        |
+| Governing rules         | Link the canonical owner and only the current clauses needed to justify the projection.                                         |
+
+Architecture records use the same position and footer with architecture-specific
+rows:
+
+| Area                    | Contract                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Governing contract      | Name the observable current decisions this architecture serves; write `None` when no product contract changes.                 |
+| System behavior         | State shipped system behavior, including the decisive invariant, boundary, or precedence rule.                                 |
+| End-user impact         | Name who is affected, in what state, and what improves, worsens, or remains unchanged.                                         |
+| Builder impact          | Name the implementation decisions, coordination work, or workarounds this architecture removes or adds.                        |
+| Compatibility/readiness | State compatibility effect, authority and implementation state, and material evidence still pending.                           |
+| Review checks           | List boundary violations, product-API mechanism leaks, or lost invariants/evidence distinctions that make a change rejectable. |
+| Governing rules         | Link the deciding specs and only the current clauses needed to justify the projection.                                         |
+
+The table is a review projection; the body remains authoritative. The projection
+itself does not make a record shorter. Size falls only when authors remove true
+duplication from the body without dropping contract semantics. `Review checks`
+project settled requirements and boundaries from the body; they do not invent
+policy or reopen a decision. When citing a list-item clause such as an AST-002 FR,
+use its exact visible label and canonical file link. Do not invent a fragment URL
+for a clause that has no stable heading or explicit anchor.
+
+Then write the authoritative body:
 
 - Use familiar words and short, direct sentences.
-- State each rule once, beside the conditions and exceptions that control it.
+- State each rule fully once, beside the conditions and exceptions that control it.
+  Later sections cite its ID or canonical owner instead of restating the prose.
 - Contract only the semantic slice being decided. Name adjacent behavior as a
   non-goal or uncontracted gap; do not fill it merely to make the record `current`.
+- Do not duplicate consumer prop tables, usage recipes, shared-system mechanics,
+  current audit dumps, or implementation steps. Link their canonical owners.
 - Use readable tables for branches or state matrices when they improve scanning.
   Never remove contract content merely to shorten a record.
 
@@ -191,15 +334,11 @@ rewrite. When reshaping a rule, keep its action, activating conditions,
 exceptions or non-goals, owner, and evidence state in the same row or bullet as
 the claim they limit.
 
-Aim to keep a single specification record at or below 200 lines. This is a soft
-readability ceiling, not a schema rule, validation gate, deletion target, or
-reason to migrate accepted history. Exceed it when the full contract, exact
-conditions, evidence boundaries, decisions, or required template structure need
-more room. First remove true duplication, shorten prose without changing meaning,
-use readable tables or lists, and link genuinely shared authority as INV2
-requires. If the record still exceeds 200 lines, keep the content and explain why
-in pull-request review. Do not minify tables or paragraphs to game the count;
-human scanability wins.
+Do not optimize for a line, word, byte, or percentage-reduction target. First
+remove true duplication, shorten prose without changing meaning, use readable
+tables or lists, and link genuinely shared authority as INV2 requires. Keep every
+load-bearing condition, qualifier, boundary, decision, and evidence distinction
+that remains. Human scanability and semantic fidelity win over size.
 
 ### Same rule, plainer form
 
@@ -227,8 +366,11 @@ The plain version changes the shape, not the meaning.
 - [ ] Confirm each rule's action, conditions, qualifiers, exceptions or non-goals,
       owner, authority verb, and evidence state remain explicit and adjacent to the
       claim they limit.
-- [ ] Confirm tables and lists improve scanning without hiding content; if the
-      record exceeds 200 lines, explain why it needs the extra space.
+- [ ] Confirm the projection states the public delta, behavior, end-user and builder
+      impact, compatibility/readiness, rejection checks, and governing rules without
+      replacing or contradicting the authoritative body.
+- [ ] Confirm tables and lists improve scanning without hiding content, and no
+      content was removed merely to meet a size target.
 
 ### When current records disagree
 
@@ -408,9 +550,10 @@ this flow passes the historical review benchmark and is enforced on pull request
   metadata.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head. Theme approval derives from the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`; record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  request head. Approval for every record kind derives from `.github/ENGOWNERS`;
+  current design and theme records and normative design assets additionally accept
+  `.github/DESIGNOWNERS`. Record metadata never self-authorizes. The workflow
+  enables auto-merge only for pure spec changes.
 
 ## Deciding specs
 
@@ -489,17 +632,93 @@ approved decision.
 Rejected: requiring a narrow visual or behavior decision to contract every API,
 composition, accessibility, and implementation fact of the named module.
 
+### DEC-6 — Product specs govern; generated review context informs
+
+**Reference:** `architecture:knowledge-contracts/DEC-6`
+**Decider:** `cixzhang`, `2026-09-12`
+
+Committed current product records decide intended behavior. A review begins with
+those claims and uses generated context, checklists, tests, screenshots,
+measurements, and recommendations only to prove conformance, contradiction, or a
+concrete defect. Generated completeness and green checks never create authority or
+upgrade the authority result.
+
+When the pull request or current record leaves context implicit, review may fill the
+gap by tracing the problem through three why questions, mapping the solution back to
+that problem, and naming tagalongs. It may also explain affected users, supported
+states, enabled or prevented behavior, and caller burden. Those explanations remain
+context unless the canonical product owner records them as current behavior.
+
+Rejected: treating a complete review form, persuasive impact story, or passing
+validation matrix as an alternative source of product direction.
+
+### DEC-7 — Product specs contract behavior, not internal architecture
+
+**Reference:** `architecture:knowledge-contracts/DEC-7`
+**Decider:** `cixzhang`, `2026-09-12`
+
+A new or materially amended product specification states the observable contract a
+conforming implementation must satisfy and leaves equivalent internal implementations
+free. It names an exact mechanism only when callers or interoperating systems
+intentionally depend on that mechanism as public behavior. Otherwise, internal
+ownership and seams belong in an architecture record, and verification remains
+evidence rather than a prescribed CI or test topology.
+
+This authoring rule is prospective. Existing current records retain their explicit
+authority until the named human owner migrates them; adding this rule cannot silently
+void a requirement such as a legacy implementation constraint. When an amendment
+touches such a requirement, the owner either demonstrates that the mechanism is
+publicly observable or moves it to the applicable architecture record.
+
+Rejected: promoting a successful prototype's module graph, algorithm, manifest,
+journal, lock, transaction design, filesystem layout, or CI job into product
+requirements merely because that implementation supplied the decision evidence.
+
+### DEC-8 — Spec review is advisory analysis for the human owner
+
+**Reference:** `architecture:knowledge-contracts/DEC-8`
+**Decider:** `cixzhang`, `2026-09-12`
+
+Automated review of a specification does not stop at routing the change to a human.
+It first produces written, evidence-backed feedback about the canonical owner,
+existing and overlapping claims, ownership collisions, claim scope, misplaced
+architecture, and exact contract edits. That analysis helps the human owner inspect
+the decision; it never substitutes for the owner's approval or becomes authority.
+
+Rejected: automatically approving a specification because its checks are green, or
+returning only “needs human” without giving the owner the contract and ownership
+analysis already available to the reviewer.
+
+### DEC-9 — Global applicability routes exact claims, not whole records
+
+**Reference:** `architecture:knowledge-contracts/DEC-9`
+**Decider:** `cixzhang`, `2026-09-19`
+
+A cross-cutting rule is discoverable without a component backlink only through a
+validated `review-applicability:v1` block. Each semantic trigger names exact local
+claim ids. Reviewers load matching current claims from the base authority commit
+before narrower records, preserve match provenance, and then resolve the direct
+owner first when it governs the delta.
+
+Rejected: treating a `global` marker as authority for every statement in a file,
+because that would erase claim boundaries and let unrelated or draft material
+silently govern a change.
+
 ## Verification
 
-| Invariant                         | Evidence                                                    | Failure signal                                                                                                                                              |
-| --------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                          | An unapproved current record or unmigrated active record passes                                                                                             |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                     | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                            |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record         |
-| INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                          |
-| INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                    |
-| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority |
-| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures            | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy |
+| Invariant                         | Evidence                                                                     | Failure signal                                                                                                                                                                                        |
+| --------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                                           | An unapproved current record or unmigrated active record passes                                                                                                                                       |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                                      | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`                               | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                         |
+| INV3, INV4, INV11                 | Blinded historical review benchmark                                          | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
+| INV10                             | Record-content and review-disposition fixtures                               | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
+| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt                  | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
+| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures                             | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy                                           |
+| INV16, INV17                      | Spec-first review and missing-context fixtures                               | Generated checklist completeness overrides authority, review invents product direction, restates supplied context, or fails to identify an unrelated tagalong or affected caller state                |
+| INV18                             | Spec-review mechanism analysis plus owner migration receipt                  | A new/amended product spec requires a private mechanism without proving it is public, silently invalidates an existing current record, or leaves touched architecture wording in the product contract |
+| INV19                             | Spec-review ownership-collision receipt and human decision                   | Automated review approves a product contract, omits current/open owner overlap, misses a collision or architecture leak, or returns only a human hold without actionable written analysis             |
+| INV20, DEC-9                      | `scripts/check-knowledge.test.mjs` and `scripts/review-global-baselines.mjs` | A matching review misses a current global claim, loads a draft/nonmatching claim, loses base-commit provenance, or treats the rest of a routed record as authority                                    |
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,

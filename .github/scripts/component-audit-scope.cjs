@@ -37,6 +37,12 @@ function classifyComponentAuditScope(paths, componentPackages) {
     file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
     file === '.github/scripts/weekly-rtl-summary.test.mjs' ||
     file === '.github/workflows/rtl-weekly.yml';
+  // These are positively owned surfaces that neither component browser audit
+  // can observe. Keep this list narrow: unmatched paths still fail closed.
+  const isKnownNonComponentSurface = file =>
+    file.startsWith('.changeset/') ||
+    file.startsWith('apps/sandbox/') ||
+    file.startsWith('packages/cli/');
   const isSharedRoutingPolicy = file =>
     file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
     file === 'apps/storybook/rtl-audit/targets.json' ||
@@ -56,7 +62,8 @@ function classifyComponentAuditScope(paths, componentPackages) {
         (!isComponentSource(file) &&
           !isStory(file) &&
           !isAccessibilitySurface(file) &&
-          !isRtlHarness(file)),
+          !isRtlHarness(file) &&
+          !isKnownNonComponentSurface(file)),
     );
 
   return {

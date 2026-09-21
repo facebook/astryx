@@ -87,36 +87,14 @@ decide each cell. There are only three legal answers, and every cell needs one:
 An undecided cell is the defect. It ships as behaviour nobody chose, and an
 agent finds it before a person does.
 
-### Worked example: `theme build --family`
-
-`--family <base> <children…>` builds a base theme and the themes that `extends`
-it as one unit: the base stylesheet restates the shared declarations once,
-scoped to every member, and each member carries only its own deltas.
-
-Its matrix against the flags already on `theme build`:
-
-| Pair                           | Answer                                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `--family` `--watch`           | Refused, explicitly, with a message naming both.                                                        |
-| `--family` `--out`             | Cannot co-occur: `--out` with more than one file is already refused, and `--family` needs at least two. |
-| `--family` `--check`           | They compose — `--check` verifies the family-shaped output.                                             |
-| `--family` `--icons-specifier` | They compose.                                                                                           |
-
-That third row carries a consequence worth writing down: `--check`'s answer now
-depends on whether `--family` was passed, because the two modes emit different
-CSS. CI has to check with the same flags it built with. A cell that changes what
-another flag _means_ is a documentation obligation, not just a test.
-
 ## Flags with the same name
 
 A name is a promise across the whole CLI. Two rules:
 
 - **The same flag name means the same thing everywhere, and is spelled the same
-  way.** `--family` means "a base plus the themes that extend it, built as one
-  unit". Nothing else may take that name for another idea.
-- **No command is forced to carry a flag because a sibling has it.** Alignment
-  is on meaning, not on presence. `--family` rests on `extends`, which only
-  themes have, so no other command has anything to point it at.
+  way.** Nothing else may take a flag name for another idea.
+- **No command is forced to carry a flag because a sibling has it.** Alignment is on
+  meaning, not on presence.
 
 ## Output: use the shared functions
 

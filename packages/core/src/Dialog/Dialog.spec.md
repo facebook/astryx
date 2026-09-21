@@ -17,7 +17,7 @@ verified_by:
     packages/core/src/Dialog/__tests__/Dialog.a11y.test.tsx,
     packages/core/src/Dialog/__tests__/Dialog.a11y.chromium.spec.ts,
   ]
-modules: []
+modules: [module:Dialog/DialogHeader]
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

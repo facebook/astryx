@@ -1,5 +1,76 @@
 # @xds/core
 
+# 0.6.2
+
+#### New Features
+
+- Markdown: add an opt-in math renderer (#6312)
+  Supply `components.math` to parse `$…$` inline math and `$$…$$` display math. The renderer receives the delimiter-free expression as `value` and its placement as `display: 'inline' | 'block'`, so applications can connect their preferred math typesetter without preprocessing Markdown or accepting raw HTML.
+
+  Math is off unless the renderer is present. Direct parser callers can opt in with `MathParseOptions` (`{math: true}`) and incremental callers create `IncrementalParseState<true>` via `createIncrementalState<true>()`. Those overloads return `InlineNodeWithMath` or `BlockNodeWithMath`; default, legacy-set, `math: false`, and `ParseOptions`- annotated calls retain the existing `InlineNode` and `BlockNode` unions, so exhaustive consumers do not gain a case unless they opt in. Existing Markdown parsing and rendering stay unchanged by default; code stays opaque, escaped and unmatched delimiters stay literal, and inline plugins skip math. Incremental parsing preserves full-parse results when display math is nested in ordinary or task lists and blockquotes, including quote-depth transitions, with LF or CRLF and with source ranges enabled.
+
+- DialogHeader exposes theme targets for its header gap, title/subtitle gap, and close-icon size. (#6240)
+- Expose DateRangeInput preset theming targets (#6223)
+- Expose the Slider interactive control as a theme target (#6225)
+- Expose FileInput's upload icon as a mode-aware theme target (#5417)
+- Add a `--spinner-arc-fraction` public var to Spinner, so a theme can change how much of the ring the moving arc covers (defaults to 0.375, a 135deg sweep), the same way it already retheme diameter, stroke width, and color. (#5845)
+
+#### Fixes
+
+- Adds the `@astryx.chatTypingIndicator.*` catalog keys so the lab ChatTypingIndicator can build its typing status from the translation runtime instead of English literals, joining names with `Intl.ListFormat` for the active locale. English output is unchanged. (#6220)
+- Spinner: the default assistive label now comes from the translation catalog (`@astryx.spinner.loading`) instead of a literal `"Loading"` in component source, so a localized app translates the status. An explicit `aria-label` and a visible string label still take precedence, in that order. (#6217)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @athz
+- @cixzhang
+- @freddymeta
+- @HelloOjasMutreja
+- @ksying
+- @Kyujenius
+
+---
+
+# 0.6.1
+
+#### New Features
+
+- Remove the prefix requirement from theme-local tokens (#6285)
+- Add ScrollableArea and useScrollableArea for accessible, logical-axis native scrolling with explicit overscroll policy. (#6262)
+  Scrollable viewports now become keyboard reachable only while content effectively overflows, preserve logical edge state across writing modes, apply contained overscroll only on active axes, avoid capturing Sticky while fitting unless explicitly requested, expose standard container sizing props, and integrate optional content padding plus opt-in full bleed with the shared container geometry system.
+
+#### Fixes
+
+- BaseTypeahead: preserve input props and keep results accessible in narrow layouts (#6179)
+  BaseTypeahead now forwards its inherited DOM and styling props to the combobox input, preserves native input attributes unless a defined legacy alias overrides them, keeps empty result lists valid for assistive technology, counts visible characters for `minQueryLength`, and keeps both the popup and long result content within viewport gutters.
+- BottomSheetSwitcher: let the topmost nested layer handle Escape before a non-modal flow. (#6184)
+- BreadcrumbItem preserves valid outside focus on menu light dismiss and labels menus from rich trigger content (#6206)
+- Center: preserve component-owned axis reflection and correct the horizontal-centering example. (#6207)
+- Localize Chart accessibility text and complete its consumer guidance. (#6247)
+- defer clear focus restoration for pointer/touch taps to prevent page scroll jumps while preserving synchronous focus restoration on keyboard activation and properly composing `onPointerDown` in `InputClearButton` (#5440)
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration. (#6126)
+- Field inputs no longer paint above the sticky AppShell header while scrolling (#5689). Field now contains its local stacking layers (the input surface's z-index and the attached status layer) behind an `isolation: isolate` boundary on the field surface, so they cannot compete with page-level stacking; the AppShell header keeps its normal stacking level.
+- TextInput's `onEnter` no longer fires for the Enter that commits an IME conversion (Japanese/Chinese/Korean input); `onKeyDown` still receives the raw event. (#6082)
+
+#### Documentation
+
+- AspectRatio: show the `ratio` prop in its JSX form (#6093)
+  The best-practice line told readers to express the ratio as a fraction like `16/9` without showing it in JSX, and nothing else in the CLI output gives `ratio` an example. Rewrites it to `ratio={16 / 9}` and names the string form as a type error.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @Cypher-Aura-19
+- @Geervan
+- @Kyujenius
+- @ManoharPaturi
+
+---
+
 # 0.6.0
 
 #### Breaking Changes

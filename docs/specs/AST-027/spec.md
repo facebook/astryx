@@ -19,6 +19,17 @@ affects_consumer_docs: []
 
 # Local stacking and browser top-layer routing system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["DEC-1", "DEC-2", "DEC-3", "DEC-4", "FR11"]
+  }
+}
+```
+
 ## Intent
 
 An Astryx component should be able to order its own painted parts without

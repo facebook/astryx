@@ -112,8 +112,28 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-axis",
+      "path": "components/charts/chart-axis",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-grid",
+      "path": "components/charts/chart-grid",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-legend",
+      "path": "components/charts/chart-legend",
+      "aliases": []
+    },
+    {
       "name": "component-charts-chart-swatch",
       "path": "components/charts/chart-swatch",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
       "aliases": []
     },
     {
@@ -789,6 +809,11 @@
     {
       "name": "component-richtext-rich-text-editor",
       "path": "components/richtext/rich-text-editor",
+      "aliases": []
+    },
+    {
+      "name": "component-scrollable-area",
+      "path": "components/scrollable-area",
       "aliases": []
     },
     {
@@ -3683,6 +3708,11 @@
     {
       "name": "hook-use-scroll-overflow",
       "path": "hooks/use-scroll-overflow",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-scrollable-area",
+      "path": "hooks/use-scrollable-area",
       "aliases": []
     },
     {

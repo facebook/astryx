@@ -35,6 +35,28 @@ deciding_specs:
 
 # Public component API
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "public-api": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV6",
+      "INV7",
+      "INV8",
+      "INV9",
+      "INV12"
+    ]
+  }
+}
+```
+
 This record defines the shared public API contract for stable Astryx components.
 
 ## Purpose

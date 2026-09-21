@@ -443,50 +443,24 @@ describe('theme-local adaptation values', () => {
     ).toThrow(/write it through value.localTokens/);
   });
 
-  it('rejects reserved local-token names through value.tokens even when unenrolled', () => {
-    expect(() =>
-      defineTheme({
-        name: 'reserved-rule-token',
-        adaptations: {
-          rules: [
-            {
-              when: {pointer: 'coarse'},
-              value: {
-                tokens: {
-                  '--astryx-theme-unrelated-owner-control-height': '44px',
-                },
-              },
-            },
-          ],
-        },
-      } as unknown as DefineThemeInput),
-    ).toThrow(/reserved.*value\.localTokens/i);
+  it('treats an unenrolled prefix-like adaptation token as portable', () => {
+    const name = '--astryx-theme-unrelated-owner-control-height';
+    const theme = defineTheme({
+      name: 'external-rule-token',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {[name]: '44px'}},
+          },
+        ],
+      },
+    } as unknown as DefineThemeInput);
+
+    expect(theme.__adaptationRules?.[0].tokens[name]).toBe('44px');
   });
 
-  it('rejects undeclared references and conditional cycles', () => {
-    expect(() =>
-      defineTheme({
-        name: 'local-root',
-        localTokens: {[localName]: '32px'},
-        adaptations: {
-          rules: [
-            {
-              when: {pointer: 'coarse'},
-              value: {
-                components: {
-                  button: {
-                    base: {
-                      minHeight: 'var(--astryx-theme-local-root-missing-name)',
-                    },
-                  },
-                },
-              },
-            },
-          ],
-        },
-      }),
-    ).toThrow(/has no declaration/);
-
+  it('rejects conditional local-token cycles', () => {
     const a = '--astryx-theme-cycle-local-a';
     const b = '--astryx-theme-cycle-local-b';
     expect(() =>

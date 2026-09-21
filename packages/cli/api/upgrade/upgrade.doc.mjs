@@ -12,7 +12,7 @@ export const doc = {
   kind: 'api',
   name: 'upgrade',
   displayName: 'upgrade()',
-  summary: 'Run version migrations and reconcile ShadCN-copied compositions.',
+  summary: 'Run version migrations and reconcile copied compositions.',
   description:
     'Migrates project source from a previous Astryx version to the currently ' +
     'installed one by running the registered codemods, and compares the fully ' +
@@ -21,7 +21,7 @@ export const doc = {
     'writes the prepared block only after selected codemods and hooks succeed. ' +
     'Core codemods run before ' +
     'the config is loaded so a config codemod can repair an otherwise-invalid ' +
-    'astryx.config. ShadCN-copied compositions carry adjacent receipts; upgrade ' +
+    'astryx.config. Copied compositions carry adjacent receipts with exact canonical and format-specific install bases; upgrade ' +
     'compares those installed bases with the matching registry release, updates pristine ' +
     'files, merges non-overlapping edits, and leaves conflicting originals untouched.',
   importPath: '@astryxdesign/cli/api',
@@ -33,7 +33,6 @@ export const doc = {
     'codemod',
     'migration',
     'version',
-    'shadcn',
     'registry',
   ],
   params: [
@@ -86,7 +85,7 @@ export const doc = {
       name: 'options.registry',
       type: 'boolean',
       description:
-        'Reconcile ShadCN-copied compositions from their install receipts without requiring `from`.',
+        'Reconcile copied compositions from their install receipts without requiring `from`.',
       default: 'false',
     },
     {
@@ -109,7 +108,7 @@ export const doc = {
     {
       type: 'upgrade.registry',
       description:
-        'A dry-run or apply receipt for ShadCN-copied compositions, including safe updates, clean merges, conflicts, missing files, and invalid receipts.',
+        'A dry-run or apply receipt for copied compositions, including safe updates, clean merges, conflicts, missing files, and invalid receipts.',
     },
     {
       type: 'upgrade.status',
@@ -153,7 +152,7 @@ export const doc = {
     },
     {label: 'Preview (dry-run)', code: "await upgrade({from: '0.0.5'});"},
     {
-      label: 'Update ShadCN-copied compositions',
+      label: 'Update copied compositions',
       code: 'await upgrade({registry: true, apply: true});',
     },
     {

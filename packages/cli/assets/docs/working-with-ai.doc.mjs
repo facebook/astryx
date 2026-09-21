@@ -50,7 +50,8 @@ export const docs = {
           label: 'Manual options',
           code: `npx @astryxdesign/cli init --features agents --agent claude    # .claude/CLAUDE.md
 npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules
-npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
+npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
+npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)`,
         },
       ],
     },

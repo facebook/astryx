@@ -62,7 +62,7 @@
   },
   {
     "component": "charts/ChartSwatch",
-    "reason": "ChartSwatch is a centered square, line, or dot sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
+    "reason": "ChartSwatch renders a square or line sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
   },
   {
     "component": "charts/ChartTooltip",
@@ -100,6 +100,10 @@
       "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e",
       "packages/core/src/SelectableCard/index.ts": "sha256:9cf677856807a09ee444ce68b21118bca9729592485f892da7e0bb64ee1d7501"
     }
+  },
+  {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and a visually-hidden role-bearing control clipped to 1×1. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
   },
   {
     "component": "core/AspectRatio",

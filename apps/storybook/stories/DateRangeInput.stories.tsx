@@ -125,6 +125,24 @@ export const WithPresetsAndValue: Story = {
   },
 };
 
+export const WithDisabledPresets: Story = {
+  render: args => {
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Constrained analytics period',
+    presets: defaultPresets,
+    maxRangeSpan: 1,
+  },
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<DateRange | null>(null);

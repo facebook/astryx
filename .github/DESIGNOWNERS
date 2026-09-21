@@ -1,8 +1,8 @@
 # Design owners for the Astryx repository
 # Design-team members. This list has three responsibilities:
 #
-# - Current design specs and normative design assets may receive exact-head
-#   approval from any DESIGNOWNER, cixzhang, or imdreamrunner.
+# - Current design and theme specs and normative design assets may receive
+#   exact-head approval from any DESIGNOWNER. ENGOWNERS may approve every spec.
 # - A DESIGNOWNER author may attest an exact PR head by marking the PR ready for
 #   review. That evidence satisfies the design-approval group even in a mixed PR;
 #   every other applicable code or spec-owner group remains required. The

@@ -2,7 +2,11 @@
 
 ## User impact
 
-<!-- Who encounters the defect, in what state, and what fails? -->
+<!-- Who encounters the defect, in what supported state, what fails, and what does the restoration enable or prevent? -->
+
+## Problem and solution fit
+
+<!-- Ask why three times: why does the defect occur, why does it harm the task, and why does that harm matter? Explain how the narrow fix addresses that chain. -->
 
 ## Expected behavior and authority
 

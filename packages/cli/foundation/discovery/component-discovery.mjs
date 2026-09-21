@@ -375,7 +375,9 @@ export function resolveImportPath(coreDir, componentName) {
 
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
-  const exactMatch = exportKeys.find(k => k.toLowerCase() === `./${componentName}`.toLowerCase());
+  const exactMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${componentName}`.toLowerCase(),
+  );
   if (exactMatch) {
     return `@astryxdesign/core/${exactMatch.slice(2)}`;
   }
@@ -387,7 +389,9 @@ export function resolveImportPath(coreDir, componentName) {
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
-  const topMatch = exportKeys.find(k => k.toLowerCase() === `./${topDir}`.toLowerCase());
+  const topMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${topDir}`.toLowerCase(),
+  );
   if (topMatch) {
     return `@astryxdesign/core/${topMatch.slice(2)}`;
   }
@@ -434,8 +438,9 @@ function exportsPublish(exportsMap, subpath) {
 }
 
 /**
- * Resolve the specifier an integration component is imported from, against the
- * owning package's `exports` map.
+ * Resolve the specifier an integration component is imported from. An authored
+ * doc import is canonical; otherwise resolve against the owning package's
+ * `exports` map.
  *
  * A component lives in a directory that need not share its name — several
  * components can be exported from one entry point — so the specifier has to
@@ -461,13 +466,24 @@ function exportsPublish(exportsMap, subpath) {
  *
  * @param {{exportsMap?: Record<string, unknown>|null, packageDir?: string, docPath?: string|null, packageName: string}} owner
  * @param {string} componentName
+ * @param {string|null} [authoredImport]
  * @returns {string}
  */
-export function resolveIntegrationImportPath(owner, componentName) {
+export function resolveIntegrationImportPath(
+  owner,
+  componentName,
+  authoredImport,
+) {
+  if (authoredImport) return authoredImport;
   const {exportsMap, packageDir, docPath, packageName} = owner;
-  const map = exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
-  const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
-  return exportsPublish(map, `./${directory}`) ? `${packageName}/${directory}` : packageName;
+  const map =
+    exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
+  const directory = docPath
+    ? path.basename(path.dirname(docPath))
+    : componentName;
+  return exportsPublish(map, `./${directory}`)
+    ? `${packageName}/${directory}`
+    : packageName;
 }
 
 /**

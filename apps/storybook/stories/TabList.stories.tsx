@@ -1039,3 +1039,30 @@ export const TabsPattern: Story = {
     );
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold an enabled tab to paint the system's `--color-overlay-pressed` layer on its surface. The disabled tab remains visually unchanged and cannot change selection.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <TabList value={value} onChange={setValue}>
+        <Tab value="home" label="Home" />
+        <Tab value="projects" label="Projects — press and hold" />
+        <Tab value="settings" label="Settings" />
+        <Tab
+          value="unavailable"
+          label="Unavailable — no pressed state"
+          aria-disabled="true"
+        />
+      </TabList>
+    );
+  },
+};

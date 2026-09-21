@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {AstryxError} from '../error.mjs';
+import {publishNewFile} from '../../foundation/fs/publish-file.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /** @param {string} value */
@@ -310,7 +311,7 @@ export function applyWrites(plans) {
 
     for (const plan of staged) {
       if (plan.original == null) {
-        fs.linkSync(plan.temporary, plan.path);
+        publishNewFile(plan.temporary, plan.path);
         published.push(plan);
         removeTemporary(plan.temporary);
         continue;

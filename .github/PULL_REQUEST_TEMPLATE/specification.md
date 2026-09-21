@@ -10,7 +10,7 @@
 
 ## Decision
 
-<!-- State the approved requirement, conditions, defaults, exceptions, compatibility, and owner. -->
+<!-- State the approved observable requirement: supported inputs, outputs/states, failure or degradation behavior, defaults, exceptions, compatibility, and owner. Preserve implementation freedom. -->
 
 ## Rejected alternatives
 
@@ -27,7 +27,11 @@
 ## Scope
 
 - [ ] This PR contains specification records only.
+- [ ] It records observable behavior and preserves equivalent internal implementations.
+- [ ] Any named internal mechanism is intentionally public, names its dependent caller/system, and explains why an equivalent implementation would not satisfy the contract.
+- [ ] Verification states the evidence layer and failure signal without prescribing CI job/workflow topology.
 - [ ] It records one intentional durable decision, not a review transcript or rescue for a separable tagalong.
+- [ ] The canonical knowledge owner, affected current claims, and overlapping open work are named; any ownership collision is resolved or called out for human decision.
 - [ ] Adjacent API, visual, accessibility, composition, and implementation facts remain outside scope unless this exact decision depends on them.
 - [ ] Public text and artifacts contain no internal Meta context.
 

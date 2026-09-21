@@ -37,17 +37,19 @@ describe('ShadCN registry CI contract', () => {
     expect(job.needs).toEqual(['check-scope']);
     expect(job.if).toContain('always()');
     expect(job['runs-on']).toBe('4-core-ubuntu');
-    expect(job['timeout-minutes']).toBe(20);
+    expect(job['timeout-minutes']).toBe(30);
     expect(step('Require successful scope classification').run).toContain(
       'refusing to skip required work',
     );
 
     expect(ci.jobs.test.needs).toContain('registry-contract');
-    const join = ci.jobs.test.steps
-      .map(candidate => candidate.run ?? '')
-      .join('\n');
-    expect(join).toContain('needs.registry-contract.result');
-    expect(join).toContain('needs.registry-contract.result }}" = "success"');
+    const join = ci.jobs.test.steps.find(candidate =>
+      candidate.run?.includes('.github/scripts/ci-test-join.mjs'),
+    );
+    expect(join).toBeDefined();
+    expect(join.env.REGISTRY_CONTRACT_RESULT).toBe(
+      '${{ needs.registry-contract.result }}',
+    );
   });
 
   it('runs every material step except on the trusted spec-only lane', () => {
@@ -66,8 +68,8 @@ describe('ShadCN registry CI contract', () => {
     }
   });
 
-  it('proves production exclusion before generating the canary catalog', () => {
-    const production = step('Verify production excludes compatibility output');
+  it('proves hidden production output without enabling public discovery', () => {
+    const production = step('Verify hidden production registry contract');
     expect(production.run).toBe(
       'node internal/shadcn-registry/verify-production-gate.mjs',
     );
@@ -75,19 +77,65 @@ describe('ShadCN registry CI contract', () => {
     const generateData = read('apps/docsite/scripts/generate-data.mjs');
     expect(generateData).toContain('generateShadcnRegistryForTarget({');
     expect(generateData).not.toMatch(/\bgenerateShadcnRegistry\(\{/);
+    expect(generateData).toContain(
+      "dependencyTag: DOCSITE_TARGET === 'canary' ? 'canary' : null",
+    );
+    expect(generateData).toContain(
+      "DOCSITE_TARGET === 'canary' ? shadcnCounts.itemPaths : undefined",
+    );
+    expect(generateData).toContain("allowSubset: DOCSITE_TARGET === 'latest'");
 
     const preview = step('Generate and validate the complete preview registry');
     expect(preview.env.DOCSITE_TARGET).toBe('canary');
     expect(preview.run).toContain('generate-data.mjs');
+    const hidden = step('Generate the hidden production registry');
+    expect(hidden.env.DOCSITE_TARGET).toBe('latest');
+    expect(hidden.run).toContain('generate-data.mjs');
+    const discovery = step('Verify hidden production discovery surfaces');
+    expect(discovery.env.ASTRYX_VERIFY_HIDDEN_PRODUCTION).toBe('1');
+    expect(discovery.env.NEXT_PUBLIC_DOCS_TARGET).toBe('latest');
+    expect(discovery.run).toBe(
+      'pnpm -F @astryxdesign/docsite exec vitest run src/__tests__/hidden-shadcn-production.test.ts',
+    );
+    expect(job.steps.indexOf(discovery)).toBeGreaterThan(
+      job.steps.indexOf(hidden),
+    );
+    expect(job.steps.indexOf(discovery)).toBeLessThan(
+      job.steps.indexOf(
+        step('Install and build every hidden production registry item'),
+      ),
+    );
+  });
+
+  it('keeps the soak rollout out of public CLI discovery', () => {
+    const docsDirectory = path.join(root, 'packages/cli/assets/docs');
+    expect(fs.readdirSync(docsDirectory)).not.toContain(
+      'shadcn-compatibility.doc.mjs',
+    );
+    expect(fs.readdirSync(docsDirectory)).toContain(
+      'shadcn-compatibility.doc.draft.mjs',
+    );
+    expect(read('packages/cli/api/upgrade/upgrade.doc.mjs')).not.toMatch(
+      /shadcn/i,
+    );
   });
 
   it('builds every workspace package before exercising local package exports', () => {
     expect(step('Build registry package exports').run).toBe('pnpm build');
   });
 
-  it('uses the complete clean-consumer verifier and an exact ShadCN pin', () => {
-    expect(step('Install and build every registry item').run).toBe(
+  it('uses the complete clean-consumer verifier in preview and production', () => {
+    expect(step('Install and build every preview registry item').run).toBe(
       'node internal/shadcn-registry/verify-full-catalog.mjs',
+    );
+    const productionInstall = step(
+      'Install and build every hidden production registry item',
+    );
+    expect(productionInstall.run).toBe(
+      'node internal/shadcn-registry/verify-full-catalog.mjs',
+    );
+    expect(productionInstall.env.ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES).toBe(
+      '1',
     );
     const manifest = JSON.parse(read('apps/docsite/package.json'));
     expect(manifest.devDependencies.shadcn).toMatch(/^\d+\.\d+\.\d+$/);
@@ -96,12 +144,18 @@ describe('ShadCN registry CI contract', () => {
     for (const invariant of [
       "'add', ...itemPaths",
       "'--silent'",
-      'installed different bytes',
+      'expectedInstalledFile(file, tsx)',
+      'for (const tsx of [true, false])',
       'did not install declared dependency',
       'alias route',
       'duplicate item name',
-      'must contain exactly one source and one receipt',
+      'must contain one source, one receipt, and a declaration only for precompiled JavaScript',
+      'lacks its exact JavaScript install variant',
+      'precompiled declaration type-check exited',
       'parseRegistryReceipt',
+      'verifyPrecompiledTypeDeclarations(project, catalog.items)',
+      'ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES',
+      'is not an exact release',
       'compileSources(project, sources)',
     ]) {
       expect(verifier).toContain(invariant);

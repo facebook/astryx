@@ -12,6 +12,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {randomUUID} from 'node:crypto';
+import {publishNewFile} from '../fs/publish-file.mjs';
 import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../fs/path-safety.mjs';
 import {findManifestPaths, loadManifestObject} from './integrations.mjs';
@@ -181,7 +182,7 @@ function createFile(file, contents) {
     fs.writeFileSync(descriptor, contents, 'utf-8');
     fs.closeSync(descriptor);
     descriptor = undefined;
-    fs.linkSync(temporary, file);
+    publishNewFile(temporary, file);
     linked = true;
     removeTemporary(temporary);
   } catch (error) {
