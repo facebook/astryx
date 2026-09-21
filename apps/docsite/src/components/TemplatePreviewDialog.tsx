@@ -9,7 +9,7 @@
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
  * @input Template metadata, selected index, open state, and navigation callbacks.
- * @output A responsive dialog with a 16:10 live preview up to 1440×900 and template actions.
+ * @output A responsive dialog with a fill-mode live preview up to 1440×900 and template actions.
  * @position Shared preview controller for the templates gallery.
  *
  * The header surfaces template metadata (name, description) with the close
@@ -76,8 +76,6 @@ const styles = stylex.create({
   body: {
     position: 'relative',
     display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
     height: '100%',
     minHeight: 0,
     boxSizing: 'border-box',
@@ -394,14 +392,7 @@ export function TemplatePreviewDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       variant={variant}
-      // Scale the desktop dialog with available block space so the preview can
-      // stay full-width and 16:10. The offsets account for viewport gutters,
-      // fixed header/footer chrome, and the preview's inline padding.
-      width={
-        isFullscreen
-          ? undefined
-          : 'min(1472px, calc((100dvh - 210px) * 1.6 + 32px))'
-      }
+      width={isFullscreen ? undefined : 1472}
       maxHeight={isFullscreen ? undefined : 'calc(100dvh - 32px)'}
       xstyle={isFullscreen ? undefined : styles.dialogDesktop}
       aria-label={current.name}>

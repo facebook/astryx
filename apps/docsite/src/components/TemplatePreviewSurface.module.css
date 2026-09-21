@@ -1,15 +1,14 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
-/* The preview "window". It preserves the 1440×900 aspect ratio while fitting
-   the dialog body's available width and height. Fill-mode templates scroll
-   their own content region; auto-height templates can still use this frame. */
+/* The preview window fills all space between the dialog header and footer.
+   Large desktop dialogs naturally reach 1440×900; constrained desktop and
+   mobile dialogs use every available pixel without forcing an aspect ratio. */
 .frame {
   position: relative;
-  width: min(100%, 1440px);
-  max-height: 900px;
-  aspect-ratio: 16 / 10;
+  width: 100%;
+  height: 100%;
   margin-inline: auto;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
   /* The frame is the single scroll container. Fill-mode templates fit the
      frame exactly and scroll their own content region internally (no frame
