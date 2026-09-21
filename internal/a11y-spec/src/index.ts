@@ -115,3 +115,5 @@ export {
   DISCLOSURE_PATTERN,
   type DisclosureStateFacts,
 } from './patterns/disclosure';
+
+export {LISTBOX_PATTERN, type ListboxStateFacts} from './patterns/listbox';

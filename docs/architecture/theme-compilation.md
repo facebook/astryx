@@ -40,6 +40,17 @@ deciding_specs:
 
 # Theme compilation
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+  }
+}
+```
+
 This record defines how one theme definition becomes usable styles.
 
 ## Purpose

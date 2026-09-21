@@ -506,8 +506,8 @@ describe('spec owner decision', () => {
     });
     const statuses = [marker('ernestt'), marker('imdreamrunner')];
 
-    // imdreamrunner is a spec owner and a design *approver*, but not a design
-    // owner. A marker they published — including one predating the rule that
+    // imdreamrunner is an engineering owner and a design *approver*, but not a
+    // design owner. A marker they published — including one predating the rule that
     // only design owners self-attest — is not evidence for any group.
     expect(
       parseReadyAttestations(statuses, {

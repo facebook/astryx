@@ -23,6 +23,17 @@ affects_consumer_docs: [theme]
 
 # Theme-local tokens system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "tokens": ["DEC-1", "DEC-2", "DEC-3", "DEC-4", "DEC-5", "DEC-6"]
+  }
+}
+```
+
 ## Intent
 
 Let a maintained theme reuse one of its own semantic decisions across component

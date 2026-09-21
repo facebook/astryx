@@ -246,6 +246,12 @@ export const categories: SandboxCategory[] = [
         description: 'Compare highlight modes and scroll performance',
       },
       {
+        name: 'Markdown Perf',
+        href: '/pages/markdown-perf/',
+        description:
+          'Compare complete Markdown rendering with bursty streaming performance and animation',
+      },
+      {
         name: 'Table Lab',
         href: '/pages/table-lab/',
         description:

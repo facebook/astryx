@@ -2,9 +2,9 @@
 
 /**
  * @file Markdown.public.test.ts
- * @input Imports Markdown parser functions and node types from the public barrel
- * @output Compile-time compatibility coverage for legacy and math-enabled results
- * @position Public API test guarding @astryxdesign/core/Markdown
+ * @input Imports Markdown parser, plugin factory, visitor, and node types from the public Markdown and plugin barrels
+ * @output Compile-time compatibility coverage for legacy, math-enabled, and plugin results
+ * @position Public API test guarding @astryxdesign/core/Markdown and /Markdown/plugins
  */
 
 import {describe, expectTypeOf, it} from 'vitest';
@@ -13,7 +13,21 @@ import {
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
+  visitMarkdownNodes,
 } from './index';
+import {
+  createMarkdownFenceTransform,
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
+  isMarkdownExtensionNode,
+} from './plugins';
+import type {
+  MarkdownExtensionNode,
+  MarkdownFenceTransformOptions,
+  MarkdownPluginEntry,
+  MarkdownSyntaxPluginDefinition,
+  MarkdownTransform,
+} from './plugins';
 import type {
   BlockNode,
   BlockNodeWithMath,
@@ -153,5 +167,114 @@ describe('Markdown public parser types', () => {
     expectTypeOf<
       Extract<BlockNodeWithMath, {type: 'math'}>['value']
     >().toBeString();
+  });
+
+  it('exports typed plugin construction and node-kind visitors', () => {
+    type PublicNode = MarkdownExtensionNode<
+      'public-demo',
+      'token',
+      {readonly label: string},
+      'inline'
+    >;
+    const definition = {
+      name: 'public-demo',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        inline: [
+          {
+            startsWith: ['::'],
+            maxSpan: 20,
+            tokenize: () => ({status: 'no-match'}) as const,
+          },
+        ],
+      },
+      renderers: {
+        token: {
+          render: () => null,
+          toText: node => node.data.label,
+        },
+      },
+    } satisfies MarkdownSyntaxPluginDefinition<'public-demo', PublicNode>;
+    const plugin = createMarkdownPlugin<'public-demo', PublicNode>(definition);
+    const nodes = parseInline('plain', {plugins: [plugin] as const});
+
+    expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
+    expectTypeOf(visitMarkdownNodes).toBeFunction();
+    expectTypeOf(createMarkdownTextTransform).toBeFunction();
+    expectTypeOf(isMarkdownExtensionNode).toBeFunction();
+
+    function compileOnlyPluginGuards() {
+      // @ts-expect-error transforms that own extension nodes require renderers
+      createMarkdownPlugin<'public-demo', PublicNode>({
+        name: 'public-demo',
+        apiVersion: 1,
+        transform: root => root,
+      });
+    }
+    expectTypeOf(compileOnlyPluginGuards).toBeFunction();
+  });
+
+  it('exports a language-narrowed semantic fence transform helper', () => {
+    type PublicFenceNode = MarkdownExtensionNode<
+      'public-semantic-fences',
+      'diagram',
+      {
+        readonly code: string;
+        readonly language: 'mermaid' | 'dot';
+        readonly meta?: string;
+      },
+      'block'
+    >;
+    const options = {
+      languages: ['mermaid', 'dot'] as const,
+      createNode: ({language, code, meta}) => {
+        expectTypeOf(language).toEqualTypeOf<'mermaid' | 'dot'>();
+        expectTypeOf(code).toBeString();
+        expectTypeOf(meta).toEqualTypeOf<string | undefined>();
+        return {
+          type: 'extension',
+          plugin: 'public-semantic-fences',
+          name: 'diagram',
+          display: 'block',
+          data: {
+            code,
+            language,
+            ...(meta == null ? {} : {meta}),
+          },
+        } as const;
+      },
+    } satisfies MarkdownFenceTransformOptions<
+      readonly ['mermaid', 'dot'],
+      PublicFenceNode
+    >;
+    const transform = createMarkdownFenceTransform(options);
+    const plugin = createMarkdownPlugin<
+      'public-semantic-fences',
+      PublicFenceNode
+    >({
+      name: 'public-semantic-fences',
+      apiVersion: 1,
+      transform,
+      renderers: {
+        diagram: {
+          render: () => null,
+          toText: node => node.data.code,
+        },
+      },
+    });
+    const typedTransform: MarkdownTransform<PublicFenceNode> = transform;
+
+    expectTypeOf(typedTransform).toBeFunction();
+    expectTypeOf(plugin).toEqualTypeOf<MarkdownPluginEntry<PublicFenceNode>>();
+
+    function compileOnlyFenceGuards() {
+      createMarkdownFenceTransform({
+        languages: ['mermaid'],
+        // @ts-expect-error fence helpers create data nodes; render belongs in renderers
+        render: () => null,
+      });
+    }
+    expectTypeOf(compileOnlyFenceGuards).toBeFunction();
   });
 });

@@ -19,6 +19,27 @@ affects_consumer_docs: [browser-support, useLayer, Popover, Toast, Dialog]
 
 # Browser and platform support system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "platform": [
+      "FR1",
+      "FR3",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR8",
+      "FR9",
+      "FR10",
+      "FR12"
+    ]
+  }
+}
+```
+
 ## Intent
 
 Give stable Astryx web components one owner for browser support, native-feature

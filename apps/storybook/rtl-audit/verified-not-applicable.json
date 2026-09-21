@@ -62,7 +62,7 @@
   },
   {
     "component": "charts/ChartSwatch",
-    "reason": "ChartSwatch is a centered square, line, or dot sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
+    "reason": "ChartSwatch renders a square or line sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
   },
   {
     "component": "charts/ChartTooltip",
@@ -100,6 +100,10 @@
       "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e",
       "packages/core/src/SelectableCard/index.ts": "sha256:9cf677856807a09ee444ce68b21118bca9729592485f892da7e0bb64ee1d7501"
     }
+  },
+  {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and a visually-hidden role-bearing control clipped to 1×1. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
   },
   {
     "component": "core/AspectRatio",
@@ -184,5 +188,25 @@
   {
     "component": "core/StatusDot",
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/ChatComposerDrawer",
+    "reason": "ChatComposerDrawer uses normal block and flex flow with logical inline spacing and symmetric top corners. Its collapse handle is horizontal and centered, the disclosure action moves only on the block axis, and its count, attachment, vertical expand/collapse, and caller-owned child content add no component-owned left/right glyph, physical inline positioning, order, horizontal scrolling or dragging, overlay placement, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerDrawer.stories.tsx": "sha256:115ecc61625c065ffcb02d35c7aeb2a399c8ba1a30a8cd637bdd4adf58185b80",
+      "packages/core/src/Chat/ChatComposerDrawer.tsx": "sha256:a8d11adc40decad25688b33a16b562e168c831933ec4387084c00530fcb94600",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatComposer",
+    "reason": "ChatComposer arranges caller-owned slots in normal flex and block flow using logical inline properties. Its owned send, stop, status, attachment, microphone, and mention glyphs are direction-neutral; it has no component-owned left/right glyph, physical inline positioning, horizontal scroll or drag behavior, overlay placement, or horizontal keyboard interaction to mirror. Text editing and bidirectional content remain native to the default contenteditable surface or the caller-supplied custom input.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
+      "packages/core/src/Chat/ChatComposer.tsx": "sha256:aa955ff0f59901285eadf7de209f78530d0f8deb0ef162f6baa4e9faa3661880",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:d3ea1122416074030c59d40f2f55bf4f4c3f086c1ce2dea5e1781b8d171c7b63",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
   }
 ]

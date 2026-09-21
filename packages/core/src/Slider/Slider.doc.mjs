@@ -255,6 +255,17 @@ export const docs = {
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Thumb',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'The thumb must have at least 3:1 contrast with the track and the surface behind it. Pointer down is the whole drag: measure the thumb with the pressed overlay applied.',
+      },
+    ],
     anatomy,
     description:
       'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage.',

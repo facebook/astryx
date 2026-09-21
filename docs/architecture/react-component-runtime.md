@@ -20,6 +20,17 @@ deciding_specs: []
 
 # React component runtime architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "react-runtime": ["INV1", "INV2", "INV3", "INV4", "INV5", "INV6", "INV8"]
+  }
+}
+```
+
 ## Purpose
 
 Astryx components should preserve their documented behavior through render,

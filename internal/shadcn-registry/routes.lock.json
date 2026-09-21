@@ -122,8 +122,18 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-legend",
+      "path": "components/charts/chart-legend",
+      "aliases": []
+    },
+    {
       "name": "component-charts-chart-swatch",
       "path": "components/charts/chart-swatch",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
       "aliases": []
     },
     {

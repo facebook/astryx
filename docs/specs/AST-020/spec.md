@@ -18,6 +18,17 @@ affects_consumer_docs: []
 
 # Accessibility spec-test authoring system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": ["FR1", "FR2", "FR6"]
+  }
+}
+```
+
 ## Intent
 
 People using Astryx components should get the keyboard, focus, meaning, and state

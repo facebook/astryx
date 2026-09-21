@@ -125,9 +125,12 @@ jobs:
   # and by the RTL roster. `analyze-pr.js` still decides which changed components
   # each downstream audit receives. When those projections disagree the audits
   # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
+  # Spec-only changes keep only the trusted scope classifier and the
+  # knowledge validator below. Unrelated component discovery must not take a
+  # runner or fan out into visual, accessibility, or RTL work.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -213,7 +216,7 @@ jobs:
   # build-storybook + build-sandbox below.
   test-ui:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
@@ -266,12 +269,17 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm lab:readiness:check
 
-      - run: pnpm vitest run --project ui
+      # A child process isolates engine state, not CPU or memory contention.
+      # FR23 must wait until the other UI workers have exited (AST-036).
+      - name: Run UI tests and isolated Markdown benchmark
+        run: |
+          pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts
+          pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
   test-node:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -319,7 +327,7 @@ jobs:
   # item through the exact pinned ShadCN client and compiles every written source.
   registry-contract:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     timeout-minutes: 30
     permissions:
@@ -383,7 +391,7 @@ jobs:
   # projects their combined result without creating another surface lane.
   test:
     needs: [check-scope, test-ui, test-node, test-build, registry-contract]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -410,7 +418,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -800,7 +808,18 @@ jobs:
       # Chromium guards for the same reason they are: pr-a11y is the blocking
       # job that runs whenever components change.
       - name: Run accessibility spec-test contracts
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm test:a11y-contract
+
+      - name: Upload pressed-state pixel evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/pressed-state-evidence/
+          retention-days: 30
+          if-no-files-found: error
 
   # Build package test owner. The plugin's production CSS partition is a Build
   # integration contract: source inspection cannot prove which declaration
@@ -1237,8 +1256,8 @@ jobs:
 
   # Stable required context joining the five package shards above.
   pr-rtl:
-    needs: [check-components, pr-rtl-shard]
-    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' }}
+    needs: [check-scope, check-components, pr-rtl-shard]
+    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:

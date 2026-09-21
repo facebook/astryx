@@ -404,6 +404,10 @@ describe('Spinner ring', () => {
       frames.forEach(cb => cb(0));
       expect(animations).toHaveLength(5);
       expect(animations.every(a => a.startTime === 0)).toBe(true);
+      // The dash animation lives on the arc <circle>, a descendant of the
+      // <svg> this ref sits on, not the <svg> itself (#6253) — subtree:true
+      // is what lets getAnimations() find it from here.
+      expect(getAnimations).toHaveBeenCalledWith({subtree: true});
       // The pin runs on the branch the other shade cases cannot reach, so the
       // no-read assertion is made here too.
       expect(

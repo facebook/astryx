@@ -28,6 +28,25 @@ deciding_specs: []
 
 # Knowledge contracts and decisions
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "specification": [
+      "INV9",
+      "INV11",
+      "INV14",
+      "INV16",
+      "INV18",
+      "INV20",
+      "DEC-9"
+    ]
+  }
+}
+```
+
 ## Purpose
 
 A reviewer should be able to answer two questions without rereading old pull
@@ -196,6 +215,49 @@ Every record is either:
   clarify. Automation may report contradictions, evidence gaps, and proposed edits;
   it MUST NOT approve, adopt, ratify, or make the contract current. A human approval
   remains required even when the advisory analysis finds no defect.
+- **INV20 — Global review routing is explicit and claim-scoped.** A cross-cutting
+  baseline participates without a component backlink only when its
+  `review-applicability:v1` block declares `scope: "global"` and maps a semantic
+  trigger to exact claim ids in that same record. Review loads matching current
+  global claims before narrower records, then resolves the direct component,
+  module, or family owner first when it governs the delta. The marker never makes
+  the whole record, adjacent claims, drafts, or proposed-head authority govern.
+  Every routed match records the base authority commit, record digest, record id,
+  path, trigger, claim id, claim title, and deterministic match reason.
+
+## Global review applicability
+
+Use this optional block only when named claims apply across otherwise unrelated
+component owners. Ordinary component, module, family, design, architecture, theme,
+and system records remain unmarked.
+
+<!-- review-applicability-example:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "public-api": ["FR1", "DEC-2"],
+    "accessibility": ["AR1"]
+  }
+}
+```
+
+In an opted-in record, replace the example marker with
+`review-applicability:v1`. Trigger names use this closed vocabulary:
+`accessibility`, `behavior`, `compatibility`, `component-slots`, `docsite`,
+`interaction`, `layering`, `layout`, `motion`, `navigation`, `platform`,
+`public-api`, `react-runtime`, `responsive`, `scrolling`, `specification`,
+`styling`, `testing`, `theming`, `tokens`, and `visual`. Every trigger has a
+non-empty list of unique claim ids, and each id resolves to an explicit numbered
+claim in that record. The checked-in validator rejects unsupported triggers,
+malformed blocks, missing or duplicate claims, and empty routing.
+`scripts/review-global-baselines.mjs` requires both the exact reviewed head and
+its full base authority commit, verifies that commit is the head's `origin/main`
+merge base, and emits deterministically sorted match rows. It therefore cannot
+read a proposed head as its own authority. Consumers load those rows before narrow lookup, preserve their
+provenance in a review receipt, and apply only the cited claim after the direct
+owner has been resolved.
 
 ## Writing specifications and contracts
 
@@ -488,9 +550,10 @@ this flow passes the historical review benchmark and is enforced on pull request
   metadata.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head. Theme approval derives from the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`; record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  request head. Approval for every record kind derives from `.github/ENGOWNERS`;
+  current design and theme records and normative design assets additionally accept
+  `.github/DESIGNOWNERS`. Record metadata never self-authorizes. The workflow
+  enables auto-merge only for pure spec changes.
 
 ## Deciding specs
 
@@ -626,20 +689,36 @@ Rejected: automatically approving a specification because its checks are green, 
 returning only “needs human” without giving the owner the contract and ownership
 analysis already available to the reviewer.
 
+### DEC-9 — Global applicability routes exact claims, not whole records
+
+**Reference:** `architecture:knowledge-contracts/DEC-9`
+**Decider:** `cixzhang`, `2026-09-19`
+
+A cross-cutting rule is discoverable without a component backlink only through a
+validated `review-applicability:v1` block. Each semantic trigger names exact local
+claim ids. Reviewers load matching current claims from the base authority commit
+before narrower records, preserve match provenance, and then resolve the direct
+owner first when it governs the delta.
+
+Rejected: treating a `global` marker as authority for every statement in a file,
+because that would erase claim boundaries and let unrelated or draft material
+silently govern a change.
+
 ## Verification
 
-| Invariant                         | Evidence                                                    | Failure signal                                                                                                                                                                                        |
-| --------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                          | An unapproved current record or unmigrated active record passes                                                                                                                                       |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                     | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record                                                   |
-| INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
-| INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
-| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
-| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures            | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy                                           |
-| INV16, INV17                      | Spec-first review and missing-context fixtures              | Generated checklist completeness overrides authority, review invents product direction, restates supplied context, or fails to identify an unrelated tagalong or affected caller state                |
-| INV18                             | Spec-review mechanism analysis plus owner migration receipt | A new/amended product spec requires a private mechanism without proving it is public, silently invalidates an existing current record, or leaves touched architecture wording in the product contract |
-| INV19                             | Spec-review ownership-collision receipt and human decision  | Automated review approves a product contract, omits current/open owner overlap, misses a collision or architecture leak, or returns only a human hold without actionable written analysis             |
+| Invariant                         | Evidence                                                                     | Failure signal                                                                                                                                                                                        |
+| --------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                                           | An unapproved current record or unmigrated active record passes                                                                                                                                       |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                                      | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`                               | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                         |
+| INV3, INV4, INV11                 | Blinded historical review benchmark                                          | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
+| INV10                             | Record-content and review-disposition fixtures                               | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
+| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt                  | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
+| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures                             | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy                                           |
+| INV16, INV17                      | Spec-first review and missing-context fixtures                               | Generated checklist completeness overrides authority, review invents product direction, restates supplied context, or fails to identify an unrelated tagalong or affected caller state                |
+| INV18                             | Spec-review mechanism analysis plus owner migration receipt                  | A new/amended product spec requires a private mechanism without proving it is public, silently invalidates an existing current record, or leaves touched architecture wording in the product contract |
+| INV19                             | Spec-review ownership-collision receipt and human decision                   | Automated review approves a product contract, omits current/open owner overlap, misses a collision or architecture leak, or returns only a human hold without actionable written analysis             |
+| INV20, DEC-9                      | `scripts/check-knowledge.test.mjs` and `scripts/review-global-baselines.mjs` | A matching review misses a current global claim, loads a draft/nonmatching claim, loses base-commit provenance, or treats the rest of a routed record as authority                                    |
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,

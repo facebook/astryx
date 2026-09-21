@@ -85,20 +85,13 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const specOwners = env.SPEC_OWNERS.split(',').map(ownerName =>
-    ownerName.toLowerCase(),
-  );
   const designOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/DESIGNOWNERS'), 'utf8'),
   );
   const engineeringOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/ENGOWNERS'), 'utf8'),
   );
-  const allOwners = new Set([
-    ...specOwners,
-    ...engineeringOwners,
-    ...designOwners,
-  ]);
+  const allOwners = new Set([...engineeringOwners, ...designOwners]);
   if (!isAuthorizedEvent(context.eventName, context.payload, allOwners)) {
     core.info('Ignoring an event from someone outside the eligible owners.');
     return;
@@ -439,8 +432,8 @@ async function reconcileSpecOwnerGate({
   const eventHead = context.payload.pull_request?.head?.sha;
   const eventTime = context.payload.pull_request?.updated_at;
   // Only a DESIGNOWNER author may self-attest a head, and only for the design
-  // approval group (.github/DESIGNOWNERS). A spec or engineering owner marking
-  // their own pull request ready is not an approval by anyone else.
+  // approval group (.github/DESIGNOWNERS). An engineering owner marking their
+  // own pull request ready is not an approval by anyone else.
   if (
     context.eventName === 'pull_request_target' &&
     context.payload.action === 'ready_for_review' &&
@@ -541,17 +534,17 @@ async function reconcileSpecOwnerGate({
   });
   const ownerApprovalRequired =
     requiredGroups.spec || requiredGroups.design || requiredGroups.theme;
-  if (requiredGroups.design && designOwners.length === 0) {
-    throw new Error('No DESIGNOWNERS are configured.');
+  if (requiredGroups.spec && engineeringOwners.length === 0) {
+    throw new Error('No ENGOWNERS are configured.');
   }
   if (
-    requiredGroups.theme &&
+    (requiredGroups.design || requiredGroups.theme) &&
     engineeringOwners.length === 0 &&
     designOwners.length === 0
   ) {
     throw new Error('No ENGOWNERS or DESIGNOWNERS are configured.');
   }
-  const designApprovers = [...new Set([...specOwners, ...designOwners])];
+  const designApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
@@ -565,10 +558,10 @@ async function reconcileSpecOwnerGate({
     headSha: initialHead,
   };
   // A ready-for-review attestation is the design group's own self-attestation
-  // path. It is not evidence for the spec or theme groups, which stay on real
-  // exact-head reviews and commands.
+  // path. It is not evidence for the non-design or theme groups, which stay on
+  // real exact-head reviews and commands.
   const specDecision = requiredGroups.spec
-    ? resolveOwnerDecision({...decisionInput, owners: specOwners})
+    ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
   const designDecision = requiredGroups.design
     ? resolveOwnerDecision({
@@ -590,7 +583,9 @@ async function reconcileSpecOwnerGate({
     .filter(Boolean)
     .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
   const requiredOwnerDescription = [
-    requiredGroups.spec ? `a spec owner (${specOwners.join(',')})` : null,
+    requiredGroups.spec
+      ? `an engineering owner (${engineeringOwners.join(',')})`
+      : null,
     requiredGroups.design
       ? `a design approver (${designApprovers.join(',')})`
       : null,
