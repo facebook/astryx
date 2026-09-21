@@ -2,7 +2,8 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Add a Canvas Editor page template
+[feat] Add a Canvas Editor page template (#6237)
+@ernestt
 
 A layered-artboard workspace: a File/Edit/View/Object/Help
 menubar over a layer rail and asset library on the left, the artboard centered
@@ -26,9 +27,10 @@ zoom control at all.
 
 Two decisions worth knowing if you copy it:
 
-**The artboard is themed, not styled.** It runs under its own `defineTheme`
-pinned to `mode="light"`, so the poster keeps its palette when the editor
-around it goes dark. The theme carries what belongs to the poster as a whole —
+**The artboard is themed, not styled.** The template's `canvasEditorTheme` is
+pinned to `mode="light"` around the artboard, so the poster keeps its palette
+when the editor around it goes dark. The theme carries what belongs to the
+poster as a whole —
 the display face, the leading, the uppercase treatment, the frame margins —
 and the display face is Anton with a fallback chain through the condensed
 grotesques that ship with macOS and Windows. The chain puts Impact ahead of
@@ -70,17 +72,11 @@ StackItem's min-width reset. Without `flexShrink: 0` on the label column the
 row spends its shrinkage there, and every field lands on a slightly different
 edge — which is the one thing an inspector cannot afford.
 
-**Row actions reveal on hover through a marker.** A layer's lock stays hidden
-until the row is pointed at. That wants `stylex.when.ancestor(':hover')`, and
-two things about it are worth writing down. A scoped `defineMarker()` is the
-usual advice but StyleX only hashes one inside a `.stylex.ts` module, which a
-single-file template cannot have; `defaultMarker()` is safe in its place
-because product code compiles markers under its own prefix and never answers
-to the one Layout sets internally. And the hidden state has to be the
-unconditional default: the reveal arms compile to a doubled class plus
-`:where(…)`, so gating the hidden state behind a media query puts both at the
-same specificity in the same layer, where source order decides and the reveal
-silently loses.
+**Row actions use the shared reveal primitive.** A layer's lock stays hidden
+until the row is pointed at or receives keyboard focus. `useContainerReveal`
+owns the hover, focus, coarse-pointer, and reduced-motion behavior, while
+`TreeListItemData` forwards the returned row props so every nested row keeps
+its reveal state isolated.
 
 **A fixed-height Card scrolls; the artboard has to clip.** Give `Card` a
 `height` and it becomes a scroll container, which is right for a card holding
@@ -212,10 +208,11 @@ The hue rail is worth pausing on, because the obvious move is to paint it and
 that would be wrong. A spectrum rail looks like custom work, but the only
 custom thing about it is the gradient — the dragging, the arrow keys, the
 ARIA and the thumb are all just a slider. So it _is_ a `Slider`, with
-`components['slider-track']` in a `defineTheme` carrying the spectrum, scoped
-under its own `Theme` so the nine filter sliders in the same panel keep the
-plain track they should have. Reach for the theming target before reaching
-for a `<div>`; check a component's `theming.targets` in its docs first.
+`components['slider-track']` in the template's single `defineTheme` carries
+the spectrum. That same theme is mounted narrowly around the hue Slider so
+the nine filter sliders in the panel keep the plain track they should have.
+Reach for the theming target before reaching for a `<div>`; check a component's
+`theming.targets` in its docs first.
 
 Only the saturation/value plane is painted, and only because it is two axes
 at once and no slider is. It carries `role="slider"`, arrow keys, and pointer
@@ -270,10 +267,10 @@ composed, so `TreeList` keeps the disclosure state, the guide lines and the
 roving focus that a hand-rolled tree would have to reimplement; the lock still
 arrives through `endContent`.
 
-The per-row lock reveal survives the move via `TreeListItemData.className`,
-which marks each row so the hover selector scopes to one row rather than to
-the whole rail. Groups take the frame mark rather than repeating a child's
-glyph, since a parent is a container and not another layer of that kind.
+The per-row lock reveal survives the move because `TreeListItemData` forwards
+the `className` and `style` from `useContainerReveal` to each row. Groups take
+the frame mark rather than repeating a child's glyph, since a parent is a
+container and not another layer of that kind.
 
 **A tab's close eats into its label rather than widening the tab.** Fading a
 control that still occupies its box costs the name 20px permanently to hold
@@ -402,5 +399,3 @@ A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
 explicit mode needs a surface — here a `Section` wrapping the editor — or the
 new mode's text lands on the host's old background.
-
-@ernestt

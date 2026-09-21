@@ -47,6 +47,7 @@ import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {TreeList, type TreeListItemData} from '@astryxdesign/core/TreeList';
+import {useContainerReveal} from '@astryxdesign/core/hooks';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
@@ -102,13 +103,14 @@ import {
 } from 'lucide-react';
 
 // =============================================================================
-// Poster theme
+// Canvas editor theme
 // =============================================================================
 
 /**
- * The artboard is artwork, not app chrome, so it runs under its own theme: a
- * heavy condensed display face, poster-scale type, and a light palette pinned
- * with `mode="light"` so the poster holds when the editor goes dark.
+ * The template keeps its visual overrides in one theme. The artboard is artwork,
+ * not app chrome, so that theme is mounted around it with a heavy condensed
+ * display face, poster-scale type, and a light palette pinned with `mode="light"`
+ * so the poster holds when the editor goes dark.
  *
  * The theme owns what belongs to the poster as a whole — the face, the
  * leading, the uppercase treatment, the frame margins. Per-layer size and
@@ -119,8 +121,8 @@ import {
  * out at its native 1080 x 1920 and the zoom control scales the whole frame,
  * so these stay the numbers a designer would type into the inspector.
  */
-const posterTheme = defineTheme({
-  name: 'canvas-editor-poster',
+const canvasEditorTheme = defineTheme({
+  name: 'canvas-editor',
   typography: {
     // Anton is the reference face. It and the fallbacks are all single-weight
     // blacks, so display-1 stays at weight 400 and the poster needs no
@@ -141,6 +143,15 @@ const posterTheme = defineTheme({
   components: {
     heading: {'type:display-1': {textTransform: 'uppercase'}},
     text: {'type:supporting': {textTransform: 'uppercase'}},
+    // The hue rail is a Slider whose track is the only custom paint. Keeping
+    // the override in this template's one theme avoids a component-only theme;
+    // the theme is mounted narrowly where the hue control and poster need it.
+    'slider-track': {
+      base: {
+        backgroundImage:
+          'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+      },
+    },
   },
 });
 
@@ -556,26 +567,6 @@ const EXPORT_MENU = EXPORT_FORMATS.map(label => ({label}));
 // Colour
 // =============================================================================
 
-/**
- * The hue rail: a Slider whose track is a spectrum.
- *
- * Reaching for `components['slider-track']` rather than painting a rail by
- * hand keeps the keyboard handling, the ARIA and the thumb that the system
- * already tested, and leaves this file responsible only for the one thing
- * that is actually specific — the gradient.
- */
-const hueTheme = defineTheme({
-  name: 'hue',
-  components: {
-    'slider-track': {
-      base: {
-        backgroundImage:
-          'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
-      },
-    },
-  },
-});
-
 /** A colour as the picker holds it: hue 0–360, saturation and value 0–100. */
 interface Hsv {
   h: number;
@@ -699,20 +690,6 @@ function shadowCss(shadow: Shadow | undefined): string {
 // =============================================================================
 // Styles
 // =============================================================================
-
-/**
- * Marks the ancestor a hover-reveal resolves against — a layer row, or a
- * document tab.
- *
- * A scoped `defineMarker()` would be the usual choice, but StyleX only hashes
- * one inside a `.stylex.ts` module and a template is a single file. The
- * default marker is safe in its place here: product code compiles markers
- * under its own prefix, so this never answers to the one Layout sets
- * internally. Layer rows and document tabs are the only things in this file
- * that carry it, and neither nests inside the other, so nothing else can trip
- * the selectors below.
- */
-const hoverScope = stylex.defaultMarker();
 
 const styles = stylex.create({
   // Zoom the way a design tool does: lay the artboard out once at its native
@@ -899,58 +876,6 @@ const styles = stylex.create({
       ':hover': 'var(--color-background-muted)',
     },
   },
-  // A layer row keeps its lock quiet until the row is the one being pointed
-  // at, so the rail reads as a list of names rather than a grid of buttons.
-  // Opacity rather than display: the row must not change width when the
-  // control arrives, and the button stays in the tab order so the lock is
-  // reachable without a pointer — which is what `:focus-within` shows.
-  //
-  // Hiding is the unconditional default on purpose. The two reveal arms
-  // compile to a doubled class plus `:where(…)`, so they outrank a plain
-  // default; make the hidden state conditional instead and it compiles to the
-  // same specificity in the same layer, where source order decides and the
-  // reveal silently loses.
-  rowAction: {
-    opacity: {
-      default: 0,
-      // A touch row has no hover to reveal on, so it shows the lock outright.
-      '@media (hover: none)': 1,
-      [stylex.when.ancestor(':hover')]: 1,
-      [stylex.when.ancestor(':focus-within')]: 1,
-    },
-    transition: 'opacity 120ms ease',
-  },
-  // A locked layer says so at rest: the state is a property of the layer, not
-  // an action offered on hover.
-  rowActionPinned: {opacity: 1},
-  // The tab close reveals by width, not just opacity. Fading a control that
-  // still occupies its box means the name is permanently short by 20px to
-  // hold room for something usually invisible; collapsing the box hands that
-  // space back to the label at rest and takes it again on hover, so the tab
-  // keeps one width and the name simply truncates a little sooner.
-  tabClose: {
-    width: {
-      default: 0,
-      '@media (hover: none)': 'var(--size-element-sm)',
-      [stylex.when.ancestor(':hover')]: 'var(--size-element-sm)',
-      [stylex.when.ancestor(':focus-within')]: 'var(--size-element-sm)',
-    },
-    opacity: {
-      default: 0,
-      '@media (hover: none)': 1,
-      [stylex.when.ancestor(':hover')]: 1,
-      [stylex.when.ancestor(':focus-within')]: 1,
-    },
-    // The box collapses rather than fades, so it clips its own glyph.
-    overflow: 'hidden',
-    flexShrink: 0,
-    // No transition. Easing a width means the label reflows for the length of
-    // the animation, so the name wobbles every time the pointer crosses a tab
-    // — motion on a hover affordance that is only ever glanced at.
-  },
-  // The active tab keeps its close, the way an open document keeps a way to
-  // be shut without being pointed at first.
-  tabClosePinned: {width: 'var(--size-element-sm)', opacity: 1},
   // Hold the label column at its set width. The fields beside it carry the
   // flex min-width reset, so without this the row spends its shrinkage on
   // whichever item gives way first and each label ends up a different width —
@@ -1274,12 +1199,16 @@ function ItemAction({
   isDisabled,
   onClick,
   xstyle,
+  className,
+  style,
 }: {
   label: string;
   icon: IconType;
   isDisabled?: boolean;
   onClick?: () => void;
   xstyle?: stylex.StyleXStyles;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
     <IconButton
@@ -1294,6 +1223,8 @@ function ItemAction({
       isDisabled={isDisabled}
       onClick={onClick}
       xstyle={[styles.itemAction, xstyle]}
+      className={className}
+      style={style}
     />
   );
 }
@@ -1328,6 +1259,8 @@ function DocumentTab({
   onSelect: () => void;
   onClose: () => void;
 }) {
+  const {getContainerProps, getContentRevealProps} = useContainerReveal();
+
   return (
     <Item
       label={tab.name}
@@ -1335,10 +1268,7 @@ function DocumentTab({
       isSelected={isActive}
       onClick={onSelect}
       aria-current={isActive ? 'true' : undefined}
-      // Scopes the close's reveal to this tab rather than to the whole strip,
-      // exactly as a layer row scopes its lock. It rides on className because
-      // an xstyle marker would be merged after Item's own styles.
-      className={stylex.props(hoverScope).className}
+      {...getContainerProps()}
       startContent={
         <Icon
           icon={tab.icon}
@@ -1351,7 +1281,9 @@ function DocumentTab({
           label={`Close ${tab.name}`}
           icon={X}
           onClick={onClose}
-          xstyle={[styles.tabClose, isActive && styles.tabClosePinned]}
+          {...getContentRevealProps({
+            forceVisibility: isActive ? 'shown' : undefined,
+          })}
         />
       }
       // Both fills land after Item's own, which is what lets the selected one
@@ -1448,10 +1380,10 @@ function ColorPicker({
       </div>
       {/* The hue rail is a real Slider with its track repainted, not a
       hand-rolled one: the rainbow is the only thing about it that is not
-      already a Slider, and `slider-track` is a theming target. Scoped to
-      its own Theme so the nine filter sliders in the same panel keep the
-      plain track they should have. */}
-      <Theme theme={hueTheme}>
+      already a Slider, and `slider-track` is a theming target. The template's
+      one custom theme is mounted narrowly here so the nine filter sliders in
+      the same panel keep the plain track they should have. */}
+      <Theme theme={canvasEditorTheme}>
         <Slider
           label="Hue"
           isLabelHidden
@@ -1574,15 +1506,17 @@ function layerTree(
   selectedID: string,
   onSelect: (id: string) => void,
   onToggleLock: (id: string) => void,
+  reveal: ReturnType<typeof useContainerReveal>,
 ): TreeListItemData[] {
   const row = (layer: Layer): TreeListItemData => ({
     id: layer.id,
     label: layer.name,
     isSelected: layer.id === selectedID,
     onClick: () => onSelect(layer.id),
-    // Marks this row so the lock's hover selector scopes to it rather than to
-    // the whole rail — otherwise every lock in the tree reveals at once.
-    className: stylex.props(hoverScope).className,
+    // The hook owns both sides of the reveal. TreeList forwards the complete
+    // container props to this row, including the inline custom properties that
+    // isolate nested reveal containers.
+    ...reveal.getContainerProps(),
     startContent: (
       <Icon icon={LAYER_ICON[layer.kind]} size={ICON} color="secondary" />
     ),
@@ -1591,7 +1525,9 @@ function layerTree(
         label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
         icon={layer.isLocked ? Lock : LockOpen}
         onClick={() => onToggleLock(layer.id)}
-        xstyle={[styles.rowAction, layer.isLocked && styles.rowActionPinned]}
+        {...reveal.getContentRevealProps({
+          forceVisibility: layer.isLocked ? 'shown' : undefined,
+        })}
       />
     ),
   });
@@ -1745,6 +1681,7 @@ export default function CanvasEditor() {
   const [appearance, setAppearance] = useState<ThemeMode>('system');
   const [tabs, setTabs] = useState(INITIAL_TABS);
   const [activeTab, setActiveTab] = useState(INITIAL_TABS[0].id);
+  const layerReveal = useContainerReveal();
   // Only used to name new tabs, so it counts documents opened rather than
   // documents open — reusing "Untitled 2" after closing one would be worse.
   const untitledCount = useRef(1);
@@ -2156,6 +2093,7 @@ export default function CanvasEditor() {
                                         : l,
                                     ),
                                   ),
+                                layerReveal,
                               )}
                             />
                           ) : (
@@ -2221,7 +2159,7 @@ export default function CanvasEditor() {
                                   styles.artboardFrame,
                                   styles.artboardCentered,
                                 ]}>
-                                <Theme theme={posterTheme} mode="light">
+                                <Theme theme={canvasEditorTheme} mode="light">
                                   <AspectRatio
                                     ratio={FRAME.width / FRAME.height}
                                     fit="cover"

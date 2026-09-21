@@ -11,7 +11,8 @@
  * - /packages/core/src/TreeList/index.ts
  */
 
-import type {ReactNode} from 'react';
+import type {CSSProperties, ReactNode} from 'react';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import type {TreeListVariantMap} from './index';
 
 /** Spacing density for tree list items. */
@@ -63,15 +64,12 @@ export interface TreeListItemData {
   /** Whether the item is initially expanded. Only meaningful for items with children. */
   isExpanded?: boolean;
 
-  /**
-   * Class applied to the item's row element.
-   *
-   * Rows are supplied as data, so nothing else here hands back the row's
-   * element. That matters for StyleX markers: a marker's class is the only way
-   * to scope `stylex.when.ancestor()` to one row, which is what per-row
-   * reveal-on-hover of `endContent` needs. `Item` already accepts `className`
-   * for this, so a list converting to a tree keeps the hook rather than losing
-   * it and having to mark the whole tree.
-   */
+  /** StyleX styles applied to the item's row element. */
+  xstyle?: StyleXStyles;
+
+  /** Class applied to the item's row element. */
   className?: string;
+
+  /** Inline styles applied to the item's row element. */
+  style?: CSSProperties;
 }
