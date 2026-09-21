@@ -4,6 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
+- **[Pull request intents](docs/contributing/pull-requests.md)** — choose one primary intent, its evidence bar, and the matching PR template
 - **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
@@ -85,8 +86,8 @@ pnpm --version   # 11.x.x
 ## Getting Started
 
 ```bash
-# Clone the repo
-git clone https://github.com/facebook/astryx.git
+# Clone without downloading historical file contents up front
+git clone --filter=blob:none https://github.com/facebook/astryx.git
 cd astryx
 
 # Install dependencies

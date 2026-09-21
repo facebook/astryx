@@ -128,9 +128,79 @@ function topicDoc(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
+}
+
+/** Scaffold the package being authored, with no config and no installation. */
+function scaffoldLocalPackage({name = '@acme/local'} = {}) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name, version: '1.0.0'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.integration.mjs'),
+    `export default {
+      components: './components',
+      templates: './templates',
+      docs: './docs',
+      themes: './themes',
+    };\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'components'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'LocalWidget.doc.mjs'),
+    `export default {type: 'component', name: 'LocalWidget', props: []};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'LocalWidget.tsx'),
+    `export function LocalWidget() { return null; }\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'templates'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'templates', 'local-page.template.mjs'),
+    `export default {type: 'page', name: 'Local page', description: 'Local page.'};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'templates', 'local-page.tsx'),
+    `export default function LocalPage() { return null; }\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'docs'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'docs', 'local-guide.doc.mjs'),
+    `export default ${JSON.stringify(
+      topicDoc({name: 'local-guide', title: 'Local guide'}),
+    )};\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+  fs.writeFileSync(
+    path.join(tmpDir, 'themes', 'manifest.json'),
+    JSON.stringify({
+      version: 1,
+      themes: [
+        {
+          slug: 'ocean',
+          displayName: 'Ocean',
+          description: 'Ocean theme.',
+          maintained: true,
+          entry: 'oceanTheme.ts',
+          exportName: 'oceanTheme',
+          files: ['oceanTheme.ts'],
+        },
+      ],
+    }),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+    `export const oceanTheme = {};\n`,
+  );
 }
 
 beforeEach(() => {
@@ -156,6 +226,52 @@ describe('Project.load', () => {
     expect(project.integrations).toEqual([]);
     expect(project.loadedIntegrations).toEqual([]);
     expect(project.cwd).toBe(tmpDir);
+  });
+
+  it('self-resolves the package being authored through every consumer surface', async () => {
+    scaffoldLocalPackage();
+
+    const project = await Project.load(tmpDir);
+
+    expect(project.loadedIntegrations).toHaveLength(1);
+    expect(project.loadedIntegrations[0]).toMatchObject({
+      name: '@acme/local',
+      __local: true,
+    });
+    expect(
+      (await project.components()).some(
+        component =>
+          component.name === 'LocalWidget' &&
+          component.package === '@acme/local',
+      ),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(
+        template =>
+          template.dirName === 'local-page' &&
+          template.package === '@acme/local',
+      ),
+    ).toBe(true);
+    expect((await project.docs()).resolve('local-guide')).toMatchObject({
+      package: '@acme/local',
+    });
+    expect(await project.themes()).toContainEqual(
+      expect.objectContaining({slug: 'ocean', package: '@acme/local'}),
+    );
+  });
+
+  it('prefers local bytes over an installed copy of the same package', async () => {
+    scaffold();
+    scaffoldLocalPackage({name: '@acme/widgets'});
+
+    const project = await Project.load(tmpDir);
+
+    expect(project.loadedIntegrations).toHaveLength(1);
+    expect(project.loadedIntegrations[0].__local).toBe(true);
+    const owned = (await project.components()).filter(
+      component => component.package === '@acme/widgets',
+    );
+    expect(owned.map(component => component.name)).toEqual(['LocalWidget']);
   });
 
   it('exposes the validated config surface and loaded integrations', async () => {
@@ -194,7 +310,9 @@ describe('findConfigPath', () => {
       path.join(tmpDir, 'astryx.config.js'),
       `module.exports = {};\n`,
     );
-    expect(() => findConfigPath(tmpDir)).toThrow(/Multiple Astryx config files/);
+    expect(() => findConfigPath(tmpDir)).toThrow(
+      /Multiple Astryx config files/,
+    );
   });
 });
 
@@ -265,7 +383,9 @@ describe('Project discovery', () => {
     const catalog = await project.docs();
     expect(catalog.resolve('deploying')).toBeUndefined();
     const issues = await project.issues();
-    expect(issues.some(i => i.code === 'invalid_doc' && i.severity === 'error')).toBe(true);
+    expect(
+      issues.some(i => i.code === 'invalid_doc' && i.severity === 'error'),
+    ).toBe(true);
   });
 
   it('keeps regular contributions when agentDocs is invalid', async () => {
@@ -323,8 +443,12 @@ describe('Project forward compatibility', () => {
     const project = await Project.load(tmpDir);
 
     const comps = await project.components();
-    expect(comps.some(c => c.name === 'Widget' && c.package === '@acme/widgets')).toBe(true);
-    expect((await project.templates()).some(t => t.package === '@acme/widgets')).toBe(true);
+    expect(
+      comps.some(c => c.name === 'Widget' && c.package === '@acme/widgets'),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(t => t.package === '@acme/widgets'),
+    ).toBe(true);
     const {integration} = await project.codemods('0.1.0', '0.2.0');
     expect(integration).toHaveLength(1);
 
@@ -376,7 +500,9 @@ describe('Project issues (skip + warn)', () => {
     const b = await project.issues();
     expect(a).toEqual(b);
     // No duplicate (package, code, message) tuples.
-    const seen = new Set(a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`));
+    const seen = new Set(
+      a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`),
+    );
     expect(seen.size).toBe(a.length);
   });
 

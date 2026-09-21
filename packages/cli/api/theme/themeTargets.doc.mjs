@@ -16,15 +16,25 @@ export const doc = {
   summary: 'List every component theming target a theme can override.',
   description:
     'Enumerates the whole themeable surface: each `defineTheme` components key, the stable ' +
-    'class it paints, the component that declares it, and the props and states that are legal ' +
-    'override keys under it. Same source as the Theming table `astryx component <Name>` prints ' +
+    'class it paints, the component that declares it, the props and states that are legal ' +
+    'override keys under it, and the canonical replacement when a listed target is deprecated. ' +
+    'Same source as the Theming table `astryx component <Name>` prints ' +
     '(the component docs), so the list cannot drift from the components, and `theme build` ' +
     'validates overrides against this exact set. A filter naming a component gives that ' +
-    'component\'s set; anything else is a substring search over the keys.',
+    "component's set; anything else is a substring search over the keys.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeTargets(filter?: string, ctx?: {cwd?: string}): Promise<ThemeTargetsResponse>',
-  keywords: ['theme', 'targets', 'defineTheme', 'components', 'override', 'class', 'states', 'audit'],
+  keywords: [
+    'theme',
+    'targets',
+    'defineTheme',
+    'components',
+    'override',
+    'class',
+    'states',
+    'audit',
+  ],
   params: [
     {
       name: 'filter',
@@ -35,18 +45,22 @@ export const doc = {
     {
       name: 'ctx.cwd',
       type: 'string',
-      description: 'Directory the project\'s @astryxdesign/core is resolved from.',
+      description:
+        "Directory the project's @astryxdesign/core is resolved from.",
     },
   ],
   returns: [
     {
       type: 'theme.targets',
       description:
-        'The echoed filter, how many components are represented, and the targets: each {key, className, component, props, states}.',
+        'The echoed filter, how many components are represented, and the targets: each {key, className, component, props, states, deprecatedFor?}.',
     },
   ],
   throws: [
-    {code: 'ERR_CORE_NOT_FOUND', when: '@astryxdesign/core cannot be resolved from cwd'},
+    {
+      code: 'ERR_CORE_NOT_FOUND',
+      when: '@astryxdesign/core cannot be resolved from cwd',
+    },
     {code: 'ERR_UNKNOWN_COMPONENT', when: 'a filter matches no target'},
   ],
   examples: [

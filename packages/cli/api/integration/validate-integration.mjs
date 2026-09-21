@@ -33,6 +33,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
   findManifestPaths,
@@ -44,6 +45,7 @@ import {
 import {
   validateLoadedIntegration,
   issueError as error,
+  issueWarning as warning,
 } from '../../foundation/integrations/validate-contributions.mjs';
 
 export {validateLoadedIntegration};
@@ -78,14 +80,200 @@ function findNearestPackageJson(cwd) {
   }
 }
 
+const UNREACHABLE_SCAN_LIMIT = 5_000;
+const UNREACHABLE_SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'coverage',
+  '.next',
+  'out',
+]);
+const DOC_CANDIDATE_RE = /\.doc\.(?:ts|mjs|js)$/u;
+const TEMPLATE_CANDIDATE_RE = /\.template\.(?:ts|mjs|js)$/u;
+const STATIC_DOC_TYPES = new Set(['component', 'generic', 'page', 'block']);
+const STATIC_TEMPLATE_TYPES = new Set(['page', 'block']);
+const j = jscodeshift.withParser('tsx');
+
+/** @param {any} node @returns {any} */
+function unwrapStaticExpression(node) {
+  let current = node;
+  while (
+    current &&
+    [
+      'TSSatisfiesExpression',
+      'TSAsExpression',
+      'TypeCastExpression',
+      'ParenthesizedExpression',
+    ].includes(current.type)
+  ) {
+    current = current.expression;
+  }
+  if (current?.type === 'CallExpression' && current.arguments.length > 0) {
+    current = unwrapStaticExpression(current.arguments[0]);
+  }
+  return current;
+}
+
+/** @param {any} property @param {string} name */
+function staticPropertyNamed(property, name) {
+  if (
+    !property ||
+    !['ObjectProperty', 'Property'].includes(property.type) ||
+    property.computed
+  ) {
+    return false;
+  }
+  return (
+    (property.key?.type === 'Identifier' && property.key.name === name) ||
+    (['Literal', 'StringLiteral'].includes(property.key?.type) &&
+      property.key.value === name)
+  );
+}
+
+/**
+ * Identify contribution metadata without importing it. Doctor scans files that
+ * the manifest does not declare, so executing those files would run code the
+ * package never asked Astryx to load.
+ *
+ * @param {string} file
+ * @param {boolean} templateOnly
+ */
+function isStaticContributionMetadata(file, templateOnly) {
+  let ast;
+  try {
+    ast = j(fs.readFileSync(file, 'utf-8'));
+  } catch {
+    return false;
+  }
+  /** @type {any[]} */
+  const candidates = [];
+  ast
+    .find(j.ExportDefaultDeclaration)
+    .forEach((/** @type {any} */ exportPath) => {
+      candidates.push(exportPath.value.declaration);
+    });
+  ast
+    .find(j.ExportNamedDeclaration)
+    .forEach((/** @type {any} */ exportPath) => {
+      const declaration = exportPath.value.declaration;
+      if (declaration?.type !== 'VariableDeclaration') return;
+      for (const declarator of declaration.declarations) {
+        if (
+          declarator.id?.type === 'Identifier' &&
+          declarator.id.name === 'docs'
+        ) {
+          candidates.push(declarator.init);
+        }
+      }
+    });
+
+  const allowedTypes = templateOnly ? STATIC_TEMPLATE_TYPES : STATIC_DOC_TYPES;
+  for (const candidate of candidates) {
+    const object = unwrapStaticExpression(candidate);
+    if (object?.type !== 'ObjectExpression') continue;
+    const typeProperty = object.properties.find((/** @type {any} */ property) =>
+      staticPropertyNamed(property, 'type'),
+    );
+    const value = unwrapStaticExpression(typeProperty?.value);
+    if (
+      ['Literal', 'StringLiteral'].includes(value?.type) &&
+      allowedTypes.has(value.value)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** @param {string} candidate @param {string} root */
+function pathIsInside(candidate, root) {
+  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+}
+
+/**
+ * Find real contribution metadata that sits outside every declared root. The
+ * scan is local-authoring-only, skips dependency/build output, never follows
+ * symlinks, and parses candidates before reporting them so ordinary JS files do
+ * not become noise.
+ *
+ * @param {string} packageDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {Promise<Issue[]>}
+ */
+async function findUnreachableContributionIssues(packageDir, loaded) {
+  const roots = /** @type {string[]} */ (
+    [
+      loaded.components,
+      loaded.templates,
+      loaded.codemods,
+      loaded.docs,
+      loaded.themes,
+    ].filter(Boolean)
+  );
+  /** @type {Issue[]} */
+  const issues = [];
+  let scanned = 0;
+  let truncated = false;
+
+  /** @param {string} dir */
+  async function walk(dir) {
+    if (roots.some(root => pathIsInside(dir, root))) return;
+    const entries = fs
+      .readdirSync(dir, {withFileTypes: true})
+      .sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      if (truncated) return;
+      if (UNREACHABLE_SKIP_DIRS.has(entry.name)) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      scanned += 1;
+      if (scanned > UNREACHABLE_SCAN_LIMIT) {
+        truncated = true;
+        return;
+      }
+      const isTemplate = TEMPLATE_CANDIDATE_RE.test(entry.name);
+      if (!isTemplate && !DOC_CANDIDATE_RE.test(entry.name)) continue;
+      if (!isStaticContributionMetadata(full, isTemplate)) continue;
+      issues.push(
+        warning(
+          'unreachable_contribution',
+          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. Move it under the matching root or update the manifest root.`,
+        ),
+      );
+    }
+  }
+
+  await walk(packageDir);
+  if (truncated) {
+    issues.push(
+      warning(
+        'unreachable_scan_truncated',
+        `Stopped unreachable-contribution scanning after ${UNREACHABLE_SCAN_LIMIT} files. Narrow the package or move generated output under dist/build.`,
+      ),
+    );
+  }
+  return issues;
+}
+
 /**
  * Validate a single integration given its package directory and identity.
  * Shared core for the local and installed entry points.
  * @param {string} packageDir
  * @param {{name: string, version?: string}} identity
+ * @param {{scanUnreachable?: boolean}} [options]
  * @returns {Promise<ValidateResult>}
  */
-async function validateAtPackageDir(packageDir, identity) {
+async function validateAtPackageDir(
+  packageDir,
+  identity,
+  {scanUnreachable = false} = {},
+) {
   /** @type {Issue[]} */
   const issues = [];
   /** @type {ValidateResult} */
@@ -164,6 +352,7 @@ async function validateAtPackageDir(packageDir, identity) {
     templates: resolveRoot(manifest.templates),
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
+    themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
     __agentDocsError: agentDocsError,
@@ -177,6 +366,11 @@ async function validateAtPackageDir(packageDir, identity) {
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
+  if (scanUnreachable) {
+    issues.push(
+      ...(await findUnreachableContributionIssues(packageDir, loaded)),
+    );
+  }
 
   return result;
 }
@@ -202,17 +396,30 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   }
 
   /** @type {{name?: string, version?: string}} */
-  let pkg = {};
+  let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  } catch {
-    // Identity falls back to undefined; the manifest checks still run.
+  } catch (err) {
+    return {
+      found: true,
+      manifestFile: manifests[0],
+      issues: [
+        error(
+          'invalid_package_json',
+          `Could not parse ${pkgJsonPath}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      ],
+    };
   }
 
-  return validateAtPackageDir(packageDir, {
-    name: pkg.name ?? '(local package)',
-    version: pkg.version,
-  });
+  return validateAtPackageDir(
+    packageDir,
+    {
+      name: pkg.name ?? '(local package)',
+      version: pkg.version,
+    },
+    {scanUnreachable: true},
+  );
 }
 
 /**
@@ -244,15 +451,18 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  } catch {
+  } catch (err) {
+    const exists = fs.existsSync(pkgJsonPath);
     return {
       found: true,
       name: spec,
       version: undefined,
       issues: [
         error(
-          'package_not_found',
-          `Could not find installed integration package "${spec}" at ${pkgJsonPath}. Install it first.`,
+          exists ? 'invalid_package_json' : 'package_not_found',
+          exists
+            ? `Could not parse ${pkgJsonPath}: ${err instanceof Error ? err.message : String(err)}`
+            : `Could not find installed integration package "${spec}" at ${pkgJsonPath}. Install it first.`,
         ),
       ],
     };

@@ -70,6 +70,7 @@ export const integrationBaseSchema = z.object({
   templates: z.string().optional(),
   codemods: z.string().optional(),
   docs: z.string().optional(),
+  themes: z.string().optional(),
   issuesUrl: z.string().url().optional(),
 });
 

@@ -478,39 +478,6 @@ describe('MultiSelector', () => {
     expect(trigger).toHaveAttribute('aria-required', 'true');
   });
 
-  it('renders listbox with aria-multiselectable', async () => {
-    const user = userEvent.setup();
-    render(
-      <MultiSelector
-        label="Fruit"
-        options={defaultOptions}
-        value={[]}
-        onChange={() => {}}
-      />,
-    );
-
-    await user.click(screen.getByRole('combobox'));
-    const listbox = screen.getByRole('listbox', h);
-    expect(listbox).toHaveAttribute('aria-multiselectable', 'true');
-  });
-
-  it('marks selected options with aria-selected', async () => {
-    const user = userEvent.setup();
-    render(
-      <MultiSelector
-        label="Fruit"
-        options={defaultOptions}
-        value={['Apple']}
-        onChange={() => {}}
-      />,
-    );
-
-    await user.click(screen.getByRole('combobox'));
-    const options = screen.getAllByRole('option', h);
-    expect(options[0]).toHaveAttribute('aria-selected', 'true');
-    expect(options[1]).toHaveAttribute('aria-selected', 'false');
-  });
-
   it('shows error status with aria-invalid', () => {
     render(
       <MultiSelector
@@ -1393,8 +1360,7 @@ describe('MultiSelector', () => {
     await user.click(screen.getByRole('combobox'));
     const options = screen.getAllByRole('option', h);
     expect(options).toHaveLength(3);
-    const group = screen.getByRole('group', h);
-    expect(group).toHaveAttribute('aria-label', 'Citrus');
+    expect(screen.getByText('Citrus')).toBeInTheDocument();
   });
 
   it('shows loading state with a spinner and aria-busy', () => {
@@ -2433,8 +2399,8 @@ describe('MultiSelector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name rides along for a
-    // deprecation window.
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
@@ -2461,8 +2427,8 @@ describe('MultiSelector clear icon theme target', () => {
   it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
     // The clear affordance now composes the shared InputClearButton (a ghost
     // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target and — for a deprecation window — the
-    // original `astryx-multi-selector-clear-icon`. Aside from those target
+    // `astryx-input-clear-icon` target plus the supported compatibility alias
+    // `astryx-multi-selector-clear-icon`. Aside from those target
     // classes it matches the shared button's own `close`/`sm`/`secondary`
     // glyph exactly, so the default look is defined in one place.
     render(

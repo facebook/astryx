@@ -6,7 +6,7 @@
  * Integrations are PACKAGE NAMES listed in astryx.config.{ts,mjs,js}. Each
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
- * components/templates/codemods/docs roots and an optional issuesUrl. Identity
+ * components/templates/codemods/docs/themes roots and an optional issuesUrl. Identity
  * (name, version) comes from the package's package.json, not the manifest.
  */
 
@@ -22,11 +22,12 @@ import {
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
+import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
- * the package's package.json; the `components`/`templates`/`codemods`/`docs`
- * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
+ * the package's package.json; the `components`/`templates`/`codemods`/`docs`/
+ * `themes` roots are absolute paths resolved from the manifest. The `__`-prefixed fields
  * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
@@ -35,6 +36,7 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {string} [templates]
  * @property {string} [codemods]
  * @property {string} [docs]
+ * @property {string} [themes]
  * @property {string} [issuesUrl]
  * @property {{append?: readonly string[]}} [agentDocs]
  * @property {string} [__agentDocsError] contribution-specific validation
@@ -52,12 +54,17 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {boolean} [__autolinked] loaded because the project declares the
  *   package as a dependency and it ships a manifest, with no astryx.config
  *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {boolean} [__local] loaded from the package containing the current
+ *   working directory, so an author sees the exact bytes they are editing
  * @property {string} [__dependencyField] for an autolinked integration, the
  *   package.json field that declared it (`dependencies`, `devDependencies`,
  *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
- *   Not a manifest key — see {@link loadManifest}.
+ * @property {import('../../authoring/gap-report/type').GapReportHandler} [__gapReport]
+ *   validated package-owned handler from the `gapReport` NAMED export.
+ * @property {string} [__gapReportError] isolated named-handler validation error.
+ *   Named exports are not manifest keys — see {@link loadManifest}.
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -79,6 +86,29 @@ export function findManifestPaths(dir) {
 }
 
 /**
+ * Parse the optional named gap-report handler without making it part of the
+ * default manifest schema. A malformed handler is isolated from every other
+ * integration contribution and represented as a failed delivery at fan-out.
+ *
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {{handler?: import('../../authoring/gap-report/type').GapReportHandler, error?: string}}
+ */
+function parseGapReportHandlerExport(value, label) {
+  if (value === undefined) return {};
+  try {
+    return {
+      handler: parseGapReportHandler(
+        value,
+        `${label} named export "gapReport"`,
+      ),
+    };
+  } catch (error) {
+    return {error: error instanceof Error ? error.message : String(error)};
+  }
+}
+
+/**
  * Load and validate a manifest module's default export, while isolating the
  * optional `agentDocs` contribution from the manifest's other fields.
  *
@@ -88,13 +118,13 @@ export function findManifestPaths(dir) {
  * The raw object is also inspected before parsing so unknown-key warnings retain
  * forward compatibility.
  *
- * `debug` comes back separately because it is a named export, not a manifest
- * key. A CLI that does not know it simply does not read it.
+ * `debug` and `gapReport` come back separately because they are named exports,
+ * not manifest keys. A CLI that does not know them simply does not read them.
  *
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, agentDocsError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, agentDocsError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -104,6 +134,7 @@ export async function loadManifest(
   const mod = await importUserModule(file, {fresh});
   const raw = mod?.default;
   const baseManifest = parseIntegrationBase(raw, label);
+  const gapReport = parseGapReportHandlerExport(mod?.gapReport, label);
   const hasAgentDocs =
     raw != null &&
     typeof raw === 'object' &&
@@ -136,6 +167,8 @@ export async function loadManifest(
             mod.debug
           )
         : undefined,
+    gapReport: gapReport.handler,
+    gapReportError: gapReport.error,
     agentDocsError,
   };
 }
@@ -181,7 +214,9 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
   const nodeModules = path.resolve(cwd, 'node_modules');
   const dir = path.resolve(nodeModules, ...packageName.split('/'));
   if (dir !== nodeModules && !dir.startsWith(nodeModules + path.sep)) {
-    throw new Error(`Integration "${packageName}" resolves outside node_modules.`);
+    throw new Error(
+      `Integration "${packageName}" resolves outside node_modules.`,
+    );
   }
   return dir;
 }
@@ -208,6 +243,102 @@ function resolveManifestPath(packageDir, spec) {
     );
   }
   return present[0];
+}
+
+/**
+ * Load the integration package rooted at `packageDir` directly, without first
+ * installing or publishing it. This is the self-resolution seam: an author in
+ * a package with a manifest sees the same contributions a consumer installs.
+ *
+ * A missing manifest returns null. A broken manifest returns the same load-error
+ * marker as an installed integration, so Project issues stay truthful.
+ *
+ * @param {string} packageDir
+ * @param {{fresh?: boolean}} [options]
+ * @returns {Promise<LoadedIntegration|null>}
+ */
+export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
+  const manifests = findManifestPaths(packageDir);
+  if (manifests.length === 0) return null;
+
+  const pkgPath = path.join(packageDir, 'package.json');
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  } catch {
+    throw new Error(
+      `Could not read the local integration package at ${pkgPath}.`,
+    );
+  }
+  const spec =
+    typeof pkg.name === 'string' && pkg.name.length > 0
+      ? pkg.name
+      : '(local integration)';
+  const manifestFile = resolveManifestPath(packageDir, spec);
+
+  let manifest;
+  /** @type {string[]} */
+  let unknownKeys;
+  /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
+  let debugHandler;
+  /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
+  let gapReportHandler;
+  /** @type {string | undefined} */
+  let gapReportError;
+  /** @type {string | undefined} */
+  let agentDocsError;
+  try {
+    ({
+      manifest,
+      unknownKeys,
+      debug: debugHandler,
+      gapReport: gapReportHandler,
+      gapReportError,
+      agentDocsError,
+    } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
+  } catch (err) {
+    return {
+      name: spec,
+      version: pkg.version,
+      __spec: spec,
+      __packageDir: packageDir,
+      __manifestFile: manifestFile,
+      __loadError: err instanceof Error ? err.message : String(err),
+      __local: true,
+    };
+  }
+
+  /** @param {string | null | undefined} value */
+  const resolveRoot = value => {
+    if (value == null) return undefined;
+    try {
+      return assertWithin(value, packageDir, {label: 'contribution root'});
+    } catch {
+      return undefined;
+    }
+  };
+
+  return {
+    name: spec,
+    version: pkg.version,
+    components: resolveRoot(manifest.components),
+    templates: resolveRoot(manifest.templates),
+    codemods: resolveRoot(manifest.codemods),
+    docs: resolveRoot(manifest.docs),
+    themes: resolveRoot(manifest.themes),
+    issuesUrl: manifest.issuesUrl,
+    agentDocs: manifest.agentDocs,
+    __agentDocsError: agentDocsError,
+    __unknownKeys: unknownKeys,
+    __debug: debugHandler,
+    __gapReport: gapReportHandler,
+    __gapReportError: gapReportError,
+    __spec: spec,
+    __packageDir: packageDir,
+    __packageExports: pkg.exports ?? null,
+    __manifestFile: manifestFile,
+    __local: true,
+  };
 }
 
 /**
@@ -246,6 +377,10 @@ export async function loadIntegrations(
     let unknownKeys;
     /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
     let debugHandler;
+    /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
+    let gapReportHandler;
+    /** @type {string | undefined} */
+    let gapReportError;
     /** @type {string | undefined} */
     let agentDocsError;
     try {
@@ -253,6 +388,8 @@ export async function loadIntegrations(
         manifest,
         unknownKeys,
         debug: debugHandler,
+        gapReport: gapReportHandler,
+        gapReportError,
         agentDocsError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
@@ -289,11 +426,14 @@ export async function loadIntegrations(
       templates: resolveRoot(manifest.templates),
       codemods: resolveRoot(manifest.codemods),
       docs: resolveRoot(manifest.docs),
+      themes: resolveRoot(manifest.themes),
       issuesUrl: manifest.issuesUrl,
       agentDocs: manifest.agentDocs,
       __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,
+      __gapReport: gapReportHandler,
+      __gapReportError: gapReportError,
       __spec: spec,
       __packageDir: packageDir,
       __packageExports: pkg.exports ?? null,

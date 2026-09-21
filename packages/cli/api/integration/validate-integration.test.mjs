@@ -33,13 +33,19 @@ afterEach(() => {
  * @param {string} dir
  * @param {{name?: string, version?: string, manifest: string, manifestExt?: string}} opts
  */
-function writePackage(dir, {name = '@acme/widgets', version = '1.0.0', manifest, manifestExt = 'mjs'}) {
+function writePackage(
+  dir,
+  {name = '@acme/widgets', version = '1.0.0', manifest, manifestExt = 'mjs'},
+) {
   fs.mkdirSync(dir, {recursive: true});
   fs.writeFileSync(
     path.join(dir, 'package.json'),
     JSON.stringify({name, version}),
   );
-  fs.writeFileSync(path.join(dir, `astryx.integration.${manifestExt}`), manifest);
+  fs.writeFileSync(
+    path.join(dir, `astryx.integration.${manifestExt}`),
+    manifest,
+  );
 }
 
 /** Find issues by code. */
@@ -116,7 +122,10 @@ describe('validate-integration API', () => {
   it('flags multiple manifests as multiple_manifests error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {manifest: `export default {};\n`});
-    fs.writeFileSync(path.join(pkgDir, 'astryx.integration.js'), 'export default {};\n');
+    fs.writeFileSync(
+      path.join(pkgDir, 'astryx.integration.js'),
+      'export default {};\n',
+    );
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'multiple_manifests')).toHaveLength(1);
   });
@@ -169,7 +178,10 @@ describe('validate-integration API', () => {
     const cmDir = path.join(pkgDir, 'codemods', '0.2.0');
     fs.mkdirSync(cmDir, {recursive: true});
     // Missing default export → discovery throws → invalid_codemod.
-    fs.writeFileSync(path.join(cmDir, 'broken.mjs'), `export const nope = 1;\n`);
+    fs.writeFileSync(
+      path.join(cmDir, 'broken.mjs'),
+      `export const nope = 1;\n`,
+    );
 
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_codemod')).toHaveLength(1);
@@ -192,6 +204,157 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_template')).toHaveLength(1);
   });
 
+  it('reports no errors for a valid source-theme catalog', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { themes: './themes' };\n`,
+    });
+    const themeDir = path.join(pkgDir, 'themes', 'ocean');
+    fs.mkdirSync(themeDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'themes', 'manifest.json'),
+      JSON.stringify({
+        version: 1,
+        themes: [
+          {
+            slug: 'ocean',
+            displayName: 'Ocean',
+            description: 'Blue and calm.',
+            maintained: true,
+            entry: 'oceanTheme.ts',
+            exportName: 'oceanTheme',
+            files: ['oceanTheme.ts'],
+          },
+        ],
+      }),
+    );
+    fs.writeFileSync(
+      path.join(themeDir, 'oceanTheme.ts'),
+      `export const oceanTheme = {};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_theme')).toHaveLength(0);
+    expect(summarizeIssues(result.issues).errors).toBe(0);
+  });
+
+  it('flags an unreadable source-theme catalog as invalid_theme', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { themes: './themes' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'themes'), {recursive: true});
+    fs.writeFileSync(path.join(pkgDir, 'themes', 'manifest.json'), '{not-json');
+
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_theme')).toHaveLength(1);
+  });
+
+  it('warns when a component source has no same-stem metadata', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { components: './components' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+    fs.writeFileSync(
+      path.join(pkgDir, 'components', 'InvisibleWidget.tsx'),
+      'export function InvisibleWidget() { return null; }\n',
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'source_without_component_doc')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        message: expect.stringContaining('InvisibleWidget.doc.mjs'),
+      }),
+    ]);
+  });
+
+  it('reports codemods outside semver folders and invalid folder names', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { codemods: './codemods' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'codemods', 'v1'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'codemods', 'forgotten.mjs'),
+      `export default {type: 'code', title: 'Forgotten', transform: file => file.source};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'codemod_outside_version')).toHaveLength(1);
+    expect(byCode(result.issues, 'invalid_codemod_version')).toHaveLength(1);
+  });
+
+  it('warns about valid contribution metadata outside every declared root', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {manifest: 'export default {};\n'});
+    fs.mkdirSync(path.join(pkgDir, 'src'));
+    fs.writeFileSync(
+      path.join(pkgDir, 'src', 'orphan.doc.mjs'),
+      `export default ${JSON.stringify({
+        type: 'generic',
+        name: 'orphan',
+        title: 'Orphan',
+        description: 'Outside every root.',
+        sections: [
+          {title: 'Overview', content: [{type: 'prose', text: 'Orphan.'}]},
+        ],
+      })};\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'src', 'not-a-doc.doc.mjs'),
+      'export default {nope: true};\n',
+    );
+    fs.mkdirSync(path.join(pkgDir, 'dist'));
+    fs.writeFileSync(
+      path.join(pkgDir, 'dist', 'built.doc.mjs'),
+      `export default ${JSON.stringify({
+        type: 'generic',
+        name: 'built',
+        title: 'Built',
+        description: 'Generated output.',
+        sections: [
+          {title: 'Overview', content: [{type: 'prose', text: 'Built.'}]},
+        ],
+      })};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    const unreachable = byCode(result.issues, 'unreachable_contribution');
+    expect(unreachable).toHaveLength(1);
+    expect(unreachable[0].message).toContain('src/orphan.doc.mjs');
+  });
+
+  it('never executes unreachable metadata while diagnosing it', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    const marker = path.join(tmpDir, 'executed');
+    writePackage(pkgDir, {manifest: 'export default {};\n'});
+    fs.mkdirSync(path.join(pkgDir, 'src'));
+    fs.writeFileSync(
+      path.join(pkgDir, 'src', 'danger.doc.mjs'),
+      `import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(marker)}, 'ran');\nexport default {type: 'generic', name: 'danger', title: 'Danger', description: 'Static only.', sections: []};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'unreachable_contribution')).toHaveLength(1);
+    expect(fs.existsSync(marker)).toBe(false);
+  });
+
+  it('reports malformed local package.json instead of losing package identity', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {manifest: 'export default {};\n'});
+    fs.writeFileSync(path.join(pkgDir, 'package.json'), '{bad-json');
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_package_json')).toHaveLength(1);
+  });
+
   it('validates an installed package resolved from node_modules', async () => {
     const consumer = path.join(tmpDir, 'consumer');
     fs.mkdirSync(consumer, {recursive: true});
@@ -206,7 +369,10 @@ describe('validate-integration API', () => {
       manifest: `export default { templates: './gone' };\n`,
     });
 
-    const result = await validateInstalledIntegration('@acme/widgets', consumer);
+    const result = await validateInstalledIntegration(
+      '@acme/widgets',
+      consumer,
+    );
     expect(result.found).toBe(true);
     expect(result.name).toBe('@acme/widgets');
     expect(result.version).toBe('2.0.0');
@@ -222,6 +388,24 @@ describe('validate-integration API', () => {
     );
     const result = await validateInstalledIntegration('@acme/nope', consumer);
     expect(byCode(result.issues, 'package_not_found')).toHaveLength(1);
+  });
+
+  it('reports malformed installed package.json distinctly from not found', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    const pkgDir = path.join(consumer, 'node_modules', '@acme', 'widgets');
+    writePackage(pkgDir, {
+      name: '@acme/widgets',
+      manifest: 'export default {};\n',
+    });
+    fs.writeFileSync(path.join(pkgDir, 'package.json'), '{bad-json');
+
+    const result = await validateInstalledIntegration(
+      '@acme/widgets',
+      consumer,
+    );
+
+    expect(byCode(result.issues, 'invalid_package_json')).toHaveLength(1);
+    expect(byCode(result.issues, 'package_not_found')).toHaveLength(0);
   });
 
   it('reports no errors for a valid component (doc + same-stem source)', async () => {

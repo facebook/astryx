@@ -42,6 +42,17 @@ deciding_specs: []
 
 # Layer runtime
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["INV2", "INV5", "INV6", "INV7"]
+  }
+}
+```
+
 This record describes the layer runtime shipped on current `main`. Accepted but
 unimplemented changes live in `spec:AST-003`; they are not current architecture.
 

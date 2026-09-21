@@ -1,10 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  expectTypeOf,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import type {ComponentProps, ReactNode} from 'react';
 import {Markdown} from './Markdown';
-import type {MarkdownInlinePlugin} from './Markdown';
+import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
@@ -69,6 +78,17 @@ describe('Markdown', () => {
         expect(target!.tagName).toMatch(/^H[1-6]$/);
         expect(target!.textContent?.trim()).toBe(item.label);
       }
+    });
+
+    it('keeps citation markers out of released heading ids', () => {
+      render(
+        <Markdown sources={{cite: {title: 'Citation'}}}>
+          {'# Before [cite] after'}
+        </Markdown>,
+      );
+      expect(
+        screen.getByRole('heading', {name: /Before.*after/}),
+      ).toHaveAttribute('id', 'before-after');
     });
 
     it('passes the generated id to a custom heading component', () => {
@@ -615,6 +635,53 @@ describe('Markdown', () => {
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
   });
+
+  it('preserves dollar-delimited text when no math renderer is supplied', () => {
+    const {container} = render(
+      <Markdown>{'Total $5 and formula $x_1 + *y*$.'}</Markdown>,
+    );
+    expect(container.textContent).toBe('Total $5 and formula $x_1 + y$.');
+    expect(container.querySelector('em')).toHaveTextContent('y');
+    expect(container.querySelector('[role="math"]')).toBeNull();
+  });
+
+  it('passes inline and display expressions to the custom math renderer', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    function MathRenderer({value, display}: MathRendererProps) {
+      const Tag = display === 'block' ? 'div' : 'span';
+      return (
+        <Tag
+          role="math"
+          aria-label={`Formula: ${value}`}
+          data-testid={`${display}-math`}>
+          {value}
+        </Tag>
+      );
+    }
+
+    render(
+      <Markdown components={{math: MathRenderer}}>
+        {'Inline $x_1 + *y*$ here.\n\n$$\n\\sum_i x_i\n$$'}
+      </Markdown>,
+    );
+
+    expect(screen.getByTestId('inline-math')).toHaveTextContent('x_1 + *y*');
+    expect(screen.getByTestId('block-math')).toHaveTextContent('\\sum_i x_i');
+    expect(screen.getAllByRole('math')).toHaveLength(2);
+  });
+
+  it('exports the math renderer and parser option types', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    expectTypeOf<MathRendererProps>().toEqualTypeOf<{
+      value: string;
+      display: 'inline' | 'block';
+    }>();
+    expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -665,6 +732,54 @@ describe('inlinePlugins', () => {
       'https://issues.example.com/browse/PROJ-123',
     );
     expect(link!.textContent).toBe('PROJ-123');
+  });
+
+  it('autolinks generic prefixed-number entities without rewriting source', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const {container} = render(
+      <Markdown inlinePlugins={[entityPlugin]}>
+        {'See DOC-2048, but keep `DOC-9999` literal.'}
+      </Markdown>,
+    );
+    const link = screen.getByTestId('entity-link');
+    expect(link).toHaveAttribute('href', '/entities/DOC-2048');
+    expect(link).toHaveTextContent('DOC-2048');
+    expect(container.querySelector('code')).toHaveTextContent('DOC-9999');
+    expect(
+      container.querySelectorAll('[data-testid="entity-link"]'),
+    ).toHaveLength(1);
+  });
+
+  it('keeps math opaque to entity plugins while transforming surrounding prose', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b(DOC-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const MathRenderer: NonNullable<MarkdownComponents['math']> = ({value}) => (
+      <span role="math">{value}</span>
+    );
+    render(
+      <Markdown
+        components={{math: MathRenderer}}
+        inlinePlugins={[entityPlugin]}>
+        {'DOC-1 and $DOC-2 + x$ and `DOC-3`'}
+      </Markdown>,
+    );
+    expect(screen.getAllByTestId('entity-link')).toHaveLength(1);
+    expect(screen.getByTestId('entity-link')).toHaveTextContent('DOC-1');
+    expect(screen.getByRole('math')).toHaveTextContent('DOC-2 + x');
+    expect(screen.getByText('DOC-3').tagName).toBe('CODE');
   });
 
   it('supports multiple plugins', () => {

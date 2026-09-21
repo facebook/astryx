@@ -11,6 +11,11 @@
  * never pre-formatted command strings. All CLI prefixing (formatCliCommand /
  * getCliInvocation) and the section prose live in the command renderer, so the
  * JSON shape stays package-manager-agnostic and stable across environments.
+ *
+ * The one adjustment it makes is on a page's `command`: when the top page is
+ * not a direct match the kit appends `--skeleton`, so the field agrees with
+ * the recommendation the kit itself computed. That is still not prefixing —
+ * the invocation stays the renderer's job.
  */
 
 import {search} from '../../search/search.mjs';
@@ -132,6 +137,31 @@ export async function buildKit(query, options = {}) {
     .slice(0, 6);
   const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
 
+  /**
+   * On a loose match, recommend reading the layout rather than scaffolding it.
+   *
+   * A page entry's `command` is what a caller runs next, and it was always the
+   * scaffold command — `template <name>` — even when the kit had just decided
+   * the top page was NOT a direct match. The renderer already says the right
+   * thing to a human in that case: RECOMMENDED START prints
+   * `template <name> --skeleton` and the PAGE TEMPLATES heading reads "use as
+   * a layout reference". But prose is not what a program reads. A JSON caller
+   * takes `command` and gets the scaffold, so the two audiences were given
+   * opposite advice from the same kit.
+   *
+   * That matters most for the caller least able to notice. `template <name>`
+   * emits the whole page, and an agent handed a full template it did not quite
+   * ask for tends to adapt it anyway — which is how a request for one thing
+   * comes back as a competent version of another. `--skeleton` gives the
+   * layout without the invitation.
+   *
+   * Copied rather than mutated: these entries come from `search()` and are not
+   * this function's to modify.
+   */
+  const recommendedPages = directMatch
+    ? pages
+    : pages.map(page => ({...page, command: `${page.command} --skeleton`}));
+
   // What to try when the kit comes back thin. Keyword search over a design
   // system misses in a predictable way — the reader's words and the package's
   // often do not overlap — so name the two commands that browse rather than
@@ -160,7 +190,7 @@ export async function buildKit(query, options = {}) {
       hasResults: matchCount > 0,
       matchCount,
       directMatch,
-      pages,
+      pages: recommendedPages,
       blocks,
       domain,
       frame: FRAME,

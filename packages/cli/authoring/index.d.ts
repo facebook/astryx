@@ -34,6 +34,14 @@ export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (v
 export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
 export type {DebugEvent} from './debug/type'; //          one recorded CLI run
 export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
+export type {
+  GapReportHandler,
+  GapReportHandlerContext,
+  GapReport,
+  GapReportCategory,
+  GapReportTarget,
+  GapReportHandlerReceipt,
+} from './gap-report/type'; // gap-report handler contract
 export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type'; // codemods/*
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -51,6 +59,10 @@ export {parseEnum} from './doctypes/enum/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
+export {
+  parseGapReportHandler,
+  parseGapReportReceipt,
+} from './gap-report/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
 export {parseDebugEvent} from './debug/parse.mjs';
 

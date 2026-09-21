@@ -49,8 +49,8 @@ e2e/playwright/.cache/
 internal/vibe-tests/results/
 internal/vibe-tests/.fixture-runs/
 
-# Astryx agent docs (generated)
-.astryx-docs/
+# Astryx agent docs and test scratch directories (generated)
+.astryx-*/
 apps/sandbox/.next/
 apps/sandbox/out/
 apps/sandbox/next-env.d.ts

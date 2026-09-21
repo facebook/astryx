@@ -49,17 +49,18 @@ Every knowledge record declares `authority: draft | current | archived`.
 - `draft` documents are not policy; unresolved evidence and owner decisions are
   recorded as blockers inside the document.
 - Initial promotion to `current` requires explicit owner approval recorded in
-  the document metadata. `cixzhang` and `imdreamrunner` may approve every record
-  kind; current design records and normative design assets also accept current
-  `.github/DESIGNOWNERS`; current theme records accept the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`. Legacy v1 `owners` metadata is
+  the document metadata. Any current `.github/ENGOWNERS` member may approve every
+  record kind; current design and theme records and normative design assets also
+  accept current `.github/DESIGNOWNERS` members. Legacy v1 `owners` metadata is
   descriptive and does not grant approval rights.
 - Pull requests that create, change, or archive a `current` record wait on the
   `spec-owner-approval` status for their exact current head. Draft-only records
   pass that status after validation without an owner review.
-- `cixzhang` or `imdreamrunner` can approve another author's current-record PR
-  through GitHub review. When an approver is also the PR author, they comment
-  `/approve-spec <full-head-sha>`. Any new commit invalidates that approval.
+- Any ENGOWNER can approve another author's current-record PR through GitHub
+  review. A DESIGNOWNER may do the same for current design or theme records and
+  normative design assets. When an eligible approver is also the PR author, they
+  comment `/approve-spec <full-head-sha>`. Any new commit invalidates that
+  approval.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative
@@ -95,6 +96,17 @@ aligned. They are intentionally separate:
 Published schema versions may extend an earlier schema. The checker composes the
 chain and tracks the latest version that defines each record kind. A new kind is
 therefore additive; changing an existing kind migrates only that kind.
+
+An optional `review-applicability:v1` JSON block can route selected claims from a
+record as cross-cutting review baselines. This is an independently versioned
+metadata overlay, like `anatomy-theming:v1`, so adding it does not change a
+record kind's required shape or migrate records that do not opt in. The block
+must declare `scope: "global"` and map each semantic trigger to one or more exact
+claim ids from the same record. Validation rejects malformed, empty, duplicate,
+or stale claim routes. Routing requires the reviewed head, verifies the supplied
+base authority commit is its `origin/main` merge base, includes only
+`authority: current` records, and returns only the matched claims; draft records
+and nonmatching routes are omitted.
 
 New record kinds should prefer one typed relationship list over parallel fields.
 If `system-spec` receives a future schema revision, replace its legacy

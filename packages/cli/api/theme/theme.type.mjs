@@ -55,6 +55,7 @@
  * @property {string} displayName
  * @property {string} description
  * @property {boolean} maintained
+ * @property {string} [package] owner package for project-aware listings
  */
 
 /**
@@ -68,7 +69,7 @@
  * xds --json theme add <slug>
  * @typedef {object} ThemeAddResponse
  * @property {'theme.add'} type
- * @property {{slug: string, displayName: string, maintained: boolean, outputDir: string, entry: string, exportName: string, files: string[]}} data
+ * @property {{slug: string, displayName: string, maintained: boolean, package: string, outputDir: string, entry: string, exportName: string, files: string[]}} data
  */
 
 /**
@@ -90,6 +91,7 @@
  * @property {string} component
  * @property {string[]} props
  * @property {string[]} states
+ * @property {string} [deprecatedFor] - exact canonical replacement for a deprecated target
  */
 
 /**

@@ -348,7 +348,7 @@ export const neutralTheme = defineTheme({
       },
     },
 
-    statusdot: {
+    'status-dot': {
       'variant:success': {backgroundColor: statusFill.success},
       'variant:warning': {backgroundColor: statusFill.warning},
       'variant:error': {backgroundColor: statusFill.error},
@@ -427,7 +427,7 @@ export const neutralTheme = defineTheme({
       },
     },
 
-    progressbar: {
+    'progress-bar': {
       base: {
         '--color-background-muted': 'var(--color-border-emphasized)',
       },

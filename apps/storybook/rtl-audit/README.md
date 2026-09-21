@@ -11,7 +11,7 @@ is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
 ## Three layers
 
-### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
+### A. Auto-discovery — over every story prefix in the component-package registry
 
 The point of the audit is to auto-catch **new or changed** components, so the
 auto-discovery layer runs with **zero curated selectors**. There are three
@@ -19,9 +19,24 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 **D6 (directional-decoration)**.
 
 > **Scope in CI.** `pr-rtl` passes `--filter` with the components the PR
-> touched (from `analysis.json`), matching `pr-a11y`. The full unfiltered sweep
-> runs weekly in `.github/workflows/rtl-weekly.yml` — that is what covers a
-> component no PR edited. Omit `--filter` to run it locally.
+> touched (from `analysis.json`), matching `pr-a11y`. Eligibility is classified
+> by the component policy and package registry loaded from the trusted base ref;
+> a missing policy, empty or unmatched path set, unresolved component list, or
+> registry/classifier/workflow mutation runs the full audit rather than accepting
+> an empty scope. CI partitions that full scope into one bounded shard per
+> canonical package, each with four browser workers; the stable `pr-rtl` context
+> succeeds only after all five scope manifests arrive and every applicable
+> package produces a report whose requested package/filter, duplicate-free exact
+> D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted
+> policy requires full scope, every manifest must be runnable with an empty
+> filter and all five package reports must arrive. A planned scan ending in ERROR
+> is incomplete. Missing or malformed analysis/index/manifest input, a noncanonical owner, stale output, a missing or unexpected report, and
+> an all-skipped required matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
+> scope so package discovery and curated aliases cannot skip their own check. The
+> full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
+> Omit `--filter` to run it locally. The blocking accessibility audit consumes the
+> same package-qualified owner-to-story routes and fails if any selected owner
+> resolves to zero stories.
 
 ### A.1 D1 icon-mirror
 
@@ -214,8 +229,15 @@ them universally.
 
 ### C. Applicability: no unexplained all-N/A components
 
-The report rolls every component in the live Core and Lab source roster into one
-of three states:
+The report rolls every public component in the canonical component-package
+registry into one of three states. Package roots, layouts, story prefixes, and
+public component names come from `scripts/component-packages.cjs`; Storybook
+titles project onto that canonical roster across Core, Lab, Charts, Rich Text,
+and Vega, including one-to-many grouped titles such as
+`Charts/Chrome/Axes & Grids`. Curated targets remain the exact alias when a title
+cannot name its owner. An entry with an empty `dims` array is route-only: it
+binds a public owner to a story that renders it for universal D1/D5/D6 scanning
+without inventing a curated measurement.
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason
@@ -298,10 +320,13 @@ Edit `targets.json`. Each entry is:
 
 ```jsonc
 {
-  "component": "MyComponent",
+  "component": "MyComponent", // explicit alias for grouped story titles
   "storyId": "core-mycomponent--some-story", // must exist in dist/index.json
   "dims": ["D2", "D3"], // D2/D3/D4 only (D1 is auto)
-  "setup": {"click": "img"}, // optional: reveal the target
+  "setup": {
+    "args": {"position": "start"}, // optional: drive Storybook args
+    "click": "img", // optional: reveal the target after args settle
+  },
   "selectors": {
     "prev": "button[aria-label=\"Prev\"]", // D2
     "next": "button[aria-label=\"Next\"]",

@@ -177,6 +177,10 @@ const CANONICAL = 'import(@acme/widgets/templates/Gauge/GaugeShowcase.tsx)';
 const SPEC = '@acme/widgets/templates/Gauge/GaugeShowcase.tsx';
 
 describe('integration block-template exports recipe', () => {
+  it('has at least one real resolver available', () => {
+    expect(TSC_BIN ?? ESBUILD_BIN).not.toBeNull();
+  });
+
   it.runIf(TSC_BIN != null)(
     `CANONICAL: exports {"./templates/*.tsx"} + ${CANONICAL} type-checks under bundler resolution`,
     () => {

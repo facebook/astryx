@@ -137,18 +137,38 @@ function App() {
       ],
     },
     {
+      title: 'Using a Theme from an Integration',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Install the integration as a direct dependency and Astryx discovers its source themes and guide topics without an `astryx.config` file. Install Core too because the copied source imports `defineTheme` from `@astryxdesign/core/theme`.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Install, inspect, copy, and build',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'The copy is editable project source, not a reference back into node_modules. Every file named by the theme catalog comes with it, including nested token or palette modules. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+        },
+      ],
+    },
+    {
       title: 'Creating a Custom Theme',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Browse, then copy a theme in as editable source',
-          code: 'astryx theme list\nastryx theme add stone',
+          code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes',
         },
         {
           type: 'prose',
@@ -162,7 +182,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using complete --astryx-theme-<name>-* custom-property names; these roles remain inside that enrolled theme family and do not expand the shared token vocabulary. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -183,16 +203,6 @@ const myTheme = defineTheme({
   tokens: {
     // Explicit overrides take precedence over scale-generated values
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
-  },
-  localTokens: {
-    '--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4'],
-  },
-  components: {
-    badge: {
-      'variant:info': {
-        backgroundColor: 'var(--astryx-theme-my-theme-color-status-fill-accent)',
-      },
-    },
   },
 });`,
         },
@@ -563,6 +573,43 @@ import './themes/ocean.css';
         {
           type: 'prose',
           text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
+        },
+      ],
+    },
+    {
+      title: 'Building a Theme Family',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use family mode when an app switches among one base theme and its selected descendants. The build writes one keyed CSS file containing every member, plus one keyed JavaScript module and one declaration file beside the root source.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build one family',
+          code: `astryx theme build --family \\
+  ./src/themes/ocean.mjs \\
+  ./src/themes/ocean-calm.mjs \\
+  ./src/themes/ocean-calm-deep.mjs \\
+  --family-key ocean-family`,
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Load native CSS and ESM independently',
+          code: `<link rel="stylesheet" href="./src/themes/ocean-family.css" />
+<script type="module">
+  import {oceanCalmTheme} from './src/themes/ocean-family.js';
+</script>`,
+        },
+        {
+          type: 'prose',
+          text: 'The family stylesheet eagerly downloads every selected member so first paint is complete. Switching members changes only the theme identity; it does not add, remove, or reorder stylesheets. A bundler such as Vite consumes the same CSS and ESM files.',
+        },
+        {
+          type: 'prose',
+          text: 'The family key is only the filename stem (`ocean-family.css`, `.js`, and `.d.ts`) and must differ from every selected member name. Use the ordinary standalone build when an app needs only one complete theme. Add `--check` to compare the exact keyed trio without writing.',
         },
       ],
     },

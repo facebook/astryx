@@ -23,5 +23,5 @@ export {
   parseStopList,
   validateStops,
 } from './palette/generate/generator.mjs';
-export {themeList} from './list/list.mjs';
+export {themeList, themeListAvailable} from './list/list.mjs';
 export {listThemes} from './_adapter.mjs';

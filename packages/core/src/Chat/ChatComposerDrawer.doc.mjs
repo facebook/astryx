@@ -7,7 +7,58 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Composer Drawer',
   isHiddenFromOverview: true,
-  description: "Collapsible drawer panel that sits above the chat input inside ChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle: collapsed state shows a badge and label, expanded state shows all children.",
+  description: "Collapsible drawer panel that sits above the chat input inside ChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle: collapsed state shows a count summary and expanded state shows all children.",
+  usage: {
+    description:
+      'Use ChatComposerDrawer in the ChatComposer drawer slot for supplementary content such as attachments, context chips, or previews. Provide count only when people should be able to collapse that content.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Give label a concrete plural noun such as "Attachments" so the expand and collapse actions have a useful accessible name.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use controlled isCollapsed with onCollapsedChange when another part of the page owns drawer state; otherwise use defaultIsCollapsed.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put primary composer actions in the drawer; use ChatComposer footer or send-action slots so those controls remain available when the drawer is collapsed.',
+      },
+    ],
+    anatomy: [
+      {
+        name: 'Root surface',
+        required: true,
+        description: 'The drawer surface that composes above the ChatComposer body.',
+      },
+      {
+        name: 'Disclosure toggle',
+        required: false,
+        description: 'The keyboard- and pointer-operable collapse control rendered when count is provided.',
+      },
+      {
+        name: 'Collapsed summary',
+        required: false,
+        description: 'The count and label presented while the drawer is collapsed.',
+      },
+      {
+        name: 'Content area',
+        required: true,
+        description: 'The caller-provided supplementary content; collapsed descendants are unavailable to keyboard and assistive technology.',
+      },
+    ],
+  },
+  theming: {
+    targets: [
+      {
+        className: 'astryx-chat-composer-drawer',
+        visualProps: ['collapsed'],
+      },
+    ],
+  },
   playground: {
     wrapper: {component: 'Stack', props: {width: 480}},
     defaults: {
@@ -79,7 +130,7 @@ export const docsDense = {
   description: 'collapsible drawer above chat input; pass to composer `drawer` slot for attachments, context chips, previews. `count` enables collapse toggle',
   propDescriptions: {
     children: 'drawer content: tokens, chips, previews, any React elements',
-    count: 'total count for collapsed badge; enables collapse/expand toggle',
+    count: 'total count for collapsed summary; enables collapse/expand toggle',
     label: 'collapsed label next to count badge',
     isCollapsed: 'controlled collapsed state',
     defaultIsCollapsed: 'initial collapsed state (uncontrolled)',

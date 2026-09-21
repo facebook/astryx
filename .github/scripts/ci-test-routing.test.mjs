@@ -4,7 +4,8 @@
  * @file ci-test-routing.test.mjs
  *
  * The contract between `vitest.config.ts` and the CI jobs that run it, in both
- * workflows that run the suite.
+ * workflows that run the suite. FR23 must run after the other UI workers exit
+ * so its helper-overhead measurement does not compete with unrelated tests.
  *
  * This repo has now lost test coverage to routing twice. First a suite
  * belonged to no Vitest project, so `pnpm test` never collected it. Then the
@@ -24,6 +25,9 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import componentPackages from '../../scripts/component-packages.cjs';
+
+const {COMPONENT_PACKAGE_NAMES} = componentPackages;
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -107,6 +111,24 @@ describe.each(Object.entries(WORKFLOWS))(
       }
     });
 
+    it('runs FR23 only after the parallel UI suite has exited', () => {
+      const benchmark = 'packages/core/src/Markdown/Markdown.fr23.perf.test.ts';
+      const job = workflow.jobs['test-ui'];
+      const suites = job.steps.filter(step =>
+        step.run?.includes('--project ui'),
+      );
+
+      // One conditional step preserves the existing scope gate for both runs.
+      // Exact foreground commands also reject backgrounding or ignored exits.
+      expect(suites).toHaveLength(1);
+      expect(suites[0].run.trim().split('\n')).toEqual([
+        `pnpm vitest run --project ui --exclude ${benchmark}`,
+        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+      ]);
+      expect(job['continue-on-error']).not.toBe(true);
+      expect(suites[0]['continue-on-error']).not.toBe(true);
+    });
+
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
       // the wall.
@@ -128,12 +150,26 @@ describe.each(Object.entries(WORKFLOWS))(
 
     it('fails the join when any lane fails', () => {
       // `needs` alone does not fail a job whose `if` is `always()`; the join
-      // has to assert the results it waited for.
-      const join = runLines(workflow.jobs.test);
-      for (const lane of lanes) {
-        expect(join, `join does not assert ${lane}`).toContain(
-          `needs.${lane}.result }}" = "success"`,
+      // has to pass every result to its fail-closed contract.
+      const join = workflow.jobs.test;
+      if (file === 'ci.yml') {
+        const contract = join.steps.find(step =>
+          step.run?.includes('.github/scripts/ci-test-join.mjs'),
         );
+        expect(contract).toBeDefined();
+        for (const lane of lanes) {
+          const key = `${lane.replaceAll('-', '_').toUpperCase()}_RESULT`;
+          expect(contract.env[key], `join does not pass ${lane}`).toContain(
+            `needs.${lane}.result`,
+          );
+        }
+      } else {
+        const commands = runLines(join);
+        for (const lane of lanes) {
+          expect(commands, `join does not assert ${lane}`).toContain(
+            `needs.${lane}.result }}" = "success"`,
+          );
+        }
       }
     });
 
@@ -170,6 +206,102 @@ describe.each(Object.entries(WORKFLOWS))(
     }
   },
 );
+
+describe('ci.yml RTL package sharding', () => {
+  const workflow = load('ci.yml');
+  const shard = workflow.jobs['pr-rtl-shard'];
+  const join = workflow.jobs['pr-rtl'];
+
+  it('skips component discovery for spec-only changes and classifies other lightweight lanes', () => {
+    const classification = workflow.jobs['check-components'];
+    expect(classification.if).toContain("github.event_name == 'pull_request'");
+    expect(classification.if).toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
+    const commands = runLines(classification);
+    for (const lane of ['docsite_only', 'tooling_only']) {
+      expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
+    }
+    expect(commands).toContain('has_components=false');
+    expect(commands).toContain('has_rtl_components=false');
+    expect(commands).toContain('has_rtl_harness=false');
+    expect(commands).toContain('force_full_component_audits=false');
+    expect(commands).toContain('has_stable_visual=false');
+  });
+
+  it('broadens both browser audits for unresolved canonical source ownership', () => {
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      '.forceFullComponentAudits // false',
+    );
+    expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
+  });
+
+  it('runs one bounded shard for every canonical component package', () => {
+    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
+    expect(shard['runs-on']).toBe('4-core-ubuntu');
+    expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
+    expect(shard['continue-on-error']).not.toBe(true);
+    const scope = shard.steps.find(
+      step => step.name === 'Resolve RTL shard scope',
+    );
+    const audit = shard.steps.find(step => step.name === 'Run RTL audit');
+    const validation = shard.steps.find(
+      step => step.name === 'Require completed RTL shard report',
+    );
+    expect(scope['continue-on-error']).not.toBe(true);
+    expect(scope.run).toContain('.github/scripts/rtl-shard-scope.mjs');
+    expect(scope.run).toContain('--manifest rtl-shard-scope.json');
+    expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
+    expect(audit['continue-on-error']).toBe(true);
+    expect(validation.if).toBe('always()');
+    expect(validation.run).toContain('steps.rtl-scope.outcome');
+    expect(validation.run).toContain(
+      'produced no explicit should_run decision',
+    );
+    expect(runLines(shard)).toContain('--packages "$PACKAGE"');
+    expect(runLines(shard)).toContain('--concurrency 4');
+    expect(runLines(shard)).toContain(
+      '.github/scripts/rtl-report-completion.mjs',
+    );
+    expect(runLines(shard)).toContain(
+      '--filter "${{ steps.rtl-scope.outputs.filter }}"',
+    );
+  });
+
+  it('keeps pr-rtl as a fail-closed join over every matrix shard', () => {
+    expect(join.needs).toEqual(
+      expect.arrayContaining(['check-components', 'pr-rtl-shard']),
+    );
+    const commands = runLines(join);
+    expect(commands).toContain('needs.check-components.result');
+    expect(commands).toContain('needs.pr-rtl-shard.result');
+    expect(commands).toContain('.github/scripts/rtl-join.mjs');
+    expect(commands).toContain('--reports-dir rtl-shard-reports');
+    expect(commands).toContain(
+      '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
+    );
+    const download = join.steps.find(
+      step => step.name === 'Download applicable RTL shard reports',
+    );
+    expect(download['continue-on-error']).toBe(true);
+    expect(download.with.pattern).toBe('rtl-audit-report-*');
+    const requireStep = join.steps.find(
+      step => step.name === 'Require every applicable RTL shard',
+    );
+    expect(requireStep.if).toBe('always()');
+  });
+
+  it('publishes a distinct scope manifest and optional report for each shard', () => {
+    const upload = shard.steps.find(step =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    expect(upload.if).toBe('always()');
+    expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
+    expect(upload.with.path).toContain('rtl-shard-scope.json');
+    expect(upload.with.path).toContain('rtl-audit-report.json');
+    expect(upload.with['if-no-files-found']).toBe('error');
+  });
+});
 
 describe('deploy.yml push gating', () => {
   const workflow = load('deploy.yml');

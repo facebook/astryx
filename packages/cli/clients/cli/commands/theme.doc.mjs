@@ -18,11 +18,11 @@ export const doc = {
     'The theme command group. Running astryx theme with no subcommand prints the ' +
     'subcommand list; the work happens in the subcommands: compile a theme (build), ' +
     'scaffold one into your project (add), start a custom one from the annotated template (template), ' +
-    'list the bundled themes (list), generate a palette candidate (palette), or list the ' +
+    'list the bundled and installed integration themes (list), generate a palette candidate (palette), or list the ' +
     'component theming targets a theme can override (targets).',
   subcommands: ['build', 'add', 'list', 'template', 'palette', 'targets'],
   examples: [
-    {label: 'List bundled themes', cli: 'astryx theme list'},
+    {label: 'List available themes', cli: 'astryx theme list'},
     {label: 'Scaffold a theme', cli: 'astryx theme add matcha'},
     {
       label: 'Generate a palette candidate',

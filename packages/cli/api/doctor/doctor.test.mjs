@@ -249,11 +249,15 @@ describe('checkImplicitIntegrations', () => {
 
   it('names the package, the field, and what it contributes', () => {
     const c = checkImplicitIntegrations({
-      integrations: [autolinked({templates: '/abs/templates'})],
+      integrations: [
+        autolinked({templates: '/abs/templates', themes: '/abs/themes'}),
+      ],
     });
     expect(c.message).toContain('@acme/widgets@1.0.0');
     expect(c.message).toContain('from dependencies');
-    expect(c.message).toContain('contributing components, templates');
+    expect(c.message).toContain(
+      'contributing components, templates, themes',
+    );
   });
 
   it('names the declared key too when an npm alias makes them differ', () => {

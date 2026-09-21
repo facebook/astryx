@@ -357,4 +357,3 @@ describe('InputClearButton pointer and focus interactions', () => {
     expect(pointerDownEvent).toBe(false);
   });
 });
-

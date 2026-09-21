@@ -45,10 +45,10 @@ Generated audit screenshots remain audit evidence rather than design authority.
 Private design sources stay private and are never named or linked here.
 
 New design specs start as `draft`. Initial promotion to `current`, later changes,
-and normative asset updates require exact-head approval from `cixzhang`,
-`imdreamrunner`, or any current member of `.github/DESIGNOWNERS`. A mixed PR still
-needs `cixzhang` or `imdreamrunner` for non-design current records. The design
-record names its content owners separately from this repository gate.
+and normative asset updates require exact-head approval from any current member
+of `.github/ENGOWNERS` or `.github/DESIGNOWNERS`. A mixed PR still needs an
+ENGOWNER for non-design current records. The design record names its content
+owners separately from this repository gate.
 
 A DESIGNOWNER author may attest the exact PR head for the design-approval group
 by marking it ready for review. That evidence also counts in a mixed PR, while

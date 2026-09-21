@@ -22,15 +22,12 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {createRequire} from 'node:module';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
-import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
+import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
-
-const _require = createRequire(import.meta.url);
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -361,7 +358,7 @@ export async function checkConfig(ctx) {
  *
  * The CLI autolinks an installed dependency that ships an
  * `astryx.integration.*` manifest, so a project can be getting components,
- * templates, docs and codemods from a package nothing in the project mentions.
+ * templates, themes, docs and codemods from a package nothing in the project mentions.
  * Two questions follow, and this line is the answer to both:
  *
  *   - "Why can the CLI see this?" — asked by an author who greps the project
@@ -417,7 +414,7 @@ export function checkImplicitIntegrations(ctx) {
       integration.__spec && integration.__spec !== integration.name
         ? ` (declared as "${integration.__spec}")`
         : '';
-    const roots = ['components', 'templates', 'docs', 'codemods'].filter(
+    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
       root => integration[/** @type {'components'} */ (root)],
     );
     const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
@@ -527,23 +524,15 @@ export function checkPeerDeps(ctx) {
   const mismatched = [];
   for (const name of peerNames) {
     const want = peers[name];
-    let pkgJsonPath;
-    try {
-      pkgJsonPath = _require.resolve(`${name}/package.json`, {paths: [ctx.cwd]});
-    } catch {
-      // package.json isn't exported — fall back to entry resolution for
-      // presence only (we then can't read the version to range-check it).
-      try {
-        _require.resolve(name, {paths: [ctx.cwd]});
-      } catch {
-        missing.push(`${name}@${want}`);
-      }
+    const installedDir = findInstalledPackage(ctx.cwd, name);
+    if (!installedDir) {
+      missing.push(`${name}@${want}`);
       continue;
     }
     // Present and version-readable: verify it actually satisfies the range,
     // not just that the package exists (a bare `npm install` can resolve an
     // out-of-range version from a stale consumer range and still "look" fine).
-    const have = pkgVersion(path.dirname(pkgJsonPath));
+    const have = pkgVersion(installedDir);
     if (have && !satisfiesRange(have, want)) {
       mismatched.push({name, want, have});
     }

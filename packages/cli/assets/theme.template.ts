@@ -222,12 +222,9 @@ export const myTheme = defineTheme({
     '--shadow-low': '0 1px 2px light-dark(#0000001A, #00000066)',
   },
 
-  /**
-   * Optional theme-family-local roles. Use the complete exact name and keep
-   * references inside this maintained theme family. These do not become
-   * portable Astryx tokens.
-   */
-  // localTokens: {'--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4']},
+  /** Optional theme-family-local roles accept any valid CSS custom-property name;
+   *  prefixes do not establish ownership. */
+  // localTokens: {},
 
   // ───────────────────────────────────────────────────────────────────────
   // components — per-component CSS, emitted inside
@@ -235,7 +232,7 @@ export const myTheme = defineTheme({
   //
   // Keys are the component's stable class minus the `astryx-` prefix
   // (`astryx-button` → `button`, `astryx-side-nav-item` → `side-nav-item`),
-  // including inner parts like `progressbar-fill`.
+  // including inner parts like `progress-bar-fill`.
   //
   // `astryx component <Name>` IS THE REFERENCE HERE. It prints that
   // component's theming targets, the visual props and states you can key on,

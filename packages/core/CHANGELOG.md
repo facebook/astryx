@@ -1,5 +1,76 @@
 # @xds/core
 
+# 0.6.2
+
+#### New Features
+
+- Markdown: add an opt-in math renderer (#6312)
+  Supply `components.math` to parse `$…$` inline math and `$$…$$` display math. The renderer receives the delimiter-free expression as `value` and its placement as `display: 'inline' | 'block'`, so applications can connect their preferred math typesetter without preprocessing Markdown or accepting raw HTML.
+
+  Math is off unless the renderer is present. Direct parser callers can opt in with `MathParseOptions` (`{math: true}`) and incremental callers create `IncrementalParseState<true>` via `createIncrementalState<true>()`. Those overloads return `InlineNodeWithMath` or `BlockNodeWithMath`; default, legacy-set, `math: false`, and `ParseOptions`- annotated calls retain the existing `InlineNode` and `BlockNode` unions, so exhaustive consumers do not gain a case unless they opt in. Existing Markdown parsing and rendering stay unchanged by default; code stays opaque, escaped and unmatched delimiters stay literal, and inline plugins skip math. Incremental parsing preserves full-parse results when display math is nested in ordinary or task lists and blockquotes, including quote-depth transitions, with LF or CRLF and with source ranges enabled.
+
+- DialogHeader exposes theme targets for its header gap, title/subtitle gap, and close-icon size. (#6240)
+- Expose DateRangeInput preset theming targets (#6223)
+- Expose the Slider interactive control as a theme target (#6225)
+- Expose FileInput's upload icon as a mode-aware theme target (#5417)
+- Add a `--spinner-arc-fraction` public var to Spinner, so a theme can change how much of the ring the moving arc covers (defaults to 0.375, a 135deg sweep), the same way it already retheme diameter, stroke width, and color. (#5845)
+
+#### Fixes
+
+- Adds the `@astryx.chatTypingIndicator.*` catalog keys so the lab ChatTypingIndicator can build its typing status from the translation runtime instead of English literals, joining names with `Intl.ListFormat` for the active locale. English output is unchanged. (#6220)
+- Spinner: the default assistive label now comes from the translation catalog (`@astryx.spinner.loading`) instead of a literal `"Loading"` in component source, so a localized app translates the status. An explicit `aria-label` and a visible string label still take precedence, in that order. (#6217)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @athz
+- @cixzhang
+- @freddymeta
+- @HelloOjasMutreja
+- @ksying
+- @Kyujenius
+
+---
+
+# 0.6.1
+
+#### New Features
+
+- Remove the prefix requirement from theme-local tokens (#6285)
+- Add ScrollableArea and useScrollableArea for accessible, logical-axis native scrolling with explicit overscroll policy. (#6262)
+  Scrollable viewports now become keyboard reachable only while content effectively overflows, preserve logical edge state across writing modes, apply contained overscroll only on active axes, avoid capturing Sticky while fitting unless explicitly requested, expose standard container sizing props, and integrate optional content padding plus opt-in full bleed with the shared container geometry system.
+
+#### Fixes
+
+- BaseTypeahead: preserve input props and keep results accessible in narrow layouts (#6179)
+  BaseTypeahead now forwards its inherited DOM and styling props to the combobox input, preserves native input attributes unless a defined legacy alias overrides them, keeps empty result lists valid for assistive technology, counts visible characters for `minQueryLength`, and keeps both the popup and long result content within viewport gutters.
+- BottomSheetSwitcher: let the topmost nested layer handle Escape before a non-modal flow. (#6184)
+- BreadcrumbItem preserves valid outside focus on menu light dismiss and labels menus from rich trigger content (#6206)
+- Center: preserve component-owned axis reflection and correct the horizontal-centering example. (#6207)
+- Localize Chart accessibility text and complete its consumer guidance. (#6247)
+- defer clear focus restoration for pointer/touch taps to prevent page scroll jumps while preserving synchronous focus restoration on keyboard activation and properly composing `onPointerDown` in `InputClearButton` (#5440)
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration. (#6126)
+- Field inputs no longer paint above the sticky AppShell header while scrolling (#5689). Field now contains its local stacking layers (the input surface's z-index and the attached status layer) behind an `isolation: isolate` boundary on the field surface, so they cannot compete with page-level stacking; the AppShell header keeps its normal stacking level.
+- TextInput's `onEnter` no longer fires for the Enter that commits an IME conversion (Japanese/Chinese/Korean input); `onKeyDown` still receives the raw event. (#6082)
+
+#### Documentation
+
+- AspectRatio: show the `ratio` prop in its JSX form (#6093)
+  The best-practice line told readers to express the ratio as a fraction like `16/9` without showing it in JSX, and nothing else in the CLI output gives `ratio` an example. Rewrites it to `ratio={16 / 9}` and names the string form as a type error.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @Cypher-Aura-19
+- @Geervan
+- @Kyujenius
+- @ManoharPaturi
+
+---
+
 # 0.6.0
 
 #### Breaking Changes
@@ -595,7 +666,7 @@ Thanks to everyone who contributed to this release:
 
   Measured on hover, same story, before and after: `2` tooltips shown to the user, then `1`.
 
-- Seven theme target roots that ran a compound component name together are deprecated onto the `<component-kebab>-<part>` spelling the component's name implies: `codeblock` → `code-block` (with `-copy-button`, `-header`, `-title`), `progressbar` → `progress-bar` (with `-fill`, `-mark`, `-track`), `hovercard` → `hover-card`, `statusdot` → `status-dot`, `textarea` → `text-area`, `navicon` → `nav-icon`, and Table's second root `base-table` → `table` (both named the same `<table>` element). A `defineTheme` key that matches no target fails silently — no error, no warning, the rule never emits — so someone who read `ProgressBar` and wrote `'progress-bar'` got nothing and no explanation. Nothing breaks: every component renders both classes and both keys resolve, including the derived vars a renamed key expands into. The old spellings drop in the next major. (#5449)
+- Seven theme target roots that ran a compound component name together are deprecated onto the `<component-kebab>-<part>` spelling the component's name implies: `codeblock` → `code-block` (with `-copy-button`, `-header`, `-title`), `progressbar` → `progress-bar` (with `-fill`, `-mark`, `-track`), `hovercard` → `hover-card`, `statusdot` → `status-dot`, `textarea` → `text-area`, `navicon` → `nav-icon`, and Table's second root `base-table` → `table` (both named the same `<table>` element). A `defineTheme` key that matches no target fails silently — no error, no warning, the rule never emits — so someone who read `ProgressBar` and wrote `'progress-bar'` got nothing and no explanation. Nothing breaks: every component renders both classes and both keys resolve, including the derived vars a renamed key expands into. New themes should use the canonical spellings; the deprecated aliases remain supported. (#5449)
 - Toast fits narrow and safe-area viewports, aligns wrapped actions and dismissal, uses edge-directed entrance and exit motion, exposes the Notifications landmark only while populated, and keeps exactly the viewport gutter below the final toast (#5353, #5460)
   Inter-toast spacing is 8px, while the visual bottom no longer adds a trailing toast gap on top of viewport padding. Placement, visible-stack limits, auto-hide defaults, announcement semantics, and dismissal reasons are unchanged.
 - TreeList: forward `aria-label`/`aria-labelledby` to the `role="tree"` element so a tree can be named (#5493)
@@ -1215,7 +1286,7 @@ Thanks to everyone who contributed to this release:
 - DateInput, DateRangeInput, and DateTimeInput now accept a `weekStartsOn` prop that sets the first day of the week in the calendar popover (0 = Sunday … 6 = Saturday, or a three-letter day name like `"mon"`). It forwards to the underlying Calendar, whose default stays Sunday, so existing usage is unchanged. (#4745)
 - Selector, MultiSelector and Typeahead expose their empty ("No results found") state as a themeable target (#4756, #4862) — `astryx-selector-empty-state`, `astryx-multi-selector-empty-state` and `astryx-typeahead-empty-state`. Themes can restyle the empty state without the fragile structural selectors consumers previously had to reach for. (The Selector search field is a TextInput, so its placeholder is reachable today via `.astryx-text-input::placeholder`; a Selector-scoped placeholder seam would require a TextInput change and is left as a possible follow-up.)
 - EmptyState: add `empty-state-title` and `empty-state-description` theme targets on the title heading and the description. A theme can now restyle the title and description directly (e.g. font size, color, per `variant`) instead of reaching them through structural `> div:has(> :is(h1..h6))` selectors that reverse-engineer which element is which. (#4942)
-- Every clearable input now renders its clear (✕) affordance through the shared `InputClearButton`, so the glyph is themeable in one place via the `astryx-input-clear-icon` target instead of a per-component target or a fragile descendant selector. The component-specific `astryx-{date-input,date-range-input,selector,multi-selector}-clear-icon` targets still render for a deprecation window — migrate to `input-clear-icon`. The clear glyph is now a consistent secondary-color icon with a ghost-button hover affordance across the whole family. (#4876)
+- Every clearable input now renders its clear (✕) affordance through the shared `InputClearButton`, so the glyph is themeable in one place via the `astryx-input-clear-icon` target instead of a per-component target or a fragile descendant selector. The component-specific `astryx-{date-input,date-range-input,selector,multi-selector}-clear-icon` targets remain supported as deprecated aliases; new themes should use `input-clear-icon`. The clear glyph is now a consistent secondary-color icon with a ghost-button hover affordance across the whole family. (#4876)
 - The input family (TextInput, NumberInput, DateInput, DateRangeInput, DateTimeInput, TimeInput, TextArea, Tokenizer) now reflects its disabled state on the root theming target as `data-disabled="disabled"` plus a `.disabled` variant (only when disabled), so a theme can gate its own hover/border treatment on the disabled state — mirroring the existing `status`/`size` reflection — instead of relying on structural `:has(input:disabled)` CSS. This closes a documented theming gap for downstream consumers. (#4794)
 - useLayer takes an `offset` for clearance from the anchor, derived from the resolved placement, and the layer wrappers stop hand-rolling it (#4803)
 - DropdownMenu rows take two new options (#4953). `DropdownMenuItem` takes `hasCloseOnSelect`, so a plain action can report its result on the item instead of closing the menu. `DropdownMenuItemData` and `DropdownMenuSection` take an optional `id`, the row's stable React key for a menu whose items reorder or filter (also reaching MoreMenu, ContextMenu and Breadcrumbs, which share the type).
@@ -1229,7 +1300,7 @@ Thanks to everyone who contributed to this release:
 - Table: `contextMenuActions` now accept a `variant: 'destructive'` for dangerous row/column actions (e.g. Delete), rendered in the error color to match ContextMenu. (#4864)
 - TextArea: theme the text inset by writing `paddingInline` on the `textarea` component key — it now drives the internal `--_textarea-inline-padding` var instead of landing on the wrapper. The wrapper stays flush (`padding: 0`), so the native resize grip keeps its true-corner position and the start icon, status, and character counter stay aligned to the text. Adds a `replaces` option to derived var entries for the general "map a property onto a var without emitting it on the class element" case. (#4793)
 - Add themeable indicators — the componentized check, checkbox, and radio visuals. `defineTheme({indicators: {check: RadioIndicator}})` replaces one by name, and every component drawing it follows. (#4712)
-  Theme targets now follow the component-name convention: `checkbox-indicator`, `radio-indicator`, `radio-indicator-dot`. The old names (`checkbox`, `radio`, `radio-dot`) are still emitted on the same element, so existing themes keep working — migrate at your convenience; they go away in the next major.
+  Theme targets now follow the component-name convention: `checkbox-indicator`, `radio-indicator`, `radio-indicator-dot`. The old names (`checkbox`, `radio`, `radio-dot`) remain emitted on the same element so existing themes keep working. New themes should use the canonical names; deprecation does not set an automatic removal deadline.
 
   Migration: menu radios use those shared targets now. `dropdown-menu-radio-dot` is removed — target `radio-indicator-dot`; `astryx upgrade` rewrites it for you.
 
