@@ -5,7 +5,7 @@
 /**
  * @file useTableGroupedRows.tsx
  * @input React, StyleX, Icon, Table types + the flat data array
- * @output Exports useTableGroupedRows hook + config/result types
+ * @output Exports useTableGroupedRows hook + config/result types with layout-safe group headers
  * @position Grouped-rows plugin; consumed by Table via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -132,27 +132,28 @@ const styles = stylex.create({
     paddingInlineStart: 0,
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
-  // The cell spans every column, so on a table scrolled sideways the heading
-  // would slide out of view while the columns it names stay pinned. Sticking
-  // the inner span to the start edge keeps the chevron and the label together
-  // and on screen.
+  // Shared row layout. Custom renderers keep this full-width so their layout
+  // continues to use the full spanning cell.
   headerInner: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    insetInlineStart: 0,
-    position: 'sticky',
     // No inline start padding on the cell, so the chevron aligns with the
     // table's leading edge (Ernest review #1).
     paddingInlineStart: spacingVars['--spacing-1'],
-    // Shrink-wrapped so the sticky above has somewhere to travel. A sticky box
-    // is confined to its containing block, so one that already spans the cell —
-    // and the cell spans every column — has no slack to take up and never
-    // moves. This applies to a custom `renderGroupHeader` too: the chevron is
-    // the plugin's, and userland can pin its own heading but cannot reach the
-    // control, so leaving the wrapper full width stranded the collapse toggle
-    // off-screen on any table scrolled sideways.
+  },
+  // The built-in heading moves with its chevron and can safely shrink-wrap.
+  headerInnerPinned: {
+    insetInlineStart: 0,
+    position: 'sticky',
     width: 'fit-content',
+  },
+  // A custom header may rely on the full row width. Pin only the plugin-owned
+  // control so custom content keeps its original containing block.
+  customHeaderChevronPinned: {
+    insetInlineStart: spacingVars['--spacing-1'],
+    position: 'sticky',
+    zIndex: 1,
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
   // zero padding) so the icon sits flush with the start of the table
@@ -386,12 +387,19 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // to the actual number of columns, so the header always spans the
             // full width without the plugin knowing the column count.
             <td colSpan={999} {...stylex.props(styles.headerCell)}>
-              <span {...stylex.props(styles.headerInner)}>
+              <span
+                {...stylex.props(
+                  styles.headerInner,
+                  !renderGroupHeader && styles.headerInnerPinned,
+                )}>
                 {/* Standalone chevron button, flush with the table's start
                     edge (no heavy button chrome) — the keyboard control. */}
                 <button
                   type="button"
-                  {...stylex.props(styles.chevron)}
+                  {...stylex.props(
+                    styles.chevron,
+                    renderGroupHeader && styles.customHeaderChevronPinned,
+                  )}
                   onClick={e => {
                     e.stopPropagation();
                     toggle();
