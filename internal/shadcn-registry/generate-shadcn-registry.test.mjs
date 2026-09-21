@@ -3,7 +3,8 @@
 /**
  * @file Registry serializer contract tests.
  * @input Minimal component, block, page, and StyleX fixtures.
- * @output Regression coverage for schema, package boundaries, names, and output.
+ * @output Regression coverage for schema, package and owner availability,
+ *   names, and output.
  * @position Node test lane for ShadCN compatibility.
  */
 
@@ -239,6 +240,35 @@ describe('buildShadcnRegistry', () => {
       'showcases/button/variants',
       'templates/dashboard',
     ]);
+  });
+
+  it('skips unavailable owned blocks only for published registries', () => {
+    const input = fixture();
+    const unavailable = buildShadcnRegistry({
+      ...input,
+      allComponents: {'@astryxdesign/core': []},
+    });
+
+    expect(unavailable.items.map(item => item.name)).not.toContain(
+      'showcase-button-variants',
+    );
+    expect(unavailable.counts.skippedUnpublishedBlocks).toBe(1);
+
+    const available = buildShadcnRegistry(input);
+    expect(available.items.map(item => item.name)).toContain(
+      'showcase-button-variants',
+    );
+    expect(available.counts.skippedUnpublishedBlocks).toBe(0);
+
+    const canary = buildShadcnRegistry({
+      ...input,
+      allComponents: {'@astryxdesign/core': []},
+      dependencyTag: 'canary',
+    });
+    expect(canary.items.map(item => item.name)).toContain(
+      'showcase-button-variants',
+    );
+    expect(canary.counts.skippedUnpublishedBlocks).toBe(0);
   });
 
   it('writes canonical nested paths and compatibility aliases', () => {
