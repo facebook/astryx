@@ -18,6 +18,10 @@
  *
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatComposerInput.test.tsx
+ * - /packages/core/src/Chat/ChatComposerInput.doc.mjs
+ * - /packages/core/src/Chat/ChatComposerInput.spec.md
+ * - /apps/storybook/stories/ChatComposerInput.stories.tsx
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
@@ -32,6 +36,7 @@ import {
   type ReactNode,
   type KeyboardEvent,
   type ClipboardEvent,
+  type DragEvent,
 } from 'react';
 import {createPortal} from 'react-dom';
 import type {BaseProps} from '../BaseProps';
@@ -516,6 +521,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   }, [controlledValue]);
 
   const cleanupPortalsRef = useRef<(() => void) | null>(null);
+  const emitChangeVersionRef = useRef(0);
 
   const emitChange = useCallback(() => {
     if (!editableRef.current) {
@@ -532,6 +538,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     const nextValue = trimmedEmpty ? '' : text;
     pendingEchoValueRef.current = nextValue;
     setIsEmpty(trimmedEmpty);
+    emitChangeVersionRef.current += 1;
     onChange?.(nextValue);
     cleanupPortalsRef.current?.();
   }, [onChange]);
@@ -550,13 +557,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       ? null
       : (pasteAsTokenProp ?? defaultPasteAsToken);
 
-  const insertText = useCallback((text: string) => {
+  const insertTextWithoutEmit = useCallback((text: string) => {
     const editable = editableRef.current;
     if (!editable) {
       return;
     }
     insertTextAtCursor(editable, text);
   }, []);
+
+  const insertText = useCallback(
+    (text: string) => {
+      insertTextWithoutEmit(text);
+      emitChange();
+    },
+    [emitChange, insertTextWithoutEmit],
+  );
 
   // Keep stable refs in sync for imperative handle
   insertTokenRef.current = tokens.insertToken;
@@ -567,7 +582,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     triggers,
     editableRef,
     onInsertToken: tokens.insertToken,
-    onInsertText: insertText,
+    onInsertText: insertTextWithoutEmit,
     onEmitChange: emitChange,
     debounceMs,
   });
@@ -758,15 +773,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       e.preventDefault();
       const text = e.clipboardData.getData('text/plain');
 
-      // Paste-as-token: convert long pastes to token chips
-      if (pasteAsToken?.onPaste(e, text)) {
-        emitChange();
+      // Consumer onPaste gets first refusal over plain text. Return true after
+      // handling it so the built-in insertion paths do not run. A consumer may
+      // use the observable imperative handle while handling the event; emit only
+      // if that path did not already publish the change.
+      const versionBeforeConsumer = emitChangeVersionRef.current;
+      const handled = onPasteProp?.(e, text);
+      if (handled) {
+        if (emitChangeVersionRef.current === versionBeforeConsumer) {
+          emitChange();
+        }
         return;
       }
 
-      // Consumer onPaste — return true to prevent default text insert
-      const handled = onPasteProp?.(e, text);
-      if (handled) {
+      // Paste-as-token: convert long pastes to token chips.
+      if (pasteAsToken?.onPaste(e, text)) {
         emitChange();
         return;
       }
@@ -775,6 +796,28 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       emitChange();
     },
     [onFiles, onPasteProp, emitChange, tokens, pasteAsToken],
+  );
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) {
+        return;
+      }
+      // File drops navigate the page by default. The input owns that drop
+      // target even when no callback is supplied, so keep the user in place.
+      e.preventDefault();
+      if (!isDisabled) {
+        onFiles?.(files);
+      }
+    },
+    [isDisabled, onFiles],
   );
 
   const maxHeight = maxRows * LINE_HEIGHT_PX;
@@ -802,7 +845,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         {...triggerMenu.ariaProps}
+        aria-disabled={isDisabled || undefined}
         {...mergeProps(stylex.props(styles.editable), {
           style: {maxHeight: `${maxHeight}px`},
         })}

@@ -2,11 +2,11 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Let a TreeList item carry row styles (#6237)
+[feat] Let a TreeList item carry row styles (#6238)
 @ernestt
 
 `TreeListItemData` gains `xstyle`, `className`, and `style`, applied to the
-item's row element.
+item's row element, as the TreeList contract's per-item styling seam requires.
 
 `TreeList` takes rows as data, so nothing previously handed back the row's
 element. That prevents row-scoped primitives such as `useContainerReveal` from

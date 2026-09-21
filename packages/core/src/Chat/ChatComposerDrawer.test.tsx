@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ChatComposerDrawer} from './ChatComposerDrawer';
 
@@ -36,26 +36,49 @@ describe('ChatComposerDrawer', () => {
     expect(region).toContainElement(screen.getByText('Drawer content'));
   });
 
-  it('toggles aria-expanded when the toggle is activated', () => {
+  it('removes collapsed children from the focus order and restores them on expand', () => {
     render(
-      <ChatComposerDrawer count={2} label="Attachments">
+      <ChatComposerDrawer count={1} label="Attachment">
+        <button type="button">Remove attachment</button>
+      </ChatComposerDrawer>,
+    );
+
+    const toggle = screen.getByRole('button', {name: /Attachment/});
+    const region = document.getElementById(
+      toggle.getAttribute('aria-controls') as string,
+    )!;
+    expect(region).not.toHaveAttribute('inert');
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(region).toHaveAttribute('inert');
+    expect(
+      screen
+        .getByRole('button', {name: 'Remove attachment'})
+        .closest('[inert]'),
+    ).toBe(region);
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(region).not.toHaveAttribute('inert');
+  });
+
+  it('supports both disclosure keys and reports the requested state', () => {
+    const onCollapsedChange = vi.fn();
+    render(
+      <ChatComposerDrawer
+        count={2}
+        label="Attachments"
+        onCollapsedChange={onCollapsedChange}>
         <span>Drawer content</span>
       </ChatComposerDrawer>,
     );
 
     const toggle = screen.getByRole('button', {name: /Attachments/});
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(toggle, {key: 'Enter'});
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(true);
 
-    fireEvent.click(toggle);
-    expect(screen.getByRole('button', {name: /Attachments/})).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-
-    fireEvent.click(screen.getByRole('button', {name: /Attachments/}));
-    expect(screen.getByRole('button', {name: /Attachments/})).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    fireEvent.keyDown(toggle, {key: ' '});
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(false);
   });
 });

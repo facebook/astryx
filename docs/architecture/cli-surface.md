@@ -8,7 +8,7 @@ archive_reason: null
 superseded_by: null
 approved_by: null
 approved_at: null
-owners: [joeyfarina]
+owners: [josephfarina]
 applies_to: [packages/cli]
 verified_by:
   [

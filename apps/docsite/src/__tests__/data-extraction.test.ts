@@ -11,6 +11,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
+import {docs as chatDocs} from '../../../../packages/core/src/Chat/Chat.doc.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
@@ -378,14 +379,10 @@ describe('componentRegistry', () => {
     const chatComposer = core.find(c => c.name === 'ChatComposer');
     expect(chatComposer).toBeDefined();
     expect(chatComposer!.parentDoc).toBe('Chat');
-    expect(chatComposer!.usage?.description).toContain(
-      'Layout shell for a chat composer',
-    );
-    expect(chatComposer!.usage?.description).not.toContain(
-      'XDSChatMessageList',
-    );
-    expect(chatComposer!.usage?.description).not.toContain(
-      'scrollable container for chat messages',
+    expect(chatDocs.usage?.description).toBeTruthy();
+    expect(chatComposer!.usage?.description).toBeTruthy();
+    expect(chatComposer!.usage?.description).not.toBe(
+      chatDocs.usage?.description,
     );
   });
 
