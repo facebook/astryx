@@ -128,8 +128,12 @@ const styles = stylex.create({
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
+    // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
+    // property-specificity mode drops border shorthands silently, so the
+    // shorthand never reached the shipped CSS and the last item kept its
+    // divider.
     ':last-child': {
-      borderBlockEnd: 'none',
+      borderBlockEndWidth: 0,
     },
   },
 });
