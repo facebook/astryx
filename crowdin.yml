@@ -11,10 +11,16 @@
 # keys from within a downloaded locale file rather than emitting them as empty
 # `"": ""` pairs that pollute the diff. Crowdin does not allow combining
 # skip_untranslated_strings with skip_untranslated_files ("You cannot skip
-# strings and files at the same time"); the workflow handles the zero-percent
-# case by removing empty-object JSON files before opening the PR.
+# strings and files at the same time"); a zero-percent locale can still land
+# as an empty `{}` file, which the Crowdin Translations Validation workflow
+# rejects before merge.
 #
-# Env vars come from the GitHub workflows that run the Crowdin CLI:
+# This file is also read by Crowdin's native GitHub integration, which
+# commits translations directly (no commit_message override, so those
+# commits run through normal CI instead of skipping it).
+#
+# Env vars come from the GitHub workflow that sets file-level context; the
+# native integration authenticates via its own GitHub App installation:
 #   CROWDIN_PROJECT_ID     — repo variable (public)
 #   CROWDIN_PERSONAL_TOKEN — repo secret
 
@@ -22,7 +28,6 @@ project_id_env: CROWDIN_PROJECT_ID
 api_token_env: CROWDIN_PERSONAL_TOKEN
 
 preserve_hierarchy: true
-commit_message: '[ci skip]'
 
 files:
   - source: /packages/core/locales/en.json
