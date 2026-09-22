@@ -18,11 +18,15 @@
 # rejects before merge.
 #
 # This file is also read by Crowdin's native GitHub integration, which
-# commits translations directly (no commit_message override, so those
-# commits run through normal CI instead of skipping it). Connecting that
-# integration included a one-time import of the repository's existing
-# translations — a setup step, already complete, that is not part of
-# ongoing operation.
+# commits translations directly. By default that integration appends its
+# own service text to the commit message, which includes a `[ci skip]`
+# marker and prevents this repo's normal PR CI and the Crowdin Translations
+# Validation workflow from running on those commits. `commit_message`
+# below sets a custom, public-safe message, and `append_commit_message:
+# false` stops Crowdin from appending that default text (and its
+# `[ci skip]` marker) after it. Connecting that integration included a
+# one-time import of the repository's existing translations — a setup
+# step, already complete, that is not part of ongoing operation.
 #
 # Env vars come from the GitHub workflow that sets file-level context; the
 # native integration authenticates through its own GitHub OAuth integration:
@@ -31,6 +35,9 @@
 
 project_id_env: CROWDIN_PROJECT_ID
 api_token_env: CROWDIN_PERSONAL_TOKEN
+
+commit_message: 'New translations for %original_file_name% (%language%)'
+append_commit_message: false
 
 preserve_hierarchy: true
 
