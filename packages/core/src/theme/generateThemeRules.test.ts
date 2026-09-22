@@ -279,12 +279,16 @@ describe('generateThemeRules', () => {
   it('applies the theme body font to the scope root', () => {
     // Components styled with `font-family: inherit` (SideNav items, Buttons)
     // resolve against this; without it they fall back to the browser default
-    // serif since nothing else sets a page font.
+    // serif since nothing else sets a page font. Emitted unconditionally like
+    // the prose rules: the token resolves via the theme override or the
+    // base-layer default.
     const fontRule = rules.find(
-      r => r.includes(':scope') && r.includes('font-family:'),
+      r =>
+        r.includes(':scope') &&
+        r.includes('font-family: var(--font-family-body)'),
     );
     expect(fontRule).toBeDefined();
-    expect(fontRule).toContain('font-family: var(--font-family-body)');
+    expect(fontRule).toBe('  :scope {\n    font-family: var(--font-family-body);\n  }');
   });
 
   // --- Prop-level color overrides ---

@@ -418,9 +418,9 @@ export function generateThemeRules(theme: ThemeRuleSource): string[] {
   // styled with `font-family: inherit` (SideNav items, Buttons) otherwise
   // resolve against the browser default serif, since nothing else sets a page
   // font. `font-family` inherits, so one rule on :scope covers the tree.
-  if (tokens['--font-family-body']) {
-    parts.push(`  :scope {\n    font-family: var(--font-family-body);\n  }`);
-  }
+  // Unconditional like the prose rules below: the token always resolves, via
+  // the theme override or the base-layer default.
+  parts.push(`  :scope {\n    font-family: var(--font-family-body);\n  }`);
 
   // 2. Component overrides: stable .astryx-* target classes combined with
   // reflected data-* selectors for visual props and runtime states.
