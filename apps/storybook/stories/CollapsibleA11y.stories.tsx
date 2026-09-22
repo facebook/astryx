@@ -4,7 +4,7 @@
  * @file CollapsibleA11y.stories.tsx
  * @input Uses Collapsible and the shared accessibility binding inventory
  * @output Stable standalone disclosure states for Chromium contract verification
- * @position Test fixtures only; no CollapsibleGroup, Accordion, Table, or SideNav adoption.
+ * @position Accessibility contract fixtures only; excluded from visual baselines.
  */
 
 import {useState} from 'react';
@@ -14,6 +14,7 @@ import type {CollapsibleProps} from '@astryxdesign/core/Collapsible';
 
 const meta = {
   title: 'A11y/Collapsible Disclosure',
+  tags: ['no-visual'],
   parameters: {layout: 'padded'},
 } satisfies Meta;
 
