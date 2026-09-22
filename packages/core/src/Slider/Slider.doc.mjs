@@ -160,7 +160,8 @@ export const docs = {
     {
       name: 'marks',
       type: 'Array<{ value: number; label?: string }>',
-      description: 'Tick marks at specified positions with optional labels.',
+      description:
+        'Tick marks at specified positions with optional labels. Marks inside the filled region (at or behind the thumb, or between the thumbs in range mode) use the fill color.',
     },
     {
       name: 'minStepsBetweenThumbs',
