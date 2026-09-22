@@ -24,6 +24,7 @@ state-taxonomy records:
 | [Shape relationships](shape-relationships.md)                     | Role-based and concentric geometry for nested surfaces                               |
 | [Elevation hierarchy](elevation-hierarchy.md)                     | Agreement between perceived depth and actual layer order                             |
 | [Typography hierarchy](typography-hierarchy.md)                   | Legible, distinguishable text roles across themes and layouts                        |
+| [Iconography](iconography.md)                                     | Icon meaning, size, artwork, color, composition, and accessibility                   |
 | [Color emphasis](color-emphasis.md)                               | Semantic color roles, contrast intent, and local emphasis                            |
 | [Motion](motion.md)                                               | Meaningful movement, timing hierarchy, easing intent, and reduced motion             |
 | [Ordered collection reordering](ordered-collection-reordering.md) | Drag preview, candidate insertion, commit, and settle intent for ordered collections |

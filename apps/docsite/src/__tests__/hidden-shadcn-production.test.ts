@@ -282,7 +282,7 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
     expect(componentUi).toContain(
       "CURRENT_TARGET === 'canary' && pkg && pkgVersion",
     );
-    expect(templateUi).toContain("CURRENT_TARGET === 'canary' && (");
+    expect(templateUi).not.toMatch(/shadcn/i);
     expect(
       registryItemPaths({blocks, templates, showcaseRegistry, exampleRegistry}),
     ).toEqual([]);

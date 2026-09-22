@@ -114,6 +114,13 @@ export type ChatComposerTokenCustom = {
 export type ChatComposerToken =
   ChatComposerTokenBadge | ChatComposerTokenCustom;
 
+export interface ChatComposerTokenElementProps extends BaseProps<HTMLSpanElement> {
+  /** Ref forwarded to the token wrapper. */
+  ref?: React.Ref<HTMLSpanElement>;
+  /** Token rendered as a Badge or by its custom render function. */
+  token: ChatComposerToken;
+}
+
 export type ChatComposerTriggerItem = SearchableItem;
 
 export type ChatComposerTrigger = {
@@ -888,13 +895,17 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
+export function ChatComposerTokenElement(props: ChatComposerTokenElementProps) {
+  const {token, ref, xstyle, className, style, ...rest} = props;
+
   return (
     <span
+      ref={ref}
+      {...mergeProps(stylex.props(styles.tokenSpan, xstyle), className, style)}
+      {...rest}
       data-astryx-token=""
       data-astryx-token-value={token.value}
-      contentEditable={false}
-      {...stylex.props(styles.tokenSpan)}>
+      contentEditable={false}>
       {isCustomToken(token) ? (
         token.render()
       ) : (
