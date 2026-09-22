@@ -1,8 +1,4 @@
 {
-  "@astryx.pagination.label": {
-    "defaultMessage": "Pagination",
-    "description": "Aria label for the pagination navigation region."
-  },
   "@astryx.pagination.previous": {
     "defaultMessage": "Aller à la page précédente",
     "description": "Aria label for the previous-page button."
@@ -34,10 +30,6 @@
   "@astryx.pagination.goToPageInput": {
     "defaultMessage": "Aller à la page",
     "description": "Aria label for the editable page/row number box in the input pagination variant. No number — the box holds the value itself."
-  },
-  "@astryx.pagination.pageLabel": {
-    "defaultMessage": "Page",
-    "description": "Visible label before the editable box in the input pagination variant. Example: \"Page [ 1 ] / 10\"."
   },
   "@astryx.pagination.pageIndicators": {
     "defaultMessage": "Indicateurs de page",
@@ -345,7 +337,7 @@
   },
   "@astryx.checkboxList.item.checkbox": {
     "defaultMessage": "Case à cocher",
-    "description": "Screen-reader-only last-ditch fallback name for a checkbox inside a list item when no label is provided. Should almost never render — consumers should supply a real label."
+    "description": "Localized hidden text used internally when a rich visible label names the checkbox through aria-labelledby. It does not become the computed name; callers must provide aria-label when rich content has no text."
   },
   "@astryx.commandPalette.emptySearch": {
     "defaultMessage": "Aucun résultat",
@@ -948,3 +940,4 @@
     "description": "Screen-reader-only label on the \"×\" on an individual Token/chip. Example: `Remove John Smith`, `Remove Active`. Imperative verb."
   }
 }
+
