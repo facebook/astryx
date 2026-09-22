@@ -276,6 +276,17 @@ describe('generateThemeRules', () => {
     expect(rules.some(r => r.includes(':where(hr)'))).toBe(true);
   });
 
+  it('applies the theme body font to the scope root', () => {
+    // Components styled with `font-family: inherit` (SideNav items, Buttons)
+    // resolve against this; without it they fall back to the browser default
+    // serif since nothing else sets a page font.
+    const fontRule = rules.find(
+      r => r.includes(':scope') && r.includes('font-family:'),
+    );
+    expect(fontRule).toBeDefined();
+    expect(fontRule).toContain('font-family: var(--font-family-body)');
+  });
+
   // --- Prop-level color overrides ---
 
   it('includes color prop overrides for text and heading', () => {
