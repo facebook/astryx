@@ -226,5 +226,14 @@
       "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
       "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
     }
+  },
+  {
+    "component": "core/ChatDictationButton",
+    "reason": "ChatDictationButton is a symmetric inline-flex icon control. Its microphone glyph and five centered equalizer bars are direction-neutral; the component owns no inline-axis placement, ordering, directional glyph, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:64429848dec3034113095f53ac860be3dddcc4b1dc0e6318d380bffac994366e",
+      "packages/core/src/Chat/ChatDictationButton.tsx": "sha256:bad96c58a64ed9463c428ab7ef53a8c41794bb685eb34b4b333c6cad5c8993c2",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
   }
 ]
