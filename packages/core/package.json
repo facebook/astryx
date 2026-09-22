@@ -539,6 +539,11 @@
       "types": "./dist/TimeInput/index.d.ts",
       "default": "./dist/TimeInput/index.js"
     },
+    "./Timer": {
+      "source": "./src/Timer/index.ts",
+      "types": "./dist/Timer/index.d.ts",
+      "default": "./dist/Timer/index.js"
+    },
     "./Timestamp": {
       "source": "./src/Timestamp/index.ts",
       "types": "./dist/Timestamp/index.d.ts",

@@ -1002,6 +1002,11 @@
       "aliases": []
     },
     {
+      "name": "component-timer",
+      "path": "components/timer",
+      "aliases": []
+    },
+    {
       "name": "component-timestamp",
       "path": "components/timestamp",
       "aliases": []
@@ -3156,6 +3161,21 @@
       "aliases": []
     },
     {
+      "name": "example-timer-formats",
+      "path": "examples/timer/formats",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-inline",
+      "path": "examples/timer/inline",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-typography",
+      "path": "examples/timer/typography",
+      "aliases": []
+    },
+    {
       "name": "example-timestamp-auto",
       "path": "examples/timestamp/auto",
       "aliases": []
@@ -4528,6 +4548,11 @@
     {
       "name": "showcase-time-input-default",
       "path": "showcases/time-input/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-timer-default",
+      "path": "showcases/timer/default",
       "aliases": []
     },
     {
