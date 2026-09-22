@@ -5,6 +5,8 @@
  * discriminants). Colocated next to the source of truth it documents.
  */
 
+import type {AuthoredDocGraphFields} from '../base/type';
+
 /** One member of an enumerated vocabulary. */
 export interface EnumMemberDoc {
   /** The literal value, e.g. 'ERR_UNKNOWN_TOPIC' | 'component.list'. */
@@ -21,7 +23,7 @@ export interface EnumMemberDoc {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').EnumDoc} \*\/
  *   export const doc = { type: 'enum', name: 'error-codes', ... };
  */
-export interface EnumDoc {
+export interface EnumDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant. */
   type?: 'enum';
   /** URL-safe identifier, used as the docs slug within its namespace. */

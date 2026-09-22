@@ -77,11 +77,49 @@ describe('configured integrations', () => {
     const loaded = project.loadedIntegrations[0];
     // Identity comes from package.json, not the manifest.
     expect(loaded.name).toBe('@acme/widgets');
+    expect(loaded.providerId).toBe('@acme/widgets');
     expect(loaded.version).toBe('1.2.3');
     expect(loaded.components).toBe(path.join(pkgDir, 'docs'));
     expect(loaded.templates).toBe(path.join(pkgDir, 'blocks'));
     expect(loaded.codemods).toBe(path.join(pkgDir, 'codemods'));
     expect(loaded.issuesUrl).toBe('https://example.com/issues');
+  });
+
+  it('preserves provider identity across an explicit package rename', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export default {providerId: '@acme/legacy-widgets'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.name).toBe('@acme/widgets');
+    expect(loaded.providerId).toBe('@acme/legacy-widgets');
+    expect(loaded.__unknownKeys).toEqual([]);
+  });
+
+  it('deduplicates package aliases by canonical provider identity', async () => {
+    writeManifestPackage(tmpDir, {body: `export default {};\n`});
+    const aliasDir = path.join(
+      tmpDir,
+      'node_modules',
+      '@acme',
+      'widgets-alias',
+    );
+    fs.mkdirSync(aliasDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(aliasDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(aliasDir, 'astryx.integration.mjs'),
+      `export default {};\n`,
+    );
+
+    const loaded = await loadIntegrations(
+      ['@acme/widgets', '@acme/widgets-alias'],
+      {cwd: tmpDir},
+    );
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].providerId).toBe('@acme/widgets');
   });
 
   it('makes integration components discoverable', async () => {
@@ -225,7 +263,11 @@ export default {};
 
     const loaded = await loadLocalIntegration(tmpDir, {fresh: true});
 
-    expect(loaded).toMatchObject({name: '@acme/local', __local: true});
+    expect(loaded).toMatchObject({
+      name: '@acme/local',
+      providerId: '@acme/local',
+      __local: true,
+    });
     expect(loaded?.__gapReport?.audience).toBe('internal');
     expect(
       loaded?.__gapReport?.handle(

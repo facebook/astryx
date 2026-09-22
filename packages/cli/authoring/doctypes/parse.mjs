@@ -15,6 +15,7 @@ import {parseTemplate} from './template/parse.mjs';
 import {parseSchema} from './schema/parse.mjs';
 import {parseCommand} from './command/parse.mjs';
 import {parseEnum} from './enum/parse.mjs';
+import {parseNamespace} from './namespace/parse.mjs';
 import {parseLegacyDoc} from './legacy.mjs';
 
 /** @typedef {import('./types').ComponentDoc} ComponentDoc */
@@ -25,6 +26,7 @@ import {parseLegacyDoc} from './legacy.mjs';
 /** @typedef {import('./types').SchemaDoc} SchemaDoc */
 /** @typedef {import('./types').CommandDoc} CommandDoc */
 /** @typedef {import('./types').EnumDoc} EnumDoc */
+/** @typedef {import('./types').NamespaceDoc} NamespaceDoc */
 
 /**
  * Validate an unknown loaded doc value into its typed shape, or throw.
@@ -34,7 +36,7 @@ import {parseLegacyDoc} from './legacy.mjs';
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc}
+ * @returns {ComponentDoc | HookDoc | FunctionDoc | ReferenceDoc | TemplateDoc | SchemaDoc | CommandDoc | EnumDoc | NamespaceDoc}
  */
 export function parseDoc(input, label = 'doc') {
   const type =
@@ -58,7 +60,11 @@ export function parseDoc(input, label = 'doc') {
       return parseCommand(input, label);
     case 'enum':
       return parseEnum(input, label);
-    default:
+    case 'namespace':
+      return parseNamespace(input, label);
+    case undefined:
       return parseLegacyDoc(input, label);
+    default:
+      throw new Error(`${label} has unsupported type ${JSON.stringify(type)}.`);
   }
 }

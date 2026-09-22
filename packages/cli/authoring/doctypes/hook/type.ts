@@ -5,6 +5,7 @@
  */
 
 import type {
+  AuthoredDocGraphFields,
   ComponentAccessibilityRequirement,
   ComponentBestPractice,
   HookParamDoc,
@@ -27,7 +28,7 @@ import type {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').HookDoc} \*\/
  *   export const docs = { ... };
  */
-export interface HookDoc {
+export interface HookDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant for the stamped default-export format
    *  (`export default { type: 'function', ... }`). Optional: legacy
    *  `export const docs = {...}` docs omit it. */

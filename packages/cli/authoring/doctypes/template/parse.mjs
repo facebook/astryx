@@ -9,6 +9,7 @@
  */
 
 import {z} from 'zod';
+import {AuthoredDocGraphFields} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
 /** @typedef {import('../types').TemplateDoc} TemplateDoc */
@@ -37,9 +38,10 @@ const registryIdentitySchema = z
   .strict();
 
 const baseTemplateFields = {
+  ...AuthoredDocGraphFields,
   name: z.string().min(1, 'name is required'),
   displayName: z.string().min(1).optional(),
-  description: z.string().min(1, 'description is required'),
+  description: z.string().min(1, 'description is required').optional(),
   category: z.string().optional(),
   componentsUsed: z.array(z.string()).optional(),
   preview: previewSchema.optional(),

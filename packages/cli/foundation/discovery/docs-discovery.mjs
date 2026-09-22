@@ -33,6 +33,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {importUserModule} from '../fs/module-loader.mjs';
+import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
 /** Where the CLI's own topics live. */
@@ -43,7 +44,7 @@ const BUILTIN_DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
  * (assets/docs), not in @astryxdesign/core, so this is the CLI's own name —
  * unlike component discovery, whose built-ins belong to core.
  */
-export const BUILTIN_DOCS_PACKAGE = '@astryxdesign/cli';
+export const BUILTIN_DOCS_PACKAGE = CLI_PROVIDER_ID;
 
 /**
  * A built-in topic file: `{topic}.doc.mjs`. Anchored at both ends so a
@@ -128,12 +129,18 @@ const BLOCK_FIELDS = {
   'token-ref': ['topic', 'section'],
 };
 
+/** Blocks that are valid authoring but require the compiled graph renderer. */
+const GRAPH_BLOCK_TYPES = new Set(['workflow', 'collection', 'reference']);
+
 /**
  * Fields a block kind may carry but does not need. Kept per kind rather than
  * globally: only a code block renders a `label`, so allowing it everywhere
  * would wave through the misspellings this check exists to catch.
  */
-const OPTIONAL_BLOCK_FIELDS = {code: ['label']};
+/** @type {Record<string, string[]>} */
+const OPTIONAL_BLOCK_FIELDS = {
+  code: ['label'],
+};
 
 /**
  * Fields whose value has to be one of a set, because the renderer indexes on
@@ -147,7 +154,7 @@ const BLOCK_FIELD_VALUES = {
 };
 
 /** Keys a section may carry. */
-const SECTION_FIELDS = ['title', 'category', 'content', 'previewType'];
+const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
 
 /**
  * Check the fields the docs surfaces actually read. `parseDoc` is the outer
@@ -173,83 +180,116 @@ export function problemsInTopic(doc) {
       `name: "${doc.name}" is not URL-safe. A topic name is its CLI argument and its docsite path, so it may hold only letters, digits, "_" and "-".`,
     );
   }
+  for (const field of ['placement', 'aliases', 'audience']) {
+    if (doc?.[field] != null) {
+      problems.push(
+        `${field}: requires the compiled graph reader and is not supported by legacy topic readers`,
+      );
+    }
+  }
   if (!Array.isArray(doc?.sections) || doc.sections.length === 0) {
     problems.push('sections: expected at least one section');
     return problems;
   }
 
-  doc.sections.forEach((/** @type {any} */ section, /** @type {number} */ s) => {
-    const at = `sections[${s}]`;
-    if (typeof section?.title !== 'string' || section.title === '') {
-      problems.push(`${at}.title: expected a non-empty string`);
-    }
-    for (const key of Object.keys(section ?? {})) {
-      if (!SECTION_FIELDS.includes(key)) {
-        problems.push(`${at}.${key}: not a field of a section`);
+  doc.sections.forEach(
+    (/** @type {any} */ section, /** @type {number} */ s) => {
+      const at = `sections[${s}]`;
+      if (typeof section?.title !== 'string' || section.title === '') {
+        problems.push(`${at}.title: expected a non-empty string`);
       }
-    }
-    if (!Array.isArray(section?.content)) {
-      problems.push(`${at}.content: expected an array of blocks`);
-      return;
-    }
-    section.content.forEach((/** @type {any} */ block, /** @type {number} */ b) => {
-      const blockAt = `${at}.content[${b}]`;
-      const fields = /** @type {Record<string, string[]>} */ (BLOCK_FIELDS)[block?.type];
-      if (fields == null) {
-        problems.push(
-          `${blockAt}.type: ${JSON.stringify(block?.type)} is not one of ${Object.keys(BLOCK_FIELDS).join(', ')}`,
-        );
+      for (const key of Object.keys(section ?? {})) {
+        if (!SECTION_FIELDS.includes(key)) {
+          problems.push(`${at}.${key}: not a field of a section`);
+        }
+      }
+      if (!Array.isArray(section?.content)) {
+        problems.push(`${at}.content: expected an array of blocks`);
         return;
       }
-      for (const field of fields) {
-        const value = block[field];
-        // Empty counts as missing, the way it does for the doc's own title: a
-        // block whose text is '' passes every other check and renders as a gap.
-        if (value == null) {
-          problems.push(`${blockAt}.${field}: required for a ${block.type} block`);
-        } else if (typeof value === 'string' && value.trim() === '') {
-          problems.push(`${blockAt}.${field}: expected a non-empty string`);
-        } else if (Array.isArray(value) && value.length === 0) {
-          problems.push(`${blockAt}.${field}: expected a non-empty array`);
-        }
-      }
-      const allowedValues =
-        /** @type {Record<string, Record<string, unknown[]>>} */ (BLOCK_FIELD_VALUES)[block.type] ?? {};
-      for (const [field, values] of Object.entries(allowedValues)) {
-        const value = block[field];
-        if (value != null && !values.includes(value)) {
-          problems.push(
-            `${blockAt}.${field}: ${JSON.stringify(value)} is not one of ${values.join(', ')}`,
-          );
-        }
-      }
-      // A table's cells are read by column index, so a short row renders blank
-      // cells and a long one drops its tail — both silently.
-      if (block.type === 'table' && Array.isArray(block.headers) && Array.isArray(block.rows)) {
-        block.rows.forEach((/** @type {any} */ row, /** @type {number} */ r) => {
-          if (!Array.isArray(row)) {
-            problems.push(`${blockAt}.rows[${r}]: expected an array of cells`);
-          } else if (row.length !== block.headers.length) {
-            problems.push(
-              `${blockAt}.rows[${r}]: has ${row.length} cells but the table has ${block.headers.length} headers`,
+      section.content.forEach(
+        (/** @type {any} */ block, /** @type {number} */ b) => {
+          const blockAt = `${at}.content[${b}]`;
+          const fields = /** @type {Record<string, string[]>} */ (BLOCK_FIELDS)[
+            block?.type
+          ];
+          if (fields == null) {
+            if (GRAPH_BLOCK_TYPES.has(block?.type)) {
+              problems.push(
+                `${blockAt}.type: ${JSON.stringify(block.type)} requires the compiled graph renderer and is not supported by legacy topic readers`,
+              );
+            } else {
+              problems.push(
+                `${blockAt}.type: ${JSON.stringify(block?.type)} is not one of ${Object.keys(BLOCK_FIELDS).join(', ')}`,
+              );
+            }
+            return;
+          }
+          for (const field of fields) {
+            const value = block[field];
+            // Empty counts as missing, the way it does for the doc's own title: a
+            // block whose text is '' passes every other check and renders as a gap.
+            if (value == null) {
+              problems.push(
+                `${blockAt}.${field}: required for a ${block.type} block`,
+              );
+            } else if (typeof value === 'string' && value.trim() === '') {
+              problems.push(`${blockAt}.${field}: expected a non-empty string`);
+            } else if (Array.isArray(value) && value.length === 0) {
+              problems.push(`${blockAt}.${field}: expected a non-empty array`);
+            }
+          }
+          const allowedValues =
+            /** @type {Record<string, Record<string, unknown[]>>} */ (
+              BLOCK_FIELD_VALUES
+            )[block.type] ?? {};
+          for (const [field, values] of Object.entries(allowedValues)) {
+            const value = block[field];
+            if (value != null && !values.includes(value)) {
+              problems.push(
+                `${blockAt}.${field}: ${JSON.stringify(value)} is not one of ${values.join(', ')}`,
+              );
+            }
+          }
+          // A table's cells are read by column index, so a short row renders blank
+          // cells and a long one drops its tail — both silently.
+          if (
+            block.type === 'table' &&
+            Array.isArray(block.headers) &&
+            Array.isArray(block.rows)
+          ) {
+            block.rows.forEach(
+              (/** @type {any} */ row, /** @type {number} */ r) => {
+                if (!Array.isArray(row)) {
+                  problems.push(
+                    `${blockAt}.rows[${r}]: expected an array of cells`,
+                  );
+                } else if (row.length !== block.headers.length) {
+                  problems.push(
+                    `${blockAt}.rows[${r}]: has ${row.length} cells but the table has ${block.headers.length} headers`,
+                  );
+                }
+              },
             );
           }
-        });
-      }
-      // An unknown key is almost always a misspelled required one, and it
-      // would otherwise reach a reader as a block that renders nothing.
-      const allowed = [
-        'type',
-        ...fields,
-        ...(/** @type {Record<string, string[]>} */ (OPTIONAL_BLOCK_FIELDS)[block.type] ?? []),
-      ];
-      for (const key of Object.keys(block)) {
-        if (!allowed.includes(key)) {
-          problems.push(`${blockAt}.${key}: not a field of a ${block.type} block`);
-        }
-      }
-    });
-  });
+          // An unknown key is almost always a misspelled required one, and it
+          // would otherwise reach a reader as a block that renders nothing.
+          const allowed = [
+            'type',
+            ...fields,
+            ...(OPTIONAL_BLOCK_FIELDS[block.type] ?? []),
+          ];
+          for (const key of Object.keys(block)) {
+            if (!allowed.includes(key)) {
+              problems.push(
+                `${blockAt}.${key}: not a field of a ${block.type} block`,
+              );
+            }
+          }
+        },
+      );
+    },
+  );
   return problems;
 }
 
@@ -283,7 +323,9 @@ export async function discoverIntegrationDocs(integration) {
       const full = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
         scanDir(full);
-      } else if (INTEGRATION_DOC_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        INTEGRATION_DOC_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         files.push(full);
       }
     }
@@ -298,7 +340,11 @@ export async function discoverIntegrationDocs(integration) {
     try {
       doc = parseDoc(await loadTopicModule(file), path.basename(file));
     } catch (err) {
-      errors.push(new Error(`${path.relative(docsDir, file)}: ${/** @type {any} */ (err).message}`));
+      errors.push(
+        new Error(
+          `${path.relative(docsDir, file)}: ${/** @type {any} */ (err).message}`,
+        ),
+      );
       continue;
     }
     const problems = problemsInTopic(doc);
@@ -315,7 +361,8 @@ export async function discoverIntegrationDocs(integration) {
     const parsed = /** @type {any} */ (doc);
     // Two files claiming one name would collapse into a single entry, and the
     // one that lost would never be reachable. Named here, where both files are.
-    const previous = seen.get(parsed.name);
+    const topicKey = parsed.name.toLowerCase();
+    const previous = seen.get(topicKey);
     if (previous) {
       errors.push(
         new Error(
@@ -324,7 +371,7 @@ export async function discoverIntegrationDocs(integration) {
       );
       continue;
     }
-    seen.set(parsed.name, path.relative(docsDir, file));
+    seen.set(topicKey, path.relative(docsDir, file));
     if (parsed.replaces != null && parsed.extends != null) {
       errors.push(
         new Error(
@@ -349,9 +396,10 @@ export async function discoverIntegrationDocs(integration) {
 }
 
 /**
- * Merge an extension onto a base topic: a section whose title matches one in
- * the base replaces it, a section the base does not have is appended, and the
- * title/description are taken from the extension when it states them.
+ * Merge an extension onto a base topic: a section with a stable `id` replaces
+ * the base section with the same `id`; legacy sections without IDs fall back to
+ * title matching. A section with no match is appended, and title/description
+ * are taken from the extension when it states them.
  *
  * Keyed by section TITLE rather than by position, the way the localization
  * overlays are — position keying grafts an overlay onto whichever section
@@ -365,7 +413,11 @@ export async function discoverIntegrationDocs(integration) {
 export function mergeTopic(base, overlay) {
   const sections = [...(base.sections ?? [])];
   for (const section of overlay.sections ?? []) {
-    const at = sections.findIndex((/** @type {any} */ s) => s.title === section.title);
+    const at = sections.findIndex((/** @type {any} */ candidate) =>
+      section.id != null
+        ? candidate.id === section.id
+        : candidate.id == null && candidate.title === section.title,
+    );
     if (at === -1) sections.push(section);
     else sections[at] = section;
   }
@@ -399,7 +451,7 @@ export class DocsCatalog {
   static fromBuiltins(builtins = discoverBuiltinTopics()) {
     const catalog = new DocsCatalog();
     for (const [name, file] of Object.entries(builtins)) {
-      catalog.#topics.set(name, {
+      catalog.#topics.set(name.toLowerCase(), {
         name,
         package: BUILTIN_DOCS_PACKAGE,
         path: file,
@@ -455,7 +507,9 @@ export class DocsCatalog {
       // The replacement takes the base topic's slot, so a reader that opens
       // the first topic (or the nth) sees the same one it did before.
       const replaced = target.name;
-      this.#replaceAt(replaced, {
+      const replacedKey = replaced.toLowerCase();
+      const replacementKey = record.name.toLowerCase();
+      this.#replaceAt(replacedKey, {
         name: record.name,
         package: record.package,
         path: record.path,
@@ -466,17 +520,18 @@ export class DocsCatalog {
         // Extensions were authored against the content that just went away.
         extensions: [],
       });
-      if (record.name !== replaced) {
-        this.#aliases.set(replaced, record.name);
+      if (replacementKey !== replacedKey) {
+        this.#aliases.set(replacedKey, replacementKey);
         // A topic renamed twice keeps every name it has ever answered to.
         for (const [from, to] of this.#aliases) {
-          if (to === replaced) this.#aliases.set(from, record.name);
+          if (to === replacedKey) this.#aliases.set(from, replacementKey);
         }
       }
       return warning;
     }
 
-    const existing = this.#topics.get(record.name);
+    const topicKey = record.name.toLowerCase();
+    const existing = this.#topics.get(topicKey);
     if (existing) {
       return {
         code: 'invalid_doc',
@@ -484,7 +539,7 @@ export class DocsCatalog {
         message: `Topic "${record.name}" is already provided by ${existing.package}. Give it another name, or declare \`replaces: '${record.name}'\` to take its place.`,
       };
     }
-    this.#topics.set(record.name, {
+    this.#topics.set(topicKey, {
       name: record.name,
       package: record.package,
       path: record.path,
@@ -519,7 +574,7 @@ export class DocsCatalog {
 
   /** @returns {string[]} every topic name, in read order */
   names() {
-    return [...this.#topics.keys()];
+    return [...this.#topics.values()].map(entry => entry.name);
   }
 
   /** @returns {DocsTopicEntry[]} every topic, in read order */
@@ -536,7 +591,7 @@ export class DocsCatalog {
     /** @type {Map<string, DocsTopicEntry>} */
     const next = new Map();
     for (const [key, value] of this.#topics) {
-      if (key === name) next.set(entry.name, entry);
+      if (key === name.toLowerCase()) next.set(entry.name.toLowerCase(), entry);
       else next.set(key, value);
     }
     this.#topics = next;

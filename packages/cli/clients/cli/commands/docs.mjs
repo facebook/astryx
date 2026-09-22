@@ -80,12 +80,23 @@ function formatBlock(block, detail) {
       return formatTable(block.headers, block.rows);
 
     case 'list': {
-      const prefix = block.style === 'ordered' ? (/** @type {number} */ i) => `${i + 1}. `
-        : block.style === 'dont' ? () => 'x '
-        : block.style === 'do' ? () => '+ '
-        : () => '- ';
+      const prefix =
+        block.style === 'ordered'
+          ? (/** @type {number} */ i) => `${i + 1}. `
+          : block.style === 'dont'
+            ? () => 'x '
+            : block.style === 'do'
+              ? () => '+ '
+              : () => '- ';
       return block.items.map((item, i) => `${prefix(i)}${item}`).join('\n');
     }
+
+    case 'workflow':
+    case 'collection':
+    case 'reference':
+      throw new Error(
+        `Documentation block "${block.type}" requires the compiled graph renderer.`,
+      );
 
     default:
       return null;
@@ -107,7 +118,8 @@ function formatSection(section, detail) {
     return `${section.title}: ${first.split('\n')[0]}`;
   }
 
-  const heading = detail === 'compact' ? `[${section.title}]` : `## ${section.title}`;
+  const heading =
+    detail === 'compact' ? `[${section.title}]` : `## ${section.title}`;
   return `${heading}\n\n${blocks.join('\n\n')}`;
 }
 
@@ -123,9 +135,10 @@ function formatReferenceFull(docs, detail) {
     return `${header}\n${sections.join('\n')}`;
   }
 
-  const header = detail === 'compact'
-    ? `# ${docs.title}\n${docs.description}`
-    : `# ${docs.title}\n\n${docs.description}`;
+  const header =
+    detail === 'compact'
+      ? `# ${docs.title}\n${docs.description}`
+      : `# ${docs.title}\n\n${docs.description}`;
   const sections = docs.sections.map(s => formatSection(s, detail));
   const sep = detail === 'compact' ? '\n\n' : '\n\n';
   return `${header}\n\n${sections.join(sep)}`;
@@ -155,7 +168,10 @@ function summarize(result) {
 export function registerDocs(program) {
   defineCommand(program, docsCommand, {
     fn: docsFn,
-    action: async (/** @type {string | undefined} */ topic, /** @type {string | undefined} */ sectionName) => {
+    action: async (
+      /** @type {string | undefined} */ topic,
+      /** @type {string | undefined} */ sectionName,
+    ) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
@@ -169,7 +185,8 @@ export function registerDocs(program) {
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
-        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
         return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,

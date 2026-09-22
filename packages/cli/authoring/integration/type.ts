@@ -3,9 +3,10 @@
 /**
  * Public type surface for an Astryx integration manifest
  * (`astryx.integration.{ts,mjs,js}`, sibling to the integration package's
- * package.json). Identity (name/version) comes from package.json, not the
- * manifest. Authors write a plain object against {@link AstryxIntegration};
- * the CLI validates it via `parseIntegration` at the load boundary.
+ * package.json). Identity defaults to the package name, but `providerId` can keep
+ * a stable logical identity across an explicit package rename. Authors write a
+ * plain object against {@link AstryxIntegration}; the CLI validates it via
+ * `parseIntegration` at the load boundary.
  *
  * The manifest module may also carry `debug` and `gapReport` NAMED exports.
  * They are not fields here on purpose: a CLI released before a given manifest
@@ -13,6 +14,9 @@
  * named export is simply not read. See the `cli-integrations` doc topic.
  */
 export interface AstryxIntegration {
+  /** Stable logical provider ID. Omit to use package.json#name. Set this only
+   *  when a package rename must preserve existing artifact IDs. */
+  providerId?: string;
   /** Relative path to the components/docs root (resolved to absolute). */
   components?: string;
   /** Relative path to the templates root (resolved to absolute). */

@@ -31,7 +31,9 @@ function topic(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
 }
@@ -97,7 +99,9 @@ describe('discoverIntegrationDocs', () => {
       }),
     );
     expect(errors).toEqual([]);
-    expect(records.map(r => [r.name, r.package, r.replaces, r.extendsTopic])).toEqual([
+    expect(
+      records.map(r => [r.name, r.package, r.replaces, r.extendsTopic]),
+    ).toEqual([
       ['deploying', '@acme/widgets', undefined, undefined],
       ['getting-started', '@acme/widgets', 'getting-started', undefined],
       ['theme-extra', '@acme/widgets', undefined, 'theme'],
@@ -126,7 +130,9 @@ describe('discoverIntegrationDocs', () => {
 
   it('reports a doc that exports nothing, rather than skipping it silently', async () => {
     const {records, errors} = await discoverIntegrationDocs(
-      integration('@acme/empty', {'deploying.doc.mjs': 'export const nope = 1;\n'}),
+      integration('@acme/empty', {
+        'deploying.doc.mjs': 'export const nope = 1;\n',
+      }),
     );
     expect(records).toEqual([]);
     expect(errors).toHaveLength(1);
@@ -153,6 +159,29 @@ describe('discoverIntegrationDocs', () => {
     expect(records).toEqual([]);
     expect(errors[0].message).toContain('declares both');
   });
+
+  it('rejects graph blocks at the legacy topic-reader boundary', async () => {
+    const {records, errors} = await discoverIntegrationDocs(
+      integration('@acme/graph-block', {
+        'deploying.doc.mjs': topic({
+          sections: [
+            {
+              id: 'steps',
+              title: 'Steps',
+              content: [
+                {
+                  type: 'workflow',
+                  steps: [{title: 'Install', description: 'Run install.'}],
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    );
+    expect(records).toEqual([]);
+    expect(errors[0].message).toContain('requires the compiled graph renderer');
+  });
 });
 
 describe('problemsInTopic', () => {
@@ -170,7 +199,11 @@ describe('problemsInTopic', () => {
     // A misspelled required field: the block renders nothing at all.
     expect(
       problemsInTopic(
-        topic({sections: [{title: 'Overview', content: [{type: 'prose', txt: 'oops'}]}]}),
+        topic({
+          sections: [
+            {title: 'Overview', content: [{type: 'prose', txt: 'oops'}]},
+          ],
+        }),
       ),
     ).toEqual([
       'sections[0].content[0].text: required for a prose block',
@@ -180,7 +213,12 @@ describe('problemsInTopic', () => {
     expect(
       problemsInTopic(
         topic({
-          sections: [{title: 'Overview', content: [{type: 'heading', level: 2, text: 'x'}]}],
+          sections: [
+            {
+              title: 'Overview',
+              content: [{type: 'heading', level: 2, text: 'x'}],
+            },
+          ],
         }),
       ),
     ).toContain('sections[0].content[0].level: 2 is not one of 3, 4, 5, 6');
@@ -196,11 +234,27 @@ describe('problemsInTopic', () => {
           ],
         }),
       ),
-    ).toContain('sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers');
+    ).toContain(
+      'sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers',
+    );
+  });
+
+  it('rejects graph metadata at the legacy topic-reader boundary', () => {
+    for (const fields of [
+      {placement: {parent: 'namespace:cli'}},
+      {aliases: ['setup']},
+      {audience: 'internal'},
+    ]) {
+      expect(problemsInTopic(topic(fields)).join('\n')).toContain(
+        'requires the compiled graph reader',
+      );
+    }
   });
 
   it('rejects a name that is not URL-safe', () => {
-    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain('URL-safe');
+    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain(
+      'URL-safe',
+    );
   });
 });
 
@@ -228,11 +282,23 @@ describe('DocsCatalog', () => {
     expect(catalog.resolve('deploying').package).toBe('@acme/widgets');
   });
 
+  it('treats topic identities case-insensitively without losing display case', () => {
+    const catalog = DocsCatalog.fromBuiltins();
+    expect(catalog.add(record({name: 'Deploying'}))).toBeNull();
+    expect(catalog.resolve('deploying').name).toBe('Deploying');
+    expect(catalog.resolve('DEPLOYING').name).toBe('Deploying');
+
+    const issue = catalog.add(
+      record({name: 'deploying', package: '@acme/duplicate'}),
+    );
+    expect(issue).toMatchObject({code: 'invalid_doc', severity: 'error'});
+  });
+
   it('refuses to shadow an existing topic by name alone', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
     const issue = catalog.add(record({name: 'tokens'}));
     expect(issue).toMatchObject({code: 'invalid_doc', severity: 'error'});
-    expect(issue.message).toContain("already provided by @astryxdesign/cli");
+    expect(issue.message).toContain('already provided by @astryxdesign/cli');
     expect(issue.message).toContain("replaces: 'tokens'");
     // The built-in topic is untouched.
     expect(catalog.resolve('tokens').package).toBe(BUILTIN_DOCS_PACKAGE);
@@ -244,7 +310,9 @@ describe('DocsCatalog', () => {
       tokens: '/cli/tokens.doc.mjs',
     });
     expect(
-      catalog.add(record({name: 'getting-started', replaces: 'getting-started'})),
+      catalog.add(
+        record({name: 'getting-started', replaces: 'getting-started'}),
+      ),
     ).toBeNull();
     expect(catalog.names()).toEqual(['getting-started', 'tokens']);
     const entry = catalog.resolve('getting-started');
@@ -276,12 +344,16 @@ describe('DocsCatalog', () => {
 
   it('warns, and lets the later package win, when two replace one topic', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
-    expect(catalog.add(record({name: 'tokens', replaces: 'tokens'}))).toBeNull();
+    expect(
+      catalog.add(record({name: 'tokens', replaces: 'tokens'})),
+    ).toBeNull();
     const issue = catalog.add(
       record({name: 'tokens', package: '@acme/later', replaces: 'tokens'}),
     );
     expect(issue).toMatchObject({code: 'duplicate_doc', severity: 'warning'});
-    expect(issue.message).toContain('@acme/later is configured later, so it wins');
+    expect(issue.message).toContain(
+      '@acme/later is configured later, so it wins',
+    );
     expect(catalog.resolve('tokens').package).toBe('@acme/later');
   });
 
@@ -327,15 +399,42 @@ describe('mergeTopic', () => {
         {title: 'Internal', content: [{type: 'prose', text: 'the meta way'}]},
       ],
     });
-    expect(merged.sections.map(s => s.title)).toEqual(['Install', 'Tokens', 'Internal']);
+    expect(merged.sections.map(s => s.title)).toEqual([
+      'Install',
+      'Tokens',
+      'Internal',
+    ]);
     expect(merged.sections[0].content[0].text).toBe('yarn add');
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
     expect(base.sections[0].content[0].text).toBe('npm i');
   });
 
+  it('replaces a section by stable ID even when its title changes', () => {
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'install', title: 'Install', content: []},
+          {id: 'tokens', title: 'Tokens', content: []},
+        ],
+      },
+      {
+        sections: [{id: 'install', title: 'Setup', content: []}],
+      },
+    );
+    expect(merged.sections.map(section => [section.id, section.title])).toEqual(
+      [
+        ['install', 'Setup'],
+        ['tokens', 'Tokens'],
+      ],
+    );
+  });
+
   it('takes the title and description only when the overlay states them', () => {
     expect(mergeTopic(base, {sections: []}).title).toBe('Theme');
-    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe('Theming');
+    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe(
+      'Theming',
+    );
   });
 });

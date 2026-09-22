@@ -12,6 +12,7 @@ export type * from './component/type';
 export type * from './hook/type';
 export type * from './function/type';
 export type * from './reference/type';
+export type * from './namespace/type';
 export type * from './template/type';
 export type * from './schema/type';
 export type * from './command/type';

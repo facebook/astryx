@@ -31,6 +31,7 @@ export type {TemplateDoc} from './doctypes/types'; //     Foo.template.{ts,mjs}
 export type {SchemaDoc} from './doctypes/types'; //       config.doc.mjs (object shape)
 export type {CommandDoc} from './doctypes/types'; //      search.doc.mjs (CLI command)
 export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (vocabulary)
+export type {NamespaceDoc} from './doctypes/types'; //    cli.doc.mjs (hierarchy)
 export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
 export type {DebugEvent} from './debug/type'; //          one recorded CLI run
 export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
@@ -56,6 +57,7 @@ export {parseTemplate} from './doctypes/template/parse.mjs';
 export {parseSchema} from './doctypes/schema/parse.mjs';
 export {parseCommand} from './doctypes/command/parse.mjs';
 export {parseEnum} from './doctypes/enum/parse.mjs';
+export {parseNamespace} from './doctypes/namespace/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
@@ -72,6 +74,26 @@ export {parseDebugEvent} from './debug/parse.mjs';
 // need them to author. Names carry the doc kind they belong to.
 // ═══════════════════════════════════════════════════════════════════════
 export type {
+  ProviderId,
+  ArtifactId,
+  DocId,
+  ProviderInstanceId,
+  ContentDigest,
+  ContributionKind,
+  ArtifactIdentity,
+  ProviderInstance,
+  AuthoredDoc,
+  AuthoredDocKindOf,
+  AuthoredDocSnapshot,
+  AuthoredDocSource,
+  AuthoredDocEntry,
+} from './identity/type';
+export type {
+  // shared graph
+  AuthoredDocKind,
+  DocAudience,
+  DocPlacement,
+  AuthoredDocGraphFields,
   // component
   SingleComponentDoc,
   MultiComponentDoc,
@@ -109,6 +131,16 @@ export type {
   ReferenceContentBlock,
   ReferenceTokenPreviewType,
   ReferenceTranslationDoc,
+  WorkflowStep,
+  WorkflowDocBlock,
+  CollectionDocBlock,
+  ReferenceDocBlock,
+  // namespace
+  NamespaceProviderScope,
+  NamespaceSlotAcceptance,
+  NamespaceSlot,
+  NamespaceAdoptionSource,
+  NamespaceAdoptionRule,
   // template
   TemplateCategory,
   // schema

@@ -21,6 +21,8 @@ import {formatZodError} from '../_shared/errors.mjs';
 const MAX_AGENT_DOC_LINES = 8;
 const MAX_AGENT_DOC_LINE_CODE_POINTS = 240;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
+const PROVIDER_ID_RE =
+  /^(?:@[a-z0-9][a-z0-9._~!*'()-]*\/)?[a-z0-9][a-z0-9._~!*'()-]*$/u;
 
 /**
  * @param {string} value
@@ -66,6 +68,10 @@ export const agentDocsSchema = z.object({
 });
 
 export const integrationBaseSchema = z.object({
+  providerId: z
+    .string()
+    .regex(PROVIDER_ID_RE, 'providerId must be a canonical npm package name')
+    .optional(),
   components: z.string().optional(),
   templates: z.string().optional(),
   codemods: z.string().optional(),

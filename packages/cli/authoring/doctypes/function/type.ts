@@ -10,7 +10,11 @@
  * here — the function does not know it has a CLI.
  */
 
-import type {HookParamDoc, UsageDoc} from '../base/type';
+import type {
+  AuthoredDocGraphFields,
+  HookParamDoc,
+  UsageDoc,
+} from '../base/type';
 
 /**
  * A documented return. Hooks list named return fields (`name` set); CLI/API
@@ -45,7 +49,7 @@ export interface FunctionExampleDoc {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').FunctionDoc} \*\/
  *   export const doc = { type: 'function', kind: 'api', name: 'search', ... };
  */
-export interface FunctionDoc {
+export interface FunctionDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant (shared with hooks). */
   type?: 'function';
   /** Export name, e.g. 'search' | 'useMediaQuery'. */

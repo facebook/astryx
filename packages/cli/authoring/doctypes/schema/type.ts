@@ -6,6 +6,7 @@
  * response envelope). Colocated as a `.doc.mjs` next to the schema it describes.
  */
 
+import type {AuthoredDocGraphFields} from '../base/type';
 import type {ReferenceContentBlock} from '../reference/type';
 
 /**
@@ -37,7 +38,7 @@ export interface SchemaFieldDoc {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').SchemaDoc} \*\/
  *   export const doc = { type: 'schema', name: 'config', ... };
  */
-export interface SchemaDoc {
+export interface SchemaDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant. */
   type?: 'schema';
   /** URL-safe identifier, used as the docs slug within its namespace. */

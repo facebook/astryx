@@ -23,8 +23,11 @@ export function parseReference(input, label = 'reference doc') {
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }
-  // The schema is permissive (it also accepts legacy generic docs), so it is
-  // deliberately looser than the rich public type; cast through unknown at this
-  // validated boundary.
-  return /** @type {ReferenceDoc} */ (/** @type {unknown} */ (result.data));
+  const doc = result.data;
+  return /** @type {ReferenceDoc} */ ({
+    ...doc,
+    title: doc.title ?? doc.displayName ?? doc.name,
+    description: doc.description ?? '',
+    sections: doc.sections ?? [],
+  });
 }

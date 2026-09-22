@@ -55,7 +55,7 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.",
+        'Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.',
       example: "'getting-started'",
     },
     {
@@ -73,6 +73,12 @@ export const doc = {
       required: true,
       fields: [
         {
+          name: 'sections[].id',
+          type: 'string',
+          description:
+            'Stable section anchor. New docs should set this instead of relying on a mutable title.',
+        },
+        {
           name: 'sections[].title',
           type: 'string',
           description:
@@ -89,7 +95,7 @@ export const doc = {
           name: 'sections[].content',
           type: 'ReferenceContentBlock[]',
           description:
-            'Ordered content blocks. Mix prose, code, tables, and lists freely.',
+            'Ordered content blocks. Existing prose, heading, code, table, list, and token-ref blocks remain; V1 adds workflow, collection, and reference.',
           required: true,
         },
         {
@@ -134,7 +140,7 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. V1 adds only workflow, collection, and reference; choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {
       type: 'code',
@@ -146,7 +152,10 @@ export const docs = {
   | { type: 'code'; lang: string; code: string; label?: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'list'; style: 'ordered' | 'unordered' | 'do' | 'dont'; items: string[] }
-  | { type: 'token-ref'; topic: string; section: string };`,
+  | { type: 'token-ref'; topic: string; section: string }
+  | { type: 'workflow'; title?: string; steps: WorkflowStep[] }
+  | { type: 'collection'; source: {slot: string}; presentation?: 'list' | 'cards' | 'compact'; whenEmpty?: 'show' | 'omit' }
+  | { type: 'reference'; target: string; projection?: {fields?: string[]; sections?: string[]} };`,
     },
     {
       type: 'prose',

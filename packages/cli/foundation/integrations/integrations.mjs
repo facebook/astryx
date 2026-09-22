@@ -6,13 +6,19 @@
  * Integrations are PACKAGE NAMES listed in astryx.config.{ts,mjs,js}. Each
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
- * components/templates/codemods/docs/themes roots and an optional issuesUrl. Identity
- * (name, version) comes from the package's package.json, not the manifest.
+ * components/templates/codemods/docs/themes roots and an optional issuesUrl.
+ * Stable provider identity and package metadata come from package.json, not the
+ * manifest.
+ *
+ * @input Integration package names, package.json files, and root manifests.
+ * @output LoadedIntegration records with normalized provider identity and roots.
+ * @position foundation/integrations — package contribution loading boundary.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
+import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // The key census and contribution parsers are internal to the schema module on
 // purpose: the public parser still validates the complete authored type, while
 // the loader can isolate an invalid optional contribution from valid roots.
@@ -31,6 +37,8 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
  * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
+ * @property {import('../../authoring/identity/type').ProviderId} [providerId]
+ *   normalized stable provider identity; absent only for a legacy unnamed local package
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
@@ -73,6 +81,21 @@ export const MANIFEST_BASENAMES = [
   'astryx.integration.mjs',
   'astryx.integration.js',
 ];
+
+/**
+ * Normalize a package-owned provider ID without rejecting legacy unnamed local
+ * packages at this compatibility boundary.
+ * @param {unknown} name
+ * @returns {import('../../authoring/identity/type').ProviderId | undefined}
+ */
+function providerIdForPackage(name) {
+  if (typeof name !== 'string' || name.length === 0) return undefined;
+  try {
+    return normalizeProviderId(name);
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Return the conventional root manifest paths present in `dir`, in
@@ -274,6 +297,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     typeof pkg.name === 'string' && pkg.name.length > 0
       ? pkg.name
       : '(local integration)';
+  const packageProviderId = providerIdForPackage(pkg.name);
   const manifestFile = resolveManifestPath(packageDir, spec);
 
   let manifest;
@@ -299,6 +323,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   } catch (err) {
     return {
       name: spec,
+      ...(packageProviderId == null ? {} : {providerId: packageProviderId}),
       version: pkg.version,
       __spec: spec,
       __packageDir: packageDir,
@@ -307,6 +332,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       __local: true,
     };
   }
+
+  const providerId = providerIdForPackage(manifest.providerId ?? pkg.name);
 
   /** @param {string | null | undefined} value */
   const resolveRoot = value => {
@@ -320,6 +347,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
 
   return {
     name: spec,
+    ...(providerId == null ? {} : {providerId}),
     version: pkg.version,
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
@@ -354,11 +382,12 @@ export async function loadIntegrations(
 ) {
   /** @type {LoadedIntegration[]} */
   const integrations = [];
-  const seen = new Set();
+  const seenSpecs = new Set();
+  const seenProviderIds = new Set();
 
   for (const spec of specs) {
-    if (!spec || seen.has(spec)) continue;
-    seen.add(spec);
+    if (!spec || seenSpecs.has(spec)) continue;
+    seenSpecs.add(spec);
 
     const packageDir = resolvePackageDir(spec, cwd);
     const pkgPath = path.join(packageDir, 'package.json');
@@ -371,6 +400,7 @@ export async function loadIntegrations(
       );
     }
 
+    const packageProviderId = providerIdForPackage(pkg.name ?? spec);
     const manifestFile = resolveManifestPath(packageDir, spec);
     let manifest;
     /** @type {string[]} */
@@ -397,8 +427,12 @@ export async function loadIntegrations(
       // down every command (component/docs/theme don't need this integration).
       // Record a load-error marker; Project surfaces it via issues() and the
       // discovery loops naturally skip it (no components/templates/codemods).
+      if (packageProviderId != null && seenProviderIds.has(packageProviderId)) {
+        continue;
+      }
       integrations.push({
         name: pkg.name ?? spec,
+        ...(packageProviderId == null ? {} : {providerId: packageProviderId}),
         version: pkg.version,
         __spec: spec,
         __packageDir: packageDir,
@@ -407,6 +441,12 @@ export async function loadIntegrations(
       });
       continue;
     }
+
+    const providerId = providerIdForPackage(
+      manifest.providerId ?? pkg.name ?? spec,
+    );
+    if (providerId != null && seenProviderIds.has(providerId)) continue;
+    if (providerId != null) seenProviderIds.add(providerId);
 
     /** @param {string | null | undefined} value */
     const resolveRoot = value => {
@@ -421,6 +461,7 @@ export async function loadIntegrations(
 
     integrations.push({
       name: pkg.name ?? spec,
+      ...(providerId == null ? {} : {providerId}),
       version: pkg.version,
       components: resolveRoot(manifest.components),
       templates: resolveRoot(manifest.templates),

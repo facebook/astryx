@@ -4,9 +4,9 @@
  * @file Template doc types.
  */
 
-import type {RegistryDocIdentity} from '../base/type';
+import type {AuthoredDocGraphFields, RegistryDocIdentity} from '../base/type';
 
-export interface BaseTemplateDoc {
+export interface BaseTemplateDoc extends AuthoredDocGraphFields {
   /** Identifier name for the template. For block templates this matches
    *  the React component import name (e.g. `"ChatMessageMetadata"`); for
    *  page templates it's a human-readable label that doubles as the

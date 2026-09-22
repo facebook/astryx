@@ -31,4 +31,5 @@ export {parseTemplate} from './doctypes/template/parse.mjs';
 export {parseSchema} from './doctypes/schema/parse.mjs';
 export {parseCommand} from './doctypes/command/parse.mjs';
 export {parseEnum} from './doctypes/enum/parse.mjs';
+export {parseNamespace} from './doctypes/namespace/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';

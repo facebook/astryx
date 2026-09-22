@@ -9,6 +9,7 @@
  * `--help`. Colocated at `clients/cli/commands/<name>.doc.mjs`.
  */
 
+import type {AuthoredDocGraphFields} from '../base/type';
 import type {ReferenceContentBlock} from '../reference/type';
 
 /** A positional argument. `param` links it to a FunctionDoc param for its description. */
@@ -53,7 +54,7 @@ export interface CommandExampleDoc {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').CommandDoc} \*\/
  *   export const doc = { type: 'command', name: 'search', fn: 'search', ... };
  */
-export interface CommandDoc {
+export interface CommandDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant. */
   type?: 'command';
   /** Command path, e.g. 'search' | 'theme build'. */

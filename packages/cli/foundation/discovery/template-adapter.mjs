@@ -27,10 +27,11 @@ import {createJiti} from 'jiti';
 import {loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
+import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
 
 /** Identity used for core (built-in) templates in package-scoped listings. */
-const CORE_PACKAGE = '@astryxdesign/core';
+const CORE_PACKAGE = CORE_PROVIDER_ID;
 
 /**
  * Identity for a template in package-scoped views. Core (built-in) templates

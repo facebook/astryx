@@ -23,9 +23,11 @@ import {Project} from '../../foundation/config/project.mjs';
 import {
   DocsCatalog,
   mergeTopic,
+  problemsInTopic,
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
 /**
  * The project's topics: the built-in ones plus whatever the configured
@@ -56,7 +58,17 @@ export async function loadDocsCatalog(cwd = process.cwd()) {
  */
 export async function loadReferenceDocs(docPath, {lang} = {}) {
   const mod = await import(pathToFileURL(docPath).href);
-  const docs = mod.docs ?? mod.default;
+  const parsed = parseDoc(mod.docs ?? mod.default, path.basename(docPath));
+  if (!('sections' in parsed)) {
+    throw new Error(`${path.basename(docPath)} is not a reference document.`);
+  }
+  const problems = problemsInTopic(parsed);
+  if (problems.length > 0) {
+    throw new Error(
+      `${path.basename(docPath)} is invalid: ${problems.join('; ')}`,
+    );
+  }
+  const docs = parsed;
   if (!lang || lang === 'en') return docs;
 
   const dir = path.dirname(docPath);
@@ -86,7 +98,9 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
     ...docs,
     description: translation.description || docs.description,
     sections: docs.sections.map(
-      (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section) => {
+      (
+        /** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section,
+      ) => {
         const ts = bySection.get(section.title);
         if (!ts) return section;
         return {
@@ -99,8 +113,10 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
             ) => {
               const tb = ts.content?.[bi];
               if (!tb) return block;
-              if (tb.type === 'prose' && block.type === 'prose') return {...block, text: tb.text};
-              if (tb.type === 'list' && block.type === 'list') return {...block, items: tb.items};
+              if (tb.type === 'prose' && block.type === 'prose')
+                return {...block, text: tb.text};
+              if (tb.type === 'list' && block.type === 'list')
+                return {...block, items: tb.items};
               return block;
             },
           ),

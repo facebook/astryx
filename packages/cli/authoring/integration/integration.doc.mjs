@@ -14,11 +14,18 @@ export const doc = {
   namespace: 'cli',
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
-    "package's package.json. Points the CLI at the package's components, " +
-    'templates, codemods, doc topics, source themes, and managed agent guidance, ' +
-    'and where to file issues. Every field is optional.',
+    "package's package.json. It can preserve a stable provider identity across a package rename, " +
+    "and points the CLI at the package's components, templates, codemods, doc topics, " +
+    'source themes, managed agent guidance, and issue tracker. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
+    {
+      name: 'providerId',
+      type: 'string',
+      description:
+        'Stable logical provider ID. Omit to use package.json#name; set it to the prior package name only when an explicit rename must preserve artifact IDs.',
+      example: "'@acme/widgets'",
+    },
     {
       name: 'components',
       type: 'string',
@@ -87,9 +94,9 @@ export const doc = {
     {
       type: 'prose',
       text:
-        "Identity, the integration's name and version, comes from the " +
-        "package's package.json, not from this manifest. The manifest only " +
-        'declares where the CLI finds each kind of artifact.',
+        'Provider identity defaults to package.json#name. During an explicit ' +
+        'package rename, set `providerId` to the prior canonical package name so ' +
+        'existing artifact IDs remain stable. Package version always comes from package.json.',
     },
     {
       type: 'prose',
