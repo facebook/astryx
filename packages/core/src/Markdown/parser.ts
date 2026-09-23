@@ -546,6 +546,10 @@ type ResolvedOptions = {
   readonly isFinal: boolean;
   readonly allowBlockSyntax?: boolean;
   readonly containerDepth?: number;
+  /** Internal structure-only pass used to locate extension container ranges. */
+  readonly skipLinkDefinitionExtraction?: boolean;
+  /** Reports where a structure-only pass stopped on deferred block syntax. */
+  readonly extensionDiscovery?: {deferredStart?: number};
   /**
    * Offset of this parse's input within the document the ranges are reported
    * against. Internal only — the incremental parser parses slices and needs
@@ -581,6 +585,9 @@ function makeResolvedOptions(
     plugins: fields.plugins,
     isFinal: fields.isFinal,
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
+    containerDepth: fields.containerDepth,
+    skipLinkDefinitionExtraction: fields.skipLinkDefinitionExtraction,
+    extensionDiscovery: fields.extensionDiscovery,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
   };
@@ -1420,53 +1427,53 @@ function findBlockExtensionContainerRanges(
   opts: ResolvedOptions,
 ): ReadonlyArray<{readonly start: number; readonly end: number}> {
   if (
+    opts.skipLinkDefinitionExtraction === true ||
     (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0 ||
     !source.split('\n').some(line => matchLinkDefinition(line) != null)
   ) {
     return [];
   }
 
-  const ranges: {readonly start: number; readonly end: number}[] = [];
-  let cursor = 0;
-  let fence = '';
-  while (cursor < source.length) {
-    const newline = source.indexOf('\n', cursor);
-    const lineEnd = newline < 0 ? source.length : newline;
-    const line = source.slice(cursor, lineEnd);
-    if (fence !== '') {
-      if (line.startsWith(fence)) {
-        fence = '';
-      }
-    } else {
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-      if (fenceMatch != null) {
-        fence = fenceMatch[1];
-      } else {
-        const column = blockExtensionColumn(line);
-        if (column != null) {
-          const offset = cursor + column;
-          const extension = matchExtensionSyntax(source, offset, 'block', opts);
-          if (
-            extension.status === 'match' &&
-            Array.isArray(extension.node.children)
-          ) {
-            ranges.push({start: offset, end: extension.end});
-            cursor = extension.end;
-            continue;
-          }
-          if (extension.status === 'defer') {
-            ranges.push({start: offset, end: source.length});
-            break;
-          }
-        }
-      }
+  const discovery: {deferredStart?: number} = {};
+  const baseOffset = opts.baseOffset ?? 0;
+  const blocks = parseMarkdownImpl(source, {
+    ...opts,
+    astPositions: true,
+    sourceRanges: true,
+    skipLinkDefinitionExtraction: true,
+    extensionDiscovery: discovery,
+  });
+  const ranges: {start: number; end: number}[] = [];
+  for (const block of blocks) {
+    const start = block.position?.start.offset;
+    const end = block.position?.end.offset;
+    if (
+      block.type === 'extension' &&
+      Array.isArray(block.children) &&
+      typeof start === 'number' &&
+      typeof end === 'number'
+    ) {
+      ranges.push({start: start - baseOffset, end: end - baseOffset});
     }
-    if (newline < 0) {
-      break;
-    }
-    cursor = newline + 1;
+  }
+  if (discovery.deferredStart != null) {
+    ranges.push({
+      start: discovery.deferredStart - baseOffset,
+      end: source.length,
+    });
   }
   return ranges;
+}
+
+function extractScopedLinkDefinitions(
+  source: string,
+  opts: ResolvedOptions,
+): ReturnType<typeof extractLinkDefinitions> {
+  return extractLinkDefinitions(
+    source,
+    opts.math,
+    findBlockExtensionContainerRanges(source, opts),
+  );
 }
 
 type ParseOptionsWithoutPlugins = Omit<ParseOptions, 'plugins'>;
@@ -2571,11 +2578,10 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned} = extractLinkDefinitions(
-    input,
-    baseOpts.math,
-    findBlockExtensionContainerRanges(input, baseOpts),
-  );
+  const {defs, cleaned} =
+    baseOpts.skipLinkDefinitionExtraction === true
+      ? {defs: new Map<string, string>(), cleaned: input}
+      : extractScopedLinkDefinitions(input, baseOpts);
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
@@ -2799,6 +2805,10 @@ function parseMarkdownImpl(
         }
       }
       if (extension.status === 'defer') {
+        if (opts.extensionDiscovery != null) {
+          opts.extensionDiscovery.deferredStart =
+            (opts.baseOffset ?? 0) + extensionOffset;
+        }
         break;
       }
     }
@@ -3827,7 +3837,7 @@ function parseMarkdownIncrementalAstBlocks(
   // blocks: document-global references may precede their footer definition.
   let definitionsChanged = false;
   if (settledDelta !== '') {
-    const {defs: deltaDefs} = extractLinkDefinitions(settledDelta, opts.math);
+    const {defs: deltaDefs} = extractScopedLinkDefinitions(settledDelta, opts);
     for (const [label, destination] of deltaDefs) {
       if (!cache.settledLinkDefs.has(label)) {
         cache.settledLinkDefs.set(label, destination);
@@ -3837,9 +3847,9 @@ function parseMarkdownIncrementalAstBlocks(
       }
     }
   }
-  const {defs: tailLinkDefs} = extractLinkDefinitions(
+  const {defs: tailLinkDefs} = extractScopedLinkDefinitions(
     unsettledInput,
-    opts.math,
+    opts,
   );
   if (
     !sameUnsettledDefinitions(

@@ -259,6 +259,30 @@ describe('markdownCalloutsPlugin', () => {
     ).toEqual(parseMarkdown(complete, {plugins: [markdownCalloutsPlugin]}));
   });
 
+  it('keeps streamed callout definitions out of the document-global cache', () => {
+    const partial = [':::note', '[local]: /inside'].join('\n');
+    const complete = [
+      partial,
+      'Use [local].',
+      ':::',
+      '',
+      'Outside [local].',
+    ].join('\n');
+    const state = createIncrementalState();
+
+    parseMarkdownIncremental(partial, state, {
+      plugins: [markdownCalloutsPlugin],
+    });
+    expect(state.linkDefsKey).toBe('');
+    const streamed = parseMarkdownIncremental(complete, state, {
+      plugins: [markdownCalloutsPlugin],
+    });
+    expect(streamed.at(-1)).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: 'Outside [local].'}],
+    });
+  });
+
   it('rejects a later plugin that rewrites callout children', () => {
     const source = [':::note', 'Keep this.', ':::'].join('\n');
     const baseline = parseMarkdownAst(source, {
