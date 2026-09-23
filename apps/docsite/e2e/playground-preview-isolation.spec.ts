@@ -322,6 +322,298 @@ test.describe('playground preview isolation', () => {
   });
 });
 
+test.describe('restricted preview capabilities', () => {
+  test('keeps targeting and property edits on the attested channel', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/playground');
+    await expectPreviewToRender(page, 'Welcome');
+    await setEditorCode(
+      page,
+      `
+      import {Button} from '@astryxdesign/core/Button';
+      export default function Example() { return <Button label="Edit me" />; }
+    `,
+    );
+    await expectPreviewToRender(page, 'Edit me');
+    const frame = currentPreviewFrame(page);
+    await page
+      .getByRole('button', {name: 'Target element', exact: true})
+      .click();
+    await frame.getByRole('button', {name: 'Edit me', exact: true}).click();
+    await expect(
+      page.getByRole('button', {name: 'Target element', exact: true}),
+    ).toHaveAttribute('aria-pressed', 'false');
+    await frame.getByRole('button', {name: 'Properties', exact: true}).click();
+    await frame
+      .getByRole('textbox', {name: 'label', exact: true})
+      .fill('Edited through properties');
+    await frame.getByRole('button', {name: 'Apply', exact: true}).click();
+    await expectPreviewToRender(page, 'Edited through properties');
+    expect(
+      await page.evaluate(() =>
+        (
+          window as unknown as {
+            monaco: {
+              editor: {getModels: () => Array<{getValue: () => string}>};
+            };
+          }
+        ).monaco.editor
+          .getModels()[0]
+          .getValue(),
+      ),
+    ).toContain('Edited through properties');
+    await page.screenshot({
+      path: testInfo.outputPath('targeting-roundtrip.png'),
+    });
+  });
+
+  test('keeps AI Chat usable without its saved panel width', async ({
+    page,
+  }, testInfo) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/playground?template=ai-chat');
+    await expectPreviewToRender(page, 'auth-service.ts');
+    const frame = currentPreviewFrame(page);
+    const input = frame.locator('[contenteditable="true"]').first();
+    await input.fill('Draft stays in memory');
+    await expect(input).toHaveText('Draft stays in memory');
+    expect(
+      await frame.evaluate(() => {
+        try {
+          localStorage.setItem('preview-probe', 'blocked');
+          return false;
+        } catch {
+          return true;
+        }
+      }),
+    ).toBe(true);
+    await expect(
+      page.getByText('Ephemeral preview:', {exact: false}),
+    ).toBeVisible();
+    await page.screenshot({path: testInfo.outputPath('ai-chat-ephemeral.png')});
+    expect(errors).toEqual([]);
+  });
+
+  test('denies privileged clipboard and microphone operations while typed input works', async ({
+    page,
+  }, testInfo) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/playground');
+    await expectPreviewToRender(page, 'Welcome');
+    await setEditorCode(
+      page,
+      `
+      import {useState} from 'react';
+      import {useClipboard} from '@astryxdesign/core/hooks';
+      import {useChatDictation, ChatDictationButton} from '@astryxdesign/core/Chat';
+      export default function Example() {
+        const {copy, isCopied} = useClipboard();
+        const [copyResult, setCopyResult] = useState('Copy not attempted');
+        const [mic, setMic] = useState('Microphone not attempted');
+        const [speechError, setSpeechError] = useState('');
+        const dictation = useChatDictation({onError: event => setSpeechError(event.error)});
+        return <div>
+          <p>Restricted capabilities</p>
+          <textarea aria-label="Typed message" defaultValue="Selectable text" />
+          <button onClick={async () => setCopyResult(await copy('Selectable text') ? 'Copied' : 'Copy unavailable')}>Try copy</button>
+          <p>{copyResult}</p><p>{isCopied ? 'Copied state' : 'Not copied'}</p>
+          <button onClick={async () => {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+              stream.getTracks().forEach(track => track.stop());
+              setMic('Microphone allowed');
+            } catch (error) { setMic('Microphone denied: ' + error.name); }
+          }}>Try microphone</button>
+          <p>{mic}</p>
+          <p>{dictation.isSupported ? 'Dictation available' : 'Dictation unavailable'}</p>
+          <ChatDictationButton dictation={dictation} label="Try dictation" />
+          <p>{dictation.isListening ? 'Listening' : 'Not listening'}</p>
+          <p>{speechError}</p>
+        </div>;
+      }
+    `,
+    );
+    await expectPreviewToRender(page, 'Restricted capabilities');
+    const frame = currentPreviewFrame(page);
+    await frame.getByRole('button', {name: 'Try copy', exact: true}).click();
+    await expect(
+      frame.getByText('Copy unavailable', {exact: true}),
+    ).toBeVisible();
+    await expect(frame.getByText('Not copied', {exact: true})).toBeVisible();
+    await frame
+      .getByRole('button', {name: 'Try microphone', exact: true})
+      .click();
+    await expect(
+      frame.getByText(/Microphone denied: (SecurityError|NotAllowedError)/),
+    ).toBeVisible();
+    if (
+      await frame
+        .getByRole('button', {name: 'Try dictation', exact: true})
+        .count()
+    ) {
+      await frame
+        .getByRole('button', {name: 'Try dictation', exact: true})
+        .click();
+      await expect(frame.getByText('not-allowed', {exact: true})).toBeVisible();
+    } else {
+      await expect(
+        frame.getByText('Dictation unavailable', {exact: true}),
+      ).toBeVisible();
+    }
+    await expect(frame.getByText('Not listening', {exact: true})).toBeVisible();
+    await frame
+      .getByRole('textbox', {name: 'Typed message'})
+      .fill('Typing still works');
+    await expect(
+      frame.getByRole('textbox', {name: 'Typed message'}),
+    ).toHaveValue('Typing still works');
+    await page.screenshot({
+      path: testInfo.outputPath('restricted-capabilities.png'),
+    });
+    expect(errors).toEqual([]);
+  });
+
+  test('retains typed dates and user-activated file pickers without origin privileges', async ({
+    page,
+  }, testInfo) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/playground');
+    await expectPreviewToRender(page, 'Welcome');
+    await setEditorCode(
+      page,
+      `
+      import {useState, useRef} from 'react';
+      import {DateInput} from '@astryxdesign/core/DateInput';
+      export default function Example() {
+        const [date, setDate] = useState('2026-09-23');
+        const [picker, setPicker] = useState('Picker not attempted');
+        const [file, setFile] = useState('No file');
+        const input = useRef(null);
+        return <div>
+          <p>Native picker restrictions</p>
+          <DateInput label="Appointment" nativePicker="always" value={date} onChange={setDate} />
+          <p>Selected date: {date}</p>
+          <input ref={input} type="date" aria-label="Native date probe" />
+          <button onClick={() => {
+            try { input.current.showPicker(); setPicker('Date picker allowed'); }
+            catch (error) { setPicker('Date picker denied: ' + error.name); }
+          }}>Try date picker</button>
+          <p>{picker}</p>
+          <input type="file" aria-label="Choose file" onChange={event => setFile(event.target.files[0]?.name ?? 'No file')} />
+          <p>{file}</p>
+          <input type="color" aria-label="Choose color" defaultValue="#0064e0" onClick={event => {
+            try { event.currentTarget.showPicker(); setPicker('Color picker allowed'); }
+            catch (error) { setPicker('Color picker denied: ' + error.name); }
+          }} />
+        </div>;
+      }
+    `,
+    );
+    await expectPreviewToRender(page, 'Native picker restrictions');
+    const frame = currentPreviewFrame(page);
+    await frame
+      .getByRole('button', {name: 'Try date picker', exact: true})
+      .click();
+    await expect(
+      frame.getByText('Date picker denied: SecurityError', {exact: true}),
+    ).toBeVisible();
+    await frame
+      .getByRole('button', {name: 'Open calendar', exact: true})
+      .click();
+    const date = frame.locator('input[type="date"]').first();
+    await expect(date).toBeFocused();
+    await date.fill('2026-10-05');
+    await date.press('Tab');
+    await expect(
+      frame.getByText('Selected date: 2026-10-05', {exact: true}),
+    ).toBeVisible();
+    const chooserEvent = page.waitForEvent('filechooser');
+    await frame.getByLabel('Choose file', {exact: true}).click();
+    const chooser = await chooserEvent;
+    await chooser.setFiles({
+      name: 'example.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('Selected by the user'),
+    });
+    await expect(frame.getByText('example.txt', {exact: true})).toBeVisible();
+    // Color is another cross-origin showPicker exception; prove the activated
+    // API call succeeds rather than mistaking a silent click for an open picker.
+    await frame.getByLabel('Choose color', {exact: true}).click();
+    await page.keyboard.press('Escape');
+    await expect(
+      frame.getByText('Color picker allowed', {exact: true}),
+    ).toBeVisible();
+    await page.screenshot({path: testInfo.outputPath('native-pickers.png')});
+    expect(errors).toEqual([]);
+  });
+
+  test('uses native links in the opaque document and recovers from non-fragment navigation', async ({
+    page,
+  }, testInfo) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    let navigated = false;
+    await page.route('**/preview-destination', async route => {
+      navigated = true;
+      await route.fulfill({
+        contentType: 'text/html',
+        body: '<p>Destination reached</p>',
+      });
+    });
+    await page.goto('/playground');
+    await expectPreviewToRender(page, 'Welcome');
+    await setEditorCode(
+      page,
+      `
+      import {Link} from '@astryxdesign/core/Link';
+      export default function Example() {
+        return <div>
+          <p>Preview navigation</p>
+          <Link href="#section">Jump to section</Link>
+          <p id="section">Same-document section</p>
+          <Link href="/preview-destination">Open destination</Link>
+        </div>;
+      }
+    `,
+    );
+    await expectPreviewToRender(page, 'Preview navigation');
+    const frame = currentPreviewFrame(page);
+    const originalSource = await page
+      .locator('iframe[title="Preview"]')
+      .getAttribute('src');
+    await frame
+      .getByRole('link', {name: 'Jump to section', exact: true})
+      .click();
+    await expect.poll(() => frame.url(), POLL).toContain('#section');
+    expect(frame.isDetached()).toBe(false);
+    await expect(page.locator('iframe[title="Preview"]')).toHaveAttribute(
+      'src',
+      originalSource ?? '',
+    );
+    await frame
+      .getByRole('link', {name: 'Open destination', exact: true})
+      .click();
+    await expect.poll(() => navigated, POLL).toBe(true);
+    await expect.poll(() => frame.isDetached(), POLL).toBe(true);
+    await expectPreviewToRender(page, 'Preview navigation');
+    expect(
+      await page.locator('iframe[title="Preview"]').getAttribute('src'),
+    ).not.toBe(originalSource);
+    await expect(page.locator('iframe[title="Preview"]')).toHaveAttribute(
+      'sandbox',
+      'allow-scripts',
+    );
+    await page.screenshot({
+      path: testInfo.outputPath('navigation-restored.png'),
+    });
+    expect(errors).toEqual([]);
+  });
+});
+
 /**
  * The page previewed code navigates the frame to. It plays the attacker the
  * reviewers described: it replays the nonce it was handed in a hello — once

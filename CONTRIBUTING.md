@@ -532,7 +532,8 @@ Chromium and fails on any other cursor.
 The docsite playground runs user-authored code in a sandboxed iframe with an
 opaque origin, tied to the page only by a nonce-attested MessagePort handshake
 (`apps/docsite/src/app/playground/previewChannel.ts`). The `docsite-browser`
-job proves that boundary in Chromium against a production build: a reloaded
+job feeds the existing required `docsite-test` check and proves that boundary
+in Chromium against a production build: a reloaded
 preview document recovers with the current code and theme, and a document that
 previewed code navigated the frame to receives nothing. The sandbox only exists
 in production builds (`next dev` cannot serve its assets to an opaque origin),

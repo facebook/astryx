@@ -3,7 +3,8 @@
 /**
  * @file PlaygroundClient.tsx
  * @input URL hash or template query, user edits, and knob edits
- * @output Full-page two-panel playground (editor + live preview)
+ * @output Full-page two-panel playground (editor + live preview), with a
+ *   production-only notice explaining the ephemeral preview's restrictions
  * @position app/playground — the interactive Astryx code playground.
  *
  * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
@@ -231,6 +232,11 @@ const s = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-muted)',
+  },
+  previewNotice: {
+    flexShrink: 0,
+    paddingInline: 'var(--spacing-4)',
+    paddingBlockEnd: 'var(--spacing-2)',
   },
   buildStatus: {
     transitionProperty: 'opacity',
@@ -1205,6 +1211,14 @@ export function PlaygroundClient() {
                 </HStack>
               }
             />
+          )}
+          {process.env.NODE_ENV !== 'development' && (
+            <Text type="supporting" color="secondary" xstyle={s.previewNotice}>
+              Ephemeral preview: no storage or parent-page access. Clipboard,
+              microphone, and some native pickers are restricted. Page
+              navigation restarts the preview; test app capabilities in your own
+              project.
+            </Text>
           )}
           <PreviewStage
             viewport={isMobile ? 'phone' : viewport}

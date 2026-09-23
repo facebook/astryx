@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file page.tsx
+ * @input Attested preview channel, editor code, and active theme
+ * @output Isolated live preview with native navigation in production
+ * @position Playground runner; platform restrictions never grant parent privileges.
+ */
+
 'use client';
 
 import React, {
@@ -29,6 +36,13 @@ import {
   readPreviewNonce,
 } from '../previewChannel';
 import type * as TS from 'typescript';
+import NextLink from 'next/link';
+import {LinkProvider} from '@astryxdesign/core/Link';
+
+// Next's client router mutates history, which an opaque-origin document cannot
+// do for another path. Native links keep fragment navigation usable and let
+// full document navigation reach the existing replacement/recovery boundary.
+const PreviewLink = process.env.NODE_ENV === 'development' ? NextLink : 'a';
 
 // How long after the compiler is ready the readiness announcement waits for
 // this document's own `load` event before giving up on it. The wait exists so
@@ -366,7 +380,9 @@ export default function PreviewPage() {
         {Component && (
           <div ref={contentRef} {...stylex.props(fill && styles.contentFill)}>
             <ErrorBoundary resetKey={resetKey} onError={handleBoundaryError}>
-              <Component />
+              <LinkProvider component={PreviewLink}>
+                <Component />
+              </LinkProvider>
             </ErrorBoundary>
           </div>
         )}

@@ -50,7 +50,12 @@ export default defineConfig({
   // and each recovery is a full document lifecycle.
   timeout: 90_000,
   expect: {timeout: 30_000},
-  use: {...devices['Desktop Chrome'], baseURL},
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL,
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+  },
   webServer: {
     command: `pnpm exec next start --port ${port}`,
     url: `${baseURL}/playground/preview`,

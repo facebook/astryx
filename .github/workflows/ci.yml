@@ -123,9 +123,9 @@ jobs:
             printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
               >> "$GITHUB_OUTPUT"
           fi
-  # Docsite data extraction tests — always runs, fast (~2s)
+  # Required docsite owner: data tests plus the production browser contract.
   docsite-test:
-    needs: [check-scope]
+    needs: [check-scope, docsite-browser]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
@@ -136,6 +136,12 @@ jobs:
         run: |
           echo "Change scope could not be classified; refusing to skip required work."
           exit 1
+
+      - name: Require successful docsite browser contract
+        if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        env:
+          DOCSITE_BROWSER_RESULT: ${{ needs.docsite-browser.result }}
+        run: test "$DOCSITE_BROWSER_RESULT" = 'success'
 
       - name: Skip docsite work for Node tooling
         if: needs.check-scope.outputs.tooling_only == 'true'
@@ -182,11 +188,11 @@ jobs:
   # down and the current code and theme reach its successor, and that a
   # document previewed code navigated the frame to receives nothing. Only the
   # production build has the opaque-origin sandbox at all, so this job builds
-  # the docsite and drives `next start` in Chromium. A separate job from
-  # docsite-test so that lane keeps its two-minute signal.
+  # the docsite and drives `next start` in Chromium. Its outcome feeds the
+  # existing required docsite-test context; it is not another required lane.
   docsite-browser:
     needs: [check-scope]
-    if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -220,6 +226,14 @@ jobs:
 
       - name: Run docsite browser contracts
         run: pnpm test:docsite-browser
+
+      - name: Upload docsite browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: docsite-browser-evidence
+          path: test-results/
+          retention-days: 7
 
   # Lightweight check — does the PR touch any published components?
   # Gates pr-a11y and pr-rtl to avoid unnecessary work.

@@ -181,6 +181,34 @@ apps/docsite/
 | `pnpm test`       | Run vitest                                      |
 | `pnpm test:watch` | Run vitest in watch mode                        |
 
+## Playground preview restrictions
+
+The playground is for trying Astryx code, not hosting an app or saving its data.
+Production previews (including deployed PR previews) are **ephemeral** and run
+with `sandbox="allow-scripts"`: browser storage, cookies, and parent-page DOM
+access are unavailable. Code must tolerate those APIs throwing. In-memory
+interaction still works; the AI Chat template's resizable panel already falls
+back when its storage is unavailable. Reloading or replacing the preview resets
+its runtime state, then restores the editor's current code, theme, and mode.
+
+- **Clipboard and microphone:** preview code receives no clipboard or microphone
+  permission. Copy controls may do nothing; select readable text and copy it
+  manually. Dictation cannot record, but typing remains available. Test these
+  integrations in your own app; the parent does not proxy privileged operations.
+- **Native pickers:** cross-origin `showPicker()` is restricted for date/time
+  controls; typed entry and Astryx's `nativePicker="never"` surface remain usable.
+  File and color controls have browser-defined exceptions and can still respond
+  to a user gesture. The sandbox is not a blanket ban on every native picker.
+- **Navigation:** previewed Astryx links use native anchors instead of inheriting
+  the docsite's Next router. Fragment links stay in the current document. A
+  non-fragment navigation replaces the document and triggers preview recovery;
+  it is not a multi-page app preview. Popups and top-level navigation are not
+  granted. Direct framework-router imports are not provided by the preview scope.
+
+`next dev` retains the original same-origin sandbox so development assets load.
+It is not evidence for the production security boundary. Do not add
+`allow-same-origin` or delegate permissions to make a production demo work.
+
 ## Testing
 
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
