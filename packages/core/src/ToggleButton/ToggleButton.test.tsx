@@ -3,7 +3,8 @@
 /**
  * @file ToggleButton.test.tsx
  * @input Uses vitest, @testing-library/react, ToggleButton, ToggleButtonGroup
- * @output Unit tests for ToggleButton and ToggleButtonGroup
+ * @output Unit tests for ToggleButton callback/Action order, pending state,
+ *   group-owned selection, and ToggleButtonGroup
  *
  * SYNC: When ToggleButton.tsx or ToggleButtonGroup.tsx changes, update tests
  */
@@ -388,8 +389,94 @@ describe('ToggleButton', () => {
     expect(pressedChangeAction).toHaveBeenCalledWith(true);
   });
 
+  it('runs the synchronous callback before the Action with the same next state', async () => {
+    const calls: string[] = [];
+    const pressedChangeAction = vi.fn(() => {
+      calls.push('action');
+    });
+    const onPressedChange = vi.fn(() => {
+      expect(pressedChangeAction).not.toHaveBeenCalled();
+      calls.push('change');
+    });
+    render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={onPressedChange}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    await userEvent.setup().click(screen.getByRole('button'));
+
+    expect(calls).toEqual(['change', 'action']);
+    expect(onPressedChange).toHaveBeenCalledExactlyOnceWith(
+      true,
+      expect.anything(),
+    );
+    expect(pressedChangeAction).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it('keeps callback-only controlled toggles synchronous without pending feedback', async () => {
+    function LegacyToggle() {
+      const [isPressed, setIsPressed] = useState(false);
+      return (
+        <ToggleButton
+          label="Bold"
+          isPressed={isPressed}
+          onPressedChange={setIsPressed}
+        />
+      );
+    }
+    render(<LegacyToggle />);
+    const button = screen.getByRole('button');
+
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+    await act(async () => {});
+  });
+
+  it('runs an Action without onPressedChange and settles to the controlled value', async () => {
+    let resolveAction: (() => void) | undefined;
+    const pressedChangeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+    const {rerender} = render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+    const button = screen.getByRole('button');
+
+    await userEvent.setup().click(button);
+    expect(pressedChangeAction).toHaveBeenCalledExactlyOnceWith(true);
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    await act(async () => resolveAction?.());
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+
+    rerender(
+      <ToggleButton
+        label="Favorite"
+        isPressed
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(pressedChangeAction).toHaveBeenCalledTimes(1);
+  });
+
   it('skips pressedChangeAction when onPressedChange calls preventDefault', async () => {
-    const user = userEvent.setup();
     const pressedChangeAction = vi.fn();
     const onPressedChange = vi.fn(
       (_next: boolean, event: MouseEvent<HTMLButtonElement>) => {
@@ -406,10 +493,17 @@ describe('ToggleButton', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Favorite'}));
+    const button = screen.getByRole('button', {name: 'Favorite'});
+    fireEvent.click(button);
 
-    expect(onPressedChange).toHaveBeenCalledWith(true, expect.anything());
+    expect(onPressedChange).toHaveBeenCalledExactlyOnceWith(
+      true,
+      expect.anything(),
+    );
     expect(pressedChangeAction).not.toHaveBeenCalled();
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+    await act(async () => {});
   });
 });
 
@@ -569,6 +663,74 @@ describe('ToggleButtonGroup (multiple)', () => {
     );
   });
 });
+
+// =============================================================================
+// Group ownership — member Actions must not compete with controlled selection
+// =============================================================================
+
+describe.each(['single', 'multiple'] as const)(
+  'ToggleButtonGroup (%s) ownership',
+  type => {
+    it('keeps selection group-owned even when a member has standalone handlers', async () => {
+      const onChange = vi.fn();
+      const onPressedChange = vi.fn();
+      const pressedChangeAction = vi.fn();
+      const groupProps =
+        type === 'single'
+          ? {type, value: 'list', onChange}
+          : {type, value: ['list'], onChange};
+      const children = (
+        <>
+          <ToggleButton value="list" label="List" isPressed={false} />
+          <ToggleButton
+            value="grid"
+            label="Grid"
+            isPressed
+            onPressedChange={onPressedChange}
+            pressedChangeAction={pressedChangeAction}
+          />
+        </>
+      );
+      const {rerender} = render(
+        <ToggleButtonGroup {...groupProps} label="View">
+          {children}
+        </ToggleButtonGroup>,
+      );
+      const grid = screen.getByRole('button', {name: 'Grid'});
+      expect(grid).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', {name: 'List'})).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+
+      await userEvent.setup().click(grid);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(
+        type === 'single' ? 'grid' : ['list', 'grid'],
+      );
+      expect(onPressedChange).not.toHaveBeenCalled();
+      expect(pressedChangeAction).not.toHaveBeenCalled();
+      expect(grid).toHaveAttribute('aria-pressed', 'false');
+      expect(grid).not.toHaveAttribute('aria-busy', 'true');
+
+      const acceptedProps =
+        type === 'single'
+          ? {type, value: 'grid', onChange}
+          : {type, value: ['list', 'grid'], onChange};
+      rerender(
+        <ToggleButtonGroup {...acceptedProps} label="View">
+          {children}
+        </ToggleButtonGroup>,
+      );
+      expect(grid).toHaveAttribute('aria-pressed', 'true');
+      await userEvent.setup().click(grid);
+      expect(onChange).toHaveBeenLastCalledWith(
+        type === 'single' ? null : ['list'],
+      );
+      expect(onPressedChange).not.toHaveBeenCalled();
+      expect(pressedChangeAction).not.toHaveBeenCalled();
+    });
+  },
+);
 
 // =============================================================================
 // Disabled state — family:buttons FR3 (disabled means non-operable)
