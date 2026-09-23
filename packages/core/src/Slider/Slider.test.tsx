@@ -528,6 +528,47 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith(0);
   });
 
+  it('moves between max and the adjacent step for 0~100 with step 3', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    function ControlledSlider() {
+      const [value, setValue] = useState(0);
+      return (
+        <Slider
+          label="Volume"
+          value={value}
+          min={0}
+          max={100}
+          step={3}
+          onChange={(next: number) => {
+            setValue(next);
+            handleChange(next);
+          }}
+          onChangeEnd={handleChangeEnd}
+        />
+      );
+    }
+    render(<ControlledSlider />);
+    const slider = screen.getByRole('slider');
+    act(() => slider.focus());
+
+    await user.keyboard('{End}');
+
+    expect(slider).toHaveAttribute('aria-valuenow', String(100));
+    expect(handleChange).toHaveBeenLastCalledWith(100);
+    expect(handleChangeEnd).toHaveBeenLastCalledWith(100);
+
+    await user.keyboard('{ArrowLeft}');
+    expect(slider).toHaveAttribute('aria-valuenow', String(99));
+    expect(handleChange).toHaveBeenLastCalledWith(99);
+    expect(handleChangeEnd).toHaveBeenLastCalledWith(99);
+
+    await user.keyboard('{ArrowRight}');
+    expect(slider).toHaveAttribute('aria-valuenow', String(100));
+    expect(handleChangeEnd).toHaveBeenLastCalledWith(100);
+  });
+
   it('fires onChangeEnd with correct value for range mode on keyboard', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
@@ -550,7 +591,81 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([25, 80]);
   });
 
+  it('keeps range separation when selecting an off-grid maximum', async () => {
+    const user = userEvent.setup();
+    const handleChangeEnd = vi.fn();
+    function ControlledRange() {
+      const [value, setValue] = useState<[number, number]>([0, 60]);
+      return (
+        <Slider
+          label="Range"
+          value={value}
+          onChange={setValue}
+          onChangeEnd={handleChangeEnd}
+          min={0}
+          max={100}
+          step={3}
+          minStepsBetweenThumbs={1}
+        />
+      );
+    }
+    render(<ControlledRange />);
+    const [lower, upper] = screen.getAllByRole('slider');
+    act(() => upper.focus());
+    await user.keyboard('{End}');
+    expect(upper).toHaveAttribute('aria-valuenow', '100');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith([0, 100]);
+
+    await user.keyboard('{ArrowLeft}');
+    expect(upper).toHaveAttribute('aria-valuenow', '99');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith([0, 99]);
+    await user.keyboard('{ArrowRight}');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith([0, 100]);
+
+    act(() => lower.focus());
+    await user.keyboard('{End}');
+    expect(lower).toHaveAttribute('aria-valuenow', '97');
+    expect(lower).toHaveAttribute('aria-valuemax', '97');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith([97, 100]);
+  });
+
   // --- Pointer handling ---
+
+  it('selects the maximum by dragging with step 3', () => {
+    const handleChangeEnd = vi.fn();
+    function ControlledSlider() {
+      const [value, setValue] = useState(0);
+      return (
+        <Slider
+          label="Volume"
+          value={value}
+          onChange={setValue}
+          onChangeEnd={handleChangeEnd}
+          min={0}
+          max={100}
+          step={3}
+          valueDisplay="none"
+        />
+      );
+    }
+    render(<ControlledSlider />);
+    const slider = screen.getByRole('slider');
+    const track = slider.parentElement!;
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 200, 20),
+    );
+
+    fireEvent.pointerDown(track, {clientX: 10, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(track, {clientX: 200, clientY: 10, pointerId: 1});
+    fireEvent.pointerUp(track, {pointerId: 1});
+    expect(slider).toHaveAttribute('aria-valuenow', '100');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith(100);
+    fireEvent.pointerDown(track, {clientX: 10, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(track, {clientX: 188, clientY: 10, pointerId: 1});
+    fireEvent.pointerUp(track, {pointerId: 1});
+    expect(slider).toHaveAttribute('aria-valuenow', '99');
+    expect(handleChangeEnd).toHaveBeenLastCalledWith(99);
+  });
 
   it('fires onChangeEnd on pointer up after pointer down', () => {
     const handleChange = vi.fn();
