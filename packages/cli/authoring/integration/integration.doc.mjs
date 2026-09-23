@@ -23,7 +23,7 @@ export const doc = {
       name: 'providerId',
       type: 'string',
       description:
-        'Stable logical provider ID. Omit to use package.json#name; set it to the prior package name only when an explicit rename must preserve artifact IDs.',
+        'Stable logical provider ID. Omit to use package.json#name; set it to the prior package name only when an explicit rename must preserve artifact IDs. If two packages claim the same ID, the package being authored is used, otherwise the first-loaded one, and the CLI warns about the other.',
       example: "'@acme/widgets'",
     },
     {

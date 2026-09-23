@@ -431,6 +431,60 @@ describe('mergeTopic', () => {
     );
   });
 
+  it('migrates a legacy section to a stable ID without duplicating it', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {
+          id: 'install',
+          title: 'Install',
+          content: [{type: 'prose', text: 'yarn add'}],
+        },
+      ],
+    });
+    expect(
+      merged.sections.map(section => [section.id ?? null, section.title]),
+    ).toEqual([
+      ['install', 'Install'],
+      [null, 'Tokens'],
+    ]);
+    expect(merged.sections[0].content[0].text).toBe('yarn add');
+  });
+
+  it('lets a legacy extension replace a section that has since gained an ID', () => {
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'setup-steps', title: 'Install', content: []},
+          {title: 'Tokens', content: []},
+        ],
+      },
+      {
+        sections: [
+          {title: 'Install', content: [{type: 'prose', text: 'yarn add'}]},
+        ],
+      },
+    );
+    expect(
+      merged.sections.map(section => [section.id ?? null, section.title]),
+    ).toEqual([
+      ['setup-steps', 'Install'],
+      [null, 'Tokens'],
+    ]);
+    expect(merged.sections[0].content[0].text).toBe('yarn add');
+  });
+
+  it('keeps two different authored IDs distinct under one title', () => {
+    const merged = mergeTopic(
+      {...base, sections: [{id: 'install', title: 'Install', content: []}]},
+      {sections: [{id: 'install-yarn', title: 'Install', content: []}]},
+    );
+    expect(merged.sections.map(section => section.id)).toEqual([
+      'install',
+      'install-yarn',
+    ]);
+  });
+
   it('takes the title and description only when the overlay states them', () => {
     expect(mergeTopic(base, {sections: []}).title).toBe('Theme');
     expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe(

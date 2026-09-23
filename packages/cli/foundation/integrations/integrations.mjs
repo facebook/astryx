@@ -38,7 +38,9 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {import('../../authoring/identity/type').ProviderId} [providerId]
- *   normalized stable provider identity; absent only for a legacy unnamed local package
+ *   normalized stable provider identity; absent only for a legacy unnamed local
+ *   package. Unique among contributing integrations: a later claimant is kept
+ *   inert with `__providerConflict` (see {@link markProviderConflicts})
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
@@ -57,6 +59,10 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
+ * @property {{providerId: import('../../authoring/identity/type').ProviderId, claimedBy: string, message: string}} [__providerConflict]
+ *   set on a package whose provider ID an earlier-loaded package already
+ *   claims; it contributes nothing and is reported as a `duplicate_provider`
+ *   warning
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
  * @property {boolean} [__autolinked] loaded because the project declares the
@@ -95,6 +101,122 @@ function providerIdForPackage(name) {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Resolve provider identity across loaded integrations, in precedence order.
+ *
+ * Artifact and document IDs are provider-scoped, so two packages cannot both
+ * contribute under one provider ID. The same package reached twice (an npm
+ * alias beside the package it aliases, with the same name and version) loads
+ * once. Any other later claimant, including the same package at another
+ * version, stays as an inert entry that carries the conflict. The package being
+ * authored claims its ID before precedence order is considered, because the
+ * source being edited is authoritative. The winner still contributes; Project
+ * issues, Doctor, and the per-command warning name the one set aside instead of
+ * dropping it without a word.
+ *
+ * @param {LoadedIntegration[]} integrations in precedence order
+ * @returns {LoadedIntegration[]}
+ */
+export function markProviderConflicts(integrations) {
+  /** @type {Map<string, LoadedIntegration>} */
+  const claims = new Map();
+  for (const integration of integrations) {
+    if (integration?.__local && claimsProvider(integration)) {
+      const providerId = /** @type {string} */ (integration.providerId);
+      if (!claims.has(providerId)) claims.set(providerId, integration);
+    }
+  }
+  /** @type {LoadedIntegration[]} */
+  const resolved = [];
+  for (const integration of integrations) {
+    if (!claimsProvider(integration)) {
+      resolved.push(integration);
+      continue;
+    }
+    const providerId = /** @type {string} */ (integration.providerId);
+    const claimant = claims.get(providerId);
+    if (claimant == null) {
+      claims.set(providerId, integration);
+      resolved.push(integration);
+    } else if (claimant === integration) {
+      resolved.push(integration);
+    } else if (
+      claimant.name !== integration.name ||
+      claimant.version !== integration.version
+    ) {
+      resolved.push(providerConflict(integration, claimant));
+    }
+  }
+  return resolved;
+}
+
+/**
+ * Whether an entry contributes under its provider ID: it has one, its manifest
+ * loaded, and it has not already been set aside.
+ * @param {LoadedIntegration | undefined} integration
+ * @returns {boolean}
+ */
+function claimsProvider(integration) {
+  return (
+    integration?.providerId != null &&
+    integration.__loadError == null &&
+    integration.__providerConflict == null
+  );
+}
+
+/**
+ * @param {LoadedIntegration} integration
+ * @returns {string}
+ */
+function describeIntegration(integration) {
+  const id = integration.version
+    ? `${integration.name}@${integration.version}`
+    : integration.name;
+  return integration.__spec && integration.__spec !== integration.name
+    ? `${id} (from "${integration.__spec}")`
+    : id;
+}
+
+/**
+ * An inert record for a package whose provider ID is already claimed. It keeps
+ * the package's identity and location for reporting, and drops every
+ * contribution root and handler.
+ * @param {LoadedIntegration} integration
+ * @param {LoadedIntegration} claimant
+ * @returns {LoadedIntegration}
+ */
+function providerConflict(integration, claimant) {
+  const providerId =
+    /** @type {import('../../authoring/identity/type').ProviderId} */ (
+      integration.providerId
+    );
+  const winner = describeIntegration(claimant);
+  const setAside = describeIntegration(integration);
+  const reason = claimant.__local
+    ? 'is the package being authored, so it is used'
+    : 'loads first and is used';
+  return {
+    name: integration.name,
+    providerId,
+    version: integration.version,
+    __spec: integration.__spec,
+    __packageDir: integration.__packageDir,
+    __manifestFile: integration.__manifestFile,
+    ...(integration.__local ? {__local: true} : {}),
+    ...(integration.__autolinked
+      ? {__autolinked: true, __dependencyField: integration.__dependencyField}
+      : {}),
+    __providerConflict: {
+      providerId,
+      claimedBy: claimant.name,
+      message:
+        `${setAside} and ${winner} both claim provider ID "${providerId}". ` +
+        `${winner} ${reason}; ${setAside} contributes nothing ` +
+        'until one package changes its providerId.',
+    },
+  };
 }
 
 /**
@@ -373,17 +495,18 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
  * Load configured integrations.
  *
  * @param {string[]} [specs] package names
- * @param {{cwd?: string, fresh?: boolean}} [options]
+ * @param {{cwd?: string, fresh?: boolean, resolveProviders?: boolean}} [options]
+ *   `resolveProviders: false` leaves provider identity to a caller that
+ *   resolves it once over a larger set (Project.load)
  * @returns {Promise<LoadedIntegration[]>}
  */
 export async function loadIntegrations(
   specs = [],
-  {cwd = process.cwd(), fresh = false} = {},
+  {cwd = process.cwd(), fresh = false, resolveProviders = true} = {},
 ) {
   /** @type {LoadedIntegration[]} */
   const integrations = [];
   const seenSpecs = new Set();
-  const seenProviderIds = new Set();
 
   for (const spec of specs) {
     if (!spec || seenSpecs.has(spec)) continue;
@@ -427,9 +550,6 @@ export async function loadIntegrations(
       // down every command (component/docs/theme don't need this integration).
       // Record a load-error marker; Project surfaces it via issues() and the
       // discovery loops naturally skip it (no components/templates/codemods).
-      if (packageProviderId != null && seenProviderIds.has(packageProviderId)) {
-        continue;
-      }
       integrations.push({
         name: pkg.name ?? spec,
         ...(packageProviderId == null ? {} : {providerId: packageProviderId}),
@@ -445,8 +565,6 @@ export async function loadIntegrations(
     const providerId = providerIdForPackage(
       manifest.providerId ?? pkg.name ?? spec,
     );
-    if (providerId != null && seenProviderIds.has(providerId)) continue;
-    if (providerId != null) seenProviderIds.add(providerId);
 
     /** @param {string | null | undefined} value */
     const resolveRoot = value => {
@@ -482,5 +600,5 @@ export async function loadIntegrations(
     });
   }
 
-  return integrations;
+  return resolveProviders ? markProviderConflicts(integrations) : integrations;
 }

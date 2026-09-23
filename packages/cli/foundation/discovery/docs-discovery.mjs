@@ -413,13 +413,18 @@ export async function discoverIntegrationDocs(integration) {
 export function mergeTopic(base, overlay) {
   const sections = [...(base.sections ?? [])];
   for (const section of overlay.sections ?? []) {
-    const at = sections.findIndex((/** @type {any} */ candidate) =>
-      section.id != null
-        ? candidate.id === section.id
-        : candidate.id == null && candidate.title === section.title,
-    );
-    if (at === -1) sections.push(section);
-    else sections[at] = section;
+    const at = findMergeTarget(sections, section);
+    if (at === -1) {
+      sections.push(section);
+    } else {
+      // A legacy extension that replaces a section which has since gained a
+      // stable ID keeps that ID, so readers addressing it keep working.
+      const replaced = sections[at];
+      sections[at] =
+        section.id == null && replaced.id != null
+          ? withSourceTitle({...section, id: replaced.id}, sourceTitle(section))
+          : section;
+    }
   }
   return {
     ...base,
@@ -427,6 +432,61 @@ export function mergeTopic(base, overlay) {
     description: overlay.description || base.description,
     sections,
   };
+}
+
+/**
+ * A section's authored title. A `--zh`/`--dense` overlay replaces the visible
+ * title, but extensions are written against the authored one, so merging
+ * compares authored titles in every language.
+ */
+const SOURCE_TITLE = Symbol('astryx.docs.sourceTitle');
+
+/**
+ * Record the authored title of a section whose visible title a translation
+ * overlay replaces.
+ * @template {object} T
+ * @param {T} section
+ * @param {string} title
+ * @returns {T}
+ */
+export function withSourceTitle(section, title) {
+  Object.defineProperty(section, SOURCE_TITLE, {value: title});
+  return section;
+}
+
+/**
+ * @param {any} section
+ * @returns {string}
+ */
+function sourceTitle(section) {
+  return section[SOURCE_TITLE] ?? section.title;
+}
+
+/**
+ * The base section an extension section replaces. A stable ID matches first.
+ * Otherwise the exact title matches when at least one side has no ID: the
+ * migration window in which the base or the extension adopts stable IDs
+ * before the other does. Two different authored IDs stay distinct even under
+ * one title.
+ *
+ * @param {any[]} sections
+ * @param {any} section
+ * @returns {number}
+ */
+function findMergeTarget(sections, section) {
+  const title = sourceTitle(section);
+  const legacyTitleMatch = () =>
+    sections.findIndex(
+      candidate => candidate.id == null && sourceTitle(candidate) === title,
+    );
+  if (section.id != null) {
+    const byId = sections.findIndex(candidate => candidate.id === section.id);
+    return byId === -1 ? legacyTitleMatch() : byId;
+  }
+  const legacy = legacyTitleMatch();
+  return legacy === -1
+    ? sections.findIndex(candidate => sourceTitle(candidate) === title)
+    : legacy;
 }
 
 /**

@@ -38,6 +38,7 @@ import {parseConfig} from '../../authoring/config/parse.mjs';
 import {
   loadIntegrations,
   loadLocalIntegration,
+  markProviderConflicts,
 } from '../integrations/integrations.mjs';
 import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
@@ -203,10 +204,11 @@ export class Project {
   /** @type {ProjectIntegrationIssue[]} */
   #issues = [];
   /**
-   * Package names of integrations whose issues have already been collected
-   * (via a discovery method or a direct issues() validation), so issues() can
-   * fill in only the ones not yet visited and never double-collect.
-   * @type {Set<string>}
+   * Loaded integrations whose issues have already been collected (via a
+   * discovery method or a direct issues() validation), so issues() can fill in
+   * only the ones not yet visited and never double-collect. Keyed by entry, not
+   * label: two entries can share a package name (an alias at another version).
+   * @type {Set<object>}
    */
   #visitedIssues = new Set();
 
@@ -277,6 +279,8 @@ export class Project {
       loadedIntegrations = await loadIntegrations(integrations, {
         cwd: projectDir,
         fresh,
+        // Provider identity is resolved once, below, over the final set.
+        resolveProviders: false,
       });
     }
 
@@ -309,6 +313,10 @@ export class Project {
       if (existing === -1) loadedIntegrations.push(localIntegration);
       else loadedIntegrations[existing] = localIntegration;
     }
+
+    // Autolinked and local packages can claim a provider ID that a configured
+    // package already holds, so identity is resolved once over the final set.
+    loadedIntegrations = markProviderConflicts(loadedIntegrations);
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -436,6 +444,13 @@ export class Project {
    * @returns {string}
    */
   #pkgLabel(integration) {
+    // A set-aside package is labelled name@version, so its issue never reads as
+    // the winner's, even when both share a package name.
+    if (integration?.__providerConflict) {
+      return integration.version
+        ? `${integration.name}@${integration.version}`
+        : (integration.__spec ?? integration.name);
+    }
     return integration?.name ?? integration?.__spec ?? '(integration)';
   }
 
@@ -463,8 +478,8 @@ export class Project {
    */
   async #collectIssues(integration) {
     const pkg = this.#pkgLabel(integration);
-    if (this.#visitedIssues.has(pkg)) return;
-    this.#visitedIssues.add(pkg);
+    if (this.#visitedIssues.has(integration)) return;
+    this.#visitedIssues.add(integration);
     // A manifest that failed to load (throwing import / invalid shape) is
     // recorded as a marker by loadIntegrations — surface it as an issue and
     // skip validation (there's no manifest to validate).

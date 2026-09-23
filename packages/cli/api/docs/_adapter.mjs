@@ -24,6 +24,7 @@ import {
   DocsCatalog,
   mergeTopic,
   problemsInTopic,
+  withSourceTitle,
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
@@ -103,7 +104,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
       ) => {
         const ts = bySection.get(section.title);
         if (!ts) return section;
-        return {
+        const localized = {
           ...section,
           title: ts.title || section.title,
           content: section.content.map(
@@ -121,6 +122,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
             },
           ),
         };
+        return withSourceTitle(localized, section.title);
       },
     ),
   };

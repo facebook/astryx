@@ -14,6 +14,7 @@ import {fileURLToPath} from 'node:url';
 import {
   doctor,
   checkImplicitIntegrations,
+  checkProviderIdentity,
   checkVersionAlignment,
   checkPackageManager,
 } from './doctor.mjs';
@@ -212,6 +213,77 @@ describe('checkPackageManager', () => {
     expect(c.status).toBe('warn');
     expect(c.message).toContain('yarn.lock');
   });
+});
+
+describe('checkProviderIdentity', () => {
+  /** @param {object} [fields] */
+  const loaded = (fields = {}) => ({
+    name: '@acme/widgets',
+    providerId: '@acme/widgets',
+    version: '1.0.0',
+    __spec: '@acme/widgets',
+    __packageDir: '/abs/node_modules/@acme/widgets',
+    __manifestFile: '/abs/node_modules/@acme/widgets/astryx.integration.mjs',
+    ...fields,
+  });
+
+  it('skips when the project could not be read', () => {
+    expect(checkProviderIdentity({integrations: null}).status).toBe('info');
+  });
+
+  it('reports none when nothing is loaded', () => {
+    const c = checkProviderIdentity({integrations: []});
+    expect(c.status).toBe('info');
+    expect(c.message).toContain('None');
+  });
+
+  it('passes when each loaded integration has its own provider ID', () => {
+    const c = checkProviderIdentity({
+      integrations: [
+        loaded(),
+        loaded({
+          name: '@acme/charts',
+          providerId: '@acme/charts',
+          __spec: '@acme/charts',
+        }),
+      ],
+    });
+    expect(c.status).toBe('pass');
+    expect(c.message).toContain('2 loaded integrations');
+  });
+
+  it('warns and names both packages when a later claimant is set aside', () => {
+    const message =
+      '@acme/renamed@2.0.0 and @acme/widgets@1.0.0 both claim provider ID ' +
+      '"@acme/widgets". @acme/widgets@1.0.0 loads first and is used; ' +
+      '@acme/renamed@2.0.0 contributes nothing until one package changes ' +
+      'its providerId.';
+    const c = checkProviderIdentity({
+      integrations: [
+        loaded(),
+        loaded({
+          name: '@acme/renamed',
+          version: '2.0.0',
+          __spec: '@acme/renamed',
+          __providerConflict: {
+            providerId: '@acme/widgets',
+            claimedBy: '@acme/widgets',
+            message,
+          },
+        }),
+      ],
+    });
+    expect(c.status).toBe('warn');
+    expect(c.message).toBe(message);
+    expect(c.fix).toContain('providerId');
+  });
+
+  it('is part of the report doctor returns', async () => {
+    const r = await doctor({cwd});
+    expect(r.data.checks.map(check => check.id)).toContain(
+      'provider-identity',
+    );
+  }, SLOW);
 });
 
 describe('checkImplicitIntegrations', () => {

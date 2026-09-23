@@ -234,7 +234,13 @@ export async function autolinkIntegrations({
 
   /** @type {import('./integrations.mjs').LoadedIntegration[]} */
   const autolinked = [];
-  const names = new Set(loaded.map(integration => integration.name));
+  // One package reached twice (an alias beside the package it aliases, at the
+  // same version) loads once. The same name at another version is kept, so the
+  // provider-identity pass in Project.load reports it instead of dropping it.
+  /** @param {{name: string, version?: string}} integration */
+  const identity = integration =>
+    `${integration.name}\u0000${integration.version ?? ''}`;
+  const seen = new Set(loaded.map(identity));
 
   for (const candidate of candidates) {
     /** @type {import('./integrations.mjs').LoadedIntegration|undefined} */
@@ -250,10 +256,11 @@ export async function autolinkIntegrations({
       continue;
     }
     if (!integration || integration.__loadError) continue;
-    // Identity is the resolved package's own name, so an alias and the package
-    // it aliases collapse here even when they are two directories on disk.
-    if (names.has(integration.name)) continue;
-    names.add(integration.name);
+    // Identity is the resolved package's own name and version, so an alias and
+    // the package it aliases collapse here even when they are two directories
+    // on disk.
+    if (seen.has(identity(integration))) continue;
+    seen.add(identity(integration));
     autolinked.push({
       ...integration,
       __autolinked: true,

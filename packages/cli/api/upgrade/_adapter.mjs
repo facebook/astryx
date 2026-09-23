@@ -33,7 +33,10 @@ import {
 } from '../../foundation/agent-docs/agent-docs.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
+import {
+  loadIntegrations,
+  markProviderConflicts,
+} from '../../foundation/integrations/integrations.mjs';
 import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
 import {logger} from '../logger.mjs';
 
@@ -309,6 +312,15 @@ export async function runCoreCodemods(versionManifests, {apply, path: srcPath, c
 }
 
 /**
+ * One installed package at one version; two specs that reach it share this.
+ * @param {{name: string, version?: string}} integration
+ * @returns {string}
+ */
+function packageIdentity(integration) {
+  return `${integration.name}\u0000${integration.version ?? ''}`;
+}
+
+/**
  * Load the consumer project's config + integrations. Throws on invalid config;
  * the run leaf decides between the config_fixable preview and a hard abort.
  * @param {string} cwd
@@ -321,11 +333,60 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // cache entry; ordinary Project discovery remains cached by default.
   const project = await Project.load(cwd, {fresh: true});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
-  const integrationSpecs = uniqueFiles([
-    ...(project.integrations ?? []),
-    ...(extraIntegrationSpecs ?? []),
+  const configuredSpecs = new Set(project.integrations ?? []);
+  // Configured packages come from Project, which has already resolved provider
+  // identity over configured, autolinked, and local packages. Loading them
+  // again here would let upgrade run codemods from a package Project set aside.
+  const configured = project.loadedIntegrations.filter(
+    integration =>
+      !integration.__autolinked && configuredSpecs.has(integration.__spec),
+  );
+  // A package that lists itself runs its installed copy's released codemods,
+  // never the work in progress being authored, so that copy stands in for it.
+  const local = project.loadedIntegrations.find(
+    integration => integration.__local,
+  );
+  const selfListed = local != null && configured.includes(local);
+  if (local != null && selfListed && project.configPath) {
+    const installed = await loadIntegrations([local.__spec], {
+      cwd: path.dirname(project.configPath),
+      resolveProviders: false,
+    });
+    configured.splice(configured.indexOf(local), 1, ...installed);
+  }
+  const extraSpecs = uniqueFiles(extraIntegrationSpecs ?? []).filter(
+    spec => !configuredSpecs.has(spec),
+  );
+  const extras =
+    extraSpecs.length === 0
+      ? []
+      : await loadIntegrations(extraSpecs, {resolveProviders: false});
+  // Autolinked packages and the package being authored join the pass only as
+  // claimants: every other command uses them for their provider IDs, but
+  // upgrade has never run their codemods and still does not. An extra that
+  // names one of them opts it in, so the extra stands in for that claimant.
+  const extraIdentities = new Set(extras.map(packageIdentity));
+  const claimantsOnly = project.loadedIntegrations.filter(
+    integration =>
+      (integration.__autolinked || (integration.__local && !selfListed)) &&
+      !extraIdentities.has(packageIdentity(integration)),
+  );
+  const resolved = markProviderConflicts([
+    ...configured,
+    ...claimantsOnly,
+    ...extras,
   ]);
-  const integrations = await loadIntegrations(integrationSpecs);
+  // Claimants leave by package directory, not object identity: the pass can
+  // return one as a new conflict entry, and upgrade must not warn that a
+  // package every other command uses contributes nothing.
+  const claimantDirs = new Set(
+    claimantsOnly.map(integration => integration.__packageDir),
+  );
+  const integrations = resolved.filter(
+    integration =>
+      integration.__packageDir == null ||
+      !claimantDirs.has(integration.__packageDir),
+  );
   return {postCodemodHooks, integrations};
 }
 

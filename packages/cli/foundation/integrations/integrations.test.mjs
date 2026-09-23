@@ -245,6 +245,347 @@ describe('configured integrations', () => {
   });
 });
 
+describe('provider identity conflicts', () => {
+  /**
+   * Install one integration package that contributes a single component.
+   * @param {string} dir directory under node_modules
+   * @param {{name: string, version: string}} pkg package.json identity
+   * @param {Record<string, unknown>} manifest extra manifest fields
+   * @param {string} component the component it contributes
+   */
+  function installPackage(dir, pkg, manifest, component) {
+    const pkgDir = path.join(tmpDir, 'node_modules', ...dir.split('/'));
+    const componentsDir = path.join(pkgDir, 'components');
+    fs.mkdirSync(componentsDir, {recursive: true});
+    fs.writeFileSync(path.join(pkgDir, 'package.json'), JSON.stringify(pkg));
+    fs.writeFileSync(
+      path.join(pkgDir, 'astryx.integration.mjs'),
+      `export default ${JSON.stringify({components: './components', ...manifest})};\n`,
+    );
+    fs.writeFileSync(
+      path.join(componentsDir, `${component}.doc.mjs`),
+      `export default {type: 'component', name: '${component}', props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(componentsDir, `${component}.tsx`),
+      `export function ${component}() { return null; }\n`,
+    );
+  }
+
+  /** @param {string[]} integrations */
+  function configure(integrations) {
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default ${JSON.stringify({integrations})};\n`,
+    );
+  }
+
+  /**
+   * Make the project directory itself the package being authored.
+   * @param {Record<string, unknown>} pkg package.json fields
+   * @param {Record<string, unknown>} manifest extra manifest fields
+   * @param {string} component the component it contributes
+   */
+  function writeLocalPackage(pkg, manifest, component) {
+    const componentsDir = path.join(tmpDir, 'local-components');
+    fs.mkdirSync(componentsDir, {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg));
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default ${JSON.stringify({components: './local-components', ...manifest})};\n`,
+    );
+    fs.writeFileSync(
+      path.join(componentsDir, `${component}.doc.mjs`),
+      `export default {type: 'component', name: '${component}', props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(componentsDir, `${component}.tsx`),
+      `export function ${component}() { return null; }\n`,
+    );
+  }
+
+  /** @param {import('../config/project.mjs').Project} project */
+  async function conflictIssues(project) {
+    return (await project.issues()).filter(
+      issue => issue.code === 'duplicate_provider',
+    );
+  }
+
+  it('keeps the first package and reports a different package claiming its ID', async () => {
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'Widget',
+    );
+    installPackage(
+      '@acme/renamed',
+      {name: '@acme/renamed', version: '2.0.0'},
+      {providerId: '@acme/widgets'},
+      'RenamedWidget',
+    );
+    configure(['@acme/widgets', '@acme/renamed']);
+
+    const loaded = await loadIntegrations(['@acme/widgets', '@acme/renamed'], {
+      cwd: tmpDir,
+    });
+    expect(loaded.map(integration => integration.name)).toEqual([
+      '@acme/widgets',
+      '@acme/renamed',
+    ]);
+    expect(loaded[1]).toMatchObject({
+      providerId: '@acme/widgets',
+      __providerConflict: {
+        providerId: '@acme/widgets',
+        claimedBy: '@acme/widgets',
+      },
+    });
+    expect(loaded[1].components).toBeUndefined();
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    const owned = (await project.components()).map(component => [
+      component.package,
+      component.name,
+    ]);
+    expect(owned).toContainEqual(['@acme/widgets', 'Widget']);
+    expect(owned.some(([pkg]) => pkg === '@acme/renamed')).toBe(false);
+    expect(await project.issues()).toContainEqual(
+      expect.objectContaining({
+        package: '@acme/renamed@2.0.0',
+        code: 'duplicate_provider',
+        severity: 'warning',
+        message: expect.stringContaining(
+          '@acme/widgets@1.0.0 loads first and is used',
+        ),
+      }),
+    );
+  });
+
+  it('reports the same package configured again at another version', async () => {
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'Widget',
+    );
+    installPackage(
+      'widgets-next',
+      {name: '@acme/widgets', version: '2.0.0'},
+      {},
+      'NextWidget',
+    );
+    configure(['@acme/widgets', 'widgets-next']);
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    const owned = (await project.components()).map(component => component.name);
+    expect(owned).toContain('Widget');
+    expect(owned).not.toContain('NextWidget');
+    expect(await project.issues()).toContainEqual(
+      expect.objectContaining({
+        package: '@acme/widgets@2.0.0',
+        code: 'duplicate_provider',
+        severity: 'warning',
+        message: expect.stringContaining('(from "widgets-next")'),
+      }),
+    );
+  });
+
+  it('reports an autolinked dependency that claims a configured ID', async () => {
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'Widget',
+    );
+    installPackage(
+      '@acme/renamed',
+      {name: '@acme/renamed', version: '2.0.0'},
+      {providerId: '@acme/widgets'},
+      'RenamedWidget',
+    );
+    configure(['@acme/widgets']);
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        name: 'consumer',
+        dependencies: {'@acme/renamed': '2.0.0'},
+      }),
+    );
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    expect(
+      project.loadedIntegrations.find(
+        integration => integration.name === '@acme/renamed',
+      ),
+    ).toMatchObject({
+      __autolinked: true,
+      __providerConflict: {claimedBy: '@acme/widgets'},
+    });
+    expect(await project.issues()).toContainEqual(
+      expect.objectContaining({
+        package: '@acme/renamed@2.0.0',
+        code: 'duplicate_provider',
+      }),
+    );
+  });
+
+  it("reports a set-aside package whose spec is the winner's name", async () => {
+    installPackage(
+      'widgets-old',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'OldWidget',
+    );
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '2.0.0'},
+      {},
+      'NewWidget',
+    );
+    configure(['widgets-old', '@acme/widgets']);
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    const owned = (await project.components()).map(component => component.name);
+    expect(owned).toContain('OldWidget');
+    expect(owned).not.toContain('NewWidget');
+    expect(await conflictIssues(project)).toEqual([
+      expect.objectContaining({
+        package: '@acme/widgets@2.0.0',
+        severity: 'warning',
+        message: expect.stringContaining(
+          '@acme/widgets@2.0.0 and @acme/widgets@1.0.0 (from "widgets-old") both claim',
+        ),
+      }),
+    ]);
+  });
+
+  it('reports an unversioned set-aside package whose spec is the winner\'s name', async () => {
+    installPackage(
+      'widgets-old',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'OldWidget',
+    );
+    installPackage('@acme/widgets', {name: '@acme/widgets'}, {}, 'NewWidget');
+    configure(['widgets-old', '@acme/widgets']);
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    expect(await conflictIssues(project)).toEqual([
+      expect.objectContaining({
+        package: '@acme/widgets',
+        message: expect.stringContaining(
+          '@acme/widgets@1.0.0 (from "widgets-old") loads first and is used',
+        ),
+      }),
+    ]);
+  });
+
+  it('reports an autolinked alias of the same package at another version', async () => {
+    installPackage(
+      '@acme/legacy-ui',
+      {name: '@acme/ui', version: '0.1.22'},
+      {},
+      'LegacyButton',
+    );
+    installPackage(
+      '@acme/ui',
+      {name: '@acme/ui', version: '1.0.0'},
+      {},
+      'NewButton',
+    );
+    fs.rmSync(path.join(tmpDir, 'astryx.config.mjs'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        name: 'consumer',
+        dependencies: {
+          '@acme/legacy-ui': 'npm:@acme/ui@0.1.22',
+          '@acme/ui': '1.0.0',
+        },
+      }),
+    );
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    const owned = (await project.components()).map(component => component.name);
+    expect(owned).toContain('LegacyButton');
+    expect(owned).not.toContain('NewButton');
+    expect(await conflictIssues(project)).toEqual([
+      expect.objectContaining({
+        package: '@acme/ui@1.0.0',
+        message: expect.stringContaining(
+          '@acme/ui@1.0.0 and @acme/ui@0.1.22 (from "@acme/legacy-ui") both claim',
+        ),
+      }),
+    ]);
+  });
+
+  it('recomputes conflicts after the authored package replaces its installed copy', async () => {
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'Widget',
+    );
+    installPackage(
+      '@acme/renamed',
+      {name: '@acme/renamed', version: '2.0.0'},
+      {providerId: '@acme/widgets'},
+      'RenamedWidget',
+    );
+    configure(['@acme/widgets', '@acme/renamed']);
+    writeLocalPackage(
+      {name: '@acme/widgets', version: '3.0.0-dev'},
+      {providerId: '@acme/widgets-next'},
+      'LocalWidget',
+    );
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    expect(
+      project.loadedIntegrations.some(
+        integration => integration.__providerConflict,
+      ),
+    ).toBe(false);
+    const owned = (await project.components()).map(component => component.name);
+    expect(owned).toEqual(
+      expect.arrayContaining(['LocalWidget', 'RenamedWidget']),
+    );
+    expect(owned).not.toContain('Widget');
+    expect(await conflictIssues(project)).toEqual([]);
+  });
+
+  it('lets the package being authored win over its installed predecessor', async () => {
+    installPackage(
+      '@acme/widgets',
+      {name: '@acme/widgets', version: '1.0.0'},
+      {},
+      'Widget',
+    );
+    fs.rmSync(path.join(tmpDir, 'astryx.config.mjs'));
+    writeLocalPackage(
+      {
+        name: '@acme/renamed',
+        version: '2.0.0-dev',
+        devDependencies: {'@acme/widgets': '1.0.0'},
+      },
+      {providerId: '@acme/widgets'},
+      'RenamedWidget',
+    );
+
+    const project = await Project.load(tmpDir, {fresh: true});
+    const owned = (await project.components()).map(component => component.name);
+    expect(owned).toContain('RenamedWidget');
+    expect(owned).not.toContain('Widget');
+    expect(await conflictIssues(project)).toEqual([
+      expect.objectContaining({
+        package: '@acme/widgets@1.0.0',
+        message: expect.stringContaining(
+          '@acme/renamed@2.0.0-dev is the package being authored, so it is used',
+        ),
+      }),
+    ]);
+  });
+});
+
 describe('local integration self-resolution', () => {
   it('preserves a valid gapReport named export', async () => {
     fs.writeFileSync(

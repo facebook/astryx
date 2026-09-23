@@ -628,6 +628,73 @@ export function checkPackageManager(ctx) {
 }
 
 /**
+ * Check 6b — every contributing integration owns its provider identity.
+ *
+ * Artifact and document IDs are provider-scoped, so a package that claims a
+ * provider ID an earlier-loaded package already holds is loaded inert: its
+ * components, templates, themes, docs, and codemods are withdrawn while the
+ * earlier package keeps contributing. That can be a deliberate transition
+ * (a renamed package installed beside its predecessor), so it warns rather
+ * than fails, but it is never allowed to happen quietly.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkProviderIdentity(ctx) {
+  const id = 'provider-identity';
+  const label = 'Integration provider identity';
+
+  if (ctx.integrations == null) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+
+  const conflicts = ctx.integrations.filter(
+    integration => integration.__providerConflict,
+  );
+  if (conflicts.length > 0) {
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: conflicts
+        .map(integration => integration.__providerConflict?.message)
+        .join(' '),
+      fix:
+        'Give each integration its own `providerId` in astryx.integration.*. ' +
+        "A renamed package may keep its predecessor's ID only when the " +
+        'predecessor is no longer installed.',
+    };
+  }
+
+  const count = ctx.integrations.filter(
+    integration =>
+      integration.providerId != null && integration.__loadError == null,
+  ).length;
+  if (count === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'None — no loaded integration has a provider identity.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message:
+      count === 1
+        ? '1 loaded integration has its own provider ID.'
+        : `${count} loaded integrations each have their own provider ID.`,
+  };
+}
+
+/**
  * Ordered list of synchronous check functions. Append here to add a check.
  * (checkConfig is async and is awaited separately by {@link runChecks}.)
  * @type {Array<(ctx: DoctorContext) => DoctorCheck>}
@@ -638,6 +705,7 @@ export const SYNC_CHECKS = [
   checkVersionAlignment,
   checkThemes,
   checkImplicitIntegrations,
+  checkProviderIdentity,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,

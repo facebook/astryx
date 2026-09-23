@@ -39,6 +39,9 @@ import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 /** Stable issue code for an invalid optional agent-doc contribution. */
 export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
 
+/** Stable issue code for a package whose provider ID is already claimed. */
+export const DUPLICATE_PROVIDER = 'duplicate_provider';
+
 /** @param {string} code @param {string} message @returns {Issue} */
 export function issueError(code, message) {
   return {code, severity: 'error', message};
@@ -289,6 +292,13 @@ export async function validateLoadedIntegration(loaded) {
   /** @type {Issue[]} */
   const issues = [];
   if (!loaded || typeof loaded !== 'object') return issues;
+  // A package set aside for claiming another package's provider ID has no
+  // contribution roots to check; the conflict itself is what to report.
+  if (loaded.__providerConflict) {
+    return [
+      issueWarning(DUPLICATE_PROVIDER, loaded.__providerConflict.message),
+    ];
+  }
   // A manifest that threw on import (or failed the schema) carries a load-error
   // marker and no contribution roots, so every check below would find nothing
   // and report a clean integration — which is how a stale manifest used to go
