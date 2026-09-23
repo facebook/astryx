@@ -184,8 +184,8 @@ has a safe theme-independent baseline, so it stays closed under
 - **AR4 — The layout MUST NOT assign a landmark role or accessible name to the
   caller's regions.** Region semantics stay caller-owned.
 - The self-scroll root carries no `tabIndex`, role, or accessible name of its
-  own, and this component does not establish the keyboard path to its own
-  scrolled content. Whether it should is unresolved; see OQ1.
+  own; the keyboard path into scrolled content comes from whatever `children`
+  supplies. Which layer should own that guarantee is unresolved; see OQ1.
 
 ## Design relationships
 
@@ -227,9 +227,10 @@ The `chat-layout` target itself is declared on the Chat family document
   label, and focus behavior. ChatLayout owns only when it is visible.
 - `component:ChatMessageList` consumes `ChatLayoutContext.contentRef`.
 - `spec:AST-025` owns the shared effective-axis scroll capability. ChatLayout
-  does **not** adopt it today: it declares `overflow-y: auto` unconditionally in
+  does not adopt it today: it declares `overflow-y: auto` unconditionally in
   self-scroll mode rather than resolving an effective axis, and it assigns no
-  keyboard access to the viewport.
+  keyboard access to the viewport itself. FR12 accepts an existing focusable
+  descendant as the keyboard path; see OQ1 for the open ownership question.
 
 ## Verification map
 
@@ -250,17 +251,18 @@ None. This record settles no decision; it describes shipped behavior.
 
 ## Open questions
 
-- **OQ1 — Should ChatLayout own the keyboard path to its own scrolled content?**
-  (`human-api`) In self-scroll mode the root is the scroll container and carries
-  no `tabIndex`, role, or accessible name. The keyboard path into scrolled
-  content therefore comes from whatever `children` supplies:
-  `component:ChatMessageList`, the documented child, carries its own
-  `role="log"` and `tabIndex={0}`, which `spec:AST-025/FR12` accepts as an
-  existing focusable descendant. `children` is typed `ReactNode`, so a
-  composition without such a descendant has no keyboard path to content
-  scrolled out of view. Whether this component should depend on its child,
-  own an explicit named viewport stop, or adopt the `spec:AST-025` hooks is
-  unresolved; this record does not claim the current arrangement is correct.
+- **OQ1 — Which layer owns the keyboard path to scrolled content, and should
+  ChatLayout guarantee it?** (`human-api`) In self-scroll mode the root is the
+  scroll container and carries no `tabIndex`, role, or accessible name of its
+  own. Measured in Chromium at this head, the path comes from the documented
+  child: `component:ChatMessageList` carries `role="log"` and `tabIndex={0}`,
+  and every observed tab stop reports `isLayoutRoot: false`, so the layout root
+  is not focused. `spec:AST-025/FR12` accepts such an existing focusable
+  descendant instead of a named viewport. `children` is typed `ReactNode`, so
+  whether a composition supplying no focusable descendant is also covered — by
+  engine scroller-focus behavior or not — is **unmeasured**, and which layer
+  should own the guarantee is undecided. This record states the observed
+  arrangement and asserts no defect.
 - **OQ2 — Should the frosted dock be themeable?** (`human-api`) The dock, its
   inner column, and the blur layer paint the component's signature surface, and
   no current target reaches them.
