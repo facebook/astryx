@@ -296,14 +296,15 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, cwd?: string}} options
  */
-export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods}) {
+export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods, cwd}) {
   return runCodemods(versionManifests, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
+    cwd,
     silent: logger.silent,
   });
 }
@@ -378,15 +379,16 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
  * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, cwd?: string}} options
  */
-export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods}) {
+export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods, cwd}) {
   const jscodeshift = (await import('jscodeshift')).default;
   return runIntegrationCodemods(versionGroups, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
+    cwd,
     jscodeshift,
     silent: logger.silent,
   });

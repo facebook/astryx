@@ -49,6 +49,20 @@ import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 
+/** @param {string[] | undefined} files */
+function failForGeneratedFiles(files) {
+  const blocked = [...new Set(files ?? [])].sort();
+  if (blocked.length === 0) return;
+
+  const message =
+    `Generated files would have been modified by codemods and were left unchanged:\n` +
+    blocked.map(file => `  ${file}`).join('\n') +
+    '\nRegenerate these files with their owning generator, then rerun the upgrade.';
+  logger.error(message);
+  logger.log('Upgrade failed\n');
+  throw new AstryxError(message, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
+}
+
 /**
  * Run the upgrade pipeline for a validated, non-list invocation. Returns the
  * terminal run receipt, or one of the status short-circuits; throws AstryxError
@@ -171,6 +185,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     path: path_,
     codemod: options.codemod,
     skipCodemods,
+    cwd,
   });
   const coreResult = codemodResult && 'totalFilesChanged' in codemodResult ? codemodResult : null;
 
@@ -184,6 +199,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     integrations = projectContext.integrations;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
+    failForGeneratedFiles(coreResult?.generatedFilesBlocked);
     // Graceful dry-run catch: a config that fails strict validation is expected
     // & fixable ONLY when dry-run AND a pending core config codemod previewed a
     // change (the codemod that would repair it).
@@ -294,8 +310,14 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       path: path_,
       codemod: options.codemod,
       skipCodemods,
+      cwd,
     });
   }
+
+  failForGeneratedFiles([
+    ...(coreResult?.generatedFilesBlocked ?? []),
+    ...(integrationResult?.generatedFilesBlocked ?? []),
+  ]);
 
   const registryResult = await reconcileCompositions();
 

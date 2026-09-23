@@ -23,8 +23,9 @@
  * entries as `{name, transform, meta}`; `runner.mjs` normalizes those to this
  * shape at the boundary (see `runner.mjs`).
  *
- * Both kinds reuse the shared output validation from runner.mjs and surface a
- * transform throw as an error (strictness contract).
+ * Both kinds reuse the shared output validation from runner.mjs, refuse to
+ * write generated files, and surface a transform throw as an error (strictness
+ * contract).
  */
 
 import * as fs from 'node:fs';
@@ -32,6 +33,16 @@ import * as path from 'node:path';
 import * as p from './term-log.mjs';
 import {findConfigPath} from '../../foundation/config/project.mjs';
 import {fixDirectiveCorruption, validateOutput, IGNORED_DIRS} from './runner.mjs';
+import {
+  GENERATED_FILE_BLOCK_REASON,
+  hasGeneratedFileHeader,
+} from './generated-file.mjs';
+
+/**
+ * @typedef {import('../../authoring/codemod/type').CodemodRunResult & {
+ *   generatedFilesBlocked?: string[],
+ * }} CodemodRunResult
+ */
 
 export const DEFAULT_CODE_EXTENSIONS = [
   '.tsx',
@@ -91,10 +102,13 @@ export function makeLog(silent) {
  * Apply a config codemod to the consumer's astryx.config.* file.
  *
  * @param {import('../../authoring/codemod/type').CodemodEntry} entry normalized codemod entry {id, codemod, package}
- * @param {{apply: boolean, log: import('../../authoring/codemod/type').CliLog, jscodeshift: import('../../authoring/codemod/type').JscodeshiftFactory}} ctx
- * @returns {import('../../authoring/codemod/type').CodemodRunResult}
+ * @param {{apply: boolean, log: import('../../authoring/codemod/type').CliLog, jscodeshift: import('../../authoring/codemod/type').JscodeshiftFactory, cwd?: string}} ctx
+ * @returns {CodemodRunResult}
  */
-export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
+export function runConfigCodemod(
+  entry,
+  {apply, log, jscodeshift, cwd = process.cwd()},
+) {
   const {codemod, id, package: pkg} = entry;
   const name = `${pkg}:${id}`;
   // findConfigPath throws when multiple astryx.config.* files coexist. Config
@@ -104,7 +118,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
   // structured error so the run continues and reports it.
   let configPath;
   try {
-    configPath = findConfigPath(process.cwd());
+    configPath = findConfigPath(cwd);
   } catch (err) {
     const message = /** @type {any} */ (err).message;
     log.error(`    ✗ astryx.config.* — ${message}`);
@@ -119,7 +133,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
     return {filesChanged: 0, writtenFiles: [], errors: []};
   }
 
-  const relativePath = path.relative(process.cwd(), configPath);
+  const relativePath = path.relative(cwd, configPath);
   try {
     const source = fs.readFileSync(configPath, 'utf-8');
     const ext = path.extname(configPath);
@@ -130,6 +144,16 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
 
     if (result == null || result === source) {
       return {filesChanged: 0, writtenFiles: [], errors: []};
+    }
+
+    if (hasGeneratedFileHeader(source)) {
+      log.error(`    ✗ ${relativePath} — ${GENERATED_FILE_BLOCK_REASON}`);
+      return {
+        filesChanged: 0,
+        writtenFiles: [],
+        errors: [{file: relativePath, codemod: name, error: GENERATED_FILE_BLOCK_REASON}],
+        generatedFilesBlocked: [relativePath],
+      };
     }
 
     result = fixDirectiveCorruption(result);
@@ -172,10 +196,14 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
  *
  * @param {import('../../authoring/codemod/type').CodemodEntry} entry normalized codemod entry {id, codemod, package}
  * @param {string[]} files
- * @param {{apply: boolean, log: import('../../authoring/codemod/type').CliLog, jscodeshift: import('../../authoring/codemod/type').JscodeshiftFactory}} ctx
- * @returns {import('../../authoring/codemod/type').CodemodRunResult}
+ * @param {{apply: boolean, log: import('../../authoring/codemod/type').CliLog, jscodeshift: import('../../authoring/codemod/type').JscodeshiftFactory, cwd?: string}} ctx
+ * @returns {CodemodRunResult & {generatedFilesBlocked: string[]}}
  */
-export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
+export function runCodeCodemod(
+  entry,
+  files,
+  {apply, log, jscodeshift, cwd = process.cwd()},
+) {
   const {codemod, id, package: pkg} = entry;
   const name = `${pkg}:${id}`;
   const extensions = new Set(codemod.fileExtensions ?? DEFAULT_CODE_EXTENSIONS);
@@ -185,12 +213,14 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
   const writtenFiles = [];
   /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
+  /** @type {Set<string>} */
+  const generatedFilesBlocked = new Set();
 
   for (const filePath of files) {
     const ext = path.extname(filePath);
     if (!extensions.has(ext)) continue;
 
-    const relativePath = path.relative(process.cwd(), filePath);
+    const relativePath = path.relative(cwd, filePath);
     try {
       const source = fs.readFileSync(filePath, 'utf-8');
       const parser = ext === '.tsx' || ext === '.ts' ? 'tsx' : 'babel';
@@ -199,6 +229,17 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
       let result = codemod.transform({source, path: filePath}, api);
 
       if (result == null || result === source) continue;
+
+      if (hasGeneratedFileHeader(source)) {
+        generatedFilesBlocked.add(relativePath);
+        log.error(`    ✗ ${relativePath} — ${GENERATED_FILE_BLOCK_REASON}`);
+        errors.push({
+          file: relativePath,
+          codemod: name,
+          error: GENERATED_FILE_BLOCK_REASON,
+        });
+        continue;
+      }
 
       result = fixDirectiveCorruption(result);
       const validation = validateOutput(result, source, j, {
@@ -229,5 +270,10 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
     }
   }
 
-  return {filesChanged, writtenFiles, errors};
+  return {
+    filesChanged,
+    writtenFiles,
+    errors,
+    generatedFilesBlocked: [...generatedFilesBlocked].sort(),
+  };
 }

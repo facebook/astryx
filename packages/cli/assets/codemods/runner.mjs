@@ -4,8 +4,9 @@
  * @file Codemod runner
  *
  * Orchestrates running jscodeshift transforms against source files.
- * Handles dry-run previews, file writing, summary reporting, and
- * output validation to prevent corrupted transforms from reaching disk.
+ * Handles dry-run previews, generated-file protection, file writing, summary
+ * reporting, and output validation to prevent corrupted transforms from
+ * reaching disk.
  */
 
 import * as fs from 'node:fs';
@@ -13,6 +14,10 @@ import * as path from 'node:path';
 import * as p from './term-log.mjs';
 import {humanLog} from '../../foundation/response/json.mjs';
 import {runConfigCodemod} from './run-codemod.mjs';
+import {
+  GENERATED_FILE_BLOCK_REASON,
+  hasGeneratedFileHeader,
+} from './generated-file.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -204,11 +209,19 @@ function toUnifiedEntry(transformEntry, version) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
- * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
+ * @param {string} [options.cwd] - Consumer project root
+ * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, generatedFilesBlocked: string[], writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, silent = false},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    silent = false,
+    cwd = process.cwd(),
+  },
 ) {
   // No-op stub object so silent mode skips log output entirely without
   // littering the body with `if (!silent)` guards.
@@ -219,7 +232,7 @@ export async function runCodemods(
     if (!silent) humanLog('');
   };
 
-  const resolvedPath = path.resolve(srcPath);
+  const resolvedPath = path.resolve(cwd, srcPath);
 
   // Config codemods target the consumer's astryx.config.* and never read
   // source files, so a missing --path should not block them. Only hard-fail
@@ -257,6 +270,8 @@ export async function runCodemods(
   let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
   let totalValidationBlocked = 0;
+  /** @type {Set<string>} */
+  const generatedFilesBlocked = new Set();
   /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
   /** @type {string[]} */
@@ -295,7 +310,11 @@ export async function runCodemods(
           apply,
           log,
           jscodeshift,
+          cwd,
         });
+        for (const file of result.generatedFilesBlocked ?? []) {
+          generatedFilesBlocked.add(file);
+        }
         if (result.errors.length > 0) {
           errors.push(...result.errors);
         } else if (result.filesChanged > 0) {
@@ -309,7 +328,7 @@ export async function runCodemods(
       let filesChanged = 0;
 
       for (const filePath of files) {
-        const relativePath = path.relative(process.cwd(), filePath);
+        const relativePath = path.relative(cwd, filePath);
 
         try {
           const ext = path.extname(filePath);
@@ -331,6 +350,19 @@ export async function runCodemods(
           let result = transform(file, api);
 
           if (result != null && result !== source) {
+            if (hasGeneratedFileHeader(source)) {
+              generatedFilesBlocked.add(relativePath);
+              log.error(
+                `    ✗ ${relativePath} — ${GENERATED_FILE_BLOCK_REASON}`,
+              );
+              errors.push({
+                file: relativePath,
+                codemod: name,
+                error: GENERATED_FILE_BLOCK_REASON,
+              });
+              continue;
+            }
+
             // Fix known jscodeshift output corruption before validation
             result = fixDirectiveCorruption(result);
 
@@ -391,6 +423,18 @@ export async function runCodemods(
     }
   }
 
+  if (generatedFilesBlocked.size > 0) {
+    log.error(
+      `${generatedFilesBlocked.size} generated file${generatedFilesBlocked.size === 1 ? '' : 's'} would have been modified by codemods and ${generatedFilesBlocked.size === 1 ? 'was' : 'were'} left unchanged:`,
+    );
+    for (const file of [...generatedFilesBlocked].sort()) {
+      log.error(`  ${file}`);
+    }
+    log.info(
+      'Regenerate these files with their owning generator, then rerun the upgrade.',
+    );
+  }
+
   if (totalValidationBlocked > 0) {
     log.warn(
       `${totalValidationBlocked} file${totalValidationBlocked === 1 ? ' was' : 's were'} blocked by validation — no changes written to ${totalValidationBlocked === 1 ? 'that file' : 'those files'}.`,
@@ -438,6 +482,7 @@ export async function runCodemods(
     totalFilesChanged,
     totalTransformsApplied,
     totalValidationBlocked,
+    generatedFilesBlocked: [...generatedFilesBlocked].sort(),
     writtenFiles,
     errors,
     skippedOptional,

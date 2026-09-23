@@ -40,11 +40,20 @@ import {
  * @param {Set<string>} [options.skipCodemods] codemod ids to exclude
  * @param {import('../../authoring/codemod/type').JscodeshiftFactory} options.jscodeshift
  * @param {boolean} [options.silent]
- * @returns {{totalFilesChanged: number, totalTransformsApplied: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type').CodemodEntry>}}
+ * @param {string} [options.cwd] consumer project root
+ * @returns {{totalFilesChanged: number, totalTransformsApplied: number, generatedFilesBlocked: string[], writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type').CodemodEntry>}}
  */
 export function runIntegrationCodemods(
   versionGroups,
-  {apply, path: srcPath, codemod, skipCodemods, jscodeshift, silent = false},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    jscodeshift,
+    silent = false,
+    cwd = process.cwd(),
+  },
 ) {
   const log = makeLog(silent);
 
@@ -52,6 +61,8 @@ export function runIntegrationCodemods(
   let totalTransformsApplied = 0;
   /** @type {string[]} */
   const writtenFiles = [];
+  /** @type {Set<string>} */
+  const generatedFilesBlocked = new Set();
   /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
   /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */
@@ -80,16 +91,19 @@ export function runIntegrationCodemods(
   // Config codemods first.
   for (const entry of configEntries) {
     log.info(`  ${entry.codemod.title} (v${entry.version}, ${entry.package})`);
-    const r = runConfigCodemod(entry, {apply, log, jscodeshift});
+    const r = runConfigCodemod(entry, {apply, log, jscodeshift, cwd});
     totalFilesChanged += r.filesChanged;
     totalTransformsApplied += r.filesChanged;
     writtenFiles.push(...r.writtenFiles);
     errors.push(...r.errors);
+    for (const file of r.generatedFilesBlocked ?? []) {
+      generatedFilesBlocked.add(file);
+    }
   }
 
   // Then code codemods (only scan the tree if there are any).
   if (codeEntries.length > 0) {
-    const resolvedPath = path.resolve(srcPath);
+    const resolvedPath = path.resolve(cwd, srcPath);
     const files = fs.existsSync(resolvedPath)
       ? findSourceFiles(resolvedPath)
       : [];
@@ -97,17 +111,21 @@ export function runIntegrationCodemods(
       log.info(
         `  ${entry.codemod.title} (v${entry.version}, ${entry.package})`,
       );
-      const r = runCodeCodemod(entry, files, {apply, log, jscodeshift});
+      const r = runCodeCodemod(entry, files, {apply, log, jscodeshift, cwd});
       totalFilesChanged += r.filesChanged;
       totalTransformsApplied += r.filesChanged;
       writtenFiles.push(...r.writtenFiles);
       errors.push(...r.errors);
+      for (const file of r.generatedFilesBlocked) {
+        generatedFilesBlocked.add(file);
+      }
     }
   }
 
   return {
     totalFilesChanged,
     totalTransformsApplied,
+    generatedFilesBlocked: [...generatedFilesBlocked].sort(),
     writtenFiles,
     errors,
     skippedOptional,
