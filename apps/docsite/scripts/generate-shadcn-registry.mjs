@@ -8,7 +8,8 @@
  * @position Build-time serializer between Astryx's catalog and shadcn clients.
  *
  * The registry keeps Astryx packages as real dependencies. Component and hook
- * items create public re-exports; blocks and pages copy app-level composition
+ * items create public re-exports; published registries omit owned blocks whose
+ * public entry is unavailable. Blocks and pages copy app-level composition
  * source that already imports published package paths and add adjacent receipts
  * so Astryx can reconcile later releases without taking ownership of user edits.
  */
@@ -550,11 +551,18 @@ export function buildShadcnRegistry({
     packages.map(pkg => [pkg.name, pkg.peerDependencies ?? {}]),
   );
   const componentEntries = Object.entries(allComponents);
+  const publishableComponentEntries = componentEntries.filter(([packageName]) =>
+    packageDependencies.has(packageName),
+  );
+  const availablePublicEntryNames = new Set(
+    publishableComponentEntries.flatMap(([, components]) =>
+      components.map(component => component.name),
+    ),
+  );
   const skippedComponents = componentEntries
     .filter(([packageName]) => !packageDependencies.has(packageName))
     .reduce((count, [, components]) => count + components.length, 0);
-  const componentItems = componentEntries
-    .filter(([packageName]) => packageDependencies.has(packageName))
+  const componentItems = publishableComponentEntries
     .flatMap(([packageName, components]) =>
       components.map(component =>
         componentItem(
@@ -569,6 +577,14 @@ export function buildShadcnRegistry({
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    if (
+      dependencyTag == null &&
+      block.exampleFor != null &&
+      !availablePublicEntryNames.has(block.exampleFor)
+    ) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     try {
       blockItems.push(
         blockItem(

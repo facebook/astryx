@@ -172,7 +172,6 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 
 const stickyStyles = stylex.create({
   cell: {
-    position: 'sticky',
     // Opaque base (overridable; defaults to the card token, the common
     // container) so scrolled content doesn't show through the pinned column.
     backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
@@ -195,13 +194,6 @@ const stickyStyles = stylex.create({
     backgroundClip: 'padding-box',
     // Sticky cells need visible overflow so the shadow ::after can bleed out.
     overflow: 'visible',
-  },
-  headerCell: {
-    // Header cells stack above body cells; both stack above non-sticky cells.
-    zIndex: 3,
-  },
-  bodyCell: {
-    zIndex: 1,
   },
 });
 
@@ -352,9 +344,10 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         if (!side) {
           return props;
         }
-        // position/inline-offset are runtime values → set via inline style so
-        // they are authoritative regardless of plugin composition order (the
-        // resize plugin also writes inline style on header cells).
+        // Position, stacking tier, and inline offset are runtime values → set
+        // via inline style so they stay authoritative regardless of plugin
+        // composition order. Header corners use tier 3, above ordinary sticky
+        // headers (2) and sticky body cells (1).
         const offsetStyle: CSSProperties =
           side.edge === 'start'
             ? {insetInlineStart: `${side.offset}px`}
@@ -363,12 +356,16 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           ...props,
           htmlProps: {
             ...props.htmlProps,
-            style: {...props.htmlProps.style, ...offsetStyle},
+            style: {
+              ...props.htmlProps.style,
+              position: 'sticky',
+              zIndex: 3,
+              ...offsetStyle,
+            },
           },
           xstyle: [
             ...props.xstyle,
             stickyStyles.cell,
-            stickyStyles.headerCell,
             side.edge === 'start' ? shadowStyles.start : shadowStyles.end,
           ],
         };
@@ -391,12 +388,16 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           ...props,
           htmlProps: {
             ...props.htmlProps,
-            style: {...props.htmlProps.style, ...offsetStyle},
+            style: {
+              ...props.htmlProps.style,
+              position: 'sticky',
+              zIndex: 1,
+              ...offsetStyle,
+            },
           },
           xstyle: [
             ...props.xstyle,
             stickyStyles.cell,
-            stickyStyles.bodyCell,
             side.edge === 'start' ? shadowStyles.start : shadowStyles.end,
           ],
         };
