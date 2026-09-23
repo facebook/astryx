@@ -8,6 +8,8 @@ import {
   list,
   record,
   records,
+  wrapText,
+  WRAP_WIDTH,
   code,
   Block,
   BULLET,
@@ -146,5 +148,53 @@ describe('emit', () => {
     setJsonMode(true);
     emit(section('A'), text('B'));
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('wrapText', () => {
+  it('leaves short lines and its own line breaks alone', () => {
+    expect(wrapText('a b\nc')).toBe('a b\nc');
+  });
+
+  it('wraps at the width with a hanging indent', () => {
+    expect(wrapText('aaa bbb ccc', {width: 7, indent: '  '})).toBe('aaa bbb\n  ccc');
+  });
+
+  it('keeps a word longer than the width whole', () => {
+    expect(wrapText('x '.concat('y'.repeat(20)), {width: 10})).toBe(
+      `x\n${'y'.repeat(20)}`,
+    );
+  });
+});
+
+describe('records inline layout', () => {
+  const items = [
+    {id: 'a', title: 'Alpha', summary: 'First.'},
+    {id: 'bbb', title: 'Beta', summary: ''},
+  ];
+
+  it('puts one record on each line under a padded first column', () => {
+    expect(
+      records(items, {fields: ['id', 'title', 'summary'], layout: 'inline'}).toString(),
+    ).toBe('a    Alpha - First.\nbbb  Beta');
+  });
+
+  it('wraps a long record under the first column', () => {
+    const out = records([{id: 'a', text: 'word '.repeat(40).trim()}], {
+      layout: 'inline',
+    }).toString();
+    expect(out.split('\n').length).toBeGreaterThan(1);
+    expect(out.split('\n').every(line => line.length <= WRAP_WIDTH)).toBe(true);
+    expect(out.split('\n')[1].startsWith('   word')).toBe(true);
+  });
+
+  it('cuts a long record to one line when asked', () => {
+    const out = records([{id: 'a', text: 'word '.repeat(40).trim()}], {
+      layout: 'inline',
+      overflow: 'truncate',
+    }).toString();
+    expect(out.includes('\n')).toBe(false);
+    expect(out.length).toBeLessThanOrEqual(WRAP_WIDTH);
+    expect(out.endsWith('...')).toBe(true);
   });
 });

@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerDocs} from './docs.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
 
 let tmpDir;
 
@@ -71,12 +72,12 @@ describe('hyphenated doc filenames', () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it('returns docs.detail via API for hyphenated topic', async () => {
+  it('returns docs.index via API for hyphenated topic', async () => {
     const {docs: docsApi} = await import('../../../api/docs/docs.mjs');
     const result = await docsApi('getting-started');
-    expect(result.type).toBe('docs.detail');
-    expect(result.data).toBeDefined();
+    expect(result.type).toBe('docs.index');
     expect(result.data.description).toBeDefined();
+    expect(result.data.sections.length).toBeGreaterThan(0);
   });
 });
 
@@ -99,4 +100,54 @@ describe('migration docs', () => {
     expect(output).toContain('Recommended Order');
     expect(output).toContain('Map shadcn and Radix Primitives');
   });
+});
+
+describe('progressive reads', () => {
+  const SLOW = 60_000;
+  /** @param {string} out */
+  const widest = out => Math.max(...out.split('\n').map(line => line.length));
+
+  it('lists every topic on one line each', async () => {
+    const {status, stdout} = await runCli(['docs']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^principles +\S/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it("prints a topic's section index with the keys to read by", async () => {
+    const {status, stdout} = await runCli(['docs', 'theme']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^quick-start +Quick Start/m);
+    expect(stdout).toContain('docs theme <section>');
+    expect(stdout).toContain('docs theme --detail full');
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it('prints one section by its key', async () => {
+    const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^## Quick Start/m);
+  }, SLOW);
+
+  it('prints the whole topic only for --detail full', async () => {
+    const index = await runCli(['docs', 'theme']);
+    const full = await runCli(['--detail', 'full', 'docs', 'theme']);
+    expect(full.status).toBe(0);
+    expect(full.stdout).toMatch(/^## Quick Start/m);
+    expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
+    expect(widest(full.stdout.replace(/```[\s\S]*?```/g, ''))).toBeLessThanOrEqual(
+      120,
+    );
+  }, SLOW);
+
+  it('returns the matching envelopes as JSON', async () => {
+    const envelope = async args => JSON.parse((await runCli([...args, '--json'])).stdout);
+    expect((await envelope(['docs', 'theme'])).type).toBe('docs.index');
+    expect((await envelope(['--detail', 'full', 'docs', 'theme'])).type).toBe(
+      'docs.detail',
+    );
+    expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
+      'docs.detail.section',
+    );
+  }, SLOW);
 });

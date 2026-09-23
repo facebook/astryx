@@ -26,10 +26,16 @@ describe('docs() dispatcher routing', () => {
     expect((await docs('')).type).toBe('docs.list');
   }, SLOW);
 
-  it('topic only -> docs.detail', async () => {
+  it('topic only -> docs.index', async () => {
     const {data} = await docs();
     const topic = data[0].topic;
     const r = await docs(topic);
+    expect(r.type).toBe('docs.index');
+  }, SLOW);
+
+  it("topic + detail: 'full' -> docs.detail", async () => {
+    const {data} = await docs();
+    const r = await docs(data[0].topic, undefined, {detail: 'full'});
     expect(r.type).toBe('docs.detail');
   }, SLOW);
 

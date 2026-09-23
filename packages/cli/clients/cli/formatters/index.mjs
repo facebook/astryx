@@ -11,7 +11,8 @@
  * which fields to show and in what order.
  *
  * Constraints (deliberately narrow):
- *   - Plain ASCII only. No color, no TTY detection, no width wrapping. Output is
+ *   - Plain ASCII only. No color and no TTY detection. Long lines wrap at a
+ *     fixed {@link WRAP_WIDTH}, never at the terminal's width, so output is
  *     byte-for-byte deterministic whether printed or piped to an agent.
  *   - Renderers return an opaque {@link Block}; `emit` accepts ONLY Blocks, so a
  *     stray string can't leak onto stdout (the compiler rejects `emit('x')`).
@@ -32,6 +33,12 @@ export const ARROW = '->';
 export const BULLET = '-';
 export const ERR = '!!';
 export const WARN = '!';
+
+/** The column long human-output lines wrap at. */
+export const WRAP_WIDTH = 120;
+
+/** The widest first column an inline record pads to; a longer value overhangs. */
+const INLINE_LEAD_MAX = 32;
 
 /**
  * An opaque, renderer-produced block of output. Nominal via a private field:
@@ -67,6 +74,13 @@ export class Block {
  * @property {Record<string, string>} [labels] - Rename a key for display.
  * @property {Record<string, (value: any) => string>} [format] - Transform a
  *   value before rendering (e.g. prefix a command with the package manager).
+ * @property {'stacked' | 'inline'} [layout] - `stacked` (the default): one
+ *   `key: value` line per field, a blank line between records. `inline`: one
+ *   record per line, the first field in a padded column and the rest joined by
+ *   ` - `, for a list a reader scans.
+ * @property {'wrap' | 'truncate'} [overflow] - What an inline record longer
+ *   than {@link WRAP_WIDTH} does: `wrap` (the default) continues under the
+ *   first column; `truncate` cuts it to one line.
  */
 
 /** @param {unknown} v @returns {boolean} */
@@ -101,6 +115,47 @@ function toAscii(s) {
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\u2026/g, '...')
     .replace(/\u00a0/g, ' ');
+}
+
+/**
+ * Word-wrap text at `width`, keeping its own line breaks. A word longer than
+ * the width stays whole on a line of its own. Continuation lines start with
+ * `indent`.
+ * @param {string} input
+ * @param {{width?: number, indent?: string}} [options]
+ * @returns {string}
+ */
+export function wrapText(input, {width = WRAP_WIDTH, indent = ''} = {}) {
+  return String(input)
+    .split('\n')
+    .map(line => wrapLine(line, width, indent))
+    .join('\n');
+}
+
+/**
+ * @param {string} line
+ * @param {number} width
+ * @param {string} indent
+ * @returns {string}
+ */
+function wrapLine(line, width, indent) {
+  if (line.length <= width) return line;
+  const lead = /^\s*/.exec(line)?.[0] ?? '';
+  const [first = '', ...words] = line.slice(lead.length).split(/ +/);
+  /** @type {string[]} */
+  const out = [];
+  let current = lead + first;
+  for (const word of words) {
+    if (word === '') continue;
+    if (current.length + 1 + word.length > width && current.trim() !== '') {
+      out.push(current);
+      current = indent + word;
+    } else {
+      current += ` ${word}`;
+    }
+  }
+  out.push(current);
+  return out.join('\n');
 }
 
 /**
@@ -177,8 +232,44 @@ export function record(obj, options = {}) {
  * @returns {Block}
  */
 export function records(items, options = {}) {
+  if (options.layout === 'inline') return inlineRecords(items, options);
   const blocks = items.map(o => record(o, options).toString()).filter(Boolean);
   return new Block(blocks.join('\n\n'));
+}
+
+/**
+ * @param {any[]} items
+ * @param {RecordOptions} options
+ * @returns {Block}
+ */
+function inlineRecords(items, options) {
+  const [lead, ...rest] = (options.fields ?? Object.keys(items[0] ?? {})).filter(
+    k => !options.omit?.includes(k),
+  );
+  if (lead == null) return new Block('');
+  /** @param {any} o @param {string} k */
+  const value = (o, k) => {
+    const fmt = options.format?.[k];
+    return fmt ? fmt(o[k]) : renderValue(o[k]);
+  };
+  const leads = items.map(o => (isEmpty(o[lead]) ? '' : value(o, lead)));
+  const column = Math.min(
+    Math.max(0, ...leads.map(l => l.length)),
+    INLINE_LEAD_MAX,
+  );
+  const indent = ' '.repeat(column + 2);
+  const lines = items.map((o, i) => {
+    const tail = rest
+      .filter(k => !isEmpty(o[k]))
+      .map(k => value(o, k))
+      .join(' - ');
+    const line = toAscii(tail ? `${leads[i].padEnd(column)}  ${tail}` : leads[i]);
+    if (options.overflow !== 'truncate') return wrapText(line, {indent});
+    return line.length > WRAP_WIDTH
+      ? `${line.slice(0, WRAP_WIDTH - 3).trimEnd()}...`
+      : line;
+  });
+  return new Block(lines.join('\n'));
 }
 
 /**

@@ -15,9 +15,10 @@ export const doc = {
   namespace: 'cli',
   summary: 'Print reference docs',
   description:
-    'Reads the reference docs: with no topic it lists every topic; a topic prints that ' +
-    'full doc; a topic plus a section returns the first section whose title contains the ' +
-    '(case-insensitive) query.',
+    'Reads the reference docs progressively: with no topic it lists every topic; a topic ' +
+    'lists its sections, each with the key to read it by; a topic plus a section prints ' +
+    'that section (by key, exact title, or a unique part of a title); `--detail full` ' +
+    'prints the whole topic.',
   fn: 'docs',
   args: [
     {name: 'topic', param: 'topic', required: false},
@@ -25,13 +26,15 @@ export const doc = {
   ],
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
-    {label: 'One topic as JSON', cli: 'astryx docs spacing --json'},
+    {label: "A topic's sections", cli: 'astryx docs theme'},
+    {label: 'One section', cli: 'astryx docs theme quick-start'},
+    {label: 'A whole topic as JSON', cli: 'astryx docs spacing --detail full --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown topic, or a section that matches no title in the topic',
+      when: 'unknown topic, or a section that matches no section or more than one',
     },
   ],
   related: ['search', 'component', 'hook', 'template'],

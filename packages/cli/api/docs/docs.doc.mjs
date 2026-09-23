@@ -13,18 +13,20 @@ export const doc = {
   name: 'docs',
   displayName: 'docs()',
   summary:
-    'Read the reference docs: list every topic, one topic, or a single section of a topic.',
+    'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',
   description:
-    'Routes on its arguments: no topic lists every reference-doc topic; a topic ' +
-    'returns that full ReferenceDoc (with token-ref blocks inlined); a topic ' +
-    'plus a section returns the first section whose title contains the ' +
-    '(case-insensitive) query. The topic set is the CLI\'s own docs plus the ' +
+    'Reads are progressive. No topic lists every reference-doc topic; a topic ' +
+    'returns its section index (each section\'s key, title, and summary); a ' +
+    'topic plus a section returns that one section, found by its key, then its ' +
+    'exact title, then a unique part of its title (an ambiguous query is ' +
+    'refused); `detail: \'full\'` returns the whole ReferenceDoc. Token-ref ' +
+    'blocks are inlined either way. The topic set is the CLI\'s own docs plus the ' +
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'Overlay options select localized or dense variants.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsDetailResponse | DocsDetailSectionResponse>',
+    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse>',
   keywords: [
     'docs',
     'documentation',
@@ -46,7 +48,7 @@ export const doc = {
       name: 'section',
       type: 'string',
       description:
-        'Section within the topic to return; matches the first section title that contains this (case-insensitive).',
+        "Section to return: its key (from the topic's index), its title, or a unique part of its title (case-insensitive).",
     },
     {
       name: 'options.lang',
@@ -64,6 +66,12 @@ export const doc = {
       description: 'Return the token-efficient dense doc variant.',
     },
     {
+      name: 'options.detail',
+      type: "'full' | 'compact' | 'brief'",
+      description:
+        "'full' returns a topic's whole doc; otherwise a topic read returns its section index.",
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description:
@@ -77,14 +85,19 @@ export const doc = {
         'All available reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.',
     },
     {
+      type: 'docs.index',
+      description:
+        "One topic's section index: {name, title, description, sections: [{id, title, summary}]}.",
+    },
+    {
       type: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined.",
+        "One topic's full ReferenceDoc, with token-ref blocks inlined (detail: 'full').",
     },
     {
       type: 'docs.detail.section',
       description:
-        'A single ReferenceSection of the topic: the first whose title contains the section query.',
+        'One ReferenceSection of the topic, found by key or title, with token-ref blocks inlined.',
     },
   ],
   throws: [
@@ -94,13 +107,17 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_SECTION',
-      when: 'a section is requested but is empty or matches no section title in the topic',
+      when: 'a section is requested but is empty, matches no section, or matches more than one',
     },
   ],
   examples: [
     {label: 'List topics', code: 'const r = await docs();'},
-    {label: 'Load a topic', code: "await docs('principles');"},
-    {label: 'One section', code: "await docs('tokens', 'spacing');"},
+    {label: "A topic's sections", code: "await docs('principles');"},
+    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
+    {
+      label: 'A whole topic',
+      code: "await docs('principles', undefined, {detail: 'full'});",
+    },
   ],
   command: 'docs',
   related: ['search', 'component', 'hook', 'template'],

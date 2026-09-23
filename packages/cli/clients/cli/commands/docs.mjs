@@ -3,18 +3,28 @@
 /**
  * @file docs command — Print Astryx reference docs
  *
- * Auto-discovers .doc.mjs files from the docs/ directory.
+ * Reads are progressive: the topic list, then one topic's section index, then
+ * one section by its key, or the whole topic with `--detail full`.
  * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
  *
  * Usage:
  *   astryx docs                          List available topics
- *   astryx docs <topic>                  Print full doc
+ *   astryx docs <topic>                  List the topic's sections
  *   astryx docs <topic> <section>        Print one section
+ *   astryx docs <topic> --detail full    Print the whole topic
  */
 
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, records, text, code} from '../formatters/index.mjs';
+import {
+  emit,
+  section,
+  records,
+  text,
+  code,
+  wrapText,
+  WRAP_WIDTH,
+} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {resultSet} from '../../../foundation/debug/index.mjs';
@@ -42,6 +52,28 @@ function formatTable(headers, rows) {
 }
 
 /**
+ * A table too wide for {@link WRAP_WIDTH}: one `header: cell` line per cell and
+ * a blank line between rows, so nothing runs off the side of a terminal.
+ * @param {string[]} headers
+ * @param {string[][]} rows
+ * @returns {string}
+ */
+function formatTableVertical(headers, rows) {
+  const width = Math.max(...headers.map(h => h.length)) + 2;
+  return rows
+    .map(row =>
+      headers
+        .map((h, i) =>
+          wrapText(`${`${h}:`.padEnd(width)}${row[i] ?? ''}`, {
+            indent: ' '.repeat(width),
+          }),
+        )
+        .join('\n'),
+    )
+    .join('\n\n');
+}
+
+/**
  * @param {string[]} headers
  * @param {string[][]} rows
  * @returns {string}
@@ -58,7 +90,7 @@ function formatTableCompact(headers, rows) {
 function formatBlock(block, detail) {
   switch (block.type) {
     case 'prose':
-      return block.text;
+      return wrapText(block.text);
 
     case 'heading':
       return `${'#'.repeat(block.level || 3)} ${block.text}`;
@@ -77,7 +109,12 @@ function formatBlock(block, detail) {
       if (detail === 'compact') {
         return formatTableCompact(block.headers, block.rows);
       }
-      return formatTable(block.headers, block.rows);
+      {
+        const table = formatTable(block.headers, block.rows);
+        return table.split('\n').some(line => line.length > WRAP_WIDTH)
+          ? formatTableVertical(block.headers, block.rows)
+          : table;
+      }
 
     case 'list': {
       const prefix =
@@ -88,7 +125,12 @@ function formatBlock(block, detail) {
             : block.style === 'do'
               ? () => '+ '
               : () => '- ';
-      return block.items.map((item, i) => `${prefix(i)}${item}`).join('\n');
+      return block.items
+        .map((item, i) => {
+          const head = prefix(i);
+          return wrapText(`${head}${item}`, {indent: ' '.repeat(head.length)});
+        })
+        .join('\n');
     }
 
     case 'workflow':
@@ -145,11 +187,35 @@ function formatReferenceFull(docs, detail) {
 }
 
 /**
+ * A topic's section index: what the topic is, one line per section with the
+ * key to read it by, and how to read further.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsIndex} index
+ * @param {string} run
+ */
+function emitIndex(index, run) {
+  emit(
+    section(index.title, index.description ? wrapText(index.description) : undefined),
+    records(index.sections, {
+      fields: ['id', 'title', 'summary'],
+      layout: 'inline',
+      overflow: 'truncate',
+    }),
+    text(
+      [
+        `Read one section: ${run} docs ${index.name} <section>`,
+        `Read everything:  ${run} docs ${index.name} --detail full`,
+      ].join('\n'),
+    ),
+  );
+}
+
+/**
  * What the run answered with. A named topic (or one of its sections) resolves
  * or throws, so it is always a direct match of one doc; the bare form lists
  * every topic there is.
  *
  * @param {import('../../../api/docs/docs.type.mjs').DocsListResponse
+ *   | import('../../../api/docs/docs.type.mjs').DocsIndexResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsDetailResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsDetailSectionResponse} result
  * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
@@ -178,10 +244,19 @@ export function registerDocs(program) {
       const dense = program.opts().dense || false;
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
+      // --detail defaults to full, so only an explicit `--detail full` asks for
+      // a whole topic; a plain topic read is its section index.
+      const wholeTopic =
+        detail === 'full' && program.getOptionValueSource?.('detail') === 'cli';
 
       let result;
       try {
-        result = await docsApi(topic, sectionName, {lang, zh, dense});
+        result = await docsApi(topic, sectionName, {
+          lang,
+          zh,
+          dense,
+          ...(wholeTopic ? {detail: 'full'} : {}),
+        });
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
@@ -205,14 +280,23 @@ export function registerDocs(program) {
           // description), then the usage footer as plain prose.
           emit(
             section('Available docs'),
-            records(result.data, {fields: ['topic', 'description']}),
+            records(result.data, {
+              fields: ['topic', 'description'],
+              layout: 'inline',
+            }),
             text(
               [
-                `Usage: ${run} docs <topic>`,
-                `       ${run} docs <topic> <section>`,
+                `Usage: ${run} docs <topic>                  list its sections`,
+                `       ${run} docs <topic> <section>        read one section`,
+                `       ${run} docs <topic> --detail full    read everything`,
               ].join('\n'),
             ),
           );
+          break;
+        }
+
+        case 'docs.index': {
+          emitIndex(result.data, run);
           break;
         }
 

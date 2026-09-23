@@ -7,7 +7,8 @@
  *   Invocation                          -> type discriminator
  *   ------------------------------------------------------------
  *   xds --json docs                     -> docs.list
- *   xds --json docs <topic>             -> docs.detail
+ *   xds --json docs <topic>             -> docs.index
+ *   xds --json docs <topic> --detail full -> docs.detail
  *   xds --json docs <topic> <section>   -> docs.detail.section
  *   (unknown topic/section)             -> CLIError
  */
@@ -31,6 +32,13 @@
 
 /**
  * xds --json docs <topic>
+ * @typedef {object} DocsIndexResponse
+ * @property {'docs.index'} type
+ * @property {DocsIndex} data
+ */
+
+/**
+ * xds --json docs <topic> --detail full
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
  * @property {import('@astryxdesign/cli/authoring').ReferenceDoc} data
@@ -40,7 +48,7 @@
  * The section index of one topic: what the topic is, and the key each section
  * is read by.
  * @typedef {object} DocsIndex
- * @property {string} topic
+ * @property {string} name the topic
  * @property {string} title
  * @property {string} description
  * @property {DocsIndexSection[]} sections
@@ -67,6 +75,8 @@
  * @property {string} [lang]
  * @property {boolean} [zh]
  * @property {boolean} [dense]
+ * @property {'full' | 'compact' | 'brief'} [detail] `'full'` returns a topic's
+ *   whole doc; anything else returns its section index
  * @property {string} [cwd] project directory whose configured integrations
  *   contribute topics; defaults to process.cwd()
  */

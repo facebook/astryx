@@ -212,7 +212,7 @@ describe('buildDocsIndexData', () => {
         ],
       }),
     ).toEqual({
-      topic: 'theme',
+      name: 'theme',
       title: 'Theme',
       description: 'Theming.',
       sections: [

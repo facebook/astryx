@@ -209,7 +209,7 @@ export function sectionSummary(section, max = SECTION_SUMMARY_MAX) {
  */
 export function buildDocsIndexData(doc) {
   return {
-    topic: doc.name,
+    name: doc.name,
     title: doc.title,
     description: doc.description,
     sections: doc.sections.map(section => ({

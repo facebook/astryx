@@ -55,7 +55,7 @@ export const RESPONSE_TYPES = {
     'component.detail.showcase',
     'component.detail.blocks',
   ],
-  docs: ['docs.list', 'docs.detail', 'docs.detail.section'],
+  docs: ['docs.list', 'docs.index', 'docs.detail', 'docs.detail.section'],
   blog: ['blog.list', 'blog.detail'],
   discover: [
     'discover.list',
@@ -105,7 +105,12 @@ const EXAMPLES = {
     'astryx component XDSButton',
     'astryx component XDSButton --props --json',
   ],
-  docs: ['astryx docs', 'astryx docs spacing --json'],
+  docs: [
+    'astryx docs',
+    'astryx docs theme',
+    'astryx docs theme quick-start',
+    'astryx docs spacing --detail full --json',
+  ],
   discover: ['astryx discover --json'],
   search: [
     'astryx search modal --json',
