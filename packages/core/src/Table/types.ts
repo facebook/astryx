@@ -365,6 +365,19 @@ export interface ScrollWrapperRenderProps {
   beforeTable?: ReactNode;
   /** Content rendered after the `<table>`, inside the scroll container. */
   afterTable?: ReactNode;
+  /**
+   * Set by a plugin that takes over the scroll container's overflow, so Table
+   * stops declaring its own `overflow-x: auto` on the same element.
+   *
+   * There can only be one owner. Table's default is a permanent inline-axis
+   * scroller; a plugin that measures the container and resolves overflow per
+   * axis has to be able to say `clip` and mean it, and two `overflow-x`
+   * declarations on one element from two separate style sources resolve by CSS
+   * source order rather than by intent.
+   *
+   * The owner is then responsible for the whole element's overflow — both axes.
+   */
+  hasPluginOwnedOverflow?: boolean;
 }
 
 // =============================================================================
@@ -621,6 +634,7 @@ export interface BaseTableProps<
     xstyle?: StyleXStyles[];
     beforeTable?: ReactNode;
     afterTable?: ReactNode;
+    hasPluginOwnedOverflow?: boolean;
   }>;
   /**
    * How default-rendered body cell text behaves when it exceeds column width.

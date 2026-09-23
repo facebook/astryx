@@ -625,7 +625,10 @@ function BaseTableInner<T extends Record<string, unknown>>({
         htmlProps={scrollWrapperRenderProps.htmlProps}
         xstyle={scrollWrapperRenderProps.xstyle}
         beforeTable={scrollWrapperRenderProps.beforeTable}
-        afterTable={scrollWrapperRenderProps.afterTable}>
+        afterTable={scrollWrapperRenderProps.afterTable}
+        hasPluginOwnedOverflow={
+          scrollWrapperRenderProps.hasPluginOwnedOverflow
+        }>
         {tableElement}
       </ScrollWrapper>
     );

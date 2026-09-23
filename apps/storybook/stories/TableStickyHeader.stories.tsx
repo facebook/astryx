@@ -73,12 +73,12 @@ const note = {
  */
 export const PinHeader: Story = {
   render: () => {
-    const stickyHeader = useTableStickyHeader<Reading>({maxHeight: 320});
+    const stickyHeader = useTableStickyHeader<Reading>({maxBlockSize: 320});
     return (
       <div>
         <p style={note}>
-          <code>maxHeight: 320</code> — scroll the table to see the header hold
-          at the top.
+          <code>maxBlockSize: 320</code> — scroll the table to see the header
+          hold at the top.
         </p>
         <Table
           data={readings}
@@ -92,16 +92,16 @@ export const PinHeader: Story = {
 };
 
 /**
- * `maxHeight` also takes any CSS length, for a table sized against the
+ * `maxBlockSize` also takes any CSS length, for a table sized against the
  * viewport rather than a fixed pixel count.
  */
 export const ViewportHeight: Story = {
   render: () => {
-    const stickyHeader = useTableStickyHeader<Reading>({maxHeight: '50vh'});
+    const stickyHeader = useTableStickyHeader<Reading>({maxBlockSize: '50vh'});
     return (
       <div>
         <p style={note}>
-          <code>maxHeight: '50vh'</code>
+          <code>maxBlockSize: '50vh'</code>
         </p>
         <Table
           data={readings}
@@ -121,7 +121,7 @@ export const ViewportHeight: Story = {
  */
 export const WithStickyColumns: Story = {
   render: () => {
-    const stickyHeader = useTableStickyHeader<Reading>({maxHeight: 320});
+    const stickyHeader = useTableStickyHeader<Reading>({maxBlockSize: 320});
     const stickyColumns = useTableStickyColumns<Reading>({
       startKeys: ['sensor'],
     });
@@ -142,7 +142,7 @@ export const WithStickyColumns: Story = {
 };
 
 /**
- * Without `maxHeight` the plugin pins the header but adds no height cap, for
+ * Without `maxBlockSize` the plugin pins the header but adds no height cap, for
  * tables whose height an ancestor already bounds. Here the wrapper supplies it.
  */
 export const HeightFromAncestor: Story = {
@@ -151,8 +151,8 @@ export const HeightFromAncestor: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: 320}}>
         <p style={note}>
-          No <code>maxHeight</code> — the surrounding 320px flex column bounds
-          the table instead.
+          No <code>maxBlockSize</code> — the surrounding 320px flex column
+          bounds the table instead.
         </p>
         <div style={{flex: 1, minHeight: 0, display: 'flex'}}>
           <Table

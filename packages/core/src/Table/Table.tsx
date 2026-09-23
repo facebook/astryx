@@ -114,8 +114,19 @@ const tableStyles = stylex.create({
 
 const scrollWrapperStyles = stylex.create({
   base: {
-    overflowX: 'auto',
     WebkitOverflowScrolling: 'touch',
+    // AST-027 FR1–FR6: the wrapper is the painted surface that owns every
+    // sticky, resize, and overlay rank inside it (see plugins/stickyTiers.stylex.ts).
+    // Isolating it keeps those local ranks local, so a pinned header or a
+    // resize handle can never come up against unrelated page chrome.
+    isolation: 'isolate',
+  },
+  // Table's own default: a permanent inline-axis scroller. Dropped when a
+  // plugin claims `hasPluginOwnedOverflow`, because that plugin resolves overflow per
+  // axis from measured geometry and two sources declaring `overflow-x` on one
+  // element would resolve by CSS source order instead of by intent.
+  inlineOverflow: {
+    overflowX: 'auto',
   },
   containerBleed: {
     marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
@@ -139,6 +150,7 @@ function TableScrollWrapper({
   xstyle: pluginStyles,
   beforeTable,
   afterTable,
+  hasPluginOwnedOverflow = false,
 }: {
   children: React.ReactNode;
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
@@ -147,9 +159,15 @@ function TableScrollWrapper({
   xstyle?: StyleXStyles[];
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
+  hasPluginOwnedOverflow?: boolean;
 }) {
   const t = useTranslator();
-  const {ref, ...restHtmlProps} = htmlProps ?? {};
+  const {
+    ref,
+    className: pluginClassName,
+    style: pluginStyle,
+    ...restHtmlProps
+  } = htmlProps ?? {};
   return (
     <div
       ref={ref}
@@ -166,9 +184,15 @@ function TableScrollWrapper({
         themeProps('table-scroll-wrapper'),
         stylex.props(
           scrollWrapperStyles.base,
+          !hasPluginOwnedOverflow && scrollWrapperStyles.inlineOverflow,
           scrollWrapperStyles.containerBleed,
           ...(pluginStyles ?? []),
         ),
+        // A plugin's own className and style land last so they survive this
+        // merge; previously they were overwritten by it, which made
+        // className/style unusable channels for a scroll-wrapper plugin.
+        pluginClassName,
+        pluginStyle,
       )}>
       {beforeTable}
       {children}

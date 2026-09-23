@@ -124,7 +124,7 @@ const columns = [
 ];
 
 export default function StickyHeaderWithColumnsHookUsage() {
-  const stickyHeader = useTableStickyHeader<Deploy>({maxHeight: 280});
+  const stickyHeader = useTableStickyHeader<Deploy>({maxBlockSize: 280});
   const stickyColumns = useTableStickyColumns<Deploy>({startKeys: ['service']});
 
   return (

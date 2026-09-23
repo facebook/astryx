@@ -178,7 +178,7 @@ const wideColumns: TableColumn<Person>[] = [
  * `hasStickyGroupHeaders` pins each heading to the top of the scrollport while
  * its section is on screen, so scrolling deep into a long group never loses
  * which group it is. The heading needs somewhere to pin, which is what
- * `useTableStickyHeader`'s `maxHeight` gives it — and with that plugin
+ * `useTableStickyHeader`'s `maxBlockSize` gives it — and with that plugin
  * installed the heading comes to rest below the header row rather than over
  * it, because the header publishes its measured height for it to clear.
  */
@@ -193,7 +193,7 @@ export const StickyGroupHeadings: Story = {
       getRowKey: p => p.id,
       hasStickyGroupHeaders: true,
     });
-    const stickyHeader = useTableStickyHeader<Person>({maxHeight: 320});
+    const stickyHeader = useTableStickyHeader<Person>({maxBlockSize: 320});
     return (
       <Table
         data={grouped.data}
@@ -223,7 +223,7 @@ export const StickyGroupHeadingsWithStickyColumn: Story = {
       getRowKey: p => p.id,
       hasStickyGroupHeaders: true,
     });
-    const stickyHeader = useTableStickyHeader<Person>({maxHeight: 320});
+    const stickyHeader = useTableStickyHeader<Person>({maxBlockSize: 320});
     const stickyColumns = useTableStickyColumns<Person>({startKeys: ['name']});
     return (
       <div style={{maxWidth: 420}}>

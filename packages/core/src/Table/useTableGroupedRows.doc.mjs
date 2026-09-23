@@ -45,7 +45,7 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        "Pin each group heading to the top of the table's scroll container while its section is on screen, so a reader deep inside a long group can still see which group they are in. Needs a scrollport with somewhere to travel: the table's container only becomes one once something bounds its height, which is what useTableStickyHeader's maxHeight does. Install that alongside and the heading pins directly beneath the header row rather than under it — it reads the header's measured height and starts below it.",
+        "Pin each group heading to the top of the table's scroll container while its section is on screen, so a reader deep inside a long group can still see which group they are in. Needs a scrollport with somewhere to travel: the table's container only becomes one once something bounds its height, which is what useTableStickyHeader's maxBlockSize does. Install that alongside and the heading pins directly beneath the header row rather than under it — it reads the header's measured height and starts below it.",
     },
     {
       name: 'getRowKey',
@@ -74,7 +74,7 @@ export const docsDense = {
     renderGroupHeader:
       "Custom header content (right of chevron). Default '<key> (<count>)'. Args: (key, count, collapsed).",
     hasStickyGroupHeaders:
-      "Pin each heading to the top of the table's scrollport while its section is on screen. Default false. Needs a bounded scrollport (useTableStickyHeader's maxHeight); with that plugin installed the heading pins below the header row, not under it.",
+      "Pin each heading to the top of the table's scrollport while its section is on screen. Default false. Needs a bounded scrollport (useTableStickyHeader's maxBlockSize); with that plugin installed the heading pins below the header row, not under it.",
     getRowKey: 'Stable key for a real row; positional fallback when omitted.',
     groupOrder: 'Pin these group keys first; others keep first-seen order.',
   },

@@ -21,6 +21,7 @@ import {
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import type {TablePlugin} from '../../types';
+import {stickyTiers} from '../stickyTiers.stylex';
 import {useTranslator} from '../../../i18n';
 
 // A synthetic group-header row injected into the flattened data. Real rows
@@ -99,7 +100,7 @@ export interface UseTableGroupedRowsConfig<T extends Record<string, unknown>> {
    *
    * Requires a scrollport with somewhere to travel: the table's own container
    * only becomes one once something bounds its height, which is what
-   * `useTableStickyHeader`'s `maxHeight` does. Install that plugin alongside
+   * `useTableStickyHeader`'s `maxBlockSize` does. Install that plugin alongside
    * this one and the heading pins directly beneath the header row — it reads
    * the header's height and starts below it, so the two never overlap.
    *
@@ -170,14 +171,14 @@ const styles = stylex.create({
   headerCellSticky: {
     position: 'sticky',
     // Starts below whatever the table already pins at the top of the same
-    // scrollport. useTableStickyHeader publishes its height here; with no
-    // pinned header the variable is unset and 0 is the right answer.
+    // scrollport. useTableStickyHeader publishes its measured extent here;
+    // with no pinned header the variable is unset and 0 is the right answer.
     insetBlockStart: `var(--table-sticky-header-height, 0px)`,
-    // Above the body cells useTableStickyColumns pins at 1, so a pinned
-    // column scrolling underneath cannot paint over the heading. This ties
-    // with the header row useTableStickyHeader pins at 2 — harmless only
-    // because the offset above means the two never occupy the same pixels.
-    zIndex: 2,
+    // GROUP_HEADING: above a pinned column travelling underneath, below the
+    // pinned header row it comes to rest beneath. See plugins/stickyTiers.stylex.ts —
+    // the tiers only work as a set, and the heading and the header row need
+    // separate ones so their order never depends on which resizes last.
+    zIndex: stickyTiers.groupHeading,
     // A sticky cell leaves its row behind, and the row is what carries the
     // heading's fill. Without a background of its own the pinned cell is
     // transparent and the rows travelling under it show through.

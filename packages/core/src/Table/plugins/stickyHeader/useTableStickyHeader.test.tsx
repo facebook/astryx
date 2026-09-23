@@ -3,13 +3,20 @@
 /**
  * @file useTableStickyHeader.test.tsx
  * @input useTableStickyHeader, Table, React testing utilities
- * @output Functional tests for sticky-header pinning, composition, and cleanup
- * @position Test file; validates the height cap, header pinning, composition
+ * @output Functional tests for effective-ownership pinning, composition, cleanup
+ * @position Test file; validates the block-size cap, conditional pinning, tiers
  *
  * Positioning and stacking tiers are inline because they are composition-critical
  * and must outrank classes from plugins that run later. The opaque background and
  * background clip remain StyleX classes, so jsdom covers their presence by class
  * identity while real-browser coverage owns their computed paint.
+ *
+ * jsdom lays nothing out, so the shared scroll hook can never measure overflow
+ * here and correctly reports the table as fitting. That makes jsdom the right
+ * place to prove the *fitting* half of `spec:AST-025` FR21 — a table with
+ * nothing to scroll does not pin — while `hasPersistentContainment` exercises
+ * the pinned half. Real-browser coverage owns the fitting→overflowing
+ * transition itself.
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -18,6 +25,7 @@ import {Table} from '../../Table';
 import {useTableStickyHeader} from './useTableStickyHeader';
 import {useTableStickyColumns} from '../stickyColumns';
 import {useTableColumnResize} from '../columnResize';
+import {STICKY_TIER} from '../stickyTiers.stylex';
 import {pixel} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 
@@ -55,14 +63,19 @@ function headerCells(): HTMLElement[] {
   return screen.getAllByRole('columnheader');
 }
 
-const HEIGHT_VAR = '--table-sticky-header-height';
+const EXTENT_VAR = '--table-sticky-header-height';
 
-function publishedHeight(): string {
-  return getScrollWrapper().style.getPropertyValue(HEIGHT_VAR);
+function publishedExtent(): string {
+  return getScrollWrapper().style.getPropertyValue(EXTENT_VAR);
+}
+
+/** The serialized inline style, so logical properties survive jsdom. */
+function inlineStyle(el: HTMLElement): string {
+  return el.getAttribute('style') ?? '';
 }
 
 /**
- * jsdom lays nothing out, so every box measures zero and the published height
+ * jsdom lays nothing out, so every box measures zero and the published extent
  * would be `0px` whatever the plugin did. Forcing a height is what makes the
  * assertion about the plugin rather than about jsdom.
  */
@@ -85,39 +98,75 @@ function mockLayoutHeight(height: number) {
 // =============================================================================
 
 describe('useTableStickyHeader', () => {
-  it('caps the scroll container at a numeric maxHeight, in px', () => {
+  it('caps the scroll container at a numeric maxBlockSize, in px', () => {
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
-    expect(getScrollWrapper().style.maxHeight).toBe('480px');
+    expect(inlineStyle(getScrollWrapper())).toContain('max-block-size: 480px');
   });
 
-  it('passes a string maxHeight through untouched', () => {
+  it('passes a string maxBlockSize through untouched', () => {
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: '60vh'});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: '60vh'});
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
-    expect(getScrollWrapper().style.maxHeight).toBe('60vh');
+    expect(inlineStyle(getScrollWrapper())).toContain('max-block-size: 60vh');
   });
 
-  it('leaves the height alone when maxHeight is omitted, for callers whose ancestor already bounds the table', () => {
+  it('leaves the size alone when maxBlockSize is omitted, for callers whose ancestor already bounds the table', () => {
     function Harness() {
       const stickyHeader = useTableStickyHeader<Row>();
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
-    expect(getScrollWrapper().style.maxHeight).toBe('');
+    expect(inlineStyle(getScrollWrapper())).not.toContain('max-block-size');
   });
 
-  it('applies one pinning class to every header cell', () => {
+  it('hands the scroll container to the shared scroll behavior', () => {
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
+    }
+    render(<Harness />);
+
+    // `spec:AST-025` IR1: the wrapper is registered with the shared hook rather
+    // than measured by a second detector the plugin owns. These attributes are
+    // the hook's published viewport state — their absence means the plugin
+    // silently went back to declaring its own overflow.
+    expect(getScrollWrapper()).toHaveAttribute('data-scroll-axis', 'both');
+  });
+
+  it('does not pin while the table fits, so an outer scrollport keeps Sticky ownership', () => {
+    function Harness() {
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
+    }
+    render(<Harness />);
+
+    // `spec:AST-025` FR10/FR21 and DEC-3: scroll intent alone does not make the
+    // wrapper an effective block owner, and a header pinned to a boundary that
+    // cannot move would take Sticky away from whatever owns it outside.
+    for (const cell of headerCells()) {
+      expect(cell.style.position).toBe('');
+    }
+
+    // The opaque surface is not conditional: the header must not change colour
+    // at the moment it starts pinning.
+    expect(headerCells()[0].className).not.toBe('');
+  });
+
+  it('pins every header cell when containment is explicit', () => {
+    function Harness() {
+      const stickyHeader = useTableStickyHeader<Row>({
+        maxBlockSize: 480,
+        hasPersistentContainment: true,
+      });
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
@@ -127,6 +176,11 @@ describe('useTableStickyHeader', () => {
 
     // Every header cell is pinned, not just the first: a partially pinned
     // header row is the bug this guards against.
+    for (const cell of cells) {
+      expect(cell.style.position).toBe('sticky');
+      expect(cell.style.insetBlockStart).toBe('0');
+      expect(cell.style.zIndex).toBe(String(STICKY_TIER.HEADER_ROW));
+    }
     const classSets = cells.map(cell => cell.className);
     expect(new Set(classSets).size).toBe(1);
     expect(classSets[0]).not.toBe('');
@@ -141,7 +195,7 @@ describe('useTableStickyHeader', () => {
     unmount();
 
     function Pinned() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Pinned />);
@@ -153,7 +207,10 @@ describe('useTableStickyHeader', () => {
 
   it('keeps sticky positioning and corner tiers in either plugin order, even with resize last', () => {
     function Harness({headerFirst}: {headerFirst: boolean}) {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({
+        maxBlockSize: 480,
+        hasPersistentContainment: true,
+      });
       const stickyColumns = useTableStickyColumns<Row>({startKeys: ['name']});
       const columnResize = useTableColumnResize<Row>({});
       return (
@@ -182,29 +239,40 @@ describe('useTableStickyHeader', () => {
       expect(headers[0].style.position).toBe('sticky');
       expect(headers[0].style.insetBlockStart).toBe('0');
       expect(headers[0].style.insetInlineStart).toBe('0px');
-      expect(headers[0].style.zIndex).toBe('3');
+      expect(headers[0].style.zIndex).toBe(String(STICKY_TIER.HEADER_CORNER));
       expect(headers[1].style.position).toBe('sticky');
-      expect(headers[1].style.zIndex).toBe('2');
+      expect(headers[1].style.zIndex).toBe(String(STICKY_TIER.HEADER_ROW));
       expect(firstBodyCell.style.position).toBe('sticky');
-      expect(firstBodyCell.style.zIndex).toBe('1');
+      expect(firstBodyCell.style.zIndex).toBe(String(STICKY_TIER.BODY_CELL));
       expect(container.querySelectorAll('[role="separator"]')).not.toHaveLength(
         0,
       );
-      expect(getScrollWrapper().style.maxHeight).toBe('480px');
+      expect(inlineStyle(getScrollWrapper())).toContain(
+        'max-block-size: 480px',
+      );
 
       unmount();
     }
   });
 
-  it('publishes the header height, so anything else pinning in the same scrollport can clear it', () => {
+  it('gives the group heading a tier of its own between the pinned column and the header row', () => {
+    // The heading rests directly beneath the header row, so a shared tier would
+    // leave their order to DOM position for the frame between a header resize
+    // and the extent variable catching up. Separate tiers remove that window.
+    expect(STICKY_TIER.BODY_CELL).toBeLessThan(STICKY_TIER.GROUP_HEADING);
+    expect(STICKY_TIER.GROUP_HEADING).toBeLessThan(STICKY_TIER.HEADER_ROW);
+    expect(STICKY_TIER.HEADER_ROW).toBeLessThan(STICKY_TIER.HEADER_CORNER);
+  });
+
+  it('publishes the header extent, so anything else pinning in the same scrollport can clear it', () => {
     const rect = mockLayoutHeight(44);
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
-    expect(publishedHeight()).toBe('44px');
+    expect(publishedExtent()).toBe('44px');
     rect.mockRestore();
   });
 
@@ -233,30 +301,30 @@ describe('useTableStickyHeader', () => {
         return original(el);
       });
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
     // AST-025 FR1/FR3: the logical block axis resolves through the computed
     // writing mode before reading physical geometry.
-    expect(publishedHeight()).toBe('120px');
+    expect(publishedExtent()).toBe('120px');
     rect.mockRestore();
     computed.mockRestore();
   });
 
-  it('publishes no height when the header is not pinned, so a lone group heading falls back to the top edge', () => {
+  it('publishes no extent when the plugin is absent, so a lone group heading falls back to the top edge', () => {
     const rect = mockLayoutHeight(44);
     render(<Table data={data} columns={columns} />);
 
-    expect(publishedHeight()).toBe('');
+    expect(publishedExtent()).toBe('');
     rect.mockRestore();
   });
 
-  it('clears the published height when the sticky-header plugin is removed', () => {
+  it('clears the published extent when the sticky-header plugin is removed', () => {
     const rect = mockLayoutHeight(44);
     function Harness({enabled}: {enabled: boolean}) {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       return (
         <Table
           data={data}
@@ -267,18 +335,18 @@ describe('useTableStickyHeader', () => {
     }
     const {rerender} = render(<Harness enabled />);
     const wrapper = getScrollWrapper();
-    expect(wrapper.style.getPropertyValue(HEIGHT_VAR)).toBe('44px');
+    expect(wrapper.style.getPropertyValue(EXTENT_VAR)).toBe('44px');
 
     rerender(<Harness enabled={false} />);
 
-    expect(wrapper.style.getPropertyValue(HEIGHT_VAR)).toBe('');
+    expect(wrapper.style.getPropertyValue(EXTENT_VAR)).toBe('');
     rect.mockRestore();
   });
 
-  it('keeps publishing the height when another plugin also holds the wrapper ref', () => {
+  it('keeps publishing the extent when another plugin also holds the wrapper ref', () => {
     const rect = mockLayoutHeight(44);
     function Harness() {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       const stickyColumns = useTableStickyColumns<Row>({startKeys: ['name']});
       return (
         <Table
@@ -292,17 +360,17 @@ describe('useTableStickyHeader', () => {
 
     // Both plugins want a ref on the same element. If either overwrote the
     // other's rather than composing, one of these variables would be missing.
-    expect(publishedHeight()).toBe('44px');
+    expect(publishedExtent()).toBe('44px');
     expect(
       getScrollWrapper().style.getPropertyValue('--table-sticky-shadow-start'),
     ).not.toBe('');
     rect.mockRestore();
   });
 
-  it('is stable across re-renders with the same config', () => {
+  it('is stable across re-renders once the scroll state has settled', () => {
     const seen: unknown[] = [];
     function Harness({tick}: {tick: number}) {
-      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyHeader = useTableStickyHeader<Row>({maxBlockSize: 480});
       seen.push(stickyHeader);
       return (
         <Table
@@ -316,7 +384,13 @@ describe('useTableStickyHeader', () => {
     const {rerender} = render(<Harness tick={1} />);
     rerender(<Harness tick={2} />);
 
-    expect(seen.length).toBeGreaterThan(1);
-    expect(seen[0]).toBe(seen[seen.length - 1]);
+    // The first render is before the shared hook has seen the viewport, so the
+    // plugin it returns is legitimately replaced once measurement lands — that
+    // replacement is what makes pinning follow effective ownership at all.
+    // What must not churn is the settled state: identical renders afterwards
+    // return the identical plugin, so Table's transform pipeline is not
+    // rebuilt on every parent render.
+    expect(seen.length).toBeGreaterThan(2);
+    expect(seen[seen.length - 1]).toBe(seen[seen.length - 2]);
   });
 });

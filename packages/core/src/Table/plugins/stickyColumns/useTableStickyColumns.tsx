@@ -24,6 +24,7 @@ import type {
   ScrollWrapperRenderProps,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {STICKY_TIER} from '../stickyTiers.stylex';
 
 // =============================================================================
 // Config
@@ -359,7 +360,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
             style: {
               ...props.htmlProps.style,
               position: 'sticky',
-              zIndex: 3,
+              zIndex: STICKY_TIER.HEADER_CORNER,
               ...offsetStyle,
             },
           },
@@ -391,7 +392,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
             style: {
               ...props.htmlProps.style,
               position: 'sticky',
-              zIndex: 1,
+              zIndex: STICKY_TIER.BODY_CELL,
               ...offsetStyle,
             },
           },

@@ -155,12 +155,12 @@ const columns = [
 ];
 
 export default function StickyHeaderHookUsage() {
-  // maxHeight is what makes this work. The header pins to the scrollport the
+  // maxBlockSize is what makes this work. The header pins to the scrollport the
   // table owns, and without a cap that container grows to fit all 14 rows and
   // never scrolls — the page scrolls instead, and the header has no scrollport
   // to pin inside. Pass a cap here, or let an ancestor bound the height and
   // omit it.
-  const stickyHeader = useTableStickyHeader<Deploy>({maxHeight: 320});
+  const stickyHeader = useTableStickyHeader<Deploy>({maxBlockSize: 320});
 
   return (
     <Table
