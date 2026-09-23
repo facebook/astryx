@@ -1740,6 +1740,8 @@ export interface ContentBlock {
 }
 
 export interface DocSection {
+  /** Stable key readers address the section by: astryx docs <topic> <id>. */
+  id?: string;
   title: string;
   content: ContentBlock[];
   previewType?: string;
