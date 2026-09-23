@@ -107,9 +107,9 @@ const EXAMPLES = {
   ],
   docs: [
     'astryx docs',
-    'astryx docs theme',
+    'astryx docs spacing --json',
+    'astryx docs theme --index',
     'astryx docs theme quick-start',
-    'astryx docs spacing --detail full --json',
   ],
   discover: ['astryx discover --json'],
   search: [

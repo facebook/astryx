@@ -73,12 +73,12 @@ describe('hyphenated doc filenames', () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it('returns docs.index via API for hyphenated topic', async () => {
+  it('returns docs.detail via API for hyphenated topic', async () => {
     const {docs: docsApi} = await import('../../../api/docs/docs.mjs');
     const result = await docsApi('getting-started');
-    expect(result.type).toBe('docs.index');
+    expect(result.type).toBe('docs.detail');
+    expect(result.data).toBeDefined();
     expect(result.data.description).toBeDefined();
-    expect(result.data.sections.length).toBeGreaterThan(0);
   });
 });
 
@@ -116,11 +116,11 @@ describe('progressive reads', () => {
   }, SLOW);
 
   it("prints a topic's section index with the keys to read by", async () => {
-    const {status, stdout} = await runCli(['docs', 'theme']);
+    const {status, stdout} = await runCli(['docs', 'theme', '--index']);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^quick-start +Quick Start/m);
     expect(stdout).toContain('docs theme <section>');
-    expect(stdout).toContain('docs theme --detail full');
+    expect(stdout).toMatch(/Read everything: +\S.* docs theme$/m);
     expect(widest(stdout)).toBeLessThanOrEqual(120);
   }, SLOW);
 
@@ -130,12 +130,15 @@ describe('progressive reads', () => {
     expect(stdout).toMatch(/^## Quick Start/m);
   }, SLOW);
 
-  it('prints the whole topic only for --detail full', async () => {
-    const index = await runCli(['docs', 'theme']);
-    const full = await runCli(['--detail', 'full', 'docs', 'theme']);
+  it('prints the whole topic by default, as before', async () => {
+    const index = await runCli(['docs', 'theme', '--index']);
+    const full = await runCli(['docs', 'theme']);
     expect(full.status).toBe(0);
     expect(full.stdout).toMatch(/^## Quick Start/m);
     expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
+    expect((await runCli(['--detail', 'full', 'docs', 'theme'])).stdout).toBe(
+      full.stdout,
+    );
     expect(widest(full.stdout.replace(/```[\s\S]*?```/g, ''))).toBeLessThanOrEqual(
       120,
     );
@@ -143,9 +146,9 @@ describe('progressive reads', () => {
 
   it('returns the matching envelopes as JSON', async () => {
     const envelope = async args => JSON.parse((await runCli([...args, '--json'])).stdout);
-    expect((await envelope(['docs', 'theme'])).type).toBe('docs.index');
-    expect((await envelope(['--detail', 'full', 'docs', 'theme'])).type).toBe(
-      'docs.detail',
+    expect((await envelope(['docs', 'theme'])).type).toBe('docs.detail');
+    expect((await envelope(['docs', 'theme', '--index'])).type).toBe(
+      'docs.index',
     );
     expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
       'docs.detail.section',
@@ -174,6 +177,7 @@ describe('text width in every language', () => {
   };
 
   it.each([
+    [['docs', 'theme', '--index', '--lang', 'zh']],
     [['docs', 'theme', '--lang', 'zh']],
     [['--detail', 'full', 'docs', 'theme', '--lang', 'zh']],
     [['--detail', 'full', 'docs', 'internationalization']],

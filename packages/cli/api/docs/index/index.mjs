@@ -7,10 +7,10 @@
  *   the topic via the shared adapter.
  * @output { type: 'docs.index', data: DocsIndex } — the topic's name, title and
  *   description and, for each section, the key it is read by, its title, and a
- *   one-line summary. Matches `astryx --json docs <topic>`.
- * @position Leaf under api/docs, and the default read of a topic. One section is
- *   the section leaf (`docs <topic> <key>`); the whole topic is the detail leaf
- *   (`--detail full`).
+ *   one-line summary. Matches `astryx --json docs <topic> --index`.
+ * @position Leaf under api/docs: a topic's opt-in progressive read. One section
+ *   is the section leaf (`docs <topic> <key>`); the whole topic, a plain topic
+ *   read, is the detail leaf.
  */
 
 import {buildDocsIndexData} from '../../../foundation/discovery/docs-section-key.mjs';

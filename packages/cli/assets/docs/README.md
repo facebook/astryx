@@ -51,7 +51,7 @@ Worked example: a responsive-and-interaction readiness rubric is grading criteri
 
 ## Sections are read one at a time
 
-`astryx docs <topic>` prints the topic's section index, and readers then open
+`astryx docs <topic> --index` lists a topic's sections, and readers then open
 one section by its key. A section's key is its `id`, or a key derived from its
 title when it has none. Give a section an `id` when its title may change, since
 readers and extensions link to the key. Two sections in one topic cannot share

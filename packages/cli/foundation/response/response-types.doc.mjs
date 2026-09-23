@@ -64,14 +64,14 @@ export const doc = {
         'All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.',
     },
     {
-      value: 'docs.index',
-      description:
-        "One topic's section index: each section's key, title, and one-line summary.",
-    },
-    {
       value: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined (--detail full).",
+        "One topic's full ReferenceDoc, with token-ref blocks inlined.",
+    },
+    {
+      value: 'docs.index',
+      description:
+        "One topic's section index (--index): each section's key, title, and one-line summary.",
     },
     {
       value: 'docs.detail.section',

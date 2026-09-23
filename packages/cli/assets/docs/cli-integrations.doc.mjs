@@ -24,7 +24,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Every file an integration author writes is documented field by field in `npx astryx docs authoring`: the manifest, astryx.config, codemods, identity, and each doc type.',
+          text: 'Every file an integration author writes is documented field by field in `npx astryx docs authoring`: the manifest, astryx.config, codemods, identity, and each doc type. `npx astryx docs authoring --index` lists them, and `npx astryx docs authoring <key>` reads one.',
         },
         {
           type: 'prose',
@@ -193,7 +193,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "`extends: 'x'` merges onto a topic instead of owning it: a section whose title matches one in the base replaces that section, and a section the base does not have is appended. Reach for it to correct or add to a topic you do not want to fork: a fork of someone else's guide stops receiving their fixes the day you write it.",
+          text: "`extends: 'x'` merges onto a topic instead of owning it: a section with the same key as one in the base (its `id`, or the key its title derives) or the same title replaces that section, and a section the base does not have is appended. Reach for it to correct or add to a topic you do not want to fork: a fork of someone else's guide stops receiving their fixes the day you write it.",
         },
         {
           type: 'list',

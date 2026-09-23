@@ -3,15 +3,15 @@
 /**
  * @file docs command — Print Astryx reference docs
  *
- * Reads are progressive: the topic list, then one topic's section index, then
- * one section by its key, or the whole topic with `--detail full`.
+ * A topic prints its whole doc; `--index` lists its sections instead, so a
+ * reader can open one section by its key.
  * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
  *
  * Usage:
  *   astryx docs                          List available topics
- *   astryx docs <topic>                  List the topic's sections
+ *   astryx docs <topic>                  Print the whole topic
+ *   astryx docs <topic> --index          List the topic's sections
  *   astryx docs <topic> <section>        Print one section
- *   astryx docs <topic> --detail full    Print the whole topic
  */
 
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
@@ -205,7 +205,7 @@ function emitIndex(index, run) {
     text(
       [
         `Read one section: ${run} docs ${index.name} <section>`,
-        `Read everything:  ${run} docs ${index.name} --detail full`,
+        `Read everything:  ${run} docs ${index.name}`,
       ].join('\n'),
     ),
   );
@@ -239,6 +239,7 @@ export function registerDocs(program) {
     action: async (
       /** @type {string | undefined} */ topic,
       /** @type {string | undefined} */ sectionName,
+      /** @type {{index?: boolean}} */ options = {},
     ) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
@@ -246,10 +247,6 @@ export function registerDocs(program) {
       const dense = program.opts().dense || false;
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
-      // --detail defaults to full, so only an explicit `--detail full` asks for
-      // a whole topic; a plain topic read is its section index.
-      const wholeTopic =
-        detail === 'full' && program.getOptionValueSource?.('detail') === 'cli';
 
       let result;
       try {
@@ -257,7 +254,7 @@ export function registerDocs(program) {
           lang,
           zh,
           dense,
-          ...(wholeTopic ? {detail: 'full'} : {}),
+          index: Boolean(options.index),
         });
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
@@ -288,9 +285,9 @@ export function registerDocs(program) {
             }),
             text(
               [
-                `Usage: ${run} docs <topic>                  list its sections`,
+                `Usage: ${run} docs <topic>                  read the whole topic`,
+                `       ${run} docs <topic> --index          list its sections`,
                 `       ${run} docs <topic> <section>        read one section`,
-                `       ${run} docs <topic> --detail full    read everything`,
               ].join('\n'),
             ),
           );

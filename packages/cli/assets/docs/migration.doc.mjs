@@ -75,7 +75,7 @@ astryx component TextInput`,
           type: 'code',
           lang: 'bash',
           label: 'Dense and JSON modes',
-          code: `astryx docs migration --dense --detail full
+          code: `astryx docs migration --dense
 astryx component Button --json`,
         },
       ],
@@ -371,9 +371,9 @@ if (getComputedStyle(button).paddingInline === '0px') {
           code: `We are migrating this existing Tailwind/shadcn app to Astryx incrementally.
 
 First run:
-- astryx docs migration --dense --detail full
-- astryx docs theme --dense --detail full
-- astryx docs styling --dense --detail full
+- astryx docs migration --dense
+- astryx docs theme --dense
+- astryx docs styling --dense
 - astryx template AppShellTopNavWithSideNav --skeleton
 
 Then migrate one route or shell surface at a time. Keep business logic and routing intact. Replace shadcn/Radix/Tailwind primitives with Astryx components, remove hardcoded colors, verify light and dark mode, and take screenshots before moving to the next surface.`,

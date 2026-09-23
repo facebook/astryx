@@ -6,15 +6,16 @@
  * Dispatcher + barrel. `docs()` routes by argument shape into one of four
  * leaves, each projecting into a single { type, data } envelope:
  *
- *   docs()                          -> list    -> docs.list
- *   docs(topic)                     -> index   -> docs.index
- *   docs(topic, undefined, {detail: 'full'}) -> detail -> docs.detail
- *   docs(topic, section)            -> section -> docs.detail.section
+ *   docs()                                -> list    -> docs.list
+ *   docs(topic)                           -> detail  -> docs.detail
+ *   docs(topic, undefined, {index: true}) -> index   -> docs.index
+ *   docs(topic, section)                  -> section -> docs.detail.section
  *
- * Reads are progressive: the topic list, then one topic's section index, then
- * one section by its key, or the whole topic on request. The leaves live in
- * list/, index/, detail/, and detail/section/; the discovery, overlay loading,
- * and topic resolution they share sit in _adapter.mjs.
+ * A topic read returns the whole doc, as it always has. The index is how a
+ * reader works progressively instead: list the topic's sections, then read one
+ * by its key. The leaves live in list/, index/, detail/, and detail/section/;
+ * the discovery, overlay loading, and topic resolution they share sit in
+ * _adapter.mjs.
  */
 
 import {list} from './list/list.mjs';
@@ -31,7 +32,8 @@ export {list, index, detail, sectionLeaf as section};
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
- * @param {'full' | 'compact' | 'brief'} [options.detail]
+ * @param {boolean} [options.index] return the topic's section index instead of
+ *   the whole doc
  * @param {string} [options.cwd]
  * @returns {Promise<
  *   import('./docs.type.mjs').DocsListResponse |
@@ -43,6 +45,6 @@ export {list, index, detail, sectionLeaf as section};
 export async function docs(topic, section, options = {}) {
   if (!topic) return list(options);
   if (section) return sectionLeaf(topic, section, options);
-  if (options.detail === 'full') return detail(topic, options);
-  return index(topic, options);
+  if (options.index) return index(topic, options);
+  return detail(topic, options);
 }

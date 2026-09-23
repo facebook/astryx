@@ -89,7 +89,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`astryx docs tokens --detail full\` for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`astryx docs tokens\` for the full reference with all values.',
         },
       ],
     },

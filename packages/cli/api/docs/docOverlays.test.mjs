@@ -88,7 +88,7 @@ describe('reference doc overlays (#2182)', () => {
 
 describe('the reported defect: docs tokens --dense (#2182)', () => {
   it('does not print the colour table under the Spacing heading', async () => {
-    const result = await docs('tokens', null, {detail: 'full', dense: true});
+    const result = await docs('tokens', null, {dense: true});
     const spacing = result.data.sections.find(s => /spacing/i.test(s.title));
     expect(spacing, 'tokens docs should have a spacing section').toBeTruthy();
 
@@ -105,26 +105,26 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
   it('keeps every base section reachable, even without an overlay entry', async () => {
     // The tokens overlay compresses only 6 of 13 sections. The other 7 must
     // still render (in English), not vanish or absorb a neighbour's title.
-    const full = await docs('tokens', null, {detail: 'full', });
-    const dense = await docs('tokens', null, {detail: 'full', dense: true});
+    const full = await docs('tokens', null, {});
+    const dense = await docs('tokens', null, {dense: true});
     expect(dense.data.sections.length).toBe(full.data.sections.length);
   });
 
   it('does not lose the Extending a Theme section from docs theme --dense', async () => {
-    const dense = await docs('theme', null, {detail: 'full', dense: true});
+    const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title);
     expect(titles).toContain('Extending a Theme');
   });
 
   it('does not emit a duplicate useTheme heading in docs theme --dense', async () => {
-    const dense = await docs('theme', null, {detail: 'full', dense: true});
+    const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title.toLowerCase());
     const useTheme = titles.filter(t => t.includes('usetheme'));
     expect(useTheme.length).toBe(1);
   });
 
   it('does not leak English headings into docs theme --zh', async () => {
-    const zh = await docs('theme', null, {detail: 'full', zh: true});
+    const zh = await docs('theme', null, {zh: true});
     const titles = zh.data.sections.map(s => s.title);
     // Every section the overlay translates must appear once, in Chinese only.
     expect(titles).not.toContain('Light/Dark Mode');

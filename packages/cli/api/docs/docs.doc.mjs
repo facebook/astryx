@@ -15,12 +15,12 @@ export const doc = {
   summary:
     'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',
   description:
-    'Reads are progressive. No topic lists every reference-doc topic; a topic ' +
-    'returns its section index (each section\'s key, title, and summary); a ' +
-    'topic plus a section returns that one section, found by its key, then its ' +
-    'exact title, then a unique part of its title (an ambiguous query is ' +
-    'refused); `detail: \'full\'` returns the whole ReferenceDoc. Token-ref ' +
-    'blocks are inlined either way. The topic set is the CLI\'s own docs plus the ' +
+    'No topic lists every reference-doc topic; a topic returns that full ' +
+    'ReferenceDoc; `index: true` returns the topic\'s section index instead ' +
+    '(each section\'s key, title, and summary); a topic plus a section returns ' +
+    'that one section, found by its key, then its exact title, then a unique ' +
+    'part of its title (an ambiguous query is refused). Token-ref blocks are ' +
+    'inlined in every read. The topic set is the CLI\'s own docs plus the ' +
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'Overlay options select localized or dense variants.',
@@ -66,10 +66,10 @@ export const doc = {
       description: 'Return the token-efficient dense doc variant.',
     },
     {
-      name: 'options.detail',
-      type: "'full' | 'compact' | 'brief'",
+      name: 'options.index',
+      type: 'boolean',
       description:
-        "'full' returns a topic's whole doc; otherwise a topic read returns its section index.",
+        "Return the topic's section index (each section's key, title, and summary) instead of the whole doc.",
     },
     {
       name: 'options.cwd',
@@ -85,14 +85,14 @@ export const doc = {
         'All available reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.',
     },
     {
-      type: 'docs.index',
-      description:
-        "One topic's section index: {name, title, description, sections: [{id, title, summary}]}.",
-    },
-    {
       type: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined (detail: 'full').",
+        "One topic's full ReferenceDoc, with token-ref blocks inlined.",
+    },
+    {
+      type: 'docs.index',
+      description:
+        "One topic's section index (index: true): {name, title, description, sections: [{id, title, summary}]}.",
     },
     {
       type: 'docs.detail.section',
@@ -112,12 +112,12 @@ export const doc = {
   ],
   examples: [
     {label: 'List topics', code: 'const r = await docs();'},
-    {label: "A topic's sections", code: "await docs('principles');"},
-    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
+    {label: 'Load a topic', code: "await docs('principles');"},
     {
-      label: 'A whole topic',
-      code: "await docs('principles', undefined, {detail: 'full'});",
+      label: "A topic's sections",
+      code: "await docs('principles', undefined, {index: true});",
     },
+    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
   ],
   command: 'docs',
   related: ['search', 'component', 'hook', 'template'],

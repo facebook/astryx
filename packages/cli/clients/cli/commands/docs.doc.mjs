@@ -15,20 +15,27 @@ export const doc = {
   namespace: 'cli',
   summary: 'Print reference docs',
   description:
-    'Reads the reference docs progressively: with no topic it lists every topic; a topic ' +
-    'lists its sections, each with the key to read it by; a topic plus a section prints ' +
-    'that section (by key, exact title, or a unique part of a title); `--detail full` ' +
-    'prints the whole topic.',
+    'Reads the reference docs: with no topic it lists every topic; a topic prints that ' +
+    'full doc; `--index` lists its sections instead, each with the key to read it by; a ' +
+    'topic plus a section prints that section (by key, exact title, or a unique part of ' +
+    'a title).',
   fn: 'docs',
   args: [
     {name: 'topic', param: 'topic', required: false},
     {name: 'section', param: 'section', required: false},
   ],
+  options: [
+    {
+      flag: '--index',
+      param: 'options.index',
+      description: "List the topic's sections and their keys instead of printing the whole topic",
+    },
+  ],
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
-    {label: "A topic's sections", cli: 'astryx docs theme'},
+    {label: 'One topic as JSON', cli: 'astryx docs spacing --json'},
+    {label: "A topic's sections", cli: 'astryx docs theme --index'},
     {label: 'One section', cli: 'astryx docs theme quick-start'},
-    {label: 'A whole topic as JSON', cli: 'astryx docs spacing --detail full --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

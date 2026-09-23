@@ -38,7 +38,7 @@ describe('authoring self-docs', () => {
   });
 
   it('is readable progressively through the docs API', async () => {
-    const index = await docs('authoring');
+    const index = await docs('authoring', undefined, {index: true});
     expect(index.type).toBe('docs.index');
     expect(index.data.sections.map(s => s.id)).toContain('integration');
     const section = await docs('authoring', 'integration');

@@ -21,7 +21,7 @@ describe('docs.index leaf', () => {
   }, SLOW);
 
   it('names the sections the full topic has, with the same keys', async () => {
-    const full = await docs('theme', undefined, {detail: 'full'});
+    const full = await docs('theme');
     const {data} = await index('theme');
     expect(data.sections.map(s => [s.id, s.title])).toEqual(
       full.data.sections.map(s => [s.id, s.title]),
@@ -49,19 +49,14 @@ describe('docs.index leaf', () => {
 });
 
 describe('docs() topic reads', () => {
-  it('returns the index by default and for compact or brief detail', async () => {
-    expect((await docs('theme')).type).toBe('docs.index');
-    expect((await docs('theme', undefined, {detail: 'compact'})).type).toBe(
-      'docs.index',
-    );
-    expect((await docs('theme', undefined, {detail: 'brief'})).type).toBe(
-      'docs.index',
-    );
-  }, SLOW);
-
-  it('returns the whole topic for full detail', async () => {
-    const res = await docs('theme', undefined, {detail: 'full'});
+  it('returns the whole topic by default, as before', async () => {
+    const res = await docs('theme');
     expect(res.type).toBe('docs.detail');
     expect(res.data.sections[0].content.length).toBeGreaterThan(0);
+  }, SLOW);
+
+  it('returns the section index on request', async () => {
+    const res = await docs('theme', undefined, {index: true});
+    expect(res.type).toBe('docs.index');
   }, SLOW);
 });
