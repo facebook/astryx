@@ -10,13 +10,14 @@
  * SWC StyleX transform and cite an example that compiles StyleX with Babel,
  * and nothing in the repo notices, because the cited path still exists.
  *
- * What is checked — derived from live sources, never hardcoded: a sentence that
- * offers an in-repo example app *as* an SWC configuration must name an app that
- * actually carries one, i.e. depends on a `@stylexswc/*` compiler. The unit is
- * the sentence, not the prose block: a block may legitimately recommend SWC and
- * then name a Babel example for a different purpose, and saying so is what a
- * correction looks like. Both ends of the pipeline are checked — the doc source
- * and what the shipped CLI actually prints.
+ * What is checked, derived from live sources and never hardcoded: a prose block
+ * that recommends SWC may name an in-repo example app only if that app carries
+ * an SWC transform (depends on a `@stylexswc/*` compiler), or the sentence
+ * naming it says outright that it does not ("no SWC example app", "not an SWC
+ * setup"). The claim is block-scoped so a recommendation split across two
+ * sentences is still one citation; the disclaimer is sentence-scoped and must
+ * negate SWC itself, so an unrelated "not" clears nothing. Both ends of the
+ * pipeline are checked: the doc source and what the shipped CLI prints.
  *
  * @position packages/cli/test/drift — colocated-docs drift harness
  */
@@ -37,13 +38,15 @@ const EXAMPLE_APP = /apps\/(example-[a-z0-9-]+)/g;
 const SWC_SCOPE = '@stylexswc/';
 
 /**
- * A sentence presents an app as an SWC setup when it says SWC and does not
- * say the app is something else. `not` / `rather than` / `instead of` are how
- * the docs disclaim a citation, so a sentence carrying one is a correction
- * about that app, not a recommendation of it.
+ * A block makes an SWC claim when it mentions SWC or an `@stylexswc/*` package
+ * anywhere. A sentence in that block disclaims an app it names only when a
+ * negator is attached to SWC itself: "no SWC", "not an SWC", "never SWC",
+ * "without SWC", "rather than SWC", "instead of SWC". A negator elsewhere in
+ * the sentence ("Do not skip this") is not a disclaimer.
  */
-const SWC_CLAIM = /\bSWC\b/;
-const DISCLAIMED = /\b(not|rather than|instead of|no SWC)\b/;
+const SWC_CLAIM = /\bSWC\b|@stylexswc\//;
+const SWC_NEGATED =
+  /\b(?:no|not|never|without|rather than|instead of)\s+(?:an?\s+|the\s+)?(?:SWC\b|`?@stylexswc\/)/;
 
 /** @returns {Promise<{file: string, doc: any}[]>} the shipped reference docs. */
 async function collectShippedDocs() {
@@ -81,19 +84,18 @@ function carriesSwcTransform(app, root = REPO_ROOT) {
 }
 
 /**
- * The rule itself, over one body of text. Sentence-scoped so that a correction
- * ("the repo ships no SWC example app: `apps/x` is the Babel one") reads as a
- * correction rather than as the defect it describes.
+ * The rule itself, over one prose block.
  *
- * @param {string} text
+ * @param {string} text one prose block
  * @param {string} where label used in the report
  * @param {(app: string) => boolean} hasSwc
  * @returns {string[]} one message per app offered as SWC that carries none
  */
 function badSwcCitations(text, where, hasSwc = carriesSwcTransform) {
+  if (!SWC_CLAIM.test(text)) return [];
   const wrong = [];
   for (const sentence of text.split(/(?<=\.)\s+/)) {
-    if (!SWC_CLAIM.test(sentence) || DISCLAIMED.test(sentence)) continue;
+    if (SWC_NEGATED.test(sentence)) continue;
     for (const [, app] of sentence.matchAll(EXAMPLE_APP)) {
       if (!hasSwc(app)) {
         wrong.push(
@@ -131,6 +133,7 @@ describe('shipped docs vs the example apps they cite', () => {
 
   it('renders no such citation through `astryx docs styling`', () => {
     // The doc source is the input; this is the output a reader actually gets.
+    // The renderer separates blocks with a blank line.
     const res = spawnSync('node', [BIN, 'docs', 'styling'], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
@@ -138,7 +141,10 @@ describe('shipped docs vs the example apps they cite', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toMatch(/@stylexswc\/nextjs-plugin/);
 
-    expect(badSwcCitations(res.stdout, 'astryx docs styling')).toEqual([]);
+    const wrong = res.stdout
+      .split(/\n\s*\n/)
+      .flatMap(block => badSwcCitations(block, 'astryx docs styling'));
+    expect(wrong).toEqual([]);
   });
 
   it('(control) reads the example apps that back the claim', () => {
@@ -208,21 +214,47 @@ describe('shipped docs vs the example apps they cite', () => {
     expect(escaped).toEqual([]);
   });
 
-  it('(control) is sentence-scoped, so a split claim and a bare "not" slip through', () => {
-    // Both are known limits of the rule, pinned so a future widening is a
-    // deliberate edit to this file rather than a silent behaviour change.
-    const hasSwc = () => false;
+  const babelOnly = () => false;
 
-    const split = 'The working path is SWC. See apps/example-babel.';
-    expect(badSwcCitations(split, 'fixture', hasSwc)).toEqual([]);
+  it.each([
+    [
+      'a "not" that is not about SWC',
+      'Do not skip this: apps/example-babel is the complete SWC setup.',
+    ],
+    [
+      'a claim split across sentences',
+      'The working path is SWC. See apps/example-babel.',
+    ],
+    [
+      'a negation of something other than SWC',
+      'Not every bundler needs this, but apps/example-babel is the SWC reference.',
+    ],
+    [
+      'an SWC negation in a different sentence from the app',
+      'The repo ships no SWC example app. See apps/example-babel for the setup.',
+    ],
+  ])('still flags %s', (_, text) => {
+    expect(badSwcCitations(text, 'fixture', babelOnly)).toHaveLength(1);
+  });
 
-    const incidental =
-      'Do not skip this: apps/example-babel is the complete SWC setup.';
-    expect(badSwcCitations(incidental, 'fixture', hasSwc)).toEqual([]);
-
-    // The same claim without the incidental disclaimer word IS caught, so the
-    // two cases above are about the disclaimer heuristic, not a dead rule.
-    const plain = 'apps/example-babel is the complete SWC setup.';
-    expect(badSwcCitations(plain, 'fixture', hasSwc)).toHaveLength(1);
+  it.each([
+    [
+      'the app is called out as not the SWC one',
+      'Use SWC. The repo ships no SWC example app: apps/example-babel compiles StyleX with Babel.',
+    ],
+    [
+      'the app is called out as not an SWC setup',
+      'Use SWC. apps/example-babel is not an SWC setup; copy the snippet above.',
+    ],
+    [
+      'the app is called out as using something instead of SWC',
+      'Use SWC. apps/example-babel uses Babel instead of SWC.',
+    ],
+    [
+      'the block makes no SWC claim at all',
+      'See apps/example-babel for the PostCSS layer setup.',
+    ],
+  ])('clears a citation when %s', (_, text) => {
+    expect(badSwcCitations(text, 'fixture', babelOnly)).toEqual([]);
   });
 });
