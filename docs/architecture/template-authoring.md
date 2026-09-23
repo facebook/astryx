@@ -14,6 +14,7 @@ applies_to:
     packages/cli/assets/templates/,
     packages/cli/authoring/doctypes/template/,
     packages/cli/foundation/discovery/template-adapter.mjs,
+    packages/cli/foundation/config/project.mjs,
     packages/cli/api/template/,
     apps/docsite/src/components/templateComponents.ts,
     apps/docsite/scripts/generate-data.mjs,
@@ -109,8 +110,9 @@ consumer; it does not discover another membership list.
 
 The converged projections are:
 
-- CLI template, search, and layout surfaces select all eligible pages and blocks.
-- `init` selects pages explicitly marked `scaffold`.
+- CLI template and search surfaces select all eligible pages and blocks.
+- Layout selects blocks only.
+- `init` selects every named built-in page.
 - The docsite overview selects ready pages not marked `scaffold` or
   `isHiddenFromOverview`.
 - Docsite live previews select the same eligible page entries and import their
