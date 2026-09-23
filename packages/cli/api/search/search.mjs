@@ -66,7 +66,7 @@ import {
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
-import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
+import {loadDocsCatalog, lowerTopic} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {setResultCoverage} from './coverage.mjs';
@@ -732,16 +732,16 @@ async function gatherHooks(coreDir) {
 async function gatherDocs(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
-  let entries;
+  let catalog;
   try {
-    entries = (await loadDocsCatalog(cwd)).entries();
+    catalog = await loadDocsCatalog(cwd);
   } catch {
     return candidates;
   }
-  for (const entry of entries) {
+  for (const entry of catalog.entries()) {
     let doc = null;
     try {
-      doc = await loadTopicDoc(entry);
+      doc = (await lowerTopic(catalog, entry)).doc;
     } catch {
       // A topic that cannot be loaded is reported by the commands that own
       // integration issues; search just cannot index it.

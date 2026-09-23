@@ -10,7 +10,7 @@
 import {describe, it, expect} from 'vitest';
 import {section} from './section.mjs';
 import {AstryxError} from '../../../error.mjs';
-import {loadDocsCatalog, loadTopicDoc} from '../../_adapter.mjs';
+import {loadDocsCatalog, lowerTopic} from '../../_adapter.mjs';
 
 const SLOW = 30_000;
 
@@ -42,7 +42,8 @@ describe('docs.detail.section leaf', () => {
   }, SLOW);
 
   it('reads a section by its stable key', async () => {
-    const doc = await loadTopicDoc((await loadDocsCatalog()).resolve('theme'));
+    const catalog = await loadDocsCatalog();
+    const {doc} = await lowerTopic(catalog, catalog.resolve('theme'));
     const target = doc.sections[doc.sections.length - 1];
     const res = await section('theme', target.id);
     expect(res.data.title).toBe(target.title);
@@ -63,7 +64,7 @@ describe('docs.detail.section leaf', () => {
       const catalog = await loadDocsCatalog();
       let checked = 0;
       for (const entry of catalog.entries()) {
-        const doc = await loadTopicDoc(entry);
+        const {doc} = await lowerTopic(catalog, entry);
         for (const own of doc.sections) {
           if (!own.content.some(block => block.type === 'token-ref')) continue;
           const res = await section(entry.name, own.id, lang ? {lang} : {});

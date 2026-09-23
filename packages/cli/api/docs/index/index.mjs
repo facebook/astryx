@@ -3,8 +3,9 @@
 /**
  * @file docs.index leaf — the section index of one topic.
  *
- * @input A topic name plus optional {lang, zh, dense, cwd}. Resolves and loads
- *   the topic via the shared adapter.
+ * @input A topic name plus optional {lang, zh, dense, cwd}. Resolves the topic
+ *   via the shared adapter and reads its lowered compiled node; nothing is
+ *   linked, since the index never inlines a token reference.
  * @output { type: 'docs.index', data: DocsIndex } — the topic's name, title and
  *   description and, for each section, the key it is read by, its title, and a
  *   one-line summary. Matches `astryx --json docs <topic> --index`.
@@ -13,7 +14,7 @@
  *   read, is the detail leaf.
  */
 
-import {buildDocsIndexData} from '../../../foundation/discovery/docs-section-key.mjs';
+import {indexView} from '../../../foundation/doc-compiler/lenses.mjs';
 import {resolveTopicDocs} from '../_adapter.mjs';
 
 /**
@@ -26,6 +27,6 @@ import {resolveTopicDocs} from '../_adapter.mjs';
  * @returns {Promise<import('../docs.type.mjs').DocsIndexResponse>}
  */
 export async function index(topic, options = {}) {
-  const {docsData} = await resolveTopicDocs(topic, options);
-  return {type: 'docs.index', data: buildDocsIndexData(docsData)};
+  const {node} = await resolveTopicDocs(topic, options);
+  return {type: 'docs.index', data: indexView(node)};
 }

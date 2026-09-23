@@ -4,14 +4,15 @@
  * @file docs.detail.section leaf — load a single section of a topic.
  *
  * @input A topic name, a section query, and optional {lang, zh, dense}. Resolves
- *   and loads the topic via the shared adapter, then finds the section by its
- *   stable key, then by exact title, then by a title that contains the query.
+ *   the topic via the shared adapter, finds the section in its lowered compiled
+ *   node by its stable key, then by exact title, then by a title that contains
+ *   the query, and links only that section.
  * @output { type: 'docs.detail.section', data: ReferenceSection } with any
  *   token-ref blocks inlined — matching `astryx --json docs <topic> <section>`.
  *   Throws ERR_UNKNOWN_SECTION when nothing matches, or when the query matches
  *   more than one section (the candidates come back as suggestions).
- * @position Leaf nested under api/docs/detail. Shares discovery/loading/
- *   topic-resolution with the detail leaf via _adapter.mjs.
+ * @position Leaf nested under api/docs/detail. Shares topic resolution with the
+ *   detail leaf via _adapter.mjs and reads through the compiler's lenses.
  */
 
 import {AstryxError} from '../../../error.mjs';
@@ -20,8 +21,12 @@ import {
   findDocSection,
   sectionKey,
 } from '../../../../foundation/discovery/docs-section-key.mjs';
-import {resolveTopicDocs} from '../../_adapter.mjs';
-import {resolveTokenRefs} from '../detail.mjs';
+import {linkReferenceSection} from '../../../../foundation/doc-compiler/compile.mjs';
+import {
+  readerSections,
+  sectionView,
+} from '../../../../foundation/doc-compiler/lenses.mjs';
+import {referenceTargets, resolveTopicDocs} from '../../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -44,31 +49,30 @@ export async function section(topic, sectionName, options = {}) {
       ERROR_CODES.ERR_UNKNOWN_SECTION,
     );
   }
-  const {catalog, docsData, lang} = await resolveTopicDocs(topic, options);
 
-  const {section: match, candidates} = findDocSection(
-    docsData.sections,
-    sectionName,
-  );
+  const {catalog, node, lang} = await resolveTopicDocs(topic, options);
+  const sections = readerSections(node);
+  const {section: match, candidates} = findDocSection(sections, sectionName);
   if (!match) {
     const ambiguous = candidates.length > 1;
     throw new AstryxError(
       ambiguous
         ? `Section "${sectionName}" matches ${candidates.length} sections in "${topic}". Read one by its key.`
         : `Section "${sectionName}" not found in "${topic}"`,
-      (ambiguous ? candidates : docsData.sections).map(s => ({
+      (ambiguous ? candidates : sections).map(s => ({
         name: sectionKey(s),
         reason: s.title,
       })),
       ERROR_CODES.ERR_UNKNOWN_SECTION,
     );
   }
+
   // A section read on its own inlines its token refs, as the whole topic does;
-  // otherwise a section that is only a token-ref prints blank.
-  const {sections} = await resolveTokenRefs(
-    {...docsData, sections: [match]},
-    catalog,
-    {lang},
+  // otherwise a section that is only a token-ref prints blank. Only this
+  // section is linked, so a broken reference elsewhere cannot fail the read.
+  const linked = await linkReferenceSection(
+    match,
+    referenceTargets(catalog, lang),
   );
-  return {type: 'docs.detail.section', data: sections[0]};
+  return {type: 'docs.detail.section', data: sectionView(node, linked)};
 }

@@ -34,8 +34,8 @@ import {
   docsIndexBytes,
   oversizedDocSections,
 } from '../../foundation/discovery/docs-output-budget.mjs';
-import {loadTopicDoc, overlayLanguages} from '../docs/_adapter.mjs';
-import {resolveTokenRefs} from '../docs/detail/detail.mjs';
+import {compileTopic, overlayLanguages} from '../docs/_adapter.mjs';
+import {detailView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
@@ -798,11 +798,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
       for (const lang of [null, ...overlayLanguages(entry)]) {
         const where = lang ? `${entry.name} [${lang}]` : entry.name;
         try {
-          const doc = await resolveTokenRefs(
-            await loadTopicDoc(entry, {lang}),
-            catalog,
-            {lang},
-          );
+          const doc = detailView(await compileTopic(catalog, entry, lang));
           if (lang == null) topics += 1;
           const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
           if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {

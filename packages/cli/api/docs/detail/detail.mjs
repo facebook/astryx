@@ -3,84 +3,17 @@
 /**
  * @file docs.detail leaf — load one topic's full reference doc.
  *
- * @input A topic name plus optional {lang, zh, dense}. Resolves and loads the
- *   topic via the shared adapter, then inlines any token-ref blocks.
+ * @input A topic name plus optional {lang, zh, dense, cwd}. Resolves the topic
+ *   via the shared adapter and compiles it with its token references linked.
  * @output { type: 'docs.detail', data: ReferenceDoc } — the full doc with
- *   token-refs resolved, matching `xds --json docs <topic>`.
- * @position Leaf under api/docs. Owns resolveTokenRefs (used only here); shares
- *   discovery/loading/topic-resolution with the section leaf via _adapter.mjs.
+ *   token-refs inlined, matching `astryx --json docs <topic>`.
+ * @position Leaf under api/docs. Reads the compiled node through the detail
+ *   lens; resolution, overlays and extensions happen in the compiler.
  */
 
-import {loadTopicDoc, resolveTopicDocs} from '../_adapter.mjs';
-import {
-  sectionKey,
-  sourceTitle,
-  withSourceTitle,
-} from '../../../foundation/discovery/docs-section-key.mjs';
-
-/**
- * Resolve token-ref blocks by inlining the referenced section's table.
- * This allows section docs to reference token tables without duplicating data.
- *
- * The reference is resolved through the catalog, so a topic may point at one
- * an integration contributed (or replaced) rather than only at a built-in. It
- * names the section by key or authored title, so it resolves in every language.
- * @param {import('../docs.type.mjs').DocsDetailResponse['data']} docsData
- * @param {import('../../../foundation/discovery/docs-discovery.mjs').DocsCatalog} catalog
- * @param {{lang?: string | null}} [options]
- * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse['data']>}
- */
-export async function resolveTokenRefs(docsData, catalog, {lang = null} = {}) {
-  const resolved = {...docsData, sections: [...docsData.sections]};
-  for (let si = 0; si < resolved.sections.length; si++) {
-    const section = resolved.sections[si];
-    /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
-    const newContent = [];
-    for (const block of section.content) {
-      if (block.type === 'token-ref') {
-        const refEntry = catalog.resolve(block.topic);
-        if (!refEntry) {
-          newContent.push({type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
-          continue;
-        }
-        const refDocs = await loadTopicDoc(refEntry, {lang});
-        const wanted = block.section.toLowerCase();
-        const refSection = refDocs.sections.find(
-          (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ s) =>
-            sectionKey(s) === block.section ||
-            sourceTitle(s).toLowerCase() === wanted,
-        );
-        if (!refSection) {
-          newContent.push({type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
-          continue;
-        }
-        // Inline the referenced section's content blocks (tables, prose, etc.)
-        // and carry over the previewType
-        for (const refBlock of refSection.content) {
-          newContent.push(refBlock);
-        }
-        // If the referenced section has a previewType, attach it to our section
-        if (refSection.previewType && !section.previewType) {
-          resolved.sections[si] = withSourceTitle(
-            {...section, previewType: refSection.previewType, content: newContent},
-            sourceTitle(section),
-          );
-        }
-      } else {
-        newContent.push(block);
-      }
-    }
-    if (resolved.sections[si] === section) {
-      resolved.sections[si] = withSourceTitle(
-        {...section, content: newContent},
-        sourceTitle(section),
-      );
-    } else {
-      resolved.sections[si].content = newContent;
-    }
-  }
-  return resolved;
-}
+import {linkReferenceTopic} from '../../../foundation/doc-compiler/compile.mjs';
+import {detailView} from '../../../foundation/doc-compiler/lenses.mjs';
+import {referenceTargets, resolveTopicDocs} from '../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -92,7 +25,10 @@ export async function resolveTokenRefs(docsData, catalog, {lang = null} = {}) {
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
-  const {catalog, docsData, lang} = await resolveTopicDocs(topic, options);
-  const resolved = await resolveTokenRefs(docsData, catalog, {lang});
-  return {type: 'docs.detail', data: resolved};
+  const {catalog, node, lang} = await resolveTopicDocs(topic, options);
+  const linked = await linkReferenceTopic(
+    node,
+    referenceTargets(catalog, lang),
+  );
+  return {type: 'docs.detail', data: detailView(linked)};
 }
