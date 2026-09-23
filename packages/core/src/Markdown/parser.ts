@@ -550,6 +550,8 @@ type ResolvedOptions = {
   readonly skipContainerDefinitionProtection?: boolean;
   /** Internal discovery pass that validates envelopes without parsing children. */
   readonly skipExtensionChildrenParsing?: boolean;
+  /** Definition line starts that retain Core precedence during discovery. */
+  readonly discoveryDefinitionStarts?: ReadonlySet<number>;
   /** Reports where a structure-only pass stopped on deferred block syntax. */
   readonly extensionDiscovery?: {deferredStart?: number};
   /**
@@ -590,6 +592,7 @@ function makeResolvedOptions(
     containerDepth: fields.containerDepth,
     skipContainerDefinitionProtection: fields.skipContainerDefinitionProtection,
     skipExtensionChildrenParsing: fields.skipExtensionChildrenParsing,
+    discoveryDefinitionStarts: fields.discoveryDefinitionStarts,
     extensionDiscovery: fields.extensionDiscovery,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
@@ -842,6 +845,7 @@ function extractLinkDefinitions(
 ): {
   defs: ReadonlyMap<string, string>;
   cleaned: string;
+  definitionStarts: ReadonlySet<number>;
 } {
   const lines = input.split('\n');
   const defs = new Map<string, string>();
@@ -937,12 +941,19 @@ function extractLinkDefinitions(
   }
 
   if (defs.size === 0) {
-    return {defs, cleaned: input};
+    return {defs, cleaned: input, definitionStarts: new Set()};
   }
+  const definitionStarts = new Set<number>();
   const cleaned = lines
-    .map((line, index) => (keep[index] ? line : ' '.repeat(line.length)))
+    .map((line, index) => {
+      if (keep[index]) {
+        return line;
+      }
+      definitionStarts.add(lineStarts[index]);
+      return ' '.repeat(line.length);
+    })
     .join('\n');
-  return {defs, cleaned};
+  return {defs, cleaned, definitionStarts};
 }
 
 /** Order-independent signature of a citation-source set, for cache checks. */
@@ -1438,20 +1449,27 @@ function findBlockExtensionContainerRanges(
 ): ReadonlyArray<{readonly start: number; readonly end: number}> {
   if (
     opts.skipContainerDefinitionProtection === true ||
-    (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0 ||
-    !source.split('\n').some(line => matchLinkDefinition(line) != null)
+    (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0
   ) {
     return [];
   }
 
+  const definitions = extractLinkDefinitions(source, opts.math);
+  if (definitions.defs.size === 0) {
+    return [];
+  }
   const discovery: {deferredStart?: number} = {};
   const baseOffset = opts.baseOffset ?? 0;
+  const discoveryDefinitionStarts = new Set(
+    [...definitions.definitionStarts].map(start => baseOffset + start),
+  );
   const blocks = parseMarkdownImpl(source, {
     ...opts,
     astPositions: true,
     sourceRanges: true,
     skipContainerDefinitionProtection: true,
     skipExtensionChildrenParsing: true,
+    discoveryDefinitionStarts,
     extensionDiscovery: discovery,
   });
   const ranges: {start: number; end: number}[] = [];
@@ -2591,7 +2609,7 @@ function parseMarkdownImpl(
   // parse.
   const {defs, cleaned} =
     baseOpts.skipContainerDefinitionProtection === true
-      ? extractLinkDefinitions(input, baseOpts.math)
+      ? {defs: new Map<string, string>(), cleaned: input}
       : extractScopedLinkDefinitions(input, baseOpts);
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
@@ -2644,6 +2662,14 @@ function parseMarkdownImpl(
     blockStartLine = index;
     const line = lines[index];
     if (line.trim() === '') {
+      index++;
+      continue;
+    }
+    if (
+      opts.discoveryDefinitionStarts?.has(
+        (opts.baseOffset ?? 0) + lineOffsets[index],
+      ) === true
+    ) {
       index++;
       continue;
     }

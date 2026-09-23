@@ -926,6 +926,59 @@ describe('Markdown plugin protocol', () => {
     expect(JSON.stringify(parsed)).not.toContain('"type":"extension"');
   });
 
+  it('passes authored container source to discovery tokenizers', () => {
+    const sourceAwarePlugin = createMarkdownPlugin({
+      name: 'source-aware-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: [':::box'],
+            maxSpan: 500,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              if (
+                close < 0 ||
+                !source.slice(offset, close).includes('[local]: /inside')
+              ) {
+                return {status: 'no-match' as const};
+              }
+              return {
+                status: 'match' as const,
+                end: close + 4,
+                node: {
+                  type: 'extension' as const,
+                  plugin: 'source-aware-boxes' as const,
+                  name: 'box' as const,
+                  display: 'block' as const,
+                  data: {},
+                },
+                children: {start: offset + 7, end: close},
+              };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+    const parsed = parseMarkdown(
+      ':::box\n[local]: /inside\nUse [local].\n:::\n\nOutside [local].',
+      {plugins: [sourceAwarePlugin]},
+    );
+
+    expect(parsed[0]).toMatchObject({type: 'extension'});
+    expect(parsed.at(-1)).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: 'Outside [local].'}],
+    });
+  });
+
   it('keeps nested container discovery linear', () => {
     const tokenize = vi.fn(
       ({source, offset, isFinal}: MarkdownTokenizerInput) => {
