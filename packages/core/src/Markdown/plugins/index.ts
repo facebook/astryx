@@ -31,6 +31,12 @@ export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
 export {markdownCalloutsPlugin} from './callouts';
 export type {MarkdownCalloutNode, MarkdownCalloutStatus} from './callouts';
+export {createMarkdownEntityReferencesPlugin} from './entityReferences';
+export type {
+  MarkdownEntityReference,
+  MarkdownEntityReferenceNode,
+  MarkdownEntityReferencesOptions,
+} from './entityReferences';
 export type {
   MarkdownFrontmatter,
   MarkdownFrontmatterOptions,

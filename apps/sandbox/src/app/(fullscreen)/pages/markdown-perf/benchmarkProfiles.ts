@@ -8,6 +8,7 @@
  */
 
 import {
+  createMarkdownEntityReferencesPlugin,
   markdownCalloutsPlugin,
   markdownSoftBreaksPlugin,
 } from '@astryxdesign/core/Markdown/plugins';
@@ -15,7 +16,8 @@ import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
 
 export type MarkdownBenchmarkClaimDensity = 'none' | 'sparse' | 'dense';
 export type MarkdownBenchmarkPipeline = 'baseline' | 'plugin';
-export type MarkdownBenchmarkProfileId = 'soft-breaks' | 'callouts';
+export type MarkdownBenchmarkProfileId =
+  'soft-breaks' | 'callouts' | 'entity-references';
 
 const EMPTY_PLUGINS: ReadonlyArray<MarkdownPluginEntry> = Object.freeze([]);
 
@@ -71,6 +73,29 @@ function addCalloutClaims(
   );
 }
 
+const entityReferencesPlugin = createMarkdownEntityReferencesPlugin({
+  references: Array.from({length: 500}, (_, index) => ({
+    id: `section-${index + 1}`,
+    label: `Section ${index + 1}`,
+    href: `/docs/sections/${index + 1}`,
+  })),
+});
+
+function addEntityReferenceClaims(
+  source: string,
+  density: MarkdownBenchmarkClaimDensity,
+): string {
+  if (density === 'none') {
+    return source;
+  }
+  return source.replace(/^Section (\d+) contains /gm, (line, sectionText) => {
+    const section = Number(sectionText);
+    return density === 'dense' || section % 10 === 1
+      ? `@{section-${section}} contains `
+      : line;
+  });
+}
+
 export const MARKDOWN_BENCHMARK_PROFILES: ReadonlyArray<MarkdownBenchmarkProfile> =
   [
     {
@@ -84,6 +109,12 @@ export const MARKDOWN_BENCHMARK_PROFILES: ReadonlyArray<MarkdownBenchmarkProfile
       label: 'Callouts',
       plugins: [markdownCalloutsPlugin],
       prepareSource: addCalloutClaims,
+    },
+    {
+      id: 'entity-references',
+      label: 'Entity references',
+      plugins: [entityReferencesPlugin],
+      prepareSource: addEntityReferenceClaims,
     },
   ];
 

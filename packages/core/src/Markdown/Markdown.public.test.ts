@@ -16,6 +16,7 @@ import {
   visitMarkdownNodes,
 } from './index';
 import {
+  createMarkdownEntityReferencesPlugin,
   createMarkdownFenceTransform,
   createMarkdownPlugin,
   createMarkdownTextTransform,
@@ -208,6 +209,7 @@ describe('Markdown public parser types', () => {
       MarkdownPluginEntry<never>
     >();
     expectTypeOf(markdownCalloutsPlugin).toMatchTypeOf<MarkdownPluginEntry>();
+    expectTypeOf(createMarkdownEntityReferencesPlugin).toBeFunction();
     expectTypeOf(isMarkdownExtensionNode).toBeFunction();
 
     function compileOnlyPluginGuards() {

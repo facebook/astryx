@@ -265,6 +265,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -361,6 +366,19 @@ import {markdownCalloutsPlugin} from '@astryxdesign/core/Markdown/plugins';
 <Markdown plugins={[markdownCalloutsPlugin]}>
   {':::warning Check first\\nRich **Markdown** belongs here.\\n:::'}
 </Markdown>;
+`,
+    },
+    {
+      label: 'Entity references',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownEntityReferencesPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+const entities = createMarkdownEntityReferencesPlugin({
+  references: [{id: 'guide', label: 'the guide'}],
+});
+
+<Markdown plugins={[entities]}>Read @{guide}.</Markdown>;
 `,
     },
     {
@@ -757,6 +775,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -845,6 +868,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
       },
       {
         guidance: true,

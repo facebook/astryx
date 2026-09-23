@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {
+  createMarkdownEntityReferencesPlugin,
   markdownCalloutsPlugin,
   markdownSoftBreaksPlugin,
 } from '@astryxdesign/core/Markdown/plugins';
@@ -621,6 +622,65 @@ export const Callouts: Story = {
       2,
     );
     await expect(canvasElement.querySelector('[role="alert"]')).toBeNull();
+  },
+};
+
+const entityReferencesPlugin = createMarkdownEntityReferencesPlugin({
+  references: [
+    {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'},
+    {id: 'design-system', label: 'the design system'},
+  ],
+  render: reference =>
+    reference.href == null ? (
+      <Text
+        as="span"
+        type="inherit"
+        weight="semibold"
+        data-markdown-entity-reference={reference.id}>
+        {reference.label}
+      </Text>
+    ) : (
+      <Link
+        href={reference.href}
+        type="inherit"
+        data-markdown-entity-reference={reference.id}>
+        {reference.label}
+      </Link>
+    ),
+});
+
+export const EntityReferences: Story = {
+  name: 'First-party entity references',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A caller-owned catalog turns known @{id} references into accessible links or emphasized labels. Unknown references and protected Markdown stay literal.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={[entityReferencesPlugin]}>
+        {
+          '# Owner: @{ada}\n\nAsk @{ada} about @{design-system}. Unknown @{person} stays literal, as do `@{ada}` and [@{ada}](/docs).'
+        }
+      </Markdown>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const adaLinks = within(canvasElement).getAllByRole('link', {
+      name: 'Ada Lovelace',
+    });
+    await expect(adaLinks[0]).toHaveAttribute('href', '/people/ada');
+    await expect(adaLinks[0].closest('h1')).not.toBeNull();
+    await expect(
+      within(canvasElement).getByText('the design system'),
+    ).toHaveAttribute('data-markdown-entity-reference', 'design-system');
+    await expect(canvasElement.textContent).toContain('@{person}');
+    await expect(canvasElement.querySelector('code')?.textContent).toBe(
+      '@{ada}',
+    );
   },
 };
 
