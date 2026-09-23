@@ -189,6 +189,21 @@ describe('records inline layout', () => {
     expect(out.split('\n')[1].startsWith('   word')).toBe(true);
   });
 
+  it('keeps the first column padded on a record that wraps', () => {
+    const out = records(
+      [
+        {id: 'a', text: 'word '.repeat(40).trim()},
+        {id: 'longer', text: 'x'},
+      ],
+      {layout: 'inline'},
+    ).toString();
+    const lines = out.split('\n');
+    expect(lines[0].startsWith(`a${' '.repeat(7)}word`)).toBe(true);
+    expect(lines[1].startsWith(' '.repeat(8) + 'word')).toBe(true);
+    expect(lines.at(-1)).toBe('longer  x');
+    expect(lines.every(line => line.length <= WRAP_WIDTH)).toBe(true);
+  });
+
   it('cuts a long record to one line when asked', () => {
     const out = records([{id: 'a', text: 'word '.repeat(40).trim()}], {
       layout: 'inline',

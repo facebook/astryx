@@ -322,14 +322,22 @@ function inlineRecords(items, options) {
   );
   const indent = ' '.repeat(column + 2);
   const lines = items.map((o, i) => {
-    const tail = rest
-      .filter(k => !isEmpty(o[k]))
-      .map(k => value(o, k))
-      .join(' - ');
-    const line = toAscii(tail ? `${leads[i].padEnd(column)}  ${tail}` : leads[i]);
-    return options.overflow === 'truncate'
-      ? truncateToWidth(line, WRAP_WIDTH)
-      : wrapText(line, {indent});
+    const tail = toAscii(
+      rest
+        .filter(k => !isEmpty(o[k]))
+        .map(k => value(o, k))
+        .join(' - '),
+    );
+    if (tail === '') return toAscii(leads[i]);
+    const head = toAscii(`${leads[i].padEnd(column)}  `);
+    if (options.overflow === 'truncate') {
+      return truncateToWidth(head + tail, WRAP_WIDTH);
+    }
+    // Wrap only the tail, so the padded first column survives the wrap.
+    const [first, ...more] = wrapText(tail, {
+      width: Math.max(20, WRAP_WIDTH - displayWidth(head)),
+    }).split('\n');
+    return [head + first, ...more.map(line => indent + line)].join('\n');
   });
   return new Block(lines.join('\n'));
 }
