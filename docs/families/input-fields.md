@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-09
+approved_at: 2026-09-20
 owners: [cixzhang, imdreamrunner]
 review_triggers: [behavior, layout, theming, accessibility, public-api]
 verified_by:
@@ -18,6 +18,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/core/src/Typeahead/Typeahead.test.tsx,
     packages/core/src/Tokenizer/Tokenizer.test.tsx,
+    packages/core/src/inputFontFloor.test.ts,
   ]
 members:
   [
@@ -114,19 +115,20 @@ another implementation helper.
 
 ## Canonical concepts
 
-| Concept            | Values or states                                               | Default semantics                                                                                                                            | Stability                                            |
-| ------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| field shell        | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                                                 | shipped pattern                                      |
-| field size         | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                                                      | approved family rule                                 |
-| inline size        | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                                                 | approved rule; Selector exception below              |
-| end controls       | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                                               | approved family rule                                 |
-| grouped row        | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                                        | approved capability contract; shipped adoption below |
+| Concept           | Values or states                                               | Default semantics                                                                                                    | Stability                                            |
+| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                                      |
+| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                                 |
+| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below              |
+| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                                 |
+| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
+| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed                   |
+| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001                        |
+| focus-zoom floor  | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing  | approved family rule                                 |
+| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                          |
+| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                 | approved family rule where exposed                   |
+| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input | approved family rule                                 |
 | public DOM targets | field presentation and primary semantic control or group       | Styling, width, and field-wide structure affect the complete field; ref, test ID, remaining DOM/ARIA, and events affect the semantic control | approved family rule                                 |
-| disabled reason    | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                                                 | approved family rule where exposed                   |
-| input busy         | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                                                  | approved by DEC-2 and AST-001                        |
-| source busy        | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                                                      | component/system-spec owned                          |
-| Transition Action  | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                                         | approved family rule where exposed                   |
-| status placement   | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input                         | approved family rule                                 |
 
 ## Cross-component invariants
 
@@ -180,7 +182,14 @@ another implementation helper.
   `detached` or a component-owned placement. Direct FieldStatus continues to
   support only `attached` and `detached`; Field consumes `tooltip` before
   rendering it.
-- **FR9 — Public DOM targets follow function.** Where a member exposes the shared
+- **FR9 — The focus-zoom floor is iOS-specific.** A text-entry control that uses
+  the family focus-zoom guard MUST resolve its editable text to at least 16 CSS
+  px on the supported iOS touch path. Android, desktop touch, and other non-iOS
+  coarse-pointer environments MUST keep the active theme's type scale rather
+  than inheriting the iOS floor. The platform-detection mechanism remains an
+  implementation detail, but it MUST preserve those observable outcomes.
+
+- **FR10 — Public DOM targets follow function.** Where a member exposes the shared
   styling and DOM surface, `xstyle`, `className`, `style`, dedicated `width`, and
   field-wide structural props (`hidden`, `inert`, `dir`, and `aria-hidden`) apply
   to the complete field presentation so label, control, description, and status
@@ -218,6 +227,10 @@ another implementation helper.
 - **AV6 — Attached-status support.** A member that cannot satisfy FR8 keeps
   attached unavailable rather than approximating the overlap. It still offers
   detached and tooltip through the family status contract.
+- **AV7 — Platform detection.** Implementations may use any supported capability
+  test that identifies the iOS touch path without applying the floor to non-iOS
+  coarse pointers. This contract does not require a particular CSS query,
+  browser string, or shared helper.
 
 ## Representative matrix
 
@@ -232,7 +245,10 @@ another implementation helper.
 | Admitted member / InputGroup                               | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow                                |
 | Member with `disabledMessage`                              | Reason is reachable; mutation remains blocked                                                    | Component owns the focus target and Tooltip composition                                                       |
 | Member / validation status                                 | Detached and tooltip are available; attached is default only when supported                      | Component owns whether its control safely satisfies attached eligibility                                      |
-| Member / public DOM targeting                              | Styling and width preserve one field presentation; semantic props reach the control              | Component chooses its stable presentation and primary semantic targets under FR9                              |
+| Floored text entry / iOS touch                             | Editable text resolves to at least 16 CSS px and focus does not trigger browser zoom             | Theme size may already satisfy the floor                                                                      |
+| Floored text entry / non-iOS coarse pointer                | The active theme's type scale remains in force                                                   | Platform and input hardware may vary                                                                          |
+
+| Member / public DOM targeting                              | Styling and width preserve one field presentation; semantic props reach the control              | Component chooses its stable presentation and primary semantic targets under FR10                              |
 
 ## Adoption and exceptions
 
@@ -254,6 +270,11 @@ another implementation helper.
 | Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned                                                                    |
 | Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | Not InputGroup-compatible on current main; DEC-5 approves admission after the grouped adaptation lands; no family `isLoading` or `changeAction` |
 
+The current text-entry controls that already carry a 16px anti-zoom floor apply it
+only on iOS. This includes input-family members and the existing shared or
+higher-level text-entry collaborators covered by the family-wide source guard;
+DEC-6 does not require unrelated components to add a new floor.
+
 ### Implementation gaps
 
 - **Public DOM targeting:** current members use incompatible routing. TextInput,
@@ -261,7 +282,7 @@ another implementation helper.
   props. DateInput, DateRangeInput, and DateTimeInput send neutral props to wrappers;
   TimeInput, Typeahead, Tokenizer, and MultiSelector drop part of their advertised
   surface; Selector uses separate styling, test-ID, and semantic targets. These are
-  conformance and compatibility gaps under FR9, not alternate family semantics.
+  conformance and compatibility gaps under FR10, not alternate family semantics.
   Migrate each component atomically with focused target, composition, and unchanged-
   behavior evidence; do not move released props between elements silently.
 - **Typeahead state geometry:** current main removes the intrinsic-width input
@@ -329,7 +350,9 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                                       | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract                                                                |
 | FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                                           | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry                                                                  |
 | FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                           | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                           |
-| FR9      | Focused DOM-target, ref, styling, event-composition, and collision tests for each supported rendering path                            | native control, semantic group, composed trigger, grouped mode, and representative unchanged consumer usage                       | A prop reaches the wrong element, is dropped, overwrites owned semantics, or styling/width stops treating the field as one layout unit                                     |
+| FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                           | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                        |
+
+| FR10      | Focused DOM-target, ref, styling, event-composition, and collision tests for each supported rendering path                            | native control, semantic group, composed trigger, grouped mode, and representative unchanged consumer usage                       | A prop reaches the wrong element, is dropped, overwrites owned semantics, or styling/width stops treating the field as one layout unit                                     |
 
 ## Decision links
 
@@ -405,7 +428,25 @@ Rejected: a permanent hard-coded allowlist, a Tokenizer-only exception, allowing
 context consumption without a complete grouped adaptation, or forcing standalone
 multiline/multi-token inputs into single-line presentation.
 
-### DEC-6 — Input public DOM targets split by function
+### DEC-6 — The 16px focus-zoom floor applies only on iOS
+
+**Decider:** `cixzhang`, `2026-09-20`
+
+Text-entry controls that carry the anti-zoom safeguard resolve editable text to at
+least 16 CSS px on the supported iOS touch path. Other coarse-pointer platforms
+keep the active theme's type scale because they do not share the iOS focus-zoom
+behavior this safeguard addresses.
+
+The contract owns the observable platform outcomes, not a particular feature
+query or source pattern. Existing shared and higher-level text-entry surfaces may
+reuse the family rule without becoming input-family members, and this decision
+does not require unrelated controls to adopt a new floor.
+
+Rejected: applying the 16px floor to every coarse pointer. Pointer precision does
+not establish the iOS browser behavior and inflates text on Android and
+input-capable touch laptops without preventing a corresponding zoom failure.
+
+### DEC-7 — Input public DOM targets split by function
 
 **Decider:** `cixzhang`, `2026-09-19`
 
@@ -434,7 +475,7 @@ None.
 ## Content boundary
 
 This record owns cross-component field behavior, including the functional public
-DOM target categories in FR9. It does not expand membership to labeled-control
+DOM target categories in FR10. It does not expand membership to labeled-control
 components excluded above; those components still follow
 `architecture:public-component-api/INV5`. Component props, exact DOM anatomy,
 selection/search algorithms, theme target maps, implementation mechanisms, current

@@ -43,7 +43,7 @@ Download and install from https://nodejs.org
 ### pnpm
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
-the `packageManager` and `devEngines.packageManager` fields of
+the `packageManager` field of
 `package.json`). You can install pnpm directly:
 
 ```bash
@@ -79,15 +79,15 @@ corepack enable
 Verify installation:
 
 ```bash
-node --version   # v22.x.x or v24.x.x
+node --version   # v24.x.x
 pnpm --version   # 11.x.x
 ```
 
 ## Getting Started
 
 ```bash
-# Clone the repo
-git clone https://github.com/facebook/astryx.git
+# Clone without downloading historical file contents up front
+git clone --filter=blob:none https://github.com/facebook/astryx.git
 cd astryx
 
 # Install dependencies

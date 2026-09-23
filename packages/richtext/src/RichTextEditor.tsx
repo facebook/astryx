@@ -182,11 +182,16 @@ const styles = stylex.create({
     width: '100%',
     // ContentEditable and Lexical's sibling placeholder inherit one shared
     // text style. This keeps their leading and coarse-pointer sizing identical
-    // to TextInput/TextArea without duplicating placeholder typography.
+    // to TextInput/TextArea without duplicating placeholder typography. The
+    // 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
   },

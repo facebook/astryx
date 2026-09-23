@@ -180,10 +180,7 @@ describe('ChatSendButton', () => {
       expect(send).toBeEnabled();
 
       fireEvent.click(send);
-      // Only that the click reaches the composer's submit path is this
-      // button's behavior. The submitted value comes from the composer's own
-      // state, not from here, so asserting it would pin ChatComposer instead.
-      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(onSubmit).toHaveBeenCalledWith('hello');
     });
   });
 });

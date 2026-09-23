@@ -188,5 +188,52 @@
   {
     "component": "core/StatusDot",
     "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/ChatComposerTokenElement",
+    "reason": "ChatComposerTokenElement is a symmetric inline-flex serialization wrapper. Structured presentation is delegated to Badge and custom presentation is caller-owned; the wrapper owns no directional glyph, inline-axis placement, ordering, scrolling, dragging, overlay, or keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerTokenElement.stories.tsx": "sha256:acb4f39a6a542d05ab32ab7173fb599b45d1ee44bd7a40a8b4005a13e00054a8",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:c2d954b31de10589e6a2878624a6d9a28ad2470a439c384b12fae28cf07d4cd5",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatComposerInput",
+    "reason": "ChatComposerInput is a full-width block-flow editing surface whose placeholder uses logical inline insets and whose text and caret direction follow native bidirectional content. It owns no left/right glyph, physical inline positioning, inline reordering, horizontal scroll or drag behavior, side-placed overlay, or horizontal keyboard action; trigger-menu presentation is delegated to the Typeahead behavior owner.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerInput.stories.tsx": "sha256:241cbd2c6517eb59710ffe9ac5eeca15f025b6bb9aeaa89bca97238c407b1e8c",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatComposerDrawer",
+    "reason": "ChatComposerDrawer uses normal block and flex flow with logical inline spacing and symmetric top corners. Its collapse handle is horizontal and centered, the disclosure action moves only on the block axis, and its count, attachment, vertical expand/collapse, and caller-owned child content add no component-owned left/right glyph, physical inline positioning, order, horizontal scrolling or dragging, overlay placement, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerDrawer.stories.tsx": "sha256:115ecc61625c065ffcb02d35c7aeb2a399c8ba1a30a8cd637bdd4adf58185b80",
+      "packages/core/src/Chat/ChatComposerDrawer.tsx": "sha256:a8d11adc40decad25688b33a16b562e168c831933ec4387084c00530fcb94600",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatComposer",
+    "reason": "ChatComposer arranges caller-owned slots in normal flex and block flow using logical inline properties. Its owned send, stop, status, attachment, microphone, and mention glyphs are direction-neutral; it has no component-owned left/right glyph, physical inline positioning, horizontal scroll or drag behavior, overlay placement, or horizontal keyboard interaction to mirror. Text editing and bidirectional content remain native to the default contenteditable surface or the caller-supplied custom input.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
+      "packages/core/src/Chat/ChatComposer.tsx": "sha256:aa955ff0f59901285eadf7de209f78530d0f8deb0ef162f6baa4e9faa3661880",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatDictationButton",
+    "reason": "ChatDictationButton is a symmetric inline-flex icon control. Its microphone glyph and five centered equalizer bars are direction-neutral; the component owns no inline-axis placement, ordering, directional glyph, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:64429848dec3034113095f53ac860be3dddcc4b1dc0e6318d380bffac994366e",
+      "packages/core/src/Chat/ChatDictationButton.tsx": "sha256:bad96c58a64ed9463c428ab7ef53a8c41794bb685eb34b4b333c6cad5c8993c2",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
   }
 ]

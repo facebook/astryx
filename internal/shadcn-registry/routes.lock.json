@@ -132,6 +132,11 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
+      "aliases": []
+    },
+    {
       "name": "component-chat-composer",
       "path": "components/chat-composer",
       "aliases": []
@@ -4633,6 +4638,11 @@
     {
       "name": "template-ai-chat-landing",
       "path": "templates/ai-chat-landing",
+      "aliases": []
+    },
+    {
+      "name": "template-canvas-editor",
+      "path": "templates/canvas-editor",
       "aliases": []
     },
     {

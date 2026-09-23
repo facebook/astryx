@@ -12,7 +12,7 @@ const anatomy = [
     name: 'Scroll region',
     required: true,
     description:
-      'Keyboard-focusable outer region that scrolls horizontally when the columns overflow.',
+      'Outer region that scrolls horizontally, enters the keyboard order, and contains overscroll only while the columns overflow.',
   },
   {
     name: 'Header section',

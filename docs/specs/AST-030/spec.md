@@ -64,7 +64,7 @@ they are separately named.
   | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
   | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and exact-head spec-owner approval                                                                                              |
   | `docsite`           | the docsite application                                                                                                            | docsite generation and tests                                                                                                                         |
-  | `node-tooling`      | individually admitted operational Node programs and their tests whose consumers are covered by Node contract tests                 | Node Vitest, repository guardrails, and ESLint                                                                                                       |
+  | `node-tooling`      | admitted operational Node tooling whose consumers are covered by Node contract tests                                               | Node Vitest, repository guardrails, and ESLint                                                                                                       |
   | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                          | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
   | `theme-build`       | shipped theme packages and theme compilation outputs                                                                               | theme tests, theme package builds, theme-family browser behavior, and stable visual evidence where applicable                                        |
   | `storybook-visual`  | Storybook stories/configuration and visual, accessibility, or RTL audit infrastructure                                             | Storybook build, preview/visual-acceptance publication, and the applicable browser, visual, accessibility, and RTL checks                            |
@@ -78,8 +78,9 @@ they are separately named.
 - **FR3 — Classification uses trusted base policy.** Pull-request code MUST NOT
   choose its own lane. The workflow MUST load the classifier and every classifier
   dependency from the trusted base ref, then apply that policy to the merge-base
-  three-dot path set. Workflow, classifier, classifier-dependency, and routing-test
-  changes therefore use the broad lane.
+  three-dot path set. Workflow changes use the broad lane unless they are an
+  admitted tool's non-PR dispatch workflow. Classifier,
+  classifier-dependency, and routing-test changes use the broad lane.
 - **FR4 — Uncertainty fails closed.** A missing merge base, missing trusted
   classifier dependency, failed classifier, empty or incomplete file list,
   ambiguous rename, unknown path, or merge-group event without a trusted PR path
@@ -94,15 +95,18 @@ they are separately named.
   `node-tooling` only when dependency analysis proves that package runtime,
   component UI, theme/build output, Storybook/visual evidence, and browser
   behavior are not changed directly, and every operational consumer has a Node
-  contract test. Directory-wide or extension-wide admission is prohibited.
+  contract test. Directory-wide admission is allowed only for a directory
+  dedicated to non-shipped tooling; other directory- or extension-wide
+  admission is prohibited.
 - **FR7 — Required check names remain stable.** `test`, `build`, `docsite-test`,
   and `lint` MUST continue to report on every pull request through their existing
   jobs or join jobs. A specialized lane skips owned steps inside those jobs; it
   does not remove historical required contexts. Any owned lane failure MUST fail
   its join.
-- **FR8 — The first implementation is one tooling slice.** The first
-  `node-tooling` admission covers only `scripts/score-ledger.mjs` and
-  `scripts/score-ledger.test.mjs`. It runs the Node project and the required lint
+- **FR8 — Initial tooling admissions.** `node-tooling` covers
+  `scripts/score-ledger.mjs`, `scripts/score-ledger.test.mjs`,
+  `internal/scripts/`, and `.github/workflows/crowdin-upload.yml`. It runs the
+  Node project and the required lint
   workflow, including repository guardrails. It skips the UI Vitest project,
   component analysis, docsite generation, production package, Storybook and
   Sandbox builds, preview/visual-acceptance publication, and browser/theme/visual/

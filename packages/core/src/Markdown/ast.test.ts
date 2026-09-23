@@ -6,6 +6,55 @@ import {
   parseMarkdown,
   parseMarkdownAst,
 } from './parser';
+import {createMarkdownPlugin} from './plugins';
+import type {
+  MarkdownExtensionNode,
+  MarkdownSyntaxPluginDefinition,
+} from './plugins';
+
+type DemoNoteNode = MarkdownExtensionNode<
+  'demo-notes',
+  'note',
+  {readonly body: string},
+  'block'
+>;
+
+const demoNotes = createMarkdownPlugin<'demo-notes', DemoNoteNode>({
+  name: 'demo-notes',
+  apiVersion: 1,
+  parseKey: 'v1',
+  syntax: {
+    block: [
+      {
+        startsWith: [':::note'],
+        maxSpan: 200,
+        tokenize({source, offset, end, isFinal}) {
+          const close = source.indexOf('\n:::', offset + 7);
+          if (close < 0 || close + 4 > end) {
+            return isFinal ? {status: 'no-match'} : {status: 'defer'};
+          }
+          return {
+            status: 'match',
+            end: close + 4,
+            node: {
+              type: 'extension',
+              plugin: 'demo-notes',
+              name: 'note',
+              display: 'block',
+              data: {body: source.slice(offset + 7, close).trim()},
+            },
+          };
+        },
+      },
+    ],
+  },
+  renderers: {
+    note: {
+      render: ({node}) => node.data.body,
+      toText: node => node.data.body,
+    },
+  },
+} satisfies MarkdownSyntaxPluginDefinition<'demo-notes', DemoNoteNode>);
 
 describe('canonical Markdown AST', () => {
   it('uses MDAST-aligned names and fields for every built-in structure', () => {
@@ -88,7 +137,7 @@ describe('canonical Markdown AST', () => {
       },
       {type: 'math', value: 'y'},
     ]);
-    expect(parseMarkdownAst('```\nplain\n```').children[0]).toEqual({
+    expect(parseMarkdownAst('```\nplain\n```').children[0]).toMatchObject({
       type: 'code',
       lang: null,
       value: 'plain',
@@ -116,6 +165,95 @@ describe('canonical Markdown AST', () => {
       range: {start: 0, end: 9},
     });
     expect('position' in legacy[0]).toBe(false);
+  });
+
+  it('authors canonical positions without the sourceRanges option', () => {
+    const source = '# Heading\n\nParagraph\n\n> Quoted';
+    const ast = parseMarkdownAst(source);
+
+    // Transforms observe provenance on every top-level block whether or not
+    // the caller opted into the released `range` projection.
+    expect(ast.children.map(block => block.position)).toEqual([
+      {start: {offset: 0}, end: {offset: 9}},
+      {start: {offset: 11}, end: {offset: 20}},
+      {start: {offset: 22}, end: {offset: 30}},
+    ]);
+    expect(
+      parseMarkdownAst(source, {sourceRanges: true}).children.map(
+        block => block.position,
+      ),
+    ).toEqual(ast.children.map(block => block.position));
+
+    // Nested blocks remain a top-level-only contract.
+    const quote = ast.children[2];
+    if (quote.type !== 'blockquote') {
+      throw new Error('Expected blockquote');
+    }
+    expect(quote.children[0].position).toBeUndefined();
+
+    // The released projection is unchanged: no `range` unless asked for.
+    expect(parseMarkdown(source)).toEqual([
+      {
+        type: 'heading',
+        level: 1,
+        children: [{type: 'text', content: 'Heading'}],
+      },
+      {type: 'paragraph', children: [{type: 'text', content: 'Paragraph'}]},
+      {
+        type: 'blockquote',
+        children: [
+          {type: 'paragraph', children: [{type: 'text', content: 'Quoted'}]},
+        ],
+      },
+    ]);
+  });
+
+  it('keeps canonical positions off released extension nodes', () => {
+    const source = ':::note\nBody\n:::\n\nTail prose.';
+    const plugins = [demoNotes];
+
+    // The projection rebuilds every built-in block field by field, but passes
+    // an extension node through — so it is the one kind that could carry a
+    // canonical position out. Without the option the released node is exactly
+    // what it has always been.
+    const released = parseMarkdown(source, {plugins});
+    expect(released[0]).toEqual({
+      type: 'extension',
+      plugin: 'demo-notes',
+      name: 'note',
+      display: 'block',
+      data: {body: 'Body'},
+      source: ':::note\nBody\n:::',
+    });
+    expect('position' in released[0]).toBe(false);
+    expect(Object.keys(released[0])).toEqual([
+      'type',
+      'plugin',
+      'name',
+      'display',
+      'data',
+      'source',
+    ]);
+
+    // With the option the node keeps the exact provenance it has always
+    // exposed: `position` with offsets, and no `range`.
+    const withRanges = parseMarkdown(source, {sourceRanges: true, plugins});
+    expect(withRanges[0]).toEqual({
+      type: 'extension',
+      plugin: 'demo-notes',
+      name: 'note',
+      display: 'block',
+      data: {body: 'Body'},
+      source: ':::note\nBody\n:::',
+      position: {start: {offset: 0}, end: {offset: 16}},
+    });
+    expect('range' in withRanges[0]).toBe(false);
+
+    // The canonical tree carries provenance either way.
+    expect(parseMarkdownAst(source, {plugins}).children[0].position).toEqual({
+      start: {offset: 0},
+      end: {offset: 16},
+    });
   });
 
   it('preserves optional legacy keys and insertion order exactly', () => {

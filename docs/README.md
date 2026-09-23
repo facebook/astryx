@@ -49,17 +49,18 @@ Every knowledge record declares `authority: draft | current | archived`.
 - `draft` documents are not policy; unresolved evidence and owner decisions are
   recorded as blockers inside the document.
 - Initial promotion to `current` requires explicit owner approval recorded in
-  the document metadata. `cixzhang` and `imdreamrunner` may approve every record
-  kind; current design records and normative design assets also accept current
-  `.github/DESIGNOWNERS`; current theme records accept the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`. Legacy v1 `owners` metadata is
+  the document metadata. Any current `.github/ENGOWNERS` member may approve every
+  record kind; current design and theme records and normative design assets also
+  accept current `.github/DESIGNOWNERS` members. Legacy v1 `owners` metadata is
   descriptive and does not grant approval rights.
 - Pull requests that create, change, or archive a `current` record wait on the
   `spec-owner-approval` status for their exact current head. Draft-only records
   pass that status after validation without an owner review.
-- `cixzhang` or `imdreamrunner` can approve another author's current-record PR
-  through GitHub review. When an approver is also the PR author, they comment
-  `/approve-spec <full-head-sha>`. Any new commit invalidates that approval.
+- Any ENGOWNER can approve another author's current-record PR through GitHub
+  review. A DESIGNOWNER may do the same for current design or theme records and
+  normative design assets. When an eligible approver is also the PR author, they
+  comment `/approve-spec <full-head-sha>`. Any new commit invalidates that
+  approval.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative

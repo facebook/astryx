@@ -160,7 +160,8 @@ export const docs = {
     {
       name: 'marks',
       type: 'Array<{ value: number; label?: string }>',
-      description: 'Tick marks at specified positions with optional labels.',
+      description:
+        'Tick marks at specified positions with optional labels. Unfilled marks use the track color; marks inside the filled region (at or behind the thumb, or between the thumbs in range mode) use the fill color.',
     },
     {
       name: 'minStepsBetweenThumbs',
@@ -365,7 +366,8 @@ export const docsZh = {
     {
       name: 'marks',
       type: 'Array<{ value: number; label?: string }>',
-      description: '在指定位置的刻度标记，带可选标签。',
+      description:
+        '在指定位置的刻度标记，带可选标签。未填充区域的标记使用轨道颜色；填充区域内的标记使用强调色。',
     },
     {
       name: 'minStepsBetweenThumbs',
@@ -531,7 +533,8 @@ export const docsDense = {
     orientation: 'Slider orientation.',
     formatValue: 'Custom value formatting fn for display + aria-valuetext.',
     valueDisplay: 'How current value is displayed.',
-    marks: 'Tick marks at specified positions w/ optional labels.',
+    marks:
+      'Tick marks at specified positions w/ optional labels. Unfilled marks use the track color; filled marks use the accent color.',
     minStepsBetweenThumbs:
       'Min steps between thumbs in range mode; prevents overlap.',
     isDisabled: 'Whether slider is disabled.',

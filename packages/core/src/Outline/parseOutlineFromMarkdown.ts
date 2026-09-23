@@ -11,8 +11,20 @@
  * - /packages/core/src/Outline/index.ts
  */
 
-import {parseMarkdownAst, slugify, uniqueSlug} from '../Markdown/parser';
+import {
+  parseMarkdownAstInternal,
+  slugify,
+  uniqueSlug,
+} from '../Markdown/parser';
 import {markdownAstText} from '../Markdown/ast';
+import {
+  markdownExtensionText,
+  prepareMarkdownPlugins,
+} from '../Markdown/plugins/protocol';
+import type {
+  MarkdownExtensionNode,
+  MarkdownPluginEntry,
+} from '../Markdown/plugins/protocol';
 import type {OutlineItem} from './types';
 
 /**
@@ -23,12 +35,35 @@ import type {OutlineItem} from './types';
  * Ids come from the parser's shared slug helpers, so they always match the
  * `id` attributes Markdown renders on its headings.
  */
-export function parseOutlineFromMarkdown(markdown: string): OutlineItem[] {
+export interface ParseOutlineFromMarkdownOptions<
+  Node extends MarkdownExtensionNode = never,
+> {
+  readonly plugins?: ReadonlyArray<MarkdownPluginEntry<Node>>;
+  /** Match Markdown's transform finality while content is streaming. */
+  readonly isFinal?: boolean;
+}
+
+export function parseOutlineFromMarkdown<
+  Node extends MarkdownExtensionNode = never,
+>(
+  markdown: string,
+  options?: ParseOutlineFromMarkdownOptions<Node>,
+): OutlineItem[] {
+  const prepared =
+    options?.plugins == null
+      ? undefined
+      : prepareMarkdownPlugins(options.plugins);
   const counts = new Map<string, number>();
-  return parseMarkdownAst(markdown)
+  return parseMarkdownAstInternal(
+    markdown,
+    {plugins: options?.plugins},
+    options?.isFinal ?? true,
+  )
     .children.filter(block => block.type === 'heading')
     .map(block => {
-      const label = markdownAstText(block.children).trim();
+      const label = markdownAstText(block.children, node =>
+        markdownExtensionText(prepared, node),
+      ).trim();
       return {
         id: uniqueSlug(slugify(label), counts),
         label,

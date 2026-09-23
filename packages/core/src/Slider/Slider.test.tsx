@@ -13,7 +13,10 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {declaresPressedOverlay} from '../__tests__/pressState';
+import {
+  declaresPressedOverlay,
+  rulesDeclaredFor,
+} from '../__tests__/pressState';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -726,6 +729,96 @@ describe('Slider', () => {
     fireEvent.pointerDown(markLabel, {clientX: 1, clientY: 10, pointerId: 1});
 
     expect(handleChange).toHaveBeenCalledWith(100);
+  });
+
+  // --- Marks color ---
+
+  /** Whether the element has an unconditional rule painting a token. */
+  function declaresColorToken(el: Element, token: string): boolean {
+    return rulesDeclaredFor(el).some(rule => {
+      const selector = rule
+        .slice(0, rule.indexOf('{'))
+        .replaceAll(':not(#\\#)', '');
+      return !selector.includes(':') && rule.includes(`var(${token})`);
+    });
+  }
+
+  it('uses the track color for unfilled marks and the accent for filled marks', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        marks={[{value: 25}, {value: 75}]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+
+    expect(marks).toHaveLength(2);
+    expect(declaresColorToken(marks[0], '--color-track')).toBe(false);
+    expect(declaresColorToken(marks[0], '--color-accent')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-track')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-accent')).toBe(false);
+  });
+
+  function declaresFillColor(el: Element): boolean {
+    return declaresColorToken(el, '--color-accent');
+  }
+
+  it('colors marks at or behind the thumb with the fill color', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        marks={[
+          {value: 0},
+          {value: 25},
+          {value: 50},
+          {value: 75},
+          {value: 100},
+        ]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+    expect(marks).toHaveLength(5);
+    // Marks at 0, 25, and 50 sit at or behind the thumb: fill color.
+    expect(declaresFillColor(marks[0])).toBe(true);
+    expect(declaresFillColor(marks[1])).toBe(true);
+    expect(declaresFillColor(marks[2])).toBe(true);
+    // Marks at 75 and 100 sit ahead of the thumb: default mark color.
+    expect(declaresFillColor(marks[3])).toBe(false);
+    expect(declaresFillColor(marks[4])).toBe(false);
+  });
+
+  it('colors marks between the thumbs with the fill color in range mode', () => {
+    render(
+      <Slider
+        label="Price range"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        marks={[
+          {value: 0},
+          {value: 20},
+          {value: 50},
+          {value: 80},
+          {value: 100},
+        ]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+    expect(marks).toHaveLength(5);
+    // The mark at 0 sits before the range: default mark color.
+    expect(declaresFillColor(marks[0])).toBe(false);
+    // Marks at 20, 50, and 80 sit between (or at) the thumbs: fill color.
+    expect(declaresFillColor(marks[1])).toBe(true);
+    expect(declaresFillColor(marks[2])).toBe(true);
+    expect(declaresFillColor(marks[3])).toBe(true);
+    // The mark at 100 sits after the range: default mark color.
+    expect(declaresFillColor(marks[4])).toBe(false);
   });
 
   // --- Boundary clamping ---

@@ -24,6 +24,7 @@ state-taxonomy records:
 | [Shape relationships](shape-relationships.md)                     | Role-based and concentric geometry for nested surfaces                               |
 | [Elevation hierarchy](elevation-hierarchy.md)                     | Agreement between perceived depth and actual layer order                             |
 | [Typography hierarchy](typography-hierarchy.md)                   | Legible, distinguishable text roles across themes and layouts                        |
+| [Iconography](iconography.md)                                     | Icon meaning, size, artwork, color, composition, and accessibility                   |
 | [Color emphasis](color-emphasis.md)                               | Semantic color roles, contrast intent, and local emphasis                            |
 | [Motion](motion.md)                                               | Meaningful movement, timing hierarchy, easing intent, and reduced motion             |
 | [Ordered collection reordering](ordered-collection-reordering.md) | Drag preview, candidate insertion, commit, and settle intent for ordered collections |
@@ -45,10 +46,10 @@ Generated audit screenshots remain audit evidence rather than design authority.
 Private design sources stay private and are never named or linked here.
 
 New design specs start as `draft`. Initial promotion to `current`, later changes,
-and normative asset updates require exact-head approval from `cixzhang`,
-`imdreamrunner`, or any current member of `.github/DESIGNOWNERS`. A mixed PR still
-needs `cixzhang` or `imdreamrunner` for non-design current records. The design
-record names its content owners separately from this repository gate.
+and normative asset updates require exact-head approval from any current member
+of `.github/ENGOWNERS` or `.github/DESIGNOWNERS`. A mixed PR still needs an
+ENGOWNER for non-design current records. The design record names its content
+owners separately from this repository gate.
 
 A DESIGNOWNER author may attest the exact PR head for the design-approval group
 by marking it ready for review. That evidence also counts in a mixed PR, while

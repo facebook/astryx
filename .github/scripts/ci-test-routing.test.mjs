@@ -4,7 +4,8 @@
  * @file ci-test-routing.test.mjs
  *
  * The contract between `vitest.config.ts` and the CI jobs that run it, in both
- * workflows that run the suite.
+ * workflows that run the suite. FR23 must run after the other UI workers exit
+ * so its helper-overhead measurement does not compete with unrelated tests.
  *
  * This repo has now lost test coverage to routing twice. First a suite
  * belonged to no Vitest project, so `pnpm test` never collected it. Then the
@@ -110,6 +111,24 @@ describe.each(Object.entries(WORKFLOWS))(
       }
     });
 
+    it('runs FR23 only after the parallel UI suite has exited', () => {
+      const benchmark = 'packages/core/src/Markdown/Markdown.fr23.perf.test.ts';
+      const job = workflow.jobs['test-ui'];
+      const suites = job.steps.filter(step =>
+        step.run?.includes('--project ui'),
+      );
+
+      // One conditional step preserves the existing scope gate for both runs.
+      // Exact foreground commands also reject backgrounding or ignored exits.
+      expect(suites).toHaveLength(1);
+      expect(suites[0].run.trim().split('\n')).toEqual([
+        `pnpm vitest run --project ui --exclude ${benchmark}`,
+        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+      ]);
+      expect(job['continue-on-error']).not.toBe(true);
+      expect(suites[0]['continue-on-error']).not.toBe(true);
+    });
+
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
       // the wall.
@@ -193,11 +212,14 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
-  it('keeps specialized lanes as explicit successful no-audit classifications', () => {
+  it('skips component discovery for spec-only changes and classifies other lightweight lanes', () => {
     const classification = workflow.jobs['check-components'];
-    expect(classification.if).toBe("github.event_name == 'pull_request'");
+    expect(classification.if).toContain("github.event_name == 'pull_request'");
+    expect(classification.if).toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
     const commands = runLines(classification);
-    for (const lane of ['docsite_only', 'spec_only', 'tooling_only']) {
+    for (const lane of ['docsite_only', 'tooling_only']) {
       expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
     }
     expect(commands).toContain('has_components=false');

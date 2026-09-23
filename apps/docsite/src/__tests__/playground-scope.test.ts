@@ -77,6 +77,9 @@ function getScopeKeys(content: string): Set<string> {
 const SKIP =
   /\.(css|stylex)$|\/utils$|^\.\/(theme|hooks|utils|syntax|docs|groups|reset)|\.$/;
 
+const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
+const NESTED_MODULE_NAME = /^[A-Z][A-Za-z0-9]*(?:\/[A-Za-z0-9][A-Za-z0-9-]*)+$/;
+
 function getExpectedComponents(): string[] {
   const pkg = JSON.parse(fs.readFileSync(CORE_PKG_PATH, 'utf-8'));
   return Object.keys(pkg.exports ?? {})
@@ -85,9 +88,25 @@ function getExpectedComponents(): string[] {
         return false;
       }
       const name = k.replace('./', '');
-      return /^[A-Z]/.test(name);
+      return COMPONENT_NAME.test(name);
     })
     .map(k => k.replace('./', ''));
+}
+
+function getExpectedNestedModules(): string[] {
+  const pkg = JSON.parse(fs.readFileSync(CORE_PKG_PATH, 'utf-8'));
+  return Object.keys(pkg.exports ?? {})
+    .filter(k => {
+      if (SKIP.test(k)) {
+        return false;
+      }
+      return NESTED_MODULE_NAME.test(k.replace('./', ''));
+    })
+    .map(k => k.replace('./', ''));
+}
+
+function nestedModuleIdentifier(name: string): string {
+  return `Core_${name.replace(/[^A-Za-z0-9_$]/g, '_')}`;
 }
 
 describe('playground-scope', () => {
@@ -121,6 +140,20 @@ describe('playground-scope', () => {
     expect(missing).toEqual([]);
   });
 
+  it('imports nested modules with valid local identifiers', () => {
+    const missing = getExpectedNestedModules().filter(name => {
+      const identifier = nestedModuleIdentifier(name);
+      return (
+        !scopeContent.includes(
+          `import * as ${identifier} from '@astryxdesign/core/${name}';`,
+        ) ||
+        !scopeContent.includes(`'@astryxdesign/core/${name}': ${identifier},`)
+      );
+    });
+    expect(missing).toEqual([]);
+    expect(scopeContent).not.toMatch(/^import \* as [^\s;]*\//m);
+  });
+
   it('has a scope entry for every component', () => {
     const missing = expectedComponents.filter(
       name => !scopeContent.includes(`'@astryxdesign/core/${name}': ${name},`),
@@ -140,7 +173,9 @@ describe('playground-scope', () => {
     const importLines = scopeContent
       .split('\n')
       .filter(l =>
-        l.match(/^import \* as \w+ from '@astryxdesign\/core\/[A-Z]/),
+        l.match(
+          /^import \* as [A-Z][A-Za-z0-9]* from '@astryxdesign\/core\/[A-Z][A-Za-z0-9]*';$/,
+        ),
       );
     expect(importLines.length).toBe(expectedComponents.length);
   });

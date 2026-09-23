@@ -533,7 +533,7 @@ describe('global review applicability', () => {
       routeGlobalReviewBaselinesAtRevision(root, proposedHead, proposedHead, [
         'public-api',
       ]),
-    ).toThrow(/origin\/main merge base/);
+    ).toThrow(/review head must differ/);
 
     execFileSync(
       'git',
@@ -542,6 +542,12 @@ describe('global review applicability', () => {
         cwd: root,
       },
     );
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, proposedHead, [
+        'public-api',
+      ]),
+    ).toThrow(/review head must differ/);
+
     fs.writeFileSync(path.join(root, 'README.md'), '# Reviewed change\n');
     execFileSync('git', ['add', '.'], {cwd: root});
     execFileSync('git', ['commit', '-q', '-m', 'later review head'], {
@@ -556,6 +562,14 @@ describe('global review applicability', () => {
         'public-api',
       ]),
     ).toHaveLength(1);
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(
+        root,
+        baseWithoutRouting,
+        laterHead,
+        ['public-api'],
+      ),
+    ).toThrow(/origin\/main merge base/);
   });
 
   it('sorts multiple matches deterministically', () => {

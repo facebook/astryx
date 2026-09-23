@@ -4,12 +4,12 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, parser AST types, optional custom renderers
+ * @input Markdown string, canonical AST, optional plugins and custom renderers
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {useMemo, useRef} from 'react';
+import {Component, Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -57,16 +57,34 @@ import {
   uniqueSlug,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
-import {markdownAstText} from './ast';
+import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstPhrasingContent,
   MarkdownAstTable,
 } from './ast';
+import {
+  applyMarkdownTransforms,
+  getMarkdownExtensionRenderer,
+  markdownExtensionText,
+  prepareMarkdownPlugins,
+  reportMarkdownPluginFailure,
+} from './plugins/protocol';
+import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import type {
+  MarkdownExtensionNode,
+  MarkdownPluginEntry,
+  PreparedMarkdownPlugins,
+} from './plugins/protocol';
+import {sanitizeMarkdownUrl} from './url';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
+type RenderExtensionNode = MarkdownExtensionNode;
+type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
+type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
+type RenderTable = MarkdownAstTable<RenderExtensionNode>;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -139,7 +157,9 @@ export interface MarkdownComponents {
   hr?: React.ComponentType<object>;
 }
 
-export interface MarkdownProps extends BaseProps<HTMLElement> {
+export interface MarkdownProps<
+  Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+> extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLDivElement> | React.Ref<HTMLSpanElement>;
   children: string;
   /**
@@ -199,6 +219,11 @@ export interface MarkdownProps extends BaseProps<HTMLElement> {
    * Applied to text nodes after parsing — code blocks, inline code, and math
    * are unaffected. Patterns are matched in order; first match wins
    * for overlapping ranges.
+   */
+  /** Ordered syntax, immutable transforms, and typed extension renderers. */
+  plugins?: Plugins;
+  /**
+   * Legacy text-match renderers. Unchanged and independent from `plugins`.
    */
   inlinePlugins?: MarkdownInlinePlugin[];
   /**
@@ -486,9 +511,7 @@ interface StreamingCursor {
  * Count the total text characters in inline nodes without rendering.
  * Used to advance the cursor past a block that will be faded as a whole unit.
  */
-function countInlineTextLength(
-  nodes: ReadonlyArray<MarkdownAstPhrasingContent>,
-): number {
+function countInlineTextLength(nodes: ReadonlyArray<RenderInlineNode>): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -516,6 +539,9 @@ function countInlineTextLength(
       case 'citation':
         len += 1;
         break;
+      case 'extension':
+        len += node.source?.length ?? 0;
+        break;
     }
   }
   return len;
@@ -524,9 +550,7 @@ function countInlineTextLength(
 /**
  * Count total text characters in a block node tree.
  */
-function countBlockTextLength(
-  nodes: ReadonlyArray<MarkdownAstBlockContent>,
-): number {
+function countBlockTextLength(nodes: ReadonlyArray<RenderBlockNode>): number {
   let len = 0;
   for (const node of nodes) {
     switch (node.type) {
@@ -555,6 +579,9 @@ function countBlockTextLength(
           }
         }
         break;
+      case 'extension':
+        len += node.source?.length ?? 0;
+        break;
       case 'thematicBreak':
         break;
       case 'image':
@@ -575,27 +602,6 @@ const headingStyles = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// URL sanitization — block dangerous protocols
-// ---------------------------------------------------------------------------
-
-const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
-
-function sanitizeUrl(url: string): string | null {
-  // Strip control characters before testing, the same normalization the
-  // parser's isSafeUrl applies — the anchored pattern must see the URL the
-  // way a browser will. Return the normalized value so the stripped
-  // characters don't ride along into an attribute or component override.
-  // eslint-disable-next-line no-control-regex -- control chars are the bypass
-  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
-  if (normalized.length === 0) {
-    return null;
-  }
-  if (DANGEROUS_URL_PATTERN.test(normalized)) {
-    return null;
-  }
-  return normalized;
-}
-
 // ---------------------------------------------------------------------------
 // Inline plugin matching
 // ---------------------------------------------------------------------------
@@ -701,6 +707,81 @@ function applyInlinePlugins(
   return segments;
 }
 
+interface MarkdownPluginBoundaryProps {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+  pluginName: string;
+  resetKey: unknown;
+  resetRenderer: unknown;
+}
+
+interface MarkdownPluginBoundaryState {
+  failed: boolean;
+  resetKey: unknown;
+  resetRenderer: unknown;
+}
+
+class MarkdownPluginBoundary extends Component<
+  MarkdownPluginBoundaryProps,
+  MarkdownPluginBoundaryState
+> {
+  state: MarkdownPluginBoundaryState = {
+    failed: false,
+    resetKey: this.props.resetKey,
+    resetRenderer: this.props.resetRenderer,
+  };
+
+  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
+    return {failed: true};
+  }
+
+  static getDerivedStateFromProps(
+    props: MarkdownPluginBoundaryProps,
+    state: MarkdownPluginBoundaryState,
+  ): Partial<MarkdownPluginBoundaryState> | null {
+    return props.resetKey === state.resetKey &&
+      props.resetRenderer === state.resetRenderer
+      ? null
+      : {
+          failed: false,
+          resetKey: props.resetKey,
+          resetRenderer: props.resetRenderer,
+        };
+  }
+
+  componentDidCatch(error: unknown): void {
+    reportMarkdownPluginFailure(this.props.pluginName, 'render', error);
+  }
+
+  render(): React.ReactNode {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+function useStableMarkdownSyntaxEntries(
+  plugins: PreparedMarkdownPlugins | undefined,
+): ReadonlyArray<MarkdownPluginEntry> | undefined {
+  const identity = plugins?.syntaxIdentity ?? '';
+  const syntaxEntriesRef = useRef<
+    | {
+        identity: string;
+        entries: ReadonlyArray<MarkdownPluginEntry> | undefined;
+      }
+    | undefined
+  >(undefined);
+  if (
+    syntaxEntriesRef.current == null ||
+    syntaxEntriesRef.current.identity !== identity
+  ) {
+    syntaxEntriesRef.current = {
+      identity,
+      entries:
+        plugins == null || identity === '' ? undefined : plugins.syntaxEntries,
+    };
+  }
+  return syntaxEntriesRef.current.entries;
+}
+
 // ---------------------------------------------------------------------------
 // Inline renderer
 // ---------------------------------------------------------------------------
@@ -768,7 +849,7 @@ function getCitationNumber(ctx: CitationContext, sourceId: string): number {
 }
 
 function renderInline(
-  node: MarkdownAstPhrasingContent,
+  node: RenderInlineNode,
   index: number,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -776,6 +857,7 @@ function renderInline(
   linkComponent: LinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<MarkdownComponents>,
+  preparedPlugins?: PreparedMarkdownPlugins,
 ): SyncReactNode {
   switch (node.type) {
     case 'text': {
@@ -818,6 +900,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </strong>
@@ -835,6 +918,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </em>
@@ -852,6 +936,7 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </del>
@@ -876,7 +961,7 @@ function renderInline(
       return <MathComp key={index} value={node.value} display="inline" />;
     }
     case 'link': {
-      const safeHref = sanitizeUrl(node.url);
+      const safeHref = sanitizeMarkdownUrl(node.url);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
         return (
@@ -891,6 +976,7 @@ function renderInline(
                 linkComponent,
                 inlinePlugins,
                 components,
+                preparedPlugins,
               ),
             )}
           </span>
@@ -910,6 +996,7 @@ function renderInline(
                 linkComponent,
                 inlinePlugins,
                 components,
+                preparedPlugins,
               ),
             )}
           </LinkComp>
@@ -948,13 +1035,14 @@ function renderInline(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
             ),
           )}
         </LinkTag>
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.url);
+      const safeSrc = sanitizeMarkdownUrl(node.url);
       if (safeSrc == null) {
         return <span key={index}>[{node.alt}]</span>;
       }
@@ -969,6 +1057,34 @@ function renderInline(
           alt={node.alt}
           {...stylex.props(styles.image)}
         />
+      );
+    }
+    case 'extension': {
+      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
+      const fallback = wrapTextWithFade(
+        node.source ?? markdownExtensionText(preparedPlugins, node),
+        cursor,
+        index,
+      );
+      if (renderer == null) {
+        return fallback;
+      }
+      let rendered: React.ReactNode;
+      try {
+        rendered = renderer.render({node});
+      } catch (error) {
+        reportMarkdownPluginFailure(node.plugin, 'render', error);
+        return fallback;
+      }
+      return (
+        <MarkdownPluginBoundary
+          key={index}
+          pluginName={node.plugin}
+          resetKey={node}
+          resetRenderer={renderer.render}
+          fallback={fallback}>
+          <Suspense fallback={fallback}>{rendered}</Suspense>
+        </MarkdownPluginBoundary>
       );
     }
     case 'break':
@@ -1012,7 +1128,7 @@ function renderInline(
 // ---------------------------------------------------------------------------
 
 function getElementSpacing(
-  node: MarkdownAstBlockContent,
+  node: RenderBlockNode,
   density: 'default' | 'compact',
 ): StyleXStyles {
   const compact = density === 'compact';
@@ -1042,6 +1158,10 @@ function getElementSpacing(
       return compact ? styles.spacingListCompact : styles.spacingListDefault;
     case 'table':
       return compact ? styles.spacingTableCompact : styles.spacingTableDefault;
+    case 'extension':
+      return compact
+        ? styles.spacingParagraphCompact
+        : styles.spacingParagraphDefault;
     case 'thematicBreak':
       return compact ? styles.spacingHrCompact : styles.spacingHrDefault;
     case 'image':
@@ -1057,7 +1177,7 @@ function getElementSpacing(
  * Compute per-column min-widths from table AST content.
  * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
  */
-function computeTableColumnMinWidths(node: MarkdownAstTable): number[] {
+function computeTableColumnMinWidths(node: RenderTable): number[] {
   const [header, ...rows] = node.children;
   if (header == null) {
     return [];
@@ -1078,7 +1198,7 @@ function computeTableColumnMinWidths(node: MarkdownAstTable): number[] {
 }
 
 function renderBlock(
-  node: MarkdownAstBlockContent,
+  node: RenderBlockNode,
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
@@ -1091,8 +1211,9 @@ function renderBlock(
   linkComponent: LinkComponentType = 'a',
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
+  preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<MarkdownAstBlockContent, string>,
+  headingIdMap?: ReadonlyMap<RenderBlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1117,6 +1238,7 @@ function renderBlock(
           linkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
         ),
       );
       // Only top-level headings get an id: the map is built from the same
@@ -1168,6 +1290,7 @@ function renderBlock(
           linkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
         ),
       );
       const ParagraphComp = components?.paragraph;
@@ -1208,17 +1331,14 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
+      const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
       const CodeBlockComp = components?.code;
       if (CodeBlockComp) {
         return (
-          <CodeBlockComp
-            key={index}
-            code={node.value}
-            language={node.lang ?? 'plaintext'}
-          />
+          <CodeBlockComp key={index} code={node.value} language={language} />
         );
       }
-      return (
+      const fallback = (
         <div
           key={index}
           {...mergeProps(
@@ -1232,7 +1352,7 @@ function renderBlock(
           )}>
           <CodeBlock
             code={node.value}
-            language={node.lang ?? 'plaintext'}
+            language={language}
             isCollapsible
             xstyle={[
               contentWidthValue != null
@@ -1243,6 +1363,36 @@ function renderBlock(
           />
         </div>
       );
+      const proposal = getMarkdownFenceProposal(node);
+      if (proposal == null) {
+        return fallback;
+      }
+      const renderer = getMarkdownExtensionRenderer(
+        preparedPlugins,
+        proposal.node,
+      );
+      if (renderer == null) {
+        return fallback;
+      }
+      try {
+        const rendered = renderer.render({node: proposal.node});
+        if (rendered == null || typeof rendered === 'boolean') {
+          return fallback;
+        }
+        return (
+          <MarkdownPluginBoundary
+            key={index}
+            pluginName={proposal.node.plugin}
+            resetKey={proposal.node}
+            resetRenderer={renderer.render}
+            fallback={fallback}>
+            <Suspense fallback={fallback}>{rendered}</Suspense>
+          </MarkdownPluginBoundary>
+        );
+      } catch (error) {
+        reportMarkdownPluginFailure(proposal.node.plugin, 'render', error);
+        return fallback;
+      }
     }
     case 'math': {
       cursor.offset += node.value.length;
@@ -1274,6 +1424,7 @@ function renderBlock(
             linkComponent,
             inlinePlugins,
             components,
+            preparedPlugins,
             t,
           ),
         );
@@ -1309,6 +1460,7 @@ function renderBlock(
               linkComponent,
               inlinePlugins,
               components,
+              preparedPlugins,
               t,
             ),
           )}
@@ -1364,6 +1516,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </>
@@ -1384,6 +1537,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                         t,
                       ),
                     )}
@@ -1446,6 +1600,7 @@ function renderBlock(
                       linkComponent,
                       inlinePlugins,
                       components,
+                      preparedPlugins,
                     ),
                   )}
                 </>
@@ -1466,6 +1621,7 @@ function renderBlock(
                       linkComponent,
                       inlinePlugins,
                       components,
+                      preparedPlugins,
                       t,
                     ),
                   )}
@@ -1535,6 +1691,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </TableHeaderCell>
@@ -1561,6 +1718,7 @@ function renderBlock(
                         linkComponent,
                         inlinePlugins,
                         components,
+                        preparedPlugins,
                       ),
                     )}
                   </TableCell>
@@ -1575,6 +1733,46 @@ function renderBlock(
               })}
             </TableBody>
           </Table>
+        </div>
+      );
+    }
+    case 'extension': {
+      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
+      const fallbackText =
+        node.source ?? markdownExtensionText(preparedPlugins, node);
+      const fallback = wrapTextWithFade(fallbackText, cursor, index);
+      let content: React.ReactNode = fallback;
+      if (renderer != null) {
+        try {
+          const rendered = renderer.render({node});
+          content = (
+            <MarkdownPluginBoundary
+              pluginName={node.plugin}
+              resetKey={node}
+              resetRenderer={renderer.render}
+              fallback={fallback}>
+              <Suspense fallback={fallback}>{rendered}</Suspense>
+            </MarkdownPluginBoundary>
+          );
+        } catch (error) {
+          reportMarkdownPluginFailure(node.plugin, 'render', error);
+        }
+      }
+      return (
+        <div
+          key={index}
+          {...stylex.props(
+            spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}>
+          {content}
         </div>
       );
     }
@@ -1599,7 +1797,7 @@ function renderBlock(
       );
     }
     case 'image': {
-      const safeSrc = sanitizeUrl(node.url);
+      const safeSrc = sanitizeMarkdownUrl(node.url);
       if (safeSrc == null) {
         return (
           <div
@@ -1653,7 +1851,9 @@ function renderBlock(
  * </Markdown>
  * ```
  */
-export function Markdown({
+export function Markdown<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+>({
   ref,
   children,
   display = 'block',
@@ -1666,6 +1866,7 @@ export function Markdown({
   contentWidth = 680,
   contentAlign = 'start',
   components,
+  plugins,
   inlinePlugins,
   autolink,
   xstyle,
@@ -1673,7 +1874,7 @@ export function Markdown({
   style,
   'data-testid': testId,
   ...props
-}: MarkdownProps): React.ReactElement {
+}: MarkdownProps<Plugins>): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
@@ -1682,14 +1883,30 @@ export function Markdown({
     [sources],
   );
 
+  const preparedPlugins = useMemo(() => {
+    if (plugins == null) {
+      return undefined;
+    }
+    try {
+      return prepareMarkdownPlugins(plugins);
+    } catch (error) {
+      reportMarkdownPluginFailure('configuration', 'transform', error);
+      return undefined;
+    }
+  }, [plugins]);
+  const syntaxPlugins = useStableMarkdownSyntaxEntries(preparedPlugins);
   const hasMathRenderer = components?.math != null;
-  const legacyParseOptions = useMemo<ParseOptions>(
-    () => ({sourceIds, autolink}),
-    [sourceIds, autolink],
+  const legacyParseOptions = useMemo<
+    ParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () => ({sourceIds, autolink, plugins: syntaxPlugins}),
+    [sourceIds, autolink, syntaxPlugins],
   );
-  const mathParseOptions = useMemo<MathParseOptions>(
-    () => ({sourceIds, autolink, math: true}),
-    [sourceIds, autolink],
+  const mathParseOptions = useMemo<
+    MathParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () => ({sourceIds, autolink, math: true, plugins: syntaxPlugins}),
+    [sourceIds, autolink, syntaxPlugins],
   );
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
@@ -1712,7 +1929,7 @@ export function Markdown({
     prevMathRef.current = hasMathRenderer;
   }
 
-  const blocks = useMemo(() => {
+  const parsedBlocks = useMemo(() => {
     if (display === 'inline') {
       return [];
     }
@@ -1752,6 +1969,24 @@ export function Markdown({
     legacyParseOptions,
   ]);
 
+  const transformSource = isStreaming
+    ? trimStreamingArtifacts(
+        smoothedText,
+        hasMathRenderer ? mathParseOptions : legacyParseOptions,
+      )
+    : children;
+  const blocks = useMemo(
+    () =>
+      applyMarkdownTransforms(
+        {type: 'root', children: parsedBlocks},
+        preparedPlugins,
+        transformSource,
+        !isStreaming,
+        'block',
+      ).children,
+    [parsedBlocks, preparedPlugins, transformSource, isStreaming],
+  );
+
   // Assign each top-level heading the slug that parseOutlineFromMarkdown
   // would derive for it, so Outline hash links built from the same source
   // always find a matching DOM id. Mirrors that function's traversal exactly:
@@ -1762,18 +1997,20 @@ export function Markdown({
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<MarkdownAstBlockContent, string>();
+    const map = new Map<RenderBlockNode, string>();
     const counts = new Map<string, number>();
     for (const block of blocks) {
       if (block.type === 'heading') {
-        const label = markdownAstText(block.children).trim();
+        const label = markdownAstText(block.children, node =>
+          markdownExtensionText(preparedPlugins, node),
+        ).trim();
         map.set(block, uniqueSlug(slugify(label), counts));
       }
     }
     return map;
-  }, [display, blocks]);
+  }, [display, blocks, preparedPlugins]);
 
-  const inlineNodes = useMemo(() => {
+  const parsedInlineNodes = useMemo(() => {
     if (display !== 'inline') {
       return [];
     }
@@ -1794,6 +2031,38 @@ export function Markdown({
     legacyParseOptions,
   ]);
 
+  const inlineTransformSource = isStreaming
+    ? trimStreamingArtifacts(
+        smoothedText,
+        hasMathRenderer ? mathParseOptions : legacyParseOptions,
+      )
+    : children;
+  const inlineNodes = useMemo(() => {
+    if (display !== 'inline') {
+      return [];
+    }
+    const transformed = applyMarkdownTransforms(
+      {
+        type: 'root',
+        children: [{type: 'paragraph', children: parsedInlineNodes}],
+      },
+      preparedPlugins,
+      inlineTransformSource,
+      !isStreaming,
+      'inline',
+    );
+    const paragraph = transformed.children[0];
+    return paragraph?.type === 'paragraph'
+      ? [...paragraph.children]
+      : parsedInlineNodes;
+  }, [
+    display,
+    parsedInlineNodes,
+    preparedPlugins,
+    inlineTransformSource,
+    isStreaming,
+  ]);
+
   // Track recent boundaries for stacked fade-in animation.
   // The number of spans needed = ceil(animationDuration / tickInterval).
   // useStreamingText ticks every ~tickMs, and the fade runs for
@@ -1808,10 +2077,8 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<ReadonlyArray<MarkdownAstBlockContent>>([]);
-  const prevInlineNodesRef = useRef<ReadonlyArray<MarkdownAstPhrasingContent>>(
-    [],
-  );
+  const prevBlocksRef = useRef<ReadonlyArray<RenderBlockNode>>([]);
+  const prevInlineNodesRef = useRef<ReadonlyArray<RenderInlineNode>>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
@@ -1860,6 +2127,7 @@ export function Markdown({
             LinkComponent,
             inlinePlugins,
             components,
+            preparedPlugins,
           ),
         )}
       </span>
@@ -1905,6 +2173,7 @@ export function Markdown({
           LinkComponent,
           inlinePlugins,
           components,
+          preparedPlugins,
           t,
           headingIdMap,
         ),

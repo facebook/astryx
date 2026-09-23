@@ -22,6 +22,17 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   return [prose, component].filter(Boolean).join('\n\n');
 }
 
+function getEndSlot(): HTMLElement {
+  const child =
+    screen.queryByRole('button', {name: 'Action'}) ??
+    screen.getByRole('button', {name: /close/i});
+  const slot = child.parentElement;
+  if (slot == null) {
+    throw new Error('Expected DialogHeader end slot');
+  }
+  return slot;
+}
+
 describe('DialogHeader', () => {
   it('renders the title', () => {
     render(<DialogHeader title="My Dialog Title" />);
@@ -61,6 +72,92 @@ describe('DialogHeader', () => {
   it('renders close button when onOpenChange is provided', () => {
     render(<DialogHeader title="Title" onOpenChange={() => {}} />);
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
+  });
+
+  it('preserves automatic end-slot compensation when the close action renders', () => {
+    const {rerender} = render(
+      <DialogHeader title="Title" onOpenChange={() => {}} />,
+    );
+    const automaticClassName = getEndSlot().className;
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        onOpenChange={() => {}}
+      />,
+    );
+    expect(getEndSlot().className).toBe(automaticClassName);
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+      />,
+    );
+    expect(getEndSlot().className).not.toBe(automaticClassName);
+  });
+
+  it('lets endContentEdgeCompensation select inline, block, or all', () => {
+    const {rerender} = render(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+      />,
+    );
+    const noCompensationClassName = getEndSlot().className;
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        endContentEdgeCompensation="inline"
+      />,
+    );
+    const inlineClassName = getEndSlot().className;
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        endContentEdgeCompensation="block"
+      />,
+    );
+    const blockClassName = getEndSlot().className;
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        endContentEdgeCompensation="all"
+      />,
+    );
+    const allClassName = getEndSlot().className;
+
+    expect(inlineClassName).not.toBe(noCompensationClassName);
+    expect(blockClassName).not.toBe(noCompensationClassName);
+    expect(inlineClassName).not.toBe(blockClassName);
+    expect(allClassName).not.toBe(inlineClassName);
+    expect(allClassName).not.toBe(blockClassName);
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        onOpenChange={() => {}}
+      />,
+    );
+    expect(getEndSlot().className).toBe(allClassName);
+
+    rerender(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Action</button>}
+        endContentEdgeCompensation="inline"
+        onOpenChange={() => {}}
+      />,
+    );
+    expect(getEndSlot().className).toBe(inlineClassName);
   });
 
   it('exposes theme targets for the header row, title block, and close icon', () => {

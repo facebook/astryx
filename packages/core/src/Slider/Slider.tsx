@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; modifier-only key presses do not restore the thumb focus ring
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -323,8 +323,14 @@ const styles = stylex.create({
   },
   mark: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-track'],
     borderRadius: radiusVars['--radius-full'],
+  },
+  // Marks over the filled region (at or behind the thumb in single mode,
+  // between the thumbs in range mode) take the fill color so they read as
+  // part of the filled track rather than the unfilled rail.
+  markFilled: {
+    backgroundColor: colorVars['--color-accent'],
   },
   markHorizontal: {
     width: 2,
@@ -1103,6 +1109,12 @@ export function Slider({ref, ...props}: SliderProps) {
                 const markPos = isHorizontal
                   ? {insetInlineStart: insetPosition(percent)}
                   : {bottom: insetPosition(percent)};
+                // Marks at or inside the filled region take the fill color:
+                // at or behind the thumb in single mode, between the thumbs
+                // in range mode.
+                const isFilled = isRange
+                  ? mark.value >= values[0] && mark.value <= values[1]
+                  : mark.value <= values[0];
                 return (
                   <div key={mark.value}>
                     <div
@@ -1114,6 +1126,7 @@ export function Slider({ref, ...props}: SliderProps) {
                           isHorizontal
                             ? styles.markHorizontal
                             : styles.markVertical,
+                          isFilled && styles.markFilled,
                         ),
                         {style: markPos},
                       )}

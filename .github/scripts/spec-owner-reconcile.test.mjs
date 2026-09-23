@@ -19,7 +19,6 @@ const nextHead = '1111111111111111111111111111111111111111';
 const repository = 'facebook/astryx';
 const workspace = path.resolve(import.meta.dirname, '../..');
 const env = {
-  SPEC_OWNERS: 'cixzhang,imdreamrunner',
   REVIEW_LABEL: 'needs:spec-owner-review',
   AUTO_MERGE_LABEL: 'spec-auto-merge',
 };
@@ -295,7 +294,7 @@ function hasReadyAttestation(state, owner = 'ernestt') {
 }
 
 describe('spec owner workflow reconciliation', () => {
-  it('never lets a spec-owner author self-attest their own head', async () => {
+  it('never lets an ENGOWNER author self-attest their own head', async () => {
     const harness = createHarness();
 
     await run(harness, context({runId: 100n}));
@@ -307,7 +306,7 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(false);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('spec owner'),
+      description: expect.stringContaining('engineering owner'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
     expect(harness.state.pr.auto_merge).toBe(null);
@@ -324,17 +323,17 @@ describe('spec owner workflow reconciliation', () => {
       context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
     );
 
-    // The attestation is published for the design group, and the spec group
-    // still waits for a real exact-head owner decision.
+    // The attestation is published for the design group, and the non-design
+    // group still waits for a real exact-head engineering-owner decision.
     expect(hasReadyAttestation(harness.state)).toBe(true);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('spec owner'),
+      description: expect.stringContaining('engineering owner'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
 
-  it('clears the gate on an exact-head spec-owner review', async () => {
+  it('clears the gate on an exact-head ENGOWNER review', async () => {
     const harness = createApprovedHarness();
 
     await run(harness, context({runId: 100n}));
@@ -342,6 +341,90 @@ describe('spec owner workflow reconciliation', () => {
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
       description: expect.stringContaining('Approved by @imdreamrunner'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('accepts every current ENGOWNER for a non-design spec', async () => {
+    const review = {
+      user: {login: 'josephfarina'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({reviews: [review]});
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'josephfarina',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @josephfarina'),
+    });
+  });
+
+  it('does not let a DESIGNOWNER approve a non-design spec', async () => {
+    const review = {
+      user: {login: 'ernestt'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({reviews: [review]});
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'ernestt',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('engineering owner'),
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('lets a DESIGNOWNER approve a visual spec', async () => {
+    const review = {
+      user: {login: 'ernestt'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createDesignHarness({
+      author: 'outside-contributor',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'ernestt',
+        author: 'outside-contributor',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @ernestt'),
     });
     expect(harness.state.calls).toContain('enable-auto-merge');
   });
@@ -1188,8 +1271,8 @@ describe('spec owner workflow reconciliation', () => {
   });
 
   it('ignores a ready marker from a handle that is not a design owner', async () => {
-    // Live shape from PR #5543: a spec owner marked their own PR ready before
-    // the design-only rule, leaving a trusted spec-owner-ready status on the
+    // Live shape from PR #5543: an engineering owner marked their own PR ready
+    // before the design-only rule, leaving a trusted spec-owner-ready status on the
     // head. It must not satisfy the design group it is not a member of.
     const harness = createDesignHarness({
       author: 'imdreamrunner',
