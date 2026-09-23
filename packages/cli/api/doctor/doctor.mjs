@@ -27,6 +27,15 @@ import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/nod
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
+import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {buildDocsIndexData} from '../../foundation/discovery/docs-section-key.mjs';
+import {
+  DOC_OUTPUT_BUDGET_BYTES,
+  docsIndexBytes,
+  oversizedDocSections,
+} from '../../foundation/discovery/docs-output-budget.mjs';
+import {loadTopicDoc} from '../docs/_adapter.mjs';
+import {resolveTokenRefs} from '../docs/detail/detail.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
@@ -52,6 +61,11 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
  *   Every integration the project loaded, or null when the project could not be
  *   read at all.
+ * @property {DocsCatalog|null} [docsCatalog] - The topics a docs read sees.
+ * @property {Array<{package?: string, code: string, message: string}>} [docsCatalogIssues]
+ *   `invalid_doc` issues from the project's contributed docs.
+ * @property {string|null} [docsCatalogError] - Why the project's docs catalog
+ *   could not be built, when it could not.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -694,6 +708,130 @@ export function checkProviderIdentity(ctx) {
   };
 }
 
+/** @param {number} bytes */
+const kilobytes = bytes => `${Math.ceil(bytes / 1024)} KB`;
+
+/**
+ * @param {string[]} problems
+ * @returns {string}
+ */
+function joinProblems(problems) {
+  return problems.length === 1
+    ? problems[0]
+    : `${problems.length} problems: ${problems.join('; ')}`;
+}
+
+/**
+ * Every authoring self-doc is reachable from `astryx docs authoring`, loads,
+ * and fits in one read. The audit is imported here, inside the try, so a
+ * malformed self-doc is reported rather than taking Doctor down.
+ * @param {DoctorContext} [_ctx]
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkAuthoringDocs(_ctx) {
+  const id = 'authoring-docs';
+  const label = 'Authoring docs';
+  try {
+    const {auditAuthoringSelfDocs} = await import(
+      '../../foundation/discovery/authoring-self-docs.mjs'
+    );
+    const audit = await auditAuthoringSelfDocs();
+    const problems = [
+      ...audit.unreachable.map(
+        source => `${source} is not in \`astryx docs authoring\``,
+      ),
+      ...audit.failed.map(({source, error}) => `${source} failed to load: ${error}`),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `authoring section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: 'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.',
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.sections} authoring schemas are readable in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The authoring docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/**
+ * Every topic reads progressively: it loads, its section index and each of its
+ * sections fit in one read, and no contributed doc is invalid.
+ * @param {DoctorContext | Partial<DoctorContext>} ctx
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkDocsProgressiveDisclosure(ctx) {
+  const id = 'docs-progressive-disclosure';
+  const label = 'Documentation navigation and size';
+  const budget = kilobytes(DOC_OUTPUT_BUDGET_BYTES);
+  /** @type {string[]} */
+  const problems = [];
+  if (ctx.docsCatalogError) {
+    problems.push(`The docs catalog could not be built: ${ctx.docsCatalogError}`);
+  }
+  for (const issue of ctx.docsCatalogIssues ?? []) {
+    problems.push(`${issue.package ?? 'a contributed doc'}: ${issue.message}`);
+  }
+  let topics = 0;
+  const catalog = ctx.docsCatalog;
+  if (catalog) {
+    for (const entry of catalog.entries()) {
+      try {
+        const doc = await resolveTokenRefs(await loadTopicDoc(entry), catalog);
+        topics += 1;
+        const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
+        if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {
+          problems.push(
+            `${entry.name}: its section index is ${kilobytes(indexBytes)}, over the ${budget} one read may return`,
+          );
+        }
+        for (const over of oversizedDocSections(doc.sections)) {
+          problems.push(
+            `${entry.name} ${over.key}: ${kilobytes(over.bytes)}, over the ${budget} one read may return`,
+          );
+        }
+      } catch (err) {
+        problems.push(
+          `${entry.name}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  }
+  if (problems.length > 0) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: joinProblems(problems),
+      fix: 'Fix the doc each problem names; split a section that is too large into smaller ones, each with its own key.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: `${topics} topics: every section index and section fits in one ${budget} read.`,
+  };
+}
+
 /**
  * Ordered list of synchronous check functions. Append here to add a check.
  * (checkConfig is async and is awaited separately by {@link runChecks}.)
@@ -737,11 +875,28 @@ export async function runChecks(options = {}) {
   let configTheme = null;
   /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
   let integrations = null;
+  // A docs read falls back to the built-in topics when the project cannot be
+  // read, so the docs checks do too; the config check reports the config.
+  /** @type {DocsCatalog|null} */
+  let docsCatalog = DocsCatalog.fromBuiltins();
+  /** @type {Array<{package?: string, code: string, message: string}>} */
+  let docsCatalogIssues = [];
+  /** @type {string|null} */
+  let docsCatalogError = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
+    try {
+      docsCatalog = await project.docs();
+      docsCatalogIssues = (await project.issues()).filter(
+        issue => issue.code === 'invalid_doc',
+      );
+    } catch (err) {
+      docsCatalog = null;
+      docsCatalogError = err instanceof Error ? err.message : String(err);
+    }
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -754,6 +909,9 @@ export async function runChecks(options = {}) {
     configPath,
     configTheme,
     integrations,
+    docsCatalog,
+    docsCatalogIssues,
+    docsCatalogError,
     configError,
   };
 
@@ -766,6 +924,8 @@ export async function runChecks(options = {}) {
       checks.push(await checkConfig(ctx));
     }
   }
+  checks.push(await checkAuthoringDocs(ctx));
+  checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};
   for (const c of checks) summary[c.status] += 1;
