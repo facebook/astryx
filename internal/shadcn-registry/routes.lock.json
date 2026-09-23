@@ -2661,8 +2661,18 @@
       "aliases": []
     },
     {
+      "name": "example-scrollable-area-overscroll-chaining",
+      "path": "examples/scrollable-area/overscroll-chaining",
+      "aliases": []
+    },
+    {
       "name": "example-scrollable-area-sticky-group-headers",
       "path": "examples/scrollable-area/sticky-group-headers",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-passthrough",
+      "path": "examples/scrollable-area/sticky-passthrough",
       "aliases": []
     },
     {
