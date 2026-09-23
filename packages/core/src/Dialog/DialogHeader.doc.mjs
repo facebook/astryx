@@ -67,6 +67,11 @@ export const docs = {
       ],
     },
     {
+      name: 'endContentEdgeCompensation',
+      type: "'inline' | 'block' | 'all'",
+      description: 'Selects compensation axes for the end-content slot. Omit to preserve automatic close-action compensation.',
+    },
+    {
       name: 'hasDivider',
       type: 'boolean',
       description: 'Adds border at the bottom edge.',
@@ -167,6 +172,11 @@ export const docsZh = {
       description: '标题之后、关闭按钮之前的内容。',
     },
     {
+      name: 'endContentEdgeCompensation',
+      type: "'inline' | 'block' | 'all'",
+      description: '选择尾部内容插槽的补偿轴；省略时保留关闭操作的自动补偿。',
+    },
+    {
       name: 'hasDivider',
       type: 'boolean',
       description: '在底部边缘添加分隔线。',
@@ -201,6 +211,8 @@ export const docsDense = {
     onOpenChange: 'close button callback (omit=no button)',
     startContent: 'content before title (e.g. back button)',
     endContent: 'content after title, before close button',
+    endContentEdgeCompensation:
+      'end-content slot axes: inline | block | all; omit=automatic close-action compensation',
     hasDivider: 'bottom border',
   },
 };
