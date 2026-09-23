@@ -203,15 +203,8 @@ has a safe theme-independent baseline, so it stays closed under
 
 ### Theming reachability (observed)
 
-This record deliberately carries **no** `anatomy-theming:v1` block. The block is
-optional during migration, and it cannot currently express one sub-component of a
-shared family directory: `scripts/check-knowledge.mjs` validates the map against
-the whole component directory's inventory, so a block here would have to declare
-every anatomy part and every target of all sixteen Chat components — including
-fifteen this audit did not examine. Declaring them would exceed ChatLayout's
-ownership boundary and manufacture dispositions without evidence. See OQ2.
-
-The observed dispositions for ChatLayout's own five anatomy parts are:
+Observed dispositions for ChatLayout's five anatomy parts. This record carries no
+`anatomy-theming:v1` block; the block is optional during migration, and see OQ2.
 
 | Anatomy part            | Disposition                                                                                                                                                                                   |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -239,20 +232,16 @@ The `chat-layout` target itself is declared on the Chat family document
 
 ## Verification map
 
-| Contract | Verification                                                             | Representative states                  | Mutation or failure expectation                                                                   | Audit section         |
-| -------- | ------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------- |
-| FR1, FR2 | `ChatLayout.test.tsx` self-scroll layout contract                        | self-scroll, short and long transcript | Restoring `min-height: 100%` on the message area re-adds the dock's height and the root overflows | `audit:ChatLayout/§4` |
-| FR3, FR4 | `ChatLayout.test.tsx` dock positioning                                   | no `scrollRef`; external `scrollRef`   | Swapping sticky and fixed detaches the dock from the element that actually scrolls                | `audit:ChatLayout/§4` |
-| FR5      | `ChatLayout.test.tsx` empty-state cases                                  | empty array; populated children        | Treating populated children as empty hides the transcript                                         | `audit:ChatLayout/§4` |
-| FR6      | `ChatLayout.test.tsx` scroll-button cases                                | default; custom node; `null`           | Collapsing `null` into the default renders an affordance the caller removed                       | `audit:ChatLayout/§4` |
-| FR7      | `ChatLayout.test.tsx` density cases; `themingTargets.test.ts`            | compact; balanced; spacious            | Dropping the reflected attribute makes the theming axis unselectable                              | `audit:ChatLayout/§2` |
-| FR8      | `useChatNewMessages.test.tsx`, `useChatStreamScroll.test.tsx`            | first fill; streaming growth           | Losing the published refs stops auto-scroll from observing content growth                         | `audit:ChatLayout/§7` |
-| AR1, AR2 | `ChatLayoutScrollButton.test.tsx`, `ChatLayout.test.tsx` tab-order cases | hidden at rest; visible                | Reverting to `opacity`-only hiding puts an invisible control back in the tab order                | `audit:ChatLayout/§1` |
-| PR2      | Source review of `useChatNewMessages`                                    | mounted list                           | A per-instance `ResizeObserver` replaces the pooled one                                           | `audit:ChatLayout/§7` |
-
-Rendered evidence is missing from this record's basis: the audit node cannot
-launch a browser, so §5b stayed `not measured` and the axe and RTL harnesses did
-not run locally. Exact-head Linux CI supplies that signal.
+| Contract | Verification                                                                                                                                 | Representative states                               | Mutation or failure expectation                                                                   | Audit section         |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------- |
+| FR1, FR2 | `ChatLayout.test.tsx` self-scroll layout contract                                                                                            | self-scroll, short and long transcript              | Restoring `min-height: 100%` on the message area re-adds the dock's height and the root overflows | `audit:ChatLayout/§4` |
+| FR3, FR4 | `ChatLayout.test.tsx` dock positioning                                                                                                       | no `scrollRef`; external `scrollRef`                | Swapping sticky and fixed detaches the dock from the element that actually scrolls                | `audit:ChatLayout/§4` |
+| FR5      | `ChatLayout.test.tsx` empty-state cases                                                                                                      | empty array; populated children                     | Treating populated children as empty hides the transcript                                         | `audit:ChatLayout/§4` |
+| FR6      | `ChatLayout.test.tsx` scroll-button cases                                                                                                    | default; custom node; `null`                        | Collapsing `null` into the default renders an affordance the caller removed                       | `audit:ChatLayout/§4` |
+| FR7      | `ChatLayout.test.tsx` density cases; `themingTargets.test.ts`                                                                                | compact; balanced; spacious                         | Dropping the reflected attribute makes the theming axis unselectable                              | `audit:ChatLayout/§2` |
+| FR8      | `useChatNewMessages.test.tsx`, `useChatStreamScroll.test.tsx`                                                                                | first fill; streaming growth                        | Losing the published refs stops auto-scroll from observing content growth                         | `audit:ChatLayout/§7` |
+| AR1, AR2 | `ChatLayoutScrollButton.test.tsx` and `ChatLayout.test.tsx` tab-order cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts` in real Chromium | hidden at rest; visible; re-hidden after activation | Reverting to `opacity`-only hiding puts an invisible control back in the tab order                | `audit:ChatLayout/§1` |
+| PR2      | Source review of `useChatNewMessages`                                                                                                        | mounted list                                        | A per-instance `ResizeObserver` replaces the pooled one                                           | `audit:ChatLayout/§7` |
 
 ## Decision log
 
@@ -268,12 +257,9 @@ None. This record settles no decision; it describes shipped behavior.
   keyboard scrolling to the viewport, together with effective-axis measurement and
   an accessible name — none of which exist here yet. Resolving it needs a naming
   decision, a role decision, and a decision about adopting the AST-025 hooks.
-- **OQ2 — Should the frosted dock be themeable, and how should a family directory
-  express per-component theming anatomy?** (`human-api`) The dock and blur layer
-  paint the component's signature surface and no target reaches them. Separately,
-  `scripts/check-knowledge.mjs` scopes the `anatomy-theming:v1` map to the whole
-  component directory, so no single Chat component can declare its own map without
-  also declaring the other fifteen components' parts and targets.
+- **OQ2 — Should the frosted dock be themeable?** (`human-api`) The dock, its
+  inner column, and the blur layer paint the component's signature surface, and
+  no current target reaches them.
 
 ## Content boundary
 

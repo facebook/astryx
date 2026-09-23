@@ -847,7 +847,6 @@ export const WithEmptyState: StoryObj = {
 };
 
 const DENSITIES = ['compact', 'balanced', 'spacious'] as const;
-
 /**
  * The three densities side by side. Density is a prop, not an automatic
  * container-width adaptation: it selects the dock's inline and block-end
@@ -898,6 +897,61 @@ export const Densities: StoryObj = {
           </ChatLayout>
         </div>
       ))}
+    </div>
+  ),
+};
+
+const AFFORDANCE_TURNS = [
+  'What does the scroll-to-bottom button do?',
+  'It appears once you scroll away from the newest message.',
+  'And when I am already at the bottom?',
+  'Then it is hidden, and it must not take keyboard focus.',
+  'Why does that matter?',
+  'Focus landing on something invisible has no visible focus indicator.',
+  'So the hidden state has to leave the tab order.',
+  'Exactly — opacity alone does not do that.',
+  'What removes it?',
+  'visibility: hidden, carried on the same transition so the fade still plays.',
+  'Does the visible button stay reachable?',
+  'Yes. Hiding it from the keyboard only applies while it paints nothing.',
+];
+
+/**
+ * Deterministic fixture for the scroll-to-bottom affordance: a bounded,
+ * self-scrolling ChatLayout with static content and a sentinel control in
+ * front of it. Scrolling away from the bottom reveals the affordance and
+ * scrolling back hides it, so one story reaches the hidden, visible, and
+ * re-hidden states without timers, streaming, or `new Date()`.
+ *
+ * Drives the exact-head keyboard and theme-size evidence in
+ * `ChatLayoutScrollButton.a11y.chromium.spec.ts`.
+ */
+export const ScrollAffordanceStates: StoryObj = {
+  name: 'Scroll Affordance States',
+  render: () => (
+    <div style={{padding: 16}}>
+      <button type="button">Before chat</button>
+      <div
+        style={{
+          height: 420,
+          marginBlockStart: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+        <ChatLayout
+          composer={<ChatComposer onSubmit={() => {}} placeholder="Reply…" />}>
+          <ChatMessageList>
+            {AFFORDANCE_TURNS.map((text, index) => (
+              <ChatMessage
+                key={text}
+                sender={index % 2 === 0 ? 'user' : 'assistant'}>
+                <ChatMessageBubble>{text}</ChatMessageBubble>
+              </ChatMessage>
+            ))}
+          </ChatMessageList>
+        </ChatLayout>
+      </div>
     </div>
   ),
 };

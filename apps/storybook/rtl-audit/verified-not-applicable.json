@@ -1,7 +1,7 @@
 [
   {
     "component": "core/Banner",
-    "reason": "Banner renders a single wrap-capable flex header row \u2014 status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` \u2014 above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180\u00b0 about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
     "evidence": {
       "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
       "packages/core/src/Banner/Banner.tsx": "sha256:d69e58bc792b8c8802311aacd7b629c890915424f5b575d3bb3f71645db9c77f",
@@ -10,7 +10,7 @@
   },
   {
     "component": "core/ToggleButton",
-    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only \u2014 no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
+    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only — no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
   },
   {
     "component": "core/Field",
@@ -26,7 +26,7 @@
   },
   {
     "component": "core/Spinner",
-    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG \u2014 two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },
   {
     "component": "core/Table",
@@ -34,7 +34,7 @@
   },
   {
     "component": "core/Text",
-    "reason": "Text sets typography \u2014 size, weight, colour, line-height, wrapping, truncation \u2014 and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
   },
   {
     "component": "core/Timestamp",
@@ -233,6 +233,24 @@
     "evidence": {
       "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:64429848dec3034113095f53ac860be3dddcc4b1dc0e6318d380bffac994366e",
       "packages/core/src/Chat/ChatDictationButton.tsx": "sha256:bad96c58a64ed9463c428ab7ef53a8c41794bb685eb34b4b333c6cad5c8993c2",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatLayout",
+    "reason": "ChatLayout is a block-flow shell: a flex column whose message area centers with marginInline auto and whose dock spans the full inline width using insetInlineStart/insetInlineEnd and logical padding. It scrolls on the block axis only (overflowY auto with overflowX hidden), owns no directional glyph, no physical inline offset or transform, no inline reordering, no horizontal scrolling or dragging, no side-placed overlay, and no horizontal keyboard behavior. Density selects block-axis blur height and symmetric inline padding. Message, composer, and scroll-affordance direction remain with their own owners.",
+    "evidence": {
+      "apps/storybook/stories/ChatLayout.stories.tsx": "sha256:e269ccea468b27e9dc20abd5e7998233c6726d2f84d88b9c6d64fefac74fc9b8",
+      "packages/core/src/Chat/ChatLayout.tsx": "sha256:bc5fbef0379c622adaf46dc7119d327100eb40c2440664b3bc288bab758b116b",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatLayoutScrollButton",
+    "reason": "ChatLayoutScrollButton is a centered pill on the block axis. Its only glyph is the block-axis chevronDown, which points along the axis RTL does not mirror, so mirroring it would be wrong rather than missing. The wrapper centers with justifyContent center, the pill sizes from logical maxWidth and the element-size token, and the labelled form uses logical paddingInline/paddingInlineEnd so the icon leads and the text trails in both directions. It owns no left/right glyph, physical inline positioning, inline ordering, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatLayout.stories.tsx": "sha256:e269ccea468b27e9dc20abd5e7998233c6726d2f84d88b9c6d64fefac74fc9b8",
+      "packages/core/src/Chat/ChatLayoutScrollButton.tsx": "sha256:33e69782520576df24846e01712628788eb5b1ccade74db6a836fd47a1eba92d",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }
   }

@@ -821,6 +821,19 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # Component-audit browser evidence. A whole-component audit has to show
+      # the states it graded, and the audit node cannot always run a browser —
+      # so the frames and their sensor receipts are produced here, bound to the
+      # same exact head as every other check in this job.
+      - name: Upload component-audit browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: component-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/chat-layout-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
   # Build package test owner. The plugin's production CSS partition is a Build
   # integration contract: source inspection cannot prove which declaration
   # paints after Vite emits the final bundle. The `test-build` name makes that
