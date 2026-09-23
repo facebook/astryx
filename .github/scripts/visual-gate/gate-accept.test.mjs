@@ -5,6 +5,7 @@
 // and baseline, so what they prove is what the Visual Baseline workflow runs.
 
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,7 +13,13 @@ import {fileURLToPath} from 'node:url';
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 
-const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'gate.mjs');
+import {incomparable} from './lib/baseline.mjs';
+import {buildVerdict} from './lib/compare.mjs';
+
+const SCRIPT = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'gate.mjs',
+);
 
 let root;
 let baselineDir;
@@ -73,9 +80,13 @@ describe('gate.mjs accept', () => {
     writeVerdict(verdict);
     const result = acceptCommand();
     expect(result.status, result.stderr).toBe(0);
-    expect(fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8')).toBe('new-a');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+    ).toBe('new-a');
     expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(false);
-    const manifest = JSON.parse(fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'));
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+    );
     expect(Object.keys(manifest.shots)).toEqual(['a']);
   });
 
@@ -96,11 +107,71 @@ describe('gate.mjs accept', () => {
     expect(fs.existsSync(baselineDir)).toBe(false);
   });
 
+  it.each([false, true])(
+    'handles a browser upgrade with additional capture failure=%s',
+    captureFailed => {
+      const manifestPath = path.join(captureDir, 'manifest.json');
+      const baseline = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      baseline.browser = 'chromium-139.0';
+      for (const key of ['a', 'b']) {
+        baseline.shots[key].sha256 = createHash('sha256')
+          .update(`new-${key}`)
+          .digest('hex');
+      }
+      fs.writeFileSync(manifestPath, JSON.stringify(baseline));
+      writeVerdict({status: 'pass'});
+      expect(acceptCommand('all').status).toBe(0);
+      const before = fs.readFileSync(
+        path.join(baselineDir, 'manifest.json'),
+        'utf8',
+      );
+      const current = {...baseline, browser: 'chromium-140.0'};
+      fs.writeFileSync(manifestPath, JSON.stringify(current));
+      // Use the producer's real verdict shape: the existing browser-upgrade
+      // guidance must reach accept, but a capture failure still cannot.
+      const failures = [
+        {key: 'baseline', error: incomparable(baseline, current)},
+      ];
+      if (captureFailed) failures.push({key: 'a', error: 'timeout'});
+      const verdict = buildVerdict({
+        comparison: {
+          changes: [],
+          added: [],
+          removed: [],
+          unchanged: ['a', 'b'],
+        },
+        baselineManifest: baseline,
+        currentManifest: current,
+        failures,
+      });
+      expect(verdict.status).toBe('failed');
+      writeVerdict(verdict);
+      const result = acceptCommand('all');
+      if (captureFailed) {
+        expect(result.status).toBe(1);
+        expect(result.stderr).toMatch(/Refusing to promote/);
+        expect(
+          fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+        ).toBe(before);
+      } else {
+        expect(result.status, result.stderr).toBe(0);
+        const refreshed = JSON.parse(
+          fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+        );
+        expect(refreshed.browser).toBe('chromium-140.0');
+        expect(refreshed.decisions.at(-1).promoted).toEqual(['a', 'b']);
+        expect(incomparable(refreshed, current)).toBeNull();
+      }
+    },
+  );
+
   it('trims the keys the dispatch form invites: "a, b" promotes both', () => {
     writeVerdict({status: 'changed'});
     const result = acceptCommand('a, b');
     expect(result.status, result.stderr).toBe(0);
-    const manifest = JSON.parse(fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'));
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+    );
     expect(Object.keys(manifest.shots).sort()).toEqual(['a', 'b']);
   });
 });

@@ -205,7 +205,17 @@ that run with `keys=all` to make it the reference. Do the same after a
 deliberate system-wide restyle.
 
 A browser bump moves antialiasing everywhere at once; the gate detects it and
-tells you to refresh rather than reporting hundreds of regressions.
+keeps the verdict `failed` because those pixels are not comparable. After
+reviewing the capture, use `keys=all` and a browser-bump reason to refresh it.
+`accept` permits this only when the sole failure is the exact browser mismatch
+against the current baseline, the platform and viewport match, every baseline
+and captured shot is selected, and every captured PNG matches its manifest hash.
+Partial refreshes, pruning, missing captures, and any other failure are refused
+before baseline files change. If coverage changed too, restore full coverage
+and rerun the gate before refreshing; removals need a separate comparable run.
+The workflow uses this same validation inside its baseline publication turn,
+not a separate status-only check. Rerun the gate after the refresh to get a
+comparable verdict; refreshing does not turn the original failed run green.
 
 ## Determinism
 

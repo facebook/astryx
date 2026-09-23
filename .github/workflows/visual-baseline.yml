@@ -88,34 +88,14 @@ jobs:
           github-token: ${{ github.token }}
           path: .visual-run
 
-      - name: Validate the downloaded verdict
-        env:
-          RUN_ID: ${{ inputs.run_id }}
-        run: |
-          set -eu
-          # The capture uploads with if: always(), and a terminal gate failure
-          # still reports its run as status=completed — so the run check above
-          # cannot tell a green gate from a failed one. The verdict can: only
-          # a capture the gate stood behind (pass or changed) may become the
-          # baseline. A failed, skipped, missing, unreadable, or unknown
-          # verdict stops here. gate.mjs accept enforces the same boundary
-          # again before it writes anything.
-          VERDICT=.visual-run/verdict.json
-          if [ ! -f "$VERDICT" ]; then
-            STATUS=missing
-          elif ! STATUS="$(jq -r '(.status // "missing") | tostring' "$VERDICT" 2>/dev/null)"; then
-            STATUS=unreadable
-          fi
-          if [ "$STATUS" != "pass" ] && [ "$STATUS" != "changed" ]; then
-            echo "::error::Run ${RUN_ID}'s verdict status is '${STATUS}' — only pass/changed captures may be promoted. Fix or rerun the gate first."
-            exit 1
-          fi
-
       - name: Wait for the baseline publication turn
         env:
           GH_TOKEN: ${{ github.token }}
         run: node .github/scripts/gh-pages-publisher.mjs wait --scope visual-gate/baseline
 
+      # The publisher calls gate.mjs accept against the current baseline before
+      # writing or publishing any shots. Keep verdict validation there: a browser
+      # refresh needs both manifests, not a second status-only allowlist here.
       - name: Promote and publish the baseline
         env:
           KEYS: ${{ inputs.keys }}

@@ -55,7 +55,7 @@ import {
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
 import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
-import {accept, assertPromotableVerdict, incomparable, readBaseline} from './lib/baseline.mjs';
+import {accept, incomparable, readBaseline} from './lib/baseline.mjs';
 import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -808,11 +808,8 @@ async function main() {
           throw new Error(`Refusing to promote: ${verdictPath} is unreadable (${error.message}).`);
         }
       }
-      // The verdict, not the run state, decides promotability: a failed or
-      // skipped gate still uploads its capture, and its run still completes.
-      // accept() enforces the same boundary before it writes; checking here
-      // first makes the refusal the first thing the operator reads.
-      assertPromotableVerdict(verdict);
+      // accept() validates the verdict against the current baseline before
+      // writing, including the narrowly allowed full browser refresh.
       const requested = flag('keys');
       const removed = new Set(verdict?.removed ?? []);
       // The dispatch form invites "a, b" — trim each key before it meets the

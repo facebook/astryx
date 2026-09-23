@@ -16,6 +16,7 @@ import {
   enqueuePublication,
   publishAcceptedVisualBaseline,
   publishImmutablePath,
+  publishManualVisualBaseline,
   publishPrPreview,
   publishReleaseGateReport,
   publishVibeReport,
@@ -436,6 +437,88 @@ async function withoutGitIdentity(callback) {
 }
 
 describe('gh-pages publisher', () => {
+  it.each(['browser-only', 'capture-failure', 'missing-verdict'])(
+    'validates %s before manual baseline publication',
+    async scenario => {
+      const fx = fixture();
+      const capture = path.join(fx.root, 'capture');
+      const after = png(0, 0, 255);
+      writeFile(path.join(capture, 'shots', `${KEY}.png`), after);
+      writeJSON(path.join(capture, 'manifest.json'), {
+        platform: 'linux-arm64',
+        browser: 'chromium-141.0',
+        viewport: {width: 1280, height: 900},
+        shots: {[KEY]: {...SHOT, sha256: digest(after)}},
+      });
+      if (scenario !== 'missing-verdict') {
+        const failures = [
+          {
+            key: 'baseline',
+            error:
+              'baseline was captured with chromium-140.0, this run with chromium-141.0 — refresh the baseline (gate.mjs accept --keys all --reason "browser bump").',
+          },
+        ];
+        if (scenario === 'capture-failure')
+          failures.push({key: KEY, error: 'timeout'});
+        writeJSON(path.join(capture, 'verdict.json'), {
+          status: 'failed',
+          counts: {total: 1, failed: failures.length},
+          failures,
+          removed: [],
+        });
+      }
+      const before = git(
+        fx.root,
+        '--git-dir',
+        fx.remote,
+        'rev-parse',
+        'gh-pages:visual-gate/baseline',
+      );
+      const publish = () =>
+        queuedPublish(fx, 850, 'visual-gate/baseline', () =>
+          publishManualVisualBaseline({
+            ...context(fx, 850, 'visual-gate/baseline'),
+            capture,
+            keys: 'all',
+            reason: 'browser bump',
+            actor: 'maintainer',
+            prune: true,
+          }),
+        );
+      if (scenario === 'browser-only') {
+        await expect(publish()).resolves.toMatchObject({published: true});
+        const final = cloneRemote(fx.remote, fx.root);
+        expect(
+          fs.readFileSync(
+            path.join(final, 'visual-gate/baseline/shots', `${KEY}.png`),
+          ),
+        ).toEqual(after);
+        const manifest = JSON.parse(
+          fs.readFileSync(
+            path.join(final, 'visual-gate/baseline/manifest.json'),
+            'utf8',
+          ),
+        );
+        expect(manifest.browser).toBe('chromium-141.0');
+        expect(manifest.decisions.at(-1)).toMatchObject({
+          promoted: [KEY],
+          reason: 'browser bump',
+        });
+      } else {
+        await expect(publish()).rejects.toThrow(/Refusing to promote/);
+        expect(
+          git(
+            fx.root,
+            '--git-dir',
+            fx.remote,
+            'rev-parse',
+            'gh-pages:visual-gate/baseline',
+          ),
+        ).toBe(before);
+      }
+    },
+  );
+
   it('queues whole-tree and scoped writers without Actions pending-run cancellation', async () => {
     const fx = fixture();
     const wholeTree = context(fx, 800, 'whole-tree');

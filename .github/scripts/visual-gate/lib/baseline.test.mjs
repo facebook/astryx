@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -70,7 +71,9 @@ describe('assertPromotableVerdict', () => {
   });
 
   it.each(UNPROMOTABLE_VERDICTS)('refuses a %s verdict', (_label, verdict) => {
-    expect(() => assertPromotableVerdict(verdict)).toThrow(/Refusing to promote/);
+    expect(() => assertPromotableVerdict(verdict)).toThrow(
+      /Refusing to promote/,
+    );
   });
 });
 
@@ -88,7 +91,9 @@ describe('accept', () => {
     'writes no baseline file from a %s verdict',
     (_label, verdict) => {
       expect(() => promote({verdict})).toThrow(/Refusing to promote/);
-      expect(() => promote({verdict, keys: ['a', 'b']})).toThrow(/Refusing to promote/);
+      expect(() => promote({verdict, keys: ['a', 'b']})).toThrow(
+        /Refusing to promote/,
+      );
       // Nothing was created: no manifest, no shots directory, no baseline dir.
       expect(fs.existsSync(baselineDir)).toBe(false);
     },
@@ -98,17 +103,28 @@ describe('accept', () => {
     'neither overwrites nor prunes an existing baseline from a %s verdict',
     (_label, verdict) => {
       promote({keys: ['a', 'b']});
-      const before = fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8');
+      const before = fs.readFileSync(
+        path.join(baselineDir, 'manifest.json'),
+        'utf8',
+      );
       fs.writeFileSync(path.join(captureDir, 'shots', 'a.png'), 'broken-a');
 
-      expect(() => promote({verdict, keys: ['a']})).toThrow(/Refusing to promote/);
-      expect(() => promote({verdict, keys: [], prune: ['b'], reason: 'story deleted'})).toThrow(
+      expect(() => promote({verdict, keys: ['a']})).toThrow(
         /Refusing to promote/,
       );
+      expect(() =>
+        promote({verdict, keys: [], prune: ['b'], reason: 'story deleted'}),
+      ).toThrow(/Refusing to promote/);
 
-      expect(fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8')).toBe('new-a');
-      expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(true);
-      expect(fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8')).toBe(before);
+      expect(
+        fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+      ).toBe('new-a');
+      expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(
+        true,
+      );
+      expect(
+        fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+      ).toBe(before);
     },
   );
 
@@ -118,22 +134,32 @@ describe('accept', () => {
     // list it arrives in.
     for (const bad of ['../escape', 'a/b', 'a\\b', '..', ' a']) {
       expect(() => promote({keys: [bad]})).toThrow(/Invalid shot key/);
-      expect(() => promote({keys: [], prune: [bad]})).toThrow(/Invalid shot key/);
+      expect(() => promote({keys: [], prune: [bad]})).toThrow(
+        /Invalid shot key/,
+      );
     }
     expect(fs.existsSync(baselineDir)).toBe(false);
   });
 
   it('copies only the named shots into the baseline', () => {
     promote();
-    expect(fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8')).toBe('new-a');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+    ).toBe('new-a');
     expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(false);
-    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual(['a']);
+    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual([
+      'a',
+    ]);
   });
 
   it('records who promoted what, and why', () => {
     promote();
     const [decision] = readBaseline(baselineDir).manifest.decisions;
-    expect(decision).toMatchObject({actor: 'tester', promoted: ['a'], reason: 'Button radius changed on purpose'});
+    expect(decision).toMatchObject({
+      actor: 'tester',
+      promoted: ['a'],
+      reason: 'Button radius changed on purpose',
+    });
   });
 
   it('keeps earlier decisions when promoting again', () => {
@@ -146,13 +172,146 @@ describe('accept', () => {
     promote({keys: ['a', 'b']});
     promote({keys: [], prune: ['b'], reason: 'story deleted'});
     expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(false);
-    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual(['a']);
+    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual([
+      'a',
+    ]);
+  });
+});
+
+describe('browser-refresh recovery', () => {
+  function refresh() {
+    const manifest = structuredClone(currentManifest);
+    manifest.browser = 'chromium-140.0';
+    for (const key of ['a', 'b']) {
+      manifest.shots[key].sha256 = crypto
+        .createHash('sha256')
+        .update(`new-${key}`)
+        .digest('hex');
+    }
+    promote({
+      currentManifest: {...manifest, browser: 'chromium-139.0'},
+      keys: ['a', 'b'],
+    });
+    const verdict = {
+      status: 'failed',
+      counts: {total: 2, failed: 1},
+      failures: [
+        {
+          key: 'baseline',
+          error:
+            'baseline was captured with chromium-139.0, this run with chromium-140.0 — refresh the baseline (gate.mjs accept --keys all --reason "browser bump").',
+        },
+      ],
+      removed: [],
+    };
+    return {
+      currentManifest: manifest,
+      verdict,
+      keys: ['a', 'b'],
+      reason: 'browser bump',
+    };
+  }
+
+  it('refreshes every shot and records the browser bump without changing the failed verdict', () => {
+    const options = refresh();
+    fs.writeFileSync(path.join(baselineDir, 'shots', 'a.png'), 'old-a');
+    const result = promote(options);
+    expect(result.promoted).toEqual(['a', 'b']);
+    expect(result.manifest.browser).toBe('chromium-140.0');
+    expect(result.manifest.decisions.at(-1).reason).toBe('browser bump');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+    ).toBe('new-a');
+    expect(options.verdict.status).toBe('failed');
+  });
+
+  it.each([
+    [
+      'another capture failure',
+      options => options.verdict.failures.push({key: 'a', error: 'timeout'}),
+    ],
+    [
+      'another baseline error',
+      options => (options.verdict.failures[0].error = 'baseline is corrupt'),
+    ],
+    [
+      'an unrelated failure key',
+      options => (options.verdict.failures[0].key = 'a'),
+    ],
+    [
+      'inconsistent failure count',
+      options => (options.verdict.counts.failed = 2),
+    ],
+    [
+      'inconsistent capture count',
+      options => (options.verdict.counts.total = 3),
+    ],
+    ['no failure list', options => delete options.verdict.failures],
+    [
+      'a platform change',
+      options => (options.currentManifest.platform = 'darwin-arm64'),
+    ],
+    [
+      'a viewport change',
+      options => (options.currentManifest.viewport.width = 800),
+    ],
+    ['missing viewport', options => delete options.currentManifest.viewport],
+    [
+      'an unchanged browser',
+      options => (options.currentManifest.browser = 'chromium-139.0'),
+    ],
+    [
+      'missing browser identity',
+      options => delete options.currentManifest.browser,
+    ],
+    ['a partial selection', options => (options.keys = ['a'])],
+    [
+      'an omitted baseline shot',
+      options => {
+        delete options.currentManifest.shots.b;
+        options.keys = ['a'];
+        options.verdict.counts.total = 1;
+      },
+    ],
+    ['pruning', options => (options.prune = ['b'])],
+    ['reported removals', options => (options.verdict.removed = ['b'])],
+    ['a missing PNG', () => fs.rmSync(path.join(captureDir, 'shots', 'b.png'))],
+    [
+      'a changed PNG',
+      () =>
+        fs.writeFileSync(path.join(captureDir, 'shots', 'b.png'), 'corrupt'),
+    ],
+    [
+      'a missing digest',
+      options => delete options.currentManifest.shots.b.sha256,
+    ],
+  ])('refuses %s without changing any baseline bytes', (_label, mutate) => {
+    const options = refresh();
+    const before = fs.readFileSync(
+      path.join(baselineDir, 'manifest.json'),
+      'utf8',
+    );
+    fs.writeFileSync(path.join(baselineDir, 'shots', 'a.png'), 'old-a');
+    fs.writeFileSync(path.join(baselineDir, 'shots', 'b.png'), 'old-b');
+    mutate(options);
+    expect(() => promote(options)).toThrow(/Refusing to promote/);
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+    ).toBe('old-a');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'b.png'), 'utf8'),
+    ).toBe('old-b');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+    ).toBe(before);
   });
 });
 
 describe('incomparable', () => {
   it('refuses a baseline from another platform', () => {
-    expect(incomparable({platform: 'darwin-arm64'}, {platform: 'linux-arm64'})).toMatch(/darwin-arm64/);
+    expect(
+      incomparable({platform: 'darwin-arm64'}, {platform: 'linux-arm64'}),
+    ).toMatch(/darwin-arm64/);
   });
 
   it('refuses a baseline captured at another viewport', () => {

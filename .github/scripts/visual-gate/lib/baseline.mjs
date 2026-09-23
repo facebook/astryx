@@ -3,8 +3,9 @@
 /**
  * @file The baseline store, and the one operation that changes it.
  *
- * @input  a baseline directory (manifest + shots) and a capture
- * @output an updated baseline, with every promotion recorded
+ * @input  a baseline directory (manifest + shots), a capture, and its verdict
+ * @output an updated baseline, with every promotion recorded; browser refreshes
+ *         require a complete capture whose only failure is the browser mismatch
  *
  * "The after is correct" is a decision, not a retry. Promoting a shot writes
  * a line into the manifest's decision log saying which shots moved, who moved
@@ -18,39 +19,77 @@
  * gate refuses the comparison instead.
  */
 
+import {createHash} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 export const EMPTY_MANIFEST = {version: 1, shots: {}, decisions: []};
 
-/** The only verdict statuses whose capture may become baseline material. */
+/** Verdict statuses that need no browser-refresh recovery validation. */
 export const PROMOTABLE_VERDICT_STATUSES = ['pass', 'changed'];
 
+/** A browser bump is recoverable only when it is the sole comparison failure. */
+function isBrowserRefresh(verdict, baseline = {}, current = {}) {
+  return (
+    typeof baseline.platform === 'string' &&
+    baseline.platform.length > 0 &&
+    baseline.platform === current.platform &&
+    typeof baseline.browser === 'string' &&
+    baseline.browser.length > 0 &&
+    typeof current.browser === 'string' &&
+    current.browser.length > 0 &&
+    baseline.browser !== current.browser &&
+    ['width', 'height'].every(
+      axis =>
+        Number.isSafeInteger(baseline.viewport?.[axis]) &&
+        baseline.viewport[axis] > 0 &&
+        baseline.viewport[axis] === current.viewport?.[axis],
+    ) &&
+    Array.isArray(verdict.failures) &&
+    verdict.failures.length === 1 &&
+    verdict.failures[0]?.key === 'baseline' &&
+    verdict.failures[0].error === incomparable(baseline, current) &&
+    verdict.counts?.failed === 1 &&
+    Array.isArray(verdict.removed) &&
+    verdict.removed.length === 0
+  );
+}
+
 /**
- * The promotion boundary. A failed or skipped gate still uploads its capture
- * (if: always()), and GitHub reports a terminal failure's run as
- * status=completed — so the verdict, not the run state, decides whether a
- * capture may be promoted. Only a verdict the gate stood behind (pass or
- * changed) passes; failed, skipped, missing (null), unreadable (not an
- * object), and any unknown status are refused.
+ * The promotion boundary. Completed runs may still carry failed captures.
+ * Pass/changed verdicts are eligible; a failed verdict needs the exact browser
+ * mismatch against both manifests. accept() also requires a complete refresh
+ * before it writes. Missing, unreadable, skipped, and unknown verdicts fail closed.
  *
  * @param {unknown} verdict - parsed verdict.json, or null when it is missing
+ * @param {object} [options]
+ * @param {object} [options.baselineManifest]
+ * @param {object} [options.currentManifest]
  * @throws {Error} when the capture must not be promoted
  */
-export function assertPromotableVerdict(verdict) {
+export function assertPromotableVerdict(
+  verdict,
+  {baselineManifest, currentManifest} = {},
+) {
   if (verdict == null) {
     throw new Error(
       'Refusing to promote a capture with no verdict.json — promote from a check or release run whose verdict is pass or changed.',
     );
   }
   const status =
-    typeof verdict === 'object' && typeof verdict.status === 'string' ? verdict.status : null;
-  if (status == null || !PROMOTABLE_VERDICT_STATUSES.includes(status)) {
-    const shown = status == null ? 'unreadable' : JSON.stringify(status);
-    throw new Error(
-      `Refusing to promote from a gate run whose verdict status is ${shown} — only pass or changed captures may become the baseline.`,
-    );
-  }
+    typeof verdict === 'object' && typeof verdict.status === 'string'
+      ? verdict.status
+      : null;
+  if (PROMOTABLE_VERDICT_STATUSES.includes(status)) return;
+  if (
+    status === 'failed' &&
+    isBrowserRefresh(verdict, baselineManifest, currentManifest)
+  )
+    return;
+  const shown = status == null ? 'unreadable' : JSON.stringify(status);
+  throw new Error(
+    `Refusing to promote from a gate run whose verdict status is ${shown} — requires pass, changed, or a complete browser-only refresh.`,
+  );
 }
 
 /**
@@ -61,8 +100,12 @@ export function readBaseline(baselineDir) {
   const manifestPath = path.join(baselineDir, 'manifest.json');
   // A deep copy: a shallow spread shared EMPTY_MANIFEST's shots and decisions
   // objects between every fresh baseline in the same process.
-  if (!fs.existsSync(manifestPath)) return {manifest: structuredClone(EMPTY_MANIFEST), exists: false};
-  return {manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')), exists: true};
+  if (!fs.existsSync(manifestPath))
+    return {manifest: structuredClone(EMPTY_MANIFEST), exists: false};
+  return {
+    manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
+    exists: true,
+  };
 }
 
 /**
@@ -132,8 +175,15 @@ export function accept({
   runId = null,
   prune = [],
 }) {
-  assertPromotableVerdict(verdict);
-  if (!reason?.trim()) throw new Error('accept requires a reason — it is the record of the decision');
+  const {manifest} = readBaseline(baselineDir);
+  assertPromotableVerdict(verdict, {
+    baselineManifest: manifest,
+    currentManifest,
+  });
+  if (!reason?.trim())
+    throw new Error(
+      'accept requires a reason — it is the record of the decision',
+    );
   // Shot keys name files inside shots/. A real key is shotKey() output
   // ([a-zA-Z0-9._-] only, see plan.mjs), never a path — reject anything else
   // before it is joined into one, whichever manifest or flag it came from.
@@ -142,7 +192,37 @@ export function accept({
   if (badKey != null) {
     throw new Error(`Invalid shot key: ${JSON.stringify(badKey)}`);
   }
-  const {manifest} = readBaseline(baselineDir);
+  if (verdict.status === 'failed') {
+    // Browser identity is manifest-wide: a partial refresh would label old
+    // pixels as captured by the new browser. Validate every file before copying.
+    const captured = Object.keys(currentManifest.shots ?? {});
+    const selected = new Set(keys);
+    if (
+      captured.length === 0 ||
+      verdict.counts?.total !== captured.length ||
+      selected.size !== captured.length ||
+      keys.length !== captured.length ||
+      captured.some(key => !selected.has(key)) ||
+      Object.keys(manifest.shots).some(key => !selected.has(key)) ||
+      prune.length > 0
+    ) {
+      throw new Error(
+        'Refusing to promote a browser refresh unless every baseline and captured shot is refreshed without pruning.',
+      );
+    }
+    for (const key of keys) {
+      const source = path.join(captureDir, 'shots', `${key}.png`);
+      if (
+        !fs.existsSync(source) ||
+        createHash('sha256').update(fs.readFileSync(source)).digest('hex') !==
+          currentManifest.shots[key].sha256
+      ) {
+        throw new Error(
+          `Refusing to promote a browser refresh with a missing or changed capture: ${key}`,
+        );
+      }
+    }
+  }
   const shotsDir = path.join(baselineDir, 'shots');
   fs.mkdirSync(shotsDir, {recursive: true});
 
