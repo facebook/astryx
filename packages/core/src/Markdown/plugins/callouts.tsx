@@ -75,9 +75,14 @@ function tokenizeCallout({
   end,
   isFinal,
   context,
+  lineStart,
   column,
 }: MarkdownTokenizerInput): MarkdownTokenizeResult<MarkdownCalloutNode> {
-  if (context !== 'block' || column > 3) {
+  if (
+    context !== 'block' ||
+    column > 3 ||
+    !/^ {0,3}$/.test(source.slice(lineStart, offset))
+  ) {
     return {status: 'no-match'};
   }
   const opening = readLine(source, offset, end);
@@ -101,8 +106,7 @@ function tokenizeCallout({
       if (
         fenceMatch != null &&
         fenceMatch[1].startsWith(fence.marker) &&
-        fenceMatch[1].length >= fence.length &&
-        fenceMatch[2].trim() === ''
+        fenceMatch[1].length >= fence.length
       ) {
         fence = null;
       }

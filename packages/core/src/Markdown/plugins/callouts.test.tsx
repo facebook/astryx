@@ -108,6 +108,30 @@ describe('markdownCalloutsPlugin', () => {
     });
   });
 
+  it('uses the same trailing-text fence closer rule as Core', () => {
+    const source = [
+      ':::note',
+      '```text',
+      'code',
+      '``` trailing text',
+      'After the fence.',
+      ':::',
+    ].join('\n');
+
+    expect(
+      parseMarkdownAst(source, {plugins: [markdownCalloutsPlugin]}).children[0],
+    ).toMatchObject({
+      type: 'extension',
+      children: [
+        {type: 'code', value: 'code'},
+        {
+          type: 'paragraph',
+          children: [{type: 'text', value: 'After the fence.'}],
+        },
+      ],
+    });
+  });
+
   it('renders rich content without creating a live region', () => {
     render(
       <Markdown plugins={[markdownCalloutsPlugin]}>{RICH_SOURCE}</Markdown>,
@@ -223,6 +247,14 @@ describe('markdownCalloutsPlugin', () => {
       '> :::note quote',
       '> Body',
       '> :::',
+      '',
+      '\t:::note tab-indented',
+      'Body',
+      ':::',
+      '',
+      '\u00a0:::note non-space-whitespace',
+      'Body',
+      ':::',
       '',
       '    :::note indented code',
     ].join('\n');
