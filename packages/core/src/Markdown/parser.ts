@@ -529,6 +529,12 @@ type RuntimeParseOptions = CommonParseOptions<
   isFinal?: boolean;
 };
 
+type MarkdownContainerRange = {readonly start: number; readonly end: number};
+type MarkdownContainerDiscovery = {
+  readonly ranges: MarkdownContainerRange[];
+  deferredStart?: number;
+};
+
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
@@ -548,12 +554,12 @@ type ResolvedOptions = {
   readonly containerDepth?: number;
   /** Internal discovery pass that uses unprotected definition precedence. */
   readonly skipContainerDefinitionProtection?: boolean;
-  /** Internal discovery pass that validates envelopes without parsing children. */
-  readonly skipExtensionChildrenParsing?: boolean;
+  /** Validated container ranges shared by recursive parses. */
+  readonly containerRanges?: ReadonlyArray<MarkdownContainerRange>;
+  /** Collects validated ranges during the structure discovery pass. */
+  readonly containerDiscovery?: MarkdownContainerDiscovery;
   /** Definition line starts that retain Core precedence during discovery. */
   readonly discoveryDefinitionStarts?: ReadonlySet<number>;
-  /** Reports where a structure-only pass stopped on deferred block syntax. */
-  readonly extensionDiscovery?: {deferredStart?: number};
   /**
    * Offset of this parse's input within the document the ranges are reported
    * against. Internal only — the incremental parser parses slices and needs
@@ -591,9 +597,9 @@ function makeResolvedOptions(
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
     containerDepth: fields.containerDepth,
     skipContainerDefinitionProtection: fields.skipContainerDefinitionProtection,
-    skipExtensionChildrenParsing: fields.skipExtensionChildrenParsing,
+    containerRanges: fields.containerRanges,
+    containerDiscovery: fields.containerDiscovery,
     discoveryDefinitionStarts: fields.discoveryDefinitionStarts,
-    extensionDiscovery: fields.extensionDiscovery,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
   };
@@ -1367,33 +1373,29 @@ function matchExtensionSyntax(
 
     let children: ReadonlyArray<unknown> | undefined;
     if (hasContainerContent && childrenRange != null) {
-      if (opts.skipExtensionChildrenParsing === true) {
-        children = [];
-      } else {
-        const containerDepth = (opts.containerDepth ?? 0) + 1;
-        if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
-          reportMarkdownPluginFailure(
-            candidate.pluginName,
-            'syntax',
-            new TypeError('Markdown extension container depth exceeded'),
-          );
-          continue;
-        }
-        const childStart = childrenRange.start as number;
-        const childEnd = childrenRange.end as number;
-        const childOptions: ResolvedOptions = {
-          ...opts,
-          allowBlockSyntax: true,
-          baseOffset: (opts.baseOffset ?? 0) + childStart,
-          containerDepth,
-          isFinal: true,
-        };
-        const childSource = source.slice(childStart, childEnd);
-        children =
-          nodeRecord.display === 'inline'
-            ? parseInlineEntry(childSource, childOptions)
-            : parseMarkdownImpl(childSource, childOptions);
+      const containerDepth = (opts.containerDepth ?? 0) + 1;
+      if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
+        reportMarkdownPluginFailure(
+          candidate.pluginName,
+          'syntax',
+          new TypeError('Markdown extension container depth exceeded'),
+        );
+        continue;
       }
+      const childStart = childrenRange.start as number;
+      const childEnd = childrenRange.end as number;
+      const childOptions: ResolvedOptions = {
+        ...opts,
+        allowBlockSyntax: true,
+        baseOffset: (opts.baseOffset ?? 0) + childStart,
+        containerDepth,
+        isFinal: true,
+      };
+      const childSource = source.slice(childStart, childEnd);
+      children =
+        nodeRecord.display === 'inline'
+          ? parseInlineEntry(childSource, childOptions)
+          : parseMarkdownImpl(childSource, childOptions);
     }
 
     const {
@@ -1418,16 +1420,23 @@ function matchExtensionSyntax(
           }
         : null),
     }) as RuntimeExtensionNode;
-    if (
-      opts.skipExtensionChildrenParsing !== true &&
-      !validateMarkdownExtensionContent(opts.plugins, extensionNode)
-    ) {
+    if (!validateMarkdownExtensionContent(opts.plugins, extensionNode)) {
       reportMarkdownPluginFailure(
         candidate.pluginName,
         'syntax',
         new TypeError('Tokenizer returned children outside declared content'),
       );
       continue;
+    }
+    if (
+      context === 'block' &&
+      children != null &&
+      opts.containerDiscovery != null
+    ) {
+      opts.containerDiscovery.ranges.push({
+        start: absoluteStart,
+        end: absoluteEnd,
+      });
     }
     return {
       status: 'match',
@@ -1446,7 +1455,19 @@ function matchExtensionSyntax(
 function findBlockExtensionContainerRanges(
   source: string,
   opts: ResolvedOptions,
-): ReadonlyArray<{readonly start: number; readonly end: number}> {
+): ReadonlyArray<MarkdownContainerRange> {
+  const baseOffset = opts.baseOffset ?? 0;
+  if (opts.containerRanges != null) {
+    return opts.containerRanges
+      .filter(
+        range =>
+          range.start >= baseOffset && range.end <= baseOffset + source.length,
+      )
+      .map(range => ({
+        start: range.start - baseOffset,
+        end: range.end - baseOffset,
+      }));
+  }
   if (
     opts.skipContainerDefinitionProtection === true ||
     (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0
@@ -1458,40 +1479,29 @@ function findBlockExtensionContainerRanges(
   if (definitions.defs.size === 0) {
     return [];
   }
-  const discovery: {deferredStart?: number} = {};
-  const baseOffset = opts.baseOffset ?? 0;
+  const discovery: MarkdownContainerDiscovery = {ranges: []};
   const discoveryDefinitionStarts = new Set(
     [...definitions.definitionStarts].map(start => baseOffset + start),
   );
-  const blocks = parseMarkdownImpl(source, {
+  parseMarkdownImpl(source, {
     ...opts,
-    astPositions: true,
-    sourceRanges: true,
+    astPositions: false,
+    sourceRanges: false,
     skipContainerDefinitionProtection: true,
-    skipExtensionChildrenParsing: true,
+    containerRanges: undefined,
+    containerDiscovery: discovery,
     discoveryDefinitionStarts,
-    extensionDiscovery: discovery,
   });
-  const ranges: {start: number; end: number}[] = [];
-  for (const block of blocks) {
-    const start = block.position?.start.offset;
-    const end = block.position?.end.offset;
-    if (
-      block.type === 'extension' &&
-      Array.isArray(block.children) &&
-      typeof start === 'number' &&
-      typeof end === 'number'
-    ) {
-      ranges.push({start: start - baseOffset, end: end - baseOffset});
-    }
-  }
   if (discovery.deferredStart != null) {
-    ranges.push({
-      start: discovery.deferredStart - baseOffset,
-      end: source.length,
+    discovery.ranges.push({
+      start: discovery.deferredStart,
+      end: baseOffset + source.length,
     });
   }
-  return ranges;
+  return discovery.ranges.map(range => ({
+    start: range.start - baseOffset,
+    end: range.end - baseOffset,
+  }));
 }
 
 function extractScopedLinkDefinitions(
@@ -2607,11 +2617,41 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned} =
-    baseOpts.skipContainerDefinitionProtection === true
-      ? {defs: new Map<string, string>(), cleaned: input}
-      : extractScopedLinkDefinitions(input, baseOpts);
-  const inherited = baseOpts.linkDefs;
+  let workingOpts = baseOpts;
+  let defs: ReadonlyMap<string, string>;
+  let cleaned: string;
+  if (baseOpts.skipContainerDefinitionProtection === true) {
+    const discoveredDefinitions = extractLinkDefinitions(input, baseOpts.math);
+    const baseOffset = baseOpts.baseOffset ?? 0;
+    workingOpts = {
+      ...baseOpts,
+      discoveryDefinitionStarts: new Set(
+        [...discoveredDefinitions.definitionStarts].map(
+          start => baseOffset + start,
+        ),
+      ),
+    };
+    defs = new Map();
+    cleaned = input;
+  } else {
+    const protectedRanges = findBlockExtensionContainerRanges(input, baseOpts);
+    if (baseOpts.containerRanges == null && protectedRanges.length > 0) {
+      const baseOffset = baseOpts.baseOffset ?? 0;
+      workingOpts = {
+        ...baseOpts,
+        containerRanges: protectedRanges.map(range => ({
+          start: baseOffset + range.start,
+          end: baseOffset + range.end,
+        })),
+      };
+    }
+    ({defs, cleaned} = extractLinkDefinitions(
+      input,
+      baseOpts.math,
+      protectedRanges,
+    ));
+  }
+  const inherited = workingOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
     linkDefs = inherited;
@@ -2621,7 +2661,7 @@ function parseMarkdownImpl(
     linkDefs = new Map<string, string>([...defs, ...inherited]);
   }
   const opts: ResolvedOptions =
-    linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
+    linkDefs != null ? {...workingOpts, linkDefs} : workingOpts;
   const lines = cleaned.split('\n');
   const hasBlockExtensionSyntax =
     opts.allowBlockSyntax !== false &&
@@ -2842,8 +2882,8 @@ function parseMarkdownImpl(
         }
       }
       if (extension.status === 'defer') {
-        if (opts.extensionDiscovery != null) {
-          opts.extensionDiscovery.deferredStart =
+        if (opts.containerDiscovery != null) {
+          opts.containerDiscovery.deferredStart =
             (opts.baseOffset ?? 0) + extensionOffset;
         }
         break;

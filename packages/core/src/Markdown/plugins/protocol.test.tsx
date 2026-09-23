@@ -979,6 +979,55 @@ describe('Markdown plugin protocol', () => {
     });
   });
 
+  it('preserves definition fallback when discovered children fail validation', () => {
+    const strictPlugin = createMarkdownPlugin({
+      name: 'strict-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: [':::box'],
+            maxSpan: 500,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              return close < 0
+                ? {status: 'no-match' as const}
+                : {
+                    status: 'match' as const,
+                    end: close + 4,
+                    node: {
+                      type: 'extension' as const,
+                      plugin: 'strict-boxes' as const,
+                      name: 'box' as const,
+                      display: 'block' as const,
+                      data: {},
+                    },
+                    children: {start: offset + 7, end: close},
+                  };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: {allow: ['paragraph'], min: 3},
+          render: () => null,
+        },
+      },
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const parsed = parseMarkdown(
+      ':::box\n\n[local]: /inside\n\nOne.\n\nTwo.\n:::\n\nUse [local].',
+      {plugins: [strictPlugin]},
+    );
+
+    expect(JSON.stringify(parsed)).not.toContain('"type":"extension"');
+    expect(JSON.stringify(parsed)).toContain('"href":"/inside"');
+    expect(warning).toHaveBeenCalled();
+    warning.mockRestore();
+  });
+
   it('keeps nested container discovery linear', () => {
     const tokenize = vi.fn(
       ({source, offset, isFinal}: MarkdownTokenizerInput) => {
