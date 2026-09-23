@@ -13,7 +13,10 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {declaresPressedOverlay, rulesDeclaredFor} from '../__tests__/pressState';
+import {
+  declaresPressedOverlay,
+  rulesDeclaredFor,
+} from '../__tests__/pressState';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -728,21 +731,39 @@ describe('Slider', () => {
     expect(handleChange).toHaveBeenCalledWith(100);
   });
 
-  // --- Marks fill color ---
+  // --- Marks color ---
 
-  /**
-   * Whether the element has an unconditional rule painting the accent (fill)
-   * color. Mirrors declaresPressedOverlay: the base mark paints
-   * --color-border-emphasized, and marks inside the filled region additionally
-   * paint --color-accent.
-   */
-  function declaresFillColor(el: Element): boolean {
+  /** Whether the element has an unconditional rule painting a token. */
+  function declaresColorToken(el: Element, token: string): boolean {
     return rulesDeclaredFor(el).some(rule => {
       const selector = rule
         .slice(0, rule.indexOf('{'))
         .replaceAll(':not(#\\#)', '');
-      return !selector.includes(':') && rule.includes('var(--color-accent)');
+      return !selector.includes(':') && rule.includes(`var(${token})`);
     });
+  }
+
+  it('uses the track color for unfilled marks and the accent for filled marks', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        marks={[{value: 25}, {value: 75}]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+
+    expect(marks).toHaveLength(2);
+    expect(declaresColorToken(marks[0], '--color-track')).toBe(false);
+    expect(declaresColorToken(marks[0], '--color-accent')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-track')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-accent')).toBe(false);
+  });
+
+  function declaresFillColor(el: Element): boolean {
+    return declaresColorToken(el, '--color-accent');
   }
 
   it('colors marks at or behind the thumb with the fill color', () => {

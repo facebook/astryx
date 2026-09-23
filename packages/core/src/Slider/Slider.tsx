@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; modifier-only key presses do not restore the thumb focus ring
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -323,7 +323,7 @@ const styles = stylex.create({
   },
   mark: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-track'],
     borderRadius: radiusVars['--radius-full'],
   },
   // Marks over the filled region (at or behind the thumb in single mode,
