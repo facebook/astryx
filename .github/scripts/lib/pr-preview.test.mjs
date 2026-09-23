@@ -46,6 +46,7 @@ function identity(overrides = {}) {
     headRepositoryId: '321',
     baseRepository: 'facebook/astryx',
     baseSha: BASE,
+    testedBaseSha: null,
     sourceRunId: 33321033727,
     sourceRunAttempt: 1,
     sourceConclusion: 'success',
@@ -231,6 +232,42 @@ afterEach(() => {
 });
 
 describe('trusted PR preview identity', () => {
+  it('keeps the source-run base when main advances before publication', async () => {
+    const current = identity({baseSha: 'f'.repeat(40)});
+    const {github} = githubFixture({value: current});
+    const run = {
+      ...sourceRun(current),
+      pull_requests: [
+        {number: current.prNumber, head: {sha: HEAD}, base: {sha: BASE}},
+      ],
+    };
+    const resolved = await resolveWorkflowRunPullRequest({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      run,
+    });
+    expect(resolved.testedBaseSha).toBe(BASE);
+    expect(resolved.baseSha).toBe(current.baseSha);
+    const prepare = PR_COMMENT_WORKFLOW.jobs.comment.steps.find(
+      step => step.name === 'Prepare canonical visual report',
+    );
+    expect(prepare.env.BASE_SHA).toBe(
+      '${{ steps.identity.outputs.tested_base_sha }}',
+    );
+  });
+
+  it('does not substitute live main when a fork run omits the base association', async () => {
+    const {github} = githubFixture();
+    const resolved = await resolveWorkflowRunPullRequest({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      run: sourceRun(),
+    });
+    expect(resolved.testedBaseSha).toBeNull();
+  });
+
   it('resolves a fork run through the trusted owner and branch fallback', async () => {
     const value = identity();
     const {github} = githubFixture({value});

@@ -22,6 +22,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import changeScope from './change-scope.cjs';
+
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
@@ -55,14 +57,17 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   const stableThemes = new Set();
   const stableComponents = new Set();
   const canaryPackages = new Set();
-  const stableVisualInfrastructure = paths.some(
-    file =>
-      file.startsWith('apps/storybook/.storybook/') ||
-      /^apps\/storybook\/stories\/.*\.stories\.[cm]?[jt]sx?$/.test(file) ||
-      file.startsWith('.github/scripts/visual-gate/') ||
-      file === '.github/scripts/visual-scope.mjs' ||
-      file === '.github/workflows/ci.yml',
-  );
+  // Reuse the accepted surface taxonomy: unknown/shared inputs and the build
+  // pipeline cannot rely on a daily backup once this is the only visual owner.
+  const {surfaces} = changeScope.classifyChanges(paths);
+  const stableVisualInfrastructure =
+    paths.length === 0 ||
+    surfaces.some(surface =>
+      ['shared-or-unknown', 'storybook-visual', 'runtime:build'].includes(
+        surface,
+      ),
+    ) ||
+    paths.includes('packages/core/package.json');
   let broadStableVisual = stableVisualInfrastructure;
 
   for (const file of stableCoreFiles) {

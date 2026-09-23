@@ -108,7 +108,7 @@ export function publishPrReport({
 }) {
   if (
     !SHA.test(headSha) ||
-    !SHA.test(baseSha) ||
+    (baseSha && !SHA.test(baseSha)) ||
     !/^[1-9]\d*$/.test(String(runId)) ||
     !/^[1-9]\d*$/.test(String(runAttempt))
   ) {
@@ -123,7 +123,8 @@ export function publishPrReport({
   }
   if (
     raw.context?.headSha !== headSha ||
-    raw.context?.baseSha !== baseSha ||
+    !SHA.test(raw.context?.baseSha) ||
+    (baseSha && raw.context.baseSha !== baseSha) ||
     String(raw.context?.runId) !== String(runId) ||
     String(raw.context?.runAttempt) !== String(runAttempt) ||
     !SHA.test(raw.context?.sha)
@@ -157,7 +158,9 @@ export function publishPrReport({
     context: {
       sha: raw.context.sha,
       headSha,
-      baseSha,
+      // Fork runs can omit GitHub's PR/base association. That base remains
+      // report data, never acceptance or baseline-write authority.
+      baseSha: baseSha || raw.context.baseSha,
       runId: String(runId),
       runAttempt: String(runAttempt),
     },

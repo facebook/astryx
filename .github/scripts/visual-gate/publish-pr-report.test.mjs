@@ -104,6 +104,13 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 
 describe('canonical visual report publication', () => {
+  it('publishes fork-run report data without substituting a newer live base', () => {
+    expect(run({baseSha: ''}).context.baseSha).toBe(BASE);
+    verdict.context.baseSha = 'not-a-sha';
+    json();
+    expect(() => run({baseSha: ''})).toThrow('exact CI');
+  });
+
   it('preserves the CI verdict without recapturing or comparing again', () => {
     const result = run();
     expect(result.status).toBe('changed');

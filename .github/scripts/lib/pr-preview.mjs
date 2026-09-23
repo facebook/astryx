@@ -90,8 +90,21 @@ function identityFromPullAndRun({pull, run, baseRepository}) {
     refuse('pull request targets another repository');
   }
 
+  const sourcePull = run.pull_requests?.find(
+    candidate =>
+      Number(candidate.number) === Number(pull.number) &&
+      candidate.head?.sha === headSha,
+  );
+  // The source run records the tested base. Live main may have advanced by the
+  // time its report is published; that is not a new CI attempt. Fork runs may
+  // omit this association, so absence is explicit rather than replaced by main.
+  const testedBaseSha = sourcePull?.base?.sha
+    ? fullSha(sourcePull.base.sha, 'source pull request base')
+    : null;
+
   return {
     prNumber: positiveInteger(pull.number, 'pull request number'),
+    testedBaseSha,
     headSha,
     headRef,
     headRepository,

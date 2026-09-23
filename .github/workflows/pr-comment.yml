@@ -101,6 +101,7 @@ jobs:
             core.setOutput('head_repo_id', identity.headRepositoryId);
             core.setOutput('head_ref', identity.headRef);
             core.setOutput('base_repo', identity.baseRepository);
+            core.setOutput('tested_base_sha', identity.testedBaseSha ?? '');
             core.setOutput('base_sha', identity.baseSha);
             core.setOutput('run_id', String(identity.sourceRunId));
             core.setOutput('run_attempt', String(identity.sourceRunAttempt));
@@ -262,6 +263,7 @@ jobs:
             core.setOutput('head_repo_id', identity.headRepositoryId);
             core.setOutput('head_ref', identity.headRef);
             core.setOutput('base_repo', identity.baseRepository);
+            core.setOutput('tested_base_sha', identity.testedBaseSha ?? '');
             core.setOutput('base_sha', identity.baseSha);
             core.setOutput('run_id', String(identity.sourceRunId));
             core.setOutput('run_attempt', String(identity.sourceRunAttempt));
@@ -336,7 +338,7 @@ jobs:
         if: steps.identity.outputs.valid == 'true' && steps.visual-download.outcome == 'success'
         env:
           HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
-          BASE_SHA: ${{ steps.identity.outputs.base_sha }}
+          BASE_SHA: ${{ steps.identity.outputs.tested_base_sha }}
           RUN_ID: ${{ steps.identity.outputs.run_id }}
           RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
         run: |
