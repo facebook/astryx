@@ -50,7 +50,7 @@ export const doc = {
       name: 'themes',
       type: 'string',
       description:
-        'Relative path to a source-theme catalog root containing manifest.json plus one directory per theme slug. Installed themes appear in `astryx theme list` and can be copied with `astryx theme add`.',
+        'Relative path to a source-theme root with one directory per theme slug. Each directory contains a source module and mandatory same-stem, strongly typed .doc.mjs descriptor. Installed themes appear in `astryx theme list` and can be copied with `astryx theme add`.',
       example: "'./themes'",
     },
     {

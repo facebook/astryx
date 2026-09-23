@@ -3,7 +3,7 @@
 /**
  * @file Doc-type vocabulary barrel. Each kind's types live in one `type.ts`
  * under its folder (`base/` shared leaves, then `component/`, `hook/`,
- * `reference/`, `template/`); this re-exports them as the full doc vocabulary
+ * `reference/`, `template/`, `theme/`); this re-exports them as the full doc vocabulary
  * behind `@astryxdesign/cli/authoring`.
  */
 
@@ -16,3 +16,4 @@ export type * from './template/type';
 export type * from './schema/type';
 export type * from './command/type';
 export type * from './enum/type';
+export type * from './theme/type';

@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'themeListAvailable()',
   summary: 'List bundled and installed integration themes.',
   description:
-    'Loads Project for the requested directory, combines the CLI bundle with source themes from installed integrations, and projects each entry with its owner package. An unreadable project configuration degrades to the bundled catalog.',
+    'Loads Project for the requested directory, combines the CLI bundle with source themes from installed integrations, and projects each entry with its owner package. An unreadable project configuration degrades to the bundled descriptors.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeListAvailable(options?: {cwd?: string, package?: string}): Promise<ThemeListResponse>',
@@ -21,7 +21,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Project directory whose installed integrations contribute themes.',
+      description:
+        'Project directory whose installed integrations contribute themes.',
     },
     {
       name: 'options.package',
@@ -39,7 +40,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_NO_SOURCE',
-      when: 'the CLI bundled-theme manifest cannot be read or parsed',
+      when: 'the CLI bundled-theme descriptors cannot be read or parsed',
     },
   ],
   examples: [

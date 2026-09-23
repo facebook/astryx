@@ -5,8 +5,7 @@
  * contribution into an integration package.
  *
  * Dispatches component, doc, template, codemod, and agent-doc. Theme
- * delegates to the existing `integrationAddTheme` (not modified here).
- * Every root-based kind shares: first add creates the manifest; one shared
+ * delegates to the dedicated same-stem descriptor writer. Every root-based kind shares: first add creates the manifest; one shared
  * writer; never creates `files`/`exports`; atomic staged writes; no clobber;
  * dry-run receipt predicts real run; post-write verify through the real
  * discovery/parser seam.
@@ -251,7 +250,7 @@ async function addComponent(name, options) {
 
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
   const importSpecifier = `${owner}/${sourcePath}`;
-  const docContents = `export default {\n  type: 'component',\n  name: '${name}',\n  import: ${JSON.stringify(importSpecifier)},\n  description: '${name} component.',\n  props: [],\n};\n`;
+  const docContents = `/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */\nexport default {\n  type: 'component',\n  name: '${name}',\n  displayName: '${name}',\n  import: ${JSON.stringify(importSpecifier)},\n  usage: {description: '${name} component.'},\n  props: [],\n};\n`;
   const sourceContents = `export function ${name}() {\n  return <div>${name}</div>;\n}\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
@@ -426,7 +425,7 @@ async function addDoc(name, options) {
     : options.extends
       ? `\n  extends: '${options.extends}',`
       : '';
-  const docContents = `export default {\n  type: 'generic',\n  name: '${name}',\n  title: '${title}',\n  description: '${title} documentation.',${relationship}\n  sections: [\n    {\n      title: 'Overview',\n      content: [\n        { type: 'prose', text: '${title} documentation.' },\n      ],\n    },\n  ],\n};\n`;
+  const docContents = `/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */\nexport default {\n  type: 'generic',\n  name: '${name}',\n  title: '${title}',\n  description: '${title} documentation.',${relationship}\n  sections: [\n    {\n      title: 'Overview',\n      content: [\n        { type: 'prose', text: '${title} documentation.' },\n      ],\n    },\n  ],\n};\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
   const plans = [{path: docFile, contents: docContents, createOnly: true}];
@@ -553,8 +552,8 @@ async function addTemplate(name, options) {
     throw error;
   }
 
-  const specFile = assertWithin(`${name}.template.mjs`, root, {
-    label: 'template spec',
+  const specFile = assertWithin(`${name}.doc.mjs`, root, {
+    label: 'template descriptor',
   });
   const sourceFile = assertWithin(`${name}.tsx`, root, {
     label: 'template source',
@@ -576,7 +575,8 @@ async function addTemplate(name, options) {
 
   const pascalName = kebabToPascal(name);
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
-  const specContents = `export default {\n  type: '${templateType}',\n  name: '${name}',\n  description: '${kebabToTitle(name)} template.',\n};\n`;
+  const blockFields = templateType === 'block' ? '\n  aspectRatio: 1,' : '';
+  const specContents = `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */\nexport default {\n  type: '${templateType}',\n  name: '${name}',\n  displayName: '${kebabToTitle(name)}',\n  description: '${kebabToTitle(name)} template.',${blockFields}\n};\n`;
   const sourceContents = `export default function ${pascalName}() {\n  return <div>${kebabToTitle(name)}</div>;\n}\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */

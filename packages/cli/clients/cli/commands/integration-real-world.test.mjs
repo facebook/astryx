@@ -201,13 +201,6 @@ export const oceanTheme = defineTheme({
 });
 `,
     );
-    const catalogFile = path.join(providerDir, 'themes', 'manifest.json');
-    const catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf-8'));
-    catalog.themes[0].files.push(
-      'tokens/ocean.palette.ts',
-      'tokens/ocean.palette.receipt.json',
-    );
-    writeJson(catalogFile, catalog);
 
     const providerPackage = JSON.parse(
       fs.readFileSync(path.join(providerDir, 'package.json'), 'utf-8'),
@@ -463,9 +456,10 @@ export const oceanTheme = defineTheme({
         package: '@acme/brand-integration',
         outputDir: target,
         files: [
+          'oceanTheme.doc.mjs',
           'oceanTheme.ts',
-          'tokens/ocean.palette.ts',
           'tokens/ocean.palette.receipt.json',
+          'tokens/ocean.palette.ts',
         ],
       },
     });
@@ -612,7 +606,7 @@ export const oceanTheme = defineTheme({
     expect(corruptedInstall.status).not.toBe(0);
     expect(parseEnvelope(corruptedInstall.stdout)).toMatchObject({
       code: 'ERR_THEME_INVALID',
-      error: expect.stringContaining('ocean.palette.ts'),
+      error: expect.stringContaining('./tokens/ocean.palette'),
     });
   }, 120_000);
 });

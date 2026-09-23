@@ -145,10 +145,10 @@ export interface ComponentBaseDoc {
 /**
  * The documentation type for a component directory's {Name}.doc.mjs file.
  *
- * Every .doc.mjs must export a single `docs` constant of this type:
+ * Every new .doc.mjs default-exports a stamped object of this type:
  *
  *   /\*\* \@type \{import('@astryxdesign/cli/authoring').ComponentDoc\} *\/
- *   export const docs = \{ ... \};
+ *   export default \{ type: 'component', ... \};
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.
  * Use MultiComponentDoc (with `components`) for multi-component directories.
