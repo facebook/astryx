@@ -138,12 +138,19 @@ they are separately named.
   owner includes its production CSS-layer cascade behavior. Theme-family
   compilation remains `theme-build` and does not become Build merely because both
   behaviors concern CSS.
-- **FR12 — Visual regression has one shared pull-request owner.** Every
+- **FR12 — Visual regression has one shared pull-request workflow.** Every
   visual-regression test from every surface MUST use the existing Storybook
-  framework and the single shared pull-request visual owner. That owner MAY use
-  multiple jobs, workflows, artifacts, and a status projection. A new or existing
-  surface, component, package, theme family, or visual suite MUST NOT create
-  another independently routed PR visual owner.
+  framework and the single shared owner in `.github/workflows/ci.yml`
+  (`pr-visual`). That workflow MAY use multiple jobs, steps, and artifacts, but
+  visual capture and regression comparison MUST NOT run in another workflow,
+  including scheduled, post-CI, post-merge, or manual replacement owners.
+  Publication of the canonical run's reports is not another test owner: it MUST
+  consume that run's artifacts without recapturing or recomparing pixels.
+  Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
+  and artifacts when they do not duplicate visual regression. A new or existing
+  surface, component, package, theme family, or visual suite MUST join the
+  canonical workflow. A repository guard MUST reject independent visual owners
+  while preserving legitimate non-visual artifact use.
 
 ### Platform support
 
@@ -236,9 +243,11 @@ add owners only after the complete FR10 admission contract is approved. A named
 surface without a complete admitted owner remains on broad CI.
 
 Visual regression is the exception to per-surface routing: every surface
-registers its cases with the one shared Storybook-backed PR visual owner. Its
-jobs, workflows, artifacts, and status projection are not additional visual
-lanes.
+registers its cases with the one shared Storybook-backed PR visual owner in
+`ci.yml`. Its jobs, steps, artifacts, and report publication are not additional
+visual lanes; a second workflow that captures or compares those pixels is.
+The single-workflow wording clarifies the existing shared-system requirement;
+it does not admit a new owner.
 
 Build's production CSS-layer cascade is a Build package integration contract, so
 it belongs to Build's test owner. Theme-family compilation remains owned by
