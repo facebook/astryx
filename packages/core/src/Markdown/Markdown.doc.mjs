@@ -378,7 +378,7 @@ const entities = createMarkdownEntityReferencesPlugin({
   references: [{id: 'guide', label: 'the guide'}],
 });
 
-<Markdown plugins={[entities]}>Read @{guide}.</Markdown>;
+<Markdown plugins={[entities]}>{'Read @{guide}.'}</Markdown>;
 `,
     },
     {

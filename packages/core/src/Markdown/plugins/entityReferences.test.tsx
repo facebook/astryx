@@ -84,19 +84,27 @@ describe('createMarkdownEntityReferencesPlugin', () => {
     );
   });
 
-  it('stays literal until complete and converges through incremental parsing', () => {
+  it('is deterministic for every streaming prefix and converges when complete', () => {
     const source = 'Ask @{ada} now.';
     const state = createIncrementalState();
-    const partial = parseMarkdownIncremental('Ask @{ada', state, {
-      plugins: [plugin],
-    });
-    expect(JSON.stringify(partial)).not.toContain('entity-reference');
 
-    const complete = parseMarkdownIncremental(source, state, {
-      plugins: [plugin],
-    });
-    expect(JSON.stringify(complete)).toContain('entity-reference');
-    expect(complete).toEqual(parseMarkdown(source, {plugins: [plugin]}));
+    for (let end = 1; end <= source.length; end++) {
+      const prefix = source.slice(0, end);
+      const first = parseMarkdownIncremental(prefix, state, {
+        plugins: [plugin],
+      });
+      const repeated = parseMarkdownIncremental(prefix, state, {
+        plugins: [plugin],
+      });
+      expect(repeated).toEqual(first);
+      expect(JSON.stringify(first).includes('entity-reference')).toBe(
+        prefix.includes('@{ada}'),
+      );
+    }
+
+    expect(
+      parseMarkdownIncremental(source, state, {plugins: [plugin]}),
+    ).toEqual(parseMarkdown(source, {plugins: [plugin]}));
   });
 
   it('rejects invalid and duplicate configuration', () => {
