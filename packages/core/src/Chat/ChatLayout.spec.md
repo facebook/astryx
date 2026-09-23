@@ -250,17 +250,17 @@ None. This record settles no decision; it describes shipped behavior.
 
 ## Open questions
 
-- **OQ1 — Should the self-scroll root carry an explicit role, accessible name,
-  and tab stop of its own?** (`human-api`) In self-scroll mode the root is the
-  scroll container and carries no `tabIndex`, role, or accessible name.
-  `ChatMessageList`, the conventional child, renders `role="log"` with an
-  explicit `tabIndex={0}`, so a composition that uses it has a focusable
-  descendant inside the scroll container — which `spec:AST-025/FR12` permits as
-  an alternative to naming the viewport, provided that path reaches all
-  overflowed content. Whether ChatLayout should depend on its child for that
-  path, or own an explicit named viewport stop, is unresolved. A composition
-  that supplies neither has no established keyboard path to scrolled-away
-  content; this record does not claim the current behavior is correct.
+- **OQ1 — Should ChatLayout own the keyboard path to its own scrolled content?**
+  (`human-api`) In self-scroll mode the root is the scroll container and carries
+  no `tabIndex`, role, or accessible name. The keyboard path into scrolled
+  content therefore comes from whatever `children` supplies:
+  `component:ChatMessageList`, the documented child, carries its own
+  `role="log"` and `tabIndex={0}`, which `spec:AST-025/FR12` accepts as an
+  existing focusable descendant. `children` is typed `ReactNode`, so a
+  composition without such a descendant has no keyboard path to content
+  scrolled out of view. Whether this component should depend on its child,
+  own an explicit named viewport stop, or adopt the `spec:AST-025` hooks is
+  unresolved; this record does not claim the current arrangement is correct.
 - **OQ2 — Should the frosted dock be themeable?** (`human-api`) The dock, its
   inner column, and the blur layer paint the component's signature surface, and
   no current target reaches them.
