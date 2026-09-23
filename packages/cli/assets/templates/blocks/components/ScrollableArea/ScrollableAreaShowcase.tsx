@@ -45,43 +45,42 @@ const SECTIONS = [
 export default function ScrollableAreaShowcase() {
   return (
     <Card width={380} padding={0}>
-      <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={3}>
-          <Heading level={3}>Workspace files</Heading>
-          <Text type="supporting">12 files across 3 sections</Text>
-        </VStack>
-        <ScrollableArea
-          axis="block"
-          role="region"
-          label="Workspace files"
-          height={260}
-          paddingInline={4}
-          paddingBlockEnd={4}>
-          <VStack gap={4}>
-            {SECTIONS.map(section => (
-              <VStack key={section.label} gap={2}>
-                <Text type="label" color="secondary">
-                  {section.label}
-                </Text>
-                <Grid columns={2} gap={2}>
-                  {section.files.map(file => (
-                    <Card key={file.id} variant="muted" padding={3}>
-                      <VStack gap={1}>
-                        <Text weight="medium" maxLines={1}>
-                          {file.title}
-                        </Text>
-                        <Text type="supporting" maxLines={1}>
-                          {file.meta}
-                        </Text>
-                      </VStack>
-                    </Card>
-                  ))}
-                </Grid>
-              </VStack>
-            ))}
+      {/* The heading sits inside the viewport, so it scrolls away with the
+          content instead of staying pinned above it. */}
+      <ScrollableArea
+        axis="block"
+        role="region"
+        label="Workspace files"
+        height={300}
+        padding={4}>
+        <VStack gap={4}>
+          <VStack gap={0.5}>
+            <Heading level={3}>Workspace files</Heading>
+            <Text type="supporting">12 files across 3 sections</Text>
           </VStack>
-        </ScrollableArea>
-      </VStack>
+          {SECTIONS.map(section => (
+            <VStack key={section.label} gap={2}>
+              <Text type="label" color="secondary">
+                {section.label}
+              </Text>
+              <Grid columns={2} gap={2}>
+                {section.files.map(file => (
+                  <Card key={file.id} variant="muted" padding={3}>
+                    <VStack gap={1}>
+                      <Text weight="medium" maxLines={1}>
+                        {file.title}
+                      </Text>
+                      <Text type="supporting" maxLines={1}>
+                        {file.meta}
+                      </Text>
+                    </VStack>
+                  </Card>
+                ))}
+              </Grid>
+            </VStack>
+          ))}
+        </VStack>
+      </ScrollableArea>
     </Card>
   );
 }

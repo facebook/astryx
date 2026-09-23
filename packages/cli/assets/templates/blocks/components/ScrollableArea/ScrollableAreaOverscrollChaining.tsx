@@ -69,60 +69,58 @@ function FileGrid({
 export default function ScrollableAreaOverscrollChaining() {
   return (
     <Card width={400} padding={0}>
-      <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={3}>
-          <Heading level={3}>Workspace files</Heading>
-          <Text type="supporting">Two sections, two edge policies</Text>
-        </VStack>
-        <ScrollableArea
-          axis="block"
-          role="region"
-          label="Workspace files"
-          height={300}
-          paddingInline={4}
-          paddingBlockEnd={4}>
-          <VStack gap={4}>
-            <VStack gap={2}>
-              <Text type="label" color="secondary">
-                Shared with you
-              </Text>
-              {/* Default overscroll="allow": a gesture that reaches this
-                  section's end carries on scrolling the panel behind it. */}
-              <ScrollableArea
-                axis="block"
-                label="Shared with you"
-                height={150}
-                padding={2}
-                xstyle={styles.sectionFrame}>
-                <FileGrid files={SHARED} />
-              </ScrollableArea>
-              <Text type="supporting">
-                Scroll past the end and the panel keeps going.
-              </Text>
-            </VStack>
-
-            <VStack gap={2}>
-              <Text type="label" color="secondary">
-                Archived
-              </Text>
-              {/* overscroll="contain" stops the gesture at this section's
-                  edge, so the panel behind it stays put. */}
-              <ScrollableArea
-                axis="block"
-                label="Archived"
-                overscroll="contain"
-                height={150}
-                padding={2}
-                xstyle={styles.sectionFrame}>
-                <FileGrid files={ARCHIVED} />
-              </ScrollableArea>
-              <Text type="supporting">
-                Scroll past the end and the panel stays where it is.
-              </Text>
-            </VStack>
+      <ScrollableArea
+        axis="block"
+        role="region"
+        label="Workspace files"
+        height={300}
+        padding={4}>
+        <VStack gap={4}>
+          <VStack gap={0.5}>
+            <Heading level={3}>Workspace files</Heading>
+            <Text type="supporting">Two sections, two edge policies</Text>
           </VStack>
-        </ScrollableArea>
-      </VStack>
+
+          <VStack gap={2}>
+            <Text type="label" color="secondary">
+              Shared with you
+            </Text>
+            {/* Default overscroll="allow": a gesture that reaches this
+                section's end carries on scrolling the panel behind it. */}
+            <ScrollableArea
+              axis="block"
+              label="Shared with you"
+              height={150}
+              padding={2}
+              xstyle={styles.sectionFrame}>
+              <FileGrid files={SHARED} />
+            </ScrollableArea>
+            <Text type="supporting">
+              Scroll past the end and the panel keeps going.
+            </Text>
+          </VStack>
+
+          <VStack gap={2}>
+            <Text type="label" color="secondary">
+              Archived
+            </Text>
+            {/* overscroll="contain" stops the gesture at this section's
+                edge, so the panel behind it stays put. */}
+            <ScrollableArea
+              axis="block"
+              label="Archived"
+              overscroll="contain"
+              height={150}
+              padding={2}
+              xstyle={styles.sectionFrame}>
+              <FileGrid files={ARCHIVED} />
+            </ScrollableArea>
+            <Text type="supporting">
+              Scroll past the end and the panel stays where it is.
+            </Text>
+          </VStack>
+        </VStack>
+      </ScrollableArea>
     </Card>
   );
 }

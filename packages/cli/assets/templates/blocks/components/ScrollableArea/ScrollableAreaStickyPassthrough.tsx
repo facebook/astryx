@@ -73,52 +73,50 @@ function FileGrid({
 export default function ScrollableAreaStickyPassthrough() {
   return (
     <Card width={400} padding={0}>
-      <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={2}>
+      <ScrollableArea
+        axis="block"
+        role="region"
+        label="Workspace files"
+        height={300}
+        padding={4}>
+        <VStack gap={0.5} paddingBlockEnd={2}>
           <Heading level={3}>Workspace files</Heading>
           <Text type="supporting">18 files across 3 sections</Text>
         </VStack>
-        <ScrollableArea
-          axis="block"
-          role="region"
-          label="Workspace files"
-          height={300}
-          paddingInline={4}
-          paddingBlockEnd={4}>
-          {/* This section's content fits, so its viewport clips instead of
-              scrolling and never becomes the Sticky boundary: the label
-              passes outward and pins to the panel's edge. */}
-          <ScrollableArea axis="block" label="Shared with you">
-            <div {...stylex.props(styles.sectionLabel)}>
-              <Text type="label" color="secondary">
-                Shared with you
-              </Text>
-            </div>
-            <FileGrid files={SHARED} />
-          </ScrollableArea>
 
-          {/* Same fitting content, but containment is explicit: this viewport
-              stays the Sticky boundary, so its label leaves with the box. */}
-          <ScrollableArea
-            axis="block"
-            label="Templates"
-            stickyContainment="always">
-            <div {...stylex.props(styles.sectionLabel)}>
-              <Text type="label" color="secondary">
-                Templates
-              </Text>
-            </div>
-            <FileGrid files={TEMPLATES} />
-          </ScrollableArea>
-
+        {/* This section's content fits, so its viewport clips instead of
+            scrolling and never becomes the Sticky boundary: the label
+            passes outward and pins to the panel's edge. */}
+        <ScrollableArea axis="block" label="Shared with you">
           <div {...stylex.props(styles.sectionLabel)}>
             <Text type="label" color="secondary">
-              Archived
+              Shared with you
             </Text>
           </div>
-          <FileGrid files={ARCHIVED} />
+          <FileGrid files={SHARED} />
         </ScrollableArea>
-      </VStack>
+
+        {/* Same fitting content, but containment is explicit: this viewport
+            stays the Sticky boundary, so its label leaves with the box. */}
+        <ScrollableArea
+          axis="block"
+          label="Templates"
+          stickyContainment="always">
+          <div {...stylex.props(styles.sectionLabel)}>
+            <Text type="label" color="secondary">
+              Templates
+            </Text>
+          </div>
+          <FileGrid files={TEMPLATES} />
+        </ScrollableArea>
+
+        <div {...stylex.props(styles.sectionLabel)}>
+          <Text type="label" color="secondary">
+            Archived
+          </Text>
+        </div>
+        <FileGrid files={ARCHIVED} />
+      </ScrollableArea>
     </Card>
   );
 }

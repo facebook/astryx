@@ -53,20 +53,20 @@ const COLUMNS = [
 export default function ScrollableAreaTwoAxisBoard() {
   return (
     <Card width={420} padding={0}>
-      <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={3}>
-          <Heading level={3}>Workspace board</Heading>
-          <Text type="supporting">16 files across 4 sections</Text>
-        </VStack>
-        {/* axis="both" gives the content box max-content inline sizing, so the
-            board is free to be wider than the viewport on both axes. */}
-        <ScrollableArea
-          axis="both"
-          role="region"
-          label="Workspace board"
-          height={280}
-          paddingInline={4}
-          paddingBlockEnd={4}>
+      {/* axis="both" gives the content box max-content inline sizing, so the
+          board is free to be wider than the viewport on both axes. The
+          heading is inside that box and travels with it. */}
+      <ScrollableArea
+        axis="both"
+        role="region"
+        label="Workspace board"
+        height={300}
+        padding={4}>
+        <VStack gap={4}>
+          <VStack gap={0.5}>
+            <Heading level={3}>Workspace board</Heading>
+            <Text type="supporting">16 files across 4 sections</Text>
+          </VStack>
           <HStack gap={3} vAlign="start">
             {COLUMNS.map(column => (
               <VStack key={column.label} gap={2} width={180}>
@@ -88,8 +88,8 @@ export default function ScrollableAreaTwoAxisBoard() {
               </VStack>
             ))}
           </HStack>
-        </ScrollableArea>
-      </VStack>
+        </VStack>
+      </ScrollableArea>
     </Card>
   );
 }

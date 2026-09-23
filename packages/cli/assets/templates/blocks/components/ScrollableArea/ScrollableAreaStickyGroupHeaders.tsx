@@ -57,45 +57,43 @@ const SECTIONS = [
 export default function ScrollableAreaStickyGroupHeaders() {
   return (
     <Card width={380} padding={0}>
-      <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={2}>
+      {/* The viewport is the containing block for position: sticky. The panel
+          heading is ordinary content and scrolls away; the section labels
+          below it pin to the top of the list, not the page. */}
+      <ScrollableArea
+        axis="block"
+        role="region"
+        label="Workspace files"
+        height={300}
+        padding={4}>
+        <VStack gap={0.5} paddingBlockEnd={2}>
           <Heading level={3}>Workspace files</Heading>
           <Text type="supporting">12 files across 3 sections</Text>
         </VStack>
-        {/* The viewport is the containing block for position: sticky, so each
-            section label pins to the top of the list, not the page. */}
-        <ScrollableArea
-          axis="block"
-          role="region"
-          label="Workspace files"
-          height={280}
-          paddingInline={4}
-          paddingBlockEnd={4}>
-          {SECTIONS.map(section => (
-            <section key={section.label}>
-              <div {...stylex.props(styles.sectionLabel)}>
-                <Text type="label" color="secondary">
-                  {section.label}
-                </Text>
-              </div>
-              <Grid columns={2} gap={2}>
-                {section.files.map(file => (
-                  <Card key={file.id} variant="muted" padding={3}>
-                    <VStack gap={1}>
-                      <Text weight="medium" maxLines={1}>
-                        {file.title}
-                      </Text>
-                      <Text type="supporting" maxLines={1}>
-                        {file.meta}
-                      </Text>
-                    </VStack>
-                  </Card>
-                ))}
-              </Grid>
-            </section>
-          ))}
-        </ScrollableArea>
-      </VStack>
+        {SECTIONS.map(section => (
+          <section key={section.label}>
+            <div {...stylex.props(styles.sectionLabel)}>
+              <Text type="label" color="secondary">
+                {section.label}
+              </Text>
+            </div>
+            <Grid columns={2} gap={2}>
+              {section.files.map(file => (
+                <Card key={file.id} variant="muted" padding={3}>
+                  <VStack gap={1}>
+                    <Text weight="medium" maxLines={1}>
+                      {file.title}
+                    </Text>
+                    <Text type="supporting" maxLines={1}>
+                      {file.meta}
+                    </Text>
+                  </VStack>
+                </Card>
+              ))}
+            </Grid>
+          </section>
+        ))}
+      </ScrollableArea>
     </Card>
   );
 }

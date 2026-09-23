@@ -30,14 +30,16 @@ export default function ScrollableAreaInlineRail() {
           <Link href="#files">View all</Link>
         </HStack>
         {/* isFullBleed lets the rail reach the card's edges, while the content
-            padding keeps the first card aligned with the heading above it. */}
+            padding keeps the first card aligned with the heading above it and
+            leaves room under the cards for the scrollbar. */}
         <ScrollableArea
           axis="inline"
           role="region"
           label="Recently opened files"
           isFullBleed
           paddingInline={4}
-          paddingBlock={0.5}>
+          paddingBlockStart={0.5}
+          paddingBlockEnd={4}>
           <HStack gap={2}>
             {FILES.map(file => (
               <Card key={file.id} variant="muted" padding={3} width={170}>
