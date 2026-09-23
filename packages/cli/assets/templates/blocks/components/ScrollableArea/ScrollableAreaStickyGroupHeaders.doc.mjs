@@ -4,11 +4,11 @@
 export const doc = {
   type: 'block',
   exampleFor: 'ScrollableArea',
-  name: 'ScrollableArea — Sticky Group Headers',
-  displayName: 'Scrollable Area — Sticky Group Headers',
+  name: 'ScrollableArea — Sticky Section Labels',
+  displayName: 'Scrollable Area — Sticky Section Labels',
   description:
-    'A scrollable viewport is the containing block for position: sticky, so day headings pin to the top edge of the list instead of the page.',
+    'A scrollable viewport is the containing block for position: sticky, so section labels pin to the top edge of the list instead of the page.',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['ScrollableArea', 'Card', 'List', 'ListItem'],
+  componentsUsed: ['ScrollableArea', 'Card', 'Grid'],
 };

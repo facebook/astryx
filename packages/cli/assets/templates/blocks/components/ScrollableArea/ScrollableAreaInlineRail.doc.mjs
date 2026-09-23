@@ -7,8 +7,8 @@ export const doc = {
   name: 'ScrollableArea — Inline Rail',
   displayName: 'Scrollable Area — Inline Rail',
   description:
-    'axis="inline" scrolls a card rail sideways; isFullBleed lets it run to the panel edges while the content padding keeps the first card aligned with the heading.',
+    'axis="inline" scrolls the same cards sideways; isFullBleed lets the rail run to the panel edges while the content padding keeps the first card aligned with the heading.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['ScrollableArea', 'Card', 'Badge', 'Link'],
+  componentsUsed: ['ScrollableArea', 'Card', 'Link'],
 };

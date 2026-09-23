@@ -2656,23 +2656,23 @@
       "aliases": []
     },
     {
-      "name": "example-scrollable-area-nested-log",
-      "path": "examples/scrollable-area/nested-log",
-      "aliases": []
-    },
-    {
-      "name": "example-scrollable-area-overscroll-chaining",
-      "path": "examples/scrollable-area/overscroll-chaining",
-      "aliases": []
-    },
-    {
-      "name": "example-scrollable-area-sticky-group-headers",
-      "path": "examples/scrollable-area/sticky-group-headers",
+      "name": "example-scrollable-area-overscroll",
+      "path": "examples/scrollable-area/overscroll",
       "aliases": []
     },
     {
       "name": "example-scrollable-area-sticky-passthrough",
       "path": "examples/scrollable-area/sticky-passthrough",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-section-labels",
+      "path": "examples/scrollable-area/sticky-section-labels",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-two-axis-board",
+      "path": "examples/scrollable-area/two-axis-board",
       "aliases": []
     },
     {

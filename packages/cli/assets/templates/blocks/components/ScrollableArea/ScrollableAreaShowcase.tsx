@@ -4,119 +4,82 @@
 
 import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Card} from '@astryxdesign/core/Card';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {VStack} from '@astryxdesign/core/Layout';
 import {Heading, Text} from '@astryxdesign/core/Text';
-import {List, ListItem} from '@astryxdesign/core/List';
-import {Avatar} from '@astryxdesign/core/Avatar';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {Timestamp} from '@astryxdesign/core/Timestamp';
 
-const REVIEWS = [
+const SECTIONS = [
   {
-    id: 4812,
-    title: 'Return focus to the trigger when a dialog closes',
-    author: 'Priya Raman',
-    repo: 'web/checkout',
-    state: 'Changes requested',
-    variant: 'warning',
-    updated: '2026-03-18T16:12:00',
+    label: 'Recently opened',
+    files: [
+      {id: 'brief', title: 'Q3 launch brief', meta: 'Edited 2 days ago'},
+      {id: 'pricing', title: 'Pricing rework', meta: 'Edited 3 days ago'},
+      {
+        id: 'onboarding',
+        title: 'Onboarding flow v4',
+        meta: 'Edited 4 days ago',
+      },
+      {id: 'macros', title: 'Support macros', meta: 'Edited last week'},
+    ],
   },
   {
-    id: 4809,
-    title: 'Cache currency rates for the pricing table',
-    author: 'Tomas Lindqvist',
-    repo: 'services/pricing',
-    state: 'Approved',
-    variant: 'success',
-    updated: '2026-03-18T15:47:00',
+    label: 'Shared with you',
+    files: [
+      {id: 'brand', title: 'Brand refresh', meta: 'Priya Raman'},
+      {id: 'checkout', title: 'Checkout audit', meta: 'Tomas Lindqvist'},
+      {id: 'partner', title: 'Partner deck', meta: 'Ines Okafor'},
+      {id: 'research', title: 'Research synthesis', meta: 'Mei Watanabe'},
+    ],
   },
   {
-    id: 4805,
-    title: 'Drop the legacy address parser',
-    author: 'Ines Okafor',
-    repo: 'services/identity',
-    state: 'Awaiting review',
-    variant: 'neutral',
-    updated: '2026-03-18T14:20:00',
+    label: 'Archived',
+    files: [
+      {id: 'roadmap', title: '2025 roadmap', meta: 'Archived in March'},
+      {id: 'legacy', title: 'Legacy pricing', meta: 'Archived in March'},
+      {id: 'kit', title: 'Old brand kit', meta: 'Archived in January'},
+      {id: 'beta', title: 'Beta feedback', meta: 'Archived in January'},
+    ],
   },
-  {
-    id: 4801,
-    title: 'Retry webhook delivery with exponential backoff',
-    author: 'Daniel Okorie',
-    repo: 'services/events',
-    state: 'Awaiting review',
-    variant: 'neutral',
-    updated: '2026-03-18T11:05:00',
-  },
-  {
-    id: 4794,
-    title: 'Fix truncation in the order summary on narrow screens',
-    author: 'Mei Watanabe',
-    repo: 'web/checkout',
-    state: 'Approved',
-    variant: 'success',
-    updated: '2026-03-17T18:33:00',
-  },
-  {
-    id: 4788,
-    title: 'Add idempotency keys to refund requests',
-    author: 'Sofia Marchetti',
-    repo: 'services/payments',
-    state: 'Changes requested',
-    variant: 'warning',
-    updated: '2026-03-17T16:58:00',
-  },
-  {
-    id: 4781,
-    title: 'Backfill missing tax regions for EU orders',
-    author: 'Hugo Bernard',
-    repo: 'services/tax',
-    state: 'Awaiting review',
-    variant: 'neutral',
-    updated: '2026-03-17T09:12:00',
-  },
-] as const;
+];
 
 export default function ScrollableAreaShowcase() {
   return (
     <Card width={380} padding={0}>
       <VStack>
-        <HStack
-          padding={4}
-          paddingBlockEnd={2}
-          hAlign="between"
-          vAlign="center">
-          <Heading level={3}>Review queue</Heading>
-          <Text type="supporting">7 open</Text>
-        </HStack>
+        <VStack gap={0.5} padding={4} paddingBlockEnd={3}>
+          <Heading level={3}>Workspace files</Heading>
+          <Text type="supporting">12 files across 3 sections</Text>
+        </VStack>
         <ScrollableArea
           axis="block"
           role="region"
-          label="Review queue"
+          label="Workspace files"
           height={260}
           paddingInline={4}
           paddingBlockEnd={4}>
-          <List hasDividers>
-            {REVIEWS.map(review => (
-              <ListItem
-                key={review.id}
-                label={review.title}
-                description={`${review.repo} · ${review.author}`}
-                startContent={<Avatar name={review.author} size="sm" />}
-                endContent={
-                  <HStack gap={2} vAlign="center">
-                    <StatusDot
-                      variant={review.variant}
-                      label={review.state}
-                      tooltip={review.state}
-                    />
-                    <Timestamp value={review.updated} format="time" />
-                  </HStack>
-                }
-                onClick={() => {}}
-              />
+          <VStack gap={4}>
+            {SECTIONS.map(section => (
+              <VStack key={section.label} gap={2}>
+                <Text type="label" color="secondary">
+                  {section.label}
+                </Text>
+                <Grid columns={2} gap={2}>
+                  {section.files.map(file => (
+                    <Card key={file.id} variant="muted" padding={3}>
+                      <VStack gap={1}>
+                        <Text weight="medium" maxLines={1}>
+                          {file.title}
+                        </Text>
+                        <Text type="supporting" maxLines={1}>
+                          {file.meta}
+                        </Text>
+                      </VStack>
+                    </Card>
+                  ))}
+                </Grid>
+              </VStack>
             ))}
-          </List>
+          </VStack>
         </ScrollableArea>
       </VStack>
     </Card>

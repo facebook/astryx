@@ -2,25 +2,12 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Card} from '@astryxdesign/core/Card';
-import {Grid} from '@astryxdesign/core/Grid';
-import {VStack} from '@astryxdesign/core/Layout';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Heading, Text} from '@astryxdesign/core/Text';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
-const styles = stylex.create({
-  sectionLabel: {
-    position: 'sticky',
-    insetBlockStart: 0,
-    zIndex: 1,
-    backgroundColor: colorVars['--color-background-card'],
-    paddingBlock: spacingVars['--spacing-2'],
-  },
-});
-
-const SECTIONS = [
+const COLUMNS = [
   {
     label: 'Recently opened',
     files: [
@@ -44,6 +31,15 @@ const SECTIONS = [
     ],
   },
   {
+    label: 'Templates',
+    files: [
+      {id: 'weekly', title: 'Weekly report', meta: 'Used 24 times'},
+      {id: 'checklist', title: 'Launch checklist', meta: 'Used 18 times'},
+      {id: 'review', title: 'Design review', meta: 'Used 11 times'},
+      {id: 'retro', title: 'Retro board', meta: 'Used 9 times'},
+    ],
+  },
+  {
     label: 'Archived',
     files: [
       {id: 'roadmap', title: '2025 roadmap', meta: 'Archived in March'},
@@ -54,32 +50,30 @@ const SECTIONS = [
   },
 ];
 
-export default function ScrollableAreaStickyGroupHeaders() {
+export default function ScrollableAreaTwoAxisBoard() {
   return (
-    <Card width={380} padding={0}>
+    <Card width={420} padding={0}>
       <VStack>
-        <VStack gap={0.5} padding={4} paddingBlockEnd={2}>
-          <Heading level={3}>Workspace files</Heading>
-          <Text type="supporting">12 files across 3 sections</Text>
+        <VStack gap={0.5} padding={4} paddingBlockEnd={3}>
+          <Heading level={3}>Workspace board</Heading>
+          <Text type="supporting">16 files across 4 sections</Text>
         </VStack>
-        {/* The viewport is the containing block for position: sticky, so each
-            section label pins to the top of the list, not the page. */}
+        {/* axis="both" gives the content box max-content inline sizing, so the
+            board is free to be wider than the viewport on both axes. */}
         <ScrollableArea
-          axis="block"
+          axis="both"
           role="region"
-          label="Workspace files"
+          label="Workspace board"
           height={280}
           paddingInline={4}
           paddingBlockEnd={4}>
-          {SECTIONS.map(section => (
-            <section key={section.label}>
-              <div {...stylex.props(styles.sectionLabel)}>
+          <HStack gap={3} vAlign="start">
+            {COLUMNS.map(column => (
+              <VStack key={column.label} gap={2} width={180}>
                 <Text type="label" color="secondary">
-                  {section.label}
+                  {column.label}
                 </Text>
-              </div>
-              <Grid columns={2} gap={2}>
-                {section.files.map(file => (
+                {column.files.map(file => (
                   <Card key={file.id} variant="muted" padding={3}>
                     <VStack gap={1}>
                       <Text weight="medium" maxLines={1}>
@@ -91,9 +85,9 @@ export default function ScrollableAreaStickyGroupHeaders() {
                     </VStack>
                   </Card>
                 ))}
-              </Grid>
-            </section>
-          ))}
+              </VStack>
+            ))}
+          </HStack>
         </ScrollableArea>
       </VStack>
     </Card>

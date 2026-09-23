@@ -4,10 +4,10 @@
 export const doc = {
   type: 'block',
   exampleFor: 'ScrollableArea',
-  name: 'ScrollableArea — Overscroll',
-  displayName: 'Scrollable Area — Overscroll',
+  name: 'ScrollableArea — Two-Axis Board',
+  displayName: 'Scrollable Area — Two-Axis Board',
   description:
-    'The same section, two edge policies: the default overscroll="allow" hands a gesture that reaches the end to the panel behind it, while overscroll="contain" stops it at the section edge.',
+    'axis="both" gives the content box max-content inline sizing, so a board wider and taller than its panel scrolls on both axes from one viewport.',
   isReady: true,
   aspectRatio: 1,
   componentsUsed: ['ScrollableArea', 'Card', 'Grid'],

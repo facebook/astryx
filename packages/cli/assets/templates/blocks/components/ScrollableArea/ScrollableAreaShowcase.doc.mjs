@@ -7,17 +7,9 @@ export const doc = {
   name: 'ScrollableArea',
   displayName: 'Scrollable Area',
   description:
-    'A fixed-height review queue that scrolls on the block axis while the panel header stays put.',
+    'A fixed-height file panel that scrolls on the block axis while its heading stays put.',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
-  componentsUsed: [
-    'ScrollableArea',
-    'Card',
-    'List',
-    'ListItem',
-    'Avatar',
-    'StatusDot',
-    'Timestamp',
-  ],
+  componentsUsed: ['ScrollableArea', 'Card', 'Grid'],
 };
