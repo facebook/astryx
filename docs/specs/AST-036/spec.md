@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-15
+approved_at: 2026-09-22
 phase: accepted
 owners: [cixzhang]
 affects_architecture:
@@ -215,7 +215,7 @@ Compatibility is explicit per plugin and tested version. “Remark-compatible”
 
 ### Planned first-party scope
 
-- **FR40 — First-party plugins use the public protocol.** Astryx ships a small first-party set — a mention plugin, an entity-link plugin, and a callout container — built only on the public protocol, each owning its semantics and evidence in its own module record and serving as canonical documentation examples. No first-party plugin receives a capability, validation exemption, ordering privilege, or type affordance unavailable to a third party; an internal fast path is permitted only where it is observationally identical, per FR23.
+- **FR40 — First-party plugins use the public protocol.** Astryx ships a small first-party set — a soft-breaks plugin, a configurable entity-reference plugin, and a callout container — built only on the public protocol, each owning its semantics and evidence in its own module record and serving as canonical documentation examples. No first-party plugin receives a capability, validation exemption, ordering privilege, or type affordance unavailable to a third party; an internal fast path is permitted only where it is observationally identical, per FR23.
 - **FR41 — Footnotes, definitions, and references stay Core scope.** They are not a plugin surface: their identity is document-level ID allocation, collision handling, and back-reference navigation that Core owns under FR15 and FR16, and a plugin owning them would fork the identity system Markdown and Outline share. Until a separately approved contract adds them as Core syntax, they are unsupported, the adapter rejects them, and consumer documentation names the gap explicitly rather than implying a plugin workaround.
 
 ## Performance evidence protocol
@@ -264,7 +264,7 @@ The new decisions are additive and opt-in. `components` swaps supported built-in
 | FR29–FR30            | Diagnostic fixtures in development/production and admission parity across entrypoints                                                                         | Every phase/code, advisories, rate suppression, no-handler default, malformed list, duplicate Core, version skew                 | Silent production failure, document content in diagnostics, module-scope throw, or entrypoint divergence fails.                  |
 | FR31–FR35            | Inference fixtures without explicit type arguments, canonical/server imports, conformance-kit self-test, documentation checks                                 | Syntax-only, transform-only, renderer-only, heterogeneous lists, server import, third-party kit run                              | Explicit-type workarounds, client references in server entry, or undocumented rejected categories fail.                          |
 | FR36–FR39            | Streaming no-oscillation, theme reachability, prepared-reuse counts, stability-policy docs                                                                    | Chunk boundaries, final-only effects, themed/unthemed output, equal new-identity lists, version skew                             | Oscillation, unreachable opted-in output, per-render re-preparation, or unpublished policy fails.                                |
-| FR40–FR41            | First-party module records/evidence and unsupported-node fixtures                                                                                             | Mention, entity link, callout; footnote/definition/reference source through parser and adapter                                   | First-party privilege or plugin-owned footnote/definition support fails.                                                         |
+| FR40–FR41            | First-party module records/evidence and unsupported-node fixtures                                                                                             | Soft breaks, configurable entity references, callouts; footnote/definition/reference source through parser and adapter           | First-party privilege or plugin-owned footnote/definition support fails.                                                         |
 | Repository integrity | Knowledge validation, public-content checks, typecheck, formatting, and changed-file review                                                                   | Specification and every implementation PR                                                                                        | Internal content, stale owner records, unrelated paths, or formatting/type failures block merge.                                 |
 
 ## Related owner prerequisites
@@ -279,7 +279,7 @@ Before implementation acceptance, current owner clauses must cover:
 6. the diagnostic channel on the component and parser options;
 7. the opt-in extension theme target in Markdown's theming anatomy;
 8. server-safe parser and conformance-kit package entries;
-9. first-party plugin module owners for mention, entity link, and callout.
+9. first-party plugin module owners for soft breaks, configurable entity references, and callouts.
 
 ## Decision log
 
@@ -383,9 +383,9 @@ Rejected: first- or third-party footnote plugins; adapter translation into ordin
 ### DEC-11 — First-party plugins are ordinary plugins
 
 **Reference:** `spec:AST-036/DEC-11`
-**Direction owner:** `cixzhang`, `2026-09-16`
+**Direction owner:** `cixzhang`, `2026-09-22`
 
-Mention, entity-link, and callout examples use only the public protocol, own their semantics and evidence in module records, and receive no capability, exemption, ordering privilege, or type affordance unavailable to third parties. An internal fast path is allowed only when observationally identical.
+Soft breaks, configurable entity references, and callout examples use only the public protocol, own their semantics and evidence in module records, and receive no capability, exemption, ordering privilege, or type affordance unavailable to third parties. An internal fast path is allowed only when observationally identical.
 
 Rejected: privileged first-party capabilities; demos that exercise private paths; a public protocol with no real first-party consumers.
 
