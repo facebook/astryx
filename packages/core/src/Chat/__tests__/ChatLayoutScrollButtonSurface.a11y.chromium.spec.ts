@@ -52,6 +52,12 @@ const STATES = [
 
 type State = (typeof STATES)[number];
 
+/** How an interaction frame was driven. `rest` is the undriven baseline. */
+type Interaction = 'rest' | 'hover' | 'focus-visible' | 'pressed';
+
+/** The two configurations whose interaction states the audit grades. */
+const INTERACTION_STATES = ['visible-collapsed', 'visible-labelled'] as const;
+
 type Shot = {
   file: string;
   sha256: string;
@@ -202,6 +208,59 @@ async function readInstance(page: Page, state: State) {
 /** `rgba(r, g, b, 0)` and `transparent` both mean "this element paints no fill". */
 function isTransparent(color: string): boolean {
   return color === 'transparent' || /,\s*0\)$/.test(color);
+}
+
+/**
+ * What the Button is painting right now: the four properties its interaction
+ * states actually move. Recorded per frame so a reader can confirm from the
+ * receipt that the state engaged, rather than trusting the file name.
+ *
+ * Read from the `<button>` rather than the pill: the pill owns the surface and
+ * the theming target, while hover, focus, and press are Button's own treatment.
+ */
+async function readButtonPaint(page: Page, state: State) {
+  return instance(page, state)
+    .locator('button')
+    .evaluate(element => {
+      const styles = getComputedStyle(element);
+      return {
+        backgroundColor: styles.backgroundColor,
+        backgroundImage: styles.backgroundImage,
+        transform: styles.transform,
+        outlineWidth: styles.outlineWidth,
+        outlineStyle: styles.outlineStyle,
+        isFocused: document.activeElement === element,
+        matchesFocusVisible: element.matches(':focus-visible'),
+        matchesHover: element.matches(':hover'),
+        matchesActive: element.matches(':active'),
+      };
+    });
+}
+
+/**
+ * Tab from the top of the document until focus lands inside `state`.
+ *
+ * Keyboard is the only modality that yields `:focus-visible` — a synthetic
+ * `focus()` call does not, and a click sets pointer modality and suppresses
+ * it. The page must therefore be freshly loaded with no pointer press behind
+ * it, which is why the caller reloads before asking for a focus frame.
+ */
+async function tabTo(
+  page: Page,
+  state: State,
+  maxPresses = 8,
+): Promise<boolean> {
+  for (let index = 0; index < maxPresses; index += 1) {
+    await page.keyboard.press('Tab');
+    const landed = await page.evaluate(selector => {
+      const active = document.activeElement;
+      return active != null && active.closest(selector) != null;
+    }, `[data-scroll-button-state="${state}"]`);
+    if (landed) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -436,6 +495,126 @@ test('every audited state renders in light and dark, and the target meets WCAG 2
           `${colorMode}: the collapsed target must fit a 24px square`,
         ).toBeGreaterThanOrEqual(24);
       }
+    }
+  }
+
+  expect(pageErrors).toEqual([]);
+});
+
+/**
+ * The interaction states, driven for real and photographed while they are
+ * engaged.
+ *
+ * Twelve frames: the two visible configurations x hover, keyboard
+ * focus-visible, and a held press x light and dark. Every frame asserts that
+ * the state actually engaged — `:hover`, `:focus-visible`, or `:active`
+ * matched, and the paint moved away from rest — so a frame cannot be a
+ * mislabelled picture of the resting pill.
+ *
+ * Order within a color mode is deliberate. Hover comes first; the pointer then
+ * moves away before the focus pass, or the hovered element would still paint
+ * hover underneath the focus ring. Press comes last, because a pointer press
+ * sets pointer modality and suppresses `:focus-visible` for the rest of the
+ * page's life — so the page is reloaded before the focus pass to guarantee the
+ * keyboard modality the ring depends on.
+ */
+test('the interaction states are driven and photographed while engaged', async ({
+  page,
+}) => {
+  for (const colorMode of ['light', 'dark'] as const) {
+    /** Rest, for the same page and color mode, as the comparison baseline. */
+    await openStory(page, {colorMode});
+    const rest: Record<
+      string,
+      Awaited<ReturnType<typeof readButtonPaint>>
+    > = {};
+    for (const state of INTERACTION_STATES) {
+      rest[state] = await readButtonPaint(page, state);
+    }
+
+    // ---- hover ------------------------------------------------------------
+    for (const state of INTERACTION_STATES) {
+      await instance(page, state).locator('button').hover();
+      const paint = await readButtonPaint(page, state);
+      const interaction: Interaction = 'hover';
+      await capture(
+        page,
+        state,
+        `${state}__${interaction}__${colorMode}`,
+        {interaction, paint, restPaint: rest[state]},
+        {colorMode},
+      );
+      expect(
+        paint.matchesHover,
+        `${state}/${colorMode}: the pointer must actually be over the button`,
+      ).toBe(true);
+      expect(
+        paint.backgroundImage !== rest[state].backgroundImage ||
+          paint.backgroundColor !== rest[state].backgroundColor,
+        `${state}/${colorMode}: hover must paint something rest does not`,
+      ).toBe(true);
+    }
+
+    // ---- keyboard focus-visible -------------------------------------------
+    // Reload rather than move the mouse: this pass must run with no pointer
+    // interaction behind it at all.
+    await openStory(page, {colorMode});
+    await page.mouse.move(0, 0);
+    for (const state of INTERACTION_STATES) {
+      const reached = await tabTo(page, state);
+      expect(reached, `${state}/${colorMode}: Tab must reach the button`).toBe(
+        true,
+      );
+      const paint = await readButtonPaint(page, state);
+      const interaction: Interaction = 'focus-visible';
+      await capture(
+        page,
+        state,
+        `${state}__${interaction}__${colorMode}`,
+        {interaction, paint, restPaint: rest[state]},
+        {colorMode},
+      );
+      expect(
+        paint.isFocused && paint.matchesFocusVisible,
+        `${state}/${colorMode}: the button must hold keyboard-visible focus`,
+      ).toBe(true);
+      expect(
+        paint.outlineStyle !== 'none' && paint.outlineWidth !== '0px',
+        `${state}/${colorMode}: focus must paint a visible ring (WCAG 2.2 SC 2.4.7)`,
+      ).toBe(true);
+    }
+
+    // ---- held press -------------------------------------------------------
+    // Captured with the button still down. Releasing first would photograph
+    // the state the press returns to, not the press.
+    for (const state of INTERACTION_STATES) {
+      await openStory(page, {colorMode});
+      const button = instance(page, state).locator('button');
+      const box = await button.boundingBox();
+      if (box == null) {
+        throw new Error(`${state}: the button has no layout box`);
+      }
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      const paint = await readButtonPaint(page, state);
+      const interaction: Interaction = 'pressed';
+      await capture(
+        page,
+        state,
+        `${state}__${interaction}__${colorMode}`,
+        {interaction, paint, restPaint: rest[state]},
+        {colorMode},
+      );
+      await page.mouse.up();
+
+      expect(
+        paint.matchesActive,
+        `${state}/${colorMode}: the button must still be held down`,
+      ).toBe(true);
+      expect(
+        paint.transform,
+        `${state}/${colorMode}: the press must move the paint away from rest`,
+      ).not.toBe(rest[state].transform);
     }
   }
 
