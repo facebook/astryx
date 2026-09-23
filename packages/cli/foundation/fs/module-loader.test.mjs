@@ -10,6 +10,8 @@ import {z} from 'zod';
 import {
   findPresentFiles,
   importUserModule,
+  isCliShippedPath,
+  isProjectCodeGated,
   loadModuleWithParser,
 } from './module-loader.mjs';
 
@@ -152,6 +154,54 @@ process.stdout.write(JSON.stringify({first: first.default?.answer, fresh: fresh.
     } finally {
       fs.rmSync(noPackageDir, {recursive: true, force: true});
     }
+  });
+});
+
+describe('ASTRYX_NO_PROJECT_CODE gate', () => {
+  afterEach(() => {
+    delete process.env.ASTRYX_NO_PROJECT_CODE;
+    delete globalThis.__astryxGateProbe;
+  });
+
+  it('is off by default and on only for the exact value "1"', () => {
+    const file = path.join(tmpDir, 'mod.mjs');
+    expect(isProjectCodeGated(file)).toBe(false);
+    process.env.ASTRYX_NO_PROJECT_CODE = 'true';
+    expect(isProjectCodeGated(file)).toBe(false);
+    process.env.ASTRYX_NO_PROJECT_CODE = '1';
+    expect(isProjectCodeGated(file)).toBe(true);
+  });
+
+  it('recognizes the CLI package as shipped code and nothing outside it', () => {
+    const cliRoot = path.join(process.cwd(), 'packages', 'cli');
+    expect(isCliShippedPath(path.join(cliRoot, 'assets', 'docs', 'x.mjs'))).toBe(true);
+    expect(isCliShippedPath(path.join(process.cwd(), 'packages', 'cli-other', 'x.mjs'))).toBe(false);
+    expect(isCliShippedPath(path.join(process.cwd(), 'packages', 'core', 'src', 'Button', 'Button.doc.mjs'))).toBe(false);
+    expect(isCliShippedPath(path.join(tmpDir, 'astryx.config.mjs'))).toBe(false);
+  });
+
+  it.each(['mjs', 'js', 'ts'])(
+    'refuses to import (and so execute) a workspace .%s module under the gate',
+    async extension => {
+      const file = path.join(tmpDir, `mod.${extension}`);
+      fs.writeFileSync(
+        file,
+        `globalThis.__astryxGateProbe = true;\nexport default {};\n`,
+      );
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+      await expect(importUserModule(file)).rejects.toThrow(/ASTRYX_NO_PROJECT_CODE/);
+      await expect(importUserModule(file, {fresh: true})).rejects.toThrow(
+        /ASTRYX_NO_PROJECT_CODE/,
+      );
+      expect(globalThis.__astryxGateProbe).toBeUndefined();
+    },
+  );
+
+  it('still loads the CLI\'s own shipped modules under the gate', async () => {
+    process.env.ASTRYX_NO_PROJECT_CODE = '1';
+    const shipped = path.join(process.cwd(), 'packages/cli/foundation/fs/paths.mjs');
+    const mod = await importUserModule(shipped);
+    expect(typeof mod.findCoreDir).toBe('function');
   });
 });
 

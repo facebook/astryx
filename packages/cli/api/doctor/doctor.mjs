@@ -25,6 +25,7 @@ import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {importUserModule, projectCodeAllowed} from '../../foundation/fs/module-loader.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
@@ -320,12 +321,23 @@ export async function checkConfig(ctx) {
     };
   }
 
+  // Under the project-code gate the config must not run, doctor included —
+  // report the state instead of executing the file it just said it ignored.
+  if (!projectCodeAllowed()) {
+    return {
+      id: 'config',
+      label: 'astryx.config.mjs',
+      status: 'info',
+      message: `ASTRYX_NO_PROJECT_CODE=1 — config present but not loaded (${path.relative(ctx.cwd, ctx.configPath) || ctx.configPath}); running on built-in data only.`,
+    };
+  }
+
   // Project.load swallows nothing — it surfaces a genuine load failure — but
   // the config check wants to report a bad default export precisely, so we
-  // re-import directly to surface a genuine load failure as a FAIL.
+  // re-import directly to surface a genuine load failure as a FAIL. The gated
+  // loader keeps this re-import on the same rules as Project.load.
   try {
-    const {pathToFileURL} = await import('node:url');
-    const mod = await import(pathToFileURL(ctx.configPath).href);
+    const mod = await importUserModule(ctx.configPath);
     const config = mod.default;
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       return {

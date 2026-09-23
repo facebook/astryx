@@ -18,7 +18,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {importUserModule} from '../../foundation/fs/module-loader.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {
   DocsCatalog,
@@ -55,8 +55,11 @@ export async function loadDocsCatalog(cwd = process.cwd()) {
  * @returns {Promise<import('./docs.type.mjs').DocsDetailResponse['data']>}
  */
 export async function loadReferenceDocs(docPath, {lang} = {}) {
-  const mod = await import(pathToFileURL(docPath).href);
-  const docs = mod.docs ?? mod.default;
+  // Gated loader: built-in topics live under the CLI package and always
+  // load; integration topic modules execute on import and must honor
+  // ASTRYX_NO_PROJECT_CODE.
+  const mod = await importUserModule(docPath);
+  const docs = /** @type {any} */ (mod.docs ?? mod.default);
   if (!lang || lang === 'en') return docs;
 
   const dir = path.dirname(docPath);
@@ -65,8 +68,10 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
   const translationPath = path.join(dir, `${base}.doc.${locale}.mjs`);
   if (!fs.existsSync(translationPath)) return docs;
 
-  const translationMod = await import(pathToFileURL(translationPath).href);
-  const translation = translationMod.docsZh || translationMod.docsDense;
+  const translationMod = await importUserModule(translationPath);
+  const translation = /** @type {any} */ (
+    translationMod.docsZh || translationMod.docsDense
+  );
   if (!translation) return docs;
 
   // Overlays are keyed to a base section by title (`section`), not by array

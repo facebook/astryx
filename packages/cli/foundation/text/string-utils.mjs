@@ -56,9 +56,11 @@ export function findClosestComponents(name, components, maxDistance = 3) {
  * @returns {Promise<{name: string, score: number, reason: string}[]>}
  */
 export async function searchComponents(needle, coreDir, components) {
-  const {pathToFileURL} = await import('node:url');
   const fs = await import('node:fs');
   const path = await import('node:path');
+  // Dynamic like the node builtins above: this file is also bundled for the
+  // browser, and the loader pulls in node:fs/jiti.
+  const {importUserModule} = await import('../fs/module-loader.mjs');
 
   const term = needle.toLowerCase();
   const allNames = Object.values(components).flat();
@@ -131,8 +133,10 @@ export async function searchComponents(needle, coreDir, components) {
     if (!docPath) continue;
 
     try {
-      const mod = await import(pathToFileURL(docPath).href);
-      const docs = mod.docs;
+      // Gated loader: consumer doc modules execute on import and must
+      // honor ASTRYX_NO_PROJECT_CODE (throws are swallowed below).
+      const mod = await importUserModule(docPath);
+      const docs = /** @type {any} */ (mod.docs);
       if (!docs) continue;
 
       // Keyword matching

@@ -33,7 +33,11 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
+import {
+  findPresentFiles,
+  loadModuleWithParser,
+  projectCodeAllowed,
+} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {
   loadIntegrations,
@@ -107,6 +111,17 @@ export const CONFIG_BASENAMES = [
   'astryx.config.mjs',
   'astryx.config.js',
 ];
+
+/** Say once per process why a present config is being ignored. */
+let configSkipNoted = false;
+/** @param {string} configPath */
+function noteConfigSkipped(configPath) {
+  if (configSkipNoted) return;
+  configSkipNoted = true;
+  console.error(
+    `astryx: ASTRYX_NO_PROJECT_CODE=1 — ignoring ${configPath}; running on built-in data only`,
+  );
+}
 
 /** Default issue tracker used when neither config nor integration routes one. */
 export const DEFAULT_ISSUES_URL =
@@ -251,7 +266,17 @@ export class Project {
     const resolvedCache = fresh
       ? new InMemoryConfigCache()
       : (cache ?? new InMemoryConfigCache());
-    const configPath = findConfigPath(cwd);
+    let configPath = findConfigPath(cwd);
+    // Loading the config executes it, and so does loading every integration
+    // manifest — the ones it names, the installed ones autolink finds, and the
+    // package being authored. Under the project-code gate the whole invocation
+    // runs on built-ins: a present config is acknowledged once on stderr and
+    // never imported, and no manifest is loaded.
+    const allowProjectCode = projectCodeAllowed();
+    if (configPath && !allowProjectCode) {
+      noteConfigSkipped(configPath);
+      configPath = null;
+    }
     const hash = configContentHash(configPath);
     // The project root: the config's directory when there is one (findConfigPath
     // resolves the config as a sibling of the nearest package.json, so the two
@@ -287,21 +312,25 @@ export class Project {
     // nothing for want of a line nobody knew to write. Appended AFTER the
     // configured ones so an explicit entry keeps its position and its
     // precedence in every discovery order.
-    loadedIntegrations = [
-      ...loadedIntegrations,
-      ...(await autolinkIntegrations({
-        projectDir,
-        loaded: loadedIntegrations,
-        fresh,
-      })),
-    ];
+    if (allowProjectCode) {
+      loadedIntegrations = [
+        ...loadedIntegrations,
+        ...(await autolinkIntegrations({
+          projectDir,
+          loaded: loadedIntegrations,
+          fresh,
+        })),
+      ];
+    }
 
     // The package being authored is the one package that cannot install itself.
     // When it carries a manifest, resolve its working bytes directly so every
     // existing consumer command doubles as the author's preview. A local copy
     // replaces the same installed package in place, preserving configured
     // precedence while making the source being edited authoritative.
-    const localIntegration = await loadLocalIntegration(projectDir, {fresh});
+    const localIntegration = allowProjectCode
+      ? await loadLocalIntegration(projectDir, {fresh})
+      : null;
     if (localIntegration) {
       const existing = loadedIntegrations.findIndex(
         integration => integration.name === localIntegration.name,

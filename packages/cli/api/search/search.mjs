@@ -50,8 +50,8 @@
  * queries they have nothing to do with.
  */
 
-import {pathToFileURL} from 'node:url';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {importUserModule} from '../../foundation/fs/module-loader.mjs';
 import {
   discoverComponents,
   discoverIntegrationComponents,
@@ -535,7 +535,9 @@ export function scoreCandidate(
  */
 async function loadModuleDoc(docPath, exportName = 'docs') {
   try {
-    const mod = await import(pathToFileURL(docPath).href);
+    // Gated loader: checkout doc modules execute on import and must honor
+    // ASTRYX_NO_PROJECT_CODE (the refusal is swallowed like any load error).
+    const mod = /** @type {any} */ (await importUserModule(docPath));
     // Support both the stamped default export and the legacy named export.
     return mod?.default ?? mod[exportName] ?? null;
   } catch {

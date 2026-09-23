@@ -4,7 +4,6 @@
  * @file Component doc loader — load and merge translations
  */
 
-import {pathToFileURL} from 'node:url';
 import {importUserModule} from '../fs/module-loader.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
@@ -139,7 +138,9 @@ export function mergeTranslation(docs, translation) {
  * @returns {Promise<any>}
  */
 export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
-  const mod = await import(pathToFileURL(readmePath).href);
+  // Through the gated loader: doc modules from a checkout execute on import,
+  // and this path must honor ASTRYX_NO_PROJECT_CODE like loadComponentDoc.
+  const mod = await importUserModule(readmePath);
   // Support both the new stamped default export (`export default {type: 'component', …}`)
   // and the legacy named export (`export const docs = {…}`). Default wins when both
   // are present, matching loadComponentDoc's precedence.
@@ -152,6 +153,7 @@ export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {
   const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
   if (!translationKey || !mod[translationKey]) return docs;
 
+  /** @type {any} */
   const translation = mod[translationKey];
 
   // A full ComponentDoc-shaped translation (legacy docsZh shape) used to be

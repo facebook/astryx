@@ -24,7 +24,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../fs/module-loader.mjs';
+import {
+  isProjectCodeGated,
+  loadModuleWithParser,
+  projectCodeAllowed,
+} from '../fs/module-loader.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {Project} from '../config/project.mjs';
@@ -245,6 +249,11 @@ export function stripTemplateAssetRefs(source) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
+  // Importing executes the spec. Shipped template specs stay loadable under
+  // the project-code gate; checkout/integration ones are skipped like a
+  // missing file. (The JSX-capable jiti here is why this does not route
+  // through importUserModule wholesale.)
+  if (isProjectCodeGated(docPath)) return null;
   const docModule = docPath.endsWith('.ts')
     ? await getJiti().import(docPath)
     : await import(`file://${docPath}`);
@@ -371,9 +380,12 @@ async function discoverBlocks() {
  * @param {string} [cwd]
  */
 async function discoverExternalBlocks(cwd = process.cwd()) {
-  const externals = discoverExternalPackages(cwd);
   /** @type {DiscoveredTemplate[]} */
   const blocks = [];
+  // External blocks are project contributions whose specs execute on load;
+  // under the project-code gate the listing is built-in blocks only.
+  if (!projectCodeAllowed()) return blocks;
+  const externals = discoverExternalPackages(cwd);
 
   for (const ext of externals) {
     if (!ext.blocksDir || !fs.existsSync(ext.blocksDir)) continue;

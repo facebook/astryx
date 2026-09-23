@@ -6,6 +6,8 @@ import * as path from 'node:path';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';
 import {InMemoryConfigCache} from './config-cache.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import * as autolink from '../integrations/autolink.mjs';
+import * as integrations from '../integrations/integrations.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -293,6 +295,105 @@ describe('Project.load', () => {
       `export default { integrations: [42] };\n`,
     );
     await expect(Project.load(tmpDir)).rejects.toThrow(/integrations/);
+  });
+
+  describe('under ASTRYX_NO_PROJECT_CODE=1', () => {
+    afterEach(() => {
+      delete process.env.ASTRYX_NO_PROJECT_CODE;
+      delete globalThis.__astryxConfigProbe;
+      delete globalThis.__astryxManifestProbe;
+    });
+
+    it('skips a present config (never executing it) and loads no configured integration', async () => {
+      scaffold();
+      // Loading a config or a manifest executes it — plant probes so "skipped"
+      // is observable as "never ran", not just "not reflected in the result".
+      fs.writeFileSync(
+        path.join(tmpDir, 'astryx.config.mjs'),
+        `globalThis.__astryxConfigProbe = true;\nexport default {integrations: ['@acme/widgets']};\n`,
+      );
+      const manifestPath = path.join(
+        tmpDir,
+        'node_modules',
+        '@acme',
+        'widgets',
+        'astryx.integration.mjs',
+      );
+      fs.writeFileSync(
+        manifestPath,
+        `globalThis.__astryxManifestProbe = true;\n${fs.readFileSync(manifestPath, 'utf-8')}`,
+      );
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+
+      const project = await Project.load(tmpDir);
+
+      expect(project.config).toEqual({integrations: []});
+      expect(project.integrations).toEqual([]);
+      expect(project.loadedIntegrations).toEqual([]);
+      expect(project.configPath).toBeNull();
+      expect(globalThis.__astryxConfigProbe).toBeUndefined();
+      expect(globalThis.__astryxManifestProbe).toBeUndefined();
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('ASTRYX_NO_PROJECT_CODE'),
+      );
+      expect(await project.issues()).toEqual([]);
+    });
+
+    it('does not autolink an installed integration', async () => {
+      // No config at all: autolink is the only way this manifest would load.
+      scaffold();
+      fs.rmSync(path.join(tmpDir, 'astryx.config.mjs'));
+      const manifestPath = path.join(
+        tmpDir,
+        'node_modules',
+        '@acme',
+        'widgets',
+        'astryx.integration.mjs',
+      );
+      fs.writeFileSync(
+        manifestPath,
+        `globalThis.__astryxManifestProbe = true;\n${fs.readFileSync(manifestPath, 'utf-8')}`,
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          name: 'consumer',
+          dependencies: {'@acme/widgets': '1.0.0'},
+        }),
+      );
+      // Autolink drops a manifest that fails to import, so the loader gate
+      // alone would leave this observationally identical; the spy proves the
+      // gate short-circuits before any manifest is even attempted.
+      const spy = vi.spyOn(autolink, 'autolinkIntegrations');
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+
+      const project = await Project.load(tmpDir);
+
+      expect(project.loadedIntegrations).toEqual([]);
+      expect(globalThis.__astryxManifestProbe).toBeUndefined();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('does not load the package being authored', async () => {
+      scaffoldLocalPackage();
+      fs.writeFileSync(
+        path.join(tmpDir, 'astryx.integration.mjs'),
+        `globalThis.__astryxManifestProbe = true;\n${fs.readFileSync(
+          path.join(tmpDir, 'astryx.integration.mjs'),
+          'utf-8',
+        )}`,
+      );
+      const spy = vi.spyOn(integrations, 'loadLocalIntegration');
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+
+      const project = await Project.load(tmpDir);
+
+      expect(project.loadedIntegrations).toEqual([]);
+      expect(globalThis.__astryxManifestProbe).toBeUndefined();
+      expect(spy).not.toHaveBeenCalled();
+      expect((await project.docs()).resolve('local-guide')).toBeUndefined();
+    });
   });
 });
 

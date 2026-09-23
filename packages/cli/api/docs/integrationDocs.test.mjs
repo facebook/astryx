@@ -20,7 +20,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {docs} from './docs.mjs';
 import {search} from '../search/search.mjs';
-import {loadDocsCatalog} from './_adapter.mjs';
+import {loadDocsCatalog, loadReferenceDocs} from './_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 
 const SLOW = 30_000;
@@ -198,6 +198,43 @@ describe('integration-contributed topics', () => {
       command: 'astryx docs deploying',
     });
   }, SLOW);
+
+  describe('under ASTRYX_NO_PROJECT_CODE=1', () => {
+    afterEach(() => {
+      delete process.env.ASTRYX_NO_PROJECT_CODE;
+      delete globalThis.__astryxTopicProbe;
+    });
+
+    it('keeps the catalog on built-in topics and never reads the config', async () => {
+      scaffold({'deploying.doc.mjs': topic()}, {
+        config:
+          "globalThis.__astryxTopicProbe = true;\nexport default {integrations: ['@acme/widgets']};\n",
+      });
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+      const catalog = await loadDocsCatalog(tmpDir);
+      expect(catalog.resolve('tokens')).toBeTruthy();
+      expect(catalog.resolve('deploying')).toBeUndefined();
+      expect(globalThis.__astryxTopicProbe).toBeUndefined();
+    }, SLOW);
+
+    it('refuses to load a topic module from outside the CLI, while built-ins still load', async () => {
+      // The catalog never holds a project topic under the gate, so the
+      // detail loader is exercised directly here.
+      scaffold({
+        'deploying.doc.mjs': `globalThis.__astryxTopicProbe = true;\nexport const docs = ${JSON.stringify(topic())};\n`,
+      });
+      const projectTopic = path.join(
+        tmpDir, 'node_modules', '@acme', 'widgets', 'docs', 'deploying.doc.mjs',
+      );
+      process.env.ASTRYX_NO_PROJECT_CODE = '1';
+      await expect(loadReferenceDocs(projectTopic)).rejects.toThrow(/ASTRYX_NO_PROJECT_CODE/);
+      expect(globalThis.__astryxTopicProbe).toBeUndefined();
+
+      const builtIn = (await loadDocsCatalog(tmpDir)).resolve('tokens');
+      const loaded = await loadReferenceDocs(builtIn.path, {lang: 'dense'});
+      expect(loaded.name).toBe('tokens');
+    }, SLOW);
+  });
 
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});

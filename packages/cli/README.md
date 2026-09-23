@@ -550,6 +550,38 @@ The config is validated against a strict schema when the CLI loads it, so an
 unknown field is a hard error rather than a silent no-op. `astryx doctor`
 reports whether the config loads cleanly.
 
+### Running in checkouts you don't trust
+
+Loading a config executes it, and so does loading the integration manifests,
+doc modules, template specs, codemods, and theme sources it leads to — which is
+what makes them useful, and also means discovery-backed commands run code from
+whatever checkout they're invoked in. For CI, triage, and agent runs over
+arbitrary checkouts, set:
+
+```bash
+ASTRYX_NO_PROJECT_CODE=1 astryx component Button
+```
+
+Under this gate the CLI runs on the data it ships with and refuses to execute
+anything the checkout contributes:
+
+- A present `astryx.config.*` is acknowledged once on stderr and skipped, and
+  no integration manifest is loaded — not the ones the config names, not the
+  installed ones autolink would pick up, and not the package being authored.
+  `astryx doctor` reports the config as present but not loaded.
+- Read commands (`component`, `docs`, `search`, `template`, `discover`,
+  `layout`, …) keep working on built-in data. A checkout doc module, topic,
+  template spec, or codemod is never imported; a command that can only be
+  answered by importing one fails with an error naming the variable instead.
+- `astryx theme build` refuses a theme source outside the CLI's own package
+  before any loader runs (jiti, the family preloader, or the legacy fallback):
+  it exits 1 with `ERR_THEME_LOAD`, a one-line message naming the variable,
+  and writes nothing. This covers `--family` and `--check` too.
+
+The gate covers code the checkout authors or contributes. The CLI's own
+runtime dependencies (`@astryxdesign/core`, `jscodeshift`, …) resolve and load
+as usual. Default behavior with the variable unset is unchanged.
+
 ## Core codemod authoring
 
 Core codemods live under `packages/cli/assets/codemods/transforms/`. Released

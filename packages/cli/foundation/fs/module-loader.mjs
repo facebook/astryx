@@ -13,11 +13,20 @@
  * load/validation boundary shared by config, integration, codemod, and
  * template discovery: import the module, take its default export, and hand it
  * to the authoring parser (which seals its own zod schema).
+ *
+ * Because every user-authored module flows through here, this is also where
+ * the project-code gate lives: importing a module executes it, which is the
+ * right trade in a workspace the operator trusts and the wrong one in CI,
+ * triage, or agent runs over arbitrary checkouts. ASTRYX_NO_PROJECT_CODE=1
+ * keeps the whole CLI on built-in data — config loading skips cleanly
+ * (Project.load checks the gate first) and any other user-module import
+ * fails with an error that names the variable. Modules under the CLI's own
+ * package root are shipped code, not project code, and always load.
  */
 
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
 import {createJiti} from 'jiti';
 
@@ -30,6 +39,54 @@ function getJiti() {
     jitiInstance = createJiti(import.meta.url);
   }
   return jitiInstance;
+}
+
+/**
+ * True unless this invocation opted out of executing code found in the
+ * workspace (ASTRYX_NO_PROJECT_CODE=1).
+ */
+export function projectCodeAllowed() {
+  return process.env.ASTRYX_NO_PROJECT_CODE !== '1';
+}
+
+// The CLI's own package root. Modules under it (assets/docs topics, shipped
+// templates, command modules) are shipped code, not project code — the gate
+// must not touch them, or "runs on built-in data" would break the built-ins.
+const CLI_PACKAGE_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+);
+
+/**
+ * True when `file` is one of the CLI's own shipped modules.
+ * @param {string} file
+ */
+export function isCliShippedPath(file) {
+  const resolved = path.resolve(file);
+  return (
+    resolved === CLI_PACKAGE_ROOT ||
+    resolved.startsWith(CLI_PACKAGE_ROOT + path.sep)
+  );
+}
+
+/**
+ * True when importing `file` would execute project code this invocation has
+ * opted out of: the gate is on and the module is not one the CLI ships.
+ * Every loader that does not go through {@link importUserModule} (the theme
+ * compiler's jiti, the JSX-capable template jiti) asks this before loading.
+ * @param {string} file absolute path
+ */
+export function isProjectCodeGated(file) {
+  return !projectCodeAllowed() && !isCliShippedPath(file);
+}
+
+/**
+ * The one-line refusal every gated loader reports.
+ * @param {string} file
+ */
+export function projectCodeGateMessage(file) {
+  return `ASTRYX_NO_PROJECT_CODE=1 — refusing to load ${file}; unset the variable to let astryx run modules from this workspace`;
 }
 
 /**
@@ -65,11 +122,17 @@ function isCommonJsFile(file) {
  * Normal loads retain module caching. `fresh` is an explicit migration-only
  * escape hatch for rereading files that a codemod changed during this process.
  *
+ * Under ASTRYX_NO_PROJECT_CODE=1 this refuses everything except the CLI's own
+ * shipped modules — importing executes the module — before any loader runs.
+ *
  * @param {string} file absolute path
  * @param {{fresh?: boolean}} [options]
  * @returns {Promise<Record<string, unknown>>}
  */
 export async function importUserModule(file, {fresh = false} = {}) {
+  if (isProjectCodeGated(file)) {
+    throw new Error(projectCodeGateMessage(file));
+  }
   if (fresh && file.endsWith('.ts')) {
     return await createJiti(import.meta.url, {moduleCache: false}).import(file);
   }

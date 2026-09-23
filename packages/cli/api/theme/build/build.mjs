@@ -46,6 +46,10 @@ import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {
+  isProjectCodeGated,
+  projectCodeGateMessage,
+} from '../../../foundation/fs/module-loader.mjs';
+import {
   assertWithin,
   sanitizeName,
   PathSafetyError,
@@ -2037,6 +2041,25 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
 }
 
 /**
+ * Building a theme executes its source: every loader below (jiti's sync and
+ * async paths, the family preloader, and the regex+eval legacy fallback) runs
+ * the file. Under ASTRYX_NO_PROJECT_CODE=1 a theme source outside the CLI's
+ * own package is refused here, before any loader is created, with the same
+ * one-line message every gated loader uses; the command exits non-zero with
+ * `ERR_THEME_LOAD` and writes nothing.
+ *
+ * @param {string} filePath absolute path to the theme source
+ */
+function refuseGatedThemeSource(filePath) {
+  if (!isProjectCodeGated(filePath)) return;
+  throw new AstryxError(
+    projectCodeGateMessage(filePath),
+    undefined,
+    ERROR_CODES.ERR_THEME_LOAD,
+  );
+}
+
+/**
  * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
  * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
  * or `null` when the theme produced no CSS (nothing to build). Throws
@@ -2066,6 +2089,7 @@ async function themeBuildInternal(
       ERROR_CODES.ERR_FILE_NOT_FOUND,
     );
   }
+  refuseGatedThemeSource(filePath);
 
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
@@ -2726,12 +2750,16 @@ export async function themeBuildFamily(
       error instanceof Error ? error.message : 'Invalid family key.';
     throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
   }
+  // Every selected member AND every intermediary the plan preloads executes
+  // when loaded; refuse the whole family before the first one runs.
+  const plannedSources = planFamilySources(files, cwd);
+  for (const source of plannedSources) refuseGatedThemeSource(source.filePath);
   const familyInterception = interceptCore(_coreThemeModule, _coreRootModule);
   // prettier-ignore
   const familyLoader = createJiti(import.meta.url, {moduleCache: true, interopDefault: false, jsx: true, extensions: THEME_MODULE_EXTENSIONS, virtualModules: familyInterception.modules});
   /** @type {any[]} */
   const prepared = [];
-  for (const source of planFamilySources(files, cwd)) {
+  for (const source of plannedSources) {
     if (!source.selected) {
       await preloadFamilySource(
         source.filePath,
