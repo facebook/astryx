@@ -2651,6 +2651,21 @@
       "aliases": []
     },
     {
+      "name": "example-scrollable-area-inline-rail",
+      "path": "examples/scrollable-area/inline-rail",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-nested-log",
+      "path": "examples/scrollable-area/nested-log",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-group-headers",
+      "path": "examples/scrollable-area/sticky-group-headers",
+      "aliases": []
+    },
+    {
       "name": "example-section-default-with-wash",
       "path": "examples/section/default-with-wash",
       "aliases": []
@@ -4393,6 +4408,11 @@
     {
       "name": "showcase-rich-text-editor-default",
       "path": "showcases/rich-text-editor/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-scrollable-area-default",
+      "path": "showcases/scrollable-area/default",
       "aliases": []
     },
     {
