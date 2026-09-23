@@ -50,7 +50,7 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
   import?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
-   *  names from other design systems (MUI, Chakra, Radix, shadcn).
+   *  names from other design systems (MUI, Chakra, Radix, and others).
    *  Lowercase only. Used by `astryx component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
