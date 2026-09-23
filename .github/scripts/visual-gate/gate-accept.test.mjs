@@ -2,7 +2,7 @@
 
 // `gate.mjs accept` is the promotion boundary: the one command that writes
 // baseline files. These tests drive the real command against a scratch capture
-// and baseline, so what they prove is what the Visual Baseline workflow runs.
+// and baseline, so what they prove is what CI's baseline-publication job runs.
 
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';

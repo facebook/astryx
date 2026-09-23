@@ -74,6 +74,12 @@ decision log remain the write boundary. Partial captures cannot become complete
 baseline candidates. Bootstrap, coverage changes, and browser refreshes use this
 same path; none is a release gate.
 
+The shared promotion boundary accepts `pass` or `changed`. A failed comparison
+is eligible only for the validated browser-only refresh: every baseline and
+captured key is selected, platform and viewport match, every PNG matches its
+manifest hash, and there are no capture failures or removals. Missing, unreadable,
+skipped, unknown, partial, or otherwise failed evidence is refused before writes.
+
 ## Local debugging
 
 ```bash

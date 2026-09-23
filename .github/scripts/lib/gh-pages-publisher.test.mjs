@@ -926,6 +926,7 @@ describe('gh-pages publisher', () => {
         [KEY]: {...SHOT, key: KEY, sha256: digest(after), width: 2, height: 2},
       },
     });
+    writeJSON(path.join(capture, 'verdict.json'), {status: 'changed'});
     const options = {
       ...context(fx, 931, 'visual-gate/baseline'),
       capture,
