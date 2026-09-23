@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-21
+approved_at: 2026-09-22
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -141,6 +141,15 @@ does not read inherited container padding or give those children a
 caller-controlled compensation API. This revision leaves that mechanism
 unchanged.
 
+A component with a documented anatomy container that applies edge compensation
+MAY expose an anatomy-targeted `<anatomy>EdgeCompensation` prop to modify that
+container's compensation. The prop MUST use the shared axis values `inline`,
+`block`, or `all`, preserve the component's documented omission behavior, and
+keep the compensation amount component-owned. `inline` means the named
+container's logical inline edge, `block` means both block edges, and `all`
+combines them. These values do not extend the self-compensation vocabulary below.
+`endContentEdgeCompensation` is DialogHeader's projection of this rule.
+
 `edgeCompensation` names the caller's intent: reduce component-owned inset at
 selected ancestor container content edges while keeping the component's own paint
 or interaction inset. The component contract states when that bounded adjustment
@@ -154,8 +163,9 @@ value vocabulary is:
 A component exposes only the values its current contract and evidence support.
 This mode does not promise that the component box reaches the container's outer
 edge. Reserve `isFullBleed` for components such as ScrollableArea whose visible
-surface consumes the full inherited container inset. New edge-alignment APIs use
-`edgeCompensation` rather than exposing margin values or inventing a second name.
+surface consumes the full inherited container inset. New self-compensation APIs
+use `edgeCompensation` rather than exposing margin values or inventing a second
+name.
 
 ### Edge-compensation ledger
 
