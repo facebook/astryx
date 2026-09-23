@@ -11,7 +11,9 @@
  * @output A compiled reference node: plain JSON carrying a schema version, the
  *   topic after overlay, extension merge and key stamping, and the authored
  *   title of every section. Linking then resolves each token reference against
- *   its target. Nothing in a node is a function, a symbol, or a file path.
+ *   its target. Nothing in a node is a function, a symbol, or a file path: an
+ *   authored value JSON cannot hold (a function, a Date, `undefined`) takes its
+ *   JSON form, the one `--json` output has always shown.
  * @position The one step between authored docs and every docs reader. The docs
  *   API, doctor and search read compiled nodes, and ./lenses.mjs turns them into
  *   response shapes. Internal to the CLI: the public way in is `docs()`.
@@ -61,6 +63,8 @@ export const COMPILED_DOC_SCHEMA_VERSION = 1;
  * @typedef {object} CompiledReferenceNode
  * @property {number} schemaVersion
  * @property {'reference'} kind
+ * @property {'lowered' | 'linked'} stage `linked` once every token reference
+ *   carries its resolution; a lowered node carries none
  * @property {string} id the topic's name in the catalog
  * @property {string | null} lang
  * @property {{provider: string, replaces: string | null, extensions: string[]}} provenance
@@ -91,14 +95,13 @@ export function lowerReferenceTopic(input) {
   const keyed = withSectionKeys(doc);
   /** @type {Record<string, string>} */
   const sourceTitles = {};
-  const sections = keyed.sections.map((/** @type {any} */ section) => {
+  for (const section of keyed.sections) {
     sourceTitles[section.id] = sourceTitle(section);
-    // A plain copy: the authored title travels in sourceTitles, not a symbol.
-    return {...section};
-  });
+  }
   return {
     schemaVersion: COMPILED_DOC_SCHEMA_VERSION,
     kind: 'reference',
+    stage: 'lowered',
     id: input.id,
     lang: input.lang,
     provenance: {
@@ -107,7 +110,8 @@ export function lowerReferenceTopic(input) {
       extensions: input.extensions.map(extension => extension.provider),
     },
     sourceTitles,
-    doc: {...keyed, sections},
+    // The authored title travels in sourceTitles; JSON drops the symbol.
+    doc: asJson(keyed, input.id),
   };
 }
 
@@ -123,7 +127,7 @@ export async function linkReferenceTopic(node, lowerTarget) {
   for (const section of node.doc.sections) {
     sections.push(await linkReferenceSection(section, lowerTarget));
   }
-  return {...node, doc: {...node.doc, sections}};
+  return {...node, stage: 'linked', doc: {...node.doc, sections}};
 }
 
 /**
@@ -174,6 +178,24 @@ async function resolveTokenRef(block, lowerTarget) {
     ...(found.previewType ? {previewType: found.previewType} : {}),
     content: found.content,
   };
+}
+
+/**
+ * A value as JSON carries it: functions, symbols and `undefined` dropped,
+ * Dates as ISO strings.
+ * @param {any} value
+ * @param {string} topic for the message when the value cannot be serialized
+ * @returns {any}
+ */
+function asJson(value, topic) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (err) {
+    throw new Error(
+      `${topic} cannot be compiled: ${err instanceof Error ? err.message : String(err)}`,
+      {cause: err},
+    );
+  }
 }
 
 /**

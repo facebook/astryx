@@ -7,6 +7,8 @@
  *   and for section lookup, linked for anything that inlines token references.
  * @output The `docs.detail` topic, the `docs.index` section index, one
  *   `docs.detail.section` section, and the sections as readers look them up.
+ *   Every view is a fresh copy, so a reader may edit what it gets back without
+ *   touching the node, which other reads of the same catalog share.
  * @position Between the compiler and api/docs. A lens only projects: it never
  *   loads, merges, overlays, keys, or resolves a reference itself.
  */
@@ -28,6 +30,8 @@ function authoredTitle(node, section) {
 /**
  * The node's sections as readers look them up: each one knows its authored
  * title, so a query in the authoring language finds a translated section.
+ * For lookup only; a section a reader gets back comes from
+ * {@link sectionView}.
  * @param {import('./compile.mjs').CompiledReferenceNode} node
  * @returns {any[]}
  */
@@ -43,12 +47,17 @@ export function readerSections(node) {
  * @returns {any}
  */
 export function detailView(node) {
-  return {
-    ...node.doc,
-    sections: node.doc.sections.map((/** @type {any} */ section) =>
-      sectionView(node, section),
-    ),
-  };
+  if (node.stage !== 'linked') {
+    throw new Error(
+      `"${node.id}" must be linked before its whole doc is read.`,
+    );
+  }
+  // Assigning `sections` keeps it where the authored doc put it.
+  const view = structuredClone({...node.doc, sections: []});
+  view.sections = node.doc.sections.map((/** @type {any} */ section) =>
+    sectionView(node, section),
+  );
+  return view;
 }
 
 /**
@@ -63,20 +72,19 @@ export function indexView(node) {
 /**
  * `docs.detail.section`: one section with its token references inlined. A
  * referenced section's content takes the reference's place; the section takes
- * the referenced section's preview type when it has none of its own.
+ * the preview type of the last reference that has one, unless it has its own.
  * @param {import('./compile.mjs').CompiledReferenceNode} node
  * @param {any} section a linked section of `node`
  * @returns {any}
  */
 export function sectionView(node, section) {
-  const title = authoredTitle(node, section);
   /** @type {any[]} */
   const content = [];
-  /** @type {any} */
-  let withPreview = null;
+  /** @type {string | null} */
+  let previewType = null;
   for (const block of section.content) {
     if (block?.type !== 'token-ref') {
-      content.push(block);
+      content.push(structuredClone(block));
       continue;
     }
     const target = block.resolved;
@@ -99,15 +107,21 @@ export function sectionView(node, section) {
       });
       continue;
     }
-    for (const refBlock of target.content) content.push(refBlock);
+    // A copy per reference: two references to one section share nothing.
+    for (const refBlock of target.content) {
+      content.push(structuredClone(refBlock));
+    }
     if (target.previewType && !section.previewType) {
-      withPreview = withSourceTitle(
-        {...section, previewType: target.previewType, content},
-        title,
-      );
+      previewType = target.previewType;
     }
   }
-  if (withPreview == null) return withSourceTitle({...section, content}, title);
-  withPreview.content = content;
-  return withPreview;
+  // Assigning `content` keeps it where the section put it; a carried preview
+  // type lands after the section's own keys, as it always has.
+  const view = structuredClone(
+    previewType == null
+      ? {...section, content: []}
+      : {...section, previewType, content: []},
+  );
+  view.content = content;
+  return withSourceTitle(view, authoredTitle(node, section));
 }

@@ -149,6 +149,8 @@ const loweredByCatalog = new WeakMap();
 /**
  * One topic, lowered for `lang`: overlaid, extensions merged, keys stamped.
  * Memoized per catalog, so a read that references a topic twice loads it once.
+ * Every read of the catalog shares the memoized node, so it is frozen; the
+ * lenses hand readers copies.
  * @param {DocsCatalog} catalog
  * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
  * @param {string | null} [lang]
@@ -164,10 +166,26 @@ export function lowerTopic(catalog, entry, lang = null) {
   const key = `${entry.name.toLowerCase()}\u0000${overlay ?? ''}`;
   let lowered = cache.get(key);
   if (!lowered) {
-    lowered = loadCompilerInput(entry, overlay).then(lowerReferenceTopic);
+    lowered = loadCompilerInput(entry, overlay).then(input =>
+      deepFreeze(lowerReferenceTopic(input)),
+    );
     cache.set(key, lowered);
   }
   return lowered;
+}
+
+/**
+ * Freeze a value and everything in it.
+ * @template T
+ * @param {T} value
+ * @returns {T}
+ */
+function deepFreeze(value) {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
 }
 
 /**

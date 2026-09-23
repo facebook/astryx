@@ -1,14 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Every shipped topic compiles to a plain-JSON node: a node read back
- * from JSON validates and answers every docs read exactly as the live one does.
+ * @file Every shipped topic compiles to a plain-JSON node that answers every
+ * docs read exactly as the live one does, and no read can change another read
+ * of the same catalog.
  */
 
 import {describe, expect, it} from 'vitest';
 import {parseCompiledReferenceNode} from '../../foundation/doc-compiler/ir.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
-import {compileTopic, loadDocsCatalog, overlayLanguages} from './_adapter.mjs';
+import {
+  compileTopic,
+  loadDocsCatalog,
+  lowerTopic,
+  overlayLanguages,
+} from './_adapter.mjs';
 
 const SLOW = 60_000;
 
@@ -20,7 +26,10 @@ describe('every shipped topic compiles to plain JSON', () => {
       let compiled = 0;
       for (const entry of catalog.entries()) {
         for (const lang of [null, ...overlayLanguages(entry)]) {
+          const lowered = await lowerTopic(catalog, entry, lang);
+          expect(parseCompiledReferenceNode(lowered)).toBe(lowered);
           const node = await compileTopic(catalog, entry, lang);
+          expect(parseCompiledReferenceNode(node)).toBe(node);
           const copy = parseCompiledReferenceNode(
             JSON.parse(JSON.stringify(node)),
           );
@@ -34,6 +43,35 @@ describe('every shipped topic compiles to plain JSON', () => {
         }
       }
       expect(compiled).toBeGreaterThan(catalog.entries().length);
+    },
+    SLOW,
+  );
+});
+
+describe('reads that share a catalog', () => {
+  it(
+    'never let one read change another',
+    async () => {
+      const catalog = await loadDocsCatalog();
+      const tokens = catalog.resolve('tokens');
+      const first = detailView(await compileTopic(catalog, tokens));
+      for (const section of first.sections) {
+        section.title = 'EDITED';
+        for (const block of section.content) {
+          if (typeof block.text === 'string') block.text = 'EDITED';
+          if (Array.isArray(block.rows)) block.rows.push(['EDITED']);
+        }
+      }
+      const again = detailView(await compileTopic(catalog, tokens));
+      const index = indexView(await lowerTopic(catalog, tokens));
+      const spacing = detailView(
+        await compileTopic(catalog, catalog.resolve('spacing')),
+      );
+      for (const read of [again, index, spacing]) {
+        expect(JSON.stringify(read)).not.toContain('EDITED');
+      }
+      const lowered = await lowerTopic(catalog, tokens);
+      expect(Object.isFrozen(lowered.doc.sections[0].content)).toBe(true);
     },
     SLOW,
   );

@@ -8,6 +8,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import jscodeshift from 'jscodeshift';
 import {describe, expect, it} from 'vitest';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 import {
@@ -66,6 +67,16 @@ const demo = () =>
     {title: 'Props', content: [prose('Every prop.')]},
   ]);
 
+/** @param {string} name @param {string} text */
+const extension = (name, text) => ({
+  ...file(
+    authored(name, [{title: 'Quick Start', content: [prose(text)]}], {
+      extends: 'demo',
+    }),
+  ),
+  provider: `@acme/${name}`,
+});
+
 describe('lowerReferenceTopic', () => {
   it('lays the overlay over authored titles and keys every section', () => {
     const overlay = {
@@ -80,6 +91,7 @@ describe('lowerReferenceTopic', () => {
     };
     const node = lowerReferenceTopic(input(file(demo(), {overlay}), [], 'zh'));
     expect(node.schemaVersion).toBe(COMPILED_DOC_SCHEMA_VERSION);
+    expect(node.stage).toBe('lowered');
     expect(node.doc.description).toBe('演示。');
     expect(
       node.doc.sections.map((/** @type {any} */ s) => [s.id, s.title]),
@@ -91,12 +103,11 @@ describe('lowerReferenceTopic', () => {
       'quick-start': 'Quick Start',
       props: 'Props',
     });
-    // Plain JSON: nothing is lost on a round trip.
-    expect(JSON.parse(JSON.stringify(node))).toEqual(node);
+    expect(parseCompiledReferenceNode(node)).toBe(node);
   });
 
   it('merges extensions by key in order and names every provider', () => {
-    const extension = authored(
+    const acme = authored(
       'demo-acme',
       [
         {title: 'Quick Start', content: [prose('Acme start.')]},
@@ -105,7 +116,7 @@ describe('lowerReferenceTopic', () => {
       {extends: 'demo'},
     );
     const node = lowerReferenceTopic(
-      input(file(demo()), [{...file(extension), provider: '@acme/ext'}]),
+      input(file(demo()), [{...file(acme), provider: '@acme/ext'}]),
     );
     expect(node.doc.sections.map((/** @type {any} */ s) => s.id)).toEqual([
       'quick-start',
@@ -121,17 +132,6 @@ describe('lowerReferenceTopic', () => {
   });
 
   it('applies extensions in configuration order, so the last one wins', () => {
-    const extension = (
-      /** @type {string} */ name,
-      /** @type {string} */ text,
-    ) => ({
-      ...file(
-        authored(name, [{title: 'Quick Start', content: [prose(text)]}], {
-          extends: 'demo',
-        }),
-      ),
-      provider: `@acme/${name}`,
-    });
     const node = lowerReferenceTopic(
       input(file(demo()), [
         extension('one', 'First.'),
@@ -168,6 +168,25 @@ describe('lowerReferenceTopic', () => {
         ]),
       ),
     ).toThrow(broken);
+  });
+
+  it('carries authored values the way JSON does', () => {
+    const doc = {
+      ...demo(),
+      when: new Date(0),
+      render: () => 1,
+      note: undefined,
+    };
+    doc.sections = [
+      {...doc.sections[0], previewType: undefined},
+      doc.sections[1],
+    ];
+    const node = lowerReferenceTopic(input(file(doc)));
+    expect(node.doc.when).toBe('1970-01-01T00:00:00.000Z');
+    expect('render' in node.doc).toBe(false);
+    expect('note' in node.doc).toBe(false);
+    expect('previewType' in node.doc.sections[0]).toBe(false);
+    expect(parseCompiledReferenceNode(node)).toBe(node);
   });
 });
 
@@ -226,8 +245,10 @@ describe('linking and lenses', () => {
     name === 'tokens' ? tokens() : null;
 
   it('resolves a reference by key or authored title in the reading language', async () => {
-    const detail = detailView(await linkReferenceTopic(guide(), targets));
-    const [byTitle, byKey, noTopic, noSection] = detail.sections;
+    const linked = await linkReferenceTopic(guide(), targets);
+    expect(linked.stage).toBe('linked');
+    expect(parseCompiledReferenceNode(linked)).toBe(linked);
+    const [byTitle, byKey, noTopic, noSection] = detailView(linked).sections;
     for (const section of [byTitle, byKey]) {
       expect(section.content).toEqual([
         {type: 'table', headers: ['Token'], rows: [['--space-1']]},
@@ -240,6 +261,117 @@ describe('linking and lenses', () => {
     expect(noSection.content).toEqual([
       prose('[token-ref: section "nope" not found in "tokens"]'),
     ]);
+  });
+
+  it('takes the preview type of the last reference that has one', async () => {
+    const palette = lowerReferenceTopic(
+      input(
+        file(
+          authored('palette', [
+            {
+              title: 'Spacing',
+              previewType: 'spacing-bar',
+              content: [{type: 'table', headers: ['S'], rows: [['1']]}],
+            },
+            {title: 'Plain', content: [prose('No preview.')]},
+            {
+              title: 'Radius',
+              previewType: 'radius-box',
+              content: [{type: 'table', headers: ['R'], rows: [['2']]}],
+            },
+          ]),
+        ),
+      ),
+    );
+    const both = lowerReferenceTopic(
+      input(
+        file(
+          authored('guide', [
+            {
+              title: 'Both',
+              content: ['spacing', 'plain', 'radius'].map(section => ({
+                type: 'token-ref',
+                topic: 'palette',
+                section,
+              })),
+            },
+          ]),
+        ),
+      ),
+    );
+    const [section] = detailView(
+      await linkReferenceTopic(both, async () => palette),
+    ).sections;
+    expect(section.previewType).toBe('radius-box');
+    expect(Object.keys(section)).toEqual([
+      'title',
+      'content',
+      'id',
+      'previewType',
+    ]);
+    expect(section.content.map((/** @type {any} */ b) => b.type)).toEqual([
+      'table',
+      'prose',
+      'table',
+    ]);
+  });
+
+  it('gives every inlined copy of a referenced section its own blocks', async () => {
+    const shared = tokens();
+    const sameTarget = async (/** @type {string} */ name) =>
+      name === 'tokens' ? shared : null;
+    const twice = lowerReferenceTopic(
+      input(
+        file(
+          authored('guide', [
+            {
+              title: 'First',
+              content: [
+                {type: 'token-ref', topic: 'tokens', section: 'spacing'},
+              ],
+            },
+            {
+              title: 'Second',
+              content: [
+                {type: 'token-ref', topic: 'tokens', section: 'spacing'},
+              ],
+            },
+          ]),
+        ),
+        [],
+        'zh',
+      ),
+    );
+    const [first, second] = detailView(
+      await linkReferenceTopic(twice, sameTarget),
+    ).sections;
+    expect(first.content).toEqual(second.content);
+    expect(first.content[0]).not.toBe(second.content[0]);
+    expect(first.content[0]).not.toBe(shared.doc.sections[0].content[0]);
+  });
+
+  it('hands out views that share nothing with the node', async () => {
+    const lowered = lowerReferenceTopic(
+      input(file({...demo(), extra: {tags: ['a']}})),
+    );
+    // Authored sections hold only scalars besides content; a node read back
+    // from JSON may hold more, and the lens copies that too.
+    lowered.doc.sections[0] = {
+      ...lowered.doc.sections[0],
+      meta: {level: 1},
+      content: [{type: 'table', headers: ['A'], rows: [['1']]}],
+    };
+    const node = await linkReferenceTopic(lowered, async () => null);
+    const view = detailView(node);
+    expect(JSON.stringify(view)).toBe(JSON.stringify(node.doc));
+    expect(view.extra).not.toBe(node.doc.extra);
+    expect(view.sections[0].meta).not.toBe(node.doc.sections[0].meta);
+    expect(view.sections[0].content[0]).not.toBe(
+      node.doc.sections[0].content[0],
+    );
+    expect(view.sections[0].content[0].rows).not.toBe(
+      node.doc.sections[0].content[0].rows,
+    );
   });
 
   it('reads the index and section lookups without linking', () => {
@@ -259,11 +391,28 @@ describe('linking and lenses', () => {
     expect(() => sectionView(node, node.doc.sections[0])).toThrow(
       /before it was linked/,
     );
+    expect(() => detailView(node)).toThrow(/must be linked/);
   });
 });
 
 describe('parseCompiledReferenceNode', () => {
   const node = () => lowerReferenceTopic(input(file(demo())));
+  const linked = async () =>
+    linkReferenceTopic(
+      lowerReferenceTopic(
+        input(
+          file(
+            authored('guide', [
+              {
+                title: 'Ref',
+                content: [{type: 'token-ref', topic: 'nope', section: 'x'}],
+              },
+            ]),
+          ),
+        ),
+      ),
+      async () => null,
+    );
 
   it('returns a valid node as given', () => {
     const value = JSON.parse(JSON.stringify(node()));
@@ -282,60 +431,257 @@ describe('parseCompiledReferenceNode', () => {
     ).toThrow(/no authored title for section "quick-start"/);
     const twice = node();
     twice.doc.sections[1] = {...twice.doc.sections[1], id: 'quick-start'};
-    twice.sourceTitles['quick-start'] = 'Quick Start';
     expect(() => parseCompiledReferenceNode(twice)).toThrow(
       /two sections have the key/,
     );
   });
 
-  it('rejects a malformed token reference resolution', () => {
-    const bad = node();
-    bad.doc.sections[0] = {
-      ...bad.doc.sections[0],
-      content: [
-        {
+  it.each([
+    [
+      'a function in a block',
+      (/** @type {any} */ n) => {
+        n.doc.sections[0].content[0].text = () => 1;
+      },
+      /a function is not JSON/,
+    ],
+    [
+      'a Date',
+      (/** @type {any} */ n) => {
+        n.doc.when = new Date(0);
+      },
+      /a Date is not JSON/,
+    ],
+    [
+      'an undefined value',
+      (/** @type {any} */ n) => {
+        n.doc.note = undefined;
+      },
+      /undefined is not JSON/,
+    ],
+    [
+      'a symbol key',
+      (/** @type {any} */ n) => {
+        n.doc[Symbol('x')] = 1;
+      },
+      /symbol keys/,
+    ],
+    [
+      'a cycle',
+      (/** @type {any} */ n) => {
+        n.doc.self = n.doc;
+      },
+      /refers back to itself/,
+    ],
+    [
+      'a block that is a number',
+      (/** @type {any} */ n) => {
+        n.doc.sections[0].content.push(42);
+      },
+      /expected a block with a type/,
+    ],
+    [
+      'a null block',
+      (/** @type {any} */ n) => {
+        n.doc.sections[0].content.push(null);
+      },
+      /expected a block with a type/,
+    ],
+    [
+      'a block with no type',
+      (/** @type {any} */ n) => {
+        n.doc.sections[0].content.push({text: 'x'});
+      },
+      /expected a block with a type/,
+    ],
+    [
+      'a path in the provenance',
+      (/** @type {any} */ n) => {
+        n.provenance.provider = '/home/me/acme';
+      },
+      /naming packages, not paths/,
+    ],
+    [
+      'a resolution on a lowered node',
+      (/** @type {any} */ n) => {
+        n.doc.sections[0].content.push({
           type: 'token-ref',
           topic: 't',
           section: 's',
-          resolved: {status: 'maybe'},
-        },
-      ],
+          resolved: {status: 'unknown-topic'},
+        });
+      },
+      /a lowered node carries no resolution/,
+    ],
+  ])('rejects %s', (_, mutate, message) => {
+    const value = node();
+    mutate(value);
+    expect(() => parseCompiledReferenceNode(value)).toThrow(message);
+  });
+
+  it('rejects a linked node with an unresolved or malformed reference', async () => {
+    const unresolved = await linked();
+    delete unresolved.doc.sections[0].content[0].resolved;
+    expect(() => parseCompiledReferenceNode(unresolved)).toThrow(
+      /a linked node resolves every reference/,
+    );
+    const malformed = await linked();
+    malformed.doc.sections[0].content[0] = {
+      ...malformed.doc.sections[0].content[0],
+      resolved: {status: 'maybe'},
     };
-    expect(() => parseCompiledReferenceNode(bad)).toThrow(
-      /token reference to "t"/,
+    expect(() => parseCompiledReferenceNode(malformed)).toThrow(
+      /token reference to "nope"/,
     );
   });
 });
 
 describe('readers go through the compiler', () => {
-  /** Doc work that belongs to discovery and the compiler, never to a reader. */
-  const COMPILER_ONLY =
-    /\b(mergeTopic|withSectionKeys|linkReferenceTopic|linkReferenceSection|lowerReferenceTopic)\s*\(/;
-  const ALLOWED = new Set([
-    'api/docs/_adapter.mjs',
-    'api/docs/detail/detail.mjs',
-    'api/docs/detail/section/section.mjs',
-  ]);
+  /** Compiler functions, by module. ESLint enforces the same list. */
+  const RESTRICTED = {
+    'foundation/discovery/docs-discovery.mjs': ['mergeTopic'],
+    'foundation/discovery/docs-section-key.mjs': ['withSectionKeys'],
+    'foundation/doc-compiler/compile.mjs': [
+      'lowerReferenceTopic',
+      'linkReferenceTopic',
+      'linkReferenceSection',
+    ],
+  };
+  /** The docs adapter and leaves drive the compiler; nothing else does. */
+  const ALLOWED = {
+    'api/docs/_adapter.mjs': ['lowerReferenceTopic', 'linkReferenceTopic'],
+    'api/docs/detail/detail.mjs': ['linkReferenceTopic'],
+    'api/docs/detail/section/section.mjs': ['linkReferenceSection'],
+  };
+  const j = jscodeshift.withParser('babel');
+
+  /**
+   * Every import of a compiler function that `rel` may not make: named under
+   * any alias, namespace, re-export, and dynamic import().
+   * @param {string} source
+   * @param {string} rel path under packages/cli
+   * @returns {string[]}
+   */
+  function forbiddenImports(source, rel) {
+    /** @type {string[]} */
+    const allowed = ALLOWED[/** @type {keyof typeof ALLOWED} */ (rel)] ?? [];
+    /** @type {string[]} */
+    const found = [];
+    /** @param {unknown} specifier @returns {string[]} */
+    const bannedFrom = specifier => {
+      if (typeof specifier !== 'string' || !specifier.startsWith('.')) {
+        return [];
+      }
+      const target = path.posix.normalize(
+        path.posix.join(path.posix.dirname(rel), specifier),
+      );
+      const names =
+        RESTRICTED[/** @type {keyof typeof RESTRICTED} */ (target)] ?? [];
+      return names.filter(name => !allowed.includes(name));
+    };
+    /** @param {any} node */
+    const checkStatic = node => {
+      const banned = bannedFrom(node.source?.value);
+      if (banned.length === 0) return;
+      if (node.type === 'ExportAllDeclaration') {
+        found.push(`${rel}: export * from ${node.source.value}`);
+        return;
+      }
+      for (const spec of node.specifiers ?? []) {
+        const name =
+          spec.type === 'ImportNamespaceSpecifier'
+            ? '*'
+            : spec.type === 'ImportDefaultSpecifier'
+              ? 'default'
+              : (spec.imported ?? spec.local)?.name;
+        if (name === '*' || name === 'default' || banned.includes(name)) {
+          found.push(`${rel}: ${name} from ${node.source.value}`);
+        }
+      }
+    };
+    /** @param {any} node */
+    const checkDynamic = node => {
+      const specifier = node.source?.value ?? node.arguments?.[0]?.value;
+      if (bannedFrom(specifier).length > 0) {
+        found.push(`${rel}: import(${specifier})`);
+      }
+    };
+    const root = j(source);
+    root.find(j.ImportDeclaration).forEach(p => checkStatic(p.node));
+    root
+      .find(j.ExportNamedDeclaration)
+      .forEach(p => p.node.source && checkStatic(p.node));
+    root.find(j.ExportAllDeclaration).forEach(p => checkStatic(p.node));
+    root.find(j.ImportExpression).forEach(p => checkDynamic(p.node));
+    root
+      .find(j.CallExpression, {callee: {type: 'Import'}})
+      .forEach(p => checkDynamic(p.node));
+    return found;
+  }
 
   /** @param {string} dir @returns {string[]} */
   const sources = dir =>
     fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory())
+      if (entry.isDirectory()) {
         return entry.name === 'node_modules' ? [] : sources(full);
+      }
       return entry.name.endsWith('.mjs') && !entry.name.endsWith('.test.mjs')
         ? [full]
         : [];
     });
 
-  it('keeps merging, keying and linking out of api/ and clients/', () => {
+  it('keeps compiler functions out of api/ and clients/', () => {
     const offenders = ['api', 'clients']
       .flatMap(dir => sources(path.join(CLI_ROOT, dir)))
-      .map(full => path.relative(CLI_ROOT, full).split(path.sep).join('/'))
-      .filter(rel => !ALLOWED.has(rel))
-      .filter(rel =>
-        COMPILER_ONLY.test(fs.readFileSync(path.join(CLI_ROOT, rel), 'utf8')),
+      .flatMap(full =>
+        forbiddenImports(
+          fs.readFileSync(full, 'utf8'),
+          path.relative(CLI_ROOT, full).split(path.sep).join('/'),
+        ),
       );
     expect(offenders).toEqual([]);
+  });
+
+  it('catches every way around the rule', () => {
+    const doctor = 'api/doctor/doctor.mjs';
+    const discovery = '../../foundation/discovery/docs-discovery.mjs';
+    expect(
+      forbiddenImports(
+        `import {mergeTopic as merge} from '${discovery}'; merge({}, {});`,
+        doctor,
+      ),
+    ).toHaveLength(1);
+    expect(
+      forbiddenImports(
+        `import * as dd from '${discovery}'; dd['mergeTopic']({}, {});`,
+        doctor,
+      ),
+    ).toHaveLength(1);
+    expect(
+      forbiddenImports(
+        `async function f() { const dd = await import('${discovery}'); dd.mergeTopic.call(null, {}, {}); }`,
+        doctor,
+      ),
+    ).toHaveLength(1);
+    expect(
+      forbiddenImports(
+        `export {withSectionKeys} from '../../foundation/discovery/docs-section-key.mjs';`,
+        doctor,
+      ),
+    ).toHaveLength(1);
+    expect(
+      forbiddenImports(`import {DocsCatalog} from '${discovery}';`, doctor),
+    ).toEqual([]);
+    const leaf = 'api/docs/detail/detail.mjs';
+    const compiler = '../../../foundation/doc-compiler/compile.mjs';
+    expect(
+      forbiddenImports(`import {linkReferenceTopic} from '${compiler}';`, leaf),
+    ).toEqual([]);
+    expect(
+      forbiddenImports(
+        `import {lowerReferenceTopic} from '${compiler}';`,
+        leaf,
+      ),
+    ).toHaveLength(1);
   });
 });
