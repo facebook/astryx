@@ -1498,10 +1498,12 @@ function findBlockExtensionContainerRanges(
       end: baseOffset + source.length,
     });
   }
-  return discovery.ranges.map(range => ({
-    start: range.start - baseOffset,
-    end: range.end - baseOffset,
-  }));
+  return discovery.ranges
+    .sort((left, right) => left.start - right.start || right.end - left.end)
+    .map(range => ({
+      start: range.start - baseOffset,
+      end: range.end - baseOffset,
+    }));
 }
 
 function extractScopedLinkDefinitions(

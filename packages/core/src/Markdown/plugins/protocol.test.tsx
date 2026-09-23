@@ -1092,9 +1092,16 @@ describe('Markdown plugin protocol', () => {
       '[d]: /docs',
       'Use [d].',
       ...Array.from({length: depth}, () => ':::'),
+      '',
+      'Outside [d].',
     ].join('\n');
 
-    expect(parseMarkdown(source, {plugins: [plugin]})).toHaveLength(1);
+    const parsed = parseMarkdown(source, {plugins: [plugin]});
+    expect(parsed).toHaveLength(2);
+    expect(parsed.at(-1)).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: 'Outside [d].'}],
+    });
     expect(tokenize.mock.calls.length).toBeLessThanOrEqual(depth * 2 + 2);
   });
 
