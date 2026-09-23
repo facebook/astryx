@@ -472,9 +472,7 @@ export const FullAIChat: StoryObj = {
             placeholder="Ask about the codebase..."
           />
         }
-        footerActions={
-          <Button label="Claude Opus" variant="ghost" size="md" />
-        }
+        footerActions={<Button label="Claude Opus" variant="ghost" size="md" />}
         sendActions={
           <Button
             label="Microphone"
@@ -844,6 +842,62 @@ export const WithEmptyState: StoryObj = {
         }>
         {[]}
       </ChatLayout>
+    </div>
+  ),
+};
+
+const DENSITIES = ['compact', 'balanced', 'spacious'] as const;
+
+/**
+ * The three densities side by side. Density is a prop, not an automatic
+ * container-width adaptation: it selects the dock's inline and block-end
+ * padding, the message area's max-width and inline padding, and the height and
+ * mask of the frosted glass blur layer.
+ */
+export const Densities: StoryObj = {
+  name: 'Densities',
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 16,
+        height: '100vh',
+        padding: 16,
+        boxSizing: 'border-box',
+      }}>
+      {DENSITIES.map(density => (
+        <div
+          key={density}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+          <strong style={{paddingBlockEnd: 8}}>{density}</strong>
+          <ChatLayout
+            density={density}
+            composer={
+              <ChatComposer onSubmit={() => {}} placeholder="Reply…" />
+            }>
+            <ChatMessageList density={density}>
+              <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
+              <ChatMessage sender="user">
+                <ChatMessageBubble>
+                  How does density change the layout?
+                </ChatMessageBubble>
+              </ChatMessage>
+              <ChatMessage sender="assistant">
+                <ChatMessageBubble>
+                  It sets the dock padding, the message column width, and the
+                  height of the blur behind the composer.
+                </ChatMessageBubble>
+              </ChatMessage>
+            </ChatMessageList>
+          </ChatLayout>
+        </div>
+      ))}
     </div>
   ),
 };
