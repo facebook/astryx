@@ -147,6 +147,13 @@ async function scrollToTop(root: Locator): Promise<void> {
   });
 }
 
+/** Computed visibility of the pill — the state every claim below turns on. */
+async function pillVisibility(page: Page): Promise<string> {
+  return page
+    .locator(PILL)
+    .evaluate(element => getComputedStyle(element).visibility);
+}
+
 /**
  * Can the affordance take focus at all? This is the mechanism under test:
  * `visibility: hidden` removes an element from sequential focus navigation AND
@@ -166,30 +173,38 @@ async function affordanceAcceptsFocus(page: Page): Promise<boolean> {
 }
 
 /**
- * Tab forward from `from` and report whether focus ever lands inside the
- * affordance, plus the sequence it walked. Reachability is the user-level
- * property; the number of intervening stops is not part of the contract, so
- * this sweeps rather than asserting one exact stop.
+ * Tab forward from `from` and report whether focus lands inside the affordance
+ * before it leaves the layout.
+ *
+ * The sweep MUST stop at the layout boundary. Sequential focus navigation
+ * scrolls each stop into view, and this affordance's visibility is a function
+ * of scroll position — so a sweep that runs past the last stop wraps around the
+ * document, re-enters the layout, and can flip the state it is measuring. An
+ * earlier revision did exactly that: it walked
+ * `root -> composer -> body -> sentinel -> root -> affordance` and reported the
+ * resting affordance as reachable, having made it visible on the way.
  */
-async function tabSweep(
+async function tabWithinLayout(
   page: Page,
   from: Locator,
-  presses: number,
+  maxPresses: number,
 ): Promise<{reached: boolean; sequence: string[]}> {
   await from.focus();
   const sequence: string[] = [];
-  for (let index = 0; index < presses; index += 1) {
+  for (let index = 0; index < maxPresses; index += 1) {
     await page.keyboard.press('Tab');
     const stop = await page.evaluate(() => {
       const active = document.activeElement as HTMLElement | null;
+      const layout = document.querySelector('.astryx-chat-layout');
       if (active == null || active === document.body) {
-        return {label: 'body', onAffordance: false};
+        return {label: 'body', inside: false, onAffordance: false};
       }
       const name =
         active.getAttribute('aria-label') ??
-        (active.textContent ?? '').trim().slice(0, 32);
+        (active.textContent ?? '').trim().slice(0, 28);
       return {
         label: `${active.tagName.toLowerCase()}${name ? `:${name}` : ''}`,
+        inside: layout != null && layout.contains(active),
         onAffordance:
           active.closest('.astryx-chat-layout-scroll-button') != null,
       };
@@ -198,14 +213,11 @@ async function tabSweep(
     if (stop.onAffordance) {
       return {reached: true, sequence};
     }
+    if (!stop.inside) {
+      break;
+    }
   }
   return {reached: false, sequence};
-}
-
-async function pillVisibility(page: Page): Promise<string> {
-  return page
-    .locator(PILL)
-    .evaluate(element => getComputedStyle(element).visibility);
 }
 
 async function capture(
@@ -283,15 +295,17 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
     await affordanceAcceptsFocus(page),
     'a control that paints nothing must refuse focus (WCAG 2.2 SC 2.4.7)',
   ).toBe(false);
-  const restSweep = await tabSweep(page, before, SWEEP);
+  const restSweep = await tabWithinLayout(page, before, SWEEP);
   expect(
     restSweep.reached,
     `Tab reached the hidden affordance: ${restSweep.sequence.join(' -> ')}`,
   ).toBe(false);
+  // The sweep must not have moved the scroll position it was measuring.
+  await expect(pill).toHaveCSS('visibility', 'hidden');
   await capture(page, 'rest-hidden', {
     pillVisibility: await pillVisibility(page),
     affordanceAcceptsFocus: false,
-    reachedByTabWithin: `not within ${SWEEP} presses`,
+    reachedByTabBeforeLeavingLayout: false,
     tabSequence: restSweep.sequence,
     distanceFromBottomPx: await distanceFromBottom(root),
   });
@@ -305,7 +319,7 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
     await affordanceAcceptsFocus(page),
     'the visible affordance must keep its keyboard access',
   ).toBe(true);
-  const visibleSweep = await tabSweep(page, before, SWEEP);
+  const visibleSweep = await tabWithinLayout(page, before, SWEEP);
   expect(
     visibleSweep.reached,
     `Tab never reached the visible affordance: ${visibleSweep.sequence.join(' -> ')}`,
@@ -313,10 +327,11 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   await expect(
     page.getByRole('button', {name: 'Scroll to bottom'}),
   ).toHaveAccessibleName('Scroll to bottom');
+  await expect(pill).toHaveCSS('visibility', 'visible');
   await capture(page, 'scrolled-up-visible', {
     pillVisibility: await pillVisibility(page),
     affordanceAcceptsFocus: true,
-    reachedByTabWithin: `${visibleSweep.sequence.length} of ${SWEEP} presses`,
+    reachedByTabAfterPresses: visibleSweep.sequence.length,
     tabSequence: visibleSweep.sequence,
     accessibleName: 'Scroll to bottom',
     distanceFromBottomPx: await distanceFromBottom(root),
@@ -330,15 +345,16 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
     await affordanceAcceptsFocus(page),
     'after returning to the bottom the affordance must refuse focus again',
   ).toBe(false);
-  const returnedSweep = await tabSweep(page, before, SWEEP);
+  const returnedSweep = await tabWithinLayout(page, before, SWEEP);
   expect(
     returnedSweep.reached,
     `Tab reached the re-hidden affordance: ${returnedSweep.sequence.join(' -> ')}`,
   ).toBe(false);
+  await expect(pill).toHaveCSS('visibility', 'hidden');
   await capture(page, 'returned-hidden', {
     pillVisibility: await pillVisibility(page),
     affordanceAcceptsFocus: false,
-    reachedByTabWithin: `not within ${SWEEP} presses`,
+    reachedByTabBeforeLeavingLayout: false,
     tabSequence: returnedSweep.sequence,
     activatedWith: 'Enter',
     distanceFromBottomPx: await distanceFromBottom(root),

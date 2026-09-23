@@ -183,8 +183,9 @@ has a safe theme-independent baseline, so it stays closed under
   `@astryx.chatLayoutScrollButton.scrollToBottom`.
 - **AR4 — The layout MUST NOT assign a landmark role or accessible name to the
   caller's regions.** Region semantics stay caller-owned.
-- Keyboard access to the root scroll container itself is unresolved; see OQ1. This
-  record does not claim the current behavior is correct.
+- The self-scroll root carries no `tabIndex`, role, or accessible name of its
+  own. Whether it should is unresolved; see OQ1. This record does not claim the
+  current behavior is correct.
 
 ## Design relationships
 
@@ -249,14 +250,20 @@ None. This record settles no decision; it describes shipped behavior.
 
 ## Open questions
 
-- **OQ1 — Should the self-scroll root become keyboard reachable, and under whose
-  contract?** (`human-api`) In self-scroll mode the root is a scroll container with
-  no `tabIndex`, role, or accessible name. A transcript of non-focusable content
-  overflows with no keyboard path to the scrolled-away part (WCAG 2.1.1).
-  `spec:AST-025/FR12` places that obligation on a delivery surface that assigns
-  keyboard scrolling to the viewport, together with effective-axis measurement and
-  an accessible name — none of which exist here yet. Resolving it needs a naming
-  decision, a role decision, and a decision about adopting the AST-025 hooks.
+- **OQ1 — Should the self-scroll root carry an explicit role and accessible
+  name?** (`human-api`) In self-scroll mode the root is a scroll container with
+  no `tabIndex`, role, or accessible name of its own. Real-Chromium evidence at
+  this head shows Chromium's own keyboard-focusable-scroller behavior giving it
+  a tab stop anyway, identified only by its text content — the observed order
+  from a sentinel in front of the layout is `layout root → composer input`. So
+  the scrolled-away content is reachable in Chromium by accident of engine
+  behavior rather than by contract, with no name and no role, and no such
+  guarantee exists for engines that do not implement it.
+  `spec:AST-025/FR12` asks a surface that assigns keyboard scrolling to a
+  viewport for an explicit tab stop with an appropriate role and accessible
+  name, plus the effective-axis measurement that decides when to add it.
+  Resolving this needs a naming decision, a role decision, and a decision about
+  adopting the AST-025 hooks.
 - **OQ2 — Should the frosted dock be themeable?** (`human-api`) The dock, its
   inner column, and the blur layer paint the component's signature surface, and
   no current target reaches them.
