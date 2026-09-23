@@ -254,15 +254,12 @@ None. This record settles no decision; it describes shipped behavior.
 - **OQ1 — Which layer owns the keyboard path to scrolled content, and should
   ChatLayout guarantee it?** (`human-api`) In self-scroll mode the root is the
   scroll container and carries no `tabIndex`, role, or accessible name of its
-  own. Measured in Chromium at this head, the path comes from the documented
-  child: `component:ChatMessageList` carries `role="log"` and `tabIndex={0}`,
-  and every observed tab stop reports `isLayoutRoot: false`, so the layout root
-  is not focused. `spec:AST-025/FR12` accepts such an existing focusable
-  descendant instead of a named viewport. `children` is typed `ReactNode`, so
-  whether a composition supplying no focusable descendant is also covered — by
-  engine scroller-focus behavior or not — is **unmeasured**, and which layer
-  should own the guarantee is undecided. This record states the observed
-  arrangement and asserts no defect.
+  own. `component:ChatMessageList`, the documented child, carries `role="log"`
+  and `tabIndex={0}`, and `spec:AST-025/FR12` accepts such an existing
+  focusable descendant instead of a named viewport. `children` is typed
+  `ReactNode`, so whether a composition supplying no focusable descendant is
+  also covered is unresolved, as is which layer should own the guarantee. This
+  record states the arrangement and asserts no defect.
 - **OQ2 — Should the frosted dock be themeable?** (`human-api`) The dock, its
   inner column, and the blur layer paint the component's signature surface, and
   no current target reaches them.
