@@ -1,7 +1,7 @@
 {
   "name": "@astryxdesign/build",
   "version": "0.6.3",
-  "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
+  "description": "Build plugins for Astryx source builds — babel, PostCSS, and Vite integrations",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
