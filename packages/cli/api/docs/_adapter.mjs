@@ -26,6 +26,10 @@ import {
   problemsInTopic,
   withSourceTitle,
 } from '../../foundation/discovery/docs-discovery.mjs';
+import {
+  sectionKeyProblems,
+  withSectionKeys,
+} from '../../foundation/discovery/docs-section-key.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
@@ -146,7 +150,16 @@ export async function loadTopicDoc(entry, {lang} = {}) {
   for (const extension of entry.extensions) {
     doc = mergeTopic(doc, await loadReferenceDocs(extension.path, {lang}));
   }
-  return doc;
+  // Each file's keys were checked on its own; an extension can still add a
+  // section whose key another section already holds.
+  const problems = sectionKeyProblems(doc.sections);
+  if (problems.length > 0) {
+    throw new Error(
+      `${path.basename(entry.path)} and its extensions are invalid: ${problems.join('; ')}`,
+    );
+  }
+  // Derived keys are stamped only now, so they never take part in merging.
+  return withSectionKeys(doc);
 }
 
 /**
@@ -164,6 +177,7 @@ export async function loadTopicDoc(entry, {lang} = {}) {
  * @returns {Promise<{
  *   catalog: DocsCatalog,
  *   docsData: import('./docs.type.mjs').DocsDetailResponse['data'],
+ *   lang: string | null,
  * }>}
  */
 export async function resolveTopicDocs(topic, options = {}) {
@@ -184,5 +198,5 @@ export async function resolveTopicDocs(topic, options = {}) {
   }
 
   const docsData = await loadTopicDoc(entry, {lang: effectiveLang});
-  return {catalog, docsData};
+  return {catalog, docsData, lang: effectiveLang};
 }

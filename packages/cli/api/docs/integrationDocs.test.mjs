@@ -179,7 +179,10 @@ describe('integration-contributed topics', () => {
 
   it('migrates a real built-in section to a stable ID without duplicating it', async () => {
     const builtin = await docs('theme');
-    const target = builtin.data.sections.find(section => section.id == null);
+    // Readers see a key on every section; the migration case is one whose
+    // source authors no id.
+    const {docs: authored} = await import('../../assets/docs/theme.doc.mjs');
+    const target = authored.sections.find(section => section.id == null);
     expect(target).toBeDefined();
     scaffold({
       'theme-internal.doc.mjs': topic({

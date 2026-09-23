@@ -10,6 +10,7 @@
 import {describe, it, expect} from 'vitest';
 import {section} from './section.mjs';
 import {AstryxError} from '../../../error.mjs';
+import {loadDocsCatalog, loadTopicDoc} from '../../_adapter.mjs';
 
 const SLOW = 30_000;
 
@@ -39,4 +40,43 @@ describe('docs.detail.section leaf', () => {
       code: 'ERR_UNKNOWN_SECTION',
     });
   }, SLOW);
+
+  it('reads a section by its stable key', async () => {
+    const doc = await loadTopicDoc((await loadDocsCatalog()).resolve('theme'));
+    const target = doc.sections[doc.sections.length - 1];
+    const res = await section('theme', target.id);
+    expect(res.data.title).toBe(target.title);
+    expect(res.data.id).toBe(target.id);
+  }, SLOW);
+
+  it('refuses a query that matches more than one section', async () => {
+    const err = await section('theme', 'e').catch(e => e);
+    expect(err).toBeInstanceOf(AstryxError);
+    expect(err.code).toBe('ERR_UNKNOWN_SECTION');
+    expect(err.message).toMatch(/matches \d+ sections/);
+    expect(err.suggestions.length).toBeGreaterThan(1);
+  }, SLOW);
+
+  it.each([null, 'zh', 'dense'])(
+    'inlines token refs when a section is read on its own (lang %s)',
+    async lang => {
+      const catalog = await loadDocsCatalog();
+      let checked = 0;
+      for (const entry of catalog.entries()) {
+        const doc = await loadTopicDoc(entry);
+        for (const own of doc.sections) {
+          if (!own.content.some(block => block.type === 'token-ref')) continue;
+          const res = await section(entry.name, own.id, lang ? {lang} : {});
+          expect(res.data.content.length).toBeGreaterThan(0);
+          expect(res.data.content.some(block => block.type === 'token-ref')).toBe(
+            false,
+          );
+          expect(JSON.stringify(res.data.content)).not.toContain('[token-ref:');
+          checked += 1;
+        }
+      }
+      expect(checked).toBeGreaterThan(0);
+    },
+    SLOW,
+  );
 });

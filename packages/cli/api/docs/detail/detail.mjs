@@ -12,18 +12,25 @@
  */
 
 import {loadTopicDoc, resolveTopicDocs} from '../_adapter.mjs';
+import {
+  sectionKey,
+  sourceTitle,
+  withSourceTitle,
+} from '../../../foundation/discovery/docs-section-key.mjs';
 
 /**
  * Resolve token-ref blocks by inlining the referenced section's table.
  * This allows section docs to reference token tables without duplicating data.
  *
  * The reference is resolved through the catalog, so a topic may point at one
- * an integration contributed (or replaced) rather than only at a built-in.
+ * an integration contributed (or replaced) rather than only at a built-in. It
+ * names the section by key or authored title, so it resolves in every language.
  * @param {import('../docs.type.mjs').DocsDetailResponse['data']} docsData
  * @param {import('../../../foundation/discovery/docs-discovery.mjs').DocsCatalog} catalog
+ * @param {{lang?: string | null}} [options]
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse['data']>}
  */
-async function resolveTokenRefs(docsData, catalog) {
+export async function resolveTokenRefs(docsData, catalog, {lang = null} = {}) {
   const resolved = {...docsData, sections: [...docsData.sections]};
   for (let si = 0; si < resolved.sections.length; si++) {
     const section = resolved.sections[si];
@@ -36,10 +43,12 @@ async function resolveTokenRefs(docsData, catalog) {
           newContent.push({type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
           continue;
         }
-        const refDocs = await loadTopicDoc(refEntry);
+        const refDocs = await loadTopicDoc(refEntry, {lang});
+        const wanted = block.section.toLowerCase();
         const refSection = refDocs.sections.find(
           (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ s) =>
-            s.title.toLowerCase() === block.section.toLowerCase(),
+            sectionKey(s) === block.section ||
+            sourceTitle(s).toLowerCase() === wanted,
         );
         if (!refSection) {
           newContent.push({type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
@@ -52,14 +61,20 @@ async function resolveTokenRefs(docsData, catalog) {
         }
         // If the referenced section has a previewType, attach it to our section
         if (refSection.previewType && !section.previewType) {
-          resolved.sections[si] = {...section, previewType: refSection.previewType, content: newContent};
+          resolved.sections[si] = withSourceTitle(
+            {...section, previewType: refSection.previewType, content: newContent},
+            sourceTitle(section),
+          );
         }
       } else {
         newContent.push(block);
       }
     }
     if (resolved.sections[si] === section) {
-      resolved.sections[si] = {...section, content: newContent};
+      resolved.sections[si] = withSourceTitle(
+        {...section, content: newContent},
+        sourceTitle(section),
+      );
     } else {
       resolved.sections[si].content = newContent;
     }
@@ -77,7 +92,7 @@ async function resolveTokenRefs(docsData, catalog) {
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
-  const {catalog, docsData} = await resolveTopicDocs(topic, options);
-  const resolved = await resolveTokenRefs(docsData, catalog);
+  const {catalog, docsData, lang} = await resolveTopicDocs(topic, options);
+  const resolved = await resolveTokenRefs(docsData, catalog, {lang});
   return {type: 'docs.detail', data: resolved};
 }

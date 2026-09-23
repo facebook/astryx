@@ -492,3 +492,37 @@ describe('mergeTopic', () => {
     );
   });
 });
+
+describe('problemsInTopic section keys', () => {
+  /** @param {object[]} sections */
+  const doc = sections => ({
+    type: 'generic',
+    name: 'keys',
+    title: 'Keys',
+    description: 'Section keys.',
+    sections: sections.map(s => ({content: [{type: 'prose', text: 'x'}], ...s})),
+  });
+
+  it('rejects two sections that derive the same key', () => {
+    expect(
+      problemsInTopic(doc([{title: 'Quick Start'}, {title: 'Quick-start'}])),
+    ).toEqual([
+      expect.stringContaining('"quick-start" is already used by sections[0]'),
+    ]);
+  });
+
+  it('rejects an unsafe id', () => {
+    expect(problemsInTopic(doc([{id: 'Quick Start', title: 'Quick Start'}]))).toEqual(
+      [expect.stringContaining('is not a stable key')],
+    );
+  });
+
+  it('rejects a title no key derives from, unless it has an id', () => {
+    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([
+      expect.stringContaining('Give the section an id'),
+    ]);
+    expect(problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}]))).toEqual(
+      [],
+    );
+  });
+});

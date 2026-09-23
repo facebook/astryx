@@ -35,6 +35,13 @@ import {CLI_ROOT} from '../fs/paths.mjs';
 import {importUserModule} from '../fs/module-loader.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+import {
+  sectionKeyProblems,
+  sourceTitle,
+  withSourceTitle,
+} from './docs-section-key.mjs';
+
+export {withSourceTitle};
 
 /** Where the CLI's own topics live. */
 const BUILTIN_DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
@@ -290,6 +297,9 @@ export function problemsInTopic(doc) {
       );
     },
   );
+  // Readers address a section by its key, so two sections sharing one would
+  // make one of them unreachable.
+  problems.push(...sectionKeyProblems(doc.sections));
   return problems;
 }
 
@@ -432,34 +442,6 @@ export function mergeTopic(base, overlay) {
     description: overlay.description || base.description,
     sections,
   };
-}
-
-/**
- * A section's authored title. A `--zh`/`--dense` overlay replaces the visible
- * title, but extensions are written against the authored one, so merging
- * compares authored titles in every language.
- */
-const SOURCE_TITLE = Symbol('astryx.docs.sourceTitle');
-
-/**
- * Record the authored title of a section whose visible title a translation
- * overlay replaces.
- * @template {object} T
- * @param {T} section
- * @param {string} title
- * @returns {T}
- */
-export function withSourceTitle(section, title) {
-  Object.defineProperty(section, SOURCE_TITLE, {value: title});
-  return section;
-}
-
-/**
- * @param {any} section
- * @returns {string}
- */
-function sourceTitle(section) {
-  return section[SOURCE_TITLE] ?? section.title;
 }
 
 /**

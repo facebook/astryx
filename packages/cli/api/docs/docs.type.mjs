@@ -37,6 +37,24 @@
  */
 
 /**
+ * The section index of one topic: what the topic is, and the key each section
+ * is read by.
+ * @typedef {object} DocsIndex
+ * @property {string} topic
+ * @property {string} title
+ * @property {string} description
+ * @property {DocsIndexSection[]} sections
+ */
+
+/**
+ * @typedef {object} DocsIndexSection
+ * @property {string} id stable key; pass it as the section argument
+ * @property {string} title
+ * @property {string} summary the section's first line of text, at most 240
+ *   characters
+ */
+
+/**
  * xds --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type

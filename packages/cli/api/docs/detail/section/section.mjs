@@ -1,25 +1,31 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file docs.detail.section leaf — load a single named section of a topic.
+ * @file docs.detail.section leaf — load a single section of a topic.
  *
  * @input A topic name, a section query, and optional {lang, zh, dense}. Resolves
- *   and loads the topic via the shared adapter, then finds the first section
- *   whose title contains the (case-insensitive) query.
- * @output { type: 'docs.detail.section', data: ReferenceSection } — matching
- *   `xds --json docs <topic> <section>`. Throws ERR_UNKNOWN_SECTION when no
- *   section title matches.
+ *   and loads the topic via the shared adapter, then finds the section by its
+ *   stable key, then by exact title, then by a title that contains the query.
+ * @output { type: 'docs.detail.section', data: ReferenceSection } with any
+ *   token-ref blocks inlined — matching `astryx --json docs <topic> <section>`.
+ *   Throws ERR_UNKNOWN_SECTION when nothing matches, or when the query matches
+ *   more than one section (the candidates come back as suggestions).
  * @position Leaf nested under api/docs/detail. Shares discovery/loading/
  *   topic-resolution with the detail leaf via _adapter.mjs.
  */
 
 import {AstryxError} from '../../../error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
+import {
+  findDocSection,
+  sectionKey,
+} from '../../../../foundation/discovery/docs-section-key.mjs';
 import {resolveTopicDocs} from '../../_adapter.mjs';
+import {resolveTokenRefs} from '../detail.mjs';
 
 /**
  * @param {string} topic
- * @param {string} sectionName
+ * @param {string} sectionName a section key, or a title (or part of one)
  * @param {object} [options]
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
@@ -28,10 +34,9 @@ import {resolveTopicDocs} from '../../_adapter.mjs';
  * @returns {Promise<import('../../docs.type.mjs').DocsDetailSectionResponse>}
  */
 export async function section(topic, sectionName, options = {}) {
-  // An empty section name must error, not resolve to the first section via
-  // `.includes('')`. The docs() dispatcher routes a falsy section to detail, but
-  // the leaf must be safe on its own. A non-string would also throw a raw
-  // TypeError below (`.toLowerCase()`) → downgrades to ERR_UNKNOWN.
+  // An empty section name must error, not resolve to the first section. The
+  // docs() dispatcher routes a falsy section to the topic, but the leaf must be
+  // safe on its own; a non-string would otherwise throw a raw TypeError.
   if (typeof sectionName !== 'string' || !sectionName.trim()) {
     throw new AstryxError(
       'A section name is required',
@@ -39,16 +44,31 @@ export async function section(topic, sectionName, options = {}) {
       ERROR_CODES.ERR_UNKNOWN_SECTION,
     );
   }
-  const {docsData} = await resolveTopicDocs(topic, options);
+  const {catalog, docsData, lang} = await resolveTopicDocs(topic, options);
 
-  const normalizedSection = sectionName.toLowerCase();
-  const match = docsData.sections.find(s => s.title.toLowerCase().includes(normalizedSection));
+  const {section: match, candidates} = findDocSection(
+    docsData.sections,
+    sectionName,
+  );
   if (!match) {
+    const ambiguous = candidates.length > 1;
     throw new AstryxError(
-      `Section "${sectionName}" not found in "${topic}"`,
-      docsData.sections.map(s => ({name: s.title, reason: 'available section'})),
+      ambiguous
+        ? `Section "${sectionName}" matches ${candidates.length} sections in "${topic}". Read one by its key.`
+        : `Section "${sectionName}" not found in "${topic}"`,
+      (ambiguous ? candidates : docsData.sections).map(s => ({
+        name: sectionKey(s),
+        reason: s.title,
+      })),
       ERROR_CODES.ERR_UNKNOWN_SECTION,
     );
   }
-  return {type: 'docs.detail.section', data: match};
+  // A section read on its own inlines its token refs, as the whole topic does;
+  // otherwise a section that is only a token-ref prints blank.
+  const {sections} = await resolveTokenRefs(
+    {...docsData, sections: [match]},
+    catalog,
+    {lang},
+  );
+  return {type: 'docs.detail.section', data: sections[0]};
 }
