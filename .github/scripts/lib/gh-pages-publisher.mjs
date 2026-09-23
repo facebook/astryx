@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Shared gh-pages publication queue and scoped publishers.
+ * @input Repository/run/scope identity, Git remote, and publication payloads.
+ * @output Serialized publications and cleanup after wait or publish failures.
+ * @position Common publication lifetime for the repository's Pages writers.
+ */
+
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
@@ -2163,6 +2170,8 @@ export async function withPublicationTurn({
   token,
   tempRoot,
   remoteURL,
+  timeoutMs,
+  beforeClaimPush,
   publish,
 }) {
   validateIdentity(repository, runId, scope);
@@ -2174,15 +2183,19 @@ export async function withPublicationTurn({
     tempRoot,
     remoteURL,
   });
-  await waitForPublicationTurn({
-    repository,
-    runId,
-    scope,
-    token,
-    tempRoot,
-    remoteURL,
-  });
+  // Enqueue refusal must not release another scope's ticket. Once enqueued,
+  // waiting owns queue state too, even before either holder is acquired.
   try {
+    await waitForPublicationTurn({
+      repository,
+      runId,
+      scope,
+      token,
+      tempRoot,
+      remoteURL,
+      timeoutMs,
+      beforeClaimPush,
+    });
     return await publish();
   } finally {
     await releasePublication({

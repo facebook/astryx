@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Local-Git contracts for Pages publishers and queue lifetimes.
+ * @input Shared/legacy queue fixtures and controlled wait/publication failures.
+ * @output Evidence of owned cleanup, preserved foreign state, and atomic holders.
+ * @position Regression coverage for the shared gh-pages publication helper.
+ */
+
 import {execFileSync, spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
@@ -7,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {PNG} from 'pngjs';
 
 import {
@@ -431,6 +438,217 @@ async function withoutGitIdentity(callback) {
     fs.rmSync(root, {recursive: true, force: true});
   }
 }
+
+function expectPublicationReleased(fx, runId, name) {
+  const checkout = cloneRemote(fx.remote, fx.root, name);
+  for (const holder of [SHARED_HOLDER, LEGACY_HOLDER]) {
+    const ticket = path.join(path.dirname(holder), `${runId}.json`);
+    expect(fs.existsSync(path.join(checkout, ticket)), ticket).toBe(false);
+    expect(holderAt(checkout, 'HEAD', holder)?.runId).not.toBe(runId);
+  }
+  expectNoPartialHolderState(checkout, runId);
+  return checkout;
+}
+
+describe('publication turn lifetime', () => {
+  it('cleans up after run lookup failure and permits another scope in the same run', async () => {
+    const fx = fixture();
+    const older = context(fx, 899, 'whole-tree');
+    const turn = context(fx, 900, 'pr-visual/evidence');
+    const publish = vi.fn();
+    await withFixturePath(fx, async () => {
+      await enqueuePublication(older);
+      await waitForPublicationTurn(older);
+      writeFile(
+        path.join(fx.bin, 'gh'),
+        '#!/bin/sh\nprintf "injected run lookup failure\\n" >&2\nexit 1\n',
+      );
+      await expect(withPublicationTurn({...turn, publish})).rejects.toThrow(
+        /cannot resolve queued run 899: injected run lookup failure/,
+      );
+      expect(publish).not.toHaveBeenCalled();
+      const failed = expectPublicationReleased(fx, 900, 'after-wait-error');
+      expect(holderAt(failed, 'HEAD', SHARED_HOLDER)).toMatchObject({
+        runId: 899,
+        scope: 'whole-tree',
+      });
+      expect(holderAt(failed, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+        runId: 899,
+      });
+
+      await releasePublication(older);
+      const source = path.join(fx.root, 'next-scope');
+      writeFile(path.join(source, 'index.html'), 'next publication');
+      await expect(
+        withPublicationTurn({
+          ...turn,
+          scope: 'pr-preview/42',
+          publish: () =>
+            publishImmutablePath({
+              ...turn,
+              source,
+              destination: 'pr/42/next-publication',
+            }),
+        }),
+      ).resolves.toMatchObject({published: true});
+    });
+    const final = expectPublicationReleased(fx, 900, 'after-next-scope');
+    expect(
+      fs.readFileSync(
+        path.join(final, 'pr/42/next-publication/index.html'),
+        'utf8',
+      ),
+    ).toBe('next publication');
+    expectNoPartialHolderState(final, 899);
+  });
+
+  it.each(['shared', 'legacy'])(
+    'cleans up a timed-out turn without removing a live %s holder',
+    async queue => {
+      const fx = fixture();
+      if (queue === 'shared') {
+        writeSharedHolder(fx.remote, fx.root, 899, 'whole-tree');
+      } else {
+        writeLegacyHolder(fx.remote, fx.root, 899, {withTicket: true});
+      }
+      writeFile(
+        path.join(fx.bin, 'gh'),
+        '#!/bin/sh\nprintf \'{"status":"in_progress"}\\n\'\n',
+      );
+      const before = cloneRemote(fx.remote, fx.root, 'before-timeout');
+      const holder = queue === 'shared' ? SHARED_HOLDER : LEGACY_HOLDER;
+      const queuePath = path.dirname(holder);
+      const queueTree = git(before, 'rev-parse', `HEAD:${queuePath}`);
+      const publish = vi.fn();
+      await withFixturePath(fx, () =>
+        expect(
+          withPublicationTurn({
+            ...context(fx, 900, 'pr-visual/evidence'),
+            timeoutMs: 0,
+            publish,
+          }),
+        ).rejects.toThrow(/timed out behind gh-pages publication run 899/),
+      );
+      expect(publish).not.toHaveBeenCalled();
+      const final = expectPublicationReleased(fx, 900, 'after-timeout');
+      expect(git(final, 'rev-parse', `HEAD:${queuePath}`)).toBe(queueTree);
+    },
+  );
+
+  it('cleans up an interrupted claim without exposing either partial holder', async () => {
+    const fx = fixture();
+    const error = new Error('injected claim failure');
+    const publish = vi.fn();
+    const beforeClaimPush = vi.fn(({checkout}) => {
+      // Both holders are staged, but the failed claim must publish neither.
+      expect(holderAt(checkout, 'HEAD', SHARED_HOLDER)).toMatchObject({
+        runId: 900,
+      });
+      expect(holderAt(checkout, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+        runId: 900,
+      });
+      throw error;
+    });
+    await withFixturePath(fx, () =>
+      expect(
+        withPublicationTurn({
+          ...context(fx, 900, 'pr-visual/evidence'),
+          beforeClaimPush,
+          publish,
+        }),
+      ).rejects.toBe(error),
+    );
+    expect(beforeClaimPush).toHaveBeenCalledOnce();
+    expect(publish).not.toHaveBeenCalled();
+    expectPublicationReleased(fx, 900, 'after-claim-error');
+  });
+
+  it.each(['throw', 'reject'])(
+    'releases an acquired turn after publish %s',
+    async failure => {
+      const fx = fixture();
+      const error = new Error('injected publish failure');
+      await expect(
+        queuedPublish(fx, 900, 'pr-visual/evidence', () => {
+          const acquired = cloneRemote(fx.remote, fx.root, 'acquired');
+          expect(holderAt(acquired, 'HEAD', SHARED_HOLDER)).toMatchObject({
+            runId: 900,
+            scope: 'pr-visual/evidence',
+          });
+          expect(holderAt(acquired, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+            runId: 900,
+          });
+          if (failure === 'reject') return Promise.reject(error);
+          throw error;
+        }),
+      ).rejects.toBe(error);
+      expectPublicationReleased(fx, 900, 'after-publish-error');
+    },
+  );
+
+  it.each([false, true])(
+    'preserves another scope when enqueue refuses (already held: %s)',
+    async held => {
+      const fx = fixture();
+      const existing = context(fx, 900, 'pr-preview/42');
+      const publish = vi.fn();
+      await withFixturePath(fx, async () => {
+        await enqueuePublication(existing);
+        if (held) await waitForPublicationTurn(existing);
+        const before = git(
+          fx.root,
+          '--git-dir',
+          fx.remote,
+          'rev-parse',
+          'gh-pages',
+        );
+        await expect(
+          withPublicationTurn({
+            ...context(fx, 900, 'pr-visual/evidence'),
+            publish,
+          }),
+        ).rejects.toThrow(/existing queue ticket has invalid identity/);
+        expect(
+          git(fx.root, '--git-dir', fx.remote, 'rev-parse', 'gh-pages'),
+        ).toBe(before);
+      });
+      expect(publish).not.toHaveBeenCalled();
+    },
+  );
+
+  it('releases successful sequential scopes in the same run without a partial dual holder', async () => {
+    const fx = fixture();
+    const scopes = ['pr-visual/evidence', 'pr-preview/42'];
+    for (const [index, scope] of scopes.entries()) {
+      const source = path.join(fx.root, `source-${index}`);
+      writeFile(path.join(source, 'index.html'), scope);
+      await expect(
+        queuedPublish(fx, 900, scope, () =>
+          publishImmutablePath({
+            ...context(fx, 900, scope),
+            source,
+            destination: `pr/42/lifetime-${index}`,
+          }),
+        ),
+      ).resolves.toMatchObject({published: true});
+      const final = expectPublicationReleased(
+        fx,
+        900,
+        `after-success-${index}`,
+      );
+      for (const [publishedIndex, publishedScope] of scopes
+        .slice(0, index + 1)
+        .entries()) {
+        expect(
+          fs.readFileSync(
+            path.join(final, `pr/42/lifetime-${publishedIndex}/index.html`),
+            'utf8',
+          ),
+        ).toBe(publishedScope);
+      }
+    }
+  });
+});
 
 describe('gh-pages publisher', () => {
   it.each(['browser-only', 'capture-failure', 'missing-verdict'])(
