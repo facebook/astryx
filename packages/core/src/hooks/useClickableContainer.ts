@@ -55,8 +55,14 @@ const NON_INTERACTIVE_SELECTORS = '[aria-readonly="true"]';
  * Check whether an element has an interactive ancestor between it and the root.
  * If the click target is inside a nested button/link/etc., we should NOT
  * handle it at the container level.
+ *
+ * Exported for containers that cannot use the hook itself — a `<tr>` whose
+ * props are assembled inside a Table plugin's `transformBodyRow`, for
+ * instance, has no ref to hand the hook but needs the identical rule. Sharing
+ * the walk keeps one definition of "this click belongs to something else"
+ * instead of a short hand-rolled selector list per caller.
  */
-function hasInteractiveAncestor(el: Element, rootEl: Element): boolean {
+export function hasInteractiveAncestor(el: Element, rootEl: Element): boolean {
   let current: Element | null = el;
   while (current != null && current !== rootEl && current !== document.body) {
     if (
@@ -70,8 +76,15 @@ function hasInteractiveAncestor(el: Element, rootEl: Element): boolean {
   return false;
 }
 
-/** Check if there's a text selection inside the node (don't navigate on text select) */
-function hasTextSelection(node: Element): boolean {
+/**
+ * Check if there's a text selection inside the node (don't navigate on text select)
+ *
+ * Exported alongside {@link hasInteractiveAncestor} for the same reason: a
+ * click that ends a text drag is not a click on the container, and every
+ * clickable surface needs that rule, hook or no hook. Scoped to the node, so a
+ * selection somewhere else on the page does not make the surface inert.
+ */
+export function hasTextSelection(node: Element): boolean {
   if (typeof document === 'undefined' || !('getSelection' in document)) {
     return false;
   }
