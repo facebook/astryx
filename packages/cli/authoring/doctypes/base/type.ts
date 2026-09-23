@@ -30,13 +30,17 @@ export interface DocPlacement {
   order?: number;
 }
 
-/** Graph metadata shared by every authored doc kind. */
+/**
+ * Graph metadata shared by every authored doc kind. Reserved for the docs
+ * graph, which is not built yet: nothing reads these fields, and a reference
+ * topic that sets one fails to load.
+ */
 export interface AuthoredDocGraphFields {
-  /** Requested canonical parent. Omit to use source adoption or Unorganized. */
+  /** Requested canonical parent in the docs graph. Not read yet. */
   placement?: DocPlacement;
-  /** Prior routes or names that must continue to resolve to this stable doc. */
+  /** Prior routes or names the docs graph will keep resolving. Not read yet. */
   aliases?: string[];
-  /** Bundle audience. Omit for public docs. */
+  /** Docs bundle audience; omit for public docs. Not read yet. */
   audience?: DocAudience;
 }
 

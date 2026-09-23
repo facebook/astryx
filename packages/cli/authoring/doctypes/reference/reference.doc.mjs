@@ -95,7 +95,7 @@ export const doc = {
           name: 'sections[].content',
           type: 'ReferenceContentBlock[]',
           description:
-            'Ordered content blocks. Existing prose, heading, code, table, list, and token-ref blocks remain; V1 adds workflow, collection, and reference.',
+            'Ordered content blocks: prose, heading, code, table, list, and token-ref. workflow, collection, and reference are declared for the docs graph and parse, but a topic that uses one fails to load until the docs graph ships.',
           required: true,
         },
         {
@@ -140,7 +140,7 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. V1 adds only workflow, collection, and reference; choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. workflow, collection, and reference are declared for the docs graph: they parse, but topic loading rejects them until the docs graph ships. choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {
       type: 'code',

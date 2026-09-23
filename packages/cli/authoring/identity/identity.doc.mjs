@@ -12,8 +12,9 @@ export const doc = {
   displayName: 'Provider and artifact identity',
   namespace: 'authoring',
   description:
-    'Separates stable provider/artifact identity from package instances and runtime lifecycle state.',
-  appliesTo: 'Compiler inputs, manifests, search, Build, and Doctor',
+    'Separates stable provider/artifact identity from package instances and runtime lifecycle state. providerId is in use today: an integration manifest may declare it, and Doctor and every command report two packages that claim one. The artifact, doc, instance, and compiler-input identities are defined for the docs graph, which is not built yet, and no command reads them.',
+  appliesTo:
+    'Integration manifests and provider conflicts today; the docs graph once it ships',
   fields: [
     {
       name: 'ProviderId',

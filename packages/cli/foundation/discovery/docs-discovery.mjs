@@ -138,7 +138,14 @@ const BLOCK_FIELDS = {
 };
 
 /** Blocks that are valid authoring but require the compiled graph renderer. */
-const GRAPH_BLOCK_TYPES = new Set(['workflow', 'collection', 'reference']);
+export const GRAPH_BLOCK_TYPES = new Set([
+  'workflow',
+  'collection',
+  'reference',
+]);
+
+/** Doc fields only the docs graph reads; a topic that sets one fails to load. */
+export const GRAPH_ONLY_FIELDS = ['placement', 'aliases', 'audience'];
 
 /**
  * Fields a block kind may carry but does not need. Kept per kind rather than
@@ -176,6 +183,13 @@ const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
  * @returns {string[]} problems, each already pointed at a place in the doc
  */
 export function problemsInTopic(doc) {
+  // A namespace doc is valid authoring that only the docs graph reads. Said
+  // plainly, instead of as the topic fields it does not have.
+  if (doc?.type === 'namespace') {
+    return [
+      `"${doc.name}" is a namespace doc. Only the docs graph reads namespace docs, and it is not built yet; remove this file from the docs directory.`,
+    ];
+  }
   /** @type {string[]} */
   const problems = [];
   for (const field of ['name', 'title', 'description']) {
@@ -188,7 +202,7 @@ export function problemsInTopic(doc) {
       `name: "${doc.name}" is not URL-safe. A topic name is its CLI argument and its docsite path, so it may hold only letters, digits, "_" and "-".`,
     );
   }
-  for (const field of ['placement', 'aliases', 'audience']) {
+  for (const field of GRAPH_ONLY_FIELDS) {
     if (doc?.[field] != null) {
       problems.push(
         `${field}: requires the compiled graph reader and is not supported by legacy topic readers`,

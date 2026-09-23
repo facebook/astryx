@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'NamespaceDoc',
   namespace: 'authoring',
   description:
-    'Declares named navigation slots and renderer-neutral layout blocks for already-discovered docs. It never scans folders or copies child documents.',
+    "Declares named navigation slots and renderer-neutral layout blocks for already-discovered docs. It never scans folders or copies child documents. Not loaded yet: only the docs graph reads namespace docs, and it is not built, so keep them out of an integration's docs directory for now.",
   appliesTo: '<namespace>.doc.mjs',
   fields: [
     {
@@ -44,13 +44,13 @@ export const doc = {
       name: 'placement',
       type: 'DocPlacement',
       description:
-        'Optional canonical parent request: {parent, slot?, order?}. Invalid explicit placement fails compilation instead of falling back.',
+        'Optional canonical parent request: {parent, slot?, order?}. Invalid explicit placement will fail compilation instead of falling back.',
     },
     {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes that must keep resolving to this doc.',
+        'Prior names or routes the docs graph will keep resolving to this doc.',
     },
     {
       name: 'audience',
@@ -111,6 +111,10 @@ export const docs = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: "Namespace docs are not loaded yet. Only the docs graph reads them, and it is not built. A namespace doc in an integration's docs directory fails to load as a topic, and with it every topic that package contributes, until the file is removed.",
+    },
     {
       type: 'prose',
       text: 'Child docs request one canonical home with placement. Collections store and render stable references to those docs; they never create a second identity or parent.',

@@ -12,14 +12,14 @@ export const doc = {
   displayName: 'Authored doc graph fields',
   namespace: 'authoring',
   description:
-    'Optional placement, compatibility aliases, and audience fields shared by every authored documentation kind.',
+    'Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs graph. The docs graph is not built yet, so nothing reads them: a reference topic that sets one fails to load, and other doc kinds accept them and ignore them.',
   appliesTo: 'Every supported .doc.mjs object',
   fields: [
     {
       name: 'placement',
       type: 'DocPlacement',
       description:
-        'Requests one canonical parent. The compiler fails invalid explicit placement instead of silently using Unorganized.',
+        'Requests one canonical parent in the docs graph. Not read yet: a topic that sets it fails to load.',
       fields: [
         {
           name: 'placement.parent',
@@ -43,12 +43,13 @@ export const doc = {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes retained for compatibility. Aliases do not create another identity.',
+        'Prior names or routes the docs graph will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
     },
     {
       name: 'audience',
       type: "'public' | 'internal'",
-      description: 'Bundle audience. Omit for public documentation.',
+      description:
+        "Which docs bundle includes this doc ('public' when omitted). Not read yet: a topic that sets it fails to load.",
       default: "'public'",
     },
   ],

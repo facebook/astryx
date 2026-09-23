@@ -182,6 +182,26 @@ describe('discoverIntegrationDocs', () => {
     expect(records).toEqual([]);
     expect(errors[0].message).toContain('requires the compiled graph renderer');
   });
+
+  it('names a namespace doc instead of listing topic fields it lacks', async () => {
+    const {records, errors} = await discoverIntegrationDocs(
+      integration('@acme/namespace', {
+        'guides.doc.mjs': {
+          type: 'namespace',
+          name: 'guides',
+          title: 'Guides',
+          summary: 'Every guide.',
+          slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}},
+        },
+      }),
+    );
+    expect(records).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain(
+      '"guides" is a namespace doc. Only the docs graph reads namespace docs',
+    );
+    expect(errors[0].message).not.toContain('sections:');
+  });
 });
 
 describe('problemsInTopic', () => {
@@ -500,7 +520,10 @@ describe('problemsInTopic section keys', () => {
     name: 'keys',
     title: 'Keys',
     description: 'Section keys.',
-    sections: sections.map(s => ({content: [{type: 'prose', text: 'x'}], ...s})),
+    sections: sections.map(s => ({
+      content: [{type: 'prose', text: 'x'}],
+      ...s,
+    })),
   });
 
   it('rejects two sections that derive the same key', () => {
@@ -512,18 +535,18 @@ describe('problemsInTopic section keys', () => {
   });
 
   it('rejects an unsafe id', () => {
-    expect(problemsInTopic(doc([{id: 'Quick Start', title: 'Quick Start'}]))).toEqual(
-      [expect.stringContaining('is not a stable key')],
-    );
+    expect(
+      problemsInTopic(doc([{id: 'Quick Start', title: 'Quick Start'}])),
+    ).toEqual([expect.stringContaining('is not a stable key')]);
   });
 
   it('rejects a title no key derives from, unless it has an id', () => {
     expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([
       expect.stringContaining('Give the section an id'),
     ]);
-    expect(problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}]))).toEqual(
-      [],
-    );
+    expect(
+      problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}])),
+    ).toEqual([]);
   });
 });
 
@@ -535,12 +558,17 @@ describe('mergeTopic by section key', () => {
       {title: 'Light/Dark Mode', content: [{type: 'prose', text: 'base'}]},
     ],
   };
-  const titles = doc => doc.sections.map(s => [s.id ?? null, s.title, s.content[0].text]);
+  const titles = doc =>
+    doc.sections.map(s => [s.id ?? null, s.title, s.content[0].text]);
 
   it('replaces the section whose derived key an extension id names', () => {
     const merged = mergeTopic(base, {
       sections: [
-        {id: 'quick-start', title: 'Quick Start with Acme', content: [{type: 'prose', text: 'acme'}]},
+        {
+          id: 'quick-start',
+          title: 'Quick Start with Acme',
+          content: [{type: 'prose', text: 'acme'}],
+        },
       ],
     });
     expect(titles(merged)).toEqual([
@@ -551,7 +579,9 @@ describe('mergeTopic by section key', () => {
 
   it('replaces the section a title variant derives the same key as', () => {
     const merged = mergeTopic(base, {
-      sections: [{title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]}],
+      sections: [
+        {title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]},
+      ],
     });
     expect(titles(merged)).toEqual([
       [null, 'Quick Start', 'base'],
@@ -561,7 +591,13 @@ describe('mergeTopic by section key', () => {
 
   it('prefers the key over a legacy title for an extension with an id', () => {
     const merged = mergeTopic(base, {
-      sections: [{id: 'light-dark-mode', title: 'Quick Start', content: [{type: 'prose', text: 'acme'}]}],
+      sections: [
+        {
+          id: 'light-dark-mode',
+          title: 'Quick Start',
+          content: [{type: 'prose', text: 'acme'}],
+        },
+      ],
     });
     expect(titles(merged)).toEqual([
       [null, 'Quick Start', 'base'],
