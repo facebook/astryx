@@ -29,6 +29,7 @@ import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
+import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
 import {ListItem} from '../List/ListItem';
@@ -1632,6 +1633,19 @@ function renderBlock(
                 <ListItem
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
+                  marker={item.checked != null ? null : undefined}
+                  startContent={
+                    item.checked != null ? (
+                      <CheckboxInput
+                        isReadOnly
+                        isDisabled={false}
+                        value={item.checked}
+                        isLabelHidden
+                        label={t('@astryx.markdown.taskList')}
+                        size="sm"
+                      />
+                    ) : undefined
+                  }
                   label={label}
                 />
               );

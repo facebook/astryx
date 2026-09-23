@@ -433,6 +433,28 @@ describe('Markdown', () => {
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 
+  it('renders mixed task and bullet lists without flattening', () => {
+    const {container} = render(<Markdown>{'- [ ] a\n- b\n- [x] c'}</Markdown>);
+    const listItems = container.querySelectorAll('li');
+    expect(listItems).toHaveLength(3);
+
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    expect(checkboxes).toHaveLength(2);
+    expect((checkboxes[0] as HTMLInputElement).checked).toBe(false);
+    expect((checkboxes[1] as HTMLInputElement).checked).toBe(true);
+
+    expect(listItems[1].textContent).toContain('b');
+  });
+
+  it('renders nested task items inside ordinary lists', () => {
+    const {container} = render(
+      <Markdown>{'- outer\n  - [x] nested task'}</Markdown>,
+    );
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    expect(checkboxes).toHaveLength(1);
+    expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
+  });
+
   it('renders tables', () => {
     render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
     expect(document.querySelector('table')).toBeInTheDocument();

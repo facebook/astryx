@@ -65,6 +65,12 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   startContent?: ReactNode;
 
   /**
+   * Custom marker rendered before startContent, replacing the default bullet or counter.
+   * Pass null to suppress the marker.
+   */
+  marker?: ReactNode;
+
+  /**
    * Content rendered after the item (badge, action button, chevron).
    */
   endContent?: ReactNode;
@@ -209,6 +215,7 @@ export function ListItem({
   description,
   startContent,
   endContent,
+  marker: markerProp,
   onClick,
   interactiveRef,
   href,
@@ -228,7 +235,7 @@ export function ListItem({
   const listStyle = ctx?.listStyle ?? 'none';
   const hasMarkers = listStyle !== 'none';
 
-  const marker =
+  const defaultMarker =
     listStyle === 'disc' ? (
       <span {...stylex.props(markerStyles.container)}>
         <span {...stylex.props(markerStyles.dot)} />
@@ -240,6 +247,8 @@ export function ListItem({
     ) : listStyle === 'decimal' ? (
       <span {...stylex.props(markerStyles.number)} />
     ) : null;
+
+  const marker = markerProp !== undefined ? markerProp : defaultMarker;
 
   return (
     <Item

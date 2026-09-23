@@ -636,6 +636,31 @@ describe('List', () => {
     expect(noMarker.children.length).toBeLessThan(markerCount);
   });
 
+  it('suppresses marker when marker is null', () => {
+    render(
+      <List listStyle="disc">
+        <ListItem label="Item" marker={null} data-testid="no-marker-item" />
+      </List>,
+    );
+    const item = screen.getByTestId('no-marker-item');
+    expect(item.querySelector(':scope > span:first-child')).toHaveTextContent(
+      'Item',
+    );
+  });
+
+  it('renders custom marker when provided', () => {
+    render(
+      <List listStyle="disc">
+        <ListItem
+          label="Item"
+          marker={<span data-testid="custom-marker">*</span>}
+          data-testid="custom-item"
+        />
+      </List>,
+    );
+    expect(screen.getByTestId('custom-marker')).toBeInTheDocument();
+  });
+
   // ===========================================================================
   // Description rendering
   // ===========================================================================
