@@ -546,8 +546,10 @@ type ResolvedOptions = {
   readonly isFinal: boolean;
   readonly allowBlockSyntax?: boolean;
   readonly containerDepth?: number;
-  /** Internal structure-only pass used to locate extension container ranges. */
-  readonly skipLinkDefinitionExtraction?: boolean;
+  /** Internal discovery pass that uses unprotected definition precedence. */
+  readonly skipContainerDefinitionProtection?: boolean;
+  /** Internal discovery pass that validates envelopes without parsing children. */
+  readonly skipExtensionChildrenParsing?: boolean;
   /** Reports where a structure-only pass stopped on deferred block syntax. */
   readonly extensionDiscovery?: {deferredStart?: number};
   /**
@@ -586,7 +588,8 @@ function makeResolvedOptions(
     isFinal: fields.isFinal,
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
     containerDepth: fields.containerDepth,
-    skipLinkDefinitionExtraction: fields.skipLinkDefinitionExtraction,
+    skipContainerDefinitionProtection: fields.skipContainerDefinitionProtection,
+    skipExtensionChildrenParsing: fields.skipExtensionChildrenParsing,
     extensionDiscovery: fields.extensionDiscovery,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
@@ -1353,29 +1356,33 @@ function matchExtensionSyntax(
 
     let children: ReadonlyArray<unknown> | undefined;
     if (hasContainerContent && childrenRange != null) {
-      const containerDepth = (opts.containerDepth ?? 0) + 1;
-      if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
-        reportMarkdownPluginFailure(
-          candidate.pluginName,
-          'syntax',
-          new TypeError('Markdown extension container depth exceeded'),
-        );
-        continue;
+      if (opts.skipExtensionChildrenParsing === true) {
+        children = [];
+      } else {
+        const containerDepth = (opts.containerDepth ?? 0) + 1;
+        if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
+          reportMarkdownPluginFailure(
+            candidate.pluginName,
+            'syntax',
+            new TypeError('Markdown extension container depth exceeded'),
+          );
+          continue;
+        }
+        const childStart = childrenRange.start as number;
+        const childEnd = childrenRange.end as number;
+        const childOptions: ResolvedOptions = {
+          ...opts,
+          allowBlockSyntax: true,
+          baseOffset: (opts.baseOffset ?? 0) + childStart,
+          containerDepth,
+          isFinal: true,
+        };
+        const childSource = source.slice(childStart, childEnd);
+        children =
+          nodeRecord.display === 'inline'
+            ? parseInlineEntry(childSource, childOptions)
+            : parseMarkdownImpl(childSource, childOptions);
       }
-      const childStart = childrenRange.start as number;
-      const childEnd = childrenRange.end as number;
-      const childOptions: ResolvedOptions = {
-        ...opts,
-        allowBlockSyntax: true,
-        baseOffset: (opts.baseOffset ?? 0) + childStart,
-        containerDepth,
-        isFinal: true,
-      };
-      const childSource = source.slice(childStart, childEnd);
-      children =
-        nodeRecord.display === 'inline'
-          ? parseInlineEntry(childSource, childOptions)
-          : parseMarkdownImpl(childSource, childOptions);
     }
 
     const {
@@ -1400,7 +1407,10 @@ function matchExtensionSyntax(
           }
         : null),
     }) as RuntimeExtensionNode;
-    if (!validateMarkdownExtensionContent(opts.plugins, extensionNode)) {
+    if (
+      opts.skipExtensionChildrenParsing !== true &&
+      !validateMarkdownExtensionContent(opts.plugins, extensionNode)
+    ) {
       reportMarkdownPluginFailure(
         candidate.pluginName,
         'syntax',
@@ -1427,7 +1437,7 @@ function findBlockExtensionContainerRanges(
   opts: ResolvedOptions,
 ): ReadonlyArray<{readonly start: number; readonly end: number}> {
   if (
-    opts.skipLinkDefinitionExtraction === true ||
+    opts.skipContainerDefinitionProtection === true ||
     (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0 ||
     !source.split('\n').some(line => matchLinkDefinition(line) != null)
   ) {
@@ -1440,7 +1450,8 @@ function findBlockExtensionContainerRanges(
     ...opts,
     astPositions: true,
     sourceRanges: true,
-    skipLinkDefinitionExtraction: true,
+    skipContainerDefinitionProtection: true,
+    skipExtensionChildrenParsing: true,
     extensionDiscovery: discovery,
   });
   const ranges: {start: number; end: number}[] = [];
@@ -2579,8 +2590,8 @@ function parseMarkdownImpl(
   // in document order; locally-nested definitions still resolve within this
   // parse.
   const {defs, cleaned} =
-    baseOpts.skipLinkDefinitionExtraction === true
-      ? {defs: new Map<string, string>(), cleaned: input}
+    baseOpts.skipContainerDefinitionProtection === true
+      ? extractLinkDefinitions(input, baseOpts.math)
       : extractScopedLinkDefinitions(input, baseOpts);
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;

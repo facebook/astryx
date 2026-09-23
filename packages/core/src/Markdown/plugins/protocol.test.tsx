@@ -27,6 +27,7 @@ import type {
   MarkdownExtensionNode,
   MarkdownInlineContainerExtensionNode,
   MarkdownSyntaxPluginDefinition,
+  MarkdownTokenizerInput,
   MarkdownTransformPluginDefinition,
 } from './protocol';
 import {parseOutlineFromMarkdown} from '../../Outline/parseOutlineFromMarkdown';
@@ -878,6 +879,121 @@ describe('Markdown plugin protocol', () => {
     const source = '> :::note\n> quoted\n> :::\n\n- :::note\n  listed\n  :::';
     const blocks = parseMarkdown(source, {plugins: [calloutPlugin]});
     expect(JSON.stringify(blocks)).not.toContain('"type":"extension"');
+  });
+
+  it('keeps link-definition precedence over matching block plugins', () => {
+    const definitionPrefixPlugin = createMarkdownPlugin({
+      name: 'definition-prefix',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: ['[d]:'],
+            maxSpan: 200,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              return close < 0
+                ? {status: 'no-match' as const}
+                : {
+                    status: 'match' as const,
+                    end: close + 4,
+                    node: {
+                      type: 'extension' as const,
+                      plugin: 'definition-prefix' as const,
+                      name: 'box' as const,
+                      display: 'block' as const,
+                      data: {},
+                    },
+                    children: {start: offset + 11, end: close},
+                  };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+
+    const parsed = parseMarkdown('[d]: /docs\nInside\n:::\n\nUse [d].', {
+      plugins: [definitionPrefixPlugin],
+    });
+    expect(JSON.stringify(parsed)).toContain('"href":"/docs"');
+    expect(JSON.stringify(parsed)).not.toContain('"type":"extension"');
+  });
+
+  it('keeps nested container discovery linear', () => {
+    const tokenize = vi.fn(
+      ({source, offset, isFinal}: MarkdownTokenizerInput) => {
+        const firstNewline = source.indexOf('\n', offset);
+        if (firstNewline < 0) {
+          return isFinal
+            ? {status: 'no-match' as const}
+            : {status: 'defer' as const};
+        }
+        let depth = 1;
+        let cursor = firstNewline + 1;
+        while (cursor <= source.length) {
+          const newline = source.indexOf('\n', cursor);
+          const lineEnd = newline < 0 ? source.length : newline;
+          const line = source.slice(cursor, lineEnd);
+          if (line === ':::box') {
+            depth++;
+          } else if (line === ':::') {
+            depth--;
+            if (depth === 0) {
+              return {
+                status: 'match' as const,
+                end: lineEnd,
+                node: {
+                  type: 'extension' as const,
+                  plugin: 'linear-boxes' as const,
+                  name: 'box' as const,
+                  display: 'block' as const,
+                  data: {},
+                },
+                children: {start: firstNewline + 1, end: cursor},
+              };
+            }
+          }
+          if (newline < 0) {
+            break;
+          }
+          cursor = newline + 1;
+        }
+        return isFinal
+          ? {status: 'no-match' as const}
+          : {status: 'defer' as const};
+      },
+    );
+    const plugin = createMarkdownPlugin({
+      name: 'linear-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [{startsWith: [':::box'], maxSpan: 10_000, tokenize}],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+    const depth = 20;
+    const source = [
+      ...Array.from({length: depth}, () => ':::box'),
+      '[d]: /docs',
+      'Use [d].',
+      ...Array.from({length: depth}, () => ':::'),
+    ].join('\n');
+
+    expect(parseMarkdown(source, {plugins: [plugin]})).toHaveLength(1);
+    expect(tokenize.mock.calls.length).toBeLessThanOrEqual(depth * 2 + 2);
   });
 
   it('runs immutable transforms in plugin order', () => {
