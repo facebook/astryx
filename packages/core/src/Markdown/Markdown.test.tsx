@@ -636,6 +636,58 @@ describe('Markdown', () => {
     expect(links[1].getAttribute('href')).toBe('/page');
   });
 
+  describe('link destinations follow the shared navigation rule', () => {
+    // The same matrix Core's link plumbing and imperative navigation apply
+    // (utils/safeUrl.ts): only executable document schemes are blocked.
+    const blocked = [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      'vbscript:MsgBox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'java\nscript:alert(1)',
+    ];
+    const accepted = [
+      'https://example.com',
+      '/page',
+      '#section',
+      '//example.com/x',
+      'mailto:a@example.com',
+      'tel:+15555550100',
+      'data:image/png;base64,iVBORw0KGgo=',
+    ];
+
+    it.each(blocked)('renders %s as text, not a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.textContent).toContain('click');
+    });
+
+    it.each(accepted)('renders %s as a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute('href')).toBe(destination);
+    });
+
+    it('a data:image link is navigation and is accepted, while a data:image image stays rejected by the resource policy', () => {
+      const {container} = render(
+        <Markdown>
+          {
+            '[view](data:image/png;base64,iVBORw0KGgo=)\n\n![pic](data:image/png;base64,iVBORw0KGgo=)'
+          }
+        </Markdown>,
+      );
+      expect(container.querySelector('a')?.getAttribute('href')).toBe(
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
+      expect(container.querySelector('img')).toBeNull();
+    });
+  });
+
   it('preserves dollar-delimited text when no math renderer is supplied', () => {
     const {container} = render(
       <Markdown>{'Total $5 and formula $x_1 + *y*$.'}</Markdown>,

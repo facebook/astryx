@@ -165,6 +165,26 @@ describe('parseInline', () => {
     }
   });
 
+  it('decides link destinations with the shared navigation rule', () => {
+    const destinations: [string, boolean][] = [
+      ['https://example.com', true],
+      ['/page', true],
+      ['#section', true],
+      ['mailto:a@example.com', true],
+      ['tel:+1234567890', true],
+      ['custom:document', true],
+      ['data:image/png;base64,iVBORw0KGgo=', true],
+      ['javascript:alert(1)', false],
+      ['vbscript:MsgBox(1)', false],
+      ['data:text/html,<b>x</b>', false],
+      ['java\u0000script:alert(1)', false],
+    ];
+    for (const [destination, accepted] of destinations) {
+      const [node] = parseInline(`[t](${destination})`);
+      expect(node.type === 'link').toBe(accepted);
+    }
+  });
+
   it('parses strikethrough', () => {
     const result = parseInline('~~deleted~~');
     expect(result[0].type).toBe('strikethrough');

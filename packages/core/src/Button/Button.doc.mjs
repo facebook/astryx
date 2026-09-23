@@ -210,7 +210,7 @@ export const docs = {
       name: 'href',
       type: 'string',
       description:
-        'When provided, renders the button as a link element (<a> or custom link component).',
+        'When provided, renders the button as a link element (<a> or custom link component). The destination follows the shared navigation rule described on the Link `href` prop.',
     },
     {
       name: 'as',
