@@ -19,11 +19,13 @@ verified_by:
     packages/core/src/Markdown/incremental.test.ts,
     packages/core/src/Markdown/remark.test.tsx,
     packages/core/src/Markdown/plugins/softBreaks.test.tsx,
+    packages/core/src/Markdown/plugins/callouts.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark, module:Markdown/softBreaks]
+modules:
+  [module:Markdown/remark, module:Markdown/softBreaks, module:Markdown/callouts]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:

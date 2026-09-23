@@ -29,6 +29,8 @@ export type {
 } from './sourceDecoration';
 export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
+export {markdownCalloutsPlugin} from './callouts';
+export type {MarkdownCalloutNode, MarkdownCalloutVariant} from './callouts';
 export type {
   MarkdownFrontmatter,
   MarkdownFrontmatterOptions,
@@ -37,12 +39,21 @@ export type {
 export type {
   MarkdownPluginData,
   MarkdownExtensionNode,
+  MarkdownInlineContainerExtensionNode,
+  MarkdownBlockContainerExtensionNode,
+  MarkdownAnyExtensionNode,
+  MarkdownPhrasingContentName,
+  MarkdownFlowContentName,
+  MarkdownExtensionContentAllowlist,
+  MarkdownExtensionContent,
   MarkdownTokenizerInput,
+  MarkdownExtensionChildrenRange,
   MarkdownTokenizeResult,
   MarkdownSyntaxContribution,
   MarkdownSyntaxCapability,
   MarkdownTransformContext,
   MarkdownTransform,
+  MarkdownExtensionRendererProps,
   MarkdownExtensionRenderer,
   MarkdownExtensionRenderers,
   MarkdownSyntaxPluginDefinition,

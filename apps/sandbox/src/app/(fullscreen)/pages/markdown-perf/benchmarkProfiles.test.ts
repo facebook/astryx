@@ -11,6 +11,7 @@ import {
 describe('Markdown performance profiles', () => {
   const source = generateMarkdownFixture(20);
   const softBreaks = getMarkdownBenchmarkProfile('soft-breaks');
+  const callouts = getMarkdownBenchmarkProfile('callouts');
 
   it('uses the same prepared fixture for paired empty and plugin runs', () => {
     expect(softBreaks.plugins).toHaveLength(1);
@@ -28,6 +29,20 @@ describe('Markdown performance profiles', () => {
     expect(
       softBreaks.prepareSource(source, 'dense').match(/\nand inline /g),
     ).toHaveLength(20);
+  });
+
+  it('provides deterministic sparse and dense callout fixtures', () => {
+    expect(callouts.prepareSource(source, 'none')).toBe(source);
+    expect(
+      callouts.prepareSource(source, 'sparse').match(/:::note Performance/g),
+    ).toHaveLength(2);
+    expect(
+      callouts.prepareSource(source, 'dense').match(/:::note Performance/g),
+    ).toHaveLength(20);
+    expect(getMarkdownBenchmarkPlugins(callouts, 'baseline')).toHaveLength(0);
+    expect(getMarkdownBenchmarkPlugins(callouts, 'plugin')).toBe(
+      callouts.plugins,
+    );
   });
 
   it('keeps profile ids unique', () => {

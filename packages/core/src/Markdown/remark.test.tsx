@@ -16,6 +16,7 @@ import {Markdown} from './Markdown';
 import {parseInlineAst, parseMarkdown, parseMarkdownAst} from './parser';
 import {createMarkdownPlugin} from './plugins';
 import type {
+  MarkdownAnyExtensionNode,
   MarkdownExtensionNode,
   MarkdownPluginEntry,
   MarkdownSyntaxPluginDefinition,
@@ -193,8 +194,8 @@ function deepFreeze<T>(value: T, seen = new Set<object>()): T {
 }
 
 interface RunResult {
-  readonly root: MarkdownAstRoot<MarkdownExtensionNode>;
-  readonly result: MarkdownAstRoot<MarkdownExtensionNode>;
+  readonly root: MarkdownAstRoot<MarkdownAnyExtensionNode>;
+  readonly result: MarkdownAstRoot<MarkdownAnyExtensionNode>;
   readonly reports: string[];
 }
 
@@ -218,12 +219,12 @@ function runAdapter(
               children: parseInlineAst(source, options.sourceIds),
             },
           ],
-        } as MarkdownAstRoot<MarkdownExtensionNode>)
-      : (parseMarkdownAst(source, {
+        } as MarkdownAstRoot<MarkdownAnyExtensionNode>)
+      : parseMarkdownAst(source, {
           sourceRanges: true,
           sourceIds: options.sourceIds,
           plugins: options.plugins ?? [],
-        }) as MarkdownAstRoot<MarkdownExtensionNode>);
+        });
   const root = deepFreeze(parsed);
   const reports: string[] = [];
   const context: MarkdownTransformContext = {
@@ -286,7 +287,7 @@ describe('Remark adapter — supported round trip', () => {
         sourceRanges: true,
         sourceIds: new Set(['ref']),
         plugins: [notePlugin],
-      }) as MarkdownAstRoot<MarkdownExtensionNode>,
+      }) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const reports: string[] = [];
     const transform = createMarkdownRemarkTransform(() => () => undefined);
@@ -504,7 +505,7 @@ describe('Remark adapter — supported round trip', () => {
     );
     const source = 'Body text';
     const root = deepFreeze(
-      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const context: MarkdownTransformContext = {
       source,
@@ -538,7 +539,7 @@ describe('Remark adapter — fenced code metadata', () => {
     const root = deepFreeze(
       parseMarkdownAst(fenceSource, {
         sourceRanges: true,
-      }) as MarkdownAstRoot<MarkdownExtensionNode>,
+      }) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const reports: string[] = [];
     const result = createMarkdownRemarkTransform(() => () => undefined)(root, {
@@ -835,10 +836,10 @@ describe('Remark adapter — a plugin cannot talk its way out of a failure', () 
       },
     );
     const reports: string[] = [];
-    const run = (): MarkdownAstRoot<MarkdownExtensionNode> => {
+    const run = (): MarkdownAstRoot<MarkdownAnyExtensionNode> => {
       const source = 'Prose.';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const result = transform(root, {
         source,
@@ -928,7 +929,7 @@ describe('Remark adapter — a plugin cannot talk its way out of a failure', () 
     );
     const source = 'Prose.';
     const root = deepFreeze(
-      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const reports: string[] = [];
 
@@ -1486,9 +1487,9 @@ describe('Remark adapter — rejection matrix', () => {
       root.children?.push(stashed);
     });
     const reports: string[] = [];
-    const run = (source: string): MarkdownAstRoot<MarkdownExtensionNode> => {
+    const run = (source: string): MarkdownAstRoot<MarkdownAnyExtensionNode> => {
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const result = transform(root, {
         source,
@@ -1605,7 +1606,7 @@ describe('Remark adapter — conventional plugin types', () => {
     // A conventional plugin also runs: a no-op leaves the document identical.
     const source = 'Prose stays put.';
     const root = deepFreeze(
-      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const reports: string[] = [];
     expect(
@@ -1624,7 +1625,7 @@ describe('Remark adapter — conventional plugin types', () => {
     const transform = createMarkdownRemarkTransform(remarkAsync);
     const source = 'Prose stays put.';
     const root = deepFreeze(
-      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+      parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
     );
     const reports: string[] = [];
 
@@ -1665,7 +1666,7 @@ describe('Remark adapter — a refused promise is never left unhandled', () => {
     const seen = await withUnhandledRejections(() => {
       const source = 'Astryx confidential-token';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const transform = createMarkdownRemarkTransform(
         () => () =>
@@ -1694,7 +1695,7 @@ describe('Remark adapter — a refused promise is never left unhandled', () => {
     const seen = await withUnhandledRejections(() => {
       const source = 'Astryx confidential-token';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const rejectingAttacher = async (): Promise<never> => {
         throw new Error('attach failed on "confidential-token"');
@@ -1725,7 +1726,7 @@ describe('Remark adapter — a refused promise is never left unhandled', () => {
     const seen = await withUnhandledRejections(() => {
       const source = 'Astryx confidential-token';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const transform = createMarkdownRemarkTransform(
         () => (_tree: MarkdownRemarkRoot, file: MarkdownRemarkFile) => {
@@ -1762,7 +1763,7 @@ describe('Remark adapter — a refused promise is never left unhandled', () => {
     const seen = await withUnhandledRejections(() => {
       const source = 'Prose.';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const transform = createMarkdownRemarkTransform(
         () => (_tree: MarkdownRemarkRoot, file: MarkdownRemarkFile) => {
@@ -1797,7 +1798,7 @@ describe('Remark adapter — a refused promise is never left unhandled', () => {
     const seen = await withUnhandledRejections(() => {
       const source = 'Prose.';
       const root = deepFreeze(
-        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownExtensionNode>,
+        parseMarkdownAst(source) as MarkdownAstRoot<MarkdownAnyExtensionNode>,
       );
       const transform = createMarkdownRemarkTransform(
         () => () =>

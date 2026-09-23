@@ -20,6 +20,7 @@ import {
   adoptMarkdownHelperNodes,
   markMarkdownTransformClaim,
   markMarkdownTransformTrusted,
+  type MarkdownAnyExtensionNode,
   type MarkdownExtensionNode,
   type MarkdownHelperOwnership,
   type MarkdownTransform,
@@ -87,7 +88,7 @@ interface Scanner {
   busy: boolean;
 }
 
-type AnyExtension = MarkdownExtensionNode;
+type AnyExtension = MarkdownAnyExtensionNode;
 type Phrasing = MarkdownAstPhrasingContent<AnyExtension>;
 type Block = MarkdownAstBlockContent<AnyExtension>;
 

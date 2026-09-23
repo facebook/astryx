@@ -8,6 +8,7 @@
  */
 
 import type {
+  MarkdownAstAnyExtensionNode,
   MarkdownAstBlockContent,
   MarkdownAstCode,
   MarkdownAstListItem,
@@ -260,8 +261,10 @@ function annotateCode(
   return annotated;
 }
 
+type Block = MarkdownAstBlockContent<MarkdownAstAnyExtensionNode>;
+
 function transformBlocks(
-  blocks: ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>>,
+  blocks: ReadonlyArray<Block>,
   languages: ReadonlySet<string>,
   pluginName: string,
   hasRenderer: (nodeName: string) => boolean,
@@ -274,11 +277,11 @@ function transformBlocks(
     | null
     | undefined,
   report: (message: string) => void,
-): ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>> {
-  let next: MarkdownAstBlockContent<MarkdownExtensionNode>[] | undefined;
+): ReadonlyArray<Block> {
+  let next: Block[] | undefined;
   for (let index = 0; index < blocks.length; index++) {
     const block = blocks[index];
-    let replacement: MarkdownAstBlockContent<MarkdownExtensionNode>;
+    let replacement: Block;
     switch (block.type) {
       case 'code':
         replacement = annotateCode(
@@ -304,7 +307,8 @@ function transformBlocks(
         break;
       }
       case 'list': {
-        let items: MarkdownAstListItem<MarkdownExtensionNode>[] | undefined;
+        let items:
+          MarkdownAstListItem<MarkdownAstAnyExtensionNode>[] | undefined;
         for (
           let itemIndex = 0;
           itemIndex < block.children.length;

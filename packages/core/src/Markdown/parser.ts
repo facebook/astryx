@@ -26,12 +26,15 @@ import type {
 import {
   applyMarkdownTransforms,
   freezeMarkdownPluginData,
+  getMarkdownExtensionContent,
   isMarkdownPluginData,
+  MAX_MARKDOWN_CONTAINER_DEPTH,
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
+  validateMarkdownExtensionContent,
 } from './plugins/protocol';
 import type {
-  MarkdownExtensionNode,
+  MarkdownAnyExtensionNode,
   MarkdownExtensionsOf,
   MarkdownPluginData,
   MarkdownPluginEntry,
@@ -45,7 +48,7 @@ import {isSafeMarkdownParserUrl} from './url';
 // ---------------------------------------------------------------------------
 
 /** Nodes returned by default and legacy parser calls. */
-export type InlineNode<Extension extends MarkdownExtensionNode = never> =
+export type InlineNode<Extension extends MarkdownAnyExtensionNode = never> =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNode<Extension>[]}
   | {type: 'italic'; children: InlineNode<Extension>[]}
@@ -62,7 +65,7 @@ export type MathInlineNode = {type: 'math'; value: string};
 
 /** Nodes returned by an explicitly math-enabled inline parse. */
 export type InlineNodeWithMath<
-  Extension extends MarkdownExtensionNode = never,
+  Extension extends MarkdownAnyExtensionNode = never,
 > =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNodeWithMath<Extension>[]}
@@ -84,7 +87,7 @@ type BlockMetadata = {
   range?: SourceRange;
 };
 
-type LegacyBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
+type LegacyBlockNodeKind<Extension extends MarkdownAnyExtensionNode = never> =
   | {
       type: 'heading';
       level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -113,13 +116,15 @@ type LegacyBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
   | Extract<Extension, {display: 'block'}>;
 
 /** Blocks returned by default and legacy parser calls. */
-export type BlockNode<Extension extends MarkdownExtensionNode = never> =
+export type BlockNode<Extension extends MarkdownAnyExtensionNode = never> =
   LegacyBlockNodeKind<Extension> & BlockMetadata;
 
 /** The additional block returned only when parsing with `math: true`. */
 export type MathBlockNode = {type: 'math'; value: string} & BlockMetadata;
 
-type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
+type MathEnabledBlockNodeKind<
+  Extension extends MarkdownAnyExtensionNode = never,
+> =
   | {
       type: 'heading';
       level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -149,8 +154,9 @@ type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
   | Extract<Extension, {display: 'block'}>;
 
 /** Blocks returned by an explicitly math-enabled block parse. */
-export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
-  MathEnabledBlockNodeKind<Extension> & BlockMetadata;
+export type BlockNodeWithMath<
+  Extension extends MarkdownAnyExtensionNode = never,
+> = MathEnabledBlockNodeKind<Extension> & BlockMetadata;
 
 /**
  * Where a block sits in the source string handed to `parseMarkdown`:
@@ -163,25 +169,26 @@ export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
  */
 export type SourceRange = {readonly start: number; readonly end: number};
 
-export type ListItemNode<Extension extends MarkdownExtensionNode = never> = {
+export type ListItemNode<Extension extends MarkdownAnyExtensionNode = never> = {
   checked?: boolean;
   children: BlockNode<Extension>[];
 };
-type ListItemNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  checked?: boolean;
-  children: BlockNodeWithMath<Extension>[];
-};
-export type TableCellNode<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNode<Extension>[];
-};
-type TableCellNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNodeWithMath<Extension>[];
-};
+type ListItemNodeWithMath<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    checked?: boolean;
+    children: BlockNodeWithMath<Extension>[];
+  };
+export type TableCellNode<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    children: InlineNode<Extension>[];
+  };
+type TableCellNodeWithMath<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    children: InlineNodeWithMath<Extension>[];
+  };
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
-type RuntimeExtensionNode =
-  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'inline'>
-  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>;
+type RuntimeExtensionNode = MarkdownAnyExtensionNode;
 type RuntimeInlineNode = InlineNodeWithMath<RuntimeExtensionNode>;
 type RuntimeBlockNode = BlockNodeWithMath<RuntimeExtensionNode>;
 
@@ -539,6 +546,7 @@ type ResolvedOptions = {
   readonly plugins?: PreparedMarkdownPlugins;
   readonly isFinal: boolean;
   readonly allowBlockSyntax?: boolean;
+  readonly containerDepth?: number;
   /**
    * Offset of this parse's input within the document the ranges are reported
    * against. Internal only — the incremental parser parses slices and needs
@@ -1265,19 +1273,47 @@ function matchExtensionSyntax(
         ? {status: 'defer'}
         : {status: 'none'};
     }
+    const rawNode = (result as {readonly node?: unknown}).node;
+    if (rawNode == null || typeof rawNode !== 'object') {
+      reportMarkdownPluginFailure(
+        candidate.pluginName,
+        'syntax',
+        new TypeError('Tokenizer returned an invalid extension node'),
+      );
+      continue;
+    }
+    const nodeRecord = rawNode as Record<string, unknown>;
+    const content = getMarkdownExtensionContent(
+      opts.plugins,
+      nodeRecord as unknown as RuntimeExtensionNode,
+    );
+    const childrenRange = (result as {readonly children?: unknown}).children as
+      {readonly start?: unknown; readonly end?: unknown} | undefined;
+    const hasContainerContent = content != null && content !== 'none';
     if (
       result.status !== 'match' ||
       !Number.isInteger(result.end) ||
       result.end <= offset ||
       result.end > end ||
-      result.node.type !== 'extension' ||
-      result.node.plugin !== candidate.pluginName ||
-      result.node.display !== context ||
-      result.node.name.trim() === '' ||
-      !isMarkdownPluginData(result.node.data) ||
-      !opts.plugins?.renderers.has(
-        `${candidate.pluginName}\0${result.node.name}`,
-      )
+      nodeRecord.type !== 'extension' ||
+      nodeRecord.plugin !== candidate.pluginName ||
+      (nodeRecord.display !== 'inline' && nodeRecord.display !== 'block') ||
+      nodeRecord.display !== context ||
+      typeof nodeRecord.name !== 'string' ||
+      nodeRecord.name.trim() === '' ||
+      !isMarkdownPluginData(nodeRecord.data) ||
+      'children' in nodeRecord ||
+      content == null ||
+      (content === 'phrasing' && nodeRecord.display !== 'inline') ||
+      (content === 'flow' && nodeRecord.display !== 'block') ||
+      (hasContainerContent &&
+        (childrenRange == null ||
+          !Number.isInteger(childrenRange.start) ||
+          !Number.isInteger(childrenRange.end) ||
+          (childrenRange.start as number) <= offset ||
+          (childrenRange.end as number) < (childrenRange.start as number) ||
+          (childrenRange.end as number) > result.end)) ||
+      (!hasContainerContent && childrenRange != null)
     ) {
       reportMarkdownPluginFailure(
         candidate.pluginName,
@@ -1286,33 +1322,68 @@ function matchExtensionSyntax(
       );
       continue;
     }
-    const rawNode = result.node as typeof result.node & {
-      readonly source?: unknown;
-      readonly position?: unknown;
-    };
+
+    let children: ReadonlyArray<unknown> | undefined;
+    if (hasContainerContent && childrenRange != null) {
+      const containerDepth = (opts.containerDepth ?? 0) + 1;
+      if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
+        reportMarkdownPluginFailure(
+          candidate.pluginName,
+          'syntax',
+          new TypeError('Markdown extension container depth exceeded'),
+        );
+        continue;
+      }
+      const childStart = childrenRange.start as number;
+      const childEnd = childrenRange.end as number;
+      const childOptions: ResolvedOptions = {
+        ...opts,
+        allowBlockSyntax: true,
+        baseOffset: (opts.baseOffset ?? 0) + childStart,
+        containerDepth,
+        isFinal: true,
+      };
+      const childSource = source.slice(childStart, childEnd);
+      children =
+        nodeRecord.display === 'inline'
+          ? parseInlineEntry(childSource, childOptions)
+          : parseMarkdownImpl(childSource, childOptions);
+    }
+
     const {
       source: _ignoredSource,
       position: _ignoredPosition,
+      children: _ignoredChildren,
       ...safeNode
-    } = rawNode;
+    } = nodeRecord;
     const absoluteStart = (opts.baseOffset ?? 0) + offset;
     const absoluteEnd = (opts.baseOffset ?? 0) + result.end;
+    const extensionNode = Object.freeze({
+      ...safeNode,
+      data: freezeMarkdownPluginData(nodeRecord.data),
+      ...(children == null ? null : {children: Object.freeze(children)}),
+      source: source.slice(offset, result.end),
+      ...(opts.sourceRanges && context === 'block'
+        ? {
+            position: Object.freeze({
+              start: Object.freeze({offset: absoluteStart}),
+              end: Object.freeze({offset: absoluteEnd}),
+            }),
+          }
+        : null),
+    }) as RuntimeExtensionNode;
+    if (!validateMarkdownExtensionContent(opts.plugins, extensionNode)) {
+      reportMarkdownPluginFailure(
+        candidate.pluginName,
+        'syntax',
+        new TypeError('Tokenizer returned children outside declared content'),
+      );
+      continue;
+    }
     return {
       status: 'match',
       end: result.end,
-      node: Object.freeze({
-        ...safeNode,
-        data: freezeMarkdownPluginData(result.node.data),
-        source: source.slice(offset, result.end),
-        ...(opts.sourceRanges && context === 'block'
-          ? {
-              position: Object.freeze({
-                start: Object.freeze({offset: absoluteStart}),
-                end: Object.freeze({offset: absoluteEnd}),
-              }),
-            }
-          : null),
-      }) as RuntimeExtensionNode,
+      node: extensionNode,
     };
   }
   return {status: 'none'};
@@ -3556,6 +3627,53 @@ export function parseMarkdownAstIncremental(
   );
 }
 
+function protectBlockExtensionBoundary(
+  source: string,
+  opts: ResolvedOptions,
+  initialBoundary: number,
+): number {
+  if (initialBoundary <= 0 || opts.plugins?.blockByFirstCharacter.size === 0) {
+    return initialBoundary;
+  }
+  let offset = 0;
+  let lineIndex = 0;
+  while (offset < source.length && lineIndex < initialBoundary) {
+    const newline = source.indexOf('\n', offset);
+    const end = newline < 0 ? source.length : newline;
+    const line = source.slice(offset, end).replace(/\r$/, '');
+    const column = blockExtensionColumn(line);
+    if (column != null) {
+      const match = matchExtensionSyntax(
+        source,
+        offset + column,
+        'block',
+        opts,
+      );
+      if (match.status === 'defer') {
+        return lineIndex;
+      }
+      if (match.status === 'match') {
+        const consumed = source.slice(offset, match.end);
+        const consumedLines =
+          consumed.split('\n').length - (consumed.endsWith('\n') ? 1 : 0);
+        const endLine = lineIndex + Math.max(1, consumedLines);
+        if (initialBoundary < endLine) {
+          return lineIndex;
+        }
+        lineIndex = endLine;
+        offset = match.end;
+        continue;
+      }
+    }
+    if (newline < 0) {
+      break;
+    }
+    offset = newline + 1;
+    lineIndex++;
+  }
+  return initialBoundary;
+}
+
 function parseMarkdownIncrementalAstBlocks(
   input: string,
   state: IncrementalState<boolean>,
@@ -3613,10 +3731,13 @@ function parseMarkdownIncrementalAstBlocks(
   const oldSettledEnd = cache.settledEnd;
   const tailRaw = input.slice(oldSettledEnd);
   const tailLines = tailRaw.split('\n');
-  const {boundary, openFence, openMath} = findSettledBoundary(
-    tailLines,
-    opts.math,
+  const settled = findSettledBoundary(tailLines, opts.math);
+  const boundary = protectBlockExtensionBoundary(
+    tailRaw,
+    opts,
+    settled.boundary,
   );
+  const {openFence, openMath} = settled;
   const settledDelta =
     boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
   const nextSettledEnd = oldSettledEnd + settledDelta.length;

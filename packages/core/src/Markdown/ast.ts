@@ -31,11 +31,11 @@ export interface MarkdownAstNodeBase {
   readonly data?: MarkdownAstDataValue;
 }
 
-export interface MarkdownAstExtensionNode<
-  Plugin extends string = string,
-  Name extends string = string,
-  Data extends MarkdownAstDataValue = MarkdownAstDataValue,
-  Display extends 'inline' | 'block' = 'inline' | 'block',
+interface MarkdownAstExtensionNodeFields<
+  Plugin extends string,
+  Name extends string,
+  Data extends MarkdownAstDataValue,
+  Display extends 'inline' | 'block',
 > extends MarkdownAstNodeBase {
   readonly type: 'extension';
   readonly plugin: Plugin;
@@ -45,6 +45,44 @@ export interface MarkdownAstExtensionNode<
   readonly source?: string;
 }
 
+/** A simple extension leaf. Its renderer declares `content: 'none'` or omits it. */
+export interface MarkdownAstExtensionNode<
+  Plugin extends string = string,
+  Name extends string = string,
+  Data extends MarkdownAstDataValue = MarkdownAstDataValue,
+  Display extends 'inline' | 'block' = 'inline' | 'block',
+> extends MarkdownAstExtensionNodeFields<Plugin, Name, Data, Display> {
+  readonly children?: never;
+}
+
+/** An inline extension container whose children are canonical phrasing nodes. */
+export interface MarkdownAstInlineContainerExtensionNode<
+  Plugin extends string = string,
+  Name extends string = string,
+  Data extends MarkdownAstDataValue = MarkdownAstDataValue,
+> extends MarkdownAstExtensionNodeFields<Plugin, Name, Data, 'inline'> {
+  readonly children: ReadonlyArray<
+    MarkdownAstPhrasingContent<MarkdownAstAnyExtensionNode>
+  >;
+}
+
+/** A block extension container whose children are canonical flow nodes. */
+export interface MarkdownAstBlockContainerExtensionNode<
+  Plugin extends string = string,
+  Name extends string = string,
+  Data extends MarkdownAstDataValue = MarkdownAstDataValue,
+> extends MarkdownAstExtensionNodeFields<Plugin, Name, Data, 'block'> {
+  readonly children: ReadonlyArray<
+    MarkdownAstBlockContent<MarkdownAstAnyExtensionNode>
+  >;
+}
+
+export type MarkdownAstAnyExtensionNode =
+  | MarkdownAstExtensionNode<string, string, MarkdownAstDataValue, 'inline'>
+  | MarkdownAstExtensionNode<string, string, MarkdownAstDataValue, 'block'>
+  | MarkdownAstInlineContainerExtensionNode
+  | MarkdownAstBlockContainerExtensionNode;
+
 export interface MarkdownAstText extends MarkdownAstNodeBase {
   readonly type: 'text';
   readonly value: string;
@@ -52,7 +90,7 @@ export interface MarkdownAstText extends MarkdownAstNodeBase {
 
 export interface MarkdownAstParent<
   Type extends 'strong' | 'emphasis' | 'delete',
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: Type;
   readonly children: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>;
@@ -69,7 +107,7 @@ export interface MarkdownAstInlineMath extends MarkdownAstNodeBase {
 }
 
 export interface MarkdownAstLink<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'link';
   readonly url: string;
@@ -92,7 +130,7 @@ export interface MarkdownAstBreak extends MarkdownAstNodeBase {
 }
 
 export type MarkdownAstPhrasingContent<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > =
   | MarkdownAstText
   | MarkdownAstParent<'strong', Extension>
@@ -107,7 +145,7 @@ export type MarkdownAstPhrasingContent<
   | (Extension & {readonly display: 'inline'});
 
 export interface MarkdownAstHeading<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'heading';
   readonly depth: 1 | 2 | 3 | 4 | 5 | 6;
@@ -115,7 +153,7 @@ export interface MarkdownAstHeading<
 }
 
 export interface MarkdownAstParagraph<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'paragraph';
   readonly children: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>;
@@ -167,14 +205,14 @@ export interface MarkdownAstMath extends MarkdownAstNodeBase {
 }
 
 export interface MarkdownAstBlockquote<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'blockquote';
   readonly children: ReadonlyArray<MarkdownAstBlockContent<Extension>>;
 }
 
 export interface MarkdownAstListItem<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'listItem';
   readonly checked?: boolean;
@@ -182,7 +220,7 @@ export interface MarkdownAstListItem<
 }
 
 export interface MarkdownAstList<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'list';
   readonly ordered: boolean;
@@ -196,21 +234,21 @@ export interface MarkdownAstList<
 export type MarkdownAstTableAlignment = 'left' | 'center' | 'right' | null;
 
 export interface MarkdownAstTableCell<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'tableCell';
   readonly children: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>;
 }
 
 export interface MarkdownAstTableRow<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'tableRow';
   readonly children: ReadonlyArray<MarkdownAstTableCell<Extension>>;
 }
 
 export interface MarkdownAstTable<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'table';
   readonly align: ReadonlyArray<MarkdownAstTableAlignment>;
@@ -222,7 +260,7 @@ export interface MarkdownAstThematicBreak extends MarkdownAstNodeBase {
 }
 
 export type MarkdownAstBlockContent<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > =
   | MarkdownAstHeading<Extension>
   | MarkdownAstParagraph<Extension>
@@ -236,14 +274,14 @@ export type MarkdownAstBlockContent<
   | (Extension & {readonly display: 'block'});
 
 export interface MarkdownAstRoot<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 > extends MarkdownAstNodeBase {
   readonly type: 'root';
   readonly children: ReadonlyArray<MarkdownAstBlockContent<Extension>>;
 }
 
 export interface MarkdownAstNodeMap<
-  Extension extends MarkdownAstExtensionNode = MarkdownAstExtensionNode,
+  Extension extends MarkdownAstAnyExtensionNode = MarkdownAstExtensionNode,
 > {
   readonly root: MarkdownAstRoot<Extension>;
   readonly text: MarkdownAstText;
@@ -271,13 +309,13 @@ export interface MarkdownAstNodeMap<
 }
 
 export type MarkdownAstNode<
-  Extension extends MarkdownAstExtensionNode = MarkdownAstExtensionNode,
+  Extension extends MarkdownAstAnyExtensionNode = MarkdownAstExtensionNode,
   Type extends keyof MarkdownAstNodeMap<Extension> =
     keyof MarkdownAstNodeMap<Extension>,
 > = MarkdownAstNodeMap<Extension>[Type];
 
 export function visitMarkdownNodes<
-  Extension extends MarkdownAstExtensionNode,
+  Extension extends MarkdownAstAnyExtensionNode,
   Type extends keyof MarkdownAstNodeMap<Extension>,
 >(
   root: MarkdownAstRoot<Extension>,
@@ -288,8 +326,10 @@ export function visitMarkdownNodes<
     if (node.type === type) {
       visitor(node as MarkdownAstNodeMap<Extension>[Type]);
     }
-    if ('children' in node) {
-      for (const child of node.children) {
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children as ReadonlyArray<
+        MarkdownAstNode<Extension>
+      >) {
         visit(child);
       }
     }
@@ -298,7 +338,7 @@ export function visitMarkdownNodes<
 }
 
 export function markdownAstText<
-  Extension extends MarkdownAstExtensionNode = never,
+  Extension extends MarkdownAstAnyExtensionNode = never,
 >(
   nodes: ReadonlyArray<MarkdownAstPhrasingContent<Extension>>,
   extensionText: (
@@ -334,4 +374,49 @@ export function markdownAstText<
     }
   }
   return text;
+}
+
+export function markdownAstBlockText<
+  Extension extends MarkdownAstAnyExtensionNode = never,
+>(
+  nodes: ReadonlyArray<MarkdownAstBlockContent<Extension>>,
+  extensionText: (node: Extension) => string = node => node.source ?? '',
+): string {
+  return nodes
+    .map(node => {
+      switch (node.type) {
+        case 'heading':
+        case 'paragraph':
+          return markdownAstText(node.children, extensionText);
+        case 'code':
+        case 'math':
+          return node.value;
+        case 'blockquote':
+          return markdownAstBlockText(node.children, extensionText);
+        case 'list':
+          return node.children
+            .map(item => markdownAstBlockText(item.children, extensionText))
+            .join('\n');
+        case 'table':
+          return node.children
+            .map(row =>
+              row.children
+                .map(cell => markdownAstText(cell.children, extensionText))
+                .join('\t'),
+            )
+            .join('\n');
+        case 'image':
+          return node.alt;
+        case 'extension':
+          return extensionText(node);
+        case 'thematicBreak':
+          return '';
+        default: {
+          node satisfies never;
+          return '';
+        }
+      }
+    })
+    .filter(text => text !== '')
+    .join('\n');
 }
