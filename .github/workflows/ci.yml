@@ -897,23 +897,16 @@ jobs:
   # interaction fixtures stay available to their dedicated checks without
   # multiplying the pixel baseline.
   #
-  # SKIPS ITSELF WHEN COMPONENT OR SHARED-INFRASTRUCTURE SCOPE IS TOO BROAD.
-  # Theme-only matrices are release evidence and are not charged against the
-  # focused component review ceiling. A token or shared-hook change puts
-  # hundreds of diffs in front of a reviewer who cannot judge them
-  # one by one, and a per-PR check is the wrong instrument for that change —
-  # the daily gate reviews it against the whole baseline instead. The skip
-  # states its reason in the PR comment rather than vanishing.
-  #
-  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
-  # verdict surfaces in the job summary and the PR comment, and the release
-  # gate is the blocking one. To promote: drop continue-on-error.
+  # Broad or unresolved scope uses the existing canonical Neutral + Probe plan.
+  # Focused components keep their review ceiling; theme-only matrices retain
+  # their own scope. A declined focused plan falls back to the full plan once,
+  # still bounded by the gate's safety limit. Only measured pass/changed
+  # verdicts succeed; capture and infrastructure failures remain blocking.
   pr-visual:
     name: Stable visual regression
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_stable_visual == 'true'
     runs-on: 2-core-ubuntu-arm
-    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -968,51 +961,78 @@ jobs:
             cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
           fi
 
-      - name: Run the visual gate for the touched components
+      - name: Run the visual gate
         id: visual
         env:
           ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          set -eu
+          set -euo pipefail
           # Component names are not globally unique, so filter by the package
           # recorded in componentStats — never infer stability from a name.
           COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
+          # The component-audit policy also broadens for theme-only changes;
+          # visual scope instead follows unresolved source ownership in analysis.
+          ANALYSIS_FORCE_FULL=$(jq -r '.forceFullComponentAudits == true or ((.unresolvedComponentSources // []) | length > 0)' analysis.json)
 
-          if [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
-            TIERS="component,theme-matrix"
-            SCOPE_ARGS=(--components "$COMPONENTS" --themes "$THEMES")
+          if [ "$ANALYSIS_FORCE_FULL" = "true" ]; then
+            GATE_ARGS=(release)
+          elif [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
+            GATE_ARGS=(check --tiers "component,theme-matrix" --components "$COMPONENTS" --themes "$THEMES")
           elif [ -n "$COMPONENTS" ]; then
-            TIERS="component"
-            SCOPE_ARGS=(--components "$COMPONENTS" --no-scout)
+            GATE_ARGS=(check --tiers component --components "$COMPONENTS" --no-scout)
           elif [ -n "$THEMES" ]; then
-            TIERS="theme-matrix"
-            SCOPE_ARGS=(--themes "$THEMES")
+            GATE_ARGS=(check --tiers theme-matrix --themes "$THEMES")
           else
-            # Shared Core theming/tokens/hooks are stable but broad. Let the
-            # gate plan the full stable surface and decline visibly at the shot
-            # budget; the daily stable gate owns the exhaustive comparison.
-            TIERS="surface,theme-matrix,probe"
-            SCOPE_ARGS=()
+            GATE_ARGS=(release)
           fi
+
+          run_gate() {
+            local code=0
+            # A failed attempt must not reuse an earlier verdict or summary.
+            rm -f .visual-run/verdict.json visual-summary.md
+            node .github/scripts/visual-gate/gate.mjs "$@" \
+              --storybook-dir apps/storybook/dist \
+              --baseline .visual-baseline \
+              --out .visual-run \
+              --summary-output visual-summary.md || code=$?
+            if [ -f visual-summary.md ]; then
+              cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            # Exit 2 reports changed pixels; every other nonzero exit is a failure.
+            if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
+              echo "::error::Visual gate exited with $code."
+              exit 1
+            fi
+            if ! STATUS=$(jq -ers '
+              select(length == 1) | .[0] |
+              select(.version == 1 and
+                (.counts.total | type == "number") and .counts.total > 0 and
+                .counts.failed == 0 and .failures == []) |
+              .status | select(. == "pass" or . == "changed" or . == "skipped")
+            ' .visual-run/verdict.json); then
+              echo "::error::Visual gate did not produce a valid, failure-free verdict."
+              exit 1
+            fi
+          }
 
           echo "Stable Core components: ${COMPONENTS:-none}"
           echo "Stable themes: ${THEMES:-none}"
-          set +e
-          node .github/scripts/visual-gate/gate.mjs check \
-            --storybook-dir apps/storybook/dist \
-            --baseline .visual-baseline \
-            --out .visual-run \
-            --tiers "$TIERS" \
-            "${SCOPE_ARGS[@]}" \
-            --summary-output visual-summary.md
-          code=$?
-          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
-          # Exit 2 is "changed", which is a question for the reviewer, not a
-          # broken job. Only a crash (1) is a failure.
-          [ "$code" -eq 1 ] && exit 1
-          exit 0
+          run_gate "${GATE_ARGS[@]}"
+          if [ "${GATE_ARGS[0]}" = "check" ] && [ "$STATUS" = "skipped" ]; then
+            # The canonical Neutral + Probe plan is bounded by the existing
+            # safety limit. It captures and compares; it never accepts a baseline.
+            echo "Focused visual plan skipped — running the full canonical plan once."
+            run_gate release
+          fi
+          case "$STATUS" in
+            pass|changed) ;;
+            *)
+              echo "::error::Full visual plan did not produce a measured verdict: $STATUS."
+              exit 1
+              ;;
+          esac
 
       - name: Upload visual verdict and report
         if: always()
