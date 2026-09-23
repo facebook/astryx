@@ -240,7 +240,7 @@ async function capture(
     height: window.innerHeight,
     dpr: window.devicePixelRatio,
   }));
-  receipts.push({
+  const receipt: Receipt = {
     state,
     storyId: STORY_ID,
     theme: await page.evaluate(
@@ -270,7 +270,9 @@ async function capture(
       width: Math.round(dimensions.width),
       height: Math.round(dimensions.height),
     },
-  });
+  };
+  receipts.push(receipt);
+  return receipt;
 }
 
 test('the scroll affordance is keyboard reachable exactly while it is visible', async ({
@@ -281,6 +283,15 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   const pill = page.locator(PILL);
   const SWEEP = 6;
 
+  // Order matters in every block below: assert the state, probe focus with
+  // preventScroll, capture the frame, and only THEN walk Tab. Sequential focus
+  // navigation scrolls each stop into view, and this affordance's visibility is
+  // a function of scroll position — measured, not assumed: an earlier revision
+  // swept first and photographed a "hidden" state that Tab had already scrolled
+  // 174px away from the bottom and made visible. The sweep is recorded as
+  // evidence of the real tab order; the assertion is the focus probe, because a
+  // button that refuses focus() is not in the sequential tab order.
+
   // ---- hidden: the resting state, where the defect lived -------------------
   // Precondition: the fixture must actually overflow, or "hidden at rest" and
   // "visible when scrolled up" would both pass without proving anything.
@@ -290,75 +301,68 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   ).toBeGreaterThan(150);
   expect(await distanceFromBottom(root)).toBeLessThan(2);
   await expect(pill).toHaveCSS('visibility', 'hidden');
-
   expect(
     await affordanceAcceptsFocus(page),
     'a control that paints nothing must refuse focus (WCAG 2.2 SC 2.4.7)',
   ).toBe(false);
-  const restSweep = await tabWithinLayout(page, before, SWEEP);
-  expect(
-    restSweep.reached,
-    `Tab reached the hidden affordance: ${restSweep.sequence.join(' -> ')}`,
-  ).toBe(false);
-  // The sweep must not have moved the scroll position it was measuring.
-  await expect(pill).toHaveCSS('visibility', 'hidden');
-  await capture(page, 'rest-hidden', {
+  const restFrame = await capture(page, 'rest-hidden', {
     pillVisibility: await pillVisibility(page),
     affordanceAcceptsFocus: false,
-    reachedByTabBeforeLeavingLayout: false,
-    tabSequence: restSweep.sequence,
     distanceFromBottomPx: await distanceFromBottom(root),
   });
+  restFrame.rendered.tabOrderObserved = (
+    await tabWithinLayout(page, before, SWEEP)
+  ).sequence;
 
   // ---- visible: the reader scrolls away from the newest message ------------
   await scrollToTop(root);
   await expect(pill).toHaveCSS('visibility', 'visible');
   expect(await distanceFromBottom(root)).toBeGreaterThan(100);
-
   expect(
     await affordanceAcceptsFocus(page),
     'the visible affordance must keep its keyboard access',
   ).toBe(true);
+  await expect(
+    page.getByRole('button', {name: 'Scroll to bottom'}),
+  ).toHaveAccessibleName('Scroll to bottom');
+  const visibleFrame = await capture(page, 'scrolled-up-visible', {
+    pillVisibility: await pillVisibility(page),
+    affordanceAcceptsFocus: true,
+    accessibleName: 'Scroll to bottom',
+    distanceFromBottomPx: await distanceFromBottom(root),
+  });
   const visibleSweep = await tabWithinLayout(page, before, SWEEP);
+  visibleFrame.rendered.tabOrderObserved = visibleSweep.sequence;
+  visibleFrame.rendered.reachedByTabAfterPresses = visibleSweep.sequence.length;
   expect(
     visibleSweep.reached,
     `Tab never reached the visible affordance: ${visibleSweep.sequence.join(' -> ')}`,
   ).toBe(true);
-  await expect(
-    page.getByRole('button', {name: 'Scroll to bottom'}),
-  ).toHaveAccessibleName('Scroll to bottom');
-  await expect(pill).toHaveCSS('visibility', 'visible');
-  await capture(page, 'scrolled-up-visible', {
-    pillVisibility: await pillVisibility(page),
-    affordanceAcceptsFocus: true,
-    reachedByTabAfterPresses: visibleSweep.sequence.length,
-    tabSequence: visibleSweep.sequence,
-    accessibleName: 'Scroll to bottom',
-    distanceFromBottomPx: await distanceFromBottom(root),
-  });
 
   // ---- re-hidden: activating it returns to the bottom ----------------------
-  // Focus is already on the affordance from the sweep above.
+  // The sweep above left focus on the affordance, so Enter activates it. Wait
+  // for the scroll spring to SETTLE at the bottom rather than merely for the
+  // pill to hide: hiding happens at the 100px threshold, while the animation
+  // is still running, and anything that nudges the scroller in that window
+  // flips the affordance back.
   await page.keyboard.press('Enter');
-  await expect(pill).toHaveCSS('visibility', 'hidden', {timeout: 5000});
+  await expect
+    .poll(async () => distanceFromBottom(root), {timeout: 5000})
+    .toBeLessThan(2);
+  await expect(pill).toHaveCSS('visibility', 'hidden');
   expect(
     await affordanceAcceptsFocus(page),
     'after returning to the bottom the affordance must refuse focus again',
   ).toBe(false);
-  const returnedSweep = await tabWithinLayout(page, before, SWEEP);
-  expect(
-    returnedSweep.reached,
-    `Tab reached the re-hidden affordance: ${returnedSweep.sequence.join(' -> ')}`,
-  ).toBe(false);
-  await expect(pill).toHaveCSS('visibility', 'hidden');
-  await capture(page, 'returned-hidden', {
+  const returnedFrame = await capture(page, 'returned-hidden', {
     pillVisibility: await pillVisibility(page),
     affordanceAcceptsFocus: false,
-    reachedByTabBeforeLeavingLayout: false,
-    tabSequence: returnedSweep.sequence,
     activatedWith: 'Enter',
     distanceFromBottomPx: await distanceFromBottom(root),
   });
+  returnedFrame.rendered.tabOrderObserved = (
+    await tabWithinLayout(page, before, SWEEP)
+  ).sequence;
 
   expect(pageErrors).toEqual([]);
 });
