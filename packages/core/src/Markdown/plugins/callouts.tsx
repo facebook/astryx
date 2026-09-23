@@ -38,7 +38,7 @@ const OPENING_LINE =
 const NESTED_OPENING_LINE =
   /^ {0,3}:::(?:note|tip|warning|danger)(?:[ \t]+[^\r\n]+)?[ \t]*$/;
 const CLOSING_LINE = /^ {0,3}:::[ \t]*$/;
-const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
+const FENCE_LINE = /^(`{3,}|~{3,})(.*)$/;
 const MAX_CALLOUT_SPAN = 100_000;
 
 interface SourceLine {

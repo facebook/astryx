@@ -132,6 +132,54 @@ describe('markdownCalloutsPlugin', () => {
     });
   });
 
+  it('does not treat indented fence-looking lines as Core fences', () => {
+    const source = [':::note', '  ```text', ':::'].join('\n');
+
+    expect(
+      parseMarkdownAst(source, {plugins: [markdownCalloutsPlugin]}).children[0],
+    ).toMatchObject({
+      type: 'extension',
+      children: [{type: 'paragraph'}],
+    });
+  });
+
+  it('keeps link definitions local to the callout and preserves child ranges', () => {
+    const source = [
+      ':::note',
+      'Intro.',
+      '',
+      '[local]: /inside',
+      'Use [local].',
+      ':::',
+      '',
+      'Outside [local].',
+    ].join('\n');
+    const root = parseMarkdownAst(source, {
+      plugins: [markdownCalloutsPlugin],
+      sourceRanges: true,
+    });
+
+    expect(root.children[0]).toMatchObject({
+      type: 'extension',
+      children: [
+        {type: 'paragraph'},
+        {
+          type: 'paragraph',
+          position: {start: {offset: source.indexOf('Use [local].')}},
+          children: [
+            {type: 'text', value: 'Use '},
+            {type: 'link', url: '/inside'},
+            {type: 'text', value: '.'},
+          ],
+        },
+      ],
+    });
+    expect(root.children[1]).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', value: 'Outside [local].'}],
+    });
+  });
+
   it('renders rich content without creating a live region', () => {
     render(
       <Markdown plugins={[markdownCalloutsPlugin]}>{RICH_SOURCE}</Markdown>,

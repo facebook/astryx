@@ -816,6 +816,41 @@ describe('Markdown plugin protocol', () => {
         children: [{type: 'text', content: 'Hello @{Ada}'}],
       },
     ]);
+
+    const malformedNode = createMarkdownPlugin({
+      ...mentionDefinition,
+      name: 'malformed-node',
+      syntax: {
+        inline: [
+          {
+            startsWith: ['@{'],
+            maxSpan: 80,
+            tokenize: ({offset}: {readonly offset: number}) =>
+              ({
+                status: 'match',
+                end: offset + 6,
+                node: {
+                  type: 'extension',
+                  plugin: Symbol('malformed-plugin'),
+                  name: Symbol('malformed-name'),
+                  display: 'inline',
+                  data: {},
+                },
+              }) as never,
+          },
+        ],
+      },
+      renderers: mentionDefinition.renderers,
+    } as never);
+    expect(() =>
+      parseMarkdown('Hello @{Ada}', {plugins: [malformedNode]}),
+    ).not.toThrow();
+    expect(parseMarkdown('Hello @{Ada}', {plugins: [malformedNode]})).toEqual([
+      {
+        type: 'paragraph',
+        children: [{type: 'text', content: 'Hello @{Ada}'}],
+      },
+    ]);
     warning.mockRestore();
   });
 

@@ -36,7 +36,6 @@ import {
 import type {
   MarkdownAnyExtensionNode,
   MarkdownExtensionsOf,
-  MarkdownPluginData,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
@@ -815,28 +814,24 @@ function matchLinkDefinition(
  * definition, or after a self-contained block (heading / thematic break /
  * closed fenced code) — but never inside a fenced code block or as a lazy
  * continuation of a paragraph, honoring CommonMark's rule that a definition
- * cannot interrupt a paragraph. First definition wins, and definitions produce
- * no output so stripping unreferenced ones is correct.
+ * cannot interrupt a paragraph. First definition wins. Definition text is
+ * replaced with same-width spaces so it produces no output while every source
+ * offset remains stable.
  *
- * Scope limit: definitions are collected at the top level only, and a
- * definition directly following a list, blockquote, or table (with no blank
- * line between) is not recognized. A definition nested inside a blockquote or
- * list item resolves within that container (via the recursive parse) but is
- * not exposed to references elsewhere in the document, unlike full CommonMark
- * where every definition is global. Separating a footer definition block with
- * a blank line — the usual form — always works.
+ * Scope limit: definitions are collected at the current parse level only.
+ * Definitions inside extension containers, blockquotes, and list items resolve
+ * within their recursive parse and are not exposed to sibling content.
  */
 function extractLinkDefinitions(
   input: string,
   math = false,
+  protectedRanges: ReadonlyArray<{
+    readonly start: number;
+    readonly end: number;
+  }> = [],
 ): {
   defs: ReadonlyMap<string, string>;
   cleaned: string;
-  /**
-   * For each line of `cleaned`, the line of `input` it came from. Undefined
-   * when nothing was stripped and the two are the same text.
-   */
-  lineMap?: number[];
 } {
   const lines = input.split('\n');
   const defs = new Map<string, string>();
@@ -844,9 +839,35 @@ function extractLinkDefinitions(
   let atBoundary = true;
   let inFence = false;
   let fenceMarker = '';
+  const lineStarts = [0];
+  for (let index = 0; index < input.length; index++) {
+    if (input[index] === '\n') {
+      lineStarts.push(index + 1);
+    }
+  }
+  let protectedIndex = 0;
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
+    const lineStart = lineStarts[index];
+    const lineEnd = lineStart + line.length;
+    while (
+      protectedIndex < protectedRanges.length &&
+      protectedRanges[protectedIndex].end <= lineStart
+    ) {
+      protectedIndex++;
+    }
+    const protectedRange = protectedRanges[protectedIndex];
+    if (
+      protectedRange != null &&
+      lineStart < protectedRange.end &&
+      lineEnd >= protectedRange.start
+    ) {
+      // A container owns its definitions. Treat the complete container as one
+      // block boundary without exposing its content to the outer definition map.
+      atBoundary = true;
+      continue;
+    }
     if (inFence) {
       if (line.startsWith(fenceMarker)) {
         inFence = false;
@@ -908,14 +929,10 @@ function extractLinkDefinitions(
   if (defs.size === 0) {
     return {defs, cleaned: input};
   }
-  const lineMap: number[] = [];
-  for (let index = 0; index < lines.length; index++) {
-    if (keep[index]) {
-      lineMap.push(index);
-    }
-  }
-  const cleaned = lineMap.map(index => lines[index]).join('\n');
-  return {defs, cleaned, lineMap};
+  const cleaned = lines
+    .map((line, index) => (keep[index] ? line : ' '.repeat(line.length)))
+    .join('\n');
+  return {defs, cleaned};
 }
 
 /** Order-independent signature of a citation-source set, for cache checks. */
@@ -1283,10 +1300,14 @@ function matchExtensionSyntax(
       continue;
     }
     const nodeRecord = rawNode as Record<string, unknown>;
-    const content = getMarkdownExtensionContent(
-      opts.plugins,
-      nodeRecord as unknown as RuntimeExtensionNode,
-    );
+    const content =
+      typeof nodeRecord.plugin === 'string' &&
+      typeof nodeRecord.name === 'string'
+        ? getMarkdownExtensionContent(
+            opts.plugins,
+            nodeRecord as unknown as RuntimeExtensionNode,
+          )
+        : undefined;
     const childrenRange = (result as {readonly children?: unknown}).children as
       {readonly start?: unknown; readonly end?: unknown} | undefined;
     const hasContainerContent = content != null && content !== 'none';
@@ -1387,6 +1408,65 @@ function matchExtensionSyntax(
     };
   }
   return {status: 'none'};
+}
+
+/**
+ * Finds block extension containers before document-global link definitions are
+ * collected. Their source is parsed recursively, so definitions they own must
+ * not be stripped from or exposed by the enclosing document.
+ */
+function findBlockExtensionContainerRanges(
+  source: string,
+  opts: ResolvedOptions,
+): ReadonlyArray<{readonly start: number; readonly end: number}> {
+  if (
+    (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0 ||
+    !source.split('\n').some(line => matchLinkDefinition(line) != null)
+  ) {
+    return [];
+  }
+
+  const ranges: {readonly start: number; readonly end: number}[] = [];
+  let cursor = 0;
+  let fence = '';
+  while (cursor < source.length) {
+    const newline = source.indexOf('\n', cursor);
+    const lineEnd = newline < 0 ? source.length : newline;
+    const line = source.slice(cursor, lineEnd);
+    if (fence !== '') {
+      if (line.startsWith(fence)) {
+        fence = '';
+      }
+    } else {
+      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+      if (fenceMatch != null) {
+        fence = fenceMatch[1];
+      } else {
+        const column = blockExtensionColumn(line);
+        if (column != null) {
+          const offset = cursor + column;
+          const extension = matchExtensionSyntax(source, offset, 'block', opts);
+          if (
+            extension.status === 'match' &&
+            Array.isArray(extension.node.children)
+          ) {
+            ranges.push({start: offset, end: extension.end});
+            cursor = extension.end;
+            continue;
+          }
+          if (extension.status === 'defer') {
+            ranges.push({start: offset, end: source.length});
+            break;
+          }
+        }
+      }
+    }
+    if (newline < 0) {
+      break;
+    }
+    cursor = newline + 1;
+  }
+  return ranges;
 }
 
 type ParseOptionsWithoutPlugins = Omit<ParseOptions, 'plugins'>;
@@ -2491,7 +2571,11 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned, lineMap} = extractLinkDefinitions(input, baseOpts.math);
+  const {defs, cleaned} = extractLinkDefinitions(
+    input,
+    baseOpts.math,
+    findBlockExtensionContainerRanges(input, baseOpts),
+  );
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
@@ -2761,7 +2845,6 @@ function parseMarkdownImpl(
       blockStartLines,
       blockEndLines ?? [],
       lines,
-      lineMap,
       input,
       opts,
     );
@@ -2774,16 +2857,14 @@ function parseMarkdownImpl(
  *
  * Blocks are contiguous and in source order, so a block runs from its own
  * first line to the line before the next block starts, minus the blank lines
- * between them. Offsets are computed against the *input*, not the text the
- * block loop saw: link reference definitions are stripped before parsing, and
- * `lineMap` says which input line each surviving line came from.
+ * between them. Definition lines are blanked at the same width before this
+ * pass, so parsed line indices map directly back to the original input.
  */
 function stampSourceRanges(
   blocks: MarkdownAstBlockContent<RuntimeExtensionNode>[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
-  lineMap: number[] | undefined,
   input: string,
   opts: ResolvedOptions,
 ): void {
@@ -2795,10 +2876,7 @@ function stampSourceRanges(
       inputLineStarts.push(i + 1);
     }
   }
-  // Stripping removes whole lines and never edits one, so a parsed line's
-  // length is its input line's length.
-  const lineStart = (line: number): number =>
-    base + inputLineStarts[lineMap != null ? lineMap[line] : line];
+  const lineStart = (line: number): number => base + inputLineStarts[line];
 
   for (let i = 0; i < blocks.length; i++) {
     const startLine = blockStartLines[i];
