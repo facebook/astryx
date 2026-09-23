@@ -48,6 +48,23 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 
 describe('classifyVisualScope', () => {
+  it.each([
+    'apps/storybook/.storybook/preview.tsx',
+    'apps/storybook/stories/Button.stories.tsx',
+    '.github/scripts/visual-gate/gate.mjs',
+    '.github/scripts/visual-gate/visual-gate.config.json',
+    '.github/scripts/visual-scope.mjs',
+    '.github/workflows/ci.yml',
+  ])(
+    'routes shared visual infrastructure through the canonical owner: %s',
+    file => {
+      expect(classifyVisualScope([file], root)).toMatchObject({
+        hasStableVisual: true,
+        broadStableVisual: true,
+      });
+    },
+  );
+
   it('includes stable Core runtime changes', () => {
     const result = classifyVisualScope(
       ['packages/core/src/Button/Button.tsx'],

@@ -11,16 +11,72 @@ on:
   pull_request:
     branches: ['main']
   merge_group:
+  # Explicit baseline maintenance shares the PR visual owner. It never runs as
+  # a release gate and never changes the baseline without a reviewed promotion.
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Capture canonical baseline candidates or promote a reviewed capture'
+        type: choice
+        options: [capture, promote]
+        default: capture
+        required: true
+      run_id:
+        description: 'For promote: the reviewed CI maintenance capture run id'
+        required: false
+      run_attempt:
+        description: 'For promote: the reviewed capture attempt'
+        required: false
+      keys:
+        description: 'For promote: comma-separated shot keys, or "all"'
+        required: false
+      reason:
+        description: 'For promote: why the reviewed rendering is correct'
+        required: false
+      prune:
+        description: 'Also drop reviewed baseline keys absent from the canonical plan'
+        type: boolean
+        default: true
+        required: false
 
 permissions: {}
 
 concurrency:
-  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref }}'
-  cancel-in-progress: true
+  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref || github.run_id }}'
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  maintenance-request:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-slim
+    steps:
+      - name: Require explicit main-branch maintenance
+        env:
+          OPERATION: ${{ inputs.operation }}
+          RUN_ID: ${{ inputs.run_id }}
+          RUN_ATTEMPT: ${{ inputs.run_attempt }}
+          KEYS: ${{ inputs.keys }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -eu
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Baseline maintenance must be dispatched from main.'
+            exit 1
+          fi
+          case "$OPERATION" in
+            capture) ;;
+            promote)
+              test -n "$RUN_ID"
+              test -n "$RUN_ATTEMPT"
+              test -n "$KEYS"
+              test -n "$REASON"
+              ;;
+            *) echo 'Choose capture or promote.'; exit 1 ;;
+          esac
+
   # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -70,7 +126,7 @@ jobs:
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -142,6 +198,7 @@ jobs:
       # Stable visual scope is separate from component scope: Core and the
       # non-private shipped themes participate; canaryOnly packages do not.
       has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
+      broad_stable_visual: ${{ steps.check.outputs.broad_stable_visual }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -169,6 +226,7 @@ jobs:
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} — running full component audits"
             printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
             echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
+            echo "broad_stable_visual=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -216,7 +274,7 @@ jobs:
   # build-storybook + build-sandbox below.
   test-ui:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
@@ -279,7 +337,7 @@ jobs:
 
   test-node:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -327,7 +385,7 @@ jobs:
   # item through the exact pinned ShadCN client and compiles every written source.
   registry-contract:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 4-core-ubuntu
     timeout-minutes: 30
     permissions:
@@ -391,7 +449,7 @@ jobs:
   # projects their combined result without creating another surface lane.
   test:
     needs: [check-scope, test-ui, test-node, test-build, registry-contract]
-    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -418,7 +476,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    if: ${{ always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -685,7 +743,7 @@ jobs:
   # behavior.
   build:
     needs: [build-storybook, build-sandbox]
-    if: ${{ !cancelled() && needs.build-storybook.result != 'skipped' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
@@ -834,6 +892,24 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # Baseline-free target/axis diagnostics are not a visual-regression lane.
+      # Keep their existing report-only behavior with the other browser guards.
+      - name: Check Probe theme reach
+        continue-on-error: true
+        run: |
+          node .github/scripts/visual-gate/gate.mjs reach \
+            --storybook-dir apps/storybook/dist \
+            --out .visual-reach
+
+      - name: Upload Probe reach report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-reach
+          path: .visual-reach/reach.json
+          retention-days: 30
+          if-no-files-found: warn
+
   # Build package test owner. The plugin's production CSS partition is a Build
   # integration contract: source inspection cannot prove which declaration
   # paints after Vite emits the final bundle. The `test-build` name makes that
@@ -841,7 +917,7 @@ jobs:
   # result. Until runtime:build has a specialized route, broad CI dispatches it.
   test-build:
     needs: [check-scope]
-    if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -866,7 +942,7 @@ jobs:
   # which custom properties paint the portaled surfaces.
   fixture-contrast:
     needs: [check-scope]
-    if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -886,34 +962,23 @@ jobs:
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
-  # Stable-package visual regression. Core component changes compare only
-  # representative or explicitly tagged story keys already present in the
-  # accepted baseline. A changed shipped theme gets its relevant matrix, but PR
-  # acceptance cannot add or remove baseline keys. Packages marked
-  # `astryx.canaryOnly` (Lab, richtext, vega) do not compare pixels and do not
-  # own a baseline.
-  #
-  # Deeper than the daily gate only where the component declares it: audit and
-  # interaction fixtures stay available to their dedicated checks without
-  # multiplying the pixel baseline.
-  #
-  # SKIPS ITSELF WHEN COMPONENT OR SHARED-INFRASTRUCTURE SCOPE IS TOO BROAD.
-  # Theme-only matrices are release evidence and are not charged against the
-  # focused component review ceiling. A token or shared-hook change puts
-  # hundreds of diffs in front of a reviewer who cannot judge them
-  # one by one, and a per-PR check is the wrong instrument for that change —
-  # the daily gate reviews it against the whole baseline instead. The skip
-  # states its reason in the PR comment rather than vanishing.
-  #
-  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
-  # verdict surfaces in the job summary and the PR comment, and the release
-  # gate is the blocking one. To promote: drop continue-on-error.
+  # Stable-package visual regression and explicit baseline maintenance share
+  # this owner. Focused PRs compare existing canonical frames; broad PRs use the
+  # full canonical plan. Maintenance captures candidates on the same runner,
+  # but only a separate explicit promotion may publish them as the baseline.
+  # Audit and interaction fixtures stay with their existing browser checks.
   pr-visual:
     name: Stable visual regression
-    needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_stable_visual == 'true'
+    needs: [build-storybook, check-components, maintenance-request]
+    if: >-
+      !cancelled() &&
+      ((github.event_name == 'pull_request' &&
+        needs.build-storybook.result == 'success' &&
+        needs.check-components.result == 'success' &&
+        needs.check-components.outputs.has_stable_visual == 'true') ||
+       (github.event_name == 'workflow_dispatch' &&
+        needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))
     runs-on: 2-core-ubuntu-arm
-    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -926,21 +991,21 @@ jobs:
           install: 'false'
 
       - name: Download analysis artifact
+        if: github.event_name == 'pull_request'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: github.event_name == 'pull_request'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
-      # Non-fatal: if this artifact is ever missing, renamed, or produced under
-      # a different key, the gate builds the themes itself. A crash here would
-      # be before the gate ever runs, which is how an artifact-wiring change
-      # reddened every open component PR twice in one day.
+      # If the optional theme artifact is missing, the gate builds the themes.
       - name: Download built themes and core
+        if: github.event_name == 'pull_request'
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -950,11 +1015,14 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
-      # The downloaded theme builds import Core's consumer-facing dist files.
-      # Rebuild only Core here so those imports resolve without repeating the
-      # full workspace build that produced the theme artifact.
+      # Downloaded theme builds import Core's consumer-facing dist files.
       - name: Build Core dependency for theme inspection
+        if: github.event_name == 'pull_request'
         run: pnpm -F @astryxdesign/core build
+
+      - name: Build canonical maintenance Storybook
+        if: github.event_name == 'workflow_dispatch'
+        run: pnpm build && pnpm -F @astryxdesign/storybook build
 
       - name: Fetch visual baseline from gh-pages
         run: |
@@ -970,52 +1038,70 @@ jobs:
 
       - name: Run the visual gate for the touched components
         id: visual
+        if: github.event_name == 'pull_request'
         env:
+          BROAD_STABLE_VISUAL: ${{ needs.check-components.outputs.broad_stable_visual }}
           ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -eu
-          # Component names are not globally unique, so filter by the package
-          # recorded in componentStats — never infer stability from a name.
+          # Component names are not globally unique; use their package identity.
           COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
-
-          if [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
-            TIERS="component,theme-matrix"
-            SCOPE_ARGS=(--components "$COMPONENTS" --themes "$THEMES")
+          COMMAND=check
+          if [ "$BROAD_STABLE_VISUAL" = 'true' ]; then
+            COMMAND=release
+            SCOPE_ARGS=()
+          elif [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
+            SCOPE_ARGS=(--tiers 'component,theme-matrix' --components "$COMPONENTS" --themes "$THEMES")
           elif [ -n "$COMPONENTS" ]; then
-            TIERS="component"
-            SCOPE_ARGS=(--components "$COMPONENTS" --no-scout)
+            SCOPE_ARGS=(--tiers component --components "$COMPONENTS" --no-scout)
           elif [ -n "$THEMES" ]; then
-            TIERS="theme-matrix"
-            SCOPE_ARGS=(--themes "$THEMES")
+            SCOPE_ARGS=(--tiers theme-matrix --themes "$THEMES")
           else
-            # Shared Core theming/tokens/hooks are stable but broad. Let the
-            # gate plan the full stable surface and decline visibly at the shot
-            # budget; the daily stable gate owns the exhaustive comparison.
-            TIERS="surface,theme-matrix,probe"
+            # Broad changes stay with this owner: the canonical full plan has
+            # no focused-component review ceiling and no deferred backup gate.
+            COMMAND=release
             SCOPE_ARGS=()
           fi
 
           echo "Stable Core components: ${COMPONENTS:-none}"
           echo "Stable themes: ${THEMES:-none}"
           set +e
-          node .github/scripts/visual-gate/gate.mjs check \
+          node .github/scripts/visual-gate/gate.mjs "$COMMAND" \
             --storybook-dir apps/storybook/dist \
             --baseline .visual-baseline \
             --out .visual-run \
-            --tiers "$TIERS" \
             "${SCOPE_ARGS[@]}" \
             --summary-output visual-summary.md
           code=$?
+          set -e
+          # Exit 2 is a visual change for review; every other nonzero exit is
+          # an infrastructure failure, not a successful evidence receipt.
+          case "$code" in 0|2) ;; *) exit "$code" ;; esac
+          STATUS=$(jq -er '.status' .visual-run/verdict.json)
+          if [ "$STATUS" = 'skipped' ]; then
+            # The focused budget refused before capture. The same owner now
+            # captures its bounded canonical full plan rather than leaving a gap.
+            set +e
+            node .github/scripts/visual-gate/gate.mjs release \
+              --storybook-dir apps/storybook/dist \
+              --baseline .visual-baseline \
+              --out .visual-run \
+              --summary-output visual-summary.md
+            code=$?
+            set -e
+            case "$code" in 0|2) ;; *) exit "$code" ;; esac
+            STATUS=$(jq -er '.status' .visual-run/verdict.json)
+          fi
           [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
-          # Exit 2 is "changed", which is a question for the reviewer, not a
-          # broken job. Only a crash (1) is a failure.
-          [ "$code" -eq 1 ] && exit 1
-          exit 0
+          case "$STATUS" in
+            pass|changed) ;;
+            *) echo "Visual evidence is incomplete: $STATUS"; exit 1 ;;
+          esac
 
       - name: Upload visual verdict and report
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: visual-pr-report
@@ -1026,6 +1112,154 @@ jobs:
             .visual-run/report/
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Capture canonical visual baseline
+        id: maintenance-capture
+        if: github.event_name == 'workflow_dispatch'
+        # A complete browser-refresh capture can be incomparable with the old
+        # baseline. The next step requires full capture, not a clean comparison.
+        continue-on-error: true
+        run: |
+          node .github/scripts/visual-gate/gate.mjs release \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --summary-output visual-summary.md
+
+      - name: Validate canonical baseline capture
+        id: maintenance-validation
+        if: >-
+          always() && github.event_name == 'workflow_dispatch' &&
+          steps.maintenance-capture.outcome != 'skipped'
+        env:
+          CAPTURE_SHA: ${{ github.sha }}
+          CAPTURE_RUN_ID: ${{ github.run_id }}
+          CAPTURE_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {validateVisualMaintenanceCapture} from './.github/scripts/visual-maintenance-source.mjs';
+          validateVisualMaintenanceCapture({
+            manifest: JSON.parse(fs.readFileSync('.visual-run/manifest.json', 'utf8')),
+            verdict: JSON.parse(fs.readFileSync('.visual-run/verdict.json', 'utf8')),
+            sha: process.env.CAPTURE_SHA,
+            runId: process.env.CAPTURE_RUN_ID,
+            runAttempt: process.env.CAPTURE_RUN_ATTEMPT,
+          });
+          NODE
+          cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload canonical baseline candidate
+        if: always() && steps.maintenance-validation.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baseline-capture-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .visual-run/shots/
+            .visual-run/manifest.json
+            .visual-run/verdict.json
+            .visual-run/report/
+          retention-days: 14
+          if-no-files-found: error
+
+  # Publication only: no browser, comparison, automatic acceptance, or release
+  # status. The explicitly reviewed CI capture supplies the baseline bytes.
+  baseline-publication:
+    needs: maintenance-request
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'promote'
+    runs-on: ubuntu-slim
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout trusted maintenance implementation
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Resolve the reviewed canonical capture
+        id: source
+        uses: actions/github-script@v9
+        env:
+          SOURCE_RUN_ID: ${{ inputs.run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.run_attempt }}
+        with:
+          retries: 3
+          script: |
+            const {pathToFileURL} = require('node:url');
+            const {resolveVisualMaintenanceSource} = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/visual-maintenance-source.mjs`).href
+            );
+            const source = await resolveVisualMaintenanceSource({
+              github, ...context.repo,
+              runId: process.env.SOURCE_RUN_ID,
+              runAttempt: process.env.SOURCE_RUN_ATTEMPT,
+            });
+            core.setOutput('artifact_id', String(source.artifactId));
+            core.setOutput('run_id', String(source.runId));
+            core.setOutput('run_attempt', String(source.runAttempt));
+            core.setOutput('sha', source.sha);
+
+      - name: Queue baseline publication
+        id: queue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/gh-pages-publisher.mjs enqueue --scope visual-gate/baseline
+
+      - name: Download the reviewed capture
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.source.outputs.artifact_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: .visual-run
+          merge-multiple: true
+
+      - name: Verify downloaded capture identity
+        env:
+          CAPTURE_SHA: ${{ steps.source.outputs.sha }}
+          CAPTURE_RUN_ID: ${{ steps.source.outputs.run_id }}
+          CAPTURE_RUN_ATTEMPT: ${{ steps.source.outputs.run_attempt }}
+        run: |
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {validateVisualMaintenanceCapture} from './.github/scripts/visual-maintenance-source.mjs';
+          validateVisualMaintenanceCapture({
+            manifest: JSON.parse(fs.readFileSync('.visual-run/manifest.json', 'utf8')),
+            verdict: JSON.parse(fs.readFileSync('.visual-run/verdict.json', 'utf8')),
+            sha: process.env.CAPTURE_SHA,
+            runId: process.env.CAPTURE_RUN_ID,
+            runAttempt: process.env.CAPTURE_RUN_ATTEMPT,
+          });
+          NODE
+
+      - name: Wait for the baseline publication turn
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/gh-pages-publisher.mjs wait --scope visual-gate/baseline
+
+      - name: Promote the explicitly reviewed baseline
+        env:
+          KEYS: ${{ inputs.keys }}
+          REASON: ${{ inputs.reason }}
+          PROMOTER: ${{ github.actor }}
+          PRUNE: ${{ inputs.prune && 'true' || 'false' }}
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          node .github/scripts/gh-pages-publisher.mjs visual-baseline-manual
+          --capture .visual-run
+          --keys "$KEYS"
+          --reason "$REASON"
+          --actor "$PROMOTER"
+          --prune "$PRUNE"
+
+      - name: Release the baseline publication turn
+        if: always() && steps.queue.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/gh-pages-publisher.mjs release --scope visual-gate/baseline
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so ordinary PRs only pay for the components they
@@ -1270,7 +1504,7 @@ jobs:
   # Stable required context joining the five package shards above.
   pr-rtl:
     needs: [check-scope, check-components, pr-rtl-shard]
-    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:

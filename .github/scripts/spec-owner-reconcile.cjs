@@ -519,15 +519,6 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  if (scope.specOnly) {
-    await createStatus({
-      sha: initialHead,
-      context: 'visual-acceptance',
-      state: 'success',
-      description: 'Spec-only change — no visual scope.',
-    });
-  }
-
   const requiredGroups = requiredApprovalGroups(records, {
     complete: scope.complete,
     touchesDesignAssets: scope.touchesDesignAssets,

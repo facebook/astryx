@@ -343,8 +343,6 @@ describe('trusted PR preview identity', () => {
       .map(([name]) => name);
 
     expect(writeCapableJobs).toEqual([
-      'invalidate',
-      'spec-only-visual',
       'spec-only-reconcile',
       'deploy-preview',
       'comment',

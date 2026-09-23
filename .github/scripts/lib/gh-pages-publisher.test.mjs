@@ -14,14 +14,11 @@ import {
   cleanupPreviews,
   compactGhPages,
   enqueuePublication,
-  publishAcceptedVisualBaseline,
   publishImmutablePath,
   publishManualVisualBaseline,
   publishPrPreview,
-  publishReleaseGateReport,
   publishVibeReport,
   publishVibeScreenshots,
-  publishVisualAcceptanceRecord,
   publishStableSite,
   releasePublication,
   waitForPublicationTurn,
@@ -37,7 +34,6 @@ const LEGACY_LOCK = fileURLToPath(
 const HEAD = 'a'.repeat(40);
 const TESTED = 'b'.repeat(40);
 const BASE = 'd'.repeat(40);
-const MERGE = 'c'.repeat(40);
 const KEY = 'core-button--default__neutral-light';
 
 const SHARED_HOLDER = path.join(
@@ -611,122 +607,6 @@ describe('gh-pages publisher', () => {
     expect(git(final, 'rev-list', '--count', 'HEAD')).toBe('1');
   });
 
-  it('publishes release-gate reports without touching the stable site or baseline', async () => {
-    const fx = fixture();
-    const report = path.join(fx.root, 'report');
-    writeFile(path.join(report, 'index.html'), 'new report');
-    writeFile(
-      path.join(report, 'release-gate.json'),
-      '{"visual":{"status":"passed"}}\n',
-    );
-
-    await publishReleaseGateReport({
-      ...context(fx, 901, 'visual-gate/reports'),
-      source: report,
-      runId: 901,
-    });
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', '901', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('new report');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', 'latest', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('new report');
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-          'utf8',
-        ),
-      ).version,
-    ).toBe(1);
-    expect(
-      fs.readFileSync(path.join(final, 'storybook', 'old.html'), 'utf8'),
-    ).toBe('old storybook');
-  });
-
-  it('retries from the source checkout after deleting the rejected gh-pages checkout', async () => {
-    const fx = fixture();
-    const report = path.join(fx.root, 'report');
-    writeFile(path.join(report, 'index.html'), 'retry report');
-    let raced = false;
-
-    await publishReleaseGateReport({
-      ...context(fx, 902, 'visual-gate/reports'),
-      source: report,
-      runId: 902,
-      beforePush: async ({attempt}) => {
-        if (attempt !== 1 || raced) return;
-        raced = true;
-        const writer = cloneRemote(fx.remote, fx.root, 'race-writer');
-        git(writer, 'config', 'user.name', 'Test');
-        git(writer, 'config', 'user.email', 'test@example.com');
-        writeFile(path.join(writer, 'visual-gate', 'race.txt'), 'race');
-        git(writer, 'add', '.');
-        git(writer, 'commit', '-qm', 'race');
-        git(writer, 'push', '-q', 'origin', 'gh-pages');
-      },
-    });
-
-    expect(raced).toBe(true);
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(path.join(final, 'visual-gate', 'race.txt'), 'utf8'),
-    ).toBe('race');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', '902', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('retry report');
-  });
-
-  it('prunes only old release-gate run directories', async () => {
-    const fx = fixture();
-    const seed = cloneRemote(fx.remote, fx.root, 'seed-more-runs');
-    git(seed, 'config', 'user.name', 'Test');
-    git(seed, 'config', 'user.email', 'test@example.com');
-    for (let runId = 100; runId <= 125; runId += 1) {
-      writeFile(
-        path.join(seed, 'visual-gate', String(runId), 'index.html'),
-        String(runId),
-      );
-    }
-    writeFile(
-      path.join(seed, '.astryx-gh-pages', 'publication-queue', '700.json'),
-      '{"version":1,"repository":"facebook/astryx","runId":700,"scope":"whole-tree"}\n',
-    );
-    git(seed, 'add', '.');
-    git(seed, 'commit', '-qm', 'seed runs');
-    git(seed, 'push', '-q', 'origin', 'gh-pages');
-    const report = path.join(fx.root, 'report-prune');
-    writeFile(path.join(report, 'index.html'), 'new');
-
-    await publishReleaseGateReport({
-      ...context(fx, 126, 'visual-gate/reports'),
-      source: report,
-      runId: 126,
-    });
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(fs.existsSync(path.join(final, 'visual-gate', '100'))).toBe(false);
-    expect(fs.existsSync(path.join(final, 'visual-gate', '107'))).toBe(true);
-    expect(fs.existsSync(path.join(final, 'visual-gate', 'baseline'))).toBe(
-      true,
-    );
-    expect(fs.existsSync(path.join(final, 'visual-gate', 'latest'))).toBe(true);
-    expect(
-      fs.existsSync(path.join(final, '.astryx-gh-pages', 'publication-queue')),
-    ).toBe(true);
-  });
-
   it('does not claim either holder while waiting for an older legacy baseline ticket', async () => {
     const fx = fixture();
     writeLegacyTicket(fx.remote, fx.root, 899);
@@ -1031,78 +911,9 @@ describe('gh-pages publisher', () => {
     ).rejects.toThrow(/immutable destination already exists/);
   });
 
-  it('archives acceptance records through the shared queue', async () => {
+  it('publishes reviewed baseline bytes only while holding the shared turn', async () => {
     const fx = fixture();
-    await queuedPublish(fx, 920, 'visual-gate/acceptances', () =>
-      publishVisualAcceptanceRecord({
-        ...context(fx, 920, 'visual-gate/acceptances'),
-        pr: 42,
-        head: HEAD,
-        acceptedRunId: 123,
-        acceptedRunAttempt: 1,
-        approver: 'maintainer',
-        approverId: 99,
-        permission: 'maintain',
-        effectivePermission: 'maintain',
-        roleName: '',
-        commentId: 1234,
-        reason: 'The new radius matches the approved component design.',
-      }),
-    );
-
-    const final = cloneRemote(fx.remote, fx.root);
-    const acceptance = JSON.parse(
-      fs.readFileSync(
-        path.join(
-          final,
-          'visual-gate',
-          'acceptances',
-          '42',
-          HEAD,
-          '123',
-          '1',
-          'acceptance.json',
-        ),
-        'utf8',
-      ),
-    );
-    expect(acceptance.keys.map(entry => entry.key)).toEqual([KEY]);
-    expect(
-      fs.existsSync(
-        path.join(
-          final,
-          'visual-gate',
-          'acceptances',
-          '42',
-          HEAD,
-          '123',
-          '1',
-          'after',
-          `${KEY}.png`,
-        ),
-      ),
-    ).toBe(true);
-  });
-
-  it('promotes accepted baseline pixels only while holding the shared turn', async () => {
-    const fx = fixture();
-    await queuedPublish(fx, 930, 'visual-gate/acceptances', () =>
-      publishVisualAcceptanceRecord({
-        ...context(fx, 930, 'visual-gate/acceptances'),
-        pr: 42,
-        head: HEAD,
-        acceptedRunId: 123,
-        acceptedRunAttempt: 1,
-        approver: 'maintainer',
-        approverId: 99,
-        permission: 'maintain',
-        effectivePermission: 'maintain',
-        roleName: '',
-        commentId: 1234,
-        reason: 'The new radius matches the approved component design.',
-      }),
-    );
-    const capture = path.join(fx.root, 'merged-capture');
+    const capture = path.join(fx.root, 'canonical-capture');
     const after = png(0, 0, 255);
     writeFile(path.join(capture, 'shots', `${KEY}.png`), after);
     writeJSON(path.join(capture, 'manifest.json'), {
@@ -1110,43 +921,39 @@ describe('gh-pages publisher', () => {
       platform: 'linux-arm64',
       browser: 'chromium-140.0',
       viewport: {width: 1280, height: 900},
-      context: {sha: MERGE},
+      context: {sha: TESTED},
       shots: {
         [KEY]: {...SHOT, key: KEY, sha256: digest(after), width: 2, height: 2},
       },
     });
-    const turn = context(fx, 931, 'visual-gate/baseline');
-    const previousPath = process.env.PATH;
-    process.env.PATH = `${fx.bin}:${previousPath}`;
-    try {
-      await enqueuePublication(turn);
-      await waitForPublicationTurn(turn);
-      await publishAcceptedVisualBaseline({
-        ...turn,
-        pr: 42,
-        head: HEAD,
-        mergeSha: MERGE,
-        expectedRecordRel: '123/1/acceptance.json',
-        capture,
-      });
-      await releasePublication(turn);
-    } finally {
-      process.env.PATH = previousPath;
-    }
-
+    const options = {
+      ...context(fx, 931, 'visual-gate/baseline'),
+      capture,
+      keys: KEY,
+      reason: 'The reviewed frame matches the intended component rendering.',
+      actor: 'maintainer',
+    };
+    await expect(publishManualVisualBaseline(options)).rejects.toThrow();
+    await queuedPublish(fx, 931, 'visual-gate/baseline', () =>
+      publishManualVisualBaseline(options),
+    );
     const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'visual-gate/baseline/shots', `${KEY}.png`),
+      ),
+    ).toEqual(after);
     const manifest = JSON.parse(
       fs.readFileSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+        path.join(final, 'visual-gate/baseline/manifest.json'),
         'utf8',
       ),
     );
     expect(manifest.shots[KEY].sha256).toBe(digest(after));
-    expect(manifest.decisions.at(-1)).toMatchObject({
-      pr: 42,
-      headSha: HEAD,
-      mergeSha: MERGE,
-    });
+    expect(manifest.decisions.at(-1).reason).toBe(options.reason);
+    expect(
+      fs.readFileSync(path.join(final, 'storybook/old.html'), 'utf8'),
+    ).toBe('old storybook');
   });
 
   it('publishes PR previews without losing reports or visual state', async () => {

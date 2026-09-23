@@ -217,14 +217,16 @@ describe('spec-only workflow contract', () => {
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
-    expect(ci).toContain('if: ${{ always() && !cancelled() }}');
+    expect(ci).toContain(
+      "if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+    );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
     const reviewSignal = read('.github/workflows/review-signal.yml');
     expect(reviewSignal).toContain('allFiles.length !== pr.changed_files');
 
     const prComment = read('.github/workflows/pr-comment.yml');
-    expect(prComment).toContain('files.length !== pr.changed_files');
+    expect(prComment).toContain('expectedCount: pull.changed_files');
   });
 
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
@@ -380,8 +382,6 @@ describe('spec-only workflow contract', () => {
     const workflow = read('.github/workflows/pr-comment.yml');
     expect(workflow).toContain("needs.resolve.outputs.spec_only != 'true'");
     expect(workflow).toContain("needs.resolve.outputs.spec_only == 'true'");
-    expect(workflow).toContain(
-      "context: 'visual-acceptance', state: 'success'",
-    );
+    expect(workflow).not.toContain("context: 'visual-acceptance'");
   });
 });

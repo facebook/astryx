@@ -21,10 +21,7 @@ on:
       - 'PR Comment'
       - 'Re-deploy Preview'
       - 'Cleanup Preview Deployments'
-      - 'Release Gate'
-      - 'Visual Baseline'
-      - 'Visual acceptance'
-      - 'Visual acceptance promotion'
+      - 'CI'
       - 'Vibe Test Screenshots'
       - 'Compact GitHub Pages History'
     types: [completed]

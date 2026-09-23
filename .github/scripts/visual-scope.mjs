@@ -55,7 +55,15 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   const stableThemes = new Set();
   const stableComponents = new Set();
   const canaryPackages = new Set();
-  let broadStableVisual = false;
+  const stableVisualInfrastructure = paths.some(
+    file =>
+      file.startsWith('apps/storybook/.storybook/') ||
+      /^apps\/storybook\/stories\/.*\.stories\.[cm]?[jt]sx?$/.test(file) ||
+      file.startsWith('.github/scripts/visual-gate/') ||
+      file === '.github/scripts/visual-scope.mjs' ||
+      file === '.github/workflows/ci.yml',
+  );
+  let broadStableVisual = stableVisualInfrastructure;
 
   for (const file of stableCoreFiles) {
     const match = file.match(/^packages\/core\/src\/([^/]+)\//);
@@ -117,7 +125,10 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   }
 
   return {
-    hasStableVisual: stableCoreFiles.length > 0 || stableThemes.size > 0,
+    hasStableVisual:
+      stableVisualInfrastructure ||
+      stableCoreFiles.length > 0 ||
+      stableThemes.size > 0,
     broadStableVisual,
     stableComponents: [...stableComponents].sort(),
     stableCoreFiles,
@@ -150,6 +161,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         `stable_themes=${outputValue(result.stableThemes)}`,
         `canary_packages=${outputValue(result.canaryPackages)}`,
         `has_stable_visual=${result.hasStableVisual}`,
+        `broad_stable_visual=${result.broadStableVisual}`,
       ].join('\n') + '\n',
     );
   }

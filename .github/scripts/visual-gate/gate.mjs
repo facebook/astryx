@@ -422,7 +422,7 @@ async function check() {
       version: 1,
       status: 'skipped',
       generatedAt: new Date().toISOString(),
-      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — no visual comparison was performed. Run the full canonical plan through CI before relying on this scope.`,
       context: {
         ...captureIdentity(),
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
@@ -530,7 +530,11 @@ async function check() {
 
   stageReportImages({
     reportDir,
-    keys: comparison.changes.map(change => change.key),
+    keys: [
+      ...comparison.changes.map(change => change.key),
+      ...comparison.added,
+      ...comparison.removed,
+    ],
     currentDir: outDir,
     baselinePath: path.join(baselineDir, 'shots'),
   });
