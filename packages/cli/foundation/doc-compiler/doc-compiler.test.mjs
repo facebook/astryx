@@ -120,6 +120,28 @@ describe('lowerReferenceTopic', () => {
     });
   });
 
+  it('applies extensions in configuration order, so the last one wins', () => {
+    const extension = (
+      /** @type {string} */ name,
+      /** @type {string} */ text,
+    ) => ({
+      ...file(
+        authored(name, [{title: 'Quick Start', content: [prose(text)]}], {
+          extends: 'demo',
+        }),
+      ),
+      provider: `@acme/${name}`,
+    });
+    const node = lowerReferenceTopic(
+      input(file(demo()), [
+        extension('one', 'First.'),
+        extension('two', 'Second.'),
+      ]),
+    );
+    expect(node.doc.sections[0].content).toEqual([prose('Second.')]);
+    expect(node.provenance.extensions).toEqual(['@acme/one', '@acme/two']);
+  });
+
   it('reports problems in the order a reader meets them', () => {
     const broken = new Error('extension failed to load');
     const invalidBase = file(
