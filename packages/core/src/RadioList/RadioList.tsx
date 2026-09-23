@@ -5,7 +5,7 @@
 /**
  * @file RadioList.tsx
  * @input Uses React useId, useCallback, useRef, createContext, ReactNode, Field, InputStatus
- * @output Exports RadioList component, RadioListProps, RadioListContext
+ * @output Exports RadioList component, RadioListProps with owned group focus/disabled semantics, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -80,8 +80,10 @@ const styles = stylex.create({
 
 export interface RadioListProps extends Omit<
   BaseProps<HTMLDivElement>,
-  'onChange'
+  'onChange' | 'tabIndex' | 'aria-disabled'
 > {
+  tabIndex?: never;
+  'aria-disabled'?: never;
   /** Ref forwarded to the semantic radiogroup element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -213,6 +215,8 @@ export function RadioList({
   inert,
   dir,
   'aria-hidden': ariaHidden,
+  tabIndex: _tabIndex,
+  'aria-disabled': _ariaDisabled,
   'data-testid': dataTestId,
   htmlName,
   children,

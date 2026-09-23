@@ -4,7 +4,7 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
+ * @input Uses React, Field, NativeTimeSegment, InputGroupContext, FormLayoutContext, pointer media queries, and shared time utilities
  * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
@@ -19,6 +19,7 @@
 
 import {
   useId,
+  use,
   useState,
   useCallback,
   useEffect,
@@ -66,7 +67,8 @@ import {joinAriaIDs} from '../utils/inputAria';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
-import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounce, type AnnouncePoliteness} from '../hooks/useAnnounce';
+import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -153,8 +155,10 @@ export type {
 
 export interface TimeInputProps extends Omit<
   BaseProps<HTMLInputElement>,
-  'onChange' | 'defaultValue'
+  'onChange' | 'defaultValue' | 'role' | 'aria-label'
 > {
+  role?: never;
+  'aria-label'?: never;
   /** Ref forwarded to the input element */
   ref?: React.Ref<HTMLInputElement>;
   /**
@@ -380,6 +384,8 @@ export function TimeInput({
   inert,
   dir,
   'aria-hidden': ariaHidden,
+  role: _role,
+  'aria-label': _ariaLabel,
   ref,
   id: idProp,
   'aria-labelledby': ariaLabelledByProp,
@@ -413,6 +419,9 @@ export function TimeInput({
   const mergedInputRef = useMergedRefs(ref, inputRef);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
+  const {direction} = use(FormLayoutContext);
+  const routesStyleToControl =
+    !!inputGroup || direction === 'horizontal-labels';
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -424,14 +433,30 @@ export function TimeInput({
   // region mounted together with its content is not reliably announced.
   // Ungrouped mode delegates to Field -> FieldStatus, which announces itself.
   const announce = useAnnounce();
+  const lastAnnouncedPolitenessRef = useRef<AnnouncePoliteness | null>(null);
+  const isStructurallyHidden =
+    hidden || inert || ariaHidden === true || ariaHidden === 'true';
   useEffect(() => {
-    if (inputGroup && status?.message) {
-      announce(
-        status.message,
-        status.type === 'error' ? 'assertive' : 'polite',
-      );
+    if (!inputGroup || !status?.message) {
+      return;
     }
-  }, [announce, inputGroup, status?.message, status?.type]);
+    if (isStructurallyHidden) {
+      if (lastAnnouncedPolitenessRef.current) {
+        announce('', lastAnnouncedPolitenessRef.current);
+        lastAnnouncedPolitenessRef.current = null;
+      }
+      return;
+    }
+    const politeness = status.type === 'error' ? 'assertive' : 'polite';
+    lastAnnouncedPolitenessRef.current = politeness;
+    announce(status.message, politeness);
+  }, [
+    announce,
+    inputGroup,
+    isStructurallyHidden,
+    status?.message,
+    status?.type,
+  ]);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input container (which already exists) and
@@ -710,10 +735,10 @@ export function TimeInput({
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          inputGroup && xstyle,
+          routesStyleToControl && xstyle,
         ),
-        inputGroup ? className : undefined,
-        inputGroup ? style : undefined,
+        routesStyleToControl ? className : undefined,
+        routesStyleToControl ? style : undefined,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       {inputGroup && description && (
@@ -850,9 +875,9 @@ export function TimeInput({
       dir={dir}
       aria-hidden={ariaHidden}
       width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      xstyle={routesStyleToControl ? undefined : xstyle}
+      className={routesStyleToControl ? undefined : className}
+      style={routesStyleToControl ? undefined : style}>
       {inputWrapper}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

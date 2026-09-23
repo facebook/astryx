@@ -968,22 +968,31 @@ describe('RadioList pass-through props', () => {
     expect(radios[0]).toHaveFocus();
   });
 
-  it('keeps the radiogroup contract over colliding pass-throughs', () => {
-    render(
-      <RadioList
-        label="Preference"
-        value=""
-        onChange={() => {}}
-        role="group"
-        data-form-section="prefs">
-        <RadioListItem label="Option A" value="a" />
-      </RadioList>,
-    );
-    // The owned role wins over the colliding pass-through role.
-    expect(
-      screen.getByRole('radiogroup', {name: 'Preference'}),
-    ).toBeInTheDocument();
-  });
+  it.each([false, true])(
+    'keeps the radiogroup contract over runtime collisions (disabled=%s)',
+    isDisabled => {
+      render(
+        <RadioList
+          label="Preference"
+          value=""
+          onChange={() => {}}
+          role="group"
+          isDisabled={isDisabled}
+          tabIndex={0 as never}
+          aria-disabled={!isDisabled as never}
+          data-form-section="prefs">
+          <RadioListItem label="Option A" value="a" />
+        </RadioList>,
+      );
+      // The owned role wins over the colliding pass-through role.
+      const group = screen.getByRole('radiogroup', {name: 'Preference'});
+      expect(group).not.toHaveAttribute('tabindex');
+      expect(group).not.toHaveAttribute('aria-disabled');
+      expect(screen.getByRole('radio').hasAttribute('disabled')).toBe(
+        isDisabled,
+      );
+    },
+  );
 
   it('composes a caller aria-describedby with the built-in description', () => {
     render(

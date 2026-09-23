@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Selector} from '@astryxdesign/core/Selector';
+import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
 import {Field} from '@astryxdesign/core/Field';
 import {Text} from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
@@ -33,6 +34,15 @@ const meta: Meta<typeof FormLayout> = {
 
 export default meta;
 type Story = StoryObj<typeof FormLayout>;
+
+const horizontalLabelStyles = stylex.create({
+  timeControl: {
+    paddingInline: 12,
+    backgroundColor: 'light-dark(#fff4cc, #3f3210)',
+    borderColor: 'light-dark(#b7791f, #f6c453)',
+    borderWidth: 2,
+  },
+});
 
 // Helper component that uses args so Storybook controls work
 function FormLayoutDemo({
@@ -89,6 +99,9 @@ export const HorizontalLabels: Story = {
     const [displayName, setDisplayName] = useState('Jane Doe');
     const [email, setEmail] = useState('jane@example.com');
     const [timezone, setTimezone] = useState('America/Los_Angeles');
+    const [startTime, setStartTime] = useState<ISOTimeString | undefined>(
+      '09:00' as ISOTimeString,
+    );
     return (
       <FormLayout direction={args.direction}>
         <TextInput
@@ -106,6 +119,13 @@ export const HorizontalLabels: Story = {
             {label: 'Eastern Time', value: 'America/New_York'},
             {label: 'UTC', value: 'UTC'},
           ]}
+        />
+        <TimeInput
+          label="Start time"
+          value={startTime}
+          onChange={setStartTime}
+          hourFormat="24h"
+          xstyle={horizontalLabelStyles.timeControl}
         />
       </FormLayout>
     );

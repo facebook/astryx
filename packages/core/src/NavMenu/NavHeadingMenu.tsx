@@ -4,7 +4,7 @@
 
 /**
  * @file NavHeadingMenu.tsx
- * @input Uses React, StyleX, useListFocus, NavMenuContext
+ * @input Uses React, StyleX, useListFocus, NavMenuContext, and capture-phase cancellation tracking
  * @output Exports NavHeadingMenu component and NavHeadingMenuProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -12,10 +12,10 @@
  * - /packages/core/src/NavMenu/index.ts
  */
 
-import React, {useCallback, useMemo, type ReactNode} from 'react';
+import React, {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {composeEventHandlers, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -97,6 +97,7 @@ export function NavHeadingMenu({
   style: styleProp,
   'data-testid': testId,
   onKeyDown: onKeyDownProp,
+  onKeyDownCapture: onKeyDownCaptureProp,
   ...rest
 }: NavHeadingMenuProps) {
   const closeCtx = useNavHeadingCloseContext();
@@ -162,6 +163,25 @@ export function NavHeadingMenu({
 
   const inlineStyle = minWidth != null ? {...styleProp, minWidth} : styleProp;
 
+  const preventedBeforeDescendantsRef = useRef(new WeakSet<Event>());
+  const handleMenuKeyDownCapture = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+  ) => {
+    onKeyDownCaptureProp?.(event);
+    if (event.defaultPrevented) {
+      preventedBeforeDescendantsRef.current.add(event.nativeEvent);
+    }
+  };
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const wasPreventedByDescendant =
+      event.defaultPrevented &&
+      !preventedBeforeDescendantsRef.current.has(event.nativeEvent);
+    onKeyDownProp?.(event);
+    if (wasPreventedByDescendant || !event.defaultPrevented) {
+      listKeyDown(event);
+    }
+  };
+
   return (
     <NavHeadingMenuContext value={ctx}>
       <div
@@ -175,7 +195,8 @@ export function NavHeadingMenu({
         )}
         {...rest}
         role="menu"
-        onKeyDown={composeEventHandlers(onKeyDownProp, listKeyDown)}>
+        onKeyDownCapture={handleMenuKeyDownCapture}
+        onKeyDown={handleMenuKeyDown}>
         {children}
       </div>
     </NavHeadingMenuContext>

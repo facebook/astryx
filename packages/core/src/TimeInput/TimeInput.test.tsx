@@ -10,11 +10,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {FormLayout} from '../FormLayout';
 import {InternationalizationProvider} from '../i18n';
 import type {ISOTimeString} from '../utils';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -704,6 +705,135 @@ describe('TimeInput disabled theme state', () => {
 });
 
 describe('TimeInput pass-through props', () => {
+  it('preserves the typed input role and visible label over runtime collisions', () => {
+    render(
+      <TimeInput
+        label="Time"
+        nativePicker="never"
+        role={'button' as never}
+        aria-label={'Override' as never}
+      />,
+    );
+    const input = screen.getByRole('textbox', {name: 'Time'});
+    expect(input).not.toHaveAttribute('role');
+    expect(input).not.toHaveAttribute('aria-label');
+  });
+
+  it('routes styling exclusively to the painted control in horizontal-label layouts', () => {
+    render(
+      <FormLayout direction="horizontal-labels">
+        <TimeInput
+          label="Time"
+          className="custom-control"
+          style={{marginTop: 4}}
+          xstyle={testStyles.field}
+          hidden
+          data-testid="time-control"
+        />
+      </FormLayout>,
+    );
+    const input = screen.getByTestId('time-control');
+    const control = input.closest('.astryx-time-input')!;
+    const field = input.closest('.astryx-field')!;
+    expect(control).toHaveClass('custom-control');
+    expect(control).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(control).paddingTop).toBe('7px');
+    expect(control).not.toHaveAttribute('hidden');
+    expect(field).not.toHaveClass('custom-control');
+    expect(field).not.toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(field).paddingTop).not.toBe('7px');
+    expect(field).toHaveAttribute('hidden');
+  });
+
+  it.each([
+    {hidden: true},
+    {inert: true},
+    {'aria-hidden': true},
+    {'aria-hidden': 'true' as const},
+  ])('suppresses hidden grouped status writes for %j', visibility => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <InputGroup label="Schedule">
+          <TimeInput
+            label="Time"
+            status={{type: 'error', message: 'Required'}}
+            {...visibility}
+          />
+        </InputGroup>,
+      );
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(assertiveRegion()?.textContent ?? '').toBe('');
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('announces grouped status with aria-hidden="false"', async () => {
+    render(
+      <InputGroup label="Schedule">
+        <TimeInput
+          label="Time"
+          aria-hidden="false"
+          status={{type: 'warning', message: 'Check time'}}
+        />
+      </InputGroup>,
+    );
+    await waitFor(() => expect(politeRegion()).toHaveTextContent('Check time'));
+  });
+
+  it.each(['error', 'warning'] as const)(
+    'clears queued and current grouped %s status on its last announced channel',
+    type => {
+      vi.useFakeTimers();
+      try {
+        const grouped = (hidden: boolean) => (
+          <InputGroup label="Schedule">
+            <TimeInput
+              label="Other"
+              status={{
+                type: type === 'error' ? 'warning' : 'error',
+                message: 'Other status',
+              }}
+            />
+            <TimeInput
+              label="Time"
+              hidden={hidden}
+              status={{
+                type: hidden ? (type === 'error' ? 'warning' : 'error') : type,
+                message: 'Check time',
+              }}
+            />
+          </InputGroup>
+        );
+        const {rerender} = render(grouped(false));
+        const region = type === 'error' ? assertiveRegion : politeRegion;
+        const otherRegion = type === 'error' ? politeRegion : assertiveRegion;
+        const write = vi.spyOn(region()!, 'textContent', 'set');
+        rerender(grouped(true));
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(region()?.textContent).toBe('');
+        expect(write).not.toHaveBeenCalledWith('Check time');
+        expect(otherRegion()).toHaveTextContent('Other status');
+        rerender(grouped(false));
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(region()).toHaveTextContent('Check time');
+        rerender(grouped(true));
+        expect(region()?.textContent).toBe('');
+        write.mockRestore();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
   it('forwards pass-through props to the input element', () => {
     render(
       <TimeInput

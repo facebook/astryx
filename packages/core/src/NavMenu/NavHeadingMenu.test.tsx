@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
+import type {KeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {NavHeadingMenu} from './NavHeadingMenu';
@@ -147,6 +148,39 @@ describe('NavHeadingMenuItem', () => {
 });
 
 describe('keyboard navigation', () => {
+  it('keeps arrow navigation when an item handler cancels', () => {
+    const onKeyDown = vi.fn((event: KeyboardEvent) => event.preventDefault());
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="First" onKeyDown={onKeyDown} />
+        <NavHeadingMenuItem label="Second" />
+      </NavHeadingMenu>,
+    );
+    const [first, second] = screen.getAllByRole('menuitem');
+    first.focus();
+    fireEvent.keyDown(first, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(second).toHaveFocus();
+  });
+
+  it.each(['onKeyDown', 'onKeyDownCapture'] as const)(
+    'preserves menu-level cancellation through %s',
+    handler => {
+      const cancel = vi.fn((event: KeyboardEvent) => event.preventDefault());
+      render(
+        <NavHeadingMenu {...{[handler]: cancel}}>
+          <NavHeadingMenuItem label="First" />
+          <NavHeadingMenuItem label="Second" />
+        </NavHeadingMenu>,
+      );
+      const first = screen.getAllByRole('menuitem')[0];
+      first.focus();
+      fireEvent.keyDown(first, {key: 'ArrowDown'});
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(first).toHaveFocus();
+    },
+  );
+
   it('moves focus with arrow keys', async () => {
     const user = userEvent.setup();
     render(

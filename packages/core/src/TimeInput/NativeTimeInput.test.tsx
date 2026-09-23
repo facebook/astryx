@@ -248,7 +248,7 @@ describe('TimeInput nativePicker', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith('10:15');
   });
 
-  it('honors caller id, aria-describedby, and aria-label on the native input', () => {
+  it('honors caller id and description while preserving the native role and label', () => {
     stubPointer(true);
     render(
       <>
@@ -258,14 +258,17 @@ describe('TimeInput nativePicker', () => {
           onChange={() => {}}
           id="meeting-time"
           aria-describedby="consumer-help"
-          aria-label="Meeting start"
+          role={'button' as never}
+          aria-label={'Meeting start' as never}
           description="Built-in help"
         />
       </>,
     );
     const input = getNativeTimeInput();
     expect(input).toHaveAttribute('id', 'meeting-time');
-    expect(input).toHaveAttribute('aria-label', 'Meeting start');
+    expect(input).not.toHaveAttribute('role');
+    expect(input).not.toHaveAttribute('aria-label');
+    expect(input).toHaveAccessibleName('Start time');
     const ids = input.getAttribute('aria-describedby')?.split(/\s+/) ?? [];
     expect(ids).toContain('consumer-help');
     expect(ids.length).toBeGreaterThan(1);
