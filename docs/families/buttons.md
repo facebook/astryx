@@ -121,14 +121,12 @@ Membership follows public responsibility, not an import of Button or a rendered
   distinct.
 - **FR5 — Callback and Action order is consistent.** Where a member exposes both
   a synchronous callback and an Action, the callback runs first. Preventing that
-  event prevents the Action. Standalone ToggleButton runs `onPressedChange` from
-  its internal `onClick` and delegates `pressedChangeAction` to Button's
-  `clickAction`. Button runs the callback before the Action and skips the Action
-  when the callback calls `preventDefault()`. The Action also runs when no callback
-  is supplied. Without `pressedChangeAction`, ToggleButton MUST leave `clickAction`
-  absent so callback-only activation starts no empty Action transition and reports
-  no Action-pending feedback. A fire-once action deduplicates activation while
-  pending; an explicitly interruptible persistent action may accept a new
+  event prevents the Action. Standalone ToggleButton runs `onPressedChange`
+  synchronously before `pressedChangeAction` and skips the Action when the callback
+  calls `preventDefault()`. The Action also runs when no callback is supplied.
+  Without `pressedChangeAction`, callback-only activation MUST remain synchronous
+  and report no Action-pending feedback. A fire-once action deduplicates activation
+  while pending; an explicitly interruptible persistent action may accept a new
   activation and replace the in-flight intent.
 - **FR6 — Persistent state is explicit and reversible.** A ToggleButton MUST
   expose its effective state with `aria-pressed` and request the next controlled
@@ -157,7 +155,8 @@ Membership follows public responsibility, not an import of Button or a rendered
   A ToggleButtonGroup member identified by `value` MUST derive pressed state and
   selection requests from the group, not its standalone `isPressed`,
   `onPressedChange`, or `pressedChangeAction`. Member `onPressedChange` and
-  `pressedChangeAction` are ignored, and Button's `clickAction` MUST be absent.
+  `pressedChangeAction` are ignored. Member activation MUST NOT start a member
+  Action or report member Action-pending feedback.
 - **FR12 — Connected and spaced groups stay distinct.** ButtonGroup's connected
   presentation removes inter-member gaps, shares outer edges, owns one elevation,
   and uses its documented roving-focus keyboard model. The current

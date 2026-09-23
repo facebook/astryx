@@ -36,12 +36,12 @@ export const docs = {
     {
       name: 'onPressedChange',
       type: '(isPressed: boolean, event: MouseEvent) => void',
-      description: 'Called synchronously from the internal click handler when pressed state should change. Receives the next state and the click event; call event.preventDefault() to skip pressedChangeAction. Without an Action, the callback starts no Action transition. Ignored for a ToggleButtonGroup member with a value.',
+      description: 'Called synchronously when pressed state should change. Receives the next state and the click event; call event.preventDefault() to skip pressedChangeAction. Without an Action, the callback produces no Action-pending feedback. Ignored for a ToggleButtonGroup member with a value.',
     },
     {
       name: 'pressedChangeAction',
       type: '(isPressed: boolean) => void | Promise<void>',
-      description: 'Action handler for API- or navigation-backed toggles, run through Button’s clickAction transition after the synchronous onPressedChange callback unless that callback calls event.preventDefault(). Works without onPressedChange. Shows an optimistic pressed state and a spinner while pending, and remains interruptible by re-clicks. Omit it for callback-only toggles with no Action transition. Ignored for a ToggleButtonGroup member with a value.',
+      description: 'Action handler for API- or navigation-backed toggles, run in a transition after the synchronous onPressedChange callback unless that callback calls event.preventDefault(). Works without onPressedChange. Shows an optimistic pressed state and a spinner while pending, and remains interruptible by re-clicks. Omit it for callback-only toggles with no Action-pending feedback. Ignored for a ToggleButtonGroup member with a value.',
     },
     {
       name: 'size',
