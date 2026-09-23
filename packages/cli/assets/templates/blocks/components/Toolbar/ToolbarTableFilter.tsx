@@ -143,9 +143,19 @@ const styles = stylex.create({
     minWidth: 120,
     width: 120,
   },
+  // The fill a control switches to once it carries a value, so a set clause is
+  // legible as engaged at a glance rather than only by reading it. This is the
+  // token ToggleButton paints for its own pressed state, so a set selector and
+  // a pressed control land on the same value over the same backdrop instead of
+  // two neighbouring shades of engaged.
+  filterFill: {
+    backgroundColor: colorVars['--color-overlay-pressed'],
+  },
   // A ghost Button has no chrome at all, so the border is what puts the count
-  // in the same family as the unset selectors it stands in for. Filled, it
-  // would read as a set clause.
+  // in the same family as the unset selectors it stands in for. Left unfilled
+  // deliberately: the fill means "this control carries a value", and the count
+  // carries none of its own — it stands in for clauses that may or may not be
+  // set.
   overflowChip: {
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
@@ -221,6 +231,7 @@ export default function ToolbarTableFilter() {
       hasClear
       options={field.options}
       value={clauses[field.key] ?? null}
+      xstyle={clauses[field.key] != null ? styles.filterFill : undefined}
       onChange={value => setClauses(prev => ({...prev, [field.key]: value}))}
       renderValue={option =>
         `${field.label} is ${option.label ?? option.value}`
