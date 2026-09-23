@@ -38,8 +38,12 @@ import {
 const OUTPUT = path.resolve('test-results/chat-layout-audit-evidence');
 const STORY_ID = 'core-chatlayout--scroll-affordance-states';
 
-/** The pill wrapper: the element whose visibility and height are the claims. */
-const PILL = '.astryx-chat-layout-scroll-button > div';
+/**
+ * The pill: the element wrapping the Button, whose visibility and height are
+ * the claims below. It also carries the public theming target, so the class is
+ * a stable handle for it.
+ */
+const PILL = '.astryx-chat-layout-scroll-button';
 
 /** One observed tab stop, identified structurally rather than by its text. */
 type FocusStop = {
