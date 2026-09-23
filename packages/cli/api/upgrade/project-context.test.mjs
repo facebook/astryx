@@ -143,6 +143,40 @@ describe('loadProjectContext provider identity', () => {
     expect(selected).not.toContain('local-wip');
   });
 
+  it('runs the installed copy when the authored package is named with --integration', async () => {
+    installWithCodemod('@acme/widgets', '1.0.0');
+    configure([]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '3.0.0-dev'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {codemods: './codemods'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'codemods', '0.2.0'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'codemods', '0.2.0', 'local-wip.mjs'),
+      "export default {type: 'code', title: 'Local WIP', transform: file => file.source};\n",
+    );
+    process.chdir(tmpDir);
+
+    const {integrations} = await loadProjectContext(tmpDir, ['@acme/widgets']);
+    expect(
+      integrations.map(integration => [
+        integration.name,
+        integration.version,
+        Boolean(integration.__local),
+        integration.__providerConflict?.claimedBy ?? null,
+      ]),
+    ).toEqual([['@acme/widgets', '1.0.0', false, null]]);
+    const selected = JSON.stringify(
+      await selectIntegrationCodemodsFor(integrations, '0.1.0', '0.3.0'),
+    );
+    expect(selected).toContain('rename');
+    expect(selected).not.toContain('local-wip');
+  });
+
   it("sets aside an --integration extra that claims an autolinked package's ID", async () => {
     installWithCodemod('@acme/a', '1.0.0');
     installWithCodemod('@acme/b', '1.0.0', {providerId: '@acme/a'});

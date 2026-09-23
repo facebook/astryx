@@ -361,6 +361,11 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
     extraSpecs.length === 0
       ? []
       : await loadIntegrations(extraSpecs, {resolveProviders: false});
+  // Naming the package being authored with --integration asks for its
+  // installed copy too, so the local package must not claim against it.
+  const localStandsIn =
+    local != null &&
+    (selfListed || extras.some(extra => extra.name === local.name));
   // Autolinked packages and the package being authored join the pass only as
   // claimants: every other command uses them for their provider IDs, but
   // upgrade has never run their codemods and still does not. An extra that
@@ -368,7 +373,7 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const extraIdentities = new Set(extras.map(packageIdentity));
   const claimantsOnly = project.loadedIntegrations.filter(
     integration =>
-      (integration.__autolinked || (integration.__local && !selfListed)) &&
+      (integration.__autolinked || (integration.__local && !localStandsIn)) &&
       !extraIdentities.has(packageIdentity(integration)),
   );
   const resolved = markProviderConflicts([
