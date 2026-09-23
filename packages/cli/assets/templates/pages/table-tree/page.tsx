@@ -67,12 +67,17 @@
  * plugins in the same `plugins={{}}` bag. Lift it into core if you need it in
  * more than one place.
  *
- * **The rows carry a cursor, not a selection.** The keyboard plugin moves a
- * roving `tabIndex` and nothing else — no `aria-selected`, no selected-row
- * tint. A repository listing has no bulk action to select *for*, and a
- * persistent highlight competes with the zebra stripe for the same signal. If
- * you do need real selection, reach for `useTableSelection` rather than
- * widening this one.
+ * **The rows carry a cursor and a selection, and they are different things.**
+ * The roving `tabIndex` is the cursor — wherever the arrows last left off. The
+ * selection is the folder the header trail and the README are describing, and
+ * it moves from the name cell or from a breadcrumb, never from an arrow key.
+ * The keyboard plugin owns the paint for both because it holds the only
+ * `transformBodyRow` in the bag: `aria-selected` and a washed row for the
+ * selection, `tabIndex` for the cursor. Because selection is read there, it is
+ * also a dependency of that memo — a breadcrumb click changes nothing else the
+ * memo watches, so leaving it out strands the tint and the ARIA state on the
+ * previously selected row. If you need real multi-row selection, reach for
+ * `useTableSelection` rather than widening this one.
  *
  * **The tree column wraps and does not truncate.** That is a documented
  * limitation of `useTableTreeData`: `textOverflow="truncate"` does not reach
@@ -820,7 +825,7 @@ function useTreeKeyboardNav({
         },
       }),
     }),
-    [handleKeyDown, focusedId, onFocusedIdChange],
+    [handleKeyDown, focusedId, selectedId, onFocusedIdChange],
   );
 }
 
