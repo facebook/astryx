@@ -526,3 +526,46 @@ describe('problemsInTopic section keys', () => {
     );
   });
 });
+
+describe('mergeTopic by section key', () => {
+  const base = {
+    title: 'Theme',
+    sections: [
+      {title: 'Quick Start', content: [{type: 'prose', text: 'base'}]},
+      {title: 'Light/Dark Mode', content: [{type: 'prose', text: 'base'}]},
+    ],
+  };
+  const titles = doc => doc.sections.map(s => [s.id ?? null, s.title, s.content[0].text]);
+
+  it('replaces the section whose derived key an extension id names', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {id: 'quick-start', title: 'Quick Start with Acme', content: [{type: 'prose', text: 'acme'}]},
+      ],
+    });
+    expect(titles(merged)).toEqual([
+      ['quick-start', 'Quick Start with Acme', 'acme'],
+      [null, 'Light/Dark Mode', 'base'],
+    ]);
+  });
+
+  it('replaces the section a title variant derives the same key as', () => {
+    const merged = mergeTopic(base, {
+      sections: [{title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]}],
+    });
+    expect(titles(merged)).toEqual([
+      [null, 'Quick Start', 'base'],
+      [null, 'Light-Dark Mode', 'acme'],
+    ]);
+  });
+
+  it('prefers the key over a legacy title for an extension with an id', () => {
+    const merged = mergeTopic(base, {
+      sections: [{id: 'light-dark-mode', title: 'Quick Start', content: [{type: 'prose', text: 'acme'}]}],
+    });
+    expect(titles(merged)).toEqual([
+      [null, 'Quick Start', 'base'],
+      ['light-dark-mode', 'Quick Start', 'acme'],
+    ]);
+  });
+});

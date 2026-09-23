@@ -9,6 +9,7 @@ import {
   record,
   records,
   wrapText,
+  displayWidth,
   WRAP_WIDTH,
   code,
   Block,
@@ -195,6 +196,31 @@ describe('records inline layout', () => {
     }).toString();
     expect(out.includes('\n')).toBe(false);
     expect(out.length).toBeLessThanOrEqual(WRAP_WIDTH);
+    expect(out.endsWith('...')).toBe(true);
+  });
+});
+
+describe('wide characters', () => {
+  it('counts CJK characters as two columns', () => {
+    expect(displayWidth('亮/暗模式')).toBe(9);
+  });
+
+  it('wraps CJK text, which has no spaces, by columns', () => {
+    const out = wrapText('中'.repeat(100), {width: 20});
+    expect(out.split('\n').every(line => displayWidth(line) <= 20)).toBe(true);
+    expect(out.split('\n')).toHaveLength(10);
+  });
+
+  it('keeps spaces between Latin words next to CJK', () => {
+    expect(wrapText('运行 astryx docs 查看', {width: 200})).toBe('运行 astryx docs 查看');
+  });
+
+  it('cuts an inline record to columns, not characters', () => {
+    const out = records([{id: 'a', text: '中'.repeat(100)}], {
+      layout: 'inline',
+      overflow: 'truncate',
+    }).toString();
+    expect(displayWidth(out)).toBeLessThanOrEqual(WRAP_WIDTH);
     expect(out.endsWith('...')).toBe(true);
   });
 });

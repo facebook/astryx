@@ -452,3 +452,44 @@ describe('doctor docs checks', () => {
     expect(byId['docs-progressive-disclosure']).toBe('pass');
   }, SLOW);
 });
+
+describe('checkDocsProgressiveDisclosure languages', () => {
+  it('checks every overlay a topic ships, not only English', async () => {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-lang-'));
+    tmpDirs.push(dir);
+    const deploying = {
+      name: 'deploying',
+      title: 'Deploying',
+      description: 'Ship it.',
+      sections: [{title: 'Overview', content: [{type: 'prose', text: 'Push the button.'}]}],
+    };
+    fs.writeFileSync(
+      path.join(dir, 'deploying.doc.mjs'),
+      `export const docs = ${JSON.stringify(deploying)};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'deploying.doc.zh.mjs'),
+      "throw new Error('zh overlay broken');\n",
+    );
+    fs.writeFileSync(
+      path.join(dir, 'deploying.doc.dense.mjs'),
+      `export const docsDense = ${JSON.stringify({
+        sections: [
+          {
+            section: 'Overview',
+            title: 'Overview',
+            content: [{type: 'prose', text: 'x'.repeat(40 * 1024)}],
+          },
+        ],
+      })};\n`,
+    );
+    const c = await checkDocsProgressiveDisclosure({
+      docsCatalog: DocsCatalog.fromBuiltins({deploying: path.join(dir, 'deploying.doc.mjs')}),
+      docsCatalogIssues: [],
+    });
+    expect(c.status).toBe('fail');
+    expect(c.message).toContain('deploying [zh]: zh overlay broken');
+    expect(c.message).toContain('deploying [dense] overview: 41 KB');
+    expect(c.message).not.toMatch(/deploying overview:/);
+  });
+});

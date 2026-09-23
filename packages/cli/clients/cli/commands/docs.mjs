@@ -23,6 +23,7 @@ import {
   text,
   code,
   wrapText,
+  displayWidth,
   WRAP_WIDTH,
 } from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -111,7 +112,7 @@ function formatBlock(block, detail) {
       }
       {
         const table = formatTable(block.headers, block.rows);
-        return table.split('\n').some(line => line.length > WRAP_WIDTH)
+        return table.split('\n').some(line => displayWidth(line) > WRAP_WIDTH)
           ? formatTableVertical(block.headers, block.rows)
           : table;
       }
@@ -172,15 +173,16 @@ function formatSection(section, detail) {
  */
 function formatReferenceFull(docs, detail) {
   if (detail === 'brief') {
-    const header = `${docs.title}: ${docs.description}`;
+    const header = wrapText(`${docs.title}: ${docs.description}`);
     const sections = docs.sections.map(s => formatSection(s, detail));
     return `${header}\n${sections.join('\n')}`;
   }
 
+  const description = wrapText(docs.description);
   const header =
     detail === 'compact'
-      ? `# ${docs.title}\n${docs.description}`
-      : `# ${docs.title}\n\n${docs.description}`;
+      ? `# ${docs.title}\n${description}`
+      : `# ${docs.title}\n\n${description}`;
   const sections = docs.sections.map(s => formatSection(s, detail));
   const sep = detail === 'compact' ? '\n\n' : '\n\n';
   return `${header}\n\n${sections.join(sep)}`;

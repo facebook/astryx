@@ -41,6 +41,44 @@ export const WRAP_WIDTH = 120;
 const INLINE_LEAD_MAX = 32;
 
 /**
+ * Characters a terminal draws two columns wide: CJK ideographs and
+ * punctuation, kana, hangul, and fullwidth forms. A line may break between
+ * any two of them.
+ */
+const WIDE_CHAR =
+  /[\u1100-\u115f\u2e80-\u303e\u3041-\u33ff\u3400-\u4dbf\u4e00-\u9fff\ua000-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/u;
+
+/**
+ * How many terminal columns a string takes.
+ * @param {string} s
+ * @returns {number}
+ */
+export function displayWidth(s) {
+  let width = 0;
+  for (const ch of String(s)) width += WIDE_CHAR.test(ch) ? 2 : 1;
+  return width;
+}
+
+/**
+ * Cut a line to `width` columns, ending it with `...` when anything was cut.
+ * @param {string} line
+ * @param {number} width
+ * @returns {string}
+ */
+function truncateToWidth(line, width) {
+  if (displayWidth(line) <= width) return line;
+  let out = '';
+  let used = 0;
+  for (const ch of line) {
+    const w = WIDE_CHAR.test(ch) ? 2 : 1;
+    if (used + w > width - 3) break;
+    out += ch;
+    used += w;
+  }
+  return `${out.trimEnd()}...`;
+}
+
+/**
  * An opaque, renderer-produced block of output. Nominal via a private field:
  * nothing outside this file can construct one, so `emit` can trust that whatever
  * it receives came from a renderer (a plain string is not assignable to Block).
@@ -139,21 +177,46 @@ export function wrapText(input, {width = WRAP_WIDTH, indent = ''} = {}) {
  * @returns {string}
  */
 function wrapLine(line, width, indent) {
-  if (line.length <= width) return line;
+  if (displayWidth(line) <= width) return line;
   const lead = /^\s*/.exec(line)?.[0] ?? '';
-  const [first = '', ...words] = line.slice(lead.length).split(/ +/);
-  /** @type {string[]} */
-  const out = [];
-  let current = lead + first;
-  for (const word of words) {
-    if (word === '') continue;
-    if (current.length + 1 + word.length > width && current.trim() !== '') {
-      out.push(current);
-      current = indent + word;
+  // Tokens a line may break between: words, and each wide character on its
+  // own, since CJK text has no spaces to break at. `gap` is what joined a
+  // token to the one before it.
+  /** @type {{text: string, gap: string}[]} */
+  const tokens = [];
+  let gap = '';
+  let word = '';
+  const flush = () => {
+    if (word === '') return;
+    tokens.push({text: word, gap});
+    gap = '';
+    word = '';
+  };
+  for (const ch of line.slice(lead.length)) {
+    if (ch === ' ') {
+      flush();
+      gap = ' ';
+    } else if (WIDE_CHAR.test(ch)) {
+      flush();
+      tokens.push({text: ch, gap});
+      gap = '';
     } else {
-      current += ` ${word}`;
+      word += ch;
     }
   }
+  flush();
+  /** @type {string[]} */
+  const out = [];
+  let current = lead;
+  tokens.forEach(({text: token, gap: before}, i) => {
+    const joined = i === 0 ? current + token : current + before + token;
+    if (i > 0 && displayWidth(joined) > width && current.trim() !== '') {
+      out.push(current);
+      current = indent + token;
+    } else {
+      current = joined;
+    }
+  });
   out.push(current);
   return out.join('\n');
 }
@@ -254,7 +317,7 @@ function inlineRecords(items, options) {
   };
   const leads = items.map(o => (isEmpty(o[lead]) ? '' : value(o, lead)));
   const column = Math.min(
-    Math.max(0, ...leads.map(l => l.length)),
+    Math.max(0, ...leads.map(l => displayWidth(l))),
     INLINE_LEAD_MAX,
   );
   const indent = ' '.repeat(column + 2);
@@ -264,10 +327,9 @@ function inlineRecords(items, options) {
       .map(k => value(o, k))
       .join(' - ');
     const line = toAscii(tail ? `${leads[i].padEnd(column)}  ${tail}` : leads[i]);
-    if (options.overflow !== 'truncate') return wrapText(line, {indent});
-    return line.length > WRAP_WIDTH
-      ? `${line.slice(0, WRAP_WIDTH - 3).trimEnd()}...`
-      : line;
+    return options.overflow === 'truncate'
+      ? truncateToWidth(line, WRAP_WIDTH)
+      : wrapText(line, {indent});
   });
   return new Block(lines.join('\n'));
 }

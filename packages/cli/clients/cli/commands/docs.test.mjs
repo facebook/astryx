@@ -7,6 +7,7 @@ import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerDocs} from './docs.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {displayWidth} from '../formatters/index.mjs';
 
 let tmpDir;
 
@@ -149,5 +150,37 @@ describe('progressive reads', () => {
     expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
       'docs.detail.section',
     );
+  }, SLOW);
+});
+
+describe('text width in every language', () => {
+  const SLOW = 60_000;
+  /** Widest line outside code blocks, in terminal columns. */
+  const widest = out => {
+    let inCode = false;
+    let max = 0;
+    for (const line of out.split('\n')) {
+      if (/^\s*```/.test(line)) {
+        inCode = !inCode;
+        continue;
+      }
+      // A single unbreakable token (a long URL) cannot wrap without breaking it.
+      const oneToken = !/\s/.test(line.trim());
+      if (!inCode && !line.startsWith('#') && !oneToken) {
+        max = Math.max(max, displayWidth(line));
+      }
+    }
+    return max;
+  };
+
+  it.each([
+    [['docs', 'theme', '--lang', 'zh']],
+    [['--detail', 'full', 'docs', 'theme', '--lang', 'zh']],
+    [['--detail', 'full', 'docs', 'internationalization']],
+    [['--detail', 'full', 'docs', 'styling']],
+  ])('%j fits in 120 columns', async args => {
+    const {status, stdout} = await runCli(args);
+    expect(status).toBe(0);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
   }, SLOW);
 });

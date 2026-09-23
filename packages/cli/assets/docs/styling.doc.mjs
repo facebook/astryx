@@ -263,7 +263,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `astryx docs theme` for the full theming guide.',
+          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `astryx docs theme --detail full` for the full theming guide.',
         },
       ],
     },
@@ -338,7 +338,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'See `astryx docs tokens` for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See `astryx docs theme` for how to override tokens via defineTheme.',
+          text: 'See `astryx docs tokens --detail full` for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See `astryx docs theme` for how to override tokens via defineTheme.',
         },
       ],
     },

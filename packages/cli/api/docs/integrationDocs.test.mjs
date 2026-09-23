@@ -211,6 +211,32 @@ describe('integration-contributed topics', () => {
     ]);
   }, SLOW);
 
+  it('replaces a real built-in section by the key its index shows', async () => {
+    const index = await docs('theme');
+    const target = index.data.sections[0];
+    scaffold({
+      'theme-internal.doc.mjs': topic({
+        name: 'theme-internal',
+        extends: 'theme',
+        sections: [
+          {
+            id: target.id,
+            title: `${target.title} with Acme`,
+            content: [{type: 'prose', text: 'Acme first.'}],
+          },
+        ],
+      }),
+    });
+
+    const extended = await docs('theme', undefined, {detail: 'full', cwd: tmpDir});
+    expect(extended.data.sections).toHaveLength(index.data.sections.length);
+    expect(extended.data.sections.filter(s => s.id === target.id)).toEqual([
+      expect.objectContaining({content: [{type: 'prose', text: 'Acme first.'}]}),
+    ]);
+    const read = await docs('theme', target.id, {cwd: tmpDir});
+    expect(read.data.title).toBe(`${target.title} with Acme`);
+  }, SLOW);
+
   it.each(['zh', 'dense'])(
     'replaces translated real sections by their authored titles under --%s',
     async lang => {

@@ -76,10 +76,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
   const docs = parsed;
   if (!lang || lang === 'en') return docs;
 
-  const dir = path.dirname(docPath);
-  const base = path.basename(docPath, '.doc.mjs');
-  const locale = lang === 'dense' ? 'dense' : lang;
-  const translationPath = path.join(dir, `${base}.doc.${locale}.mjs`);
+  const translationPath = overlayPath(docPath, lang);
   if (!fs.existsSync(translationPath)) return docs;
 
   const translationMod = await import(pathToFileURL(translationPath).href);
@@ -149,17 +146,44 @@ export async function loadTopicDoc(entry, {lang} = {}) {
   let doc = await loadReferenceDocs(entry.path, {lang});
   for (const extension of entry.extensions) {
     doc = mergeTopic(doc, await loadReferenceDocs(extension.path, {lang}));
-  }
-  // Each file's keys were checked on its own; an extension can still add a
-  // section whose key another section already holds.
-  const problems = sectionKeyProblems(doc.sections);
-  if (problems.length > 0) {
-    throw new Error(
-      `${path.basename(entry.path)} and its extensions are invalid: ${problems.join('; ')}`,
-    );
+    // Merging matches on keys, so this holds unless merge itself regresses.
+    const problems = sectionKeyProblems(doc.sections);
+    if (problems.length > 0) {
+      throw new Error(
+        `${path.basename(extension.path)}, extending ${entry.name}, leaves two sections with one key: ${problems.join('; ')}`,
+      );
+    }
   }
   // Derived keys are stamped only now, so they never take part in merging.
   return withSectionKeys(doc);
+}
+
+/** The localized overlays a docs read can apply. */
+export const OVERLAY_LANGUAGES = ['zh', 'dense'];
+
+/**
+ * Where the `lang` overlay of a doc file lives: `{topic}.doc.{lang}.mjs`.
+ * @param {string} docPath
+ * @param {string} lang
+ * @returns {string}
+ */
+function overlayPath(docPath, lang) {
+  return path.join(
+    path.dirname(docPath),
+    `${path.basename(docPath, '.doc.mjs')}.doc.${lang}.mjs`,
+  );
+}
+
+/**
+ * The overlay languages a topic ships for its own file or any extension.
+ * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
+ * @returns {string[]}
+ */
+export function overlayLanguages(entry) {
+  const files = [entry.path, ...entry.extensions.map(ext => ext.path)];
+  return OVERLAY_LANGUAGES.filter(lang =>
+    files.some(file => fs.existsSync(overlayPath(file, lang))),
+  );
 }
 
 /**

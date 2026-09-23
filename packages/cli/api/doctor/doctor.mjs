@@ -34,7 +34,7 @@ import {
   docsIndexBytes,
   oversizedDocSections,
 } from '../../foundation/discovery/docs-output-budget.mjs';
-import {loadTopicDoc} from '../docs/_adapter.mjs';
+import {loadTopicDoc, overlayLanguages} from '../docs/_adapter.mjs';
 import {resolveTokenRefs} from '../docs/detail/detail.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
@@ -773,8 +773,9 @@ export async function checkAuthoringDocs(_ctx) {
 }
 
 /**
- * Every topic reads progressively: it loads, its section index and each of its
- * sections fit in one read, and no contributed doc is invalid.
+ * Every topic reads progressively, in every language it ships: it loads, its
+ * section index and each of its sections fit in one read, and no contributed
+ * doc is invalid.
  * @param {DoctorContext | Partial<DoctorContext>} ctx
  * @returns {Promise<DoctorCheck>}
  */
@@ -794,24 +795,31 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   const catalog = ctx.docsCatalog;
   if (catalog) {
     for (const entry of catalog.entries()) {
-      try {
-        const doc = await resolveTokenRefs(await loadTopicDoc(entry), catalog);
-        topics += 1;
-        const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
-        if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {
+      for (const lang of [null, ...overlayLanguages(entry)]) {
+        const where = lang ? `${entry.name} [${lang}]` : entry.name;
+        try {
+          const doc = await resolveTokenRefs(
+            await loadTopicDoc(entry, {lang}),
+            catalog,
+            {lang},
+          );
+          if (lang == null) topics += 1;
+          const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
+          if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {
+            problems.push(
+              `${where}: its section index is ${kilobytes(indexBytes)}, over the ${budget} one read may return`,
+            );
+          }
+          for (const over of oversizedDocSections(doc.sections)) {
+            problems.push(
+              `${where} ${over.key}: ${kilobytes(over.bytes)}, over the ${budget} one read may return`,
+            );
+          }
+        } catch (err) {
           problems.push(
-            `${entry.name}: its section index is ${kilobytes(indexBytes)}, over the ${budget} one read may return`,
+            `${where}: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
-        for (const over of oversizedDocSections(doc.sections)) {
-          problems.push(
-            `${entry.name} ${over.key}: ${kilobytes(over.bytes)}, over the ${budget} one read may return`,
-          );
-        }
-      } catch (err) {
-        problems.push(
-          `${entry.name}: ${err instanceof Error ? err.message : String(err)}`,
-        );
       }
     }
   }

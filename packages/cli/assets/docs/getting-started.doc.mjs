@@ -102,7 +102,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Run `astryx docs theme` for the full theming guide.',
+          text: 'Run `astryx docs theme --detail full` for the full theming guide.',
         },
       ],
     },

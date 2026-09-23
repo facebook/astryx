@@ -140,6 +140,6 @@ astryx docs                          # list topics
 astryx docs tokens                   # section index, one key per section
 astryx docs tokens spacing           # single section, by key or title
 astryx --detail full docs tokens     # full output
-astryx --detail compact docs tokens  # agent-friendly
+astryx --detail compact docs tokens spacing  # one section, compact
 astryx --lang dense docs tokens      # compressed prose
 ```

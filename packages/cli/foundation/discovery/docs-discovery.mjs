@@ -36,6 +36,7 @@ import {importUserModule} from '../fs/module-loader.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 import {
+  sectionKey,
   sectionKeyProblems,
   sourceTitle,
   withSourceTitle,
@@ -457,18 +458,26 @@ export function mergeTopic(base, overlay) {
  */
 function findMergeTarget(sections, section) {
   const title = sourceTitle(section);
+  const key = sectionKey(section);
+  // A section is addressed by its key: an authored id, or the key its title
+  // derives, which is the key the topic's index shows. Matching on it means an
+  // extension never appends a second section under a key already in use.
+  const byKey = () =>
+    sections.findIndex(candidate => sectionKey(candidate) === key);
   const legacyTitleMatch = () =>
     sections.findIndex(
       candidate => candidate.id == null && sourceTitle(candidate) === title,
     );
   if (section.id != null) {
-    const byId = sections.findIndex(candidate => candidate.id === section.id);
+    const byId = byKey();
     return byId === -1 ? legacyTitleMatch() : byId;
   }
   const legacy = legacyTitleMatch();
-  return legacy === -1
-    ? sections.findIndex(candidate => sourceTitle(candidate) === title)
-    : legacy;
+  if (legacy !== -1) return legacy;
+  const sameTitle = sections.findIndex(
+    candidate => sourceTitle(candidate) === title,
+  );
+  return sameTitle === -1 ? byKey() : sameTitle;
 }
 
 /**

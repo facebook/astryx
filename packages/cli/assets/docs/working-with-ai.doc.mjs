@@ -139,8 +139,8 @@ If you don't know all three, run \`npx @astryxdesign/cli init --features agents\
           label: 'Reliable CLI invocation',
           code: `astryx component --list
 astryx component Dialog --dense
-astryx docs styling --dense
-astryx docs tokens --dense`,
+astryx docs styling --dense --detail full
+astryx docs tokens --dense --detail full`,
         },
       ],
     },
@@ -156,8 +156,8 @@ astryx docs tokens --dense`,
           lang: 'bash',
           label: 'Dense output for pasting into AI conversations',
           code: `astryx component Dialog --dense
-astryx docs styling --dense
-astryx docs tokens --dense`,
+astryx docs styling --dense --detail full
+astryx docs tokens --dense --detail full`,
         },
       ],
     },
