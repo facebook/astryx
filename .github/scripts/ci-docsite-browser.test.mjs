@@ -52,6 +52,21 @@ describe('docsite browser required-check projection', () => {
     expect(run['continue-on-error']).toBeUndefined();
   });
 
+  it('uploads the explicit browser output directory and fails if evidence is missing', () => {
+    const configPath = path.join(root, 'apps/docsite/playwright.config.ts');
+    const config = fs.readFileSync(configPath, 'utf8');
+    const outputDir = config.match(/outputDir:\s*'([^']+)'/)?.[1];
+    expect(outputDir).toBe('../../test-results/docsite');
+    const upload = browser.steps.find(
+      step => step.name === 'Upload docsite browser evidence',
+    );
+    expect(upload.if).toBe('always()');
+    expect(upload.with['if-no-files-found']).toBe('error');
+    expect(path.resolve(root, upload.with.path)).toBe(
+      path.resolve(path.dirname(configPath), outputDir),
+    );
+  });
+
   it.each(['success', 'failure', 'cancelled', 'skipped', ''])(
     'fails closed for browser result %j',
     result => {

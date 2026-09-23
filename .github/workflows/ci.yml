@@ -232,7 +232,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: docsite-browser-evidence
-          path: test-results/
+          path: test-results/docsite/
+          if-no-files-found: error
           retention-days: 7
 
   # Lightweight check — does the PR touch any published components?

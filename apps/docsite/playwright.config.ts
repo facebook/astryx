@@ -38,6 +38,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: './e2e',
+  outputDir: '../../test-results/docsite',
   testMatch: ['**/*.spec.ts'],
   // The playground specs drive one preview frame through reloads and hostile
   // navigations; parallel workers would only add timing noise to a lifecycle
