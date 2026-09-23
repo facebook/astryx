@@ -6,6 +6,7 @@ import {useState} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
 import {useTableRowExpansion} from './useTableRowExpansion';
+import {spacingDefaults} from '../../../theme/tokens.stylex';
 import {InternationalizationProvider} from '../../../i18n';
 
 // popover mock for context-menu tests
@@ -58,12 +59,20 @@ function Harness({
   initialExpanded = EMPTY_KEYS,
   isItemExpandable,
   renderExpanded = defaultRenderExpanded,
+  density,
+  hasRowClickExpansion,
+  columnsOverride,
+  panelVariant,
   dividers,
   isStriped,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
   renderExpanded?: (item: Row) => React.ReactNode;
+  density?: 'compact' | 'balanced' | 'spacious';
+  hasRowClickExpansion?: boolean;
+  columnsOverride?: TableColumn<Row>[];
+  panelVariant?: 'muted' | 'transparent';
   dividers?: 'rows' | 'columns' | 'grid' | 'none';
   isStriped?: boolean;
 }) {
@@ -83,12 +92,15 @@ function Harness({
     getRowKey: item => item.id,
     renderExpanded,
     getIsItemExpandable: isItemExpandable,
+    hasRowClickExpansion,
+    panelVariant,
   });
   return (
     <Table
       data={rows}
-      columns={columns}
+      columns={columnsOverride ?? columns}
       idKey="id"
+      density={density}
       dividers={dividers}
       isStriped={isStriped}
       plugins={{expansion}}
@@ -218,6 +230,33 @@ describe('useTableRowExpansion (detail panel)', () => {
     expect(button).not.toHaveStyle({transform: 'rotate(90deg)'});
   });
 
+  it('starts the panel at the first column, not at the row edge', () => {
+    // Left to itself the panel begins under the chevron, a column to the left
+    // of every label it describes. It should start where the first column's
+    // content does: the chevron column's width plus a cell's own padding.
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
+      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-3))',
+    });
+  });
+
+  it('tracks the table density it is rendered at', () => {
+    render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
+    expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
+      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-4))',
+    });
+  });
+
+  it('sizes the chevron column at the spacing token the panel indents by', () => {
+    // The column width is a number the layout does arithmetic on, so it cannot
+    // be a token reference — but the panel's indent, which has to line up with
+    // the first column, spells it as `--spacing-10`. Pin the two together so a
+    // change to the scale cannot silently unalign them.
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    const chevronHeader = screen.getAllByRole('columnheader')[0];
+    expect(chevronHeader).toHaveStyle({width: spacingDefaults['--spacing-10']});
+  });
+
   describe('row divider placement', () => {
     const panelCell = () =>
       screen.getByTestId('panel').closest('td') as HTMLTableCellElement;
@@ -256,6 +295,27 @@ describe('useTableRowExpansion (detail panel)', () => {
       render(<Harness initialExpanded={new Set(['a'])} dividers="grid" />);
       expect(panelCell()).toHaveStyle({
         borderBottomWidth: 'var(--border-width)',
+      });
+    });
+  });
+
+  describe('panel variant', () => {
+    const panelRow = () =>
+      screen.getByTestId('panel').closest('tr') as HTMLTableRowElement;
+
+    it('leaves the panel on the surface behind the table by default', () => {
+      // The panel is the row's continuation, not a surface of its own: it
+      // takes whatever the table sits on, the way the row does.
+      render(<Harness initialExpanded={new Set(['a'])} />);
+      expect(panelRow()).not.toHaveStyle({
+        backgroundColor: 'var(--color-background-muted)',
+      });
+    });
+
+    it('washes the panel when muted is asked for', () => {
+      render(<Harness initialExpanded={new Set(['a'])} panelVariant="muted" />);
+      expect(panelRow()).toHaveStyle({
+        backgroundColor: 'var(--color-background-muted)',
       });
     });
   });
@@ -313,6 +373,123 @@ describe('useTableRowExpansion (detail panel)', () => {
       ).filter(r => r.hasAttribute('data-expansion-panel'));
       expect(panels).toHaveLength(1);
       expect(panels[0]).toHaveTextContent('Ada: Ada bio');
+    });
+  });
+
+  describe('whole-row-click expansion', () => {
+    const rowFor = (name: string) =>
+      screen.getByText(name).closest('tr') as HTMLTableRowElement;
+
+    it('leaves the row body inert by default', () => {
+      render(<Harness />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('expands a collapsed row when its body is clicked', () => {
+      // The collapsed row is the one that has to respond: the early return
+      // that skips panel rendering must not skip the click handler with it.
+      render(<Harness hasRowClickExpansion />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.getByTestId('panel')).toHaveTextContent('Ada: Ada bio');
+    });
+
+    it('collapses an expanded row when its body is clicked', () => {
+      render(<Harness hasRowClickExpansion initialExpanded={new Set(['a'])} />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('does not double-toggle when the chevron itself is clicked', () => {
+      // The chevron stops propagation, so the row handler must not also fire —
+      // two toggles would land back where they started.
+      render(<Harness hasRowClickExpansion />);
+      fireEvent.click(screen.getAllByRole('button', {name: /expand row/i})[0]);
+      expect(screen.getByTestId('panel')).toBeInTheDocument();
+    });
+
+    it('yields to interactive cell content', () => {
+      // A composed link or action button does not stop propagation the way the
+      // chevron does, so the row handler has to check what was hit.
+      const onAction = vi.fn();
+      render(
+        <Harness
+          hasRowClickExpansion
+          columnsOverride={[
+            {
+              key: 'name',
+              header: 'Name',
+              renderCell: item => (
+                <button type="button" onClick={onAction}>
+                  {`Act on ${item.name}`}
+                </button>
+              ),
+            },
+          ]}
+        />,
+      );
+      fireEvent.click(screen.getByText('Act on Ada'));
+      expect(onAction).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('yields to a text selection', () => {
+      // Dragging across a cell to copy it ends in a click. Toggling then would
+      // shift the row out from under the text the reader just selected. The
+      // selection has to be anchored inside the row: one somewhere else on the
+      // page is not this row's business, which is why the shared guard scopes
+      // it to the node rather than asking the document for any selection.
+      render(<Harness hasRowClickExpansion />);
+      const cell = screen.getByText('Ada');
+      const selection = {
+        isCollapsed: false,
+        anchorNode: cell.firstChild ?? cell,
+        toString: () => 'Ada',
+      } as unknown as Selection;
+      const spy = vi.spyOn(document, 'getSelection').mockReturnValue(selection);
+      fireEvent.click(cell);
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+      spy.mockRestore();
+    });
+
+    it('toggles despite a text selection somewhere else on the page', () => {
+      // The old guard asked the document for any selection at all, so text
+      // selected in a sidebar made every row in the table inert.
+      render(<Harness hasRowClickExpansion />);
+      const outside = document.createElement('p');
+      outside.textContent = 'elsewhere';
+      document.body.appendChild(outside);
+      const selection = {
+        isCollapsed: false,
+        anchorNode: outside.firstChild,
+        toString: () => 'elsewhere',
+      } as unknown as Selection;
+      const spy = vi.spyOn(document, 'getSelection').mockReturnValue(selection);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.getByTestId('panel')).toBeInTheDocument();
+      spy.mockRestore();
+      outside.remove();
+    });
+
+    it('leaves non-expandable rows inert', () => {
+      render(
+        <Harness
+          hasRowClickExpansion
+          isItemExpandable={item => item.id !== 'a'}
+        />,
+      );
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Bo'));
+      expect(screen.getByTestId('panel')).toHaveTextContent('Bo: Bo bio');
+    });
+
+    it('marks the row as interactive only when the click is wired up', () => {
+      const {unmount} = render(<Harness hasRowClickExpansion />);
+      expect(rowFor('Ada')).toHaveStyle({cursor: 'pointer'});
+      unmount();
+      render(<Harness />);
+      expect(rowFor('Ada')).not.toHaveStyle({cursor: 'pointer'});
     });
   });
 

@@ -4,7 +4,7 @@
 
 /**
  * @file useTableRowExpansion.tsx
- * @input React, StyleX, Icon, Table types, table context (dividers), i18n
+ * @input React, StyleX, Icon, Table types, table context (density), i18n
  *   (useTranslator)
  * @output Exports useTableRowExpansion hook + config type
  * @position Row-expansion plugin (detail panel); consumed by Table via plugins prop
@@ -35,6 +35,10 @@ import {resolveContextActions} from '../../tableContextMenu';
 import {useTableContext} from '../../useTableCellStyles';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
+import {
+  hasInteractiveAncestor,
+  hasTextSelection,
+} from '../../../hooks/useClickableContainer';
 import type {
   TablePlugin,
   TableColumn,
@@ -70,13 +74,58 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
    * context-menu action, and never render a panel. @default all rows expandable
    */
   getIsItemExpandable?: (item: T) => boolean;
+  /**
+   * Background behind the detail panel.
+   *
+   * - `transparent` (default): the panel paints nothing and takes whatever
+   *   surface is behind the table. The panel is the row's own continuation,
+   *   so it inherits the table's background the way the row does, and on a
+   *   striped table the zebra reads on unchanged — a panel is not a row, and
+   *   is not counted as one.
+   * - `muted`: a wash marking the panel as commentary on the row above rather
+   *   than another row of data. Reach for it in a bare table — no card, no
+   *   dividers, no striping — where nothing else distinguishes the panel from
+   *   the data around it. It is an opt-in, not the house style: a table on a
+   *   Card gets a third surface out of it, and a striped table gets a band in
+   *   the same token as the stripe, which reads as a data row.
+   *
+   * Worth knowing when choosing: the wash is a low-alpha near-black, so over a
+   * dark card it is close to invisible. `muted` is largely a light-theme
+   * effect, and dark themes look like `transparent` either way.
+   * @default 'transparent'
+   */
+  panelVariant?: 'muted' | 'transparent';
+  /**
+   * Toggle a row by clicking anywhere on it, not only on its chevron.
+   *
+   * This is a pointer-only convenience layered over the chevron: keyboard and
+   * assistive-tech users toggle via the chevron button (which stays the
+   * accessible control). Clicks originating from interactive cell content
+   * (buttons, links, form controls) or a text selection do not toggle.
+   * Non-expandable rows stay inert.
+   * @default false (only the chevron toggles expansion).
+   */
+  hasRowClickExpansion?: boolean;
 }
 
 // =============================================================================
 // Styles
 // =============================================================================
 
-const EXPANSION_COLUMN_WIDTH = {type: 'pixel' as const, value: 40};
+/**
+ * The chevron column's width, in pixels.
+ *
+ * A column width is a number the layout does arithmetic on, not a CSS value,
+ * so this cannot be a token reference — but it is the pixel value of
+ * `--spacing-10`, and the panel's indent (which has to line up with the first
+ * real column) spells it as the token. The unit test pins the two together so
+ * a change to the scale cannot silently unalign them.
+ */
+const EXPANSION_COLUMN_WIDTH_PX = 40;
+const EXPANSION_COLUMN_WIDTH = {
+  type: 'pixel' as const,
+  value: EXPANSION_COLUMN_WIDTH_PX,
+};
 
 const expansionStyles = stylex.create({
   chevronButton: {
@@ -136,7 +185,14 @@ const expansionStyles = stylex.create({
   },
   expandedCell: {
     paddingBlock: spacingVars['--spacing-4'],
-    paddingInline: spacingVars['--spacing-5'],
+    paddingInlineEnd: spacingVars['--spacing-5'],
+  },
+  /** Whole-row-click expansion: signal the row is interactive. */
+  clickableRow: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -164,6 +220,30 @@ const dividerStyles = stylex.create({
     },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
+  },
+});
+
+/**
+ * Start inset for the detail panel, one per density.
+ *
+ * The panel is one cell spanning the whole row, so left to itself its content
+ * starts at the row's edge — under the chevron, a column to the left of every
+ * label it describes. These line it up with the first real column instead: the
+ * chevron column's fixed width, plus the inline padding a cell of that density
+ * gives its own content.
+ *
+ * Written as a logical property so RTL mirrors it, and kept in `calc` so the
+ * padding half still tracks the spacing scale.
+ */
+const panelIndentStyles = stylex.create({
+  compact: {
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-2']})`,
+  },
+  balanced: {
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-3']})`,
+  },
+  spacious: {
+    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-4']})`,
   },
 });
 
@@ -208,10 +288,11 @@ function ExpansionChevron({
 }
 
 /**
- * The detail panel's cell. A component rather than a bare `<td>` so it can read
- * the table's divider mode off the context and carry the row divider its own
- * row gave up. The plugin builds this row outside the Table's own render, where
- * that context is not otherwise in hand.
+ * The detail panel's cell. A component rather than a bare `<td>` so it can
+ * read the table's density and divider mode off the context — to indent itself
+ * to match the first column, and to carry the row divider its own row gave up.
+ * The plugin builds this row outside the Table's own render, where that
+ * context is not otherwise in hand.
  */
 function ExpansionPanelCell({
   colSpan,
@@ -227,6 +308,7 @@ function ExpansionPanelCell({
       colSpan={colSpan}
       {...stylex.props(
         expansionStyles.expandedCell,
+        panelIndentStyles[ctx?.density ?? 'balanced'],
         hasRowDividers && dividerStyles.panelCell,
       )}>
       {children}
@@ -274,6 +356,8 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     getRowKey,
     renderExpanded,
     getIsItemExpandable,
+    hasRowClickExpansion,
+    panelVariant = 'transparent',
   } = config;
 
   const t = useTranslator();
@@ -375,8 +459,45 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           return props;
         }
         const key = getRowKey(item);
+
+        // Whole-row-click expansion (opt-in), applied before the collapsed
+        // early-return: a collapsed row is precisely the one a click has to
+        // reach, since opening it is the whole point.
+        const withClick = hasRowClickExpansion
+          ? {
+              ...props,
+              htmlProps: {
+                ...props.htmlProps,
+                onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
+                  // Don't hijack clicks on interactive cell content (the
+                  // chevron already stops propagation, but a composed
+                  // selection checkbox, link, or action button does not) or a
+                  // text selection. Both rules come from
+                  // `useClickableContainer`, the same pair every clickable
+                  // surface in the system uses — the hook itself wants a ref
+                  // we have no way to hand it from inside `transformBodyRow`,
+                  // so this shares its guards rather than its plumbing.
+                  const row = event.currentTarget;
+                  const target = event.target;
+                  if (!(target instanceof Element)) {
+                    return;
+                  }
+                  if (target !== row && hasInteractiveAncestor(target, row)) {
+                    return;
+                  }
+                  if (hasTextSelection(row)) {
+                    return;
+                  }
+                  props.htmlProps.onClick?.(event);
+                  onToggle(key);
+                },
+              },
+              xstyle: [...props.xstyle, expansionStyles.clickableRow],
+            }
+          : props;
+
         if (!expandedKeys.has(key)) {
-          return props;
+          return withClick;
         }
 
         const panel = (
@@ -391,7 +512,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
               // Carries the marker so the panel cell's divider can ask whether
               // this row is the table's last, the same way TableCell does.
               tableRowMarker,
-              expansionStyles.expandedRow,
+              panelVariant === 'muted' && expansionStyles.expandedRow,
             )}>
             <ExpansionPanelCell colSpan={columnCountRef.current}>
               {renderExpanded(item)}
@@ -400,10 +521,10 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         );
 
         return {
-          ...props,
-          afterRow: props.afterRow ? (
+          ...withClick,
+          afterRow: withClick.afterRow ? (
             <>
-              {props.afterRow}
+              {withClick.afterRow}
               {panel}
             </>
           ) : (
@@ -417,6 +538,8 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       getRowKey,
       renderExpanded,
       getIsItemExpandable,
+      hasRowClickExpansion,
+      panelVariant,
       onToggle,
       t,
       expansionColumn,
