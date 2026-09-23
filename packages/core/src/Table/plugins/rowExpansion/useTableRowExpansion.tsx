@@ -4,7 +4,8 @@
 
 /**
  * @file useTableRowExpansion.tsx
- * @input React, StyleX, Icon, Table types, i18n (useTranslator)
+ * @input React, StyleX, Icon, Table types, table context (dividers), i18n
+ *   (useTranslator)
  * @output Exports useTableRowExpansion hook + config type
  * @position Row-expansion plugin (detail panel); consumed by Table via plugins prop
  *
@@ -19,10 +20,19 @@
 
 import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
+import {
+  spacingVars,
+  colorVars,
+  radiusVars,
+  borderVars,
+  durationVars,
+  easeVars,
+} from '../../../theme/tokens.stylex';
+import {tableRowMarker} from '../../table.stylex';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTableContext} from '../../useTableCellStyles';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
 import type {
@@ -83,8 +93,12 @@ const expansionStyles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: colorVars['--color-icon-secondary'],
-    transitionProperty: 'transform, color',
-    transitionDuration: '150ms',
+    // Colour only. The rotation belongs to the glyph, not to the button: the
+    // button is the hit target and carries the hover chip, and turning that
+    // swings the rounded rectangle and its highlight around with the arrow.
+    transitionProperty: 'color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     padding: 0,
     // Match IconButton ghost hover: subtle overlay background.
     backgroundImage: {
@@ -96,6 +110,11 @@ const expansionStyles = stylex.create({
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
+  },
+  chevron: {
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   // The RTL mirror is folded into each state's transform rather than living
   // on a parent span, matching TreeListItem's chevron (both are `transform`,
@@ -121,6 +140,33 @@ const expansionStyles = stylex.create({
   },
 });
 
+/**
+ * An expanded row and its panel are one unit, so the row divider belongs after
+ * the pair rather than between them — left alone, the row's own bottom border
+ * draws a line cutting it off from the detail it just opened, and the panel
+ * then runs flush into the next row, which is the wrong way round.
+ *
+ * So the row gives up its border and the panel takes one. On a table with no
+ * row dividers the suppression is a no-op (there was no border to remove) and
+ * the panel's is never applied, so neither needs to consult the divider mode.
+ */
+const dividerStyles = stylex.create({
+  expandedRowCell: {
+    borderBottomWidth: 0,
+  },
+  panelCell: {
+    borderBottomWidth: {
+      default: borderVars['--border-width'],
+      // Same rule TableCell uses: no trailing line under the last row of the
+      // table. Scoped to the marker so <tbody>, also a :last-child, does not
+      // match and suppress every panel's border.
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
+    },
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
+  },
+});
+
 // =============================================================================
 // Chevron Cell
 // =============================================================================
@@ -136,12 +182,7 @@ function ExpansionChevron({
   return (
     <button
       type="button"
-      {...stylex.props(
-        expansionStyles.chevronButton,
-        isExpanded
-          ? expansionStyles.chevronExpanded
-          : expansionStyles.chevronCollapsed,
-      )}
+      {...stylex.props(expansionStyles.chevronButton)}
       onClick={e => {
         e.stopPropagation();
         onToggle();
@@ -152,8 +193,44 @@ function ExpansionChevron({
           : t('@astryx.tableRowExpansion.expandRow')
       }
       aria-expanded={isExpanded}>
-      <Icon icon="chevronRight" size="xsm" />
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        xstyle={[
+          expansionStyles.chevron,
+          isExpanded
+            ? expansionStyles.chevronExpanded
+            : expansionStyles.chevronCollapsed,
+        ]}
+      />
     </button>
+  );
+}
+
+/**
+ * The detail panel's cell. A component rather than a bare `<td>` so it can read
+ * the table's divider mode off the context and carry the row divider its own
+ * row gave up. The plugin builds this row outside the Table's own render, where
+ * that context is not otherwise in hand.
+ */
+function ExpansionPanelCell({
+  colSpan,
+  children,
+}: {
+  colSpan: number;
+  children: ReactNode;
+}) {
+  const ctx = useTableContext();
+  const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
+  return (
+    <td
+      colSpan={colSpan}
+      {...stylex.props(
+        expansionStyles.expandedCell,
+        hasRowDividers && dividerStyles.panelCell,
+      )}>
+      {children}
+    </td>
   );
 }
 
@@ -261,6 +338,11 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const isExpanded = expandedKeys.has(key);
         return {
           ...props,
+          // Hand the row divider to the panel below, so the line closes the
+          // row-plus-panel pair instead of splitting it.
+          xstyle: isExpanded
+            ? [...props.xstyle, dividerStyles.expandedRowCell]
+            : props.xstyle,
           contextMenuActions: () => [
             ...resolveContextActions(props.contextMenuActions),
             {
@@ -300,12 +382,20 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const panel = (
           <tr
             key={`${key}-expanded`}
-            {...stylex.props(expansionStyles.expandedRow)}>
-            <td
-              colSpan={columnCountRef.current}
-              {...stylex.props(expansionStyles.expandedCell)}>
+            // A panel is its row's continuation, not a row of its own. Striping
+            // counts `:nth-child(even of :not([data-expansion-panel]))`, so this
+            // attribute is what keeps an open panel from inverting the zebra of
+            // every row beneath it. Load-bearing, not diagnostic.
+            data-expansion-panel=""
+            {...stylex.props(
+              // Carries the marker so the panel cell's divider can ask whether
+              // this row is the table's last, the same way TableCell does.
+              tableRowMarker,
+              expansionStyles.expandedRow,
+            )}>
+            <ExpansionPanelCell colSpan={columnCountRef.current}>
               {renderExpanded(item)}
-            </td>
+            </ExpansionPanelCell>
           </tr>
         );
 
