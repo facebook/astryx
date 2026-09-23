@@ -24,6 +24,10 @@ export const docs = {
         },
         {
           type: 'prose',
+          text: 'Every file an integration author writes is documented field by field in `npx astryx docs authoring`: the manifest, astryx.config, codemods, identity, and each doc type.',
+        },
+        {
+          type: 'prose',
           text: 'A consumer can still name the package explicitly when order or precedence matters:',
         },
         {
