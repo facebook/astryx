@@ -71,7 +71,9 @@ let storybook: StaticServer;
 let browserVersion = 'unknown';
 
 test.beforeAll(async () => {
-  fs.rmSync(OUTPUT, {recursive: true, force: true});
+  // Do NOT wipe: Playwright restarts the worker after a failing test, which
+  // re-runs this hook. Wiping here would delete the frames the earlier tests
+  // already banked, which is exactly when the evidence matters most.
   fs.mkdirSync(OUTPUT, {recursive: true});
   storybook = await serveStorybook(
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
@@ -79,8 +81,16 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  const manifestPath = path.join(OUTPUT, 'manifest.json');
+  const previous = fs.existsSync(manifestPath)
+    ? (JSON.parse(fs.readFileSync(manifestPath, 'utf8')).frames ?? [])
+    : [];
+  const merged = [...previous, ...receipts].filter(
+    (frame, index, all) =>
+      all.findIndex(other => other.state === frame.state) === index,
+  );
   fs.writeFileSync(
-    path.join(OUTPUT, 'manifest.json'),
+    manifestPath,
     `${JSON.stringify(
       {
         version: 1,
@@ -91,7 +101,7 @@ test.afterAll(async () => {
           'local-working-copy',
         checkoutSha: process.env.GITHUB_SHA ?? 'local-working-copy',
         browser: browserVersion,
-        frames: receipts,
+        frames: merged,
       },
       null,
       2,
@@ -135,6 +145,61 @@ async function scrollToTop(root: Locator): Promise<void> {
     element.scrollTop = 0;
     element.dispatchEvent(new Event('scroll'));
   });
+}
+
+/**
+ * Can the affordance take focus at all? This is the mechanism under test:
+ * `visibility: hidden` removes an element from sequential focus navigation AND
+ * refuses programmatic focus, which `opacity: 0` does neither of. A CSS locator
+ * is used rather than a role query because a hidden button is not in the
+ * accessibility tree and a role query would not resolve it.
+ */
+async function affordanceAcceptsFocus(page: Page): Promise<boolean> {
+  return page
+    .locator('.astryx-chat-layout-scroll-button button')
+    .evaluate(element => {
+      // preventScroll: focusing must not move the scroll position, or the
+      // probe would change the very state the next assertion reads.
+      (element as HTMLElement).focus({preventScroll: true});
+      return document.activeElement === element;
+    });
+}
+
+/**
+ * Tab forward from `from` and report whether focus ever lands inside the
+ * affordance, plus the sequence it walked. Reachability is the user-level
+ * property; the number of intervening stops is not part of the contract, so
+ * this sweeps rather than asserting one exact stop.
+ */
+async function tabSweep(
+  page: Page,
+  from: Locator,
+  presses: number,
+): Promise<{reached: boolean; sequence: string[]}> {
+  await from.focus();
+  const sequence: string[] = [];
+  for (let index = 0; index < presses; index += 1) {
+    await page.keyboard.press('Tab');
+    const stop = await page.evaluate(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active == null || active === document.body) {
+        return {label: 'body', onAffordance: false};
+      }
+      const name =
+        active.getAttribute('aria-label') ??
+        (active.textContent ?? '').trim().slice(0, 32);
+      return {
+        label: `${active.tagName.toLowerCase()}${name ? `:${name}` : ''}`,
+        onAffordance:
+          active.closest('.astryx-chat-layout-scroll-button') != null,
+      };
+    });
+    sequence.push(stop.label);
+    if (stop.onAffordance) {
+      return {reached: true, sequence};
+    }
+  }
+  return {reached: false, sequence};
 }
 
 async function pillVisibility(page: Page): Promise<string> {
@@ -201,8 +266,8 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
 }) => {
   const root = await openStory(page);
   const before = page.getByRole('button', {name: 'Before chat', exact: true});
-  const affordance = page.getByRole('button', {name: 'Scroll to bottom'});
   const pill = page.locator(PILL);
+  const SWEEP = 6;
 
   // ---- hidden: the resting state, where the defect lived -------------------
   // Precondition: the fixture must actually overflow, or "hidden at rest" and
@@ -213,19 +278,21 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   ).toBeGreaterThan(150);
   expect(await distanceFromBottom(root)).toBeLessThan(2);
   await expect(pill).toHaveCSS('visibility', 'hidden');
-  await before.focus();
-  await page.keyboard.press('Tab');
-  await expect(affordance).not.toBeFocused();
-  const firstStop = await page.evaluate(() => {
-    const active = document.activeElement;
-    return active == null
-      ? 'none'
-      : `${active.tagName.toLowerCase()}:${active.getAttribute('aria-label') ?? active.textContent?.trim().slice(0, 40) ?? ''}`;
-  });
+
+  expect(
+    await affordanceAcceptsFocus(page),
+    'a control that paints nothing must refuse focus (WCAG 2.2 SC 2.4.7)',
+  ).toBe(false);
+  const restSweep = await tabSweep(page, before, SWEEP);
+  expect(
+    restSweep.reached,
+    `Tab reached the hidden affordance: ${restSweep.sequence.join(' -> ')}`,
+  ).toBe(false);
   await capture(page, 'rest-hidden', {
     pillVisibility: await pillVisibility(page),
-    affordanceFocusedAfterTab: false,
-    firstTabStopAfterSentinel: firstStop,
+    affordanceAcceptsFocus: false,
+    reachedByTabWithin: `not within ${SWEEP} presses`,
+    tabSequence: restSweep.sequence,
     distanceFromBottomPx: await distanceFromBottom(root),
   });
 
@@ -233,26 +300,46 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   await scrollToTop(root);
   await expect(pill).toHaveCSS('visibility', 'visible');
   expect(await distanceFromBottom(root)).toBeGreaterThan(100);
-  await before.focus();
-  await page.keyboard.press('Tab');
-  await expect(affordance).toBeFocused();
-  await expect(affordance).toHaveAccessibleName('Scroll to bottom');
+
+  expect(
+    await affordanceAcceptsFocus(page),
+    'the visible affordance must keep its keyboard access',
+  ).toBe(true);
+  const visibleSweep = await tabSweep(page, before, SWEEP);
+  expect(
+    visibleSweep.reached,
+    `Tab never reached the visible affordance: ${visibleSweep.sequence.join(' -> ')}`,
+  ).toBe(true);
+  await expect(
+    page.getByRole('button', {name: 'Scroll to bottom'}),
+  ).toHaveAccessibleName('Scroll to bottom');
   await capture(page, 'scrolled-up-visible', {
     pillVisibility: await pillVisibility(page),
-    affordanceFocusedAfterTab: true,
-    accessibleName: await affordance.getAttribute('aria-label'),
+    affordanceAcceptsFocus: true,
+    reachedByTabWithin: `${visibleSweep.sequence.length} of ${SWEEP} presses`,
+    tabSequence: visibleSweep.sequence,
+    accessibleName: 'Scroll to bottom',
     distanceFromBottomPx: await distanceFromBottom(root),
   });
 
   // ---- re-hidden: activating it returns to the bottom ----------------------
+  // Focus is already on the affordance from the sweep above.
   await page.keyboard.press('Enter');
   await expect(pill).toHaveCSS('visibility', 'hidden', {timeout: 5000});
-  await before.focus();
-  await page.keyboard.press('Tab');
-  await expect(affordance).not.toBeFocused();
+  expect(
+    await affordanceAcceptsFocus(page),
+    'after returning to the bottom the affordance must refuse focus again',
+  ).toBe(false);
+  const returnedSweep = await tabSweep(page, before, SWEEP);
+  expect(
+    returnedSweep.reached,
+    `Tab reached the re-hidden affordance: ${returnedSweep.sequence.join(' -> ')}`,
+  ).toBe(false);
   await capture(page, 'returned-hidden', {
     pillVisibility: await pillVisibility(page),
-    affordanceFocusedAfterTab: false,
+    affordanceAcceptsFocus: false,
+    reachedByTabWithin: `not within ${SWEEP} presses`,
+    tabSequence: returnedSweep.sequence,
     activatedWith: 'Enter',
     distanceFromBottomPx: await distanceFromBottom(root),
   });
