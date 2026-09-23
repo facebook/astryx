@@ -622,19 +622,23 @@ function validateRenderers(
       const isFlowName = FLOW_CONTENT_NAMES.has(
         allowedName as MarkdownFlowContentName,
       );
-      const category =
-        isPhrasingName === isFlowName
-          ? undefined
-          : isPhrasingName
-            ? 'phrasing'
-            : 'flow';
-      if (category != null) {
-        if (builtInCategory != null && builtInCategory !== category) {
+      if (isPhrasingName || isFlowName) {
+        const category =
+          isPhrasingName === isFlowName
+            ? undefined
+            : isPhrasingName
+              ? 'phrasing'
+              : 'flow';
+        if (
+          category != null &&
+          builtInCategory != null &&
+          builtInCategory !== category
+        ) {
           fail(
             `"${pluginName}" renderer "${nodeName}" content allowlist mixes phrasing and flow nodes`,
           );
         }
-        builtInCategory = category;
+        builtInCategory ??= category;
       } else if (!ownNames.has(allowedName)) {
         fail(
           `"${pluginName}" renderer "${nodeName}" may allow only built-in or owned extension names`,

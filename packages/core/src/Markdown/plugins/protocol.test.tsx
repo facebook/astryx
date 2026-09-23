@@ -571,6 +571,20 @@ describe('Markdown plugin protocol', () => {
 
     expect(() =>
       createMarkdownPlugin({
+        name: 'image-container',
+        apiVersion: 1,
+        transform: (root: never) => root,
+        renderers: {
+          box: {
+            content: {allow: ['image']},
+            render: () => null,
+          },
+        },
+      } as never),
+    ).not.toThrow();
+
+    expect(() =>
+      createMarkdownPlugin({
         name: 'invalid-content-declaration',
         apiVersion: 1,
         transform: (root: never) => root,
