@@ -41,6 +41,16 @@ const STORY_ID = 'core-chatlayout--scroll-affordance-states';
 /** The pill wrapper: the element whose visibility and height are the claims. */
 const PILL = '.astryx-chat-layout-scroll-button > div';
 
+/** One observed tab stop, identified structurally rather than by its text. */
+type FocusStop = {
+  tag: string;
+  astryxClass: string | null;
+  role: string | null;
+  tabIndex: string | null;
+  accessibleName: string | null;
+  isLayoutRoot: boolean;
+};
+
 type Shot = {
   file: string;
   sha256: string;
@@ -173,51 +183,107 @@ async function affordanceAcceptsFocus(page: Page): Promise<boolean> {
 }
 
 /**
- * Tab forward from `from` and report whether focus lands inside the affordance
- * before it leaves the layout.
+ * Tab forward from `from` and report where focus actually lands, by identity.
+ *
+ * Each stop records the element's tag, its `astryx-*` class, explicit role,
+ * explicit tabindex, accessible name, and whether it IS the layout root — not
+ * a text-content guess. Several nested elements share the transcript's text,
+ * so a label built from `textContent` cannot tell the scrolling layout root
+ * from the `role="log"` message list inside it.
  *
  * The sweep MUST stop at the layout boundary. Sequential focus navigation
  * scrolls each stop into view, and this affordance's visibility is a function
- * of scroll position — so a sweep that runs past the last stop wraps around the
- * document, re-enters the layout, and can flip the state it is measuring. An
- * earlier revision did exactly that: it walked
- * `root -> composer -> body -> sentinel -> root -> affordance` and reported the
- * resting affordance as reachable, having made it visible on the way.
+ * of scroll position, so a sweep that runs past the last stop wraps around the
+ * document, re-enters the layout, and can flip the state it is measuring.
  */
+/** Render a sweep as a readable trail for a failure message. */
+function describeStops(stops: FocusStop[]): string {
+  return stops
+    .map(stop => {
+      const parts = [stop.tag];
+      if (stop.astryxClass != null) {
+        parts.push(`.${stop.astryxClass}`);
+      }
+      if (stop.role != null) {
+        parts.push(`[role=${stop.role}]`);
+      }
+      if (stop.isLayoutRoot) {
+        parts.push('(layout root)');
+      }
+      return parts.join('');
+    })
+    .join(' -> ');
+}
+
 async function tabWithinLayout(
   page: Page,
   from: Locator,
   maxPresses: number,
-): Promise<{reached: boolean; sequence: string[]}> {
+): Promise<{reached: boolean; sequence: FocusStop[]}> {
   await from.focus();
-  const sequence: string[] = [];
+  const sequence: FocusStop[] = [];
   for (let index = 0; index < maxPresses; index += 1) {
     await page.keyboard.press('Tab');
     const stop = await page.evaluate(() => {
       const active = document.activeElement as HTMLElement | null;
       const layout = document.querySelector('.astryx-chat-layout');
       if (active == null || active === document.body) {
-        return {label: 'body', inside: false, onAffordance: false};
+        return {
+          tag: 'body',
+          astryxClass: null,
+          role: null,
+          tabIndex: null,
+          accessibleName: null,
+          isLayoutRoot: false,
+          inside: false,
+          onAffordance: false,
+        };
       }
-      const name =
-        active.getAttribute('aria-label') ??
-        (active.textContent ?? '').trim().slice(0, 28);
       return {
-        label: `${active.tagName.toLowerCase()}${name ? `:${name}` : ''}`,
+        tag: active.tagName.toLowerCase(),
+        astryxClass:
+          [...active.classList].find(name => name.startsWith('astryx-')) ??
+          null,
+        role: active.getAttribute('role'),
+        tabIndex: active.getAttribute('tabindex'),
+        accessibleName:
+          active.getAttribute('aria-label') ??
+          active.getAttribute('aria-labelledby') ??
+          null,
+        isLayoutRoot: active === layout,
         inside: layout != null && layout.contains(active),
         onAffordance:
           active.closest('.astryx-chat-layout-scroll-button') != null,
       };
     });
-    sequence.push(stop.label);
-    if (stop.onAffordance) {
+    const {inside, onAffordance, ...identity} = stop;
+    sequence.push(identity);
+    if (onAffordance) {
       return {reached: true, sequence};
     }
-    if (!stop.inside) {
+    if (!inside) {
       break;
     }
   }
   return {reached: false, sequence};
+}
+
+/**
+ * Read a PNG's real pixel dimensions out of its IHDR header.
+ *
+ * These frames are ELEMENT screenshots, so their size is the subject's box,
+ * not the viewport's. An earlier revision recorded the viewport here and
+ * published receipts claiming 1280x720 for images that are 1216x420 — the
+ * pixels were genuine, the stated dimensions were not. The viewport stays in
+ * its own sensor row, where it belongs.
+ */
+function pngShot(file: string, bytes: Buffer): Shot {
+  return {
+    file,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20),
+  };
 }
 
 async function capture(
@@ -264,12 +330,7 @@ async function capture(
       height: Math.round(box.height),
     },
     settled: {fontsReady: true, pageErrors: pageErrors.length},
-    image: {
-      file,
-      sha256: createHash('sha256').update(bytes).digest('hex'),
-      width: Math.round(dimensions.width),
-      height: Math.round(dimensions.height),
-    },
+    image: pngShot(file, bytes),
   };
   receipts.push(receipt);
   return receipt;
@@ -336,7 +397,7 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
   visibleFrame.rendered.reachedByTabAfterPresses = visibleSweep.sequence.length;
   expect(
     visibleSweep.reached,
-    `Tab never reached the visible affordance: ${visibleSweep.sequence.join(' -> ')}`,
+    `Tab never reached the visible affordance: ${describeStops(visibleSweep.sequence)}`,
   ).toBe(true);
 
   // ---- re-hidden: activating it returns to the bottom ----------------------
