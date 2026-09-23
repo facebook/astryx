@@ -245,9 +245,24 @@ const ComponentBaseSchema = z
   })
   .passthrough();
 
-/** New-format stamped component doc (`type: 'component'`). */
+/**
+ * New-format stamped component doc (`type: 'component'`): one component's
+ * `props`, or the `components` a group doc documents together. These are the
+ * shapes the published ComponentDoc type allows, and the ones an unstamped doc
+ * may already take.
+ */
 export const ComponentDocKindSchema = ComponentBaseSchema.extend({
-  props: z.array(PropSchema),
+  props: z.array(PropSchema).optional(),
+  components: z.array(z.unknown()).optional(),
+}).superRefine((doc, context) => {
+  if (doc.props == null && doc.components == null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['props'],
+      message:
+        'expected the props array, or `components` for a doc that groups several components',
+    });
+  }
 });
 
 /** Return entry for generalized function docs. */

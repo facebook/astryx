@@ -88,8 +88,13 @@ export async function runDrift() {
     }
   }
 
+  // The typed examples under test/authoring-types must parse, but they
+  // document nothing real, so they take no part in the cross-reference checks.
+  const production = docs.filter(
+    d => !d.file.startsWith('packages/cli/test/authoring-types/'),
+  );
   const of = (/** @type {string} */ t) =>
-    docs.filter(d => d.doc && d.doc.type === t);
+    production.filter(d => d.doc && d.doc.type === t);
   const fnByName = new Map(of('function').map(d => [d.doc.name, d.doc]));
 
   // Command drift: fn resolves, params resolve, name is real.
