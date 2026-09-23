@@ -101,7 +101,7 @@ export function createMarkdownEntityReferencesPlugin({
       renderers: {
         'entity-reference': {
           render: ({node}): React.ReactNode =>
-            render?.(node.data) ?? node.data.label,
+            render === undefined ? node.data.label : render(node.data),
           toText: node => node.data.label,
         },
       },

@@ -77,6 +77,27 @@ describe('createMarkdownEntityReferencesPlugin', () => {
     expectTypeOf(plugin).toMatchTypeOf<MarkdownPluginEntry>();
   });
 
+  it('uses the label only when no renderer is supplied', () => {
+    const defaultPlugin = createMarkdownEntityReferencesPlugin({
+      references: [{id: 'compiler', label: 'Compiler'}],
+    });
+    const hiddenPlugin = createMarkdownEntityReferencesPlugin({
+      references: [{id: 'compiler', label: 'Compiler'}],
+      render: () => null,
+    });
+
+    expect(
+      renderToString(
+        <Markdown plugins={[defaultPlugin]}>{'@{compiler}'}</Markdown>,
+      ),
+    ).toContain('Compiler');
+    expect(
+      renderToString(
+        <Markdown plugins={[hiddenPlugin]}>{'@{compiler}'}</Markdown>,
+      ),
+    ).not.toContain('Compiler');
+  });
+
   it('preserves code, links, and unconfigured text', () => {
     const source = '`@{ada}` [@{ada}](/docs) @{missing}';
     expect(parseMarkdownAst(source, {plugins: [plugin]})).toEqual(
