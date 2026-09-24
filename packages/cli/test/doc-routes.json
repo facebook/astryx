@@ -1,0 +1,2218 @@
+{
+  "about": [
+    "Every current doc route with a PROPOSED docs-graph placement. The docs graph spec is not decided; nothing here moves anything, and doc-routes.test.mjs fails when a current route has no row, a row names a route that no longer exists, or a row breaks the placement rules below.",
+    "Rows: one per built-in topic (`astryx docs <topic>`) and per section key (`astryx docs <topic> <key>`); typed descriptors take one row per provider and kind, with `count` and the ids in doc-routes.ids.json under the row id. Placeholders <id> expand per id. Per-item rows would repeat one decision per group hundreds of times (704 templates alone).",
+    "placement: keep-flat (the route stays where it is), namespace:<path> (the doc becomes <path> in the graph), or generated:<provider>/<kind> (the unorganized bucket for typed descriptors that author no placement). Anything but keep-flat carries a one-line evidence note, and a namespace must be decided `create` under namespaces.",
+    "aliasNeeded: true when the proposal leaves the old CLI route or docsite URL without its content unless an alias keeps it resolving. Sections move with their topic.",
+    "oldDocsiteUrl: the public docsite URL (paths on astryx.atmeta.com). Topic and section URLs are checked; section anchors are the docsite outline ids (slugged titles). docsiteExceptions on descriptor rows were measured on 2026-09-24 from a canary data build of apps/docsite and are not rechecked by the test; production documents the latest published core, so a newer component has no page until release."
+  ],
+  "idsFile": "doc-routes.ids.json",
+  "namespaces": [
+    {
+      "name": "cli",
+      "decision": "create",
+      "evidence": "cli-integrations documents the CLI's integration surface (see its row), and the NamespaceDoc contract's own example is a 'cli' namespace for commands, APIs and integration authoring.",
+      "note": "/docs/cli is the @astryxdesign/cli package page on the docsite today; the namespace page must own that URL. Considered and left out: authoring, whose section docs declare namespace 'authoring', a sibling of 'cli' in the SchemaDoc contract."
+    },
+    {
+      "name": "foundations",
+      "decision": "reject",
+      "evidence": "Only the docsite's 'foundations' category label groups color, elevation, icons, illustrations, motion, shape, spacing, tokens and typography. The docsite serves each flat at /docs/<topic>, and icons and illustrations are not token pages."
+    },
+    {
+      "name": "styling",
+      "decision": "reject",
+      "evidence": "styling-libraries is linked from styling and from theme; only the hyphen suggests styling/libraries."
+    },
+    {
+      "name": "theme",
+      "decision": "reject",
+      "evidence": "No topic is a child of theme: theme descriptors and theme command docs are typed descriptors (generated bucket), and theme's 17 sections stay with it."
+    },
+    {
+      "name": "migration",
+      "decision": "reject",
+      "evidence": "migration is one guide with no child topics; the draft shadcn-compatibility doc is not a route, and version upgrades are the upgrade command doc."
+    },
+    {
+      "name": "tokens",
+      "decision": "reject",
+      "evidence": "The six token-category pages pull their tables from tokens by token reference; the only other tie is the tokenCategory label. Nothing authored nests them."
+    }
+  ],
+  "rows": [
+    {
+      "kind": "topic",
+      "id": "authoring",
+      "oldCliRoute": "astryx docs authoring",
+      "oldDocsiteUrl": "/docs/authoring",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Integration-author reference, built from the CLI's authoring self-docs (one section each). Stays top-level: the SchemaDoc contract names 'cli' and 'authoring' as sibling namespace paths, and 12 of its 15 section docs declare namespace 'authoring'. On the docsite, 14 of its 15 anchors come from section titles and differ from the section keys.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#integration",
+      "oldCliRoute": "astryx docs authoring integration",
+      "oldDocsiteUrl": "/docs/authoring#astryx-integration",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `integration` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#config",
+      "oldCliRoute": "astryx docs authoring config",
+      "oldDocsiteUrl": "/docs/authoring#astryx-config",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `config` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#codemod",
+      "oldCliRoute": "astryx docs authoring codemod",
+      "oldDocsiteUrl": "/docs/authoring#astryx-codemod",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `codemod` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#provider-identity",
+      "oldCliRoute": "astryx docs authoring provider-identity",
+      "oldDocsiteUrl": "/docs/authoring#provider-and-artifact-identity",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `provider-identity` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#authored-doc-graph-fields",
+      "oldCliRoute": "astryx docs authoring authored-doc-graph-fields",
+      "oldDocsiteUrl": "/docs/authoring#authored-doc-graph-fields",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `authored-doc-graph-fields` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#component-doc",
+      "oldCliRoute": "astryx docs authoring component-doc",
+      "oldDocsiteUrl": "/docs/authoring#componentdoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `component-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#hook-doc",
+      "oldCliRoute": "astryx docs authoring hook-doc",
+      "oldDocsiteUrl": "/docs/authoring#hookdoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `hook-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#function-doc",
+      "oldCliRoute": "astryx docs authoring function-doc",
+      "oldDocsiteUrl": "/docs/authoring#functiondoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `function-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#command-doc",
+      "oldCliRoute": "astryx docs authoring command-doc",
+      "oldDocsiteUrl": "/docs/authoring#commanddoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `command-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#enum-doc",
+      "oldCliRoute": "astryx docs authoring enum-doc",
+      "oldDocsiteUrl": "/docs/authoring#enumdoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `enum-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#namespace-doc",
+      "oldCliRoute": "astryx docs authoring namespace-doc",
+      "oldDocsiteUrl": "/docs/authoring#namespacedoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `namespace-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#reference-doc",
+      "oldCliRoute": "astryx docs authoring reference-doc",
+      "oldDocsiteUrl": "/docs/authoring#referencedoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `reference-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#schema-doc",
+      "oldCliRoute": "astryx docs authoring schema-doc",
+      "oldDocsiteUrl": "/docs/authoring#schemadoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `schema-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#template-doc",
+      "oldCliRoute": "astryx docs authoring template-doc",
+      "oldDocsiteUrl": "/docs/authoring#templatedoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `template-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#theme-doc",
+      "oldCliRoute": "astryx docs authoring theme-doc",
+      "oldDocsiteUrl": "/docs/authoring#themedoc",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `theme-doc` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "browser-support",
+      "oldCliRoute": "astryx docs browser-support",
+      "oldDocsiteUrl": "/docs/browser-support",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Standalone guide: no topic links to it, and nothing authored places it under another topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#overview",
+      "oldCliRoute": "astryx docs browser-support overview",
+      "oldDocsiteUrl": "/docs/browser-support#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#support-tiers",
+      "oldCliRoute": "astryx docs browser-support support-tiers",
+      "oldDocsiteUrl": "/docs/browser-support#support-tiers",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#which-features-set-the-floor",
+      "oldCliRoute": "astryx docs browser-support which-features-set-the-floor",
+      "oldDocsiteUrl": "/docs/browser-support#which-features-set-the-floor",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#which-components-are-affected",
+      "oldCliRoute": "astryx docs browser-support which-components-are-affected",
+      "oldDocsiteUrl": "/docs/browser-support#which-components-are-affected",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#what-astryx-guarantees",
+      "oldCliRoute": "astryx docs browser-support what-astryx-guarantees",
+      "oldDocsiteUrl": "/docs/browser-support#what-astryx-guarantees",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#supporting-older-browsers",
+      "oldCliRoute": "astryx docs browser-support supporting-older-browsers",
+      "oldDocsiteUrl": "/docs/browser-support#supporting-older-browsers",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "browser-support#how-these-tiers-move-over-time",
+      "oldCliRoute": "astryx docs browser-support how-these-tiers-move-over-time",
+      "oldDocsiteUrl": "/docs/browser-support#how-these-tiers-move-over-time",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of browser-support under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "cli-integrations",
+      "oldCliRoute": "astryx docs cli-integrations",
+      "oldDocsiteUrl": "/docs/cli-integrations",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Its subject is the CLI's integration surface: 10 of its 14 sections drive `astryx integration add|pack`, `astryx doctor integration ...`, `astryx init` or `astryx upgrade`.",
+      "rationale": "Guide for integration authors. `astryx docs cli-integrations` and /docs/cli-integrations must keep resolving. The docsite already serves /docs/cli as the @astryxdesign/cli package page, so the cli namespace page has to take over that URL.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#overview",
+      "oldCliRoute": "astryx docs cli-integrations overview",
+      "oldDocsiteUrl": "/docs/cli-integrations#overview",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#authoring-with-the-cli",
+      "oldCliRoute": "astryx docs cli-integrations authoring-with-the-cli",
+      "oldDocsiteUrl": "/docs/cli-integrations#authoring-with-the-cli",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#theme-package-walkthrough",
+      "oldCliRoute": "astryx docs cli-integrations theme-package-walkthrough",
+      "oldDocsiteUrl": "/docs/cli-integrations#theme-package-walkthrough",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#contribution-kinds-at-a-glance",
+      "oldCliRoute": "astryx docs cli-integrations contribution-kinds-at-a-glance",
+      "oldDocsiteUrl": "/docs/cli-integrations#contribution-kinds-at-a-glance",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#the-integration-file",
+      "oldCliRoute": "astryx docs cli-integrations the-integration-file",
+      "oldDocsiteUrl": "/docs/cli-integrations#the-integration-file",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#components",
+      "oldCliRoute": "astryx docs cli-integrations components",
+      "oldDocsiteUrl": "/docs/cli-integrations#components",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#templates",
+      "oldCliRoute": "astryx docs cli-integrations templates",
+      "oldDocsiteUrl": "/docs/cli-integrations#templates",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#docs",
+      "oldCliRoute": "astryx docs cli-integrations docs",
+      "oldDocsiteUrl": "/docs/cli-integrations#docs",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#themes",
+      "oldCliRoute": "astryx docs cli-integrations themes",
+      "oldDocsiteUrl": "/docs/cli-integrations#themes",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#agent-docs",
+      "oldCliRoute": "astryx docs cli-integrations agent-docs",
+      "oldDocsiteUrl": "/docs/cli-integrations#agent-docs",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#codemods",
+      "oldCliRoute": "astryx docs cli-integrations codemods",
+      "oldDocsiteUrl": "/docs/cli-integrations#codemods",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#recording-runs",
+      "oldCliRoute": "astryx docs cli-integrations recording-runs",
+      "oldDocsiteUrl": "/docs/cli-integrations#recording-runs",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#gap-report-handler",
+      "oldCliRoute": "astryx docs cli-integrations gap-report-handler",
+      "oldDocsiteUrl": "/docs/cli-integrations#gap-report-handler",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli-integrations#how-it-works",
+      "oldCliRoute": "astryx docs cli-integrations how-it-works",
+      "oldDocsiteUrl": "/docs/cli-integrations#how-it-works",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": true,
+      "evidence": "Moves with cli-integrations.",
+      "rationale": "Stays a section of cli-integrations under the same key, so its old route needs an alias along with the topic's.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "color",
+      "oldCliRoute": "astryx docs color",
+      "oldDocsiteUrl": "/docs/color",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'color') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "color#overview",
+      "oldCliRoute": "astryx docs color overview",
+      "oldDocsiteUrl": "/docs/color#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of color under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "color#surface-colors",
+      "oldCliRoute": "astryx docs color surface-colors",
+      "oldDocsiteUrl": "/docs/color#surface-colors",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of color under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "color#usage",
+      "oldCliRoute": "astryx docs color usage",
+      "oldDocsiteUrl": "/docs/color#usage",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of color under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "color#best-practices",
+      "oldCliRoute": "astryx docs color best-practices",
+      "oldDocsiteUrl": "/docs/color#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of color under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "elevation",
+      "oldCliRoute": "astryx docs elevation",
+      "oldDocsiteUrl": "/docs/elevation",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'shadow') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#overview",
+      "oldCliRoute": "astryx docs elevation overview",
+      "oldDocsiteUrl": "/docs/elevation#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#elevation-scale",
+      "oldCliRoute": "astryx docs elevation elevation-scale",
+      "oldDocsiteUrl": "/docs/elevation#elevation-scale",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#choosing-a-level",
+      "oldCliRoute": "astryx docs elevation choosing-a-level",
+      "oldDocsiteUrl": "/docs/elevation#choosing-a-level",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#the-elevation-prop",
+      "oldCliRoute": "astryx docs elevation the-elevation-prop",
+      "oldDocsiteUrl": "/docs/elevation#the-elevation-prop",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#usage",
+      "oldCliRoute": "astryx docs elevation usage",
+      "oldDocsiteUrl": "/docs/elevation#usage",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "elevation#best-practices",
+      "oldCliRoute": "astryx docs elevation best-practices",
+      "oldDocsiteUrl": "/docs/elevation#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of elevation under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "getting-started",
+      "oldCliRoute": "astryx docs getting-started",
+      "oldDocsiteUrl": "/docs/getting-started",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Entry guide: the docsite redirects /docs here, and it links out to migration, styling, theme and tokens. Nothing places it under another topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#quick-start-with-ai",
+      "oldCliRoute": "astryx docs getting-started quick-start-with-ai",
+      "oldDocsiteUrl": "/docs/getting-started#quick-start-with-ai",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#install",
+      "oldCliRoute": "astryx docs getting-started install",
+      "oldDocsiteUrl": "/docs/getting-started#install",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#add-the-theme-css",
+      "oldCliRoute": "astryx docs getting-started add-the-theme-css",
+      "oldDocsiteUrl": "/docs/getting-started#add-the-theme-css",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#add-your-first-component",
+      "oldCliRoute": "astryx docs getting-started add-your-first-component",
+      "oldDocsiteUrl": "/docs/getting-started#add-your-first-component",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#customize-with-stylex",
+      "oldCliRoute": "astryx docs getting-started customize-with-stylex",
+      "oldDocsiteUrl": "/docs/getting-started#customize-with-stylex",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#example-apps",
+      "oldCliRoute": "astryx docs getting-started example-apps",
+      "oldDocsiteUrl": "/docs/getting-started#example-apps",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "getting-started#explore-the-cli",
+      "oldCliRoute": "astryx docs getting-started explore-the-cli",
+      "oldDocsiteUrl": "/docs/getting-started#explore-the-cli",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of getting-started under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "icons",
+      "oldCliRoute": "astryx docs icons",
+      "oldDocsiteUrl": "/docs/icons",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Shares only the 'foundations' category label with the token pages; it has no tokenCategory and no topic links to it.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "icons#available-names",
+      "oldCliRoute": "astryx docs icons available-names",
+      "oldDocsiteUrl": "/docs/icons#available-names",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of icons under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "icons#custom-icons",
+      "oldCliRoute": "astryx docs icons custom-icons",
+      "oldDocsiteUrl": "/docs/icons#custom-icons",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of icons under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "icons#theme-overrides",
+      "oldCliRoute": "astryx docs icons theme-overrides",
+      "oldDocsiteUrl": "/docs/icons#theme-overrides",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of icons under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "icons#component-and-library-icons",
+      "oldCliRoute": "astryx docs icons component-and-library-icons",
+      "oldDocsiteUrl": "/docs/icons#component-and-library-icons",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of icons under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "icons#adding-new-icons",
+      "oldCliRoute": "astryx docs icons adding-new-icons",
+      "oldDocsiteUrl": "/docs/icons#adding-new-icons",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of icons under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "illustrations",
+      "oldCliRoute": "astryx docs illustrations",
+      "oldDocsiteUrl": "/docs/illustrations",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Shares only the 'foundations' category label with the token pages; it has no tokenCategory and no topic links to it.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "illustrations#when-to-use",
+      "oldCliRoute": "astryx docs illustrations when-to-use",
+      "oldDocsiteUrl": "/docs/illustrations#when-to-use",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of illustrations under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "illustrations#guidelines",
+      "oldCliRoute": "astryx docs illustrations guidelines",
+      "oldDocsiteUrl": "/docs/illustrations#guidelines",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of illustrations under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "illustrations#placement",
+      "oldCliRoute": "astryx docs illustrations placement",
+      "oldDocsiteUrl": "/docs/illustrations#placement",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of illustrations under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "internationalization",
+      "oldCliRoute": "astryx docs internationalization",
+      "oldDocsiteUrl": "/docs/internationalization",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Standalone guide: no topic links to it, and nothing authored places it under another topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#quick-start",
+      "oldCliRoute": "astryx docs internationalization quick-start",
+      "oldDocsiteUrl": "/docs/internationalization#quick-start",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#runtime-language-swap",
+      "oldCliRoute": "astryx docs internationalization runtime-language-swap",
+      "oldDocsiteUrl": "/docs/internationalization#runtime-language-swap",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#text-direction-rtl",
+      "oldCliRoute": "astryx docs internationalization text-direction-rtl",
+      "oldDocsiteUrl": "/docs/internationalization#text-direction-rtl",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#overriding-astryx-s-default-text",
+      "oldCliRoute": "astryx docs internationalization overriding-astryx-s-default-text",
+      "oldDocsiteUrl": "/docs/internationalization#overriding-astryx-s-default-text",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#using-astryx-with-your-own-i18n-library",
+      "oldCliRoute": "astryx docs internationalization using-astryx-with-your-own-i18n-library",
+      "oldDocsiteUrl": "/docs/internationalization#using-astryx-with-your-own-i18n-library",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#using-astryx-as-your-i18n-library",
+      "oldCliRoute": "astryx docs internationalization using-astryx-as-your-i18n-library",
+      "oldDocsiteUrl": "/docs/internationalization#using-astryx-as-your-i18n-library",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#testing-your-translations",
+      "oldCliRoute": "astryx docs internationalization testing-your-translations",
+      "oldDocsiteUrl": "/docs/internationalization#testing-your-translations",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "internationalization#for-contributors",
+      "oldCliRoute": "astryx docs internationalization for-contributors",
+      "oldDocsiteUrl": "/docs/internationalization#for-contributors",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of internationalization under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "layout",
+      "oldCliRoute": "astryx docs layout",
+      "oldDocsiteUrl": "/docs/layout",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Standalone guide, linked from principles. The `layout` command group has its own command docs (generated bucket), so they are not children of this topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "layout#overview",
+      "oldCliRoute": "astryx docs layout overview",
+      "oldDocsiteUrl": "/docs/layout#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of layout under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "layout#scaffold",
+      "oldCliRoute": "astryx docs layout scaffold",
+      "oldDocsiteUrl": "/docs/layout#scaffold",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of layout under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "layout#structure",
+      "oldCliRoute": "astryx docs layout structure",
+      "oldDocsiteUrl": "/docs/layout#structure",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of layout under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "layout#spacing",
+      "oldCliRoute": "astryx docs layout spacing",
+      "oldDocsiteUrl": "/docs/layout#spacing",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of layout under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "layout#breakpoints",
+      "oldCliRoute": "astryx docs layout breakpoints",
+      "oldDocsiteUrl": "/docs/layout#breakpoints",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of layout under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "migration",
+      "oldCliRoute": "astryx docs migration",
+      "oldDocsiteUrl": "/docs/migration",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "One incremental guide (Tailwind, shadcn, Radix): its sections are the steps of that guide, and it only links out (styling, theme). Version upgrades are the `upgrade` command doc, and the draft shadcn-compatibility file is not a route, so no topic would sit under a migration namespace.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#overview",
+      "oldCliRoute": "astryx docs migration overview",
+      "oldDocsiteUrl": "/docs/migration#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#recommended-order",
+      "oldCliRoute": "astryx docs migration recommended-order",
+      "oldDocsiteUrl": "/docs/migration#recommended-order",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#cli-workflow",
+      "oldCliRoute": "astryx docs migration cli-workflow",
+      "oldDocsiteUrl": "/docs/migration#cli-workflow",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#theme-and-css-setup",
+      "oldCliRoute": "astryx docs migration theme-and-css-setup",
+      "oldDocsiteUrl": "/docs/migration#theme-and-css-setup",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#cascade-layer-safety",
+      "oldCliRoute": "astryx docs migration cascade-layer-safety",
+      "oldDocsiteUrl": "/docs/migration#cascade-layer-safety",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#foundation-smoke-test",
+      "oldCliRoute": "astryx docs migration foundation-smoke-test",
+      "oldDocsiteUrl": "/docs/migration#foundation-smoke-test",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#move-the-app-frame-first",
+      "oldCliRoute": "astryx docs migration move-the-app-frame-first",
+      "oldDocsiteUrl": "/docs/migration#move-the-app-frame-first",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#map-shadcn-and-radix-primitives",
+      "oldCliRoute": "astryx docs migration map-shadcn-and-radix-primitives",
+      "oldDocsiteUrl": "/docs/migration#map-shadcn-and-radix-primitives",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#command-palette-settings-and-theme",
+      "oldCliRoute": "astryx docs migration command-palette-settings-and-theme",
+      "oldDocsiteUrl": "/docs/migration#command-palette-settings-and-theme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#verification-checklist",
+      "oldCliRoute": "astryx docs migration verification-checklist",
+      "oldDocsiteUrl": "/docs/migration#verification-checklist",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "migration#ai-migration-prompt",
+      "oldCliRoute": "astryx docs migration ai-migration-prompt",
+      "oldDocsiteUrl": "/docs/migration#ai-migration-prompt",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of migration under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "motion",
+      "oldCliRoute": "astryx docs motion",
+      "oldDocsiteUrl": "/docs/motion",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'duration') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#overview",
+      "oldCliRoute": "astryx docs motion overview",
+      "oldDocsiteUrl": "/docs/motion#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#duration",
+      "oldCliRoute": "astryx docs motion duration",
+      "oldDocsiteUrl": "/docs/motion#duration",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#easing",
+      "oldCliRoute": "astryx docs motion easing",
+      "oldDocsiteUrl": "/docs/motion#easing",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#where-motion-helps",
+      "oldCliRoute": "astryx docs motion where-motion-helps",
+      "oldDocsiteUrl": "/docs/motion#where-motion-helps",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#where-motion-hurts",
+      "oldCliRoute": "astryx docs motion where-motion-hurts",
+      "oldDocsiteUrl": "/docs/motion#where-motion-hurts",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#movement-principles",
+      "oldCliRoute": "astryx docs motion movement-principles",
+      "oldDocsiteUrl": "/docs/motion#movement-principles",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#respecting-user-preferences",
+      "oldCliRoute": "astryx docs motion respecting-user-preferences",
+      "oldDocsiteUrl": "/docs/motion#respecting-user-preferences",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#usage",
+      "oldCliRoute": "astryx docs motion usage",
+      "oldDocsiteUrl": "/docs/motion#usage",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "motion#best-practices",
+      "oldCliRoute": "astryx docs motion best-practices",
+      "oldDocsiteUrl": "/docs/motion#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of motion under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "principles",
+      "oldCliRoute": "astryx docs principles",
+      "oldDocsiteUrl": "/docs/principles",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Cross-cutting rules that link out to layout, styling and tokens. No topic links to it, and nothing places it under another topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "principles#design-philosophy",
+      "oldCliRoute": "astryx docs principles design-philosophy",
+      "oldDocsiteUrl": "/docs/principles#design-philosophy",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of principles under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "principles#rules",
+      "oldCliRoute": "astryx docs principles rules",
+      "oldDocsiteUrl": "/docs/principles#rules",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of principles under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "principles#styling-approach",
+      "oldCliRoute": "astryx docs principles styling-approach",
+      "oldDocsiteUrl": "/docs/principles#styling-approach",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of principles under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "principles#anti-patterns",
+      "oldCliRoute": "astryx docs principles anti-patterns",
+      "oldDocsiteUrl": "/docs/principles#anti-patterns",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of principles under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "principles#design-tokens",
+      "oldCliRoute": "astryx docs principles design-tokens",
+      "oldDocsiteUrl": "/docs/principles#design-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of principles under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "shape",
+      "oldCliRoute": "astryx docs shape",
+      "oldDocsiteUrl": "/docs/shape",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'radius') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "shape#overview",
+      "oldCliRoute": "astryx docs shape overview",
+      "oldDocsiteUrl": "/docs/shape#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of shape under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "shape#radius-scale",
+      "oldCliRoute": "astryx docs shape radius-scale",
+      "oldDocsiteUrl": "/docs/shape#radius-scale",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of shape under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "shape#concentric-radius",
+      "oldCliRoute": "astryx docs shape concentric-radius",
+      "oldDocsiteUrl": "/docs/shape#concentric-radius",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of shape under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "shape#best-practices",
+      "oldCliRoute": "astryx docs shape best-practices",
+      "oldDocsiteUrl": "/docs/shape#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of shape under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "spacing",
+      "oldCliRoute": "astryx docs spacing",
+      "oldDocsiteUrl": "/docs/spacing",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'spacing') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "spacing#overview",
+      "oldCliRoute": "astryx docs spacing overview",
+      "oldDocsiteUrl": "/docs/spacing#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of spacing under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "spacing#scale",
+      "oldCliRoute": "astryx docs spacing scale",
+      "oldDocsiteUrl": "/docs/spacing#scale",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of spacing under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "spacing#usage",
+      "oldCliRoute": "astryx docs spacing usage",
+      "oldDocsiteUrl": "/docs/spacing#usage",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of spacing under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "spacing#best-practices",
+      "oldCliRoute": "astryx docs spacing best-practices",
+      "oldDocsiteUrl": "/docs/spacing#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of spacing under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "styling-libraries",
+      "oldCliRoute": "astryx docs styling-libraries",
+      "oldDocsiteUrl": "/docs/styling-libraries",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Two topics send readers here: styling (Overview, Tailwind Integration) and theme (useTheme Hook). With no single parent, only the hyphen would put it under styling, and a hyphen alone is not evidence.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#core-principle",
+      "oldCliRoute": "astryx docs styling-libraries core-principle",
+      "oldDocsiteUrl": "/docs/styling-libraries#core-principle",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#choose-an-integration-path",
+      "oldCliRoute": "astryx docs styling-libraries choose-an-integration-path",
+      "oldDocsiteUrl": "/docs/styling-libraries#choose-an-integration-path",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#best-practices",
+      "oldCliRoute": "astryx docs styling-libraries best-practices",
+      "oldDocsiteUrl": "/docs/styling-libraries#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#plain-css-and-css-modules",
+      "oldCliRoute": "astryx docs styling-libraries plain-css-and-css-modules",
+      "oldDocsiteUrl": "/docs/styling-libraries#plain-css-and-css-modules",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#stylex",
+      "oldCliRoute": "astryx docs styling-libraries stylex",
+      "oldDocsiteUrl": "/docs/styling-libraries#stylex",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#tailwind",
+      "oldCliRoute": "astryx docs styling-libraries tailwind",
+      "oldDocsiteUrl": "/docs/styling-libraries#tailwind",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#panda-chakra-and-other-semantic-token-systems",
+      "oldCliRoute": "astryx docs styling-libraries panda-chakra-and-other-semantic-token-systems",
+      "oldDocsiteUrl": "/docs/styling-libraries#panda-chakra-and-other-semantic-token-systems",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#mui-and-palette-based-themes",
+      "oldCliRoute": "astryx docs styling-libraries mui-and-palette-based-themes",
+      "oldDocsiteUrl": "/docs/styling-libraries#mui-and-palette-based-themes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#emotion-styled-components-theme-ui-and-styled-system",
+      "oldCliRoute": "astryx docs styling-libraries emotion-styled-components-theme-ui-and-styled-system",
+      "oldDocsiteUrl": "/docs/styling-libraries#emotion-styled-components-theme-ui-and-styled-system",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#unocss-and-custom-utility-systems",
+      "oldCliRoute": "astryx docs styling-libraries unocss-and-custom-utility-systems",
+      "oldDocsiteUrl": "/docs/styling-libraries#unocss-and-custom-utility-systems",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#non-css-processing",
+      "oldCliRoute": "astryx docs styling-libraries non-css-processing",
+      "oldDocsiteUrl": "/docs/styling-libraries#non-css-processing",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#non-css-processing-best-practices",
+      "oldCliRoute": "astryx docs styling-libraries non-css-processing-best-practices",
+      "oldDocsiteUrl": "/docs/styling-libraries#non-css-processing-best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling-libraries#interop-checklist",
+      "oldCliRoute": "astryx docs styling-libraries interop-checklist",
+      "oldDocsiteUrl": "/docs/styling-libraries#interop-checklist",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling-libraries under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "styling",
+      "oldCliRoute": "astryx docs styling",
+      "oldDocsiteUrl": "/docs/styling",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Linked from six topics (getting-started, migration, principles, theme, tokens, working-with-ai). No topic or authored field places it under another topic.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#overview",
+      "oldCliRoute": "astryx docs styling overview",
+      "oldDocsiteUrl": "/docs/styling#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#xstyle-prop",
+      "oldCliRoute": "astryx docs styling xstyle-prop",
+      "oldDocsiteUrl": "/docs/styling#xstyle-prop",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#tailwind-integration",
+      "oldCliRoute": "astryx docs styling tailwind-integration",
+      "oldDocsiteUrl": "/docs/styling#tailwind-integration",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#classname-and-style-props",
+      "oldCliRoute": "astryx docs styling classname-and-style-props",
+      "oldDocsiteUrl": "/docs/styling#classname-and-style-props",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#rest-props-prop-drilling",
+      "oldCliRoute": "astryx docs styling rest-props-prop-drilling",
+      "oldDocsiteUrl": "/docs/styling#rest-props-prop-drilling",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#compound-components",
+      "oldCliRoute": "astryx docs styling compound-components",
+      "oldDocsiteUrl": "/docs/styling#compound-components",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#preferred-selector-surface-data-attributes",
+      "oldCliRoute": "astryx docs styling preferred-selector-surface-data-attributes",
+      "oldDocsiteUrl": "/docs/styling#preferred-selector-surface-data-attributes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#deprecated-bare-prop-and-state-classes",
+      "oldCliRoute": "astryx docs styling deprecated-bare-prop-and-state-classes",
+      "oldDocsiteUrl": "/docs/styling#deprecated-bare-prop-and-state-classes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#design-tokens",
+      "oldCliRoute": "astryx docs styling design-tokens",
+      "oldDocsiteUrl": "/docs/styling#design-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#stylex-build-setup-required-for-swizzled-components",
+      "oldCliRoute": "astryx docs styling stylex-build-setup-required-for-swizzled-components",
+      "oldDocsiteUrl": "/docs/styling#stylex-build-setup-required-for-swizzled-components",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "styling#what-not-to-do",
+      "oldCliRoute": "astryx docs styling what-not-to-do",
+      "oldDocsiteUrl": "/docs/styling#what-not-to-do",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of styling under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "theme",
+      "oldCliRoute": "astryx docs theme",
+      "oldDocsiteUrl": "/docs/theme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Linked from getting-started, migration, styling and tokens, and its --dense and --zh overlays resolve by this route. The theme descriptors and the `theme` command docs are typed descriptors (generated bucket), so nothing authored would sit under a theme namespace.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#quick-start",
+      "oldCliRoute": "astryx docs theme quick-start",
+      "oldDocsiteUrl": "/docs/theme#quick-start",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#available-themes",
+      "oldCliRoute": "astryx docs theme available-themes",
+      "oldDocsiteUrl": "/docs/theme#available-themes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#theme-props",
+      "oldCliRoute": "astryx docs theme theme-props",
+      "oldDocsiteUrl": "/docs/theme#theme-props",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#using-a-theme-from-an-integration",
+      "oldCliRoute": "astryx docs theme using-a-theme-from-an-integration",
+      "oldDocsiteUrl": "/docs/theme#using-a-theme-from-an-integration",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#creating-a-custom-theme",
+      "oldCliRoute": "astryx docs theme creating-a-custom-theme",
+      "oldDocsiteUrl": "/docs/theme#creating-a-custom-theme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#definetheme",
+      "oldCliRoute": "astryx docs theme definetheme",
+      "oldDocsiteUrl": "/docs/theme#definetheme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#extending-a-theme",
+      "oldCliRoute": "astryx docs theme extending-a-theme",
+      "oldDocsiteUrl": "/docs/theme#extending-a-theme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#theme-adaptations",
+      "oldCliRoute": "astryx docs theme theme-adaptations",
+      "oldDocsiteUrl": "/docs/theme#theme-adaptations",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#component-style-overrides",
+      "oldCliRoute": "astryx docs theme component-style-overrides",
+      "oldDocsiteUrl": "/docs/theme#component-style-overrides",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#custom-variants",
+      "oldCliRoute": "astryx docs theme custom-variants",
+      "oldDocsiteUrl": "/docs/theme#custom-variants",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#building-themes-for-production",
+      "oldCliRoute": "astryx docs theme building-themes-for-production",
+      "oldDocsiteUrl": "/docs/theme#building-themes-for-production",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#building-a-theme-family",
+      "oldCliRoute": "astryx docs theme building-a-theme-family",
+      "oldDocsiteUrl": "/docs/theme#building-a-theme-family",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#runtime-vs-built-themes",
+      "oldCliRoute": "astryx docs theme runtime-vs-built-themes",
+      "oldDocsiteUrl": "/docs/theme#runtime-vs-built-themes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#light-dark-mode",
+      "oldCliRoute": "astryx docs theme light-dark-mode",
+      "oldDocsiteUrl": "/docs/theme#light-dark-mode",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#nesting-themes",
+      "oldCliRoute": "astryx docs theme nesting-themes",
+      "oldDocsiteUrl": "/docs/theme#nesting-themes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#token-utilities",
+      "oldCliRoute": "astryx docs theme token-utilities",
+      "oldDocsiteUrl": "/docs/theme#token-utilities",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#usetheme-hook",
+      "oldCliRoute": "astryx docs theme usetheme-hook",
+      "oldDocsiteUrl": "/docs/theme#usetheme-hook",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "tokens",
+      "oldCliRoute": "astryx docs tokens",
+      "oldDocsiteUrl": "/docs/tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Complete token reference. The six token-category pages pull their tables from it by token reference, which is a reference, not containment: each keeps its own route.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#color-tokens",
+      "oldCliRoute": "astryx docs tokens color-tokens",
+      "oldDocsiteUrl": "/docs/tokens#color-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#spacing-tokens",
+      "oldCliRoute": "astryx docs tokens spacing-tokens",
+      "oldDocsiteUrl": "/docs/tokens#spacing-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#size-tokens",
+      "oldCliRoute": "astryx docs tokens size-tokens",
+      "oldDocsiteUrl": "/docs/tokens#size-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#border-tokens",
+      "oldCliRoute": "astryx docs tokens border-tokens",
+      "oldDocsiteUrl": "/docs/tokens#border-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#focus-tokens",
+      "oldCliRoute": "astryx docs tokens focus-tokens",
+      "oldDocsiteUrl": "/docs/tokens#focus-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#radius-tokens",
+      "oldCliRoute": "astryx docs tokens radius-tokens",
+      "oldDocsiteUrl": "/docs/tokens#radius-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#shadow-tokens",
+      "oldCliRoute": "astryx docs tokens shadow-tokens",
+      "oldDocsiteUrl": "/docs/tokens#shadow-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#duration-tokens",
+      "oldCliRoute": "astryx docs tokens duration-tokens",
+      "oldDocsiteUrl": "/docs/tokens#duration-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#easing-tokens",
+      "oldCliRoute": "astryx docs tokens easing-tokens",
+      "oldDocsiteUrl": "/docs/tokens#easing-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#font-family-tokens",
+      "oldCliRoute": "astryx docs tokens font-family-tokens",
+      "oldDocsiteUrl": "/docs/tokens#font-family-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#font-size-tokens",
+      "oldCliRoute": "astryx docs tokens font-size-tokens",
+      "oldDocsiteUrl": "/docs/tokens#font-size-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#font-weight-tokens",
+      "oldCliRoute": "astryx docs tokens font-weight-tokens",
+      "oldDocsiteUrl": "/docs/tokens#font-weight-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#type-scale-tokens",
+      "oldCliRoute": "astryx docs tokens type-scale-tokens",
+      "oldDocsiteUrl": "/docs/tokens#type-scale-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "tokens#usage-in-stylex",
+      "oldCliRoute": "astryx docs tokens usage-in-stylex",
+      "oldDocsiteUrl": "/docs/tokens#usage-in-stylex",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "typography",
+      "oldCliRoute": "astryx docs typography",
+      "oldDocsiteUrl": "/docs/typography",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Token-category page (tokenCategory 'typography') whose tables come from `tokens` through token references. Only the docsite's 'foundations' category label groups it with the other token pages, and a label alone is not evidence for a route segment.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#overview",
+      "oldCliRoute": "astryx docs typography overview",
+      "oldDocsiteUrl": "/docs/typography#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#font-families",
+      "oldCliRoute": "astryx docs typography font-families",
+      "oldDocsiteUrl": "/docs/typography#font-families",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#loading-custom-fonts",
+      "oldCliRoute": "astryx docs typography loading-custom-fonts",
+      "oldDocsiteUrl": "/docs/typography#loading-custom-fonts",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#font-sizes",
+      "oldCliRoute": "astryx docs typography font-sizes",
+      "oldDocsiteUrl": "/docs/typography#font-sizes",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#font-weights",
+      "oldCliRoute": "astryx docs typography font-weights",
+      "oldDocsiteUrl": "/docs/typography#font-weights",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#line-height",
+      "oldCliRoute": "astryx docs typography line-height",
+      "oldDocsiteUrl": "/docs/typography#line-height",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#type-scale",
+      "oldCliRoute": "astryx docs typography type-scale",
+      "oldDocsiteUrl": "/docs/typography#type-scale",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#display-text",
+      "oldCliRoute": "astryx docs typography display-text",
+      "oldDocsiteUrl": "/docs/typography#display-text",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#usage",
+      "oldCliRoute": "astryx docs typography usage",
+      "oldDocsiteUrl": "/docs/typography#usage",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "typography#best-practices",
+      "oldCliRoute": "astryx docs typography best-practices",
+      "oldDocsiteUrl": "/docs/typography#best-practices",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of typography under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
+      "id": "working-with-ai",
+      "oldCliRoute": "astryx docs working-with-ai",
+      "oldDocsiteUrl": "/docs/working-with-ai",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Setup guide for AI coding tools (agent files, the hosted MCP server). It covers the reader's tooling, none of its sections is a CLI command's doc, and nothing places it under cli.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#overview",
+      "oldCliRoute": "astryx docs working-with-ai overview",
+      "oldDocsiteUrl": "/docs/working-with-ai#overview",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#quick-start",
+      "oldCliRoute": "astryx docs working-with-ai quick-start",
+      "oldDocsiteUrl": "/docs/working-with-ai#quick-start",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#what-gets-generated",
+      "oldCliRoute": "astryx docs working-with-ai what-gets-generated",
+      "oldDocsiteUrl": "/docs/working-with-ai#what-gets-generated",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#cursor-setup",
+      "oldCliRoute": "astryx docs working-with-ai cursor-setup",
+      "oldDocsiteUrl": "/docs/working-with-ai#cursor-setup",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#checking-your-setup",
+      "oldCliRoute": "astryx docs working-with-ai checking-your-setup",
+      "oldDocsiteUrl": "/docs/working-with-ai#checking-your-setup",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#the-astryx-pattern",
+      "oldCliRoute": "astryx docs working-with-ai the-astryx-pattern",
+      "oldDocsiteUrl": "/docs/working-with-ai#the-astryx-pattern",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#the-dense-flag",
+      "oldCliRoute": "astryx docs working-with-ai the-dense-flag",
+      "oldDocsiteUrl": "/docs/working-with-ai#the-dense-flag",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "working-with-ai#mcp-server",
+      "oldCliRoute": "astryx docs working-with-ai mcp-server",
+      "oldDocsiteUrl": "/docs/working-with-ai#mcp-server",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of working-with-ai under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "component",
+      "id": "@astryxdesign/core/component",
+      "provider": "@astryxdesign/core",
+      "count": 175,
+      "oldCliRoute": "astryx component <id>",
+      "oldDocsiteUrl": "/components/<id>",
+      "docsiteExceptions": {
+        "Chat": "No page: a family doc with no props of its own; its members have pages.",
+        "Indicator": "No page: a family doc with no props of its own; its members have pages.",
+        "Layer": "No page: a family doc with no props of its own; its members have pages.",
+        "NavMenu": "No page under this id: the doc declares the name NavHeadingMenu, and the page is /components/NavHeadingMenu.",
+        "Resizable": "No page: a family doc with no props of its own; its members have pages."
+      },
+      "placement": "generated:@astryxdesign/core/component",
+      "aliasNeeded": false,
+      "evidence": "No component doc authors a docs-graph placement.",
+      "rationale": "Unplaced typed descriptors go to their provider's generated bucket, not a guessed hierarchy; group and category fields are labels. The ids include the 10 core docs that `component <Name>` reads but `component --list` omits. No alias: `astryx component <id>` and /components/<id> are not docs-graph routes, and nothing here moves them.",
+      "status": "proposed"
+    },
+    {
+      "kind": "component-member",
+      "id": "@astryxdesign/core/component-member",
+      "provider": "@astryxdesign/core",
+      "count": 10,
+      "oldCliRoute": "astryx component <id>",
+      "oldDocsiteUrl": "/components/<id>",
+      "placement": "generated:@astryxdesign/core/component",
+      "aliasNeeded": true,
+      "evidence": "No doc of its own: `component <id>` resolves into another component doc, as a member of its components list or as the name the doc declares (NavMenu declares NavHeadingMenu).",
+      "rationale": "Neither `component --list` nor the compiler inputs list these names, yet each reads by name and has its own docsite page. The docs graph keeps one identity per doc file, so each name needs an alias to its parent doc.",
+      "status": "proposed"
+    },
+    {
+      "kind": "hook",
+      "id": "@astryxdesign/core/hook",
+      "provider": "@astryxdesign/core",
+      "count": 55,
+      "oldCliRoute": "astryx hook <id>",
+      "oldDocsiteUrl": "/components/<id>",
+      "placement": "generated:@astryxdesign/core/hook",
+      "aliasNeeded": false,
+      "evidence": "No hook doc authors a docs-graph placement.",
+      "rationale": "Unplaced typed descriptors go to their provider's generated bucket. The docsite serves hooks under /components/, next to components. No alias: neither route is a docs-graph route.",
+      "status": "proposed"
+    },
+    {
+      "kind": "page",
+      "id": "@astryxdesign/core/page",
+      "provider": "@astryxdesign/core",
+      "count": 54,
+      "oldCliRoute": "astryx template <id> --type page",
+      "oldDocsiteUrl": "/templates?preview=<id>",
+      "docsiteExceptions": {
+        "blank": "No docsite route: the docsite skips scaffold templates.",
+        "incident-console": "Not ready: /templates/<id> redirects to the gallery, which drops the preview without a message.",
+        "login": "Hidden from the overview: /templates/<id> redirects to the gallery, which drops the preview without a message.",
+        "messaging-shell": "Not ready: /templates/<id> redirects to the gallery, which drops the preview without a message.",
+        "table": "Hidden and not ready: /templates/<id> redirects to the gallery, which drops the preview without a message.",
+        "theme-showcase": "Hidden from the overview: /templates/<id> redirects to the gallery, which drops the preview without a message."
+      },
+      "placement": "generated:@astryxdesign/core/page",
+      "aliasNeeded": false,
+      "evidence": "No template doc authors a docs-graph placement; its category (for example 'Dashboard - Analytics') is a label.",
+      "rationale": "Unplaced typed descriptors go to their provider's generated bucket. Discovery reports built-in templates as @astryxdesign/core (the `template --list` package field) although the files ship in @astryxdesign/cli, and the provider follows discovery. /templates/<id> redirects to this canonical preview URL.",
+      "status": "proposed"
+    },
+    {
+      "kind": "block",
+      "id": "@astryxdesign/core/block",
+      "provider": "@astryxdesign/core",
+      "count": 650,
+      "oldCliRoute": "astryx template <id> --type block",
+      "oldDocsiteUrl": null,
+      "placement": "generated:@astryxdesign/core/block",
+      "aliasNeeded": false,
+      "evidence": "No block doc authors a docs-graph placement; its directory and category are not placements.",
+      "rationale": "Unplaced typed descriptors go to their provider's generated bucket. The docsite renders blocks inside component pages as showcases and examples; no block has a URL of its own. Provider follows discovery, as for pages.",
+      "status": "proposed"
+    },
+    {
+      "kind": "theme",
+      "id": "@astryxdesign/cli/theme",
+      "provider": "@astryxdesign/cli",
+      "count": 7,
+      "oldCliRoute": "astryx theme add <id>",
+      "oldDocsiteUrl": "/themes?theme=<id>",
+      "docsiteExceptions": {
+        "chocolate": "Not a docsite dependency: /themes?theme=chocolate shows Neutral without a message."
+      },
+      "placement": "generated:@astryxdesign/cli/theme",
+      "aliasNeeded": false,
+      "evidence": "No theme descriptor authors a docs-graph placement.",
+      "rationale": "Unplaced typed descriptors go to their provider's generated bucket. No read-only single-theme route exists: `astryx theme list` prints every descriptor, and `theme add <id>`, which writes files, is the only command that takes the slug.",
+      "status": "proposed"
+    },
+    {
+      "kind": "command",
+      "id": "@astryxdesign/cli/command",
+      "provider": "@astryxdesign/cli",
+      "count": 34,
+      "oldCliRoute": "astryx <id> --help",
+      "oldDocsiteUrl": null,
+      "placement": "generated:@astryxdesign/cli/command",
+      "aliasNeeded": false,
+      "evidence": "No command doc authors a docs-graph placement.",
+      "rationale": "Each CommandDoc builds its command's --help. The docs declare namespace 'cli', an older docs-index field that nothing reads; that is a candidate for a cli placement once the graph reads placement, not a placement today.",
+      "status": "proposed"
+    },
+    {
+      "kind": "function",
+      "id": "@astryxdesign/cli/function",
+      "provider": "@astryxdesign/cli",
+      "count": 41,
+      "oldCliRoute": null,
+      "oldDocsiteUrl": null,
+      "placement": "generated:@astryxdesign/cli/function",
+      "aliasNeeded": false,
+      "evidence": "No function doc authors a docs-graph placement.",
+      "rationale": "API reference for @astryxdesign/cli/api. No route of its own: a wrapping command's --help reuses its parameter descriptions. No namespace declared.",
+      "status": "proposed"
+    },
+    {
+      "kind": "schema",
+      "id": "@astryxdesign/cli/schema",
+      "provider": "@astryxdesign/cli",
+      "count": 16,
+      "oldCliRoute": null,
+      "oldDocsiteUrl": null,
+      "placement": "generated:@astryxdesign/cli/schema",
+      "aliasNeeded": false,
+      "evidence": "No schema doc authors a docs-graph placement.",
+      "rationale": "15 are read only as sections of `astryx docs authoring` (see those rows), and `output` has no route. They declare namespace 'authoring' (12) or 'cli' (4), the older field that nothing reads.",
+      "status": "proposed"
+    },
+    {
+      "kind": "enum",
+      "id": "@astryxdesign/cli/enum",
+      "provider": "@astryxdesign/cli",
+      "count": 2,
+      "oldCliRoute": null,
+      "oldDocsiteUrl": null,
+      "placement": "generated:@astryxdesign/cli/enum",
+      "aliasNeeded": false,
+      "evidence": "No enum doc authors a docs-graph placement.",
+      "rationale": "Error codes and response types: the CLI README's generated tables read them, and no command prints them. They declare namespace 'cli', the older field that nothing reads.",
+      "status": "proposed"
+    }
+  ]
+}
