@@ -28,6 +28,7 @@ describe('checkDeclarationValue keeps valid CSS inside one declaration', () => {
       'url(data:image/png;base64,iVBORw0KGgo=)',
     ],
     ['uppercase URL()', 'URL(data:image/svg+xml;base64,PHN2Zz4=)'],
+    ['uppercase URL with an inert brace', 'URL(data:text/plain,a{b)'],
     ['mixed-case Url() with spaces', 'Url( data:image/png;base64,iVBORw0= )'],
     ['quoted url with semicolon', 'url("data:image/svg+xml;utf8,<svg/>")'],
     ['quoted url with a quoted brace', "url('x.png?a={1;2}')"],
@@ -47,6 +48,12 @@ describe('checkDeclarationValue keeps valid CSS inside one declaration', () => {
     ['brace nested in parentheses', 'var(--x, {a})'],
     ['backslash before a newline is a delim', 'a\\\nb'],
     ['whitespace including tab and newline', 'a\t\nb'],
+    ['CRLF string continuation', '"a\\\r\nb"'],
+    ['CRLF after a hex escape in a string', '"\\61\r\nb"'],
+    ['escaped url identifier', 'u\\72l(data:image/png;base64,a)'],
+    ['null is preprocessed by CSS', 'red\u0000'],
+    ['control character inside a string', '"a\u0001b"'],
+    ['control character inside a closed comment', 'red /* \u0001 ; } */'],
     ['empty value', ''],
   ])('keeps %s', (_label, value) => {
     expect(checkDeclarationValue(value)).toBeNull();
@@ -70,6 +77,7 @@ describe('checkDeclarationValue rejects true declaration and rule breaks', () =>
     ['trailing backslash', 'red\\', 'backslash'],
     ['newline inside a string (bad string)', '"a\nb"', 'bad string'],
     ['whitespace inside an unquoted url (bad url)', 'url(a b)', 'bad url'],
+    ['uppercase bad url', 'URL(a b)', 'bad url'],
     ['quote inside an unquoted url (bad url)', 'url(a"b)', 'bad url'],
     ['paren inside an unquoted url (bad url)', 'url(a(b)', 'bad url'],
     [
@@ -77,8 +85,7 @@ describe('checkDeclarationValue rejects true declaration and rule breaks', () =>
       'url(a\\\nb)',
       'bad url',
     ],
-    ['control character', 'red\u0000', 'U+0000'],
-    ['control character inside a string', '"a\u0001b"', 'U+0001'],
+    ['control character inside an unquoted url', 'url(a\u0001b)', 'bad url'],
   ])('rejects %s', (_label, value, fragment) => {
     const reason = checkDeclarationValue(value);
     expect(reason).not.toBeNull();

@@ -26,8 +26,6 @@ export {
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
-  type ThemeCSSOptions,
-  type ThemeCSSDiagnostic,
   type ThemeRulesSplit,
   isDefinedTheme,
   tokenDefaults,

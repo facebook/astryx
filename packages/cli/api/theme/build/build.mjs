@@ -2304,22 +2304,14 @@ async function themeBuildInternal(
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
-    // Core's generator drops any declaration whose name or value could not
-    // stay one `name: value;` declaration (an unquoted `;` or brace, an
-    // unclosed string/comment/url, ...). At runtime it says so on the console;
-    // a build has a receipt, so every drop lands in `warnings` instead, where
-    // a programmatic caller can see that the CSS omits a value the generated
-    // JS still carries. A core that predates the option ignores the argument.
-    /** @type {{message: string}[]} */
+    // Older cores ignore this optional collector. Current core writes the same
+    // warning text here that runtime callers receive on the console.
+    /** @type {string[]} */
     const droppedDeclarations = [];
-    const generatorOptions = {
-      onDiagnostic: (/** @type {{message: string}} */ diagnostic) =>
-        droppedDeclarations.push(diagnostic),
-    };
 
     const {component, prose} = _generateThemeRulesSplit(
       resolvedTheme,
-      generatorOptions,
+      droppedDeclarations,
     );
     const cssParts = [];
     // Prose element defaults always ship — the `<Theme>` runtime
@@ -2339,7 +2331,7 @@ async function themeBuildInternal(
     let adaptationCss;
     try {
       adaptationCss = _generateAdaptationCSS
-        ? _generateAdaptationCSS(resolvedTheme, generatorOptions)
+        ? _generateAdaptationCSS(resolvedTheme, droppedDeclarations)
         : {component: '', prose: ''};
     } catch (error) {
       const message =
@@ -2385,12 +2377,12 @@ async function themeBuildInternal(
     // adaptations on the same resolved leaf.
     let onMediaCss = '';
     if (_generateOnMediaCSS) {
-      onMediaCss = _generateOnMediaCSS(resolvedTheme, generatorOptions);
+      onMediaCss = _generateOnMediaCSS(resolvedTheme, droppedDeclarations);
       if (onMediaCss) {
         cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
       }
     }
-    for (const {message} of droppedDeclarations) {
+    for (const message of droppedDeclarations) {
       const w = `Declaration ${message}. The generated CSS omits it; fix the value in the theme source.`;
       warningMessages.push(w);
       logger.warn(`  ⚠ ${w}`);

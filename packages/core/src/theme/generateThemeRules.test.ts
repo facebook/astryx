@@ -15,7 +15,6 @@ import {
   generateOnMediaCSS,
   generateThemeRules,
   type DefinedTheme,
-  type ThemeCSSDiagnostic,
 } from './index';
 import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
@@ -295,7 +294,9 @@ describe('generateThemeRules', () => {
         r.includes('font-family: var(--font-family-body)'),
     );
     expect(fontRule).toBeDefined();
-    expect(fontRule).toBe('  :scope {\n    font-family: var(--font-family-body);\n  }');
+    expect(fontRule).toBe(
+      '  :scope {\n    font-family: var(--font-family-body);\n  }',
+    );
   });
 
   it('emits no scope font rule when the theme declares no body font', () => {
@@ -1393,10 +1394,8 @@ describe('data visualization tokens', () => {
 describe('declaration assembly keeps values as values', () => {
   /** Run the full runtime generator, collecting every dropped declaration. */
   function generate(theme: DefinedTheme) {
-    const diagnostics: ThemeCSSDiagnostic[] = [];
-    const {component, prose} = generateThemeCSS(theme, {
-      onDiagnostic: diagnostic => diagnostics.push(diagnostic),
-    });
+    const diagnostics: string[] = [];
+    const {component, prose} = generateThemeCSS(theme, diagnostics);
     return {css: component + prose, component, prose, diagnostics};
   }
 
@@ -1594,6 +1593,11 @@ describe('declaration assembly keeps values as values', () => {
     ['a closed comment with a semicolon inside', 'red /* ; } */'],
     ['a semicolon inside a string', '"a;b"'],
     ['an escaped quote inside a string', '"a\\" ; b"'],
+    ['quoted braces', '"} body { color: red }"'],
+    ['important', 'red !important'],
+    ['nested functions', 'var(--fallback, calc(1px + 2px))'],
+    ['CRLF string continuation', '"a\\\r\nb"'],
+    ['closed comment with a control character', 'red /* \u0001 ; } */'],
     [
       'balanced brackets and parentheses',
       '[full-start] minmax(0, 1fr) [full-end]',
@@ -1667,14 +1671,9 @@ describe('declaration assembly keeps values as values', () => {
       expect(css).not.toContain('example.com');
       expect(css).not.toContain('leak');
       expect(diagnostics).toHaveLength(1);
-      expect(diagnostics[0]).toMatchObject({
-        property: path.property,
-        value,
-        location: path.location,
-      });
-      expect(diagnostics[0].reason).toContain(reason);
-      expect(diagnostics[0].message).toContain(`"${path.property}"`);
-      expect(diagnostics[0].message).toContain(path.location);
+      expect(diagnostics[0]).toContain(`"${path.property}"`);
+      expect(diagnostics[0]).toContain(path.location);
+      expect(diagnostics[0]).toContain(reason);
     });
   });
 
@@ -1709,12 +1708,8 @@ describe('declaration assembly keeps values as values', () => {
     expect(css).not.toContain('body{color:blue');
     expect(css).not.toContain('body {');
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]).toMatchObject({
-      property: '--x:red} body{color:blue',
-      value: 'red',
-      location: 'tokens',
-    });
-    expect(diagnostics[0].reason).toContain('identifier');
+    expect(diagnostics[0]).toContain('"--x:red} body{color:blue" in tokens');
+    expect(diagnostics[0]).toContain('identifier');
   });
 
   it('keeps prose rules intact when a typed token carries a payload', () => {
@@ -1732,7 +1727,7 @@ describe('declaration assembly keeps values as values', () => {
     expect(css).not.toContain('body {');
     expect(prose).toContain('font-size: var(--text-body-size);');
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0].property).toBe('--text-body-size');
+    expect(diagnostics[0]).toContain('"--text-body-size" in tokens');
   });
 
   it('falls back to the token weight when an authored Heading weight cannot stay a declaration', () => {
@@ -1749,10 +1744,9 @@ describe('declaration assembly keeps values as values', () => {
     );
     // Reported once, where the authored rule's own declarations are emitted.
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]).toMatchObject({
-      property: 'font-weight',
-      location: 'components.heading["weight:bold"]',
-    });
+    expect(diagnostics[0]).toContain(
+      '"font-weight" in components.heading["weight:bold"]',
+    );
   });
 
   it('falls back to the token weight when an inherited Heading weight cannot stay a declaration', () => {
@@ -1787,13 +1781,12 @@ describe('declaration assembly keeps values as values', () => {
     );
     expect(css).not.toContain('example.com');
     expect(css).toContain('border-radius: 8px;');
-    expect(diagnostics.length).toBeGreaterThan(0);
-    expect(
-      diagnostics.every(d => d.location === 'components.card["base"]'),
-    ).toBe(true);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toContain('"padding" in components.card["base"]');
+    expect(css).not.toContain('--astryx-card-padding');
   });
 
-  it('warns on the console only when no diagnostic handler is given', () => {
+  it('warns on the console only when no warning collector is given', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const theme = defineTheme({
       name: 'brand',
@@ -1811,14 +1804,14 @@ describe('declaration assembly keeps values as values', () => {
     );
 
     warn.mockClear();
-    const diagnostics: ThemeCSSDiagnostic[] = [];
-    generateThemeCSS(theme, {onDiagnostic: d => diagnostics.push(d)});
+    const diagnostics: string[] = [];
+    generateThemeCSS(theme, diagnostics);
     expect(warn).not.toHaveBeenCalled();
     expect(diagnostics).toHaveLength(1);
     warn.mockRestore();
   });
 
-  it('every shipped generator entry point accepts the diagnostic handler', () => {
+  it('every shipped generator entry point appends to the warning collector', () => {
     const theme = defineTheme({
       name: 'brand',
       tokens: {
@@ -1844,16 +1837,17 @@ describe('declaration assembly keeps values as values', () => {
       },
     });
     const seen: string[] = [];
-    const options = {
-      onDiagnostic: (d: ThemeCSSDiagnostic) => seen.push(d.location),
-    };
-    expect(generateThemeRules(theme, options).join('')).not.toContain(
+    expect(generateThemeRules(theme, seen).join('')).not.toContain(
       'example.com',
     );
-    expect(generateOnMediaCSS(theme, options)).not.toContain('example.com');
-    expect(generateAdaptationCSS(theme, options).component).not.toContain(
+    expect(generateOnMediaCSS(theme, seen)).not.toContain('example.com');
+    expect(generateAdaptationCSS(theme, seen).component).not.toContain(
       'example.com',
     );
-    expect(seen).toEqual(['tokens', 'onDark.tokens', 'adaptations[0].tokens']);
+    expect(seen).toEqual([
+      expect.stringContaining('in tokens:'),
+      expect.stringContaining('in onDark.tokens:'),
+      expect.stringContaining('in adaptations[0].tokens:'),
+    ]);
   });
 });

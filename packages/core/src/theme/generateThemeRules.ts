@@ -11,17 +11,15 @@
  *
  * Every consumer-supplied declaration is checked by declarationBoundary.ts
  * before it is emitted, so a value can never end its declaration or rule
- * early. A refused declaration is dropped and reported: through the optional
- * `onDiagnostic` handler every generator accepts (the build receipt), or
- * `console.warn` when none is given (the runtime).
+ * early. A refused declaration is dropped and reported in the supplied
+ * warnings array (build receipts), or through `console.warn` (runtime).
  *
  * Extracted from defineTheme.ts to reduce cyclomatic complexity and provide
  * a clear single-responsibility module for CSS generation.
  *
- * @input DefinedTheme (resolved theme object from defineTheme), optional
- *   ThemeCSSOptions
- * @output CSS rule strings, split by layer (component vs prose), plus
- *   ThemeCSSDiagnostic for each dropped declaration
+ * @input DefinedTheme (resolved theme object from defineTheme), optional warnings array
+ * @output CSS rule strings, split by layer (component vs prose), and warning text
+ *   for each dropped declaration
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
@@ -382,45 +380,15 @@ function expandContainerPadding(
 // Declaration assembly: a declaration always stays one declaration
 // =============================================================================
 
-/**
- * A declaration the generator refused to emit because its name or value
- * could not stay inside one `name: value;` declaration.
- */
-export interface ThemeCSSDiagnostic {
-  /** The property as it would have been emitted (kebab-case or custom property). */
-  property: string;
-  /** The authored value, verbatim. */
-  value: string;
-  /**
-   * Where in the theme the declaration came from, e.g. `tokens`,
-   * `components.button["variant:secondary"][":hover"]`, `onDark.tokens`,
-   * or `adaptations[0].components.card["base"]`.
-   */
-  location: string;
-  /** Why it was dropped, in CSS terms. */
-  reason: string;
-  /** The fields above as one printable sentence. */
-  message: string;
-}
+type DiagnosticSink = (message: string) => void;
 
-/** Options accepted by every theme CSS generator. */
-export interface ThemeCSSOptions {
-  /**
-   * Receives each declaration the generator dropped. When omitted, drops are
-   * reported with `console.warn`, which is what the `<Theme>` runtime wants;
-   * `astryx theme build` collects them into its receipt instead.
-   */
-  onDiagnostic?: (diagnostic: ThemeCSSDiagnostic) => void;
-}
-
-type DiagnosticSink = (diagnostic: ThemeCSSDiagnostic) => void;
-
-const warnToConsole: DiagnosticSink = diagnostic => {
-  console.warn(`[astryx theme] ${diagnostic.message}`);
+const warnToConsole: DiagnosticSink = message => {
+  console.warn(`[astryx theme] ${message}`);
 };
 
-function diagnosticSink(options: ThemeCSSOptions | undefined): DiagnosticSink {
-  return options?.onDiagnostic ?? warnToConsole;
+/** Build receipts collect warning text; runtime callers warn by default. */
+function diagnosticSink(warnings: string[] | undefined): DiagnosticSink {
+  return warnings ? message => warnings.push(message) : warnToConsole;
 }
 
 /** Shorten an authored value for a one-line message. */
@@ -436,13 +404,9 @@ function reportDrop(
   location: string,
   reason: string,
 ): void {
-  sink({
-    property,
-    value,
-    location,
-    reason,
-    message: `dropped "${property}" in ${location}: ${reason} (value: ${previewValue(value)})`,
-  });
+  sink(
+    `dropped "${property}" in ${location}: ${reason} (value: ${previewValue(value)})`,
+  );
 }
 
 /**
@@ -480,7 +444,10 @@ function joinDeclarations(
   mapProp: (prop: string) => string = p => p,
 ): string {
   const lines: string[] = [];
-  for (const [rawProp, value] of entries) {
+  for (const [rawProp, rawValue] of entries) {
+    // Legacy unenrolled tokens retain non-string values. Scan the same text
+    // interpolation has always emitted, without changing the normalized theme.
+    const value = `${rawValue}`;
     const prop = mapProp(rawProp);
     if (acceptDeclaration(prop, value, location, sink)) {
       lines.push(`    ${prop}: ${value};`);
@@ -549,10 +516,10 @@ export interface ThemeRuleSource {
 
 export function generateThemeRules(
   theme: ThemeRuleSource,
-  options?: ThemeCSSOptions,
+  warnings?: string[],
 ): string[] {
   const parts: string[] = [];
-  const sink = diagnosticSink(options);
+  const sink = diagnosticSink(warnings);
 
   // Bare prose rules reference semantic variables instead of baking the root
   // value. That lets adaptation token writes take effect through CSS alone
@@ -560,9 +527,9 @@ export function generateThemeRules(
   const val = (key: string): string => `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
-  const tokens = tokenBlock(theme, '', sink);
-  if (tokens !== null) {
-    parts.push(tokens);
+  const tokenRules = tokenBlock(theme, '', sink);
+  if (tokenRules !== null) {
+    parts.push(tokenRules);
   }
 
   // 1b. Base font — apply the theme's declared body font to the scope root.
@@ -571,7 +538,7 @@ export function generateThemeRules(
   // sets a page font. `font-family` inherits, so one rule on :scope covers
   // the tree. Only emitted when the theme declares a body font, so a bare
   // theme still contributes no scope rules of its own.
-  if (tokens['--font-family-body']) {
+  if (theme.tokens['--font-family-body']) {
     parts.push(`  :scope {\n    font-family: var(--font-family-body);\n  }`);
   }
 
@@ -742,7 +709,9 @@ function generateComponentRules(
       for (const [prop, value] of entries) {
         if (prop.startsWith(':') && typeof value === 'object') {
           pseudos.push([prop, value]);
-        } else {
+        } else if (
+          acceptDeclaration(toKebabCase(prop), `${value}`, location, sink)
+        ) {
           props.push([prop, value as string]);
         }
       }
@@ -1008,9 +977,9 @@ function generateSizeOverrides(
  */
 export function generateThemeRulesSplit(
   theme: DefinedTheme,
-  options?: ThemeCSSOptions,
+  warnings?: string[],
 ): ThemeRulesSplit {
-  const allRules = generateThemeRules(theme, options);
+  const allRules = generateThemeRules(theme, warnings);
 
   const prose: string[] = [];
   const component: string[] = [];
@@ -1036,11 +1005,11 @@ export function generateThemeRulesSplit(
  */
 export function generateOnMediaCSS(
   theme: DefinedTheme,
-  options?: ThemeCSSOptions,
+  warnings?: string[],
 ): string {
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
-  const sink = diagnosticSink(options);
+  const sink = diagnosticSink(warnings);
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
@@ -1146,9 +1115,9 @@ function generateAdaptationMediaBlock(
  */
 export function generateAdaptationCSS(
   theme: DefinedTheme,
-  options?: ThemeCSSOptions,
+  warnings?: string[],
 ): ThemeCSSOutput {
-  const sink = diagnosticSink(options);
+  const sink = diagnosticSink(warnings);
   // Built themes can reach this compiler without passing through defineTheme.
   // Validate retained metadata even when it has no rules (and therefore emits
   // no CSS): width points remain observable through AppShell and inheritance.
@@ -1233,12 +1202,9 @@ export function generateAdaptationCSS(
   return {prose: '', component: blocks.join('\n\n')};
 }
 
-/** Indent a generated rule one level further, for nesting inside `@media`. */
+/** Indent the rule start without rewriting newlines inside authored values. */
 function indentRule(rule: string): string {
-  return rule
-    .split('\n')
-    .map(line => (line.length > 0 ? `  ${line}` : line))
-    .join('\n');
+  return `  ${rule}`;
 }
 
 /**
@@ -1281,9 +1247,9 @@ export function generateDataTokenDefaultsCSS(): string {
  */
 export function generateThemeCSS(
   theme: DefinedTheme,
-  options?: ThemeCSSOptions,
+  warnings?: string[],
 ): ThemeCSSOutput {
-  const {component, prose} = generateThemeRulesSplit(theme, options);
+  const {component, prose} = generateThemeRulesSplit(theme, warnings);
   const scopeSelector = themeScopeStart(theme.name);
   const scopeTo = THEME_SCOPE_TO;
 
@@ -1303,14 +1269,14 @@ export function generateThemeCSS(
 
   // Adaptations follow the root theme in authored order. Media-surface rules
   // follow adaptations so onDark/onLight keep their specified precedence.
-  const adaptationCss = generateAdaptationCSS(theme, options);
+  const adaptationCss = generateAdaptationCSS(theme, warnings);
   if (adaptationCss.component) {
     componentCss = componentCss
       ? `${componentCss}\n\n${adaptationCss.component}`
       : adaptationCss.component;
   }
 
-  const onMediaCss = generateOnMediaCSS(theme, options);
+  const onMediaCss = generateOnMediaCSS(theme, warnings);
   if (onMediaCss) {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`

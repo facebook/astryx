@@ -50,14 +50,14 @@ function isNameChar(ch: string): boolean {
   return isNameStart(ch) || /^[0-9-]$/.test(ch);
 }
 
-/**
- * Non-printable code points per CSS Syntax §4.2. Inside an unquoted url()
- * one makes a bad-url; anywhere else the browser keeps it as a delim or
- * string content. No theme value has a reason to carry one, so the value is
- * rejected up front, before any tokenizing.
- */
+/** CSS Syntax §3.3 preprocessing, for scanning only; emitted bytes stay intact. */
+function preprocess(input: string): string {
+  return input.replace(/\r\n?|\f/g, '\n').replace(/\0/g, '\uFFFD');
+}
+
+/** Non-printable code points make an unquoted url() a bad-url token. */
 // eslint-disable-next-line no-control-regex -- these code points are the subject
-const NON_PRINTABLE = /[\x00-\x08\x0b\x0e-\x1f\x7f]/;
+const NON_PRINTABLE = /[\x01-\x08\x0b\x0e-\x1f\x7f]/;
 
 /** "Check if two code points are a valid escape" (§4.3.8). */
 function isValidEscape(input: string, pos: number): boolean {
@@ -200,6 +200,9 @@ function consumeUrl(
       }
       return {reason: 'whitespace inside an unquoted url() makes a bad url'};
     }
+    if (NON_PRINTABLE.test(ch)) {
+      return {reason: 'a non-printable character inside url() makes a bad url'};
+    }
     if (ch === '"' || ch === "'" || ch === '(') {
       return {
         reason: `"${ch}" inside an unquoted url() makes a bad url; quote the URL instead`,
@@ -224,17 +227,8 @@ const CLOSER: Record<string, string> = {'(': ')', '[': ']', '{': '}'};
  * when it can. Valid CSS a browser keeps inside one declaration always
  * returns `null`; see the file header for the exact rules.
  */
-export function checkDeclarationValue(value: string): string | null {
-  const nonPrintable = NON_PRINTABLE.exec(value);
-  if (nonPrintable) {
-    const hex = nonPrintable[0]
-      .charCodeAt(0)
-      .toString(16)
-      .toUpperCase()
-      .padStart(4, '0');
-    return `control character U+${hex} has no place in a declaration value`;
-  }
-
+export function checkDeclarationValue(input: string): string | null {
+  const value = preprocess(input);
   const open: string[] = [];
   let i = 0;
   while (i < value.length) {
@@ -340,7 +334,8 @@ export function checkDeclarationValue(value: string): string | null {
  * browser is not this check's concern; only that it cannot end the
  * declaration or leak a second one.
  */
-export function checkDeclarationName(name: string): string | null {
+export function checkDeclarationName(input: string): string | null {
+  const name = preprocess(input);
   if (name.length === 0 || !startsIdent(name, 0)) {
     return 'a property name must be a CSS identifier';
   }

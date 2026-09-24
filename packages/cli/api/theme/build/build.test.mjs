@@ -282,6 +282,25 @@ describe('themeBuild() — dropped declarations reach the receipt', () => {
     }
   });
 
+  it('generates CSS for legacy null tokens without losing neighboring declarations', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'legacy.mjs'),
+      `export default {
+        name: 'legacy',
+        tokens: {'--color-background-body': null, '--spacing-4': 12},
+        onDark: {tokens: {'--color-background-body': null}},
+        components: {button: {base: {borderRadius: '4px'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('legacy.mjs', {}, {cwd: tmpDir});
+    const css = fs.readFileSync(path.join(tmpDir, 'legacy.css'), 'utf8');
+    expect(css).toContain('--color-background-body: null;');
+    expect(css).toContain('--spacing-4: 12;');
+    expect(css).toContain('border-radius: 4px;');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
   it('keeps valid CSS that carries semicolons, and reports nothing', async () => {
     const themeFile = path.join(tmpDir, 'kept.mjs');
     fs.writeFileSync(
