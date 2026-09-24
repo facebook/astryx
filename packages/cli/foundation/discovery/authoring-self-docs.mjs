@@ -31,6 +31,8 @@ export const AUTHORING_ROOT = path.join(CLI_ROOT, 'authoring');
 export const AUTHORING_SELF_DOCS = [
   'integration/integration.doc.mjs',
   'config/config.doc.mjs',
+  'debug/debug.doc.mjs',
+  'gap-report/gap-report.doc.mjs',
   'codemod/codemod.doc.mjs',
   'identity/identity.doc.mjs',
   'doctypes/base/graph-fields.doc.mjs',
