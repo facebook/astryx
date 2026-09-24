@@ -582,6 +582,264 @@ describe('unreachable_contribution fixes cover what the move leaves behind', () 
   });
 });
 
+describe('fixes never move a contribution onto a name its root already has', () => {
+  it('asks for a new slug when the themes root already has that theme', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'themes/ocean/oceanTheme.ts': themeSource('oceanTheme'),
+      'extra/ocean/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'extra/ocean/oceanTheme.ts': themeSource('oceanTheme'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('extra/ocean/oceanTheme.doc.mjs')} Fix: themes/ocean/ is taken, so give this theme a new lower-kebab slug: move extra/ocean/ to themes/<slug>/ and set \`name\` in oceanTheme.doc.mjs to <slug>.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [['extra/ocean', 'themes/deep-ocean']],
+      write: {'themes/deep-ocean/oceanTheme.doc.mjs': themeDoc('deep-ocean')},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('asks for a new slug for a theme at the top of the codemods root', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({codemods: './codemods', themes: './themes'}),
+      'themes/ocean/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'themes/ocean/oceanTheme.ts': themeSource('oceanTheme'),
+      'codemods/1.2.0/rename.mjs': codemod,
+      'codemods/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'codemods/oceanTheme.ts': themeSource('oceanTheme'),
+    });
+
+    const move =
+      'themes/ocean/ is taken, so give this theme a new lower-kebab slug: move oceanTheme.doc.mjs and oceanTheme.ts (with any local files it imports) into themes/<slug>/ and set `name` in oceanTheme.doc.mjs to <slug>.';
+    expect(
+      (await issuesOf(dir))
+        .filter(issue => issue.code === 'codemod_outside_version')
+        .map(issue => issue.message),
+    ).toEqual([
+      `Codemod file "codemods/oceanTheme.doc.mjs" is outside a version folder, so upgrade will never load it. Fix: oceanTheme.doc.mjs has type: 'theme', so it is not a codemod; ${move}`,
+      `Codemod file "codemods/oceanTheme.ts" is outside a version folder, so upgrade will never load it. Fix: oceanTheme.ts is the source of oceanTheme.doc.mjs, which has type: 'theme', so neither is a codemod; ${move}`,
+    ]);
+
+    const fixed = follow(dir, {
+      move: [
+        ['codemods/oceanTheme.doc.mjs', 'themes/deep-ocean/oceanTheme.doc.mjs'],
+        ['codemods/oceanTheme.ts', 'themes/deep-ocean/oceanTheme.ts'],
+      ],
+      write: {'themes/deep-ocean/oceanTheme.doc.mjs': themeDoc('deep-ocean')},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('asks for a new name when the docs root already has that topic', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({docs: './docs'}),
+      'docs/guide.doc.mjs': topic('guide'),
+      'extra/guide.doc.mjs': topic('guide'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('extra/guide.doc.mjs')} Fix: docs/ already has a topic named "guide" (docs/guide.doc.mjs), so give this one a new name: rename it to <name>.doc.mjs, set its \`name\` to <name>, and move it under docs/ (the docs root).`,
+    );
+
+    const fixed = follow(dir, {
+      move: [['extra/guide.doc.mjs', 'docs/more-guide.doc.mjs']],
+      write: {'docs/more-guide.doc.mjs': topic('more-guide')},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('asks for a new name when the components root already has that component', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/Foo/Foo.doc.mjs': componentDoc('Foo'),
+      'components/Foo/Foo.tsx': componentSource('Foo'),
+      'Foo.doc.mjs': componentDoc('Foo'),
+      'Foo.tsx': componentSource('Foo'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('Foo.doc.mjs')} Fix: components/ already has a component named Foo (components/Foo/Foo.doc.mjs), so give this one a new name: rename it and Foo.tsx to <Name>.doc.mjs and <Name>.tsx, set its \`name\` to <Name>, and move them under components/ (the components root).`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['Foo.doc.mjs', 'components/FooPanel.doc.mjs'],
+        ['Foo.tsx', 'components/FooPanel.tsx'],
+      ],
+      write: {'components/FooPanel.doc.mjs': componentDoc('FooPanel')},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+    expect(
+      fs.readFileSync(path.join(fixed, 'components/Foo/Foo.doc.mjs'), 'utf-8'),
+    ).toBe(componentDoc('Foo'));
+  });
+
+  it('asks for a new name when the templates root already has that template', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
+      'templates/hero.tsx': componentSource('Hero'),
+      'extra/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
+      'extra/hero.tsx': componentSource('Hero'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('extra/hero.doc.mjs')} Fix: templates/ already has a template named hero (templates/hero.doc.mjs), so give this one a new name: rename it and hero.tsx to <name>.doc.mjs and <name>.tsx, set its \`name\` to <name>, and move them under templates/ (the templates root).`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['extra/hero.doc.mjs', 'templates/hero-wide.doc.mjs'],
+        ['extra/hero.tsx', 'templates/hero-wide.tsx'],
+      ],
+      write: {
+        'templates/hero-wide.doc.mjs': `export default {type: 'page', name: 'hero-wide', displayName: 'Hero'};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('asks for a new name when the root a fix moves out already has that topic', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './src', docs: './src/zdocs'}),
+      'src/zdocs/guide.doc.mjs': topic('guide'),
+      'src/faq.doc.mjs': topic('guide'),
+    });
+
+    const [faq] = (await issuesOf(dir)).filter(issue =>
+      issue.message.includes('Component "faq"'),
+    );
+    expect(faq.message).toBe(
+      `Component "faq" is missing its same-stem source file faq.tsx. Fix: faq.doc.mjs has type: 'generic', so it is not a component, and the components root src/ also reads the docs root src/zdocs/ inside it; move src/zdocs/ to docs/ and set \`docs: './docs'\` in astryx.integration.mjs, then give it a new name: rename it to <name>.doc.mjs, set its \`name\` to <name>, and move it into docs/.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['src/zdocs', 'docs'],
+        ['src/faq.doc.mjs', 'docs/more-guide.doc.mjs'],
+      ],
+      write: {
+        [MANIFEST]: manifest({components: './src', docs: './docs'}),
+        'docs/more-guide.doc.mjs': topic('more-guide'),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('never declares a folder that holds one topic name twice', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({}),
+      'src/guide.doc.mjs': topic('guide'),
+      'src/more/guide.doc.mjs': topic('guide'),
+    });
+
+    const [first] = (await issuesOf(dir)).filter(issue =>
+      issue.message.includes('"src/guide.doc.mjs"'),
+    );
+    expect(first.message).toBe(
+      `${unreachable('src/guide.doc.mjs')} Fix: move it into docs/ and set \`docs: './docs'\` in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [['src/guide.doc.mjs', 'docs/guide.doc.mjs']],
+      write: {[MANIFEST]: manifest({docs: './docs'})},
+    });
+    const left = await issuesOf(fixed);
+    expect(left.map(issue => issue.code)).toEqual(['unreachable_contribution']);
+    expect(left[0].message).toContain('"src/more/guide.doc.mjs"');
+  });
+});
+
+describe('theme fixes bring along what the theme imports', () => {
+  it('copies a file a moved theme folder imports from outside it', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      ...good,
+      'lib/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'lib/oceanTheme.ts': `import {tokens} from '../shared/tokens';\nexport const oceanTheme = {tokens};\n`,
+      'shared/tokens.ts': 'export const tokens = {};\n',
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('lib/oceanTheme.doc.mjs')} Fix: move lib/ to themes/ocean/ and set \`themes: './themes'\` in astryx.integration.mjs. Also copy shared/tokens.ts into themes/ocean/ and change the import of ../shared/tokens in oceanTheme.ts to ./tokens: a theme can import only files inside its own folder.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [['lib', 'themes/ocean']],
+      write: {
+        [MANIFEST]: manifest({components: './components', themes: './themes'}),
+        'themes/ocean/tokens.ts': 'export const tokens = {};\n',
+        'themes/ocean/oceanTheme.ts': `import {tokens} from './tokens';\nexport const oceanTheme = {tokens};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('copies what a theme imports from outside the folder a fix declares', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      ...good,
+      'palettes/sand/sandTheme.doc.mjs': themeDoc('sand'),
+      'palettes/sand/sandTheme.ts': `import {tokens} from '../../shared/tokens.ts';\nexport const sandTheme = {tokens};\n`,
+      'shared/tokens.ts': 'export const tokens = {};\n',
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('palettes/sand/sandTheme.doc.mjs')} Fix: set \`themes: './palettes'\` in astryx.integration.mjs. Also copy shared/tokens.ts into palettes/sand/ and change the import of ../../shared/tokens.ts in sandTheme.ts to ./tokens.ts: a theme can import only files inside its own folder.`,
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        [MANIFEST]: manifest({
+          components: './components',
+          themes: './palettes',
+        }),
+        'palettes/sand/tokens.ts': 'export const tokens = {};\n',
+        'palettes/sand/sandTheme.ts': `import {tokens} from './tokens.ts';\nexport const sandTheme = {tokens};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+});
+
+describe('a components root is offered only where every source has a doc', () => {
+  it('moves the component instead of declaring a folder with a source no doc covers', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({docs: './docs'}),
+      'docs/guide.doc.mjs': topic('guide'),
+      'ui/Button.doc.mjs': componentDoc('Button'),
+      'ui/Button.tsx': componentSource('Button'),
+      'ui/Icon.tsx': componentSource('Icon'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('ui/Button.doc.mjs')} Fix: move it and Button.tsx into components/ and set \`components: './components'\` in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['ui/Button.doc.mjs', 'components/Button.doc.mjs'],
+        ['ui/Button.tsx', 'components/Button.tsx'],
+      ],
+      write: {
+        [MANIFEST]: manifest({docs: './docs', components: './components'}),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+});
+
 describe('invalid_component fixes hold when followed', () => {
   it('names the real doc file for a .doc.ts component, and never says to delete it', async () => {
     const dir = writePackage({
@@ -785,6 +1043,59 @@ describe('invalid_component fixes hold when followed', () => {
       write: {
         [MANIFEST]: manifest({components: './components', docs: './docs'}),
       },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+});
+
+describe('component fixes never leave another root reading the new files', () => {
+  it('moves the components out of a folder another root also reads before a doc is added', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './src', docs: './src'}),
+      'src/Good.doc.mjs': componentDoc('Good'),
+      'src/Good.tsx': componentSource('Good'),
+      'src/Helper.tsx': componentSource('Helper'),
+    });
+
+    const message = only(await issuesOf(dir), 'source_without_component_doc');
+    expect(message).toBe(
+      `Component source "Helper.tsx" has no same-stem metadata file Helper.doc.mjs, so Astryx ignores it. Fix: add Helper.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields. The docs root is also src/; move the components there into components/ and set \`components: './components'\` in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['src/Good.doc.mjs', 'components/Good.doc.mjs'],
+        ['src/Good.tsx', 'components/Good.tsx'],
+        ['src/Helper.tsx', 'components/Helper.tsx'],
+      ],
+      write: {
+        [MANIFEST]: manifest({components: './components', docs: './src'}),
+        'components/Helper.doc.mjs': componentDoc('Helper'),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('never moves the components into a components/ that holds a source without a doc', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './', docs: './docs'}),
+      'Button.doc.mjs': componentDoc('Button'),
+      'Button.tsx': componentSource('Button'),
+      'docs/guide.doc.mjs': topic('guide'),
+      'components/Helper.tsx': componentSource('Helper'),
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_component');
+    expect(message).toBe(
+      `Component "guide" is missing its same-stem source file guide.tsx. Fix: guide.doc.mjs has type: 'generic', so it is not a component, and the components root is the package root, which reads every doc in the package; move the components into a folder that holds only components, and set \`components\` to that folder in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['Button.doc.mjs', 'ui/Button.doc.mjs'],
+        ['Button.tsx', 'ui/Button.tsx'],
+      ],
+      write: {[MANIFEST]: manifest({components: './ui', docs: './docs'})},
     });
     expect(await issuesOf(fixed)).toEqual([]);
   });
@@ -1009,6 +1320,35 @@ describe('codemod fixes hold when followed', () => {
       move: [
         ['codemods/oceanTheme.doc.ts', 'themes/ocean/oceanTheme.doc.mjs'],
         ['codemods/oceanTheme.ts', 'themes/ocean/oceanTheme.ts'],
+      ],
+      write: {
+        [MANIFEST]: manifest({codemods: './codemods', themes: './themes'}),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('moves a file a theme imports out of the codemods root with the theme', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({codemods: './codemods'}),
+      'codemods/1.2.0/rename.mjs': codemod,
+      'codemods/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'codemods/oceanTheme.ts': `import {tokens} from './oceanTokens';\nexport const oceanTheme = {tokens};\n`,
+      'codemods/oceanTokens.ts': 'export const tokens = {};\n',
+    });
+
+    const [tokens] = (await issuesOf(dir)).filter(issue =>
+      issue.message.includes('"codemods/oceanTokens.ts"'),
+    );
+    expect(tokens.message).toBe(
+      `Codemod file "codemods/oceanTokens.ts" is outside a version folder, so upgrade will never load it. Fix: oceanTokens.ts is imported by oceanTheme.ts, the source of oceanTheme.doc.mjs, which has type: 'theme', so none of them is a codemod; move oceanTheme.doc.mjs and oceanTheme.ts (with any local files it imports) into themes/ocean/ and set \`themes: './themes'\` in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['codemods/oceanTheme.doc.mjs', 'themes/ocean/oceanTheme.doc.mjs'],
+        ['codemods/oceanTheme.ts', 'themes/ocean/oceanTheme.ts'],
+        ['codemods/oceanTokens.ts', 'themes/ocean/oceanTokens.ts'],
       ],
       write: {
         [MANIFEST]: manifest({codemods: './codemods', themes: './themes'}),

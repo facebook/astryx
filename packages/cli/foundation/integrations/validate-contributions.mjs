@@ -32,11 +32,13 @@ import {
   createFixContext,
   DOC_CANDIDATE_RE,
   heldRootFix,
+  newComponentDocNote,
   notACodemodFix,
   notAComponentFix,
   readContributionStamp,
   sharedCodemodsRootFix,
   stampOf,
+  themeImporting,
   TEMPLATE_CANDIDATE_RE,
 } from './contribution-fixes.mjs';
 import {MANIFEST_BASENAMES} from './integrations.mjs';
@@ -177,6 +179,17 @@ async function checkCodemods(integration, issues) {
       else if (context && stamp) fix = notACodemodFix(context, full, stamp);
       else if (context && themeDoc && themeStamp?.type === 'theme') {
         fix = notACodemodFix(context, themeDoc, themeStamp, entry.name);
+      } else if (context) {
+        const owner = themeImporting(context, full);
+        if (owner) {
+          fix = notACodemodFix(
+            context,
+            owner.doc,
+            owner.stamp,
+            owner.source,
+            entry.name,
+          );
+        }
       }
       issues.push(
         issueWarning(
@@ -269,6 +282,11 @@ async function checkComponents(integration, issues) {
         );
       }
     }
+    const overlap = integration.__packageDir
+      ? newComponentDocNote(
+          (context ??= createFixContext(integration.__packageDir, integration)),
+        )
+      : '';
     for (const name of findSourceOnlyCandidates(
       integration.components,
       records.map(record => record.name),
@@ -289,7 +307,7 @@ async function checkComponents(integration, issues) {
       issues.push(
         issueWarning(
           'source_without_component_doc',
-          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields.`,
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields.${overlap}`,
         ),
       );
     }

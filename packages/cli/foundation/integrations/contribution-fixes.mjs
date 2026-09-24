@@ -318,8 +318,9 @@ function isFreeFolder(context, dir) {
 
 /**
  * Whether `dir` is one complete theme: a slug folder whose only metadata is
- * its theme descriptor, naming that folder, beside exactly one source. The
- * descriptor being fixed may lack its source; the fix asks for it.
+ * its theme descriptor, naming that folder, beside exactly one source that
+ * imports nothing outside the folder. The descriptor being fixed may lack its
+ * source or import from outside; the fix asks for both.
  * @param {FixContext} context
  * @param {string} dir
  * @param {string} [fixing]
@@ -336,7 +337,9 @@ function isCompleteTheme(context, dir, fixing) {
     descriptor.endsWith(THEME_DOC_SUFFIX) &&
     stamp?.type === 'theme' &&
     stamp.name === slug &&
-    (descriptor === fixing || sourcesBeside(descriptor, 'theme').length === 1)
+    (descriptor === fixing ||
+      (sourcesBeside(descriptor, 'theme').length === 1 &&
+        importsOutside(descriptor)?.length === 0))
   );
 }
 
@@ -393,19 +396,260 @@ function canBeRoot(context, dir, key, fixing) {
   if (!isFreeFolder(context, dir)) return false;
   if (key === 'themes') return readsAsThemesRoot(context, dir, {fixing});
   const found = candidatesUnder(context, dir);
+  if (found == null) return false;
+  const complete = found.every(file => {
+    const stamp = stampOf(context, file);
+    return (
+      stamp != null &&
+      ROOT_FOR_TYPE[stamp.type] === key &&
+      (file === fixing ||
+        stamp.type === 'generic' ||
+        sourcesBeside(file, stamp.type).length > 0)
+    );
+  });
+  const names = found.map(file => identity(context, file, key));
+  const unique = new Set(names).size === names.length;
   return (
-    found != null &&
-    found.every(file => {
-      const stamp = stampOf(context, file);
-      return (
-        stamp != null &&
-        ROOT_FOR_TYPE[stamp.type] === key &&
-        (file === fixing ||
-          stamp.type === 'generic' ||
-          sourcesBeside(file, stamp.type).length > 0)
-      );
-    })
+    complete &&
+    unique &&
+    (key !== 'components' || uncoveredSources(dir, found).length === 0)
   );
+}
+
+/**
+ * The name a root knows a contribution by, and must hold only once: a
+ * component's stem, a topic's lower-cased \`name\`, a template's path without
+ * its suffix. A file with no static name gets its path, which never repeats.
+ * @param {FixContext} context
+ * @param {string} file
+ * @param {MetadataRoot} key
+ */
+function identity(context, file, key) {
+  if (key === 'components') return docStem(file);
+  if (key === 'docs')
+    return stampOf(context, file)?.name?.toLowerCase() ?? file;
+  return path.join(path.dirname(file), docStem(file).toLowerCase());
+}
+
+/**
+ * The PascalCase \`.tsx\` files directly in a folder that no doc under it
+ * covers. A components root there warns that Astryx ignores each one.
+ * @param {string} dir
+ * @param {string[]} found the doc and template files under it
+ * @returns {string[]} their file names
+ */
+function uncoveredSources(dir, found) {
+  const covered = new Set(
+    found.filter(file => DOC_CANDIDATE_RE.test(file)).map(docStem),
+  );
+  try {
+    return fs
+      .readdirSync(dir, {withFileTypes: true})
+      .filter(entry => entry.isFile() || entry.isSymbolicLink())
+      .map(entry => entry.name)
+      .filter(name => {
+        const match = /^([A-Z][A-Za-z0-9]+)\.tsx$/u.exec(name);
+        return match != null && !covered.has(match[1]);
+      });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Whether a folder holds an entry by this name, compared the way a
+ * case-insensitive file system would.
+ * @param {string} dir
+ * @param {string} name
+ */
+function hasEntry(dir, name) {
+  const wanted = name.toLowerCase();
+  try {
+    return fs.readdirSync(dir).some(entry => entry.toLowerCase() === wanted);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What already holds the name \`file\` would take once moved to the top of
+ * \`root\`, or null when the name is free.
+ * @param {FixContext} context
+ * @param {string} file
+ * @param {ContributionStamp} stamp
+ * @param {string} root
+ * @returns {string | null} e.g. \`a topic named "guide" (docs/guide.doc.mjs)\`
+ */
+function takenIn(context, file, stamp, root) {
+  const key = ROOT_FOR_TYPE[stamp.type];
+  const stem = docStem(file);
+  const name = identity(context, path.join(root, path.basename(file)), key);
+  const same = (candidatesUnder(context, root) ?? []).find(
+    other =>
+      (key === 'templates' || DOC_CANDIDATE_RE.test(other)) &&
+      (key === 'docs'
+        ? stamp.name != null &&
+          stampOf(context, other)?.name?.toLowerCase() ===
+            stamp.name.toLowerCase()
+        : identity(context, other, key) === name),
+  );
+  if (same) {
+    const kind = {
+      components: 'component',
+      docs: 'topic',
+      templates: 'template',
+    }[/** @type {'components' | 'docs' | 'templates'} */ (key)];
+    const called = key === 'docs' ? `"${stamp.name}"` : stem;
+    return `a ${kind} named ${called} (${shown(context, same)})`;
+  }
+  const clash = [path.basename(file), ...sourcesBeside(file, stamp.type)].find(
+    entry => hasEntry(root, entry),
+  );
+  return clash ? `a file named ${clash}` : null;
+}
+
+/**
+ * The local modules a theme source reaches, read statically the way theme
+ * discovery reads them. Null when a file in the graph cannot be parsed.
+ * @param {string} entry
+ * @returns {Array<{importer: string, specifier: string, target: string}> | null}
+ */
+function localImports(entry) {
+  /** @type {Array<{importer: string, specifier: string, target: string}>} */
+  const edges = [];
+  const seen = new Set();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const file = /** @type {string} */ (queue.shift());
+    if (seen.has(file)) continue;
+    seen.add(file);
+    /** @type {string[]} */
+    const specifiers = [];
+    try {
+      const js = jscodeshift.withParser(
+        /\.(?:ts|tsx|mts)$/u.test(file) ? 'tsx' : 'babel',
+      );
+      const ast = js(fs.readFileSync(file, 'utf-8'));
+      /** @param {any} node */
+      const add = node => {
+        if (typeof node?.value === 'string') specifiers.push(node.value);
+      };
+      for (const type of [
+        js.ImportDeclaration,
+        js.ExportNamedDeclaration,
+        js.ExportAllDeclaration,
+        js.ImportExpression,
+      ]) {
+        ast.find(type).forEach((/** @type {any} */ found) => {
+          add(found.node.source);
+        });
+      }
+      ast.find(js.CallExpression).forEach((/** @type {any} */ call) => {
+        if (call.node.callee?.type === 'Import') add(call.node.arguments?.[0]);
+      });
+    } catch {
+      return null;
+    }
+    for (const specifier of specifiers) {
+      if (!specifier.startsWith('.')) continue;
+      const base = path.resolve(path.dirname(file), specifier);
+      const target = [
+        base,
+        ...THEME_MODULE_EXTENSIONS.map(extension => `${base}${extension}`),
+        ...THEME_MODULE_EXTENSIONS.map(extension =>
+          path.join(base, `index${extension}`),
+        ),
+      ].find(isFile);
+      if (!target) continue;
+      edges.push({importer: file, specifier, target});
+      if (THEME_MODULE_EXTENSIONS.includes(path.extname(target))) {
+        queue.push(target);
+      }
+    }
+  }
+  return edges;
+}
+
+/**
+ * A theme's imports that reach outside the folder its descriptor is in. Null
+ * when unknown.
+ * @param {string} file the theme descriptor
+ */
+function importsOutside(file) {
+  const [source] = sourcesBeside(file, 'theme');
+  if (!source) return [];
+  const home = path.dirname(file);
+  const edges = localImports(path.join(home, source));
+  return edges && edges.filter(edge => !pathIsInside(edge.target, home));
+}
+
+/**
+ * The sentence that brings the files a theme imports from outside its folder
+ * into the folder: discovery rejects any import that leaves it. Files move
+ * with the folder keep their paths; outside files are copied to its top.
+ * @param {FixContext} context
+ * @param {string} file the theme descriptor
+ * @param {string} destination the theme folder, as the fix names it
+ * @returns {string} a sentence with a leading space, or ''
+ */
+function themeImportNote(context, file, destination) {
+  const [source] = sourcesBeside(file, 'theme');
+  if (!source) return '';
+  const home = path.dirname(file);
+  const edges = localImports(path.join(home, source));
+  if (!edges) return '';
+  const copies = [
+    ...new Set(
+      edges
+        .map(edge => edge.target)
+        .filter(target => !pathIsInside(target, home)),
+    ),
+  ];
+  if (
+    copies.length === 0 ||
+    copies.some(target => !pathIsInside(target, context.packageDir))
+  ) {
+    return '';
+  }
+  const why = ': a theme can import only files inside its own folder.';
+  const listed = copies.map(target => shown(context, target));
+  const list =
+    listed.length === 1
+      ? listed[0]
+      : `${listed.slice(0, -1).join(', ')} and ${listed.at(-1)}`;
+  const names = copies.map(target => path.basename(target).toLowerCase());
+  if (
+    new Set(names).size !== names.length ||
+    copies.some(target => hasEntry(home, path.basename(target)))
+  ) {
+    return ` Also copy ${list} into ${destination} and point the imports of ${copies.length === 1 ? 'it at the copy' : 'them at the copies'}${why}`;
+  }
+  /** @param {string} target where a file ends up, relative to the theme folder */
+  const inTheme = target =>
+    (pathIsInside(target, home)
+      ? path.relative(home, target)
+      : path.basename(target)
+    )
+      .split(path.sep)
+      .join('/');
+  /** @type {string[]} */
+  const changes = [];
+  for (const {importer, specifier, target} of edges) {
+    const extension = path.extname(specifier);
+    let next = inTheme(target);
+    if (!(extension && target.endsWith(extension))) {
+      next = next.slice(0, next.length - path.extname(next).length);
+    }
+    next = path.posix.relative(path.posix.dirname(inTheme(importer)), next);
+    if (!next.startsWith('.')) next = `./${next}`;
+    const change = `of ${specifier} in ${path.basename(importer)} to ${next}`;
+    if (next !== specifier && !changes.includes(change)) changes.push(change);
+  }
+  const changed =
+    changes.length === 1
+      ? `the import ${changes[0]}`
+      : `the imports ${changes.slice(0, -1).join(', ')} and ${changes.at(-1)}`;
+  return ` Also copy ${list} into ${destination} and change ${changed}${why}`;
 }
 
 /**
@@ -674,9 +918,15 @@ function themeFiles(context, file, target) {
  * @param {string} file
  * @param {ContributionStamp} stamp
  * @param {string} root the themes root the theme moves under
+ * @param {string} [slug] the folder it takes there
  */
-function moveTheme(context, file, stamp, root) {
-  const slug = themeSlug(context, file, stamp);
+function moveTheme(
+  context,
+  file,
+  stamp,
+  root,
+  slug = themeSlug(context, file, stamp),
+) {
   const {what, folder} = themeFiles(context, file, path.join(root, slug));
   const target = `${root === context.packageDir ? '' : `${shown(context, root)}/`}${slug}/`;
   return folder ? `move ${what} to ${target}` : `move ${what} into ${target}`;
@@ -688,18 +938,50 @@ function moveTheme(context, file, stamp, root) {
  * @param {string} file
  * @param {ContributionStamp} stamp
  * @param {string} root
+ * @param {string} [destination] the theme folder, as the fix names it
  * @returns {{main: string, notes: string}}
  */
-function moveUnder(context, file, stamp, root) {
+function moveUnder(context, file, stamp, root, destination) {
   const key = ROOT_FOR_TYPE[stamp.type];
-  const notes = sourceNote(file, stamp.type) + overlapNote(context, root, key);
+  const overlap = overlapNote(context, root, key);
   if (key === 'themes') {
+    const slugDir = path.join(root, themeSlug(context, file, stamp));
+    const taken = hasEntry(root, path.basename(slugDir));
+    const imports = themeImportNote(
+      context,
+      file,
+      destination ??
+        (taken ? `${place(context, root)}<slug>/` : place(context, slugDir)),
+    );
+    const notes = sourceNote(file, stamp.type) + imports + overlap;
+    if (taken) {
+      return {
+        main: `${place(context, slugDir)} is taken, so give this theme a new lower-kebab slug: ${moveTheme(context, file, stamp, root, '<slug>')} and set \`name\` in ${path.basename(file)} to <slug>`,
+        notes,
+      };
+    }
     return {main: moveTheme(context, file, stamp, root), notes};
   }
   const [source] = sourcesBeside(file, stamp.type);
+  const taken = takenIn(context, file, stamp, root);
+  if (taken) {
+    const name = key === 'components' ? '<Name>' : '<name>';
+    const suffix = path.basename(file).slice(docStem(file).length);
+    const renamed = source
+      ? `rename it and ${source} to ${name}${suffix} and ${name}.tsx`
+      : `rename it to ${name}${suffix}`;
+    const missing =
+      stamp.type === 'generic' || source
+        ? ''
+        : ` Also add ${name}.tsx beside it.`;
+    return {
+      main: `${place(context, root)} already has ${taken}, so give this one a new name: ${renamed}, set its \`name\` to ${name}, and move ${source ? 'them' : 'it'} under ${place(context, root)} (the ${key} root)`,
+      notes: missing + overlap,
+    };
+  }
   return {
     main: `move ${source ? `it and ${source}` : 'it'} under ${place(context, root)} (the ${key} root)`,
-    notes,
+    notes: sourceNote(file, stamp.type) + overlap,
   };
 }
 
@@ -730,11 +1012,16 @@ function moveToNewRoot(context, file, stamp) {
         fixing: file,
       }) &&
       (slugDir === themeDir || !fs.existsSync(slugDir));
-    if (clear && slugDir === themeDir) return {main: declare, notes};
+    if (clear && slugDir === themeDir) {
+      return {
+        main: declare,
+        notes: notes + themeImportNote(context, file, place(context, themeDir)),
+      };
+    }
     if (clear) {
       return {
         main: `${moveTheme(context, file, stamp, target)} and ${declare}`,
-        notes,
+        notes: notes + themeImportNote(context, file, place(context, slugDir)),
       };
     }
     const {what, folder} = themeFiles(context, file);
@@ -742,13 +1029,17 @@ function moveToNewRoot(context, file, stamp) {
       main: folder
         ? `move ${what} into a folder that holds only themes, as ${slug}/, and ${pointAtIt}`
         : `move ${what} into a ${slug}/ folder inside a folder that holds only themes, and ${pointAtIt}`,
-      notes: picked,
+      notes:
+        notes +
+        themeImportNote(context, file, 'the theme folder') +
+        overlapNote(context, undefined, key),
     };
   }
   const [source] = sourcesBeside(file, stamp.type);
   const what = source ? `it and ${source}` : 'it';
   const clear = fs.existsSync(target)
-    ? canBeRoot(context, target, key, file)
+    ? canBeRoot(context, target, key, file) &&
+      takenIn(context, file, stamp, target) == null
     : isFreeFolder(context, target);
   if (clear) return {main: `move ${what} into ${key}/ and ${declare}`, notes};
   return {
@@ -771,24 +1062,36 @@ export function unreachableFix(context, file, stamp) {
   const folder = path.dirname(key === 'themes' ? path.dirname(file) : file);
   const declare = `set \`${key}: './${shown(context, folder)}'\` in ${context.manifest}`;
   const folderCanBeRoot = canBeRoot(context, folder, key, file);
+  const stays =
+    sourceNote(file, stamp.type) +
+    (key === 'themes'
+      ? themeImportNote(context, file, place(context, path.dirname(file)))
+      : '');
   if (root) {
     // Swapping roots would orphan whatever the declared root already reads.
     const swappable =
       folderCanBeRoot && candidatesUnder(context, root)?.length === 0;
     if (swappable && overlapNote(context, root, key) !== '') {
-      return `Fix: ${declare}.${sourceNote(file, stamp.type)}`;
+      return `Fix: ${declare}.${stays}`;
     }
-    const {main, notes} = moveUnder(context, file, stamp, root);
+    const {main, notes} = moveUnder(
+      context,
+      file,
+      stamp,
+      root,
+      swappable ? 'the theme folder' : undefined,
+    );
     return `Fix: ${main}${swappable ? `, or ${declare}` : ''}.${notes}`;
   }
-  if (folderCanBeRoot) return `Fix: ${declare}.${sourceNote(file, stamp.type)}`;
+  if (folderCanBeRoot) return `Fix: ${declare}.${stays}`;
   const {main, notes} = moveToNewRoot(context, file, stamp);
   return `Fix: ${main}.${notes}`;
 }
 
 /**
  * Whether the components can move into `dir` out of a components root at the
- * package root: it is missing, or holds only component docs and no other root.
+ * package root: it is missing, or holds only component docs, a doc for every
+ * source, and no other root.
  * @param {FixContext} context
  * @param {string} dir
  */
@@ -798,11 +1101,49 @@ function holdsOnlyComponents(context, dir) {
   return (
     found != null &&
     found.every(file => stampOf(context, file)?.type === 'component') &&
+    uncoveredSources(dir, found).length === 0 &&
     !METADATA_ROOTS.some(kind => {
       const root = context.roots[kind];
       return kind !== 'components' && root != null && pathIsInside(root, dir);
     })
   );
+}
+
+/**
+ * The step a component doc added to the components root also needs when
+ * another root reads that folder too, and would read the new doc as its own.
+ * @param {FixContext} context
+ * @returns {string} a sentence with a leading space, or ''
+ */
+export function newComponentDocNote(context) {
+  const components = context.roots.components;
+  return components ? overlapNote(context, components, 'components') : '';
+}
+
+/**
+ * The theme beside \`file\` whose source imports it, if any: such a file is
+ * part of that theme, not a codemod.
+ * @param {FixContext} context
+ * @param {string} file
+ * @returns {{doc: string, stamp: ContributionStamp, source: string} | null}
+ */
+export function themeImporting(context, file) {
+  const dir = path.dirname(file);
+  let entries;
+  try {
+    entries = fs.readdirSync(dir);
+  } catch {
+    return null;
+  }
+  for (const name of entries.filter(entry => DOC_CANDIDATE_RE.test(entry))) {
+    const doc = path.join(dir, name);
+    const stamp = stampOf(context, doc);
+    const [source] = stamp?.type === 'theme' ? sourcesBeside(doc, 'theme') : [];
+    if (!stamp || !source) continue;
+    const edges = localImports(path.join(dir, source));
+    if (edges?.some(edge => edge.target === file)) return {doc, stamp, source};
+  }
+  return null;
 }
 
 /**
@@ -813,15 +1154,20 @@ function holdsOnlyComponents(context, dir) {
  * @param {string} file the metadata doc
  * @param {ContributionStamp} stamp
  * @param {string} [source]
+ * @param {string} [stray] a file that source imports, when the stray file is
+ *   that one
  * @returns {string}
  */
-export function notACodemodFix(context, file, stamp, source) {
+export function notACodemodFix(context, file, stamp, source, stray) {
   const key = ROOT_FOR_TYPE[stamp.type];
   const root = context.roots[key];
   const codemods = context.roots.codemods;
-  const lead = source
-    ? `Fix: ${source} is the source of ${path.basename(file)}, which has type: '${stamp.type}', so neither is a codemod`
-    : `Fix: ${path.basename(file)} has type: '${stamp.type}', so it is not a codemod`;
+  let lead = `Fix: ${path.basename(file)} has type: '${stamp.type}', so it is not a codemod`;
+  if (source && stray) {
+    lead = `Fix: ${stray} is imported by ${source}, the source of ${path.basename(file)}, which has type: '${stamp.type}', so none of them is a codemod`;
+  } else if (source) {
+    lead = `Fix: ${source} is the source of ${path.basename(file)}, which has type: '${stamp.type}', so neither is a codemod`;
+  }
   if (root && codemods && pathIsInside(file, root)) {
     // Its own root reads it already; only the codemods root is in the way.
     const [companion] = sourcesBeside(file, stamp.type);
@@ -895,10 +1241,28 @@ function separateRoots(context, file, stamp, root) {
   }
   const overlap = `the components root ${place(context, components)} also reads the ${key} root ${place(context, root)} inside it`;
   const carried = pathIsInside(file, root);
+  // The root's contents move with it, so a name it holds is still taken.
+  const slug = themeSlug(context, file, stamp);
+  const taken =
+    !carried &&
+    (key === 'themes'
+      ? hasEntry(root, slug)
+      : takenIn(context, file, stamp, root) != null);
+  const [source] = sourcesBeside(file, stamp.type);
+  const name = '<name>';
+  const suffix = path.basename(file).slice(docStem(file).length);
+  const renamed = `give it a new name: ${source ? `rename it and ${source} to ${name}${suffix} and ${name}.tsx` : `rename it to ${name}${suffix}`}, set its \`name\` to ${name}, and move ${source ? 'them' : 'it'}`;
+  const newSlug = taken ? '<slug>' : slug;
+  const slugNote = taken
+    ? ` and set \`name\` in ${path.basename(file)} to <slug>`
+    : '';
   if (free) {
-    const then = carried
-      ? ''
-      : `, then ${key === 'themes' ? moveTheme(context, file, stamp, target) : `move it into ${key}/`}`;
+    let then = '';
+    if (!carried && key === 'themes') {
+      then = `, then ${moveTheme(context, file, stamp, target, newSlug)}${slugNote}`;
+    } else if (!carried) {
+      then = `, then ${taken ? renamed : 'move it'} into ${key}/`;
+    }
     return {
       main: `${overlap}; move ${place(context, root)} to ${key}/ and set \`${key}: './${key}'\` in ${context.manifest}${then}`,
       notes: '',
@@ -907,12 +1271,11 @@ function separateRoots(context, file, stamp, root) {
   let then = '';
   if (!carried && key === 'themes') {
     const {what, folder} = themeFiles(context, file, root);
-    const slug = themeSlug(context, file, stamp);
     then = folder
-      ? `, then move ${what} into that root as ${slug}/`
-      : `, then move ${what} into a ${slug}/ folder in that root`;
+      ? `, then move ${what} into that root as ${newSlug}/${slugNote}`
+      : `, then move ${what} into a ${newSlug}/ folder in that root${slugNote}`;
   } else if (!carried) {
-    then = ', then move it into that root';
+    then = `, then ${taken ? renamed : 'move it'} into that root`;
   }
   return {
     main: `${overlap}; move ${place(context, root)} out of ${place(context, components)} and set \`${key}\` to its new path in ${context.manifest}${then}`,
