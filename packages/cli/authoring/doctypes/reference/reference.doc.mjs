@@ -140,6 +140,10 @@ export const docs = {
   notes: [
     {
       type: 'prose',
+      text: 'A stamped generic doc without `title`, `description` or `sections` still loads, as older codemod output does; its title falls back to `displayName` or `name`. Without a description and sections it is not a usable topic, and `astryx doctor` reports it.',
+    },
+    {
+      type: 'prose',
       text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. workflow, collection, and reference are declared for the docs graph: they parse, but topic loading rejects them until the docs graph ships. choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {

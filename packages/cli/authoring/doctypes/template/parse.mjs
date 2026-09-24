@@ -13,6 +13,8 @@ import {AuthoredDocGraphFields} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
 /** @typedef {import('../types').TemplateDoc} TemplateDoc */
+/** @typedef {import('./type').PageTemplateDoc} PageTemplateDoc */
+/** @typedef {import('./type').BlockTemplateDoc} BlockTemplateDoc */
 
 const previewSchema = z
   .object({
@@ -66,6 +68,36 @@ const blockTemplateSchema = z
     isShowcase: z.boolean().optional(),
   })
   .strict();
+
+/**
+ * Templates as they load. Integration templates already published omit
+ * `displayName` and `aspectRatio` and group themselves under their own
+ * `category`, so the loader accepts those (template discovery falls back to an
+ * aspect ratio of 1). The published types keep asking authors for all three.
+ *
+ * @typedef {Omit<PageTemplateDoc, 'displayName' | 'category'>
+ *   & {displayName?: string, category?: string}} LoadedPageTemplateDoc
+ * @typedef {Omit<BlockTemplateDoc, 'displayName' | 'aspectRatio' | 'category'>
+ *   & {displayName?: string, aspectRatio?: number, category?: string}} LoadedBlockTemplateDoc
+ */
+
+/**
+ * @typedef {import('../../_shared/contract').Expect<
+ *   import('../../_shared/contract').MutuallyAssignable<
+ *     import('../../_shared/contract').NamedFields<z.infer<typeof pageTemplateSchema>>,
+ *     import('../../_shared/contract').NamedFields<LoadedPageTemplateDoc>
+ *   >
+ * >} _PageTemplateDocDriftLock
+ */
+
+/**
+ * @typedef {import('../../_shared/contract').Expect<
+ *   import('../../_shared/contract').MutuallyAssignable<
+ *     import('../../_shared/contract').NamedFields<z.infer<typeof blockTemplateSchema>>,
+ *     import('../../_shared/contract').NamedFields<LoadedBlockTemplateDoc>
+ *   >
+ * >} _BlockTemplateDocDriftLock
+ */
 
 const templateEnvelopeSchema = z
   .discriminatedUnion('type', [pageTemplateSchema, blockTemplateSchema])

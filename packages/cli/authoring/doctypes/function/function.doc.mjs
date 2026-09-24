@@ -252,6 +252,10 @@ export const doc = {
   notes: [
     {
       type: 'prose',
+      text: 'When it loads, a stamped function doc may leave out `displayName`, and its `usage` is not checked. Write to the type anyway; it is the contract.',
+    },
+    {
+      type: 'prose',
       text: "The `type` discriminant is 'function' for both flavors. Set `kind: 'hook'` or `kind: 'api'` to drive docsite sectioning; it is inferred from `importPath` when omitted.",
     },
     {

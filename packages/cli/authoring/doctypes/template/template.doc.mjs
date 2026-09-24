@@ -150,6 +150,10 @@ export const doc = {
   notes: [
     {
       type: 'prose',
+      text: 'When it loads, a template may leave out `displayName` and `aspectRatio` and use its own `category`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract.',
+    },
+    {
+      type: 'prose',
       text: "TemplateDoc is a discriminated union keyed by `type`. Set `type: 'page'` for a full page template. Set `type: 'block'` for an editable composition; add `exampleFor` only when one component owns the example.",
     },
     {

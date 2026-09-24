@@ -244,6 +244,10 @@ export const docs = {
   notes: [
     {
       type: 'prose',
+      text: "When it loads, a stamped component doc is checked as loosely as an unstamped one, so adding `type: 'component'` to an existing doc never breaks it: `displayName` may be missing, `category` may be any string, and `usage`, `theming`, `playground` and `examples` are not checked. Write to the type anyway; it is the contract.",
+    },
+    {
+      type: 'prose',
       text: 'ComponentDoc is a discriminated union of three shapes that all extend ComponentBaseDoc. Pick the variant by which key you set: `props` (single), `components` (multi), or `subComponentOf` (sub).',
     },
     {
