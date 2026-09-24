@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -86,7 +87,7 @@ describe('theme descriptor discovery', () => {
         maintained: true,
         entry: 'oceanTheme.ts',
         exportName: 'oceanTheme',
-        files: ['oceanTheme.doc.mjs', 'oceanTheme.ts'],
+        files: ['oceanTheme.ts', 'oceanTheme.doc.mjs'],
         package: '@acme/themes',
         sourceDir: path.join(tmpDir, 'ocean'),
         docPath: path.join(tmpDir, 'ocean', 'oceanTheme.doc.mjs'),
@@ -178,7 +179,7 @@ describe('theme descriptor discovery', () => {
       discoverIntegrationThemes({name: '@acme/themes', themes: tmpDir}),
     ).resolves.toEqual([
       expect.objectContaining({
-        files: ['oceanTheme.doc.mjs', 'oceanTheme.ts', 'tokens/theme.ts'],
+        files: ['oceanTheme.ts', 'oceanTheme.doc.mjs', 'tokens/theme.ts'],
       }),
     ]);
   });
@@ -221,8 +222,8 @@ describe('theme descriptor discovery', () => {
       },
     });
     expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].files).toEqual([
-      'oceanTheme.doc.mjs',
       'oceanTheme.ts',
+      'oceanTheme.doc.mjs',
       'receipts/palette.json',
       'tokens/ocean.palette.ts',
     ]);
@@ -309,7 +310,7 @@ describe('theme descriptor discovery', () => {
       'export const oceanTheme = {};\n',
     );
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
-      /exactly one same-stem \.doc\.mjs descriptor; found 0/u,
+      'Theme "ocean" for @acme/themes must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts".',
     );
   });
 
@@ -326,7 +327,7 @@ describe('theme descriptor discovery', () => {
       }),
     );
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
-      /exactly one same-stem \.doc\.mjs descriptor; found 2/u,
+      'Theme "ocean" for @acme/themes must contain exactly one same-stem .doc.mjs descriptor; found 2: "oceanTheme.doc.mjs", "other.doc.mjs".',
     );
   });
 
@@ -353,7 +354,7 @@ describe('theme descriptor discovery', () => {
   it('rejects descriptor identity that differs from its directory', () => {
     writeTheme({doc: {name: 'sea'}});
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
-      /names "sea" but its directory is "ocean"/u,
+      'Theme descriptor oceanTheme.doc.mjs for @acme/themes names "sea" but its directory is "ocean".',
     );
   });
 
@@ -389,7 +390,291 @@ describe('theme descriptor discovery', () => {
     fs.writeFileSync(outside, '{}\n');
     fs.symlinkSync(outside, path.join(dir, 'outside.json'));
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
-      /contains symlink/u,
+      'Theme "ocean" for @acme/themes contains symlink "outside.json"; theme files must be regular files inside the theme directory.',
     );
+  });
+});
+
+const TYPE = "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */";
+const BODY =
+  "{type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue and calm.', maintained: true}";
+
+/** @param {string} source the whole descriptor file */
+function writeDescriptor(source) {
+  const dir = writeTheme();
+  fs.writeFileSync(path.join(dir, 'oceanTheme.doc.mjs'), source);
+}
+
+describe('theme descriptor type annotation', () => {
+  it.each([
+    ['the annotation on the export', `${TYPE}\nexport default ${BODY};\n`],
+    [
+      'a header comment above the annotation',
+      `// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n${TYPE}\nexport default ${BODY};\n`,
+    ],
+    [
+      'a multi-line JSDoc block',
+      `/**\n * Ocean.\n *\n * @type {import("@astryxdesign/cli/authoring").ThemeDoc}\n */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a typedef alias',
+      `/** @typedef {import('@astryxdesign/cli/authoring').ThemeDoc} ThemeDoc */\n\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a typedef alias declared after the export',
+      `/** @type {Doc} */\nexport default ${BODY};\n/** @typedef {import('@astryxdesign/cli/authoring').ThemeDoc} Doc */\n`,
+    ],
+    [
+      'an @import of the type',
+      `/** @import {ThemeDoc} from '@astryxdesign/cli/authoring' */\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a renamed @import',
+      `/** @import {ComponentDoc, ThemeDoc as Doc} from '@astryxdesign/cli/authoring' */\n/** @type {Doc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a namespace @import',
+      `/** @import * as authoring from '@astryxdesign/cli/authoring' */\n/** @type {authoring.ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    ['a JSDoc cast of the object', `export default ${TYPE} (${BODY});\n`],
+  ])('accepts %s', (_, source) => {
+    writeDescriptor(source);
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')).toHaveLength(1);
+  });
+
+  it.each([
+    ['a line comment', `// ${TYPE.slice(4, -3)}\nexport default ${BODY};\n`],
+    [
+      'a block comment that is not JSDoc',
+      `/* ${TYPE.slice(4, -3)} */\nexport default ${BODY};\n`,
+    ],
+    ['an annotation after the export', `export default ${BODY};\n${TYPE}\n`],
+    [
+      'an annotation inside a string value',
+      `export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: "${TYPE.slice(4, -3)}", maintained: true};\n`,
+    ],
+    [
+      'an annotation on a property',
+      `export default {\n  ${TYPE}\n  type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue.', maintained: true};\n`,
+    ],
+    [
+      'an unparenthesized inline annotation',
+      `export default ${TYPE} ${BODY};\n`,
+    ],
+    [
+      'an annotation inside the parentheses',
+      `export default (${TYPE} ${BODY});\n`,
+    ],
+    [
+      'a later JSDoc between the annotation and the export',
+      `${TYPE}\n/** Ocean. */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a typedef written as a line comment',
+      `// @typedef {import('@astryxdesign/cli/authoring').ThemeDoc} ThemeDoc\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'an alias of another public type',
+      `/** @typedef {import('@astryxdesign/cli/authoring').ComponentDoc} ThemeDoc */\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a ThemeDoc from another module',
+      `/** @type {import('@astryxdesign/core').ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+  ])('rejects %s', (_, source) => {
+    writeDescriptor(source);
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      'Theme descriptor oceanTheme.doc.mjs for @acme/themes must declare its public ThemeDoc type from @astryxdesign/cli/authoring.',
+    );
+  });
+});
+
+describe('theme descriptor values', () => {
+  it.each([
+    ['displayName', {displayName: '   '}],
+    ['description', {description: ''}],
+    ['name', {name: ' '}],
+  ])('rejects a blank %s', (field, doc) => {
+    writeTheme({doc});
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      `Theme descriptor oceanTheme.doc.mjs for @acme/themes is invalid: ${field}: ${field} must not be blank`,
+    );
+  });
+
+  it.each(['__proto__', "'__proto__'", 'extra'])(
+    'rejects the unknown key %s',
+    key => {
+      writeDescriptor(
+        `${TYPE}\nexport default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue.', maintained: true, ${key}: 'x'};\n`,
+      );
+      expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+        `Theme descriptor oceanTheme.doc.mjs for @acme/themes is invalid: (root): Unrecognized key: "${key.replaceAll("'", '')}"`,
+      );
+    },
+  );
+
+  it('rejects a BigInt where a string belongs', () => {
+    writeDescriptor(
+      `${TYPE}\nexport default {type: 'theme', name: 'ocean', displayName: 10n, description: 'Blue.', maintained: true};\n`,
+    );
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      /must use static string and boolean values/u,
+    );
+  });
+
+  it('reuses a read while the file keeps its size and mtime', () => {
+    const dir = writeTheme();
+    const file = path.join(dir, 'oceanTheme.doc.mjs');
+    const pinned = new Date('2020-01-01T00:00:00Z');
+    fs.utimesSync(file, pinned, pinned);
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].displayName).toBe(
+      'Ocean',
+    );
+
+    fs.writeFileSync(
+      file,
+      fs.readFileSync(file, 'utf-8').replace('"Ocean"', '"Coral"'),
+    );
+    fs.utimesSync(file, pinned, pinned);
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].displayName).toBe(
+      'Ocean',
+    );
+
+    const later = new Date('2020-01-01T00:00:01Z');
+    fs.utimesSync(file, later, later);
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].displayName).toBe(
+      'Coral',
+    );
+  });
+});
+
+describe('theme folder messages', () => {
+  it('names the package and file of a symlinked descriptor', () => {
+    const dir = path.join(tmpDir, 'ocean');
+    fs.mkdirSync(dir);
+    fs.writeFileSync(
+      path.join(dir, 'oceanTheme.ts'),
+      'export const oceanTheme = {};\n',
+    );
+    const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-linked-'));
+    try {
+      const target = path.join(elsewhere, 'oceanTheme.doc.mjs');
+      fs.writeFileSync(target, `${TYPE}\nexport default ${BODY};\n`);
+      fs.symlinkSync(target, path.join(dir, 'oceanTheme.doc.mjs'));
+      expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+        'Theme "ocean" for @acme/themes contains symlink "oceanTheme.doc.mjs"; theme files must be regular files inside the theme directory.',
+      );
+    } finally {
+      fs.rmSync(elsewhere, {recursive: true, force: true});
+    }
+  });
+
+  it('names the package and both files of a nested second descriptor', () => {
+    writeTheme({
+      files: {'extra/otherTheme.doc.mjs': `${TYPE}\nexport default ${BODY};\n`},
+    });
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      'Theme "ocean" for @acme/themes contains more than one .doc.mjs descriptor: "oceanTheme.doc.mjs" and "extra/otherTheme.doc.mjs".',
+    );
+  });
+});
+
+describe('folders under a theme root that are not themes', () => {
+  it('skips dot-folders and folders with neither a descriptor nor a theme source', () => {
+    writeTheme();
+    const stray = {
+      'shared/palette.ts': 'export const blue = "#00f";\n',
+      '.cache/state.json': '{}\n',
+      '.cache/stateTheme.ts': 'export const stateTheme = {};\n',
+      '__tests__/oceanTheme.test.ts': 'export {};\n',
+      'Shared_Helpers/colors.ts': 'export const red = "#f00";\n',
+    };
+    for (const [file, contents] of Object.entries(stray)) {
+      fs.mkdirSync(path.dirname(path.join(tmpDir, file)), {recursive: true});
+      fs.writeFileSync(path.join(tmpDir, file), contents);
+    }
+    fs.mkdirSync(path.join(tmpDir, 'empty'));
+    fs.symlinkSync(path.join(tmpDir, 'shared'), path.join(tmpDir, '.linked'));
+    expect(
+      discoverThemeDirectory(tmpDir, '@acme/themes').map(theme => theme.slug),
+    ).toEqual(['ocean']);
+  });
+
+  it('still fails a folder with a theme source and no descriptor', () => {
+    writeTheme();
+    fs.mkdirSync(path.join(tmpDir, 'sand'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'sand', 'sandTheme.ts'),
+      'export const sandTheme = {};\n',
+    );
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      'Theme "sand" for @acme/themes must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "sandTheme.ts".',
+    );
+  });
+
+  it('still fails a folder whose descriptor sits in a subfolder', () => {
+    writeTheme({slug: 'reef', stem: 'reefTheme', doc: {name: 'reef'}});
+    fs.mkdirSync(path.join(tmpDir, 'reef', 'src'));
+    for (const file of ['reefTheme.ts', 'reefTheme.doc.mjs']) {
+      fs.renameSync(
+        path.join(tmpDir, 'reef', file),
+        path.join(tmpDir, 'reef', 'src', file),
+      );
+    }
+    expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
+      'Theme "reef" for @acme/themes must contain exactly one same-stem .doc.mjs descriptor; found 0; "src/reefTheme.doc.mjs" is in a subfolder.',
+    );
+  });
+});
+
+describe('bundled theme files', () => {
+  it('copies what the bundle has always copied, entry first, without its descriptor', () => {
+    const themes = discoverBundledThemes();
+    expect(themes.find(theme => theme.slug === 'neutral')?.files).toEqual([
+      'neutralTheme.ts',
+      'icons.tsx',
+      'neutralPalettes.ts',
+      'neutralPalettes.generated.ts',
+      'neutralPaletteRefs.generated.ts',
+      'neutralPalettes.generated.receipt.json',
+      'palette.config.json',
+    ]);
+    for (const theme of themes) {
+      expect(theme.files[0]).toBe(theme.entry);
+      expect(theme.files.some(file => file.endsWith('.doc.mjs'))).toBe(false);
+    }
+  });
+
+  it('passes the full source check it skips at runtime', () => {
+    const bundled = discoverBundledThemes();
+    const checked = discoverThemeDirectory(
+      path.dirname(bundled[0].sourceDir),
+      BUNDLED_THEME_PACKAGE,
+    );
+    expect(checked.map(theme => theme.slug)).toEqual(
+      bundled.map(theme => theme.slug),
+    );
+  });
+
+  it('loads no parser on import and only the descriptor parser for bundled themes', () => {
+    const script = `
+      import {createRequire} from 'node:module';
+      const cache = createRequire(import.meta.url).cache;
+      const loaded = name => Object.keys(cache).some(file => file.includes('/node_modules/' + name + '/'));
+      const state = () => ({babel: loaded('@babel/parser'), jscodeshift: loaded('jscodeshift')});
+      const discovery = await import(${JSON.stringify(new URL('./theme-discovery.mjs', import.meta.url).href)});
+      const imported = state();
+      discovery.discoverBundledThemes();
+      console.log(JSON.stringify({imported, bundled: state()}));
+    `;
+    const output = execFileSync(
+      process.execPath,
+      ['--input-type=module', '-e', script],
+      {encoding: 'utf-8'},
+    );
+    expect(JSON.parse(output)).toEqual({
+      imported: {babel: false, jscodeshift: false},
+      bundled: {babel: true, jscodeshift: false},
+    });
   });
 });

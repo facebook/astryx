@@ -456,8 +456,8 @@ export const oceanTheme = defineTheme({
         package: '@acme/brand-integration',
         outputDir: target,
         files: [
-          'oceanTheme.doc.mjs',
           'oceanTheme.ts',
+          'oceanTheme.doc.mjs',
           'tokens/ocean.palette.receipt.json',
           'tokens/ocean.palette.ts',
         ],

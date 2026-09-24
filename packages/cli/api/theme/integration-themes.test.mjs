@@ -90,8 +90,8 @@ describe('themeAdd with integration themes', () => {
     const result = await themeAdd('ocean', {cwd: tmpDir});
 
     expect(result.data.files).toEqual([
-      'oceanTheme.doc.mjs',
       'oceanTheme.ts',
+      'oceanTheme.doc.mjs',
       'receipts/palette.json',
       'tokens/colors.ts',
     ]);

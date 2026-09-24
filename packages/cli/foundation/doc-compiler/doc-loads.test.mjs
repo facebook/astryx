@@ -240,6 +240,10 @@ const RUNNERS = {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
   },
+  'foundation/discovery/theme-discovery.mjs': {
+    runs: '@babel/parser and jscodeshift (CommonJS), each on first use, so listing bundled themes never loads jscodeshift',
+    sites: ['require(@babel/parser)', 'require(jscodeshift)'],
+  },
   'foundation/doc-compiler/import.mjs': {
     runs: 'authored doc files, for the doc reader and discovery',
     sites: [

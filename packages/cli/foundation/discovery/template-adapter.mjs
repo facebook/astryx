@@ -82,20 +82,24 @@ export function pkgOf(t) {
  */
 
 /**
- * Canonical descriptor suffixes for templates, in precedence order. New
- * authoring always emits `.doc.mjs`; the TypeScript and JavaScript variants
- * remain readable for existing integrations.
- */
-const DOC_SUFFIXES = ['.doc.mjs', '.doc.ts', '.doc.js'];
-
-/**
- * Released compatibility suffixes. Stable 0.6.0 documented `.template.*`, so
- * discovery keeps reading those files while all new authoring uses `.doc.mjs`.
+ * Released compatibility suffixes, in precedence order. Stable 0.6.0
+ * documented `.template.*`, so discovery keeps reading those files while all
+ * new authoring uses `.doc.mjs`.
  */
 const TEMPLATE_SUFFIXES = ['.template.ts', '.template.mjs', '.template.js'];
 
-/** Canonical descriptors win when both families exist for one stem. */
-const ALL_TEMPLATE_SUFFIXES = [...DOC_SUFFIXES, ...TEMPLATE_SUFFIXES];
+/**
+ * Descriptor suffixes for templates, in precedence order. New authoring always
+ * emits `.doc.mjs`; the TypeScript and JavaScript variants remain readable.
+ */
+const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
+
+/**
+ * Every template-spec suffix, in the released precedence a core page directory
+ * uses to pick one file. Integration discovery never picks: every match is a
+ * template, so two specs for one stem list twice and read as ambiguous.
+ */
+const ALL_TEMPLATE_SUFFIXES = [...TEMPLATE_SUFFIXES, ...DOC_SUFFIXES];
 
 /**
  * The template-spec suffix present on `file`, or null if none matches.
@@ -536,11 +540,11 @@ function findDocFiles(dir, pattern) {
 
 /**
  * Resolve the template-spec file for a core page directory: the first existing
- * metadata file in canonical-then-compatibility precedence, or null.
+ * metadata file in {@link ALL_TEMPLATE_SUFFIXES} precedence, or null.
  * @param {string} dirPath
  * @returns {string | null}
  */
-function findPageDocFile(dirPath) {
+export function findPageDocFile(dirPath) {
   for (const suffix of ALL_TEMPLATE_SUFFIXES) {
     const candidate = path.join(dirPath, `template${suffix}`);
     if (fs.existsSync(candidate)) return candidate;
@@ -722,31 +726,24 @@ export async function discoverAllWithErrors(cwd = process.cwd()) {
  * @returns {string[]}
  */
 function findIntegrationDocFiles(root) {
-  /** @type {Map<string, {path: string, rank: number}>} */
-  const byStem = new Map();
-  if (!fs.existsSync(root)) return [];
+  /** @type {string[]} */
+  const results = [];
+  if (!fs.existsSync(root)) return results;
   /** @param {string} dir */
   const walk = dir => {
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-        continue;
-      }
-      const rank = ALL_TEMPLATE_SUFFIXES.findIndex(suffix =>
-        entry.name.endsWith(suffix),
-      );
-      if (rank === -1) continue;
-      const suffix = ALL_TEMPLATE_SUFFIXES[rank];
-      const stem = full.slice(0, -suffix.length);
-      const current = byStem.get(stem);
-      if (!current || rank < current.rank) {
-        byStem.set(stem, {path: full, rank});
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
+        results.push(full);
       }
     }
   };
   walk(root);
-  return [...byStem.values()].map(value => value.path).sort();
+  return results;
 }
 
 /**

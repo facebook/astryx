@@ -30,8 +30,20 @@ describe('themeAdd (api/theme/add)', () => {
     expect(result.data.slug).toBe('neutral');
     expect(result.data.package).toBe('@astryxdesign/cli');
     expect(result.data.outputDir).toBe(path.join('src', 'themes', 'neutral'));
-    expect(result.data.files.length).toBeGreaterThan(0);
-    expect(result.data.files).toContain('neutralTheme.doc.mjs');
+    // Exactly what the bundle has always copied, in that order: the CLI's own
+    // descriptor stays behind.
+    expect(result.data.files).toEqual([
+      'neutralTheme.ts',
+      'icons.tsx',
+      'neutralPalettes.ts',
+      'neutralPalettes.generated.ts',
+      'neutralPaletteRefs.generated.ts',
+      'neutralPalettes.generated.receipt.json',
+      'palette.config.json',
+    ]);
+    expect(
+      fs.readdirSync(path.join(tmpDir, 'src', 'themes', 'neutral')).sort(),
+    ).toEqual([...result.data.files].sort());
     for (const f of result.data.files) {
       expect(
         fs.existsSync(path.join(tmpDir, 'src', 'themes', 'neutral', f)),

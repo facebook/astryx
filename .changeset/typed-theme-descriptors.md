@@ -11,6 +11,6 @@
 
 [feat] Author integration themes with typed same-stem descriptors.
 
-Replace the canary-only central theme catalog with `ThemeDoc` beside every theme source. Theme discovery and materialization keep each complete descriptor-owned directory together without executing source. New component, topic, and template scaffolds also emit type-annotated `.doc.mjs`; released `.template.*` inputs remain readable.
+Replace the canary-only central theme catalog with `ThemeDoc` beside every theme source. Theme discovery reads descriptors and checks integration theme sources without executing them, and `theme add` copies an integration theme's complete directory. New component, topic, and template scaffolds also emit type-annotated `.doc.mjs`; released `.template.*` inputs remain readable.
 
 @josephfarina

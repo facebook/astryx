@@ -171,9 +171,21 @@ describe('integrationAddTheme', () => {
   it('refuses an existing invalid theme directory', async () => {
     setup();
     fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+      'export const oceanTheme = {};\n',
+    );
     await expect(
       integrationAddTheme('ocean', {cwd: tmpDir}),
     ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
+  });
+
+  it('refuses to write into an existing folder that is not yet a theme', async () => {
+    setup();
+    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+    await expect(
+      integrationAddTheme('ocean', {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
   });
 
   it.each(['../ocean', 'Ocean', 'ocean theme', '.ocean'])(

@@ -14,20 +14,33 @@ import {formatZodError} from '../../_shared/errors.mjs';
 
 /** @typedef {import('./type.js').ThemeDoc} ThemeDoc */
 
+/** @param {string} field */
+const nonBlank = field =>
+  z.string().refine(value => value.trim() !== '', {
+    message: `${field} must not be blank`,
+    abort: true,
+  });
+
 const themeDocSchema = z
   .object({
     type: z.literal('theme'),
-    name: z
-      .string()
-      .regex(
-        /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
-        'name must be lowercase kebab-case starting with a letter',
-      ),
-    displayName: z.string().min(1, 'displayName is required'),
-    description: z.string(),
+    name: nonBlank('name').regex(
+      /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
+      'name must be lowercase kebab-case starting with a letter',
+    ),
+    displayName: nonBlank('displayName'),
+    description: nonBlank('description'),
     maintained: z.boolean(),
   })
   .strict();
+
+/** Zod skips `__proto__` when it looks for unknown keys. */
+const PROTO_KEY_ISSUE = {
+  code: /** @type {const} */ ('unrecognized_keys'),
+  keys: ['__proto__'],
+  path: [],
+  message: 'Unrecognized key: "__proto__"',
+};
 
 /**
  * Compile-time drift lock: the sealed schema must infer exactly ThemeDoc.
@@ -49,8 +62,14 @@ const themeDocSchema = z
  */
 export function parseTheme(input, label = 'theme') {
   const result = themeDocSchema.safeParse(input);
-  if (!result.success) {
-    throw new Error(formatZodError(label, result.error));
-  }
-  return result.data;
+  const protoKey =
+    input !== null &&
+    typeof input === 'object' &&
+    Object.hasOwn(input, '__proto__');
+  if (result.success && !protoKey) return result.data;
+  const issues = [
+    ...(result.error?.issues ?? []),
+    ...(protoKey ? [PROTO_KEY_ISSUE] : []),
+  ];
+  throw new Error(formatZodError(label, new z.ZodError(issues)));
 }

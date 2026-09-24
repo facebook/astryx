@@ -138,18 +138,26 @@ describe('integration templates: canonical .doc.* plus released .template.* comp
     expect(gauge.type).toBe(chip.type);
     expect(gauge.package).toBe(chip.package);
   });
-  it('prefers the canonical .doc.mjs when both suffix families exist', async () => {
-    const pkgDir = installWidgets(tmpDir);
-    writeTemplate(pkgDir, 'pricing', {kind: 'page', suffix: '.doc.mjs'});
-    fs.writeFileSync(
-      path.join(pkgDir, 'templates', 'pricing.template.ts'),
-      "export default {type: 'page', name: 'compatibility name', description: 'compatibility'};\n",
-    );
+  it('lists both same-stem specs and reads the id as ambiguous', async () => {
+    for (const [first, second] of [
+      ['.doc.mjs', '.template.ts'],
+      ['.doc.ts', '.doc.mjs'],
+    ]) {
+      const pkgDir = installWidgets(tmpDir);
+      fs.rmSync(path.join(pkgDir, 'templates'), {recursive: true, force: true});
+      writeTemplate(pkgDir, 'pricing', {kind: 'page', suffix: first});
+      writeTemplate(pkgDir, 'pricing', {kind: 'page', suffix: second});
 
-    const result = await template(undefined, {list: true, cwd: tmpDir});
-    const matches = result.data.filter(entry => entry.id === 'pricing');
-    expect(matches).toHaveLength(1);
-    expect(matches[0].name).toBe('pricing name');
+      const result = await template(undefined, {list: true, cwd: tmpDir});
+      expect(
+        result.data.filter(entry => entry.id === 'pricing'),
+        `${first} + ${second}`,
+      ).toHaveLength(2);
+      await expect(
+        template('pricing', {cwd: tmpDir}),
+        `${first} + ${second}`,
+      ).rejects.toMatchObject({code: 'ERR_AMBIGUOUS_TEMPLATE'});
+    }
   });
 });
 

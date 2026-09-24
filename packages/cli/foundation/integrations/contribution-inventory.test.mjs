@@ -71,6 +71,19 @@ describe('computeRequiredFiles', () => {
     expect(inv.allFiles).not.toContain('themes/manifest.json');
   });
 
+  it('requires only the folders theme discovery reads', () => {
+    const root = writeTheme('ocean');
+    for (const file of ['shared/palette.ts', '.cache/state.json']) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
+      fs.writeFileSync(path.join(root, file), '{}\n');
+    }
+    const inv = computeRequiredFiles(loaded({themes: root}));
+    expect(inv.roots[0].files).toEqual([
+      'themes/ocean/oceanTheme.doc.mjs',
+      'themes/ocean/oceanTheme.ts',
+    ]);
+  });
+
   it('enumerates paired component metadata and source files', () => {
     const root = path.join(tmpDir, 'components');
     fs.mkdirSync(root, {recursive: true});

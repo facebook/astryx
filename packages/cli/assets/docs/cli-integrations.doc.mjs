@@ -119,7 +119,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: "Kind        Metadata file              type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.mjs               'component'    Name.tsx (same stem)\nTemplate    Name.doc.mjs               'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.mjs              'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       <slug>/nameTheme.doc.mjs   'theme'        <slug>/nameTheme.ts (same stem)\n\nReleased .doc.ts / .doc.js and .template.{ts,mjs,js} files still load.",
+          code: "Kind        Metadata file              type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.mjs               'component'    Name.tsx (same stem)\nTemplate    Name.doc.mjs               'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.mjs              'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       <slug>/nameTheme.doc.mjs   'theme'        <slug>/nameTheme.ts (same stem)\n\nReleased component and template .doc.ts / .doc.js files and .template.{ts,mjs,js}\ntemplates still load. Doc topics must be .doc.mjs or .doc.js: an installed\npackage's .doc.ts topic is listed but cannot be read.",
         },
         {
           type: 'prose',

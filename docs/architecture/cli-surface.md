@@ -173,8 +173,11 @@ test, applicable text, and consumer-documentation projections.
   derives the source entry and required named runtime export from the shared stem,
   parses source without executing it, and rejects escaped local imports and missing
   or type-only runtime exports. The theme directory is the recursive copy and pack
-  boundary. `theme list` retains package ownership, and `theme add --package` copies
-  the complete directory before `theme build` compiles the consumer-owned copy.
+  boundary. A dot-folder, or a folder holding neither a descriptor nor a
+  `<name>Theme` source, is not a theme and is neither read nor packed; a folder
+  with a theme source and no descriptor fails. `theme list` retains package
+  ownership, and `theme add --package` copies the complete directory before
+  `theme build` compiles the consumer-owned copy.
 - **INV20 — A command's API subject has one layout.** A command's behavior lives
   in `api/<subject>/`. `<subject>.mjs` is the subject's entry, and `api/index.mjs`
   re-exports what it exports. A subject with more than one operation puts each in

@@ -33,33 +33,54 @@ function readJSON(file) {
   return JSON.parse(fs.readFileSync(file, 'utf-8'));
 }
 
-function listThemeSlugs() {
-  if (!fs.existsSync(THEMES_SRC_ROOT)) return [];
+/**
+ * The public theme packages to bundle: each directory with a package.json and
+ * a `src/<name>Theme.ts`, unless the package is private. A public one without
+ * its same-stem descriptor throws rather than dropping out of the bundle.
+ * @param {string} [themesRoot]
+ * @returns {string[]}
+ */
+export function listThemeSlugs(themesRoot = THEMES_SRC_ROOT) {
+  if (!fs.existsSync(themesRoot)) return [];
   return fs
-    .readdirSync(THEMES_SRC_ROOT, {withFileTypes: true})
+    .readdirSync(themesRoot, {withFileTypes: true})
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name)
     .filter(slug => {
-      const sourceDir = path.join(THEMES_SRC_ROOT, slug, 'src');
+      const sourceDir = path.join(themesRoot, slug, 'src');
       const stem = `${toIdentifier(slug)}Theme`;
-      const pkg = path.join(THEMES_SRC_ROOT, slug, 'package.json');
+      const pkg = path.join(themesRoot, slug, 'package.json');
       const source = path.join(sourceDir, `${stem}.ts`);
-      const descriptor = path.join(sourceDir, `${stem}.doc.mjs`);
-      if (
-        !fs.existsSync(pkg) ||
-        !fs.existsSync(source) ||
-        !fs.existsSync(descriptor)
-      ) {
-        return false;
-      }
+      if (!fs.existsSync(pkg) || !fs.existsSync(source)) return false;
+      const manifest = readJSON(pkg);
       // A private theme package is a test fixture, not a selectable theme.
-      return readJSON(pkg).private !== true;
+      if (manifest.private === true) return false;
+      if (!fs.existsSync(path.join(sourceDir, `${stem}.doc.mjs`))) {
+        const where = `${path.basename(themesRoot)}/${slug}`;
+        const name =
+          typeof manifest.name === 'string'
+            ? `${manifest.name} (${where})`
+            : where;
+        throw new Error(
+          `Theme package ${name} has src/${stem}.ts but no src/${stem}.doc.mjs descriptor, so it cannot be bundled.`,
+        );
+      }
+      return true;
     })
     .sort();
 }
 
 function main() {
-  const slugs = listThemeSlugs();
+  let slugs;
+  try {
+    slugs = listThemeSlugs();
+  } catch (error) {
+    console.error(
+      `generate-cli-themes: ${error instanceof Error ? error.message : error}`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   if (slugs.length === 0) {
     console.warn('generate-cli-themes: no theme packages found — skipping.');
     return;
@@ -120,4 +141,4 @@ function main() {
   );
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();

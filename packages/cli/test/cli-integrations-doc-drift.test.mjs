@@ -210,13 +210,14 @@ describe('documented theme palette workflow', () => {
     );
     expect(theme).toMatchObject({slug: 'ocean', entry: 'oceanTheme.ts'});
     const documented = [
-      'oceanTheme.doc.mjs',
       'oceanTheme.ts',
+      'oceanTheme.doc.mjs',
       'palette.config.json',
       'tokens/ocean.palette.receipt.json',
       'tokens/ocean.palette.ts',
     ];
-    // The documented layout is exactly what the theme directory ships.
+    // The documented layout is exactly what the theme directory ships, entry
+    // first.
     expect(theme.files).toEqual(documented);
 
     const text = guideText(integrationGuide);
@@ -259,6 +260,18 @@ describe('cli-integrations guide required content', () => {
       'Released `.doc.ts` and `.doc.js` inputs remain readable',
     );
     expect(text).toContain('Released `.template.*` files remain readable');
+  });
+
+  it('says which released suffixes still load for each kind', () => {
+    expect(text).toContain(
+      'Released component and template .doc.ts / .doc.js files and .template.{ts,mjs,js}\ntemplates still load.',
+    );
+    expect(text).toContain(
+      "Doc topics must be .doc.mjs or .doc.js: an installed\npackage's .doc.ts topic is listed but cannot be read.",
+    );
+    expect(text).not.toContain(
+      'Released .doc.ts / .doc.js and .template.{ts,mjs,js} files still load.',
+    );
   });
 
   it('documents the codemod version-directory layout', () => {
