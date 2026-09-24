@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-22
+approved_at: 2026-09-23
 owners: [cixzhang, imdreamrunner]
 review_triggers: [theming, layout, public-api]
 verified_by:
@@ -177,6 +177,18 @@ action renders. `endContentEdgeCompensation` targets the existing end-content
 slot and selects `inline`, `block`, or `all` without exposing a margin amount.
 This is a slot-targeted projection of the retained-inset edge-compensation
 intent; it does not make DialogHeader a List-style inherited-padding consumer.
+
+### DEC-3 — Content-slot wrappers are approved target destinations
+
+**Reference:** `module:Dialog/DialogHeader/DEC-3`
+**Decider:** cixzhang, 2026-09-23
+
+The existing wrappers for `startContent` and `endContent` are approved as stable
+visible anatomy. Their target destinations are
+`dialog-header-start-content` and `dialog-header-end-content`; implementation
+must add no wrapper and must preserve default layout, paint, interaction,
+accessibility, and public props. The end-content name follows the public prop
+even though that slot also contains the optional close action.
 
 ## Open questions
 
