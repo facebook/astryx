@@ -92,4 +92,15 @@ describe('swizzle path safety', () => {
     // Existing file unchanged
     expect(fs.readFileSync(existingPath, 'utf-8')).toBe('// my customizations\n');
   });
+
+  // The CLI never prompts: without --overwrite it refuses with a code, and the
+  // manifest agents read must say so.
+  it('describes --overwrite by its refusal, not a prompt', async () => {
+    const {project} = buildFakeRepo(tmpDir);
+    const result = await runCli(['--json', 'manifest'], project);
+    const swizzle = JSON.parse(result.stdout).data.commands.find(c => c.name === 'swizzle');
+    const overwrite = swizzle.options.find(o => o.flag.includes('--overwrite'));
+    expect(overwrite.description).not.toMatch(/prompt/i);
+    expect(overwrite.description).toContain('ERR_FILE_EXISTS');
+  });
 });
