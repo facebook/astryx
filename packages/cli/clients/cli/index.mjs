@@ -16,7 +16,6 @@ import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {checkForUpdate} from './lib/update-check.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
@@ -275,7 +274,6 @@ const commands = [
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
 ];
 
-const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
 
 /**
@@ -497,25 +495,6 @@ export async function createProgram() {
       code: ERROR_CODES.ERR_UNKNOWN,
     }, null, 2));
     process.exit(1);
-  });
-
-  /**
-   * Post-action hook: print update hint after any command output.
-   * Only fires for commands that produce output agents read (component, docs, etc.).
-   * Suppressed when --json is active to avoid contaminating stdout.
-   */
-  program.hook('postAction', (thisCommand, actionCommand) => {
-    if (program.opts().json) return;
-    try {
-      if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
-        const hint = checkForUpdate();
-        if (hint) {
-          console.error(`\n${hint}`);
-        }
-      }
-    } catch {
-      // Never let update check break the CLI
-    }
   });
 
   /**
