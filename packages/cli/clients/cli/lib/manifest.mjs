@@ -92,9 +92,6 @@ export const RESPONSE_TYPES = {
   'doctor integration templates': ['integration.template-conflicts'],
   'doctor integration components': ['integration.component-conflicts'],
   'doctor integration docs': ['integration.doc-conflicts'],
-  'layout expand': ['layout.expand'],
-  'layout check': ['layout.check'],
-  'layout grammar': ['layout.grammar'],
 };
 
 /**
@@ -173,11 +170,6 @@ const EXAMPLES = {
     'astryx doctor integration docs @acme/widgets --json',
   ],
   init: ['astryx init', 'astryx init --all --json'],
-  'layout expand': [
-    `astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`,
-  ],
-  'layout check': [`astryx layout check 'A[cp6] > L > LC > S[p6]' --json`],
-  'layout grammar': ['astryx layout grammar'],
 };
 
 /**
