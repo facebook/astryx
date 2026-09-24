@@ -69,7 +69,7 @@ export const doc = {
     {
       name: 'options.to',
       type: 'string',
-      description: 'Exact target semver. Required for codemod.',
+      description: 'Exact target semver (e.g. 1.2.0). Required for codemod and only valid there.',
     },
   ],
   returns: [

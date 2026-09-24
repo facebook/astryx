@@ -85,6 +85,7 @@ describe('integration add control definitions', () => {
       'not with options.replaces',
     );
     expect(param('options.to')?.description).toContain('Exact target semver');
+    expect(param('options.to')?.description).toContain('only valid there');
   });
 
   it('behaves as the definitions say', async () => {
