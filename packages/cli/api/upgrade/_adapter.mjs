@@ -147,7 +147,7 @@ export async function runPostCodemodHooks(hooks, context) {
         env: {...process.env, ...(cmd.options?.env ?? {})},
       }),
     );
-    logger.log(`✓ Post-codemod hook ${label} completed.`);
+    logger.log(`[ok] Post-codemod hook ${label} completed.`);
   }
 }
 
@@ -186,7 +186,7 @@ export async function prepareAgentDocsRefresh({
   if (initial.status === 'missing') {
     summary.action = 'nudge-init';
     logger.warn(
-      `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
     );
     return {cwd, renderedBlock: null, summary};
   }
@@ -240,7 +240,7 @@ export function applyAgentDocsRefresh(plan) {
     summary.files = written;
     summary.action = summary.refreshed ? 'refreshed' : 'error';
     if (summary.refreshed) {
-      logger.log(`✓ Agent docs refreshed → ${written.join(', ')}`);
+      logger.log(`[ok] Agent docs refreshed -> ${written.join(', ')}`);
     } else {
       logger.warn(
         `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
