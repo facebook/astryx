@@ -13,7 +13,7 @@
  *   - any command exiting non-zero
  *
  * Usage:
- *   node .github/scripts/cli-smoke-test.mjs
+ *   node .github/scripts/cli-smoke-test.mjs [--bin <astryx.mjs>] [--cwd <dir>]
  *
  * Exit code 0 = all commands passed
  * Exit code 1 = one or more commands failed
@@ -22,10 +22,20 @@
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import * as path from 'node:path';
+import {parseArgs} from 'node:util';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
+// --bin and --cwd run this suite against a packaged CLI, such as the
+// standalone runtime, from another directory. By default it runs the
+// workspace CLI from the repo root.
+const {values: options} = parseArgs({
+  options: {bin: {type: 'string'}, cwd: {type: 'string'}},
+});
+const CLI = options.bin
+  ? path.resolve(options.bin)
+  : path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
+const CWD = options.cwd ? path.resolve(options.cwd) : ROOT;
 
 let passed = 0;
 let failed = 0;
@@ -33,7 +43,7 @@ const failures = [];
 
 function run(args) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
-    cwd: ROOT,
+    cwd: CWD,
     encoding: 'utf8',
     timeout: 30_000,
   });

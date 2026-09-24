@@ -96,6 +96,25 @@ export function findInstalledPackage(startDir, name) {
 }
 
 /**
+ * Find the Core a catalog read answers from: the project's own Core when it
+ * has one, else the Core installed beside this CLI.
+ *
+ * Catalog reads (component, hook, search, theme targets) only need a Core that
+ * matches this CLI's release, and the standalone runtime ships exactly that
+ * beside the CLI, so those commands work in a directory with no node_modules.
+ * Checks that describe or write to the project itself (doctor, swizzle, theme
+ * build) keep calling findCoreDir: a Core the project never installed must not
+ * read as installed there.
+ *
+ * @param {string} [startDir]
+ * @param {string} [cliRoot] - Where this CLI is installed; overridable for tests.
+ * @returns {string|null}
+ */
+export function findCatalogCoreDir(startDir = process.cwd(), cliRoot = CLI_ROOT) {
+  return findCoreDir(startDir) ?? findInstalledPackage(cliRoot, '@astryxdesign/core');
+}
+
+/**
  * Find the monorepo root by looking for the root package.json
  * that has workspaces defined.
  */

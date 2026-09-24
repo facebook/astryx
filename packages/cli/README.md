@@ -150,7 +150,7 @@ if (isError(result)) {
 | `ERR_INVALID_LANG`                | `--lang` was given a value outside its choices (en, zh, dense).                                                                                          |
 | `ERR_INVALID_DETAIL`              | `--detail` was given a value outside its choices (full, compact, brief).                                                                                 |
 | `ERR_NODE_VERSION`                | The running Node.js version is below the supported minimum.                                                                                              |
-| `ERR_CORE_NOT_FOUND`              | `@astryxdesign/core` could not be located (not installed / not in a monorepo).                                                                           |
+| `ERR_CORE_NOT_FOUND`              | `@astryxdesign/core` could not be located (not installed / not in a monorepo). Catalog reads also look for a Core installed beside the CLI.              |
 | `ERR_CORE_INCOMPATIBLE`           | The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core). |
 | `ERR_UNKNOWN_COMPONENT`           | No component matched the requested name.                                                                                                                 |
 | `ERR_UNKNOWN_HOOK`                | No hook matched the requested name.                                                                                                                      |

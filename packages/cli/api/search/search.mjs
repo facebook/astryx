@@ -51,7 +51,7 @@
  */
 
 import {pathToFileURL} from 'node:url';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findCatalogCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   discoverIntegrationComponents,
@@ -919,7 +919,7 @@ export async function search(query, options = {}) {
   const term = String(query).trim().toLowerCase();
   const tokens = tokenizeQuery(term);
 
-  const coreDir = findCoreDir(cwd);
+  const coreDir = findCatalogCoreDir(cwd);
   if (!coreDir) {
     throw new AstryxError('Could not find @astryxdesign/core package');
   }

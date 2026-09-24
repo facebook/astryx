@@ -4,7 +4,7 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact, findInstalledPackage} from './paths.mjs';
+import {findCoreDir, findCatalogCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact, findInstalledPackage} from './paths.mjs';
 
 let tmpDir;
 
@@ -40,6 +40,54 @@ describe('findCoreDir', () => {
 
   it('returns null when nothing found', () => {
     expect(findCoreDir(tmpDir)).toBeNull();
+  });
+});
+
+describe('findCatalogCoreDir', () => {
+  /** @param {string} root */
+  function installCore(root) {
+    const dir = path.join(root, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version: '0.0.0'}),
+    );
+    return dir;
+  }
+
+  /** A CLI laid out the way the standalone runtime ships it: Core beside it. */
+  function cliWithCore() {
+    const runtime = path.join(tmpDir, 'runtime');
+    const cliRoot = path.join(runtime, 'node_modules', '@astryxdesign', 'cli');
+    fs.mkdirSync(cliRoot, {recursive: true});
+    return {cliRoot, core: installCore(runtime)};
+  }
+
+  it("prefers the project's own Core over the one beside the CLI", () => {
+    const project = path.join(tmpDir, 'project');
+    const projectCore = installCore(project);
+    const {cliRoot} = cliWithCore();
+
+    expect(findCatalogCoreDir(project, cliRoot)).toBe(projectCore);
+  });
+
+  it('falls back to the Core installed beside the CLI', () => {
+    const project = path.join(tmpDir, 'project');
+    fs.mkdirSync(project, {recursive: true});
+    const {cliRoot, core} = cliWithCore();
+
+    expect(findCatalogCoreDir(project, cliRoot)).toBe(core);
+    // The project lookup itself stays project-only.
+    expect(findCoreDir(project)).toBeNull();
+  });
+
+  it('returns null when neither the project nor the CLI has a Core', () => {
+    const project = path.join(tmpDir, 'project');
+    const cliRoot = path.join(tmpDir, 'cli');
+    fs.mkdirSync(project, {recursive: true});
+    fs.mkdirSync(cliRoot, {recursive: true});
+
+    expect(findCatalogCoreDir(project, cliRoot)).toBeNull();
   });
 });
 

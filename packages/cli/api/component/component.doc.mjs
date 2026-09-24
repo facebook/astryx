@@ -43,7 +43,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to resolve @astryxdesign/core from.',
+      description:
+        'Directory to resolve @astryxdesign/core from. When the project there has no Core of its own, the Core installed beside the CLI answers instead.',
     },
     {
       name: 'options.list',
@@ -137,7 +138,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core cannot be resolved from cwd',
+      when: '@astryxdesign/core cannot be resolved from cwd, and none is installed beside the CLI',
     },
     {
       code: 'ERR_UNKNOWN_CATEGORY',

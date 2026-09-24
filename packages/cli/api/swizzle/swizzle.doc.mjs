@@ -33,7 +33,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to resolve @astryxdesign/core from.',
+      description:
+        'Directory to resolve @astryxdesign/core from. Only a Core installed in that project counts, because the copied source imports it.',
     },
     {
       name: 'options.output',
@@ -76,7 +77,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core cannot be located from cwd',
+      when: '@astryxdesign/core is not installed in the project at cwd',
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
