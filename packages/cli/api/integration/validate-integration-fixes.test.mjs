@@ -230,13 +230,35 @@ describe('unreachable_contribution fixes hold when followed', () => {
     expect(await issuesOf(declared)).toEqual([]);
   });
 
-  it('puts a theme in a folder of its own when themes/ holds more than themes', async () => {
+  it('declares themes/ as the root when its other folders are not themes', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       ...good,
       'themes/ocean/oceanTheme.doc.mjs': themeDoc('ocean'),
       'themes/ocean/oceanTheme.ts': themeSource('oceanTheme'),
       'themes/shared/colors.ts': 'export const colors = {};\n',
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('themes/ocean/oceanTheme.doc.mjs')} Fix: set \`themes: './themes'\` in astryx.integration.mjs.`,
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        [MANIFEST]: manifest({components: './components', themes: './themes'}),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('puts a theme in a folder of its own when themes/ holds a broken theme', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      ...good,
+      'themes/ocean/oceanTheme.doc.mjs': themeDoc('ocean'),
+      'themes/ocean/oceanTheme.ts': themeSource('oceanTheme'),
+      'themes/draft/draftTheme.ts': themeSource('draftTheme'),
     });
 
     const message = only(await issuesOf(dir), 'unreachable_contribution');

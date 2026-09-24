@@ -23,6 +23,7 @@ import * as path from 'node:path';
 import jscodeshift from 'jscodeshift';
 import {isValidSemver} from '../env/semver.mjs';
 import {
+  isThemeFolder as readsAsTheme,
   THEME_DOC_SUFFIX,
   THEME_MODULE_EXTENSIONS,
   THEME_SLUG_RE,
@@ -323,7 +324,7 @@ function isFreeFolder(context, dir) {
  * @param {string} dir
  * @param {string} [fixing]
  */
-function isThemeFolder(context, dir, fixing) {
+function isCompleteTheme(context, dir, fixing) {
   const found = candidatesUnder(context, dir);
   if (found?.length !== 1) return false;
   const [descriptor] = found;
@@ -340,8 +341,9 @@ function isThemeFolder(context, dir, fixing) {
 }
 
 /**
- * Whether `dir` reads cleanly as a themes root: every folder in it is one
- * complete theme, and no metadata sits directly in it.
+ * Whether `dir` reads cleanly as a themes root: every folder in it that
+ * discovery reads as a theme is one complete theme, and no metadata sits
+ * directly in it.
  * @param {FixContext} context
  * @param {string} dir
  * @param {{except?: string, ignore?: string, fixing?: string}} [options] a
@@ -359,9 +361,14 @@ function readsAsThemesRoot(context, dir, {except, ignore, fixing} = {}) {
   }
   return entries.every(entry => {
     const full = path.join(dir, entry.name);
+    if (entry.name.startsWith('.')) return true;
     if (entry.isSymbolicLink()) return false;
     if (entry.isDirectory()) {
-      return full === except || isThemeFolder(context, full, fixing);
+      return (
+        full === except ||
+        !readsAsTheme(full) ||
+        isCompleteTheme(context, full, fixing)
+      );
     }
     return (
       full === ignore ||
