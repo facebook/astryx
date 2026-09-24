@@ -172,6 +172,20 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.status).toBe(1);
   });
 
+  it.each(['1.5', '5abc'])(
+    'refuses --limit %s like search({limit}) does, in both modes',
+    async value => {
+      await expect(
+        search('x', {...OPTS, limit: Number(value)}),
+      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+      const json = await runCli(['--json', 'search', 'x', '--limit', value], REPO_ROOT);
+      expect(json.status).toBe(1);
+      expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+      const text = await runCli(['search', 'x', '--limit', value], REPO_ROOT);
+      expect(text.status).toBe(1);
+    },
+  );
+
   it('emits a valid --json envelope', async () => {
     const r = await runCli(['--json', 'search', 'button'], REPO_ROOT);
     expect(r.status).toBe(0);

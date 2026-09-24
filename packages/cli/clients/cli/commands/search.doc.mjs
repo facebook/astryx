@@ -29,7 +29,7 @@ export const doc = {
     {
       flag: '--limit <n>',
       param: 'options.limit',
-      description: 'Max number of results (default 20)',
+      description: 'Max number of results, a positive integer (default 20)',
     },
     {
       flag: '--verbose',
@@ -45,7 +45,7 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'success (including zero matches)'},
-    {code: 1, when: 'invalid --type or a non-positive --limit'},
+    {code: 1, when: 'invalid --type or a --limit that is not a positive integer'},
   ],
   related: ['component', 'hook', 'docs', 'template', 'build'],
 };

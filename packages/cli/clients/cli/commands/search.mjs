@@ -54,11 +54,10 @@ export function registerSearch(program) {
         // Never let the nudge break the command.
       }
 
-      // Parse --limit to a number; the API validates it (positive integer) and
-      // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
-      // pre-rejecting with a generic code here.
-      const limit =
-        options.limit != null ? Number.parseInt(options.limit, 10) : 20;
+      // Number(), not parseInt(): parseInt truncates `1.5` and `5abc` into
+      // integers the API would reject. The API validates the value, so the
+      // flag and `search({limit})` accept and refuse the same inputs.
+      const limit = options.limit != null ? Number(options.limit) : 20;
 
       /** @type {import('../../../api/search/search.type.mjs').SearchResponse} */
       let result;
