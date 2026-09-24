@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, records, code} from '../formatters/index.mjs';
-import {cliError} from '../lib/cli-error.mjs';
+import {cliError, rejectEmptyArgument} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
@@ -81,6 +81,8 @@ export function registerTemplate(program) {
        * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
+      rejectEmptyArgument('name', name, 'astryx template');
+      rejectEmptyArgument('path', targetPath, 'astryx template');
       const json = program.opts().json || false;
       const run = getCliInvocation();
 

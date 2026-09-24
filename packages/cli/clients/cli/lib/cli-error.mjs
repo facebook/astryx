@@ -136,6 +136,36 @@ export function cliError(message, options = {}) {
 }
 
 /**
+ * Reject a positional argument the user typed as `""`.
+ *
+ * An optional argument is absent when it is `undefined`, and an empty string is
+ * not that — but it is falsy, so `if (name)` in a handler treats the two as the
+ * same thing. `astryx template "" src/zzz.tsx` took the list branch and threw
+ * away the write target the user named, exiting 0. One space already fails with
+ * ERR_INVALID_ARGUMENT; zero characters has to fail the same way.
+ *
+ * Call this from a handler whose argument has no other source. A command that
+ * can take the same value from `--file` or stdin (layout) is the opposite case:
+ * an empty positional there really does mean "not given as an argument", and it
+ * has its own ERR_MISSING_ARGUMENT for it.
+ *
+ * @param {string} name the argument as the help spells it, without brackets
+ * @param {unknown} value what Commander passed
+ * @param {string} command the command as a user types it, e.g. `astryx template`
+ * @returns {void} returns only when the argument is not an empty string
+ */
+export function rejectEmptyArgument(name, value, command) {
+  if (typeof value !== 'string' || value.length > 0) return;
+  cliError(
+    `Argument <${name}> is an empty string. ` +
+      'An empty argument is not the same as an omitted one, and ignoring it ' +
+      'would silently discard the rest of the command: pass a value, or leave ' +
+      `<${name}> out of \`${command}\` entirely.`,
+    {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+  );
+}
+
+/**
  * Clean exit. Mostly a marker for intent — `process.exit(0)` works fine,
  * but using cliExit at success boundaries makes greps for "exit policy"
  * sites unambiguous.

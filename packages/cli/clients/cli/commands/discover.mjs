@@ -13,7 +13,7 @@
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, record, records, list, code} from '../formatters/index.mjs';
-import {cliError} from '../lib/cli-error.mjs';
+import {cliError, rejectEmptyArgument} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../../../api/discover/discover.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
@@ -72,6 +72,7 @@ export function registerDiscover(program) {
        * @param {{components?: boolean}} options
        */
       async (query, options) => {
+      rejectEmptyArgument('query', query, 'astryx discover');
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
       const lang = program.opts().lang || null;
