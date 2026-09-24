@@ -22,6 +22,7 @@ import {
   emit,
   section,
   text,
+  list,
   record,
   records,
 } from '../formatters/index.mjs';
@@ -32,20 +33,14 @@ import {doc as buildCommand} from './build.doc.mjs';
 import {doc as buildFn} from '../../../api/build/build.doc.mjs';
 
 /**
- * Render a playbook command list: each command formatted with the caller's
- * invocation, purposes aligned into one comment column.
- * @param {import('../../../api/build/build.type.mjs').BuildPlaybookCommand[]} commands
- * @returns {string[]}
+ * Playbook commands as records whose field names are the JSON keys, so a
+ * reader can grep `^command:`. The command is run with the caller's invocation.
+ * @type {import('../formatters/index.mjs').RecordOptions}
  */
-function playbookCommandLines(commands) {
-  const rendered = commands.map(c => formatCliCommand(c.command));
-  const width = Math.max(0, ...rendered.map(r => r.length));
-  return commands.map((c, i) =>
-    c.purpose
-      ? `     ${rendered[i].padEnd(width)}   # ${c.purpose}`
-      : `     ${rendered[i]}`,
-  );
-}
+const COMMAND_RECORDS = {
+  fields: ['command', 'purpose'],
+  format: {command: command => formatCliCommand(command)},
+};
 
 /**
  * Emit the build playbook (shown when `build` is run with no query) — a
@@ -55,23 +50,16 @@ function playbookCommandLines(commands) {
 function printPlaybook(playbook) {
   emit(
     section(playbook.title),
-    ...playbook.steps.map((step, i) =>
-      text(
-        [
-          `${i + 1}. ${step.title}:`,
-          ...playbookCommandLines(step.commands),
-          ...(step.returns ? [`   returns: ${step.returns}`] : []),
-        ].join('\n'),
-      ),
-    ),
-    text(
-      [
-        `${playbook.steps.length + 1}. Rules (keep it on-system):`,
-        ...playbook.rules.map(rule => `   - ${rule}`),
-      ].join('\n'),
-    ),
-    playbook.related.length > 0 &&
-      text(['Related:', ...playbookCommandLines(playbook.related)].join('\n')),
+    ...playbook.steps.flatMap((step, i) => [
+      section(`${i + 1}. ${step.title}`),
+      records(step.commands, COMMAND_RECORDS),
+      step.returns ? record({returns: step.returns}) : null,
+    ]),
+    section(`${playbook.steps.length + 1}. Rules (keep it on-system)`),
+    list(playbook.rules),
+    ...(playbook.related.length > 0
+      ? [section('Related'), records(playbook.related, COMMAND_RECORDS)]
+      : []),
   );
 }
 

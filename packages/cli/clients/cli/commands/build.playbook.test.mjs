@@ -44,16 +44,19 @@ describe('build playbook: text is a projection of the JSON', () => {
       ...data.steps.flatMap((/** @type {any} */ s) => s.commands),
       ...data.related,
     ];
-    // Command lines are indented five spaces: `<invocation> <command>  # purpose`.
+    // Each command is one record whose field names are the JSON keys:
+    // `command:` (run with the caller's invocation), then `purpose:`.
     const printed = out
       .split('\n')
-      .filter(line => /^ {5}\S/.test(line))
-      .map(line => line.replace(/\s+#.*$/, '').trim());
+      .filter(line => line.startsWith('command: '))
+      .map(line => line.slice('command: '.length).trim());
     expect(printed).toHaveLength(commands.length);
     commands.forEach(({command, purpose}, i) => {
       expect(printed[i].endsWith(` ${command}`)).toBe(true);
-      if (purpose) expect(out).toContain(`# ${ascii(purpose)}`);
+      if (purpose) expect(out).toContain(`purpose: ${ascii(purpose)}`);
     });
+    // No column the handler drew itself.
+    expect(out).not.toMatch(/ {2,}# /);
   }, SLOW);
 
   it('names only commands this CLI registers', async () => {
