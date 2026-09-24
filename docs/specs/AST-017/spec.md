@@ -35,6 +35,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-5",
       "DEC-6",
       "DEC-7",
+      "DEC-8",
       "FR3",
       "FR4",
       "FR5",
@@ -43,7 +44,9 @@ affects_consumer_docs: [release-process, templates]
       "FR15",
       "FR16",
       "FR17",
-      "FR18"
+      "FR18",
+      "FR19",
+      "FR20"
     ]
   }
 }
@@ -213,6 +216,38 @@ independent for each invocation.
   independently. When the CLI and programmatic API expose the same control, they MUST
   share accepted values, defaults, precedence, observable behavior, and error
   semantics.
+- **FR19 — Configuration is admitted only on evidence.** A new configuration key,
+  or a new accepted value that changes CLI behavior, MUST be justified by a
+  reproducible supported-consumer case in which automatic detection and
+  established project conventions produce the wrong result. The proposal MUST
+  record that case and the convention it tried first. When an established
+  convention or automatic detection can express the need, the CLI MUST use it
+  instead of adding configuration. Configuration MUST NOT duplicate a value the
+  CLI can derive.
+- **FR20 — Integration contributions compose predictably and visibly.** A
+  configuration setting MAY accept contributions from integrations only when its
+  entry in the public configuration contract (the exported `AstryxConfig` type
+  and the configuration schema reference consumers read through the CLI) states:
+  that integrations may contribute; the exact form of a contribution; how the app
+  value and all contributions combine, and in what order; the one documented
+  control through which an app refuses inherited contributions; and what happens
+  when a contribution fails. The setting owns that rule; an integration cannot
+  change it. An integration declares each contribution statically in its
+  integration module, either as a field of the exported `AstryxIntegration`
+  manifest type or as a documented named export, and the integration authoring
+  reference documents that form. Importing an integration module MUST NOT
+  contribute anything as a side effect. The CLI MUST let a caller inspect the
+  effective value of each such setting and the source of each part (the app or a
+  named integration) through a documented command or programmatic API. Unless a
+  setting's contract states and justifies otherwise: app and integration
+  contributions combine rather than replace one another; the app's own value
+  applies first, then integrations in their resolved order; a failing
+  contribution is skipped without removing the others or changing the command's
+  result; the app refuses all inherited contributions through one documented
+  control; and loading the project more than once in one invocation applies each
+  contribution once. No integration contribution can remove or weaken a value
+  supplied by the app or by another integration. When a setting protects the
+  project, a failed contribution MUST fail closed instead of being skipped.
 
 ### Platform support
 
@@ -257,18 +292,31 @@ A future proposal must prove meaningful behavior across every command under FR15
 behavior. These decisions change policy only, so they do not change runtime output or
 a published package and require no Changeset.
 
+The existing `debug` setting is the reference behavior for FR20: the app handler
+and every integration handler run, the app first; a throwing handler is skipped
+without affecting the others or the command; `inheritDebug: false` in the
+package's `astryx` field refuses inherited handlers; and a repeated project load
+delivers each event once. Its configuration schema entry states that rule, and
+the `cli-integrations` authoring topic documents the `debug` named export. Draft
+AST-031 details the same model for runtime handler features. No command yet
+reports an effective contributed value with its sources, so existing contributed
+settings do not meet FR20's inspection requirement; this record does not choose
+that command. FR19 applies to new configuration; this amendment does not
+reclassify existing keys.
+
 ## Verification
 
-| Contract  | Verification                                                                                                                     | Representative states                                                                         | Mutation or failure expectation                                                                                                                |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                               |
-| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                              |
-| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                    | Category and bump diverge, or a breaking release gives no usable migration path                                                                |
-| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection |
-| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                      |
-| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                | command, option, API/config, private rollout/test hook                                        | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                   |
-| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                             | global invariant, scoped command group, single command, programmatic API                      | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                     |
-| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                     | known and new extension, partial result, text/JSON/API parity, independent concurrent calls   | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                 |
+| Contract  | Verification                                                                                                                     | Representative states                                                                                                | Mutation or failure expectation                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                                               | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                         |
+| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                                              | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                        |
+| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                                           | Category and bump diverge, or a breaking release gives no usable migration path                                                                                                                          |
+| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                        | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                           |
+| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                                         | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                |
+| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                | command, option, API/config, private rollout/test hook                                                               | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                             |
+| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                             | global invariant, scoped command group, single command, programmatic API                                             | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                               |
+| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                     | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                          | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                           |
+| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                     | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection |
 
 ## Decision log
 
@@ -405,6 +453,29 @@ and API surfaces.
 Rejected: best-effort interception of known loaders, silent fallback to partial or
 empty results, process-global mutable switches, and separate CLI and API meanings. Each can
 make the advertised guarantee false while the happy-path tests remain green.
+
+### DEC-8 — Configuration is a last resort, and contributions compose
+
+**Reference:** `spec:AST-017/DEC-8`
+**Decider:** `josephfarina`, `2026-09-23`
+
+Every configuration key is permanent public surface under FR3 and FR14, and it
+asks every consumer to make a decision. A key often hides a gap in detection, so
+detection and established conventions come first, and a new key needs a
+reproduced case where they fail.
+
+Integration contributions let one package set shared behavior once, as the
+`debug` setting does for organization-wide debug logs, while the app keeps the
+final say. The setting defines how contributions combine; an integration only
+declares its contribution, in the documented form. Contributions combine with the
+app value instead of replacing it, they are isolated from one another, each part
+of the effective value can be traced to its source, and a protective setting
+fails closed.
+
+Rejected: adding a key because it is easy to add, a key that duplicates a
+convention or a derivable value, an integration silently replacing an app value,
+an integration defining its own merge rule, contributions made by import side
+effects, and one broken integration disabling a setting for every app.
 
 ## Open questions
 
