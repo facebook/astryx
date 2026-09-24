@@ -50,10 +50,11 @@
 #
 # Uses pull_request_target so it can label / request reviewers / disable
 # auto-merge on fork PRs. It reads the PR file list, diff text, and changed Core
-# base/head source bytes as inert API data. The classifiers and approval helper
-# come from the trusted base ref. It reads eng/design owner lists from repository
-# VARIABLES (vars.ENGOWNERS / vars.DESIGNOWNERS) — no checkout and no execution
-# of PR-controlled code. Do not add checkout or build steps here.
+# base/head source bytes as inert API data. The approval helper comes from the
+# trusted workflow SHA; the visual classifier comes from the PR base ref. It reads
+# eng/design owner lists from repository VARIABLES (vars.ENGOWNERS /
+# vars.DESIGNOWNERS) — no checkout and no execution of PR-controlled code.
+# Do not add checkout or build steps here.
 
 name: Review signal
 
@@ -214,8 +215,10 @@ jobs:
               return;
             }
 
+            // Match the trusted workflow version: an older PR base can predate
+            // this helper even though the running workflow requires it.
             const { data: reviewDecisionFile } = await github.rest.repos.getContent({
-              owner, repo, ref: pr.base.sha,
+              owner, repo, ref: context.sha,
               path: '.github/scripts/review-signal-decision.cjs',
             });
             const reviewDecisionSource = Buffer.from(
