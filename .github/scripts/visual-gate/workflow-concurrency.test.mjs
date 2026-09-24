@@ -72,7 +72,7 @@ describe('PR report and deployment workflow contracts', () => {
       'reconcileEarlyPreviewComment',
     );
     expect(jobs.resolve.if).toContain("github.event_name == 'workflow_run'");
-    expect(jobs.comment.needs).toBe('resolve');
+    expect(jobs.comment.needs).toEqual(['resolve', 'deploy-preview']);
     expect(jobs.comment.permissions.deployments).toBe('read');
   });
 
@@ -105,12 +105,12 @@ describe('PR report and deployment workflow contracts', () => {
     expect(value).not.toContain(
       'storybook_url=https://${REPO_OWNER}.github.io',
     );
-    expect(value).not.toContain(
+    expect(value).toContain(
       'name: sandbox-${{ steps.urls.outputs.short_hash }}',
     );
   });
 
-  it('moves both human PR previews to the existing Vercel docsite, not Pages', () => {
+  it('hosts only Storybook on Vercel and preserves Sandbox Pages publication', () => {
     const config = JSON.parse(
       fs.readFileSync(path.join(ROOT, 'apps/docsite/vercel.json'), 'utf8'),
     );
@@ -125,34 +125,35 @@ describe('PR report and deployment workflow contracts', () => {
       'utf8',
     );
     expect(builder).toContain("deploymentEnv !== 'preview'");
-    expect(builder).toContain(
-      "runPreviewBuild(run, root, '@astryxdesign/storybook')",
-    );
-    expect(builder).toContain(
-      "runPreviewBuild(run, root, '@astryxdesign/sandbox'",
-    );
+    expect(builder).toContain('buildStorybookPreview(deploymentEnv, root');
+    expect(builder).not.toContain("'@astryxdesign/sandbox'");
     const comment = workflow('pr-comment.yml');
-    expect(comment).not.toContain('deploy-preview.yml');
-    expect(comment).not.toContain('preview-deployment-');
+    expect(comment).toContain('uses: ./.github/workflows/deploy-preview.yml');
+    expect(comment).toContain('preview-deployment-');
     expect(comment).toContain('deployments: read');
-    expect(fs.existsSync(path.join(WORKFLOWS, 'deploy-preview.yml'))).toBe(
-      false,
+    expect(workflow('deploy-preview.yml')).not.toContain(
+      '--storybook storybook-dist',
     );
-    expect(fs.existsSync(path.join(WORKFLOWS, 'redeploy-preview.yml'))).toBe(
-      false,
+    expect(workflow('redeploy-preview.yml')).not.toContain(
+      '--storybook storybook-dist',
+    );
+    expect(workflow('deploy-preview.yml')).toContain('--sandbox sandbox-dist');
+    expect(workflow('redeploy-preview.yml')).toContain(
+      '--sandbox sandbox-dist',
     );
     const publisher = fs.readFileSync(
       path.join(ROOT, '.github/scripts/lib/gh-pages-publisher.mjs'),
       'utf8',
     );
-    expect(publisher).not.toContain("command === 'pr-preview'");
+    expect(publisher).toContain("command === 'pr-preview'");
+    expect(publisher).toContain('Storybook previews are hosted on Vercel');
     const reconciler = fs.readFileSync(
       path.join(ROOT, '.github/scripts/lib/pr-preview.mjs'),
       'utf8',
     );
     expect(reconciler).toContain('resolveVercelPreview');
     expect(reconciler).toContain('`${previewOrigin}/storybook/`');
-    expect(reconciler).toContain('`${previewOrigin}/sandbox/`');
+    expect(reconciler).toContain('pagesURL(identity, sandboxPath)');
   });
 
   it('defers full-tree cleanup and retains required visual evidence and stable-site writers', () => {
@@ -167,7 +168,7 @@ describe('PR report and deployment workflow contracts', () => {
     );
     expect(pages).toContain("- 'Deploy'");
     expect(pages).toContain("- 'PR Comment'");
-    expect(pages).not.toContain("- 'Re-deploy Preview'");
+    expect(pages).toContain("- 'Re-deploy Preview'");
     expect(pages).toContain(
       "github.event.workflow_run.event == 'workflow_dispatch'",
     );
@@ -182,6 +183,8 @@ describe('PR report and deployment workflow contracts', () => {
 
   it('retains the remaining Pages publishers behind the shared publisher', () => {
     const files = [
+      '.github/workflows/deploy-preview.yml',
+      '.github/workflows/redeploy-preview.yml',
       '.github/workflows/cleanup-previews.yml',
       '.github/workflows/compact-gh-pages.yml',
       '.github/workflows/vibe-screenshots.yml',

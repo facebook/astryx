@@ -23,6 +23,7 @@ import {
   enqueuePublication,
   publishImmutablePath,
   publishManualVisualBaseline,
+  publishPrPreview,
   publishVibeReport,
   publishVibeScreenshots,
   publishStableSite,
@@ -368,6 +369,21 @@ function context({root, remote, bin}, runId, scope) {
     tempRoot: root,
     remoteURL: `file://${remote}`,
     envPath: `${bin}:${process.env.PATH}`,
+  };
+}
+
+function previewIdentity(overrides = {}) {
+  return {
+    pr: 123,
+    head: HEAD,
+    headRepo: 'cixzhang/astryx',
+    headRepoId: '321',
+    headRef: 'preview-fix',
+    baseRepo: REPO,
+    sourceRunId: 333,
+    sourceRunAttempt: 1,
+    sourceConclusion: 'success',
+    ...overrides,
   };
 }
 
@@ -1157,6 +1173,67 @@ describe('gh-pages publisher', () => {
     expect(
       fs.readFileSync(path.join(final, 'storybook/old.html'), 'utf8'),
     ).toBe('old storybook');
+  });
+
+  it('publishes Sandbox only and preserves existing Storybook and visual bytes', async () => {
+    const fx = fixture();
+    const sandbox = path.join(fx.root, 'preview-sandbox');
+    writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
+    writeFile(
+      path.join(sandbox, 'template-assets', 'ignored.txt'),
+      'shared asset',
+    );
+    const result = await queuedPublish(fx, 940, 'pr-preview/123', () =>
+      publishPrPreview({
+        ...context(fx, 940, 'pr-preview/123'),
+        ...previewIdentity(),
+        sandbox,
+      }),
+    );
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
+    expect(
+      fs.readFileSync(path.join(final, 'pr/123/sandbox/index.html'), 'utf8'),
+    ).toBe('new sandbox');
+    expect(
+      fs.existsSync(path.join(final, 'pr/123/sandbox/template-assets')),
+    ).toBe(false);
+    expect(
+      fs.readFileSync(path.join(final, 'pr/123/visual/evidence.json'), 'utf8'),
+    ).toBe('same-PR visual evidence');
+    expect(fs.readFileSync(path.join(final, 'pr/124/index.html'), 'utf8')).toBe(
+      'closed preview',
+    );
+    expect(result.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
+    });
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(final, 'pr/123/.astryx-preview.json'), 'utf8'),
+    );
+    expect(manifest.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
+    });
+  });
+
+  it('rejects attempts to republish Storybook onto Pages', async () => {
+    const fx = fixture();
+    const storybook = path.join(fx.root, 'storybook');
+    writeFile(path.join(storybook, 'index.html'), 'untrusted storybook');
+    await expect(
+      publishPrPreview({
+        ...context(fx, 946, 'pr-preview/123'),
+        ...previewIdentity(),
+        storybook,
+      }),
+    ).rejects.toThrow(/Storybook previews are hosted on Vercel/);
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
   });
 
   it('cleans stale previews without deleting visual evidence or live previews', async () => {

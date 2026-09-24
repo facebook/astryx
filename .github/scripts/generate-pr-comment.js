@@ -203,23 +203,27 @@ if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
 **${extLink('View Sandbox for this PR', sandboxUrl)}**
+_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
 
-// Vercel previews are independent of CI's conclusion; no missing preview
-// should be attributed to a failed visual, test, or Sandbox check.
+// Storybook readiness follows Vercel; Sandbox still follows the source CI's
+// trusted Pages publisher. Report their missing states independently.
 let previewAvailabilitySection = '';
 if (previewState) {
   const missing = [];
-  if (!storybookUrl) missing.push('Storybook');
-  if (!sandboxUrl) missing.push('Sandbox');
-  if (missing.length > 0) {
-    const reason =
+  if (!storybookUrl)
+    missing.push('Storybook is not ready on the exact-head Vercel preview.');
+  if (!sandboxUrl) {
+    missing.push(
       sourceConclusion === 'success'
-        ? `${missing.join(' and ')} ${missing.length === 1 ? 'is' : 'are'} not ready for this head.`
-        : `Preview for this head is not ready; CI concluded ${sourceConclusion || 'without a result'}.`;
-    previewAvailabilitySection = `> **Preview availability:** ${reason}\n\n`;
+        ? 'Sandbox was not published for this CI run.'
+        : `Sandbox is unavailable because CI concluded ${sourceConclusion || 'without a result'}.`,
+    );
+  }
+  if (missing.length > 0) {
+    previewAvailabilitySection = `> **Preview availability:** ${missing.join(' ')}\n\n`;
   }
 }
 

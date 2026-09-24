@@ -10,8 +10,9 @@
 # drift between a fork path and a same-repo path.
 #
 # Safety: resolves scope and PR identity from the GitHub API. Privileged jobs
-# check out only trusted default-branch code. Exact-head Vercel deployment URLs
-# are resolved from GitHub API records; PR artifacts remain static data.
+# check out only trusted default-branch code. The Storybook URL is resolved
+# from GitHub's exact-head Vercel deployment, while Sandbox Pages proof comes
+# from the validated source CI artifact. PR artifacts remain static data.
 
 name: PR Comment
 
@@ -255,13 +256,37 @@ jobs:
                 'The current change has no visual or preview-producing scope. Visual checks are not applicable; preview links are not shown.',
             });
 
-  comment:
+  deploy-preview:
     needs: resolve
+    if: >-
+      github.event.action == 'completed' &&
+      needs.resolve.outputs.valid == 'true' &&
+      needs.resolve.outputs.spec_only != 'true' &&
+      needs.resolve.outputs.tooling_only != 'true'
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: read
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ needs.resolve.outputs.pr_number }}
+      head_sha: ${{ needs.resolve.outputs.head_sha }}
+      head_repository: ${{ needs.resolve.outputs.head_repo }}
+      head_repository_id: ${{ needs.resolve.outputs.head_repo_id }}
+      head_ref: ${{ needs.resolve.outputs.head_ref }}
+      base_repository: ${{ needs.resolve.outputs.base_repo }}
+      source_run_id: ${{ needs.resolve.outputs.run_id }}
+      source_run_attempt: ${{ needs.resolve.outputs.run_attempt }}
+      source_conclusion: ${{ needs.resolve.outputs.source_conclusion }}
+    secrets: inherit
+
+  comment:
+    needs: [resolve, deploy-preview]
     concurrency:
       group: pr-report-${{ needs.resolve.outputs.pr_number }}
       cancel-in-progress: false
-    # Canonical visual evidence still uses its existing trusted publisher.
-    # Human Storybook/Sandbox previews are served by the exact-head Vercel build.
+    # Sandbox Pages publication settles before CI evidence reconciliation;
+    # Storybook links come from the exact-head Vercel deployment independently.
     if: >-
       always() &&
       github.event.action == 'completed' &&
@@ -351,6 +376,14 @@ jobs:
           path: a11y
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download trusted preview deployment result
+        if: steps.identity.outputs.valid == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: preview-deployment-${{ steps.identity.outputs.run_id }}-${{ steps.identity.outputs.run_attempt }}
+          path: preview-deployment
         continue-on-error: true
 
       - name: Download canonical visual report

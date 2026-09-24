@@ -19,6 +19,7 @@ on:
     workflows:
       - 'Deploy'
       - 'PR Comment'
+      - 'Re-deploy Preview'
       - 'Cleanup Preview Deployments'
       - 'CI'
       - 'Vibe Test Screenshots'

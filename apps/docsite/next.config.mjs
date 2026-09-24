@@ -2,8 +2,8 @@
 
 /**
  * @file Configure the docsite's routes, response headers, and theme resolution.
- * @input Next.js build configuration and staged Storybook/Sandbox static exports.
- * @output Docsite routes plus preview-only static HTML at /storybook/ and /sandbox/.
+ * @input Next.js build configuration and staged Storybook static export.
+ * @output Docsite routes plus preview-only Storybook HTML at /storybook/.
  * @position Next.js configuration for the existing Vercel docsite deployment.
  */
 
@@ -15,15 +15,12 @@ const nextConfig = {
   cacheComponents: true,
   // A dynamic route segment can't carry a static extension, so the public
   // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
-  // Exported directories contain index.html files, not Next.js page routes.
-  // Files (iframe.html, _next/static/*, images, template assets) are served
-  // directly from public/ before these fallback rewrites are checked.
+  // Storybook's exported index.html is a static file, not a Next.js route.
+  // Its other files are served directly from public/ before this rewrite.
   async rewrites() {
     return [
       {source: '/blog/:slug.txt', destination: '/blog/txt/:slug'},
       {source: '/storybook', destination: '/storybook/index.html'},
-      {source: '/sandbox', destination: '/sandbox/index.html'},
-      {source: '/sandbox/:path*', destination: '/sandbox/:path*/index.html'},
     ];
   },
   // The playground preview evaluates user-authored code, so it is the one

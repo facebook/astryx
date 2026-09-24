@@ -9,10 +9,17 @@
  */
 
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+import {
+  createPreviewPublicationManifest,
+  createPublishedDeploymentResult,
+  writeDeploymentResult,
+} from './pr-preview.mjs';
 
 const PAGES_BRANCH = 'gh-pages';
 const QUEUE_REL = path.join('.astryx-gh-pages', 'publication-queue');
@@ -1328,6 +1335,164 @@ export async function publishManualVisualBaseline({
   refuse(`could not push the updated baseline after ${maxAttempts} attempts`);
 }
 
+const PREVIEW_MANIFEST = '.astryx-preview.json';
+
+function previewDirectory(value, name) {
+  if (!value) return null;
+  const directory = path.resolve(value);
+  if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+    refuse(`${name} must be a directory`);
+  }
+  const index = path.join(directory, 'index.html');
+  if (!fs.existsSync(index) || !fs.statSync(index).isFile()) {
+    refuse(`${name} must contain index.html`);
+  }
+  return directory;
+}
+
+function sha256(file) {
+  return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function clearPreviewContents(destination) {
+  fs.mkdirSync(destination, {recursive: true});
+  // Sandbox remains on Pages until its own migration. Keep Storybook and the
+  // immutable visual evidence untouched when replacing Sandbox for this PR.
+  for (const name of ['sandbox', PREVIEW_MANIFEST]) {
+    fs.rmSync(path.join(destination, name), {recursive: true, force: true});
+  }
+}
+
+export async function publishPrPreview({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  pr,
+  head,
+  headRepo,
+  headRepoId,
+  headRef,
+  baseRepo,
+  sourceRunId,
+  sourceRunAttempt,
+  sourceConclusion,
+  storybook,
+  sandbox,
+  resultFile,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const prNumber = Number(pr);
+  if (!Number.isSafeInteger(prNumber) || prNumber <= 0) {
+    refuse('PR number is invalid');
+  }
+  if (baseRepo !== repository) {
+    refuse('preview base repository does not match publisher repository');
+  }
+  if (storybook) {
+    refuse('Storybook previews are hosted on Vercel, not gh-pages');
+  }
+  const sandboxDir = previewDirectory(sandbox, '--sandbox');
+  if (sourceConclusion !== 'success' && sandboxDir) {
+    refuse('failed source CI cannot publish preview targets');
+  }
+  const identity = {
+    prNumber,
+    headSha: head,
+    headRepository: headRepo,
+    headRepositoryId: headRepoId,
+    headRef,
+    baseRepository: baseRepo,
+    sourceRunId,
+    sourceRunAttempt,
+    sourceConclusion,
+  };
+  const storybookIndexSha256 = null;
+  const sandboxIndexSha256 = sandboxDir
+    ? sha256(path.join(sandboxDir, 'index.html'))
+    : null;
+  const manifest = createPreviewPublicationManifest(identity, {
+    storybookIndexSha256,
+    sandboxIndexSha256,
+  });
+  const destinationRel = `pr/${prNumber}`;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      sparsePaths: [destinationRel],
+      prefix: 'gh-pages-preview-',
+    });
+    try {
+      const destination = path.join(checkout, destinationRel);
+      clearPreviewContents(destination);
+      if (sandboxDir) {
+        const sandboxDestination = path.join(destination, 'sandbox');
+        fs.mkdirSync(sandboxDestination, {recursive: true});
+        for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
+          if (entry.name === 'template-assets') continue;
+          fs.cpSync(
+            path.join(sandboxDir, entry.name),
+            path.join(sandboxDestination, entry.name),
+            {recursive: true, force: true},
+          );
+        }
+      }
+      if (
+        sandboxDir &&
+        sha256(path.join(destination, 'sandbox', 'index.html')) !==
+          sandboxIndexSha256
+      ) {
+        refuse('published Sandbox index does not match its source artifact');
+      }
+      fs.writeFileSync(
+        path.join(destination, PREVIEW_MANIFEST),
+        `${JSON.stringify(manifest, null, 2)}\n`,
+      );
+      let commit = commitIfNeeded(checkout, `Deploy PR #${prNumber} preview`, [
+        '-A',
+        destinationRel,
+      ]);
+      if (commit !== null) {
+        await beforePush?.({attempt, checkout, commit});
+        const pushed = tryRun('git', [
+          '-C',
+          checkout,
+          'push',
+          'origin',
+          PAGES_BRANCH,
+        ]);
+        if (!pushOrRetry(pushed)) {
+          process.stdout.write(
+            `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
+          );
+          await sleep(attempt * 2000);
+          continue;
+        }
+      } else {
+        commit = git(checkout, 'rev-parse', 'HEAD');
+      }
+
+      const result = createPublishedDeploymentResult(identity, {
+        storybookIndexSha256,
+        sandboxIndexSha256,
+        pagesCommit: commit,
+      });
+      if (resultFile) writeDeploymentResult(resultFile, result);
+      process.stdout.write(`Reconciled PR #${prNumber} preview.\n`);
+      return result;
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+  }
+  refuse(
+    `could not publish PR #${prNumber} preview after ${maxAttempts} attempts`,
+  );
+}
+
 function listOpenPRsFromGitHub(repository) {
   const result = run('gh', [
     'pr',
@@ -2096,6 +2261,28 @@ export async function main(argv = process.argv.slice(2)) {
       actor: flag(argv, '--actor'),
       prune: flag(argv, '--prune', 'false') === 'true',
     });
+  } else if (command === 'pr-preview') {
+    const pr = flag(argv, '--pr');
+    await withPublicationTurn({
+      ...context,
+      scope: `pr-preview/${pr}`,
+      publish: () =>
+        publishPrPreview({
+          ...context,
+          pr,
+          head: flag(argv, '--head'),
+          headRepo: flag(argv, '--head-repo'),
+          headRepoId: flag(argv, '--head-repo-id'),
+          headRef: flag(argv, '--head-ref'),
+          baseRepo: flag(argv, '--base-repo'),
+          sourceRunId: flag(argv, '--source-run-id'),
+          sourceRunAttempt: flag(argv, '--source-run-attempt'),
+          sourceConclusion: flag(argv, '--source-conclusion'),
+          storybook: flag(argv, '--storybook'),
+          sandbox: flag(argv, '--sandbox'),
+          resultFile: flag(argv, '--result'),
+        }),
+    });
   } else if (command === 'cleanup-previews') {
     await withPublicationTurn({
       ...context,
@@ -2143,7 +2330,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
   } else {
     refuse(
-      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|immutable-path|visual-baseline-manual|cleanup-previews|vibe-report|vibe-screenshots|compact>',
+      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|immutable-path|visual-baseline-manual|pr-preview|cleanup-previews|vibe-report|vibe-screenshots|compact>',
     );
   }
 }
