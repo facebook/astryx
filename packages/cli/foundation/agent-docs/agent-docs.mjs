@@ -718,9 +718,9 @@ export function removeAgentDocs(targetDir) {
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
       if (!fs.existsSync(filePath)) {
-        humanLog(`✓ Removed empty ${p}`);
+        humanLog(`[ok] Removed empty ${p}`);
       } else {
-        humanLog(`✓ Removed design system section from ${p}`);
+        humanLog(`[ok] Removed design system section from ${p}`);
       }
     }
   }

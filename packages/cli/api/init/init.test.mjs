@@ -250,6 +250,7 @@ describe('init() — ASCII output', () => {
       await init({all: true}, {cwd: tmpDir});
       await init({all: true}, {cwd: tmpDir});
       await init({features: 'template', templateName: 'blank'}, {cwd: tmpDir});
+      await init({removeAgents: true}, {cwd: tmpDir});
       await init({removeAgents: true}, {cwd: empty});
     } finally {
       logger.setSilent(true);
@@ -258,6 +259,7 @@ describe('init() — ASCII output', () => {
       fs.rmSync(empty, {recursive: true, force: true});
     }
     expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some(line => line.startsWith('[ok] Removed'))).toBe(true);
     expect(lines.filter(line => /[\u0080-\uFFFF]/.test(line))).toEqual([]);
   });
 });
