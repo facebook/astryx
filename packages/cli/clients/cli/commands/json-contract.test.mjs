@@ -172,3 +172,24 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.data.summary.fail).toBeGreaterThan(0);
   });
 });
+
+describe('--json contract: the flag describes the envelopes it emits', () => {
+  /** @param {string} shape e.g. ` apiVersion, error, code, suggestions? ` */
+  const fields = shape => shape.split(',').map(f => f.trim().replace(/\?$/, ''));
+
+  it('names every field of the success and error envelopes', async () => {
+    const manifest = parseJson((await runCli(['manifest', '--json'], {cwd: tmpDir})).stdout);
+    const {description} = manifest.data.globalOptions.find(o => o.flag === '--json');
+    const match = /Success envelope: \{([^}]*)\}.*Error envelope: \{([^}]*)\}/.exec(description);
+    expect(match, description).not.toBeNull();
+    const [, success, error] = /** @type {RegExpExecArray} */ (match);
+
+    for (const key of Object.keys(manifest)) expect(fields(success)).toContain(key);
+    expect(fields(success)).toContain('meta');
+
+    // An unknown command's envelope carries every error field, suggestions included.
+    const failure = parseJson((await runCli(['bogus-cmd', '--json'], {cwd: tmpDir})).stdout);
+    expect(Object.keys(failure)).toContain('suggestions');
+    for (const key of Object.keys(failure)) expect(fields(error)).toContain(key);
+  });
+});
