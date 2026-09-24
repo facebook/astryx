@@ -70,6 +70,28 @@ describe('search leaf — envelope + ranking', () => {
   }, SLOW);
 });
 
+describe('search leaf — per-domain result fields', () => {
+  it('carries import for components and hooks, title for docs, displayName and kind for templates', async () => {
+    const r = await search('theme', {cwd, limit: 60});
+    expect(new Set(r.data.results.map(res => res.domain))).toEqual(
+      new Set(SEARCH_DOMAINS),
+    );
+    for (const res of r.data.results) {
+      expect(typeof res.command).toBe('string');
+      expect(typeof res.description).toBe('string');
+      if (res.domain === 'component' || res.domain === 'hook') {
+        expect(res.import).toMatch(/\S/);
+      } else if (res.domain === 'doc') {
+        expect(res.title).toMatch(/\S/);
+        expect(res.command).toBe(`astryx docs ${res.name}`);
+      } else {
+        expect(res.displayName).toMatch(/\S/);
+        expect(['page', 'block']).toContain(res.kind);
+      }
+    }
+  }, SLOW);
+});
+
 describe('search leaf — matchCount is the total, not the cap', () => {
   it('reports every match while `results` stays bounded by the limit', async () => {
     // The regression: `matchCount` used to be `results.length`, so a query

@@ -28,6 +28,33 @@ const OPTS = {cwd: REPO_ROOT};
 // the vitest per-test timeout. Give both the same generous scan budget.
 const SCAN_TIMEOUT = 30_000;
 
+/**
+ * A JSON value as the formatters print it (they normalize typography to ASCII).
+ * @param {unknown} value
+ */
+function asText(value) {
+  return (Array.isArray(value) ? value.join(', ') : String(value))
+    .replace(/[\u2014\u2013]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00a0/g, ' ')
+    .trimEnd();
+}
+
+/**
+ * Whether some text line prints `key:` with this value. The command field gains
+ * the caller's invocation prefix, so the value is matched as the line's end; a
+ * multi-line value is matched by its first line.
+ * @param {string[]} lines
+ * @param {string} key
+ * @param {unknown} value
+ */
+function printsField(lines, key, value) {
+  const shown = asText(value).split('\n')[0].trimEnd();
+  return lines.some(line => line.startsWith(`${key}:`) && line.trimEnd().endsWith(shown));
+}
+
 describe('search() API — ranking', () => {
   it('ranks an exact component name match first', async () => {
     const {data} = await search('button', OPTS);
@@ -222,6 +249,25 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toMatch(/^domain:\s+component$/m);
     expect(r.stdout).toContain('description:');
   });
+
+  it('prints every result field under its JSON key (score and reason with --verbose)', async () => {
+    // One query that reaches all four domains, so every per-domain field shows.
+    const args = ['search', 'theme', '--limit', '60'];
+    const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
+    expect(new Set(env.data.results.map(r => r.domain))).toEqual(new Set(SEARCH_DOMAINS));
+    const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
+    const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
+    for (const result of env.data.results) {
+      for (const [key, value] of Object.entries(result)) {
+        if (value == null || value === '') continue;
+        const label = `${result.domain} ${result.name}: ${key}`;
+        expect(printsField(verbose, key, value), label).toBe(true);
+        if (key !== 'score' && key !== 'reason') {
+          expect(printsField(plain, key, value), label).toBe(true);
+        }
+      }
+    }
+  }, 90_000);
 
   it('--verbose exits 0 and prints import/match detail', async () => {
     // Regression: the boolean verbose flag was named --detail, which collided

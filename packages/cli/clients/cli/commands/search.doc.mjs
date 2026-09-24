@@ -33,7 +33,7 @@ export const doc = {
     },
     {
       flag: '--verbose',
-      description: 'Verbose output (include import paths and match reason)',
+      description: "Also print each result's score and match reason",
     },
   ],
   examples: [
