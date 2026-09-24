@@ -91,7 +91,8 @@ export const doc = {
     {
       name: 'options.lang',
       type: 'string',
-      description: 'Language code for localized doc content.',
+      description:
+        "Language code for localized doc content: 'en', 'zh', or 'dense'.",
     },
     {
       name: 'options.zh',
@@ -135,6 +136,14 @@ export const doc = {
     },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_DETAIL',
+      when: "options.detail is not 'full', 'compact', or 'brief'",
+    },
+    {
+      code: 'ERR_INVALID_LANG',
+      when: "options.lang is set to anything other than 'en', 'zh', or 'dense'",
+    },
     {
       code: 'ERR_CORE_NOT_FOUND',
       when: '@astryxdesign/core cannot be resolved from cwd',
