@@ -25,11 +25,13 @@ export const doc = {
     {
       flag: '--components',
       param: 'options.components',
-      description: 'List components only',
+      description:
+        'In the package list, print every component of each package instead of the first 10 and a "+N more" count. No effect on --json output or on a package, component, or search query.',
     },
   ],
   examples: [
     {label: 'List packages', cli: 'astryx discover --json'},
+    {label: 'List every component of each package', cli: 'astryx discover --components'},
     {label: 'Browse a package', cli: 'astryx discover @acme/ui'},
   ],
   exitCodes: [
