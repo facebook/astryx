@@ -178,41 +178,24 @@ for each bug.
   Cancelled, rejected, failed, ignored, closed, or superseded work MUST NOT emit a
   success event.
 
-### Playground preview capabilities
+### Playground storage and parent-page isolation
 
-- **FR16 — Production playground previews are ephemeral and restricted.** The
-  playground exists to try Astryx code, not to host an application or persist its
-  runtime data. Production previews, including deployed pull-request previews,
-  MUST execute user-authored code with an opaque origin, without access to the
-  Docsite's origin-bound storage or parent-page DOM. Local storage may be blocked
-  entirely; previewed code has no persistence guarantee. Local development MAY
-  retain different capabilities, but MUST NOT stand in for production isolation
-  evidence.
+- **FR16 — Production playground code is isolated from storage and the parent page.**
+  Production previews, including deployed pull-request previews, MUST execute
+  user-authored code with an opaque origin, without access to the Docsite's
+  origin-bound storage or parent-page DOM. Local storage may be blocked entirely;
+  previewed code has no persistence guarantee. The playground MUST explain these
+  restrictions to users. Local development MAY differ, but MUST NOT stand in for
+  production isolation evidence.
 
-  The playground MUST explain these restrictions. A preview may lack clipboard,
-  microphone/dictation, or native-picker capabilities. Existing in-memory
-  interaction, typed entry, and browser-permitted user-activated picker paths
-  SHOULD remain usable where possible without granting additional privileges.
-  An unavailable operation MUST NOT be reported as successful. Integrations that
-  need unavailable capabilities belong in the builder's own application; the
-  playground MUST NOT restore same-origin access or delegate privileged parent
-  operations to make a demo work.
-
-  Preview navigation remains within this boundary. Fragment navigation SHOULD
-  remain usable; a full document navigation or reload may reset runtime state and
-  MUST recover the preview with the editor's current code and active theme/mode.
-  Replacement content MUST NOT receive editor source, theme state, or authority
-  to edit the parent merely because it occupies the preview. Framework routing
-  MUST NOT prevent recovery or weaken isolation; the playground does not promise
-  to host a multi-page application.
+  Reload or hostile navigation may reset preview runtime state. The playground
+  MUST recover a trusted preview with the editor's current code and active
+  theme/mode. Replacement content MUST NOT receive editor source, theme state, or
+  authority to edit the parent merely because it occupies the preview.
 
   Changes to this boundary require real production-browser evidence for storage
   and parent-DOM denial, trusted recovery after reload and hostile navigation,
-  current code/theme restoration, and representative shipped-template usability.
-  Clipboard, dictation/microphone, native pickers, and fragment/full navigation
-  consequences MUST be verified or handled explicitly. Browser permission policy
-  and observable outcomes are evidence; absence of hardware or a service callback
-  alone is not proof of isolation.
+  and restoration of current code and theme/mode.
 
 ### Authority routing
 
@@ -345,19 +328,19 @@ treatment. Closing or superseding the transition ends that authority.
 Rejected: one global pending/deferred value repainting a newly opened, closed, or
 newer selection.
 
-### DEC-6 — Trying code does not grant application capabilities
+### DEC-6 — Trying code does not require persistence or parent-page access
 
 **Reference:** `spec:AST-033/DEC-6`
 **Decider:** `cixzhang`, `2026-09-23`
 
-The production playground is an ephemeral, restricted place to try Astryx code.
-Blocking local storage and parent-page access is intentional, even when a
-builder's application would use those capabilities. Preserve usable local
-interaction and describe capability limits rather than relaxing isolation.
-Development may differ and is not production security evidence.
+The playground is for trying Astryx code, not storing local data. Production
+previews have an opaque origin and no access to the Docsite's origin-bound
+storage or parent-page DOM. Previewed code has no persistence guarantee;
+restrictions are explained to users. Development may differ. Reload and hostile
+navigation recover a trusted preview with current editor code and theme/mode.
 
-Rejected: treating local persistence as a playground guarantee or granting
-same-origin or parent privileges to preserve a demo integration.
+Rejected: treating local persistence or parent-page DOM access as a playground
+guarantee.
 
 ## Open questions
 
