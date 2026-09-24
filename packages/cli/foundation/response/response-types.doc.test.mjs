@@ -59,6 +59,12 @@ describe('response-types EnumDoc names every field', () => {
     const ownership = ['package', 'import', 'sourceAvailable', 'parentDoc'];
     for (const f of ownership) expect(Object.keys(res.data)).toContain(f);
     expectNamed('component.detail', ownership);
+    // The canonical response type declares parentDoc too.
+    const types = fs.readFileSync(
+      new URL('../../api/component/component.type.mjs', import.meta.url),
+      'utf8',
+    );
+    expect(types).toMatch(/@property \{string\} \[parentDoc\]/);
   });
 
   it('docs.index', async () => {
@@ -130,9 +136,23 @@ describe('response-types EnumDoc names every field', () => {
       'missingFiles',
       'complete',
       'packedFiles',
-      // contributions
+      // contributions, each ContributionIdentities
       'local',
       'packed',
+      'themes',
+      'slug',
+      'exportName',
+      'components',
+      'templates',
+      'id',
+      'type',
+      'codemods',
+      'docs',
+      'agentDocsAppend',
+      // issues, each AstryxIntegrationIssue
+      'code',
+      'severity',
+      'message',
     ]);
   });
 });

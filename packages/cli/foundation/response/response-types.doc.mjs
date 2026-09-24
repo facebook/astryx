@@ -36,7 +36,7 @@ export const doc = {
     {
       value: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership fields: package (owner), import (specifier), sourceAvailable (whether source exists), and parentDoc (present when the component is documented inside another component's doc, naming that doc).",
+        "One component's authored ComponentDoc plus ownership fields (package, the owner; import, the specifier; sourceAvailable, whether source exists) and parentDoc (present when the component is documented inside another component's doc, naming that doc).",
     },
     {
       value: 'component.detail.props',
@@ -276,7 +276,7 @@ export const doc = {
     {
       value: 'integration.pack-check',
       description:
-        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed} (identities per kind), and issues.',
+        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message}].',
     },
     {
       value: 'integration.validate',
