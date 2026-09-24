@@ -17,7 +17,7 @@ import {doc as integrationAddDoc} from '../clients/cli/commands/integration-add.
 import {parseDoc} from '../authoring/doctypes/parse.mjs';
 import {parseCodemod} from '../authoring/codemod/parse.mjs';
 import {resolvePackageDir} from '../foundation/integrations/integrations.mjs';
-import {discoverThemeCatalog} from '../foundation/discovery/theme-discovery.mjs';
+import {discoverThemeDirectory} from '../foundation/discovery/theme-discovery.mjs';
 import {integrationAddTheme} from '../api/integration/add-theme.mjs';
 import {themePaletteGenerate} from '../api/theme/palette/generate/generate.mjs';
 import * as fs from 'node:fs';
@@ -111,27 +111,17 @@ describe('resolvePackageDir keeps integration specs beneath node_modules', () =>
   });
 });
 
-describe('discoverThemeCatalog validates all documented required fields', () => {
+describe('a theme descriptor carries every documented field', () => {
   let tmpDir;
 
-  function writeCatalog(themes) {
-    const root = path.join(tmpDir, 'themes');
-    fs.mkdirSync(root, {recursive: true});
-    fs.writeFileSync(
-      path.join(root, 'manifest.json'),
-      JSON.stringify({version: 1, themes}),
-    );
-    return root;
-  }
-
-  function writeThemeFiles(slug, entry, exportName) {
-    const dir = path.join(tmpDir, 'themes', slug);
-    fs.mkdirSync(dir, {recursive: true});
-    fs.writeFileSync(
-      path.join(dir, entry),
-      `export const ${exportName} = {};\n`,
-    );
-  }
+  const descriptor = (/** @type {object} */ fields = {}) => ({
+    type: 'theme',
+    name: 'ocean',
+    displayName: 'Ocean',
+    description: 'Ocean theme.',
+    maintained: true,
+    ...fields,
+  });
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-drift-'));
@@ -140,101 +130,34 @@ describe('discoverThemeCatalog validates all documented required fields', () => 
     fs.rmSync(tmpDir, {recursive: true, force: true});
   });
 
-  it('accepts a valid entry with all required fields', () => {
-    const root = writeCatalog([
-      {
-        slug: 'ocean',
-        displayName: 'Ocean',
-        description: 'Ocean theme.',
-        maintained: true,
-        entry: 'oceanTheme.ts',
-        exportName: 'oceanTheme',
-        files: ['oceanTheme.ts'],
-      },
-    ]);
-    writeThemeFiles('ocean', 'oceanTheme.ts', 'oceanTheme');
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).not.toThrow();
+  it('accepts a descriptor with every documented field', () => {
+    expect(parseDoc(descriptor(), 'oceanTheme.doc.mjs').type).toBe('theme');
   });
 
-  it('rejects missing slug', () => {
-    const root = writeCatalog([
-      {
-        displayName: 'Ocean',
-        description: 'x',
-        maintained: true,
-        entry: 'a.ts',
-        exportName: 'a',
-        files: ['a.ts'],
-      },
-    ]);
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow();
+  it.each(['name', 'displayName', 'description', 'maintained'])(
+    'rejects a descriptor without %s',
+    field => {
+      const {[field]: _, ...rest} = descriptor();
+      expect(() => parseDoc(rest, 'oceanTheme.doc.mjs')).toThrow(field);
+    },
+  );
+
+  it('rejects a slug that is not lowercase kebab-case', () => {
+    expect(() =>
+      parseDoc(descriptor({name: 'Ocean'}), 'oceanTheme.doc.mjs'),
+    ).toThrow(/kebab-case/);
   });
 
-  it('rejects missing displayName', () => {
-    const root = writeCatalog([
-      {
-        slug: 'ocean',
-        description: 'x',
-        maintained: true,
-        entry: 'a.ts',
-        exportName: 'a',
-        files: ['a.ts'],
-      },
-    ]);
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow();
-  });
-
-  it('rejects missing exportName', () => {
-    const root = writeCatalog([
-      {
-        slug: 'ocean',
-        displayName: 'Ocean',
-        description: 'x',
-        maintained: true,
-        entry: 'a.ts',
-        files: ['a.ts'],
-      },
-    ]);
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow();
-  });
-
-  it('rejects empty files array', () => {
-    const root = writeCatalog([
-      {
-        slug: 'ocean',
-        displayName: 'Ocean',
-        description: 'x',
-        maintained: true,
-        entry: 'a.ts',
-        exportName: 'a',
-        files: [],
-      },
-    ]);
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow();
-  });
-
-  it('rejects missing maintained boolean', () => {
-    const root = writeCatalog([
-      {
-        slug: 'ocean',
-        displayName: 'Ocean',
-        description: 'x',
-        entry: 'a.ts',
-        exportName: 'a',
-        files: ['a.ts'],
-      },
-    ]);
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow();
-  });
-
-  it('requires version: 1 in the catalog root', () => {
-    const root = path.join(tmpDir, 'themes');
-    fs.mkdirSync(root, {recursive: true});
+  it('rejects a theme directory without its same-stem descriptor', () => {
+    const dir = path.join(tmpDir, 'themes', 'ocean');
+    fs.mkdirSync(dir, {recursive: true});
     fs.writeFileSync(
-      path.join(root, 'manifest.json'),
-      JSON.stringify({version: 2, themes: []}),
+      path.join(dir, 'oceanTheme.ts'),
+      'export const oceanTheme = {};\n',
     );
-    expect(() => discoverThemeCatalog(root, '@test/pkg')).toThrow(/version 1/);
+    expect(() =>
+      discoverThemeDirectory(path.join(tmpDir, 'themes'), '@test/pkg'),
+    ).toThrow();
   });
 });
 
@@ -253,7 +176,7 @@ describe('documented theme palette workflow', () => {
     fs.rmSync(tmpDir, {recursive: true, force: true});
   });
 
-  it('generates and discovers the exact slug-relative catalog inventory', async () => {
+  it('generates and discovers the exact documented theme directory', async () => {
     await integrationAddTheme('ocean', {cwd: tmpDir});
     const themeDir = path.join(tmpDir, 'themes', 'ocean');
     fs.mkdirSync(path.join(themeDir, 'tokens'), {recursive: true});
@@ -281,26 +204,24 @@ describe('documented theme palette workflow', () => {
       path.join(themeDir, 'oceanTheme.ts'),
       "import {palette} from './tokens/ocean.palette';\nexport const oceanTheme = {palette};\n",
     );
-    const catalogPath = path.join(tmpDir, 'themes', 'manifest.json');
-    const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));
-    catalog.themes[0].files = [
+    const [theme] = discoverThemeDirectory(
+      path.join(tmpDir, 'themes'),
+      '@acme/brand-integration',
+    );
+    expect(theme).toMatchObject({slug: 'ocean', entry: 'oceanTheme.ts'});
+    const documented = [
+      'oceanTheme.doc.mjs',
       'oceanTheme.ts',
       'palette.config.json',
-      'tokens/ocean.palette.ts',
       'tokens/ocean.palette.receipt.json',
+      'tokens/ocean.palette.ts',
     ];
-    fs.writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
-
-    expect(
-      discoverThemeCatalog(
-        path.join(tmpDir, 'themes'),
-        '@acme/brand-integration',
-      ),
-    ).toEqual([expect.objectContaining({slug: 'ocean'})]);
+    // The documented layout is exactly what the theme directory ships.
+    expect(theme.files).toEqual(documented);
 
     const text = guideText(integrationGuide);
-    for (const documentedPath of catalog.themes[0].files) {
-      expect(text).toContain(documentedPath);
+    for (const documentedPath of documented) {
+      expect(text).toContain(documentedPath.split('/').pop());
     }
     expect(
       paletteGenerateDoc.examples.some(
@@ -332,9 +253,12 @@ describe('cli-integrations guide required content', () => {
     }
   });
 
-  it('contrasts component, doc, and template metadata suffixes', () => {
-    expect(text).toContain('.doc.{ts,mjs,js}');
-    expect(text).toContain('.template.{ts,mjs,js}');
+  it('names .doc.mjs as the authoring suffix and the released ones it still reads', () => {
+    expect(text).toContain('strongly typed `.doc.mjs`');
+    expect(text).toContain(
+      'Released `.doc.ts` and `.doc.js` inputs remain readable',
+    );
+    expect(text).toContain('Released `.template.*` files remain readable');
   });
 
   it('documents the codemod version-directory layout', () => {
@@ -349,19 +273,18 @@ describe('cli-integrations guide required content', () => {
     expect(text).toMatch(/no `--dry-run` flag/i);
   });
 
-  it('documents all required theme catalog manifest.json fields', () => {
+  it('documents every ThemeDoc field and the same-stem source rule', () => {
     for (const field of [
-      '`slug`',
+      '`ThemeDoc`',
+      '`name`',
       '`displayName`',
       '`description`',
       '`maintained`',
-      '`entry`',
-      '`exportName`',
-      '`files`',
     ]) {
       expect(text).toContain(field);
     }
-    expect(text).toContain('"version": 1');
+    expect(text).toMatch(/stem supplies the source entry/);
+    expect(text).not.toContain('manifest.json entry');
   });
 
   it('documents the generated palette inventory exactly', () => {
@@ -430,10 +353,10 @@ describe('upgrade FunctionDoc --integration param', () => {
   });
 });
 
-describe('palette generate doc mentions catalog connection', () => {
-  it('description references theme catalog files array', () => {
-    expect(paletteGenerateDoc.description).toMatch(/catalog/i);
-    expect(paletteGenerateDoc.description).toMatch(/files.*array/i);
+describe('palette generate doc says where its outputs ship', () => {
+  it('keeps the outputs in the theme directory that theme add copies', () => {
+    expect(paletteGenerateDoc.description).toMatch(/theme directory/i);
+    expect(paletteGenerateDoc.description).not.toMatch(/catalog/i);
   });
 });
 

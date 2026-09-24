@@ -34,15 +34,9 @@ export interface AstryxIntegration {
    *  serves from `astryx docs`, alongside the built-in ones. A topic may also
    *  `replace` or `extend` a built-in topic; see the ReferenceDoc type. */
   docs?: string;
-  /** Relative path to the source-theme catalog root (resolved to absolute).
-   *  The root contains `manifest.json` plus one directory per theme slug.
-   *  `manifest.json` is `{ "version": 1, "themes": [...] }` where each
-   *  entry requires `slug`, `displayName`, `description` (string),
-   *  `maintained` (boolean), `entry` (source file relative to `themes/<slug>/`),
-   *  `exportName` (a valid JS identifier naming the runtime export), and
-   *  `files` (non-empty array of filenames relative to `themes/<slug>/`).
-   *  Every file listed must exist on disk; the entry file must also appear
-   *  in `files`. */
+  /** Relative path to the source-theme root (resolved to absolute). Each
+   *  lower-kebab theme directory contains a source module and mandatory
+   *  same-stem, strongly typed `.doc.mjs` descriptor. */
   themes?: string;
   /** Static package guidance appended to the CLI-owned managed agent block. */
   agentDocs?: {

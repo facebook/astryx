@@ -84,7 +84,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'A useful theme package usually ships more than colors. Start with the source theme, author the palette request at `themes/ocean/palette.config.json`, then add the guides its consumers need. The `integration add` commands keep the package manifest in sync; add palette outputs to the theme catalog after generation.',
+          text: 'A useful theme package usually ships more than colors. Start with the source theme, author the palette request at `themes/ocean/palette.config.json`, then add the guides its consumers need. The `integration add` commands keep the package manifest in sync. Palette outputs live inside the theme directory, which ships as one unit, so there is nothing to register after generation.',
         },
         {
           type: 'code',
@@ -94,7 +94,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Edit the generated theme and guide files before publishing. The shown palette command writes `themes/ocean/tokens/ocean.palette.ts` and its sibling `themes/ocean/tokens/ocean.palette.receipt.json`. The TypeScript candidate directly exports `black`, `white`, and `palette`; import what the theme uses from `./tokens/ocean.palette`. Keep the request at `themes/ocean/palette.config.json`, and list the theme source, request, candidate, and receipt in the catalog entry's `files` array. Add any optional wrapper, refs, icon, or preview modules only when you author them, and list each one too. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source file or files allowlist entry fails before a consumer sees it.",
+          text: 'Edit the generated theme descriptor, source, and guide files before publishing. The shown palette command writes `themes/ocean/tokens/ocean.palette.ts` and its sibling `themes/ocean/tokens/ocean.palette.receipt.json`, a reproducibility receipt. The TypeScript candidate directly exports `black`, `white`, and `palette`; import what the theme uses from `./tokens/ocean.palette`. Keep the request at `themes/ocean/palette.config.json`. The whole theme directory is copied and packed as one unit, so an optional wrapper, refs, icon, or preview module you add inside it ships with the theme. `integration pack --check` runs the real package lifecycle and compares local discovery with the npm tarball, so a missing source or descriptor fails before a consumer sees it.',
         },
         {
           type: 'code',
@@ -104,7 +104,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies every file listed by the selected catalog entry, including nested token modules, and refuses to overwrite existing project files.',
+          text: "The package must be a direct dependency for automatic discovery. No `astryx.config` entry is needed unless the app must control integration order. `theme add` copies the selected theme's complete directory, including its typed `.doc.mjs`, nested token modules, and receipts, and refuses to overwrite existing project files.",
         },
       ],
     },
@@ -119,7 +119,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: "Kind        Metadata suffix            type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.{ts,mjs,js}       'component'    Name.tsx (same stem)\nTemplate    Name.template.{ts,mjs,js}  'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.{ts,mjs,js}      'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       manifest.json entry         —             <slug>/<entry>.ts",
+          code: "Kind        Metadata file              type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.mjs               'component'    Name.tsx (same stem)\nTemplate    Name.doc.mjs               'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.mjs              'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       <slug>/nameTheme.doc.mjs   'theme'        <slug>/nameTheme.ts (same stem)\n\nReleased .doc.ts / .doc.js and .template.{ts,mjs,js} files still load.",
         },
         {
           type: 'prose',
@@ -152,7 +152,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`. The doc file must default-export an object with `type: 'component'` — not `'generic'` (that is for reference docs) and not `'page'`/`'block'` (those are for templates).",
+          text: "Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a strongly typed `.doc.mjs` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.mjs`. The doc file must default-export an object with `type: 'component'` — not `'generic'` (that is for reference docs) and not `'page'`/`'block'` (those are for templates). Released `.doc.ts` and `.doc.js` inputs remain readable for compatibility, but new authoring uses `.doc.mjs`.",
         },
         {
           type: 'prose',
@@ -161,7 +161,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n} satisfies import('@astryxdesign/cli/authoring').ComponentDoc;",
+          code: "// AcmeCarousel.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  displayName: 'Acme Carousel',\n  usage: {description: 'A carousel that cycles through slides.'},\n  props: [],\n};",
         },
       ],
     },
@@ -171,7 +171,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) as its default export in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`. Do not use the `.doc.{ts,mjs,js}` suffix — that is for component docs and reference docs.",
+          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a strongly typed plain object stamped with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) in a same-stem `.doc.mjs`, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.doc.mjs`. Released `.template.*` files remain readable for compatibility.",
         },
         {
           type: 'prose',
@@ -180,7 +180,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeLandingPage.template.ts\nexport default {\n  type: 'page',\n  // name, description, preview, ...\n};",
+          code: "// AcmeLandingPage.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */\nexport default {\n  type: 'page',\n  name: 'acme-landing-page',\n  displayName: 'Acme Landing Page',\n  description: 'A complete product landing page.',\n};",
         },
         {
           type: 'prose',
@@ -194,12 +194,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Point the integration file's `docs` field at a directory of reference docs and every `{topic}.doc.{ts,mjs,js}` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object with `type: 'generic'` as its default export — not `'component'` (that is for component docs with a same-stem source file). This is the same shape core's own topics use.",
+          text: "Point the integration file's `docs` field at a directory of reference docs and every strongly typed `{topic}.doc.mjs` under it becomes a topic the CLI serves: `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object stamped `type: 'generic'` — not `'component'` (that is for component docs with a same-stem source file) — the same shape core's own topics use.",
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// docs/deploying.doc.ts\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  category: 'guide',\n  sections: [\n    {title: 'Overview', content: [{type: 'prose', text: '...'}]},\n  ],\n};",
+          code: "// docs/deploying.doc.mjs\n/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  category: 'guide',\n  sections: [\n    {title: 'Overview', content: [{type: 'prose', text: '...'}]},\n  ],\n};",
         },
         {
           type: 'prose',
@@ -233,38 +233,25 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "A theme contribution is editable `defineTheme` source, not compiled CSS. Add `themes: './themes'` to `astryx.integration.*`, place the source under one directory per slug, and list it in `themes/manifest.json`. If package.json has a `files` allowlist, include both the integration manifest and the themes root; packages with no allowlist already publish both. Do not add an `exports` map only for theme discovery.",
+          text: "A theme contribution is editable `defineTheme` source, not compiled CSS. Add `themes: './themes'` to `astryx.integration.*`. Give each lower-kebab slug its own directory containing a theme source and mandatory same-stem, strongly typed `.doc.mjs`. If package.json has a `files` allowlist, include both the integration manifest and the themes root; packages with no allowlist already publish both. Do not add an `exports` map only for theme discovery.",
         },
         {
           type: 'code',
           lang: 'text',
-          code: 'themes/\n  manifest.json\n  ocean/\n    oceanTheme.ts\n    palette.config.json\n    tokens/\n      ocean.palette.ts\n      ocean.palette.receipt.json',
+          code: 'themes/\n  ocean/\n    oceanTheme.ts\n    oceanTheme.doc.mjs\n    palette.config.json\n    tokens/\n      ocean.palette.ts\n      ocean.palette.receipt.json',
         },
         {
           type: 'prose',
-          text: 'The root catalog `manifest.json` must be `{ "version": 1, "themes": [...] }`. Each entry in the `themes` array requires every field shown below — omitting any one is a hard validation error:',
-        },
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            '`slug` — lowercase kebab-case starting with a letter (e.g. `"ocean"`). Must be unique within the catalog.',
-            '`displayName` — human-readable label (e.g. `"Ocean"`).',
-            '`description` — string description of the theme.',
-            '`maintained` — boolean indicating active maintenance.',
-            '`entry` — source file relative to `themes/<slug>/` (e.g. `"oceanTheme.ts"`).',
-            '`exportName` — a valid JS identifier naming the runtime export in the entry file (e.g. `"oceanTheme"`). Astryx parses the source without executing it and rejects missing or type-only exports.',
-            '`files` — non-empty array of filenames relative to `themes/<slug>/`. Must include the entry file and every local static import the entry source uses. Astryx validates that every listed file exists on disk and that every local import in the entry names a file in this list.',
-          ],
+          text: '`ThemeDoc` owns `name` (the slug), `displayName`, `description`, and `maintained`. The descriptor/source stem supplies the source entry and required named runtime export. Astryx parses the source without executing it, confines every local static import and re-export to the theme directory, copies that complete directory, and rejects missing or type-only exports.',
         },
         {
           type: 'code',
-          lang: 'json',
-          code: '{\n  "version": 1,\n  "themes": [{\n    "slug": "ocean",\n    "displayName": "Ocean",\n    "description": "Ocean theme with OKLCH palettes.",\n    "maintained": true,\n    "entry": "oceanTheme.ts",\n    "exportName": "oceanTheme",\n    "files": [\n      "oceanTheme.ts",\n      "palette.config.json",\n      "tokens/ocean.palette.ts",\n      "tokens/ocean.palette.receipt.json"\n    ]\n  }]\n}',
+          lang: 'javascript',
+          code: "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {\n  type: 'theme',\n  name: 'ocean',\n  displayName: 'Ocean',\n  description: 'Ocean theme.',\n  maintained: true,\n};",
         },
         {
           type: 'prose',
-          text: 'The generated candidate is already importable: it exports `black`, `white`, `palette`, and a default palette value. Import it directly from `./tokens/ocean.palette`. A wrapper or palette-refs module is optional application code, not generator output; list it only if you create it.',
+          text: 'The generated palette candidate is already importable: it exports `black`, `white`, `palette`, and a default palette value. Import it directly from `./tokens/ocean.palette`. A wrapper or palette-refs module is optional application code, not generator output.',
         },
         {
           type: 'prose',

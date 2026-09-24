@@ -203,7 +203,7 @@ export const doc = {
     {
       value: 'ERR_THEME_INVALID',
       description:
-        'A theme definition or contributed theme catalog is invalid.',
+        'A theme definition or contributed theme descriptor is invalid.',
     },
     {
       value: 'ERR_THEME_LOAD',

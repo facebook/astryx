@@ -250,7 +250,7 @@ async function checkDocs(integration, issues) {
 }
 
 /**
- * Validate the integration's source-theme catalog. The same discovery function
+ * Validate the integration's source-theme descriptors. The same discovery function
  * powers Project and theme list/add, so validation cannot accept a shape that
  * consumers later fail to use.
  * @param {LoadedIntegration} integration

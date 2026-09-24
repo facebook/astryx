@@ -92,7 +92,13 @@ const UNREACHABLE_SKIP_DIRS = new Set([
 ]);
 const DOC_CANDIDATE_RE = /\.doc\.(?:ts|mjs|js)$/u;
 const TEMPLATE_CANDIDATE_RE = /\.template\.(?:ts|mjs|js)$/u;
-const STATIC_DOC_TYPES = new Set(['component', 'generic', 'page', 'block']);
+const STATIC_DOC_TYPES = new Set([
+  'component',
+  'generic',
+  'page',
+  'block',
+  'theme',
+]);
 const STATIC_TEMPLATE_TYPES = new Set(['page', 'block']);
 const j = jscodeshift.withParser('tsx');
 

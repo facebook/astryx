@@ -179,7 +179,7 @@ if (isError(result)) {
 | `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file.                                                                                                                   |
 | `ERR_PATH_TRAVERSAL`              | A path escaped its allowed root, or a name contained traversal markers.                                                                                  |
 | `ERR_WRITE_FAILED`                | Writing output files failed (and was rolled back).                                                                                                       |
-| `ERR_THEME_INVALID`               | A theme definition or contributed theme catalog is invalid.                                                                                              |
+| `ERR_THEME_INVALID`               | A theme definition or contributed theme descriptor is invalid.                                                                                           |
 | `ERR_THEME_LOAD`                  | A theme file could not be loaded / parsed into a defineTheme result.                                                                                     |
 | `ERR_PALETTE_GENERATION`          | A palette generation request or one of its constraints was invalid.                                                                                      |
 | `ERR_VERSION_DETECT`              | The current `@astryxdesign/core` version could not be detected.                                                                                          |

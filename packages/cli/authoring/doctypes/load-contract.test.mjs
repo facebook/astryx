@@ -49,7 +49,7 @@ const EXAMPLES = Object.fromEntries(
 
 describe('load check vs published type', () => {
   it('locks every doc kind', () => {
-    const source = ['_schema.mjs', 'template/parse.mjs']
+    const source = ['_schema.mjs', 'template/parse.mjs', 'theme/parse.mjs']
       .map(file => fs.readFileSync(path.join(HERE, file), 'utf8'))
       .join('\n');
     expect(Object.keys(LOCKS).sort()).toEqual([...KINDS].sort());
@@ -57,6 +57,7 @@ describe('load check vs published type', () => {
       ...Object.values(LOCKS),
       '_AuthoredDocKindDriftLock',
       '_HookDocIsFunctionDocLock',
+      '_ThemeDocDriftLock',
     ];
     for (const lock of locks) {
       expect(source, `${lock} is missing`).toMatch(

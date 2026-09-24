@@ -49,7 +49,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown or ambiguous theme, a path escape, a missing catalog file, or an existing file without --overwrite',
+      when: 'unknown or ambiguous theme, a path escape, a missing descriptor or source, or an existing file without --overwrite',
     },
   ],
   related: ['theme list', 'theme build'],

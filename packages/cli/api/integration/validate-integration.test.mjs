@@ -210,33 +210,24 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_template')).toHaveLength(1);
   });
 
-  it('reports no errors for a valid source-theme catalog', async () => {
+  it('reports no errors for a valid source-theme descriptor', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
-      manifest: `export default { themes: './themes' };\n`,
+      manifest: `export default { themes: './themes' };
+`,
     });
     const themeDir = path.join(pkgDir, 'themes', 'ocean');
     fs.mkdirSync(themeDir, {recursive: true});
     fs.writeFileSync(
-      path.join(pkgDir, 'themes', 'manifest.json'),
-      JSON.stringify({
-        version: 1,
-        themes: [
-          {
-            slug: 'ocean',
-            displayName: 'Ocean',
-            description: 'Blue and calm.',
-            maintained: true,
-            entry: 'oceanTheme.ts',
-            exportName: 'oceanTheme',
-            files: ['oceanTheme.ts'],
-          },
-        ],
-      }),
+      path.join(themeDir, 'oceanTheme.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue and calm.', maintained: true};
+`,
     );
     fs.writeFileSync(
       path.join(themeDir, 'oceanTheme.ts'),
-      `export const oceanTheme = {};\n`,
+      `export const oceanTheme = {};
+`,
     );
 
     const result = await validateLocalIntegration(pkgDir);
@@ -244,13 +235,17 @@ describe('validate-integration API', () => {
     expect(summarizeIssues(result.issues).errors).toBe(0);
   });
 
-  it('flags an unreadable source-theme catalog as invalid_theme', async () => {
+  it('flags an obsolete source-theme catalog as invalid_theme', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
-      manifest: `export default { themes: './themes' };\n`,
+      manifest: `export default { themes: './themes' };
+`,
     });
     fs.mkdirSync(path.join(pkgDir, 'themes'), {recursive: true});
-    fs.writeFileSync(path.join(pkgDir, 'themes', 'manifest.json'), '{not-json');
+    fs.writeFileSync(
+      path.join(pkgDir, 'themes', 'manifest.json'),
+      '{"version":1}',
+    );
 
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_theme')).toHaveLength(1);

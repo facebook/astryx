@@ -37,6 +37,7 @@ const SELF_DOCS = {
   'doctypes/command/command.doc.mjs': 'CommandDoc',
   'doctypes/enum/enum.doc.mjs': 'EnumDoc',
   'doctypes/namespace/namespace.doc.mjs': 'NamespaceDoc',
+  'doctypes/theme/theme.doc.mjs': 'ThemeDoc',
   'config/config.doc.mjs': 'AstryxConfig',
   'integration/integration.doc.mjs': 'AstryxIntegration',
   // The codemod types describe a loaded codemod, whose `isOptional` has its

@@ -53,25 +53,10 @@ function writePackage({
       "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'ocean'});\n",
     );
     fs.writeFileSync(
-      path.join(root, 'manifest.json'),
-      JSON.stringify(
-        {
-          version: 1,
-          themes: [
-            {
-              slug: 'ocean',
-              displayName: 'Ocean',
-              description: 'Ocean theme.',
-              maintained: true,
-              entry: 'oceanTheme.ts',
-              exportName: 'oceanTheme',
-              files: ['oceanTheme.ts'],
-            },
-          ],
-        },
-        null,
-        2,
-      ) + '\n',
+      path.join(root, 'ocean', 'oceanTheme.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};
+`,
     );
   }
   if (components) {
@@ -109,7 +94,7 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme entry omits its catalog export', async () => {
+  it('fails when a theme entry omits its inferred runtime export', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
@@ -129,18 +114,11 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme imports a file omitted from its catalog', async () => {
+  it('fails when a theme imports a missing local file', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean', 'tokens'), {
-      recursive: true,
-    });
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
       "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
-    );
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'ocean', 'tokens', 'ocean.palette.ts'),
-      'export const oceanPalette = {};\n',
     );
 
     const result = await integrationPackCheck({cwd: tmpDir});
@@ -150,7 +128,7 @@ describe('integrationPackCheck', () => {
       expect.objectContaining({
         code: 'invalid_theme',
         message: expect.stringContaining(
-          'must resolve to a listed file inside the theme directory',
+          'must resolve to a file inside the theme directory',
         ),
       }),
     );
@@ -231,7 +209,7 @@ describe('integrationPackCheck', () => {
     );
     fs.mkdirSync(path.join(tmpDir, 'templates'));
     fs.writeFileSync(
-      path.join(tmpDir, 'templates', 'account-page.template.mjs'),
+      path.join(tmpDir, 'templates', 'account-page.doc.mjs'),
       "export default {type: 'page', name: 'Account page', description: 'Account page.'};\n",
     );
     fs.writeFileSync(
@@ -314,10 +292,10 @@ describe('integrationPackCheck', () => {
     const script = [
       "const fs=require('fs')",
       "fs.renameSync('themes/ocean','themes/storm')",
-      "const p='themes/manifest.json'",
-      'const x=JSON.parse(fs.readFileSync(p))',
-      "x.themes[0].slug='storm'",
-      'fs.writeFileSync(p,JSON.stringify(x))',
+      "const p='themes/storm/oceanTheme.doc.mjs'",
+      "let x=fs.readFileSync(p,'utf8')",
+      "x=x.replace(/name: 'ocean'/, 'name: '+String.fromCharCode(39)+'storm'+String.fromCharCode(39))",
+      'fs.writeFileSync(p,x)',
     ].join(';');
     writePackage({
       files: ['astryx.integration.mjs', 'themes'],
@@ -513,23 +491,15 @@ describe('integrationPackCheck', () => {
 });
 
 describe('pack-check mutation tests', () => {
-  it('detects when a theme file is deleted after initial add', async () => {
+  it('detects when a theme source is deleted after initial authoring', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-
-    // Write a second theme file then delete it — catalog still references it
-    const catalog = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'themes', 'manifest.json'), 'utf-8'),
-    );
-    catalog.themes[0].files.push('tokens.ts');
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'manifest.json'),
-      JSON.stringify(catalog, null, 2) + '\n',
-    );
-    // tokens.ts doesn't exist on disk → will be in inventory but not on disk
-    // (Phase 1 catches this; the file won't be in the pack list either)
+    fs.rmSync(path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'));
 
     const result = await integrationPackCheck({cwd: tmpDir});
     expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'invalid_theme'}),
+    );
   });
 
   it('detects when files[] is narrowed after add removes themes', async () => {

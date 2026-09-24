@@ -56,7 +56,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'Unknown fields: `component`, `function`, `generic`, `schema`, `command` and `enum` docs accept a field they do not know, and nothing reads it, so a doc written for a newer CLI still loads here. `page`, `block` and `namespace` docs refuse one. Sections and content blocks refuse one in every doc.',
+      text: 'Unknown fields: `component`, `function`, `generic`, `schema`, `command` and `enum` docs accept a field they do not know, and nothing reads it, so a doc written for a newer CLI still loads here. `page`, `block` and `namespace` docs refuse one, as do `theme` descriptors. Sections and content blocks refuse one in every doc.',
     },
   ],
 };
