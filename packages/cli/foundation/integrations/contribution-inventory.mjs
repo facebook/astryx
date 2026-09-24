@@ -189,6 +189,14 @@ export function computeRequiredFiles(loaded) {
 // ── Public: identity collection ──────────────────────────────────
 
 /**
+ * Catalog entry and sorted file list behind each theme identity collected
+ * here. Pack verification compares them; the reported identity stays
+ * `{slug, exportName}`.
+ * @type {WeakMap<object, {entry: string, files: string[]}>}
+ */
+const themeSources = new WeakMap();
+
+/**
  * @typedef {object} ContributionIdentities
  * @property {{slug: string, exportName: string}[]} themes
  * @property {string[]} components
@@ -238,7 +246,14 @@ export async function collectIdentities(loaded) {
         /** @type {import('./integrations.mjs').LoadedIntegration} */ (loaded),
       );
       identities.themes = themes
-        .map(t => ({slug: t.slug, exportName: t.exportName}))
+        .map(theme => {
+          const identity = {slug: theme.slug, exportName: theme.exportName};
+          themeSources.set(identity, {
+            entry: theme.entry,
+            files: [...theme.files].sort(),
+          });
+          return identity;
+        })
         .sort((a, b) => a.slug.localeCompare(b.slug));
     } catch (err) {
       errors.push({
@@ -388,8 +403,27 @@ export async function assertContributionVisible(
  */
 
 /**
+ * How two collected themes' catalog entry or file list differ, or null.
+ * @param {object} localTheme
+ * @param {object} packedTheme
+ * @returns {string|null}
+ */
+function themeSourceDifference(localTheme, packedTheme) {
+  const local = themeSources.get(localTheme);
+  const packed = themeSources.get(packedTheme);
+  if (isDeepStrictEqual(local, packed)) return null;
+  if (!local || !packed)
+    return 'its catalog entry and files could not be compared';
+  if (local.entry !== packed.entry) {
+    return `its entry is "${local.entry}" locally but "${packed.entry}" in the tarball`;
+  }
+  return `its files are ${local.files.join(', ')} locally but ${packed.files.join(', ')} in the tarball`;
+}
+
+/**
  * Compare local and packed identities. Anything discoverable locally but
- * missing from the packed tarball is an error.
+ * missing from the packed tarball is an error, and so is a theme whose
+ * catalog entry or file list changed.
  *
  * @param {ContributionIdentities} local
  * @param {ContributionIdentities} packed
@@ -407,8 +441,16 @@ export function compareIdentities(local, packed) {
    * @param {unknown[]} localItems
    * @param {unknown[]} packedItems
    * @param {(item: any) => string} keyOf
+   * @param {(localItem: any, packedItem: any) => string|null} [differenceOf]
+   *   a difference the reported record does not show
    */
-  function compareKind(kind, localItems, packedItems, keyOf) {
+  function compareKind(
+    kind,
+    localItems,
+    packedItems,
+    keyOf,
+    differenceOf = () => null,
+  ) {
     const localByKey = new Map(localItems.map(item => [keyOf(item), item]));
     const packedByKey = new Map(packedItems.map(item => [keyOf(item), item]));
     for (const [key, item] of localByKey) {
@@ -421,11 +463,14 @@ export function compareIdentities(local, packed) {
         continue;
       }
       const packedItem = packedByKey.get(key);
-      if (!isDeepStrictEqual(item, packedItem)) {
+      const difference = differenceOf(item, packedItem);
+      if (difference || !isDeepStrictEqual(item, packedItem)) {
         issues.push({
           code: 'identity_mismatch',
           severity: 'error',
-          message: `${kind} "${key}" resolves differently from the packed tarball.`,
+          message: `${kind} "${key}" resolves differently from the packed tarball${
+            difference ? `: ${difference}` : ''
+          }.`,
         });
       }
     }
@@ -440,7 +485,13 @@ export function compareIdentities(local, packed) {
     }
   }
 
-  compareKind('Theme', local.themes, packed.themes, item => item.slug);
+  compareKind(
+    'Theme',
+    local.themes,
+    packed.themes,
+    item => item.slug,
+    themeSourceDifference,
+  );
   compareKind('Component', local.components, packed.components, item => item);
   compareKind('Template', local.templates, packed.templates, item => item.id);
   compareKind(
