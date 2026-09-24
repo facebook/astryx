@@ -806,9 +806,6 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
-      gpt-tokenizer:
-        specifier: ^3.4.0
-        version: 3.4.0
       lucide-react:
         specifier: ^1.18.0
         version: 1.23.0(react@19.2.7)
@@ -4975,9 +4972,6 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
-
-  gpt-tokenizer@3.4.0:
-    resolution: {integrity: sha512-wxFLnhIXTDjYebd9A9pGl3e31ZpSypbpIJSOswbgop5jLte/AsZVDvjlbEuVFlsqZixVKqbcoNmRlFDf6pz/UQ==}
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -10819,8 +10813,6 @@ snapshots:
       slash: 3.0.0
 
   gopd@1.2.0: {}
-
-  gpt-tokenizer@3.4.0: {}
 
   graceful-fs@4.2.11: {}
 
