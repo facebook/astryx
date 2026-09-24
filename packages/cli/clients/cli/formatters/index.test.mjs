@@ -117,6 +117,12 @@ describe('ASCII normalization', () => {
     expect(list(['Avatar \u2014 Group']).toString()).toBe('- Avatar - Group');
   });
 
+  it('converts Unicode arrows to ASCII arrows', () => {
+    expect(text('Rename items \u2192 options').toString()).toBe('Rename items -> options');
+    expect(text('options \u2190 items').toString()).toBe('options <- items');
+    expect(record({title: 'a \u2192 b'}).toString()).toBe('title: a -> b');
+  });
+
   it('leaves code verbatim (no normalization)', () => {
     expect(code('a \u2014 b').toString()).toBe('a \u2014 b');
   });

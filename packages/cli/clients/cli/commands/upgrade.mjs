@@ -13,6 +13,7 @@
  */
 
 import {jsonOut, jsonError} from '../../../foundation/response/json.mjs';
+import {emit, section, records} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {AstryxError} from '../../../api/error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -33,27 +34,45 @@ export function registerUpgrade(program) {
        */
       async options => {
         const json = program.opts().json || false;
-        logger.setSilent(json);
+        const isList = Boolean(options.list);
+        // Silence the logger for --list so the handler renders from the
+        // result (parity with --json), and for --json as before.
+        // Re-enable on error so handled failures still print.
+        logger.setSilent(json || isList);
 
         /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRegistryResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
           result = await upgradeApi(options, {cwd: process.cwd()});
         } catch (e) {
-          // Handled failures throw AstryxError: --json emits the structured
-          // envelope (byte-identical to the old inline jsonError) + exits 1;
-          // human mode already saw the error line + outro via the logger, so we
-          // just set the exit code. Anything else is unexpected — let the
-          // top-level boundary in bin/astryx.mjs format it as before.
+          // Re-enable the logger so the error is visible in text mode.
+          // For --list the logger was silent; for other modes the API
+          // already printed the error before throwing.
+          logger.setSilent(json);
           if (e instanceof AstryxError) {
             if (json) jsonError(e.message, undefined, e.code);
-            else process.exitCode = 1;
+            else {
+              // The logger was silent only for --list; replay the error there.
+              // Non-list failures were already printed by the API.
+              if (isList) logger.error(e.message);
+              process.exitCode = 1;
+            }
             return NO_RESULT_SET;
           }
           throw e;
         }
 
         if (json) jsonOut(result);
+        else if (result.type === 'upgrade.list') {
+          // Render the list from the result, not the API logger, so the text
+          // carries the same fields the JSON does (name, title, version, optional).
+          emit(
+            section('Available codemods'),
+            records(result.data, {
+              fields: ['name', 'title', 'version', 'optional'],
+            }),
+          );
+        }
 
         const registrySummary =
           result.type === 'upgrade.registry'
