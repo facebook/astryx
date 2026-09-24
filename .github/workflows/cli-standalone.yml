@@ -1,0 +1,54 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Builds the standalone CLI runtime (scripts/build-cli-standalone.mjs) and
+# proves it runs with nothing installed: extracted twice into empty
+# directories, it must print exactly what the workspace CLI prints.
+# Publishes nothing; the tarball is kept as a workflow artifact.
+name: CLI Standalone
+
+on:
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'packages/cli/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - 'scripts/build-cli-standalone.mjs'
+      - '.github/scripts/cli-standalone-smoke-test.mjs'
+      - '.github/workflows/cli-standalone.yml'
+
+permissions: {}
+
+concurrency:
+  group: 'cli-standalone-${{ github.head_ref }}'
+  cancel-in-progress: true
+
+jobs:
+  standalone:
+    runs-on: 4-core-ubuntu
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      # The runtime ships the files `pnpm publish` would: Core's dist and the
+      # CLI's generated declarations.
+      - name: Build Core and the CLI declarations
+        run: pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/cli sync:api-types
+
+      - name: Build the standalone runtime
+        run: node scripts/build-cli-standalone.mjs --out-dir "$RUNNER_TEMP/cli-standalone"
+
+      - name: Smoke-test the runtime
+        run: node .github/scripts/cli-standalone-smoke-test.mjs "$RUNNER_TEMP"/cli-standalone/*.tgz
+
+      - name: Upload the runtime
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-standalone
+          path: |
+            ${{ runner.temp }}/cli-standalone/*.tgz
+            ${{ runner.temp }}/cli-standalone/*.tgz.sha256
+          retention-days: 14
