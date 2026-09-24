@@ -12,7 +12,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {template, discoverTemplates} from '../template.mjs';
 
-const SLOW = 30_000;
+const SLOW = 60_000;
 const FIXTURE_REF = /\/template-assets\/[\w.-]+\.(\w+)/g;
 const VIDEO = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
 

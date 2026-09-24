@@ -27,6 +27,21 @@ const FIXTURE_NAMESPACE = '/template-assets/';
 const countFixtureRefs = source => source.split(FIXTURE_NAMESPACE).length - 1;
 
 /**
+ * Replace the Astryx demo media in template source with placeholders. A
+ * replaced reference leaves the fixture namespace, so the drop in count is
+ * exactly what a receipt must disclose.
+ * @param {string} source
+ * @returns {{source: string, demoMediaReplaced: number}}
+ */
+export function replaceDemoMedia(source) {
+  const output = stripTemplateAssetRefs(source);
+  return {
+    source: output,
+    demoMediaReplaced: countFixtureRefs(source) - countFixtureRefs(output),
+  };
+}
+
+/**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
  * return the `template.copy` receipt.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
@@ -96,13 +111,10 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
 
   // Strip demo image references so the scaffolded file renders without a
   // Meta-only network dependency.
-  const source = fs.readFileSync(match.filePath, 'utf-8');
-  const outputSource = stripTemplateAssetRefs(source);
+  const {source: outputSource, demoMediaReplaced} = replaceDemoMedia(
+    fs.readFileSync(match.filePath, 'utf-8'),
+  );
   fs.writeFileSync(outputFilePath, outputSource);
-  // A replaced reference leaves the fixture namespace, so the drop in count is
-  // exactly what the receipt must disclose.
-  const demoMediaReplaced =
-    countFixtureRefs(source) - countFixtureRefs(outputSource);
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {

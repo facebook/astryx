@@ -109,6 +109,20 @@ async function readExpression(expr, options = {}) {
 }
 
 /**
+ * The disclosure for demo media replaced in spliced template blocks, or '' when
+ * none was. After printed code it is a line comment, so piped output stays TSX.
+ * @param {LayoutExpandResponse['data']} data
+ * @returns {string}
+ */
+function demoMediaNotice({demoMediaReplaced, written}) {
+  if (demoMediaReplaced === 0) return '';
+  const notice =
+    `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${written ?? 'the code above'}: ` +
+    'images now show a neutral placeholder and videos have an empty source. Supply your own media there.';
+  return written ? notice : `// ${notice}`;
+}
+
+/**
  * @param {import('commander').Command} program
  */
 export function registerLayout(program) {
@@ -169,6 +183,8 @@ export function registerLayout(program) {
         // Raw expanded TSX (no target path) — preformatted, emitted verbatim.
         out.push(code(result.data.code));
       }
+      const mediaNotice = demoMediaNotice(result.data);
+      if (mediaNotice) out.push(text(mediaNotice));
       emit(...out);
       return NO_RESULT_SET;
     },

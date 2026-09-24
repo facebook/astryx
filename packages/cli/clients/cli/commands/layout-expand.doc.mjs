@@ -18,7 +18,9 @@ export const doc = {
   description:
     'Parses and validates a compressed XLE/XLO expression, then expands it into ' +
     'ready-to-use XDS TSX, routing children into slots, scaffolding typed useState for ' +
-    'interactive controls, and splicing referenced blocks. Writes to a path, or returns the code.',
+    'interactive controls, and splicing referenced blocks. Writes to a path, or returns the code. ' +
+    'Astryx demo media in a spliced block becomes a placeholder, and the output says how many ' +
+    'references were replaced (as a closing line comment when it prints the code).',
   fn: 'layoutExpand',
   args: [
     {name: 'expression', param: 'expression', required: false},

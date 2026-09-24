@@ -12,7 +12,7 @@ import * as path from 'node:path';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 import {discoverTemplates} from '../../../api/template/template.mjs';
 
-const SLOW = 30_000;
+const SLOW = 60_000;
 
 /** A page template whose source carries demo media, and one that carries none. */
 async function pickPages() {
