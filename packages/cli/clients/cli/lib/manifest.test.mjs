@@ -196,3 +196,20 @@ describe('manifest: e2e', () => {
       .toContain('component.list');
   });
 });
+
+describe('manifest: text projection', () => {
+  it('astryx manifest (text) uses the JSON entry keys as its field names', async () => {
+    const text = await runCli(['manifest']);
+    expect(text.status).toBe(0);
+    const json = JSON.parse((await runCli(['manifest', '--json'])).stdout);
+    const jsonKeys = new Set(json.data.commands.flatMap((c) => Object.keys(c)));
+    const textKeys = new Set(
+      text.stdout
+        .split('\n')
+        .map((line) => /^([A-Za-z]+):\s/.exec(line)?.[1])
+        .filter(Boolean),
+    );
+    expect(textKeys).toContain('name');
+    for (const key of textKeys) expect(jsonKeys).toContain(key);
+  });
+});

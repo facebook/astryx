@@ -202,7 +202,7 @@ D6 returns **N-A** when a story contains no contextual decoration. The
 applicability layer below decides whether that N-A is explained; D6 itself does
 not turn absence into a pass.
 
-### B. Curated precision — D2 / D3 / D4 / D7 / D8
+### B. Curated precision — D2 / D3 / D4 / D7 / D8 / D9
 
 `targets.json` holds the geometry/behavior dimensions that genuinely need
 hand-written selectors, run **in addition** to auto-discovery:
@@ -223,8 +223,13 @@ hand-written selectors, run **in addition** to auto-discovery:
   fixtures fail closed because they cannot prove the relationship. Real
   Chromium startup self-checks prove horizontal and vertical-writing passes plus
   a hidden-subject failure before any component result is accepted.
+- **D9 logical grouped corners** — configured first/middle/last subjects must
+  tighten the end/both/start corners on one declared logical inline side, keep
+  every opposite-side corner full, and mirror the physical side between LTR and
+  RTL. Missing, hidden, symmetric, inconsistent, or physically pinned groups
+  fail rather than earning coverage for parent alignment.
 
-D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
+D1, D5, and D6 are intentionally **not** in `targets.json`; auto-discovery covers
 them universally.
 
 ### C. Applicability: no unexplained all-N/A components
@@ -322,7 +327,7 @@ Edit `targets.json`. Each entry is:
 {
   "component": "MyComponent", // explicit alias for grouped story titles
   "storyId": "core-mycomponent--some-story", // must exist in dist/index.json
-  "dims": ["D2", "D3"], // D2/D3/D4 only (D1 is auto)
+  "dims": ["D2", "D3", "D9"], // D2/D3/D4/D7/D8/D9 only (D1/D5/D6 are auto)
   "setup": {
     "args": {"position": "start"}, // optional: drive Storybook args
     "click": "img", // optional: reveal the target after args settle
@@ -334,6 +339,16 @@ Edit `targets.json`. Each entry is:
     "nextButton": "button[aria-label=\"Scroll right\"]",
     "overlay": "…",
     "overlayRoot": "…", // D4
+    "groups": [
+      // D9
+      {
+        "name": "primary",
+        "logicalSide": "inline-start",
+        "first": "[data-testid=group-first]",
+        "middle": "[data-testid=group-middle]",
+        "last": "[data-testid=group-last]",
+      },
+    ],
   },
 }
 ```

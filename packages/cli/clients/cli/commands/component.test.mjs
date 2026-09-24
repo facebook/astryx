@@ -13,6 +13,9 @@ import {
   levenshteinDistance,
   findClosestComponents,
 } from './component/index.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
+
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../..');
 
 let tmpDir;
 
@@ -590,4 +593,20 @@ describe('searchComponents', () => {
     );
     expect(results.length).toBe(0);
   });
+});
+
+describe('component <Name> text output', () => {
+  // The text is a projection of the JSON envelope: it may show less, never
+  // data the envelope does not carry.
+  it('shows no related-block records that the JSON lacks', async () => {
+    const json = await runCli(['--json', 'component', 'Button'], REPO_ROOT);
+    expect(json.code).toBe(0);
+    expect(JSON.stringify(JSON.parse(json.stdout).data)).not.toContain('dirName');
+
+    const text = await runCli(['component', 'Button'], REPO_ROOT);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain('# Button');
+    expect(text.stdout).not.toMatch(/^dirName:/m);
+    expect(text.stdout).not.toContain('Related block templates');
+  }, 30_000);
 });

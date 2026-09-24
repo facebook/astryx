@@ -33,7 +33,7 @@ export const doc = {
     },
     {
       flag: '--verbose',
-      description: 'Verbose output (include import paths and match reason)',
+      description: "Also print each result's score and match reason",
     },
   ],
   examples: [
@@ -45,7 +45,10 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'success (including zero matches)'},
-    {code: 1, when: 'invalid --type or a non-positive --limit'},
+    {
+      code: 1,
+      when: 'invalid --type or a non-positive --limit, or @astryxdesign/core cannot be found',
+    },
   ],
   related: ['component', 'hook', 'docs', 'template', 'build'],
 };

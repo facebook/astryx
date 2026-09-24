@@ -187,8 +187,7 @@ export const doc = {
     },
     {
       value: 'ERR_FILE_EXISTS',
-      description:
-        'Refused to overwrite an existing file in non-interactive mode.',
+      description: 'Refused to overwrite an existing file.',
     },
     {
       value: 'ERR_PATH_TRAVERSAL',

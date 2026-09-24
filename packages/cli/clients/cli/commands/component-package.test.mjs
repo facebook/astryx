@@ -121,6 +121,24 @@ describe('component() with --package option', () => {
     expect(result.data.aspectRatio).toBeCloseTo(16 / 9);
   });
 
+  // A legacy package ships docs only: --source and --blocks answer the same
+  // way scoped as unscoped, never falling back to the plain doc.
+  it('--package + --source reports the missing source, like the unscoped lookup', async () => {
+    await expect(
+      component('ProfileCard', {cwd: tmpDir, source: true}),
+    ).rejects.toMatchObject({code: 'ERR_NO_SOURCE'});
+    await expect(
+      component('ProfileCard', {cwd: tmpDir, package: '@test/ext', source: true}),
+    ).rejects.toMatchObject({code: 'ERR_NO_SOURCE'});
+  });
+
+  it('--package + --blocks returns the blocks, like the unscoped lookup', async () => {
+    const unscoped = await component('ProfileCard', {cwd: tmpDir, blocks: true});
+    const scoped = await component('ProfileCard', {cwd: tmpDir, package: '@test/ext', blocks: true});
+    expect(scoped.type).toBe('component.detail.blocks');
+    expect(scoped.data).toEqual(unscoped.data);
+  });
+
   // `cwd` is an explicit API input: --blocks must discover from it, as
   // --showcase does, not from the process working directory.
   it('--blocks discovers blocks from options.cwd, like --showcase', async () => {

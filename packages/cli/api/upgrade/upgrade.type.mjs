@@ -25,6 +25,7 @@
  * @property {string} name
  * @property {string} title
  * @property {string} version
+ * @property {boolean} optional True when the codemod runs only if named with `--codemod`.
  */
 
 /**

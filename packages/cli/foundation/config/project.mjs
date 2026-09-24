@@ -39,6 +39,7 @@ import {
   loadIntegrations,
   loadLocalIntegration,
   markProviderConflicts,
+  resolvePackageDir,
 } from '../integrations/integrations.mjs';
 import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
@@ -96,6 +97,118 @@ function errorMessage(err) {
 }
 
 /**
+ * Load the configured integrations one at a time, so a package that cannot
+ * load at all (not installed, no manifest, more than one manifest, not a bare
+ * name) becomes that entry's load-error marker instead of failing the project.
+ * @param {string[]} specs
+ * @param {{cwd: string, fresh: boolean}} options
+ * @returns {Promise<import('../integrations/integrations.mjs').LoadedIntegration[]>}
+ */
+async function loadConfiguredIntegrations(specs, {cwd, fresh}) {
+  /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
+  const loaded = [];
+  const seen = new Set();
+  for (const spec of specs) {
+    if (!spec || seen.has(spec)) continue;
+    seen.add(spec);
+    try {
+      loaded.push(
+        ...(await loadIntegrations([spec], {
+          cwd,
+          fresh,
+          resolveProviders: false,
+        })),
+      );
+    } catch (err) {
+      /** @type {string|undefined} */
+      let packageDir;
+      try {
+        packageDir = resolvePackageDir(spec, cwd);
+      } catch {
+        // Not a bare package name: there is no install location to record.
+      }
+      const pkg = packageDir ? readPackageJson(packageDir) : null;
+      loaded.push(
+        loadErrorMarker({
+          name: packageName(pkg) ?? spec,
+          version: pkg?.version,
+          spec,
+          packageDir,
+          err,
+        }),
+      );
+    }
+  }
+  return loaded;
+}
+
+/**
+ * Resolve the package being authored. Every failure, including an unreadable
+ * package.json or more than one manifest, becomes its load-error marker.
+ * @param {string} projectDir
+ * @param {boolean} fresh
+ * @returns {Promise<import('../integrations/integrations.mjs').LoadedIntegration|null>}
+ */
+async function loadLocalIntegrationSafely(projectDir, fresh) {
+  try {
+    return await loadLocalIntegration(projectDir, {fresh});
+  } catch (err) {
+    const pkg = readPackageJson(projectDir);
+    const name = packageName(pkg) ?? '(local integration)';
+    return {
+      ...loadErrorMarker({
+        name,
+        version: pkg?.version,
+        spec: name,
+        packageDir: projectDir,
+        err,
+      }),
+      __local: true,
+    };
+  }
+}
+
+/**
+ * An inert entry for an integration that could not be loaded. It contributes
+ * nothing; Project reports its `__loadError` as the package's issue.
+ * @param {{name: string, version?: unknown, spec: string, packageDir?: string, err: unknown}} input
+ * @returns {import('../integrations/integrations.mjs').LoadedIntegration}
+ */
+function loadErrorMarker({name, version, spec, packageDir, err}) {
+  return /** @type {import('../integrations/integrations.mjs').LoadedIntegration} */ ({
+    name,
+    ...(typeof version === 'string' ? {version} : {}),
+    __spec: spec,
+    ...(packageDir ? {__packageDir: packageDir} : {}),
+    __loadError: errorMessage(err),
+  });
+}
+
+/**
+ * @param {Record<string, unknown>|null} pkg
+ * @returns {string|undefined}
+ */
+function packageName(pkg) {
+  const name = pkg?.name;
+  return typeof name === 'string' && name.length > 0 ? name : undefined;
+}
+
+/**
+ * @param {string} dir
+ * @returns {Record<string, unknown>|null}
+ */
+function readPackageJson(dir) {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
+    );
+    return pkg && typeof pkg === 'object' ? pkg : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * An integration issue tagged with the owner package. The base
  * {@link import('../integrations/issue').AstryxIntegrationIssue} fields plus the
  * `package` that produced it, which Project tracks for routing/dedup.
@@ -147,13 +260,15 @@ function findPackageRoot(startDir) {
  *
  * This governs INHERITED handlers only. A project's own `debug` always runs.
  *
- * @param {string|null} configPath
+ * Read from the project root whether or not an astryx.config exists: an
+ * autolinked integration contributes a handler with no config at all.
+ *
+ * @param {string} projectDir directory holding the project's package.json
  * @returns {boolean}
  */
-function inheritsIntegrationDebug(configPath) {
-  if (!configPath) return true;
+function inheritsIntegrationDebug(projectDir) {
   try {
-    const pkgPath = path.join(path.dirname(configPath), 'package.json');
+    const pkgPath = path.join(projectDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     return pkg?.astryx?.inheritDebug !== false;
   } catch {
@@ -276,11 +391,10 @@ export class Project {
         fresh,
       });
       integrations = config.integrations ?? [];
-      loadedIntegrations = await loadIntegrations(integrations, {
+      // Provider identity is resolved once, below, over the final set.
+      loadedIntegrations = await loadConfiguredIntegrations(integrations, {
         cwd: projectDir,
         fresh,
-        // Provider identity is resolved once, below, over the final set.
-        resolveProviders: false,
       });
     }
 
@@ -305,7 +419,7 @@ export class Project {
     // existing consumer command doubles as the author's preview. A local copy
     // replaces the same installed package in place, preserving configured
     // precedence while making the source being edited authoritative.
-    const localIntegration = await loadLocalIntegration(projectDir, {fresh});
+    const localIntegration = await loadLocalIntegrationSafely(projectDir, fresh);
     if (localIntegration) {
       const existing = loadedIntegrations.findIndex(
         integration => integration.name === localIntegration.name,
@@ -335,7 +449,7 @@ export class Project {
       // because Project.load can run more than once in a process and appending
       // would deliver twice.
       setDebugIntegrationEventHandlers(
-        inheritsIntegrationDebug(configPath)
+        inheritsIntegrationDebug(projectDir)
           ? loadedIntegrations.map(integration => integration.__debug)
           : [],
       );

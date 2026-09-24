@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   ChatLayout,
+  ChatLayoutScrollButton,
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
@@ -951,6 +952,59 @@ export const ScrollAffordanceStates: StoryObj = {
             ))}
           </ChatMessageList>
         </ChatLayout>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * The scroll affordance's own rendered configurations, side by side, so the
+ * hidden, collapsed, labelled, and long-label pills can be compared in one
+ * frame and in one theme switch.
+ *
+ * `ScrollAffordanceStates` above owns the *behavioral* fixture — a real
+ * scroller whose position drives the affordance. This one owns the *rendered*
+ * fixture: the labelled pill is only reachable inside ChatLayout when new
+ * messages arrive during a scroll, which no static story can stage, and the
+ * hidden pill occupies no visible place there at all. Rendering the component
+ * directly is what makes those configurations photographable and lets a theme
+ * be judged against the surface it is supposed to paint.
+ *
+ * The long label is deliberately past the pill's expanded ceiling: text
+ * expansion is a real locale outcome, and the frame records what a reader sees
+ * when it happens.
+ */
+export const ScrollButtonStates: StoryObj = {
+  name: 'Scroll Button States',
+  parameters: {layout: 'centered'},
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        padding: 24,
+        width: 360,
+      }}>
+      <div data-scroll-button-state="hidden">
+        <ChatLayoutScrollButton isVisible={false} onClick={() => {}} />
+      </div>
+      <div data-scroll-button-state="visible-collapsed">
+        <ChatLayoutScrollButton isVisible onClick={() => {}} />
+      </div>
+      <div data-scroll-button-state="visible-labelled">
+        <ChatLayoutScrollButton
+          isVisible
+          label="New messages"
+          onClick={() => {}}
+        />
+      </div>
+      <div data-scroll-button-state="visible-long-label">
+        <ChatLayoutScrollButton
+          isVisible
+          label="Neue Nachrichten unterhalb dieser Stelle"
+          onClick={() => {}}
+        />
       </div>
     </div>
   ),

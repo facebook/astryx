@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Re-publishes whatever independent preview artifacts remain for a PR's latest
-# successful CI run. It never checks out or executes the PR head.
+# Re-publishes the Sandbox artifact from the PR's latest successful CI run.
+# Storybook lives with the exact-head Vercel docsite preview.
 
 name: Re-deploy Preview
 
@@ -146,15 +146,6 @@ jobs:
               },
             );
 
-      - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: storybook-${{ steps.source.outputs.short_hash }}
-          path: storybook-dist
-          run-id: ${{ steps.source.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
       - name: Download Sandbox artifact
         uses: actions/download-artifact@v8
         with:
@@ -164,17 +155,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Detect independently available preview targets
+      - name: Detect available Sandbox artifact
         id: targets
         run: |
-          storybook=false
-          sandbox=false
-          if [ -f storybook-dist/index.html ]; then storybook=true; fi
-          if [ -f sandbox-dist/index.html ]; then sandbox=true; fi
-          echo "storybook=$storybook" >> "$GITHUB_OUTPUT"
-          echo "sandbox=$sandbox" >> "$GITHUB_OUTPUT"
-          if [ "$storybook" != 'true' ] && [ "$sandbox" != 'true' ]; then
-            echo "::error::No preview artifact remains for source run ${{ steps.source.outputs.run_id }}. Re-run CI on the PR."
+          if [ ! -f sandbox-dist/index.html ]; then
+            echo "::error::No Sandbox artifact remains for source run ${{ steps.source.outputs.run_id }}. Re-run CI on the PR."
             exit 1
           fi
 
@@ -213,7 +198,7 @@ jobs:
             });
             if (identity.draft) core.setFailed(`PR #${identity.prNumber} is still a draft.`);
 
-      - name: Deploy available targets to GitHub Pages
+      - name: Deploy Sandbox to GitHub Pages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.source.outputs.pr_number }}
@@ -224,8 +209,6 @@ jobs:
           BASE_REPOSITORY: ${{ steps.source.outputs.base_repo }}
           SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
           SOURCE_RUN_ATTEMPT: ${{ steps.source.outputs.run_attempt }}
-          STORYBOOK_AVAILABLE: ${{ steps.targets.outputs.storybook }}
-          SANDBOX_AVAILABLE: ${{ steps.targets.outputs.sandbox }}
         run: |
           args=(
             pr-preview
@@ -239,13 +222,8 @@ jobs:
             --source-run-attempt "$SOURCE_RUN_ATTEMPT"
             --source-conclusion success
             --result preview-deployment.json
+            --sandbox sandbox-dist
           )
-          if [ "$STORYBOOK_AVAILABLE" = 'true' ]; then
-            args+=(--storybook storybook-dist)
-          fi
-          if [ "$SANDBOX_AVAILABLE" = 'true' ]; then
-            args+=(--sandbox sandbox-dist)
-          fi
           node .github/scripts/gh-pages-publisher.mjs "${args[@]}"
 
       - name: Upload deployment result

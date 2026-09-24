@@ -1,8 +1,9 @@
 # CLI conventions for contributors
 
-This guide turns the CLI surface architecture into the steps you follow when
-you change `packages/cli`. It does not create policy. Where it and
-`docs/architecture/cli-surface.md` disagree, the architecture record wins.
+This guide turns the CLI surface architecture (`docs/architecture/cli-surface.md`)
+and the admission rules (`docs/specs/AST-042-cli-command-admission/spec.md`) into
+the steps you follow when you change `packages/cli`. It does not create policy.
+Where it disagrees with either record, the record wins.
 
 ## Who the CLI is for
 
@@ -29,11 +30,23 @@ commands on it. Most valuable work makes an existing command answer better.
 
 ## Adding a command
 
-**A new command needs approval from a code owner of `packages/cli` before you
-write it.** `.github/CODEOWNERS` is the source of truth for who that is. Open
-the proposal first: a command is a permanent concept — it appears in help, in
-the manifest, in the README, and in every agent's cheat sheet, and removing one
-is a breaking change.
+The bar depends on the tier (`spec:AST-042` FR4):
+
+- **A new top-level command** needs a current system spec that authorizes it,
+  approved by an approval owner (an owner listed in the knowledge schema's
+  `approvalOwners`). Write the spec first.
+- **A new subcommand** stays inside its parent's one job. State its case in the
+  pull request, and get approval from a code owner of `packages/cli`.
+  `.github/CODEOWNERS` is the source of truth for who that is.
+- **A new flag** follows the flag rules below and needs no extra approval.
+
+Propose a command before you write it: a command is a permanent concept — it
+appears in help, in the manifest, in the README, and in every agent's cheat
+sheet, and removing one is a breaking change.
+
+Every command is a thin layer over one exported `api/` function: parse the
+arguments, call the function, render the result. The function does the work, so
+an agent that scripts the API gets the same result as one that runs the command.
 
 A command earns its place when all four hold:
 
@@ -51,9 +64,10 @@ topic.
 
 ## Adding a flag
 
-Flags are more forgiving than commands, and they do not need a proposal. They
-are not free: every flag is a branch an agent has to know about, and a
-combination somebody has to keep working.
+Flags are more forgiving than commands, and they do not need a proposal, but
+`spec:AST-042` FR5 makes the rules below binding. They are not free: every flag
+is a branch an agent has to know about, and a combination somebody has to keep
+working.
 
 A good flag:
 
@@ -96,6 +110,19 @@ A name is a promise across the whole CLI. Two rules:
 - **No command is forced to carry a flag because a sibling has it.** Alignment is on
   meaning, not on presence.
 
+## Where the code goes
+
+Copy `api/blog` and `clients/cli/commands/blog.mjs`. They are the reference
+layout (`cli-surface` INV20–INV22).
+
+- The behavior lives in `api/<subject>/`: an entry `<subject>.mjs`, one leaf
+  folder per operation, a `FunctionDoc` and typedefs for each exported function,
+  and tests beside the code they cover.
+- Anything that touches the environment — files, the network, subprocesses,
+  loading the project or running discovery — goes in the subject's
+  `_adapter.mjs`. The leaves only shape the result.
+- The handler in `clients/cli/commands/` only parses, calls, and renders.
+
 ## Output: use the shared functions
 
 Never call `console.log`. Every path is provided:
@@ -112,7 +139,9 @@ Never call `console.log`. Every path is provided:
 
 `emit` accepts only a renderer-produced `Block`, so a bare string will not
 compile. Keep text field names identical to the JSON keys — the text output is
-a view of the envelope, not a separate design.
+a view of the envelope, not a separate design. Do not pad strings, align
+columns, or draw tables yourself; map rows onto `records()`. A new block kind
+needs the evidence that `spec:AST-042` FR3 asks for.
 
 ## Errors: every failure carries a code
 
@@ -146,11 +175,15 @@ change.
 
 ## Checklist before you open the pull request
 
-- [ ] For a new command: a code owner approved the proposal.
+- [ ] For a new top-level command: a current spec authorizes it. For a new
+      subcommand: a code owner approved its case.
+- [ ] The handler only parses, calls one exported `api/` function, and renders;
+      the subject's adapter does any file, network, or project access.
 - [ ] One file per command, with its sibling doc file.
 - [ ] `--json` returns one envelope; the `type` matches the API function.
 - [ ] Every failure path carries a code; new codes are appended, never edited.
-- [ ] No `console.log`; all human output goes through the formatters.
+- [ ] No `console.log`; all human output goes through the formatters, with no
+      hand-padded columns.
 - [ ] Text field names match the JSON keys.
 - [ ] Exit code is the same with and without `--json`.
 - [ ] The composition matrix is closed: every pair composes with a test, is
@@ -164,6 +197,8 @@ change.
 - **A flag that only a maintainer would pass.** It is a debugging affordance;
   keep it out of the surface.
 - **A new command whose summary contains "and".** Two commands.
+- **A handler that reads files or loads the project.** That work belongs in the
+  API subject's adapter.
 - **A flag added because another command has one.** Presence does not have to
   align; meaning does.
 - **A composition cell nobody decided.** The most common defect in a flag PR.

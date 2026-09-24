@@ -20,7 +20,8 @@ import {PAYLOAD_PROPS} from './validate.mjs';
 import {mergeImports, renderImport, prepareSpliceModule} from './splice.mjs';
 
 const INDENT = '  ';
-const MAX_REPEAT = 10000;
+/** The most copies one `*N` repeat expands to. */
+export const MAX_REPEAT = 10000;
 
 /** @param {string | null | undefined} text */
 function slugify(text) {
@@ -642,7 +643,7 @@ class Emitter {
     /** @type {import('./xle-ast').XLENode[]} */
     const out = [];
     for (const item of items) {
-      const count = item.repeat || 1;
+      const count = Math.min(item.repeat || 1, MAX_REPEAT);
       for (let i = 1; i <= count; i++) {
         const clone = count > 1 ? cloneItem(item) : item;
         if (count > 1) {

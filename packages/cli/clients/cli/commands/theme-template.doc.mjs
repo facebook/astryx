@@ -36,7 +36,7 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'success, including when an existing file was left untouched'},
-    {code: 1, when: 'the target path escapes the project'},
+    {code: 1, when: 'the target path escapes the project, or the file cannot be written'},
   ],
   related: ['theme add', 'theme list', 'theme build'],
 };
