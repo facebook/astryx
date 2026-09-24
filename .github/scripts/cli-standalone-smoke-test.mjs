@@ -229,9 +229,9 @@ function main() {
   for (const suite of SUITES) {
     console.log(`\n── ${suite} against the runtime ──`);
     const started = performance.now();
-    const result = node([path.join(HERE, suite)], {
+    const result = node([path.join(HERE, suite), '--bin', bin, '--cwd', empty], {
       cwd: empty,
-      env: cleanEnv(home, {ASTRYX_SMOKE_BIN: bin, ASTRYX_SMOKE_CWD: empty}),
+      env,
       stdio: 'inherit',
     });
     check(

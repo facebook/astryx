@@ -16,25 +16,26 @@
  * No hardcoded type allowlist — validates shape, not specific strings.
  * The .d.ts type declarations are the source of truth for valid types.
  *
- * Usage: node .github/scripts/cli-json-smoke-test.mjs
- *        ASTRYX_SMOKE_BIN=<bin> ASTRYX_SMOKE_CWD=<dir> node .github/scripts/cli-json-smoke-test.mjs
+ * Usage: node .github/scripts/cli-json-smoke-test.mjs [--bin <astryx.mjs>] [--cwd <dir>]
  */
 
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import * as path from 'node:path';
+import {parseArgs} from 'node:util';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-// ASTRYX_SMOKE_BIN and ASTRYX_SMOKE_CWD run this suite against a packaged CLI,
-// such as the standalone runtime, from another directory. By default it runs
-// the workspace CLI from the repo root.
-const CLI = process.env.ASTRYX_SMOKE_BIN
-  ? path.resolve(process.env.ASTRYX_SMOKE_BIN)
+// --bin and --cwd run this suite against a packaged CLI, such as the
+// standalone runtime, from another directory. By default it runs the
+// workspace CLI from the repo root.
+const {values: options} = parseArgs({
+  options: {bin: {type: 'string'}, cwd: {type: 'string'}},
+});
+const CLI = options.bin
+  ? path.resolve(options.bin)
   : path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
-const CWD = process.env.ASTRYX_SMOKE_CWD
-  ? path.resolve(process.env.ASTRYX_SMOKE_CWD)
-  : ROOT;
+const CWD = options.cwd ? path.resolve(options.cwd) : ROOT;
 
 let passed = 0;
 let failed = 0;
