@@ -2,28 +2,31 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Build the standalone Astryx CLI runtime.
+ * Build the standalone Astryx CLI runtime: the real CLI, runnable with nothing
+ * installed.
  *
- * The runtime is `@astryxdesign/cli`, its production dependencies, and the
- * matching `@astryxdesign/core`, laid out as an installed `node_modules` tree
- * and packed into one npm tarball. A consumer extracts it and runs
- * `node package/bin/astryx.mjs`: no package manager, no registry, no install
- * step. Catalog commands (component, search, build, docs, template, hook) answer
- * from the bundled Core whenever the project has no Core of its own.
+ * The runtime holds `@astryxdesign/cli` and `@astryxdesign/core` exactly as a
+ * release publishes them (their `pnpm pack` tarballs, extracted unchanged) plus
+ * the third-party dependencies pnpm-lock.yaml pins for them, laid out as an
+ * installed `node_modules` tree and packed into one tarball. A consumer
+ * extracts it and runs `node package/bin/astryx.mjs`: no package manager, no
+ * registry, no install step. Catalog commands answer from the bundled Core
+ * whenever the project has no Core of its own.
  *
- * Every third-party version comes from this repo's pnpm-lock.yaml through
- * `pnpm deploy`, never from a fresh resolution, and the CLI and Core trees hold
- * exactly the files `pnpm publish` ships. Deliberately not a JS bundle: the CLI
- * picks command modules, parsers and integration configs at runtime (computed
- * dynamic imports, Jiti, a worker, 1,600+ data files), which bundling breaks.
+ * Deliberately not a JS bundle: the CLI picks command modules, parsers and
+ * integration configs at runtime (computed dynamic imports, Jiti, a worker,
+ * 1,600+ data files), which bundling breaks.
  *
- * Needs a workspace install and a built Core (`pnpm build`).
+ * Needs a workspace install. Packing runs each package's prepack, as
+ * `pnpm publish` does, so Core is built on the way.
  *
  * Usage: node scripts/build-cli-standalone.mjs [--out-dir <dir>] [-- <pnpm args>]
  *   Default out dir: .astryx-standalone/ (gitignored). Writes
- *   astryxdesign-cli-standalone-<version>.tgz plus a .sha256 beside it, keeps
- *   the unpacked tree in cli-standalone/, and prints a JSON summary. Arguments
- *   after `--` go to both `pnpm deploy` runs (e.g. registry or proxy config).
+ *   astryxdesign-cli-standalone-<version>.tgz and its .sha256, keeps the two
+ *   packed packages (astryxdesign-cli-<version>.tgz and
+ *   astryxdesign-core-<version>.tgz) and the unpacked tree (cli-standalone/)
+ *   beside it, and prints a JSON summary. Arguments after `--` go to both
+ *   `pnpm deploy` runs (e.g. registry or proxy config).
  */
 
 import {spawnSync} from 'node:child_process';
@@ -45,13 +48,6 @@ export const MANIFEST_FILE = 'astryx-standalone.json';
 export const ENTRY = 'bin/astryx.mjs';
 const CLI = '@astryxdesign/cli';
 const CORE = '@astryxdesign/core';
-
-/** What `pnpm deploy` leaves beside a deployed package that is not package content. */
-const DEPLOY_ONLY_ENTRIES = new Set([
-  'node_modules',
-  'pnpm-lock.yaml',
-  'pnpm-workspace.yaml',
-]);
 
 /** @param {string} file */
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -200,18 +196,70 @@ export function findSymlinks(dir) {
 }
 
 /**
- * Move a deployed package's own files into `dest`, leaving deploy leftovers.
+ * `pnpm pack` one workspace package into `dest` and return the tarball's path.
+ * pnpm runs the package's prepack and rewrites its manifest exactly as
+ * `pnpm publish` does, so this is the tarball a release uploads.
  *
- * @param {string} deployDir
+ * @param {string} packageDir - Repo-relative package directory.
  * @param {string} dest
+ * @returns {string}
  */
-function movePackageFiles(deployDir, dest) {
-  fs.mkdirSync(dest, {recursive: true});
-  for (const entry of fs.readdirSync(deployDir)) {
-    if (DEPLOY_ONLY_ENTRIES.has(entry)) continue;
-    fs.renameSync(path.join(deployDir, entry), path.join(dest, entry));
+function packPackage(packageDir, dest) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pack-'));
+  try {
+    const result = spawnSync('pnpm', ['pack', '--pack-destination', tmp], {
+      cwd: path.join(REPO_ROOT, packageDir),
+      encoding: 'utf8',
+      // stdout lists every packed file; print it only when something fails.
+      stdio: ['ignore', 'pipe', 'inherit'],
+      maxBuffer: 256 * 1024 * 1024,
+      shell: process.platform === 'win32',
+    });
+    if (result.status !== 0) {
+      process.stdout.write(result.stdout ?? '');
+      throw new Error(
+        `pnpm pack in ${packageDir} failed (${result.error?.message ?? result.signal ?? `exit ${result.status}`})`,
+      );
+    }
+    const tarballs = fs.readdirSync(tmp).filter(f => f.endsWith('.tgz'));
+    if (tarballs.length !== 1) {
+      throw new Error(
+        `pnpm pack in ${packageDir} wrote ${tarballs.length} tarballs`,
+      );
+    }
+    const target = path.join(dest, tarballs[0]);
+    fs.copyFileSync(path.join(tmp, tarballs[0]), target);
+    return target;
+  } finally {
+    fs.rmSync(tmp, {recursive: true, force: true});
   }
 }
+
+/**
+ * Extract a packed package into `dest` unchanged, dropping the tarball's
+ * `package/` top directory.
+ *
+ * @param {string} tarball
+ * @param {string} dest
+ */
+function extractPackage(tarball, dest) {
+  fs.mkdirSync(dest, {recursive: true});
+  const result = spawnSync(
+    'tar',
+    ['-xzf', tarball, '-C', dest, '--strip-components=1'],
+    {encoding: 'utf8'},
+  );
+  if (result.status !== 0) {
+    throw new Error(`tar -xzf ${tarball} failed: ${result.stderr}`);
+  }
+}
+
+/**
+ * npm's integrity string for a file: `sha512-` and the base64 digest.
+ * @param {string} file
+ */
+export const sha512Integrity = file =>
+  `sha512-${createHash('sha512').update(fs.readFileSync(file)).digest('base64')}`;
 
 /**
  * Move a deployed package's dependency tree into `dest`, leaving pnpm's own
@@ -391,27 +439,29 @@ export function buildStandalone({outDir, pnpmArgs = []}) {
       `${CLI}@${cliPkg.version} and ${CORE}@${corePkg.version} differ`,
     );
   }
-  if (!fs.existsSync(path.join(REPO_ROOT, 'packages/core/dist/index.js'))) {
-    throw new Error(
-      `${CORE} is not built (no packages/core/dist); run \`pnpm build\` first`,
-    );
-  }
   const version = cliPkg.version;
+
+  // The published packages, byte for byte. They stay in outDir beside the
+  // runtime, so anyone can check the runtime against them.
+  const cliTarball = packPackage('packages/cli', outDir);
+  const coreTarball = packPackage('packages/core', outDir);
 
   const staging = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-standalone-'));
   const root = path.join(outDir, 'cli-standalone');
   try {
+    // Only the third-party dependencies come from `pnpm deploy`, pinned by
+    // pnpm-lock.yaml. Its own copies of the two packages are dropped.
     deploy(CLI, path.join(staging, 'cli'), pnpmArgs);
     deploy(CORE, path.join(staging, 'core'), pnpmArgs);
 
     fs.rmSync(root, {recursive: true, force: true});
     const nodeModules = path.join(root, 'node_modules');
-    // The CLI's dependencies go at the top level, beside the CLI, exactly
-    // where an install puts them. Core keeps its own tree nested under it, so
-    // a version it needs can never shadow one the CLI needs.
+    // Where an install puts them: the CLI's dependencies at the top level,
+    // beside the CLI. Core keeps its own tree nested under it, so a version it
+    // needs can never shadow one the CLI needs.
     moveDependencies(path.join(staging, 'cli'), nodeModules);
-    movePackageFiles(path.join(staging, 'cli'), path.join(nodeModules, CLI));
-    movePackageFiles(path.join(staging, 'core'), path.join(nodeModules, CORE));
+    extractPackage(cliTarball, path.join(nodeModules, CLI));
+    extractPackage(coreTarball, path.join(nodeModules, CORE));
     moveDependencies(
       path.join(staging, 'core'),
       path.join(nodeModules, CORE, 'node_modules'),
@@ -454,8 +504,8 @@ export function buildStandalone({outDir, pnpmArgs = []}) {
     version,
     entry: ENTRY,
     node: cliPkg.engines.node,
-    cli: {name: CLI, version},
-    core: {name: CORE, version},
+    cli: {name: CLI, version, integrity: sha512Integrity(cliTarball)},
+    core: {name: CORE, version, integrity: sha512Integrity(coreTarball)},
     source: {
       repository: 'https://github.com/facebook/astryx',
       commit: sourceCommit(),
@@ -482,8 +532,8 @@ export function buildStandalone({outDir, pnpmArgs = []}) {
     unpackedSize: packed.unpackedSize,
     files: packed.files,
     packages: packages.length,
-    cli: version,
-    core: version,
+    cli: cliTarball,
+    core: coreTarball,
   };
 }
 

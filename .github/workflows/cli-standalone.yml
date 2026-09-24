@@ -1,8 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Builds the standalone CLI runtime (scripts/build-cli-standalone.mjs) and
-# proves it runs with nothing installed: extracted twice into empty
-# directories, it must print exactly what the workspace CLI prints.
+# Builds the standalone CLI runtime (scripts/build-cli-standalone.mjs): the
+# published @astryxdesign/cli and @astryxdesign/core packages plus their locked
+# dependencies in one tarball. Then it checks the runtime holds exactly those
+# packages and runs the CLI's own smoke suites against it, extracted into an
+# empty directory with nothing installed.
 # Publishes nothing; the tarball is kept as a workflow artifact.
 name: CLI Standalone
 
@@ -15,6 +17,8 @@ on:
       - 'pnpm-lock.yaml'
       - 'scripts/build-cli-standalone.mjs'
       - '.github/scripts/cli-standalone-smoke-test.mjs'
+      - '.github/scripts/cli-smoke-test.mjs'
+      - '.github/scripts/cli-json-smoke-test.mjs'
       - '.github/workflows/cli-standalone.yml'
 
 permissions: {}
@@ -33,22 +37,20 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      # The runtime ships the files `pnpm publish` would: Core's dist and the
-      # CLI's generated declarations.
-      - name: Build Core and the CLI declarations
-        run: pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/cli sync:api-types
-
+      # Packs @astryxdesign/cli and @astryxdesign/core the way `pnpm publish`
+      # does (their prepack builds run here), then adds their locked
+      # dependencies.
       - name: Build the standalone runtime
         run: node scripts/build-cli-standalone.mjs --out-dir "$RUNNER_TEMP/cli-standalone"
 
-      - name: Smoke-test the runtime
-        run: node .github/scripts/cli-standalone-smoke-test.mjs "$RUNNER_TEMP"/cli-standalone/*.tgz
+      - name: Test the runtime
+        run: node .github/scripts/cli-standalone-smoke-test.mjs "$RUNNER_TEMP"/cli-standalone/astryxdesign-cli-standalone-*.tgz
 
       - name: Upload the runtime
         uses: actions/upload-artifact@v7
         with:
           name: cli-standalone
           path: |
-            ${{ runner.temp }}/cli-standalone/*.tgz
-            ${{ runner.temp }}/cli-standalone/*.tgz.sha256
+            ${{ runner.temp }}/cli-standalone/astryxdesign-cli-standalone-*.tgz
+            ${{ runner.temp }}/cli-standalone/astryxdesign-cli-standalone-*.tgz.sha256
           retention-days: 14

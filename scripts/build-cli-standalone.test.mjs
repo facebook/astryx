@@ -14,6 +14,7 @@ import {
   packTree,
   removeBinDirs,
   runtimePackageJson,
+  sha512Integrity,
 } from './build-cli-standalone.mjs';
 
 const REPO_ROOT = path.resolve(
@@ -263,6 +264,16 @@ describe('packTree', () => {
     fs.symlinkSync('package.json', path.join(root, 'alias.json'));
     expect(() => packTree(root, path.join(tmp, 'x.tgz'))).toThrow(
       /not a regular file/,
+    );
+  });
+});
+
+describe('sha512Integrity', () => {
+  it("matches npm's integrity format for a file", () => {
+    const file = path.join(tmp, 'x.tgz');
+    fs.writeFileSync(file, 'hello');
+    expect(sha512Integrity(file)).toBe(
+      'sha512-m3HSJL1i83hdltRq0+o9czGb+8KJDKra4t/3JRlnPKcjI8PZm6XBHXx6zG4UuMXaDEZjR1wuXDre9G9zvN7AQw==',
     );
   });
 });
