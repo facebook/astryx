@@ -27,7 +27,7 @@
  *      *.test.mjs   coverage (may be nested, e.g. api/theme/build/build.test.mjs)
  *
  * Deliberately NOT checked here: command <-> CommandDoc pairing. That is not a
- * filename convention — subcommand docs (layout-expand, theme-add, ...) live
+ * filename convention — subcommand docs (theme-add, doctor-integration, ...) live
  * inside their group's handler and `manifest` registers in index.mjs — and the
  * drift harness already validates it semantically against the live manifest,
  * which is strictly stronger than matching filenames.
