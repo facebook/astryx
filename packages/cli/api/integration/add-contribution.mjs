@@ -35,6 +35,7 @@ import {
 } from '../../foundation/integrations/integrations.mjs';
 import {isValidSemver} from '../../foundation/env/semver.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
+import {findIntegrationComponentDoc} from '../../foundation/discovery/component-discovery.mjs';
 import {parseAgentDocsField} from '../../authoring/integration/schema.mjs';
 import {integrationAddTheme} from './add-theme.mjs';
 import {
@@ -244,6 +245,16 @@ async function addComponent(name, options) {
   if (fs.existsSync(sourceFile)) {
     throw new AstryxError(
       `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, sourceFile))}.`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
+  // Discovery keys components by doc stem anywhere under the root, so a second
+  // doc with this name would shadow one of the two.
+  const existingDoc = findIntegrationComponentDoc({components: root}, name);
+  if (existingDoc != null) {
+    throw new AstryxError(
+      `Refusing to add component "${name}": ${projectPath(path.relative(packageDir, existingDoc))} already defines it.`,
       undefined,
       ERROR_CODES.ERR_FILE_EXISTS,
     );
