@@ -127,7 +127,7 @@ export function compileDocFile(file, options, {node = false} = {}) {
         {check, node},
       );
       if (out.node) deepFreeze(out.node);
-      if (out.loadFailure !== undefined || 'overlayError' in authored) {
+      if (out.loadFailed || 'overlayError' in authored) {
         lowered.delete(key);
       }
       return out;
@@ -169,14 +169,14 @@ export async function readDocView(file, options) {
     },
     {check: strict || options.check === true, node: false},
   );
-  if (result.loadFailure !== undefined) throw result.loadFailure;
+  if (result.loadFailed) throw result.loadFailure;
   if (result.missing) {
     if (strict)
       parserFor(options.root)(result.missingValue, options.label ?? file);
     return result.missingValue;
   }
-  if (strict && result.failure !== undefined) throw result.failure;
-  if (result.overlayFailure !== undefined) throw result.overlayFailure;
+  if (strict && result.failed) throw result.failure;
+  if (result.overlayFailed) throw result.overlayFailure;
   return result.view;
 }
 

@@ -370,11 +370,15 @@ export function parserFor(root) {
  * @property {CompiledDocNode | null} node null when not asked for, or when a
  *   problem is fatal to the node
  * @property {CompilerDiagnostic[]} diagnostics
- * @property {unknown} [loadFailure] what importing the file threw
+ * @property {boolean} [loadFailed] importing the file threw
+ * @property {unknown} [loadFailure] what importing the file threw (any value,
+ *   `undefined` included)
  * @property {boolean} [missing] the file exports no doc
  * @property {null | undefined} [missingValue] the empty export, as the reader
  *   picked it
+ * @property {boolean} [failed] the kind's parser threw
  * @property {unknown} [failure] what the kind's parser threw
+ * @property {boolean} [overlayFailed] laying the translation over threw
  * @property {unknown} [overlayFailure] what laying the translation over threw
  */
 
@@ -404,7 +408,7 @@ export function lowerDoc(input, {check = true, node: wantNode = true} = {}) {
         message: `${file.file} could not be loaded: ${messageOf(file.error)}`,
       }),
     );
-    return {node: null, diagnostics, loadFailure: file.error};
+    return {node: null, diagnostics, loadFailed: true, loadFailure: file.error};
   }
   if (file.doc == null) {
     diagnostics.push(
@@ -439,6 +443,7 @@ export function lowerDoc(input, {check = true, node: wantNode = true} = {}) {
       const parsed = parserFor(input.root)(file.doc, input.label ?? file.file);
       if (input.useParsed || input.root === 'themes') view = parsed;
     } catch (error) {
+      result.failed = true;
       result.failure = error;
       diagnostics.push(
         diagnostic('invalid_doc', {...at, message: messageOf(error)}),
@@ -446,15 +451,17 @@ export function lowerDoc(input, {check = true, node: wantNode = true} = {}) {
     }
   }
   if ('overlayError' in file) {
+    result.overlayFailed = true;
     result.overlayFailure = file.overlayError;
   } else if (file.overlay) {
     try {
       view = overlayAuthoredDoc(view, file.overlay);
     } catch (error) {
+      result.overlayFailed = true;
       result.overlayFailure = error;
     }
   }
-  if (result.overlayFailure !== undefined) {
+  if (result.overlayFailed) {
     diagnostics.push(
       diagnostic('overlay_failed', {
         ...at,
@@ -495,5 +502,10 @@ export function lowerDoc(input, {check = true, node: wantNode = true} = {}) {
 
 /** @param {unknown} error */
 function messageOf(error) {
-  return error instanceof Error ? error.message : String(error);
+  // Any value can be thrown; describing one must never throw in its place.
+  try {
+    return error instanceof Error ? String(error.message) : String(error);
+  } catch {
+    return Object.prototype.toString.call(error);
+  }
 }

@@ -233,6 +233,28 @@ export const docsZh = {get props() { throw new TypeError('bad translation'); }};
     expect((await read()).componentsUsed).toEqual(['A']);
   });
 
+  it('treats any thrown value as a failure, undefined included, as main did', async () => {
+    const strict = write(
+      'ThrowsUndefined.doc.mjs',
+      "export default {type: 'component', name: 'ThrowsUndefined', displayName: 'T', props: [], get usage() { throw undefined; }};\n",
+    );
+    await expect(loadComponentDoc(strict)).rejects.toBeUndefined();
+    const translated = write(
+      'ZhUndefined.doc.mjs',
+      "export default {type: 'component', name: 'ZhUndefined', displayName: 'Z', props: [], usage: {description: 'd'}};\nexport const docsZh = {get usage() { throw undefined; }};\n",
+    );
+    await expect(loadDocs(translated, {lang: 'zh'})).rejects.toBeUndefined();
+    const imported = write('ImportUndefined.doc.mjs', 'throw undefined;\n');
+    await expect(loadDocs(imported)).rejects.toBeUndefined();
+    const bare = write(
+      'NullProto.doc.mjs',
+      'const e = Object.create(null);\ne.tag = 1;\nthrow e;\n',
+    );
+    const thrown = await loadDocs(bare).catch(error => error);
+    expect(Object.getPrototypeOf(thrown)).toBeNull();
+    expect(thrown.tag).toBe(1);
+  });
+
   it('never lets a message that is not a path break a read', async () => {
     const file = write(
       'Odd.doc.mjs',

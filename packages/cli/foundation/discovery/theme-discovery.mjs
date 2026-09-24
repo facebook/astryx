@@ -542,7 +542,7 @@ function readThemeDoc(docPath, owner) {
   const label = themeDescriptorLabel(docPath, owner);
   const value = readThemeDescriptorValue(docPath, label);
   // Read statically, never executed, then compiled like every other doc.
-  const {node, failure} = lowerDoc({
+  const {node, failed, failure} = lowerDoc({
     id: `${owner}:themes:${path.basename(docPath)}`,
     root: 'themes',
     provider: owner,
@@ -551,7 +551,7 @@ function readThemeDoc(docPath, owner) {
     file: {file: path.basename(docPath), doc: value},
     label,
   });
-  if (!node || failure !== undefined) throw failure;
+  if (!node || failed) throw failure;
   return node.doc;
 }
 
