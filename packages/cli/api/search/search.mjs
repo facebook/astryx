@@ -884,7 +884,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} [options.cwd]
  * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
- * @returns {Promise<{type: 'search', data: {query: string, matchCount: number, results: Array<object>}}>}
+ * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
 export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
@@ -971,7 +971,10 @@ export async function search(query, options = {}) {
     data: {
       query: String(query).trim(),
       matchCount: scored.length,
-      results: limited,
+      // toResult gives every domain its command and domain fields.
+      results: /** @type {import('./search.type.mjs').SearchResultEntry[]} */ (
+        limited
+      ),
     },
   };
 }
