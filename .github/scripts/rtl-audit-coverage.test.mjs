@@ -15,6 +15,7 @@ import {
   buildComponentCoverage,
   buildStoryComponentRoutes,
   classifyDirectionalDecorationPair,
+  classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   filterStoryRoutesByPackages,
@@ -244,6 +245,98 @@ describe('classifyLogicalInlinePair', () => {
       verdict: 'fail',
       reason:
         'logical inline-edge writing mode is missing or changed between directions',
+    });
+  });
+});
+
+function groupedCornerMeasurement(direction = 'ltr', physicalSide = 'left') {
+  const full = 28;
+  const inset = 6;
+  const left = physicalSide === 'left';
+  const corners = (topInset, bottomInset) => ({
+    topLeft: left && topInset ? inset : full,
+    topRight: !left && topInset ? inset : full,
+    bottomRight: !left && bottomInset ? inset : full,
+    bottomLeft: left && bottomInset ? inset : full,
+  });
+  return {
+    direction,
+    writingMode: 'horizontal-tb',
+    boxes: [
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(false, true),
+      },
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(true, true),
+      },
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(true, false),
+      },
+    ],
+  };
+}
+
+describe('classifyLogicalGroupedCorners', () => {
+  it('passes an inline-start group that mirrors left to right', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        groupedCornerMeasurement('rtl', 'right'),
+        'inline-start',
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      ltr: {physicalSide: 'left', insetRadius: 6, fullRadius: 28},
+      rtl: {physicalSide: 'right', insetRadius: 6, fullRadius: 28},
+    });
+  });
+
+  it('passes an inline-end group that mirrors right to left', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'right'),
+        groupedCornerMeasurement('rtl', 'left'),
+        'inline-end',
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      ltr: {physicalSide: 'right'},
+      rtl: {physicalSide: 'left'},
+    });
+  });
+
+  it('fails grouped corners that stay on the LTR physical side', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        groupedCornerMeasurement('rtl', 'left'),
+        'inline-start',
+      ),
+    ).toMatchObject({verdict: 'fail'});
+  });
+
+  it('fails when any grouped subject is missing or hidden', () => {
+    const rtl = groupedCornerMeasurement('rtl', 'right');
+    rtl.boxes[1] = null;
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        rtl,
+        'inline-start',
+      ),
+    ).toMatchObject({
+      verdict: 'fail',
+      reason:
+        'grouped-corner subjects must be three visible horizontal LTR/RTL boxes',
     });
   });
 });

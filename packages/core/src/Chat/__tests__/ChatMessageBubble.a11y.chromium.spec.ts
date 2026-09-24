@@ -9,6 +9,7 @@
  */
 
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -52,6 +53,8 @@ interface Receipt {
 const receipts: Receipt[] = [];
 let storybook: StaticServer;
 let browserVersion = 'unknown';
+let checkoutSha = 'unknown';
+let storybookSha = 'unknown';
 
 function pageErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -60,10 +63,33 @@ function pageErrors(page: Page): string[] {
 }
 
 test.beforeAll(async () => {
+  checkoutSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  }).trim();
+  const expectedHead = process.env.ASTRYX_HEAD_SHA;
+  if (expectedHead != null && checkoutSha !== expectedHead) {
+    throw new Error(
+      `ChatMessageBubble evidence checkout ${checkoutSha} does not match reviewed head ${expectedHead}`,
+    );
+  }
   fs.mkdirSync(OUTPUT, {recursive: true});
   storybook = await serveStorybook(
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
   );
+  const sourceResponse = await fetch(
+    `${storybook.origin}/astryx-build-sha.txt`,
+  );
+  if (!sourceResponse.ok) {
+    throw new Error(
+      'ChatMessageBubble evidence requires Storybook source provenance',
+    );
+  }
+  storybookSha = (await sourceResponse.text()).trim();
+  if (storybookSha !== checkoutSha) {
+    throw new Error(
+      `ChatMessageBubble Storybook ${storybookSha} does not match checkout ${checkoutSha}`,
+    );
+  }
 });
 
 test.afterAll(async () => {
@@ -87,11 +113,9 @@ test.afterAll(async () => {
       {
         version: 1,
         component: 'core/ChatMessageBubble',
-        headSha:
-          process.env.ASTRYX_HEAD_SHA ??
-          process.env.GITHUB_SHA ??
-          'local-working-copy',
-        checkoutSha: process.env.GITHUB_SHA ?? 'local-working-copy',
+        headSha: checkoutSha,
+        checkoutSha,
+        storybookSha,
         browser: browserVersion,
         frames,
       },
@@ -279,10 +303,7 @@ async function capture(
   const receipt: Receipt = {
     state,
     storyId,
-    build:
-      process.env.ASTRYX_HEAD_SHA ??
-      process.env.GITHUB_SHA ??
-      'local-working-copy',
+    build: storybookSha,
     browser: browserVersion,
     theme:
       (await page

@@ -141,10 +141,24 @@
   {
     "component": "ChatMessageBubble",
     "storyId": "core-chatmessagebubble--states",
-    "dims": ["D2"],
+    "dims": ["D9"],
     "selectors": {
-      "prev": "[data-bubble-audit-state=\"sender-alignment\"] .astryx-chat-message-bubble[data-sender=\"assistant\"]",
-      "next": "[data-bubble-audit-state=\"sender-alignment\"] .astryx-chat-message-bubble[data-sender=\"user\"]"
+      "groups": [
+        {
+          "name": "assistant",
+          "logicalSide": "inline-start",
+          "first": "[data-testid=\"assistant-group-first\"]",
+          "middle": "[data-testid=\"assistant-group-middle\"]",
+          "last": "[data-testid=\"assistant-group-last\"]"
+        },
+        {
+          "name": "user",
+          "logicalSide": "inline-end",
+          "first": "[data-testid=\"user-group-first\"]",
+          "middle": "[data-testid=\"user-group-middle\"]",
+          "last": "[data-testid=\"user-group-last\"]"
+        }
+      ]
     }
   },
   {

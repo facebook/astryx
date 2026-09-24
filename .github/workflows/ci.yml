@@ -581,10 +581,20 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         uses: actions/checkout@v7
         with:
+          # Component evidence artifacts are named for and reviewed at the PR
+          # head, so build their Storybook bytes from that exact tree rather
+          # than GitHub's synthetic merge checkout.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # Depth 50 (same as check-scope) so analyze-pr.js's three-dot diff
           # can find a merge base — depth 1 breaks it ("no merge base") and
           # the analysis silently reported zero changed components.
           fetch-depth: 50
+
+      - name: Verify Storybook source checkout
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Fetch base branch for PR analysis
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
@@ -651,6 +661,10 @@ jobs:
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
+
+      - name: Stamp Storybook source revision
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: git rev-parse HEAD > apps/storybook/dist/astryx-build-sha.txt
 
       - name: Compute PR preview path
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
@@ -867,6 +881,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify evidence checkout
+        if: github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       # Dependencies are installed later, together with the Playwright browser,
       # because the analysis artifact has to be downloaded first.
@@ -1423,8 +1445,8 @@ jobs:
   # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
-  # contextual directional decorations. Curated D2/D3/D4 adds behavior that
-  # needs selectors. The applicability rollup treats unexplained all-N/A as a
+  # contextual directional decorations. Curated D2/D3/D4/D7/D8/D9 add
+  # behavior and geometry that need selectors. The applicability rollup treats unexplained all-N/A as a
   # coverage gap for both new and existing components.
   #
   # Audit findings remain SOFT while the stability window is observed: the audit
@@ -1452,6 +1474,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify RTL checkout
+        if: github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup

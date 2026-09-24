@@ -205,7 +205,11 @@ describe('explicit release routing', () => {
       for (const item of jobs[name].steps) {
         if (item.uses?.startsWith('actions/checkout@')) {
           // Omitted ref is the event SHA, not the mutable default branch.
-          expect([undefined, '${{ github.sha }}']).toContain(item.with?.ref);
+          expect([
+            undefined,
+            '${{ github.sha }}',
+            '${{ github.event.pull_request.head.sha || github.sha }}',
+          ]).toContain(item.with?.ref);
           expect(item.with?.repository).toBeUndefined();
         }
       }

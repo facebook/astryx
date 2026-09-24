@@ -77,13 +77,19 @@ export const States: Story = {
 
       <Panel state="assistant-group">
         <ChatMessage sender="assistant">
-          <ChatMessageBubble group="first" name="Navi">
+          <ChatMessageBubble
+            data-testid="assistant-group-first"
+            group="first"
+            name="Navi">
             First assistant bubble
           </ChatMessageBubble>
-          <ChatMessageBubble group="middle">
+          <ChatMessageBubble
+            data-testid="assistant-group-middle"
+            group="middle">
             Middle assistant bubble
           </ChatMessageBubble>
           <ChatMessageBubble
+            data-testid="assistant-group-last"
             group="last"
             metadata={<ChatMessageMetadata timestamp="10:32 AM" />}>
             Last assistant bubble
@@ -93,13 +99,17 @@ export const States: Story = {
 
       <Panel state="user-group">
         <ChatMessage sender="user">
-          <ChatMessageBubble group="first" name="You">
+          <ChatMessageBubble
+            data-testid="user-group-first"
+            group="first"
+            name="You">
             First user bubble
           </ChatMessageBubble>
-          <ChatMessageBubble group="middle">
+          <ChatMessageBubble data-testid="user-group-middle" group="middle">
             Middle user bubble
           </ChatMessageBubble>
           <ChatMessageBubble
+            data-testid="user-group-last"
             group="last"
             metadata={
               <ChatMessageMetadata timestamp="10:33 AM" status="read" />
