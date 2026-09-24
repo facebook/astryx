@@ -90,6 +90,10 @@ export const doc = {
       code: 'ERR_FILE_EXISTS',
       when: 'scaffolding a template would overwrite an existing page.tsx',
     },
+    {
+      code: 'ERR_PATH_TRAVERSAL',
+      when: 'the template output path resolves outside cwd, for example through a symlinked src directory',
+    },
   ],
   examples: [
     {label: 'Default setup', code: 'const r = await init();'},

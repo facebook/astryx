@@ -17,7 +17,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
-import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {PathSafetyError, assertWithin} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {
   installAgentDocs,
@@ -190,9 +190,19 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
     );
   }
 
-  const outputDir = path.resolve(cwd, `./src/pages/${templateName}`);
+  let destFile;
+  try {
+    destFile = assertWithin(path.join('src', 'pages', templateName, 'page.tsx'), cwd, {
+      label: 'template output path',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
+  const outputDir = path.dirname(destFile);
   const srcPath = path.join(CLI_ROOT, 'assets', 'templates', 'pages', templateName, 'page.tsx');
-  const destFile = path.join(outputDir, 'page.tsx');
   // Don't clobber a user's existing page — same guard the peer template/copy and
   // theme/add write-leaves apply (init is a public API surface too).
   if (fs.existsSync(destFile)) {

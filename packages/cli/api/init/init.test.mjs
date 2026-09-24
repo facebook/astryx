@@ -260,4 +260,17 @@ describe('init() — write-path safety', () => {
       init({features: 'template', templateName: '../../etc/evil'}, {cwd: tmpDir}),
     ).rejects.toMatchObject({code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
   });
+
+  it('refuses a template write that a symlinked src would carry outside cwd (ERR_PATH_TRAVERSAL)', async () => {
+    const outside = fs.mkdtempSync(path.join(process.cwd(), '.astryx-init-outside-'));
+    try {
+      fs.symlinkSync(outside, path.join(tmpDir, 'src'), 'dir');
+      await expect(
+        init({features: 'template', templateName: 'blank'}, {cwd: tmpDir}),
+      ).rejects.toMatchObject({code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+      expect(fs.readdirSync(outside)).toEqual([]);
+    } finally {
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
+  });
 });
