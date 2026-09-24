@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {createRef} from 'react';
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {ChatMessage} from './ChatMessage';
@@ -64,6 +65,63 @@ describe('ChatMessageBubble', () => {
       </ChatMessage>,
     );
     expect(screen.getByTestId('my-bubble')).toBeTruthy();
+  });
+
+  it('renders aligned name and metadata slots around the bubble root', () => {
+    render(
+      <ChatMessage sender="assistant">
+        <ChatMessageBubble
+          data-testid="bubble"
+          name="Navi"
+          metadata={<span>10:32 AM</span>}>
+          Hi
+        </ChatMessageBubble>
+      </ChatMessage>,
+    );
+    const bubble = screen.getByTestId('bubble');
+
+    expect(bubble.previousElementSibling).toHaveTextContent('Navi');
+    expect(bubble.nextElementSibling).toHaveTextContent('10:32 AM');
+  });
+
+  it('forwards the ref and neutral DOM props to the bubble root', () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <ChatMessageBubble
+        ref={ref}
+        id="bubble-id"
+        aria-label="Message content"
+        data-consumer="preserved"
+        data-testid="bubble">
+        Standalone
+      </ChatMessageBubble>,
+    );
+    const bubble = screen.getByTestId('bubble');
+
+    expect(ref.current).toBe(bubble);
+    expect(bubble).toHaveAttribute('id', 'bubble-id');
+    expect(bubble).toHaveAttribute('aria-label', 'Message content');
+    expect(bubble).toHaveAttribute('data-consumer', 'preserved');
+  });
+
+  it('reflects both built-in visual variants on the painting root', () => {
+    render(
+      <>
+        <ChatMessageBubble data-testid="filled">Filled</ChatMessageBubble>
+        <ChatMessageBubble data-testid="ghost" variant="ghost">
+          Ghost
+        </ChatMessageBubble>
+      </>,
+    );
+
+    expect(screen.getByTestId('filled')).toHaveAttribute(
+      'data-variant',
+      'filled',
+    );
+    expect(screen.getByTestId('ghost')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
   });
 
   it('ghost variant aligns custom content with the bubble text column (#2574)', () => {

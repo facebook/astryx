@@ -11,9 +11,7 @@
   {
     "component": "Button",
     "storyId": "core-button--icon-with-text",
-    "dims": [
-      "D2"
-    ],
+    "dims": ["D2"],
     "selectors": {
       "prev": "[data-testid=\"button-leading-icon\"]",
       "next": "[data-testid=\"button-label\"]"
@@ -134,12 +132,19 @@
   {
     "component": "ScrollableArea",
     "storyId": "core-scrollablearea--rtl-behavior-probe",
-    "dims": [
-      "D3"
-    ],
+    "dims": ["D3"],
     "selectors": {
       "scroller": "[data-rtl-scroll-probe]",
       "nextButton": "[data-rtl-scroll-button]"
+    }
+  },
+  {
+    "component": "ChatMessageBubble",
+    "storyId": "core-chatmessagebubble--states",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "[data-bubble-audit-state=\"sender-alignment\"] .astryx-chat-message-bubble[data-sender=\"assistant\"]",
+      "next": "[data-bubble-audit-state=\"sender-alignment\"] .astryx-chat-message-bubble[data-sender=\"user\"]"
     }
   },
   {

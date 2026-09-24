@@ -947,6 +947,34 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
+      # ChatMessageBubble is nested under the shared Chat source directory, so
+      # the generic stable-visual owner cannot select its dedicated fixture.
+      # Run the component's bounded evidence matrix only when the PR scope names
+      # it, and upload the receipted frames below.
+      - name: Run ChatMessageBubble audit browser evidence
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/ChatMessageBubble,*)
+              pnpm exec playwright test \
+                packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts \
+                --project chromium
+              ;;
+            *) echo "ChatMessageBubble not in PR scope; skipping audit evidence." ;;
+          esac
+
+      - name: Upload ChatMessageBubble audit evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-message-bubble-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/chat-message-bubble-audit-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.
