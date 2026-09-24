@@ -706,6 +706,33 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 }
 
 /**
+ * Whether an agent-doc file already carries a managed-block marker.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasManagedMarker(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every file an install writes must resolve inside `targetDir`, symlinks
+ * included. Checked for the whole write set before the first write, so an
+ * escape writes nothing.
+ * @param {string} targetDir
+ * @param {Iterable<string>} relPaths
+ */
+function assertTargetsWithin(targetDir, relPaths) {
+  for (const p of relPaths) {
+    assertWithin(p, targetDir, {label: 'agent docs path'});
+  }
+}
+
+/**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
  */
@@ -750,6 +777,8 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.renderedBlock] - Fully rendered expected block. Init
  *   and upgrade pass one shared block to every target.
  * @returns {string[]} List of files written
+ * @throws {import('../fs/path-safety.mjs').PathSafetyError} when a file it would
+ *   write resolves outside `targetDir`; nothing is written.
  */
 export function installAgentDocs(
   targetDir,
@@ -806,6 +835,7 @@ export function installAgentDocs(
   // Agent preset
   if (agent) {
     const {inject, create} = resolveAgentPaths(targetDir, agent);
+    assertTargetsWithin(targetDir, [...inject, ...create]);
     for (const p of inject) {
       injectXdsBlock(path.join(targetDir, p), compressedIndex);
       written.push(p);
@@ -833,6 +863,14 @@ export function installAgentDocs(
   if (existing.length > 0) {
     const wrappers = discoverAgentDocWrappers(targetDir, existing);
     const targets = existing.filter(p => !wrappers.has(p));
+    // A refresh skips unmarked files and a wrapper is only written when it
+    // carries a block, so only the files this run writes are checked.
+    /** @param {string} p */
+    const marked = p => hasManagedMarker(path.join(targetDir, p));
+    assertTargetsWithin(targetDir, [
+      ...targets.filter(p => !onlyReplace || marked(p)),
+      ...[...wrappers].filter(marked),
+    ]);
 
     for (const p of targets) {
       const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
@@ -860,6 +898,7 @@ export function installAgentDocs(
   if (onlyReplace) return written;
 
   const defaultPath = AGENTS_MD;
+  assertTargetsWithin(targetDir, [defaultPath]);
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
