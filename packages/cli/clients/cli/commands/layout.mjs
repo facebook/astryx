@@ -154,15 +154,15 @@ export function registerLayout(program) {
       if (result.data.written) {
         out.push(
           text(`[ok] Expanded to ${result.data.written}`),
+          // Field names are the JSON keys; todos are summarised, not listed.
           record(
+            {componentsUsed: result.data.componentsUsed, todos: result.data.todos},
             {
-              components: result.data.componentsUsed,
-              todos:
-                result.data.todos.length > 0
-                  ? `${result.data.todos.length} (search for "TODO(xle)")`
-                  : '',
+              format: {
+                todos: (/** @type {string[]} */ todos) =>
+                  `${todos.length} (search for "TODO(xle)")`,
+              },
             },
-            {labels: {components: 'Components', todos: 'TODOs'}},
           ),
         );
       } else {
