@@ -280,7 +280,7 @@ export function registerDocs(program) {
           emit(
             section('Available docs'),
             records(result.data, {
-              fields: ['topic', 'description'],
+              fields: ['topic', 'description', 'package'],
               layout: 'inline',
             }),
             text(
