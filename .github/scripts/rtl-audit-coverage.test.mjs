@@ -348,19 +348,29 @@ describe('classifyLogicalGroupedCorners', () => {
 });
 
 describe('validateRemovedComponents', () => {
-  it('accepts removed Core, Lab, and unknown identifiers', () => {
+  it('accepts removed identifiers from every audited package and unknown routes', () => {
     expect(
       validateRemovedComponents([
         'core/Button',
         'lab/Tree',
+        'charts/ChartAxis',
+        'richtext/RichTextView',
+        'vega/VegaChart',
         'unknown/ChartTooltip',
       ]),
-    ).toEqual(['core/Button', 'lab/Tree', 'unknown/ChartTooltip']);
+    ).toEqual([
+      'core/Button',
+      'lab/Tree',
+      'charts/ChartAxis',
+      'richtext/RichTextView',
+      'vega/VegaChart',
+      'unknown/ChartTooltip',
+    ]);
   });
 
   it('rejects malformed and duplicate identifiers', () => {
     expect(() => validateRemovedComponents(['ChartTooltip'])).toThrow(
-      'core/Name, lab/Name, or unknown/Name',
+      'audited-package/Name or unknown/Name',
     );
     expect(() =>
       validateRemovedComponents([
@@ -418,17 +428,28 @@ describe('validateVerifiedNotApplicable', () => {
 });
 
 describe('validateKnownCoverageGaps', () => {
-  it('accepts unique Core and Lab component names', () => {
-    expect(validateKnownCoverageGaps(['core/Button', 'lab/Tree'])).toEqual([
+  it('accepts unique component names from every audited package', () => {
+    expect(
+      validateKnownCoverageGaps([
+        'core/Button',
+        'lab/Tree',
+        'charts/ChartAxis',
+        'richtext/RichTextView',
+        'vega/VegaChart',
+      ]),
+    ).toEqual([
       'core/Button',
       'lab/Tree',
+      'charts/ChartAxis',
+      'richtext/RichTextView',
+      'vega/VegaChart',
     ]);
   });
 
   it('rejects malformed and duplicate entries', () => {
     expect(() => validateKnownCoverageGaps({})).toThrow('JSON array');
     expect(() => validateKnownCoverageGaps(['Button'])).toThrow(
-      'core/Name or lab/Name',
+      'audited-package/Name',
     );
     expect(() =>
       validateKnownCoverageGaps(['core/Button', 'core/button']),

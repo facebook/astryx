@@ -10,6 +10,7 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const POLICY_FILES = [
   '.github/scripts/check-rtl-applicability-registries.mjs',
   'apps/storybook/rtl-audit/rtl-audit-coverage.mjs',
+  'scripts/component-packages.cjs',
 ];
 const temporaryDirectories = [];
 
@@ -92,6 +93,8 @@ describe('RTL applicability policy', () => {
 
   it.each([
     ['chart component source', 'packages/charts/src/Chart.tsx'],
+    ['Rich Text component source', 'packages/richtext/src/RichTextView.tsx'],
+    ['Vega component source', 'packages/vega/src/VegaChart.tsx'],
     ['Storybook story', 'apps/storybook/stories/Removed.stories.tsx'],
     ['curated target registry', 'apps/storybook/rtl-audit/targets.json'],
   ])('routes a changed %s through the full audit', (_label, file) => {
@@ -223,7 +226,14 @@ describe('RTL applicability policy', () => {
     expect(workflow).toContain(
       'cp .rtl-applicability-policy/apps/storybook/rtl-audit/rtl-audit-coverage.mjs',
     );
+    expect(workflow).toContain(
+      'cp .rtl-applicability-policy/scripts/component-packages.cjs',
+    );
     expect(workflow).toContain('if [ "$FULL_AUDIT" = \'true\' ]; then');
-    expect(workflow).toContain('ARGS+=(--check-known-gap-roster)');
+    expect(workflow).toContain(
+      'ARGS+=(--check-known-gap-roster --concurrency 4)',
+    );
+    expect(workflow).toContain('elif [ -n "$AUDIT_COMPONENTS" ]; then');
+    expect(workflow).toContain('ARGS+=(--filter "$AUDIT_COMPONENTS")');
   });
 });

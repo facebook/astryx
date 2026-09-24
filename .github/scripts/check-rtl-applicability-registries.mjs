@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import componentPackages from '../../scripts/component-packages.cjs';
 import {
   diffVerifiedNotApplicable,
   validateKnownCoverageGaps,
@@ -22,8 +23,11 @@ import {
   validateVerifiedNotApplicable,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
+const {COMPONENT_PACKAGES} = componentPackages;
+const COMPONENT_SOURCE_PREFIXES = COMPONENT_PACKAGES.map(pkg => `${pkg.src}/`);
+
 const BASELINE_BOOTSTRAP_SHA256 =
-  '0e379f365073a8c0872451208e0a8d57f18ebdee513f3877187cf4b344431155';
+  '68e9933b4e3f5b428d85901992664e7239255c38ef5b3c7263713c743df3a0e3';
 
 const args = process.argv.slice(2);
 const getArg = name => {
@@ -74,12 +78,13 @@ function changedPaths() {
 
 function canStaleApplicability(file) {
   return (
-    /^packages\/(core|lab|charts|vega)\/src\//.test(file) ||
+    COMPONENT_SOURCE_PREFIXES.some(prefix => file.startsWith(prefix)) ||
     file.startsWith('apps/storybook/stories/') ||
     file === '.github/scripts/check-rtl-applicability-registries.mjs' ||
     file === 'apps/storybook/rtl-audit/targets.json' ||
     file === 'apps/storybook/rtl-audit/rtl-audit.mjs' ||
     file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
+    file === 'scripts/component-packages.cjs' ||
     file.startsWith('packages/cli/foundation/discovery/')
   );
 }

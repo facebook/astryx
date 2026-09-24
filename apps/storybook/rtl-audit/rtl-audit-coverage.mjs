@@ -20,6 +20,13 @@ export const AUDITED_STORY_PREFIXES = Object.freeze([
   ...new Set(COMPONENT_PACKAGES.flatMap(pkg => pkg.storyPrefixes)),
 ]);
 
+const AUDITED_COMPONENT_IDENTIFIER = new RegExp(
+  `^(?:${COMPONENT_PACKAGE_NAMES.join('|')})/[A-Za-z0-9][A-Za-z0-9._-]*$`,
+);
+const ROUTED_COMPONENT_IDENTIFIER = new RegExp(
+  `^(?:${[...COMPONENT_PACKAGE_NAMES, 'unknown'].join('|')})/[A-Za-z0-9][A-Za-z0-9._-]*$`,
+);
+
 function packageForStoryId(
   storyId,
   packageNames = AUDITED_PACKAGE_NAMES,
@@ -767,10 +774,10 @@ export function validateRemovedComponents(value) {
   return value.map((component, index) => {
     if (
       typeof component !== 'string' ||
-      !/^(core|lab|unknown)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component)
+      !ROUTED_COMPONENT_IDENTIFIER.test(component)
     ) {
       throw new Error(
-        `removed component at index ${index} must be a core/Name, lab/Name, or unknown/Name string`,
+        `removed component at index ${index} must be an audited-package/Name or unknown/Name string`,
       );
     }
     const key = component.toLowerCase();
@@ -793,12 +800,12 @@ export function validateVerifiedNotApplicable(value) {
     const reason = declaration?.reason;
     if (
       typeof component !== 'string' ||
-      !/^(core|lab|unknown)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component) ||
+      !ROUTED_COMPONENT_IDENTIFIER.test(component) ||
       typeof reason !== 'string' ||
       reason.trim().length === 0
     ) {
       throw new Error(
-        `verified-N/A entry at index ${index} needs a core/Name, lab/Name, or unknown/Name component and a non-empty reason`,
+        `verified-N/A entry at index ${index} needs an audited-package/Name or unknown/Name component and a non-empty reason`,
       );
     }
     const key = component.toLowerCase();
@@ -850,10 +857,10 @@ export function validateKnownCoverageGaps(value) {
   return value.map((component, index) => {
     if (
       typeof component !== 'string' ||
-      !/^(core|lab)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component)
+      !AUDITED_COMPONENT_IDENTIFIER.test(component)
     ) {
       throw new Error(
-        `known coverage gap at index ${index} must be a core/Name or lab/Name string`,
+        `known coverage gap at index ${index} must be an audited-package/Name string`,
       );
     }
     const key = component.toLowerCase();

@@ -120,11 +120,13 @@ jobs:
           POLICY_ROOT="$RUNNER_TEMP/rtl-applicability-policy"
           mkdir -p \
             "$POLICY_ROOT/.github/scripts" \
-            "$POLICY_ROOT/apps/storybook/rtl-audit"
+            "$POLICY_ROOT/apps/storybook/rtl-audit" \
+            "$POLICY_ROOT/scripts"
           POLICY_FILES=(
             .github/scripts/check-rtl-applicability-registries.mjs
             apps/storybook/rtl-audit/rtl-audit.mjs
             apps/storybook/rtl-audit/rtl-audit-coverage.mjs
+            scripts/component-packages.cjs
           )
           if git cat-file -e "$BASE_SHA:.github/scripts/check-rtl-applicability-registries.mjs" 2>/dev/null; then
             for file in "${POLICY_FILES[@]}"; do
@@ -139,9 +141,10 @@ jobs:
             (
               cd "$POLICY_ROOT"
               printf '%s  %s\n' \
-                24eaa3519f8519e74dc427ce649c52df09f13b0e74dd58ad5a78f9c578c1a5ca .github/scripts/check-rtl-applicability-registries.mjs \
-                fa6711472dbf3d930733f1b6a7e174aae3966ac8de6cfa0714a79c46a2f6a906 apps/storybook/rtl-audit/rtl-audit.mjs \
-                d146e0d384a38863a2136518a7c760640824c1d86b0a2a4808b4df15dc33520b apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
+                67ed4e640b303c4d97a6c7a4ee46f8ac714f665676d9ae1f2e3f57bfab0d6c20 .github/scripts/check-rtl-applicability-registries.mjs \
+                47e2a1b820f1cf11a6a825e625f1b6275fb2e8fe0c8a307ef098cde6b7d1059b apps/storybook/rtl-audit/rtl-audit.mjs \
+                d59db4e326aeb690481155f1fb41f741d5448f8a820ab6c6a053ece9c69307ff apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
+                7d369000132c42f28679da7a65077ff20741d6935429fc848a40ca22b30ab1d3 scripts/component-packages.cjs \
                 | sha256sum --check --strict -
             )
           fi
@@ -1864,14 +1867,17 @@ jobs:
             apps/storybook/rtl-audit/rtl-audit.mjs
           cp .rtl-applicability-policy/apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
             apps/storybook/rtl-audit/rtl-audit-coverage.mjs
+          cp .rtl-applicability-policy/scripts/component-packages.cjs \
+            scripts/component-packages.cjs
           ARGS=(
             --storybook-dir apps/storybook/dist
             --output rtl-applicability-registry-report.json
             --removed-components "$REMOVED_COMPONENTS"
-            --filter "$AUDIT_COMPONENTS"
           )
           if [ "$FULL_AUDIT" = 'true' ]; then
-            ARGS+=(--check-known-gap-roster)
+            ARGS+=(--check-known-gap-roster --concurrency 4)
+          elif [ -n "$AUDIT_COMPONENTS" ]; then
+            ARGS+=(--filter "$AUDIT_COMPONENTS")
           fi
           node apps/storybook/rtl-audit/rtl-audit.mjs "${ARGS[@]}"
 
