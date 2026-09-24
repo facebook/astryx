@@ -37,11 +37,10 @@ On the same date, `cixzhang` corrected its scope to **text/layout/visual isolati
 only** (DEC-4). **This is a VISUAL RESET ONLY: behavior and accessibility must
 remain unchanged.** Preserve ARIA, focus, selection, disabled/read-only state,
 callbacks, keyboard ownership, dismissal, semantic/data/interaction contexts,
-and DOM/accessibility-tree semantics. This draft records that direction; approval metadata above
-records the original acceptance, not approval or merge of this correction.
-The exact wording awaits review. [Implementation PR #6457](https://github.com/facebook/astryx/pull/6457)
-remains blocked on the correction's approval and subsequent alignment. Neither
-this record nor test success authorizes implementation merge. Architecture
+and DOM/accessibility-tree semantics. `cixzhang` approved this correction and
+authorized its spec-only merge on 2026-09-23. [Implementation PR #6457](https://github.com/facebook/astryx/pull/6457)
+may align to this accepted contract. Neither this record nor test success
+authorizes implementation merge. Architecture
 projects the decision rather than independently approving it.
 
 ### Ownership
@@ -456,8 +455,8 @@ ownership. FR9's preservation of non-equivalent local styling still applies.
 
 **Reference:** `spec:AST-038/DEC-4`
 **Decider:** `cixzhang`, `2026-09-23`
-**Status:** Owner direction recorded; this draft correction's exact wording
-awaits approval. The original approval metadata is unchanged.
+**Status:** Approved by `cixzhang` on 2026-09-23, with authorization to merge
+this spec correction only. The approval metadata covers DEC-1–DEC-4.
 
 Corrected the scope: **VISUAL RESET ONLY**. Preserve ARIA, focus, selection,
 disabled/read-only state, callbacks, keyboard ownership, dismissal,
@@ -481,6 +480,6 @@ changing focus or keyboard ownership because a surface is visually independent.
 
 ## Open questions
 
-OQ1–OQ3 remain historical decisions, with their semantic-scope interpretation
-corrected by DEC-4. Approval of this one-file correction is pending. Implementation
-alignment follows that approval; neither approval nor validation authorizes merge.
+None. OQ1–OQ3 remain historical decisions, with their semantic-scope interpretation
+corrected by approved DEC-4. Implementation alignment may proceed; neither spec
+approval nor validation authorizes implementation merge.
