@@ -59,7 +59,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'a missing/empty expression, a bad --name or --form, a parse/validation error, or a path escape',
+      when: 'a missing, empty or over-5 MB expression (from stdin or --file), a bad --name or --form, a parse/validation error, or a path escape',
     },
   ],
   related: ['layout check', 'layout grammar'],

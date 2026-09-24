@@ -59,6 +59,9 @@ import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
  * @property {boolean} [loose]
  */
 
+/** The largest layout expression read from --file or stdin. */
+const MAX_EXPRESSION_BYTES = 5 * 1024 * 1024; // 5 MB
+
 /**
  * Resolve the expression from arg, --file, or stdin ('-').
  * @param {string} [expr]
@@ -78,8 +81,7 @@ async function readExpression(expr, options = {}) {
         code: ERROR_CODES.ERR_FILE_NOT_FOUND,
       });
     }
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-    if (stat.size > MAX_FILE_SIZE) {
+    if (stat.size > MAX_EXPRESSION_BYTES) {
       cliError(
         `File "${options.file}" is too large (${(stat.size / 1024 / 1024).toFixed(1)} MB, max 5 MB)`,
         {code: ERROR_CODES.ERR_FILE_NOT_FOUND},
@@ -100,9 +102,19 @@ async function readExpression(expr, options = {}) {
     }
   }
   if (expr === '-') {
+    // Capped like --file: an endless stream must not be buffered whole.
     /** @type {Buffer[]} */
     const chunks = [];
-    for await (const chunk of process.stdin) chunks.push(/** @type {Buffer} */ (chunk));
+    let size = 0;
+    for await (const chunk of process.stdin) {
+      size += /** @type {Buffer} */ (chunk).length;
+      if (size > MAX_EXPRESSION_BYTES) {
+        cliError('The layout expression on stdin is too large (max 5 MB)', {
+          code: ERROR_CODES.ERR_INVALID_ARGUMENT,
+        });
+      }
+      chunks.push(/** @type {Buffer} */ (chunk));
+    }
     return Buffer.concat(chunks).toString('utf-8');
   }
   return expr ?? '';

@@ -47,7 +47,7 @@ export const doc = {
     {code: 0, when: 'the expression is valid'},
     {
       code: 1,
-      when: 'the expression is invalid or empty, has a syntax error, or a bad --form',
+      when: 'the expression is invalid, empty or over 5 MB (from stdin or --file), has a syntax error, or a bad --form',
     },
   ],
   related: ['layout expand', 'layout grammar'],
