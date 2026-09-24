@@ -579,6 +579,128 @@ export function classifyLogicalInlinePair(ltr, rtl, tolerancePx = 0.5) {
       };
 }
 
+/**
+ * Classify a first/middle/last group whose tightened corners belong to one
+ * logical inline side. The contracted corner sequence must be end/both/start,
+ * its opposite corners must stay full, and the physical side must mirror.
+ */
+export function classifyLogicalGroupedCorners(
+  ltr,
+  rtl,
+  logicalSide,
+  tolerancePx = 0.5,
+) {
+  const close = (left, right) => Math.abs(left - right) <= tolerancePx;
+  if (!['inline-start', 'inline-end'].includes(logicalSide)) {
+    return {verdict: 'fail', reason: 'grouped corners need a logical side'};
+  }
+
+  const measurements = [ltr, rtl];
+  if (
+    !measurements.every(
+      measurement =>
+        measurement?.boxes?.length === 3 &&
+        measurement.writingMode === 'horizontal-tb' &&
+        measurement.boxes.every(
+          box =>
+            box?.visible === true &&
+            Number.isFinite(box.width) &&
+            Number.isFinite(box.height) &&
+            box.width > 0 &&
+            box.height > 0 &&
+            ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'].every(
+              corner => Number.isFinite(box.corners?.[corner]),
+            ),
+        ),
+    ) ||
+    ltr.direction !== 'ltr' ||
+    rtl.direction !== 'rtl'
+  ) {
+    return {
+      verdict: 'fail',
+      reason:
+        'grouped-corner subjects must be three visible horizontal LTR/RTL boxes',
+    };
+  }
+
+  const evaluateDirection = measurement => {
+    const physicalSide =
+      (logicalSide === 'inline-start') === (measurement.direction === 'ltr')
+        ? 'left'
+        : 'right';
+    const oppositeSide = physicalSide === 'left' ? 'right' : 'left';
+    const sideTop = physicalSide === 'left' ? 'topLeft' : 'topRight';
+    const sideBottom =
+      physicalSide === 'left' ? 'bottomLeft' : 'bottomRight';
+    const oppositeTop = oppositeSide === 'left' ? 'topLeft' : 'topRight';
+    const oppositeBottom =
+      oppositeSide === 'left' ? 'bottomLeft' : 'bottomRight';
+    const [first, middle, last] = measurement.boxes;
+    const inset = [
+      first.corners[sideBottom],
+      middle.corners[sideTop],
+      middle.corners[sideBottom],
+      last.corners[sideTop],
+    ];
+    const full = [
+      first.corners[sideTop],
+      last.corners[sideBottom],
+      ...measurement.boxes.flatMap(box => [
+        box.corners[oppositeTop],
+        box.corners[oppositeBottom],
+      ]),
+    ];
+    const insetConsistent = inset.every(value => close(value, inset[0]));
+    const fullConsistent = full.every(value => close(value, full[0]));
+    const distinct = full[0] > inset[0] + tolerancePx;
+    return {
+      pass: insetConsistent && fullConsistent && distinct,
+      physicalSide,
+      insetRadius: inset[0],
+      fullRadius: full[0],
+    };
+  };
+
+  const ltrResult = evaluateDirection(ltr);
+  const rtlResult = evaluateDirection(rtl);
+  const mirrored = ltr.boxes.every((box, index) => {
+    const other = rtl.boxes[index];
+    return (
+      close(box.corners.topLeft, other.corners.topRight) &&
+      close(box.corners.topRight, other.corners.topLeft) &&
+      close(box.corners.bottomRight, other.corners.bottomLeft) &&
+      close(box.corners.bottomLeft, other.corners.bottomRight)
+    );
+  });
+
+  if (!ltrResult.pass || !rtlResult.pass) {
+    return {
+      verdict: 'fail',
+      reason:
+        'first/middle/last corners do not preserve the contracted/full sequence',
+      ltr: ltrResult,
+      rtl: rtlResult,
+    };
+  }
+  if (!mirrored || ltrResult.physicalSide === rtlResult.physicalSide) {
+    return {
+      verdict: 'fail',
+      reason: 'grouped corners stay on a physical side instead of mirroring',
+      ltr: ltrResult,
+      rtl: rtlResult,
+    };
+  }
+  return {
+    verdict: 'pass',
+    reason:
+      `${logicalSide} grouped corners mirror ${ltrResult.physicalSide}→` +
+      `${rtlResult.physicalSide} with ${ltrResult.insetRadius}px inset and ` +
+      `${ltrResult.fullRadius}px full radii`,
+    ltr: ltrResult,
+    rtl: rtlResult,
+  };
+}
+
 function resultIsApplicable(result) {
   return result?.verdict === 'pass' || result?.verdict === 'fail';
 }

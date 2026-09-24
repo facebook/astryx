@@ -122,11 +122,11 @@ export function registerDiscover(program) {
             break;
           }
 
-          // One record per package — fields mirror the JSON entry. The default
+          // One record per package, every field of the JSON entry. The default
           // view summarizes each package's components (first N + "+N more");
           // --components lists them all (record comma-joins the full array).
           /** @type {import('../formatters/index.mjs').RecordOptions} */
-          const listOpts = {fields: ['displayName', 'name', 'description', 'components']};
+          const listOpts = {};
           if (!options.components) {
             listOpts.format = {
               components: (/** @type {string[]} */ comps) => {
@@ -155,7 +155,7 @@ export function registerDiscover(program) {
         case 'discover.detail': {
           const d = result.data;
           emit(
-            record(d, {fields: ['displayName', 'name', 'description', 'components']}),
+            record(d),
             text(`Usage: ${run} discover ${d.name}/<ComponentName>`),
           );
           break;

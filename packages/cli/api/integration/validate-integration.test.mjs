@@ -13,10 +13,16 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  validateIntegration,
   validateLocalIntegration,
   validateInstalledIntegration,
   summarizeIssues,
 } from './validate-integration.mjs';
+import {
+  integrationComponentConflicts,
+  integrationDocConflicts,
+  integrationTemplateConflicts,
+} from './authoring-checks.mjs';
 
 let tmpDir;
 
@@ -470,5 +476,90 @@ describe('validate-integration API', () => {
     );
     const result = await validateInstalledIntegration('/etc/passwd', consumer);
     expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
+  });
+});
+
+describe('integration diagnostics are read-only', () => {
+  /** Every directory and file under `dir`, with file bytes. */
+  function snapshot(dir) {
+    /** @type {Record<string, string>} */
+    const entries = {};
+    /** @param {string} current */
+    const walk = current => {
+      for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+        const full = path.join(current, entry.name);
+        const key = path.relative(dir, full);
+        if (entry.isDirectory()) {
+          entries[`${key}/`] = '';
+          walk(full);
+        } else {
+          entries[key] = fs.readFileSync(full, 'base64');
+        }
+      }
+    };
+    walk(dir);
+    return entries;
+  }
+
+  /** A package with valid, broken, conflicting, and unreachable contributions. */
+  function writeDiagnosedPackage(dir) {
+    writePackage(dir, {
+      manifest:
+        "export default {\n  components: './components',\n  templates: './templates',\n  docs: './docs',\n  codemods: './gone',\n  themes: './themes',\n};\n",
+    });
+    const write = (relative, contents) => {
+      fs.mkdirSync(path.dirname(path.join(dir, relative)), {recursive: true});
+      fs.writeFileSync(path.join(dir, relative), contents);
+    };
+    write(
+      'components/Card.doc.mjs',
+      "export default {type: 'component', name: 'Card', props: []};\n",
+    );
+    write('components/Card.tsx', 'export function Card() { return null; }\n');
+    write(
+      'components/Orphan.doc.mjs',
+      "export default {type: 'component', name: 'Orphan', props: []};\n",
+    );
+    write('templates/dash.doc.mjs', "export default {type: 'page', name: 'Dash'};\n");
+    write(
+      'docs/theme.doc.mjs',
+      "export default {type: 'generic', name: 'theme', title: 'Theme', description: 'x', sections: [{title: 'A', content: [{type: 'prose', text: 'x'}]}]};\n",
+    );
+    write('themes/manifest.json', '{"version": 1, "themes": [{"slug": 7}]}\n');
+    write(
+      'stray/Stray.doc.mjs',
+      "export default {type: 'component', name: 'Stray', props: []};\n",
+    );
+  }
+
+  it('leaves local and installed packages byte-for-byte unchanged', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writeDiagnosedPackage(pkgDir);
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    writeDiagnosedPackage(path.join(consumer, 'node_modules', '@acme', 'widgets'));
+    const before = {pkg: snapshot(pkgDir), consumer: snapshot(consumer)};
+
+    const local = await validateIntegration(undefined, {cwd: pkgDir});
+    const installed = await validateIntegration('@acme/widgets', {
+      cwd: consumer,
+    });
+    for (const [pkg, cwd] of [
+      [undefined, pkgDir],
+      ['@acme/widgets', consumer],
+    ]) {
+      await integrationTemplateConflicts(pkg, {cwd});
+      await integrationComponentConflicts(pkg, {cwd});
+      await integrationDocConflicts(pkg, {cwd});
+    }
+
+    expect(summarizeIssues(local.data.issues).errors).toBeGreaterThan(0);
+    expect(byCode(local.data.issues, 'unreachable_contribution')).toHaveLength(1);
+    expect(summarizeIssues(installed.data.issues).errors).toBeGreaterThan(0);
+    expect({pkg: snapshot(pkgDir), consumer: snapshot(consumer)}).toEqual(before);
   });
 });

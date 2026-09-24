@@ -57,7 +57,7 @@ function formatParamsTable(params) {
   lines.push('| Param | Type | Default | Description |');
   lines.push('|-------|------|---------|-------------|');
   for (const p of params) {
-    const def = p.default ? `\`${mdCell(p.default)}\`` : '\u2014';
+    const def = p.default ? `\`${mdCell(p.default)}\`` : '-';
     const req = p.required ? ' **(required)**' : '';
     lines.push(
       `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req} |`,
@@ -198,7 +198,7 @@ export function formatHookCompact(docs, importPath) {
 /**
  * Format a brief, LLM-optimized hook summary.
  * Matches component formatBrief conventions:
- *   signature  ← from 'import/path'
+ *   signature  <- from 'import/path'
  *   description
  *   key params
  * @param {any} docs
@@ -211,7 +211,7 @@ export function formatHookBrief(docs) {
   // Signature line with import hint (matches component brief)
   const sig = buildSignature(docs);
   const imp = docs.importPath;
-  output.push(imp ? `${sig}  \u2190 from '${imp}'` : sig);
+  output.push(imp ? `${sig}  <- from '${imp}'` : sig);
 
   // Description (shortened, matches component brief)
   const desc = docs.usage?.description || '';
@@ -225,12 +225,12 @@ export function formatHookBrief(docs) {
     output.push(`  Related: ${docs.relatedComponents.join(', ')}`);
   }
 
-  // Key params (matches component brief 'prop · prop' line)
+  // Key params (matches component brief 'prop, prop' line)
   const paramNames = (docs.params || [])
     .filter((/** @type {any} */ p) => !p.name.includes('.'))
     .map((/** @type {any} */ p) => p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name);
   if (paramNames.length > 0) {
-    output.push(`  ${paramNames.join(' \u00b7 ')}`);
+    output.push(`  ${paramNames.join(', ')}`);
   }
 
   return output.join('\n') + '\n';

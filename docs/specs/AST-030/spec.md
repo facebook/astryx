@@ -159,8 +159,22 @@ they are separately named.
   consume that run's artifacts without recapturing or recomparing pixels.
   Explicit full-plan baseline capture and reviewed baseline publication MUST
   remain in `ci.yml`; they are maintenance operations, not release gates.
-  Release evidence remains the constituent PR's exact-head `pr-visual` and
-  `pr-a11y` checks, never a daily gate or retroactive acceptance status.
+  Release evidence MUST come from an explicit `operation=release-check`
+  `workflow_dispatch` in this same workflow, dispatched from `main` and bound to
+  its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
+  regression**), `pr-a11y`, and `pr-rtl` owners with full scope: the closed stable
+  visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
+  focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
+  remain scoped to changed components plus fast interaction guards; full a11y
+  sweeps, whole-repository spec-test contracts, their evidence uploads, and Probe
+  reach MUST run only for `release-check` in this workflow. Missing,
+  failed, cancelled, or skipped required work MUST block the release-check join.
+  The request and join MUST verify that the checked SHA is still current `main`;
+  release callers MUST recheck it before mutation and dispatch again after drift.
+  This replaces constituent-PR-only release gating, not the canonical checks'
+  existing finding policies. Release checks MUST NOT run on every push, capture
+  baseline candidates, publish baselines, or use a separate daily workflow or
+  retroactive acceptance status.
   Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
   and artifacts when they do not duplicate visual regression. A new or existing
   surface, component, package, theme family, or visual suite MUST join the
@@ -272,6 +286,31 @@ Rejected: per-suite, per-component, per-feature, per-theme-family, or separate
 PR visual owners; counting internal jobs or required status projections as
 lanes; and implicit expansion under an undefined “additional specialized
 surface” exception.
+
+### DEC-5 — Release checks reuse the canonical owners on exact main
+
+**Reference:** `spec:AST-030/DEC-5`
+**Decider:** `cixzhang`, `2026-09-23`
+
+Run release evidence against exact current `main`, not only constituent PR heads.
+Use an explicit release-time dispatch in `ci.yml` so full visual, accessibility,
+and RTL checks do not run on every main push. Reuse existing test/build owners,
+keep their finding policies, and fail closed on incomplete scope, missing work,
+or main drift. Baseline capture and reviewed promotion remain separate operations.
+
+PR accessibility remains a scoped, fast check: audit only explicitly resolved
+changed component owners and retain the fast modal-close, theme-var, and story-play
+browser guards. Never widen a PR to the exhaustive accessibility sweep because a
+shared path changed or the component set is empty. Missing or approximate analysis
+fails the scoped check rather than silently claiming no work. Multi-component
+folders expand only to their own canonical component owners or existing umbrella
+Storybook routes; an exported name without either route cannot be passed to axe. The full
+accessibility roster, whole-repository spec-test contracts and their evidence
+uploads, and Probe reach sweep run only on `release-check` in this workflow.
+The release path retains the complete suite and cannot substitute a scoped result.
+
+Rejected: a separate workflow, per-push full audits, and treating a maintenance
+capture, skipped check, old main SHA, or retroactive status as release evidence.
 
 ## Open questions
 

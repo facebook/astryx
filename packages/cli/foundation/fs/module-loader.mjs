@@ -7,7 +7,8 @@
  * user-authored module (`.ts` via jiti, `.mjs`/`.js` via native dynamic
  * import) and (b) find conventional files by basename in a fixed
  * load-precedence order. These helpers centralize that so the two callers stay
- * in lockstep.
+ * in lockstep. A module's stdout writes go to stderr while it loads, so
+ * project code that prints cannot corrupt a `--json` envelope.
  *
  * `loadModuleWithParser` builds on these primitives to provide the single
  * load/validation boundary shared by config, integration, codemod, and
@@ -16,6 +17,7 @@
  */
 
 import * as path from 'node:path';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
@@ -56,6 +58,43 @@ function isCommonJsFile(file) {
   }
 }
 
+let loadsInFlight = 0;
+/** @type {typeof process.stdout.write | undefined} */
+let realStdoutWrite;
+/** Set in the async context of a module load, and only there. */
+const moduleLoad = new AsyncLocalStorage();
+
+/**
+ * Run a module load with the stdout writes made in its async context sent to
+ * stderr. Writes from any other context pass through, so the CLI's own output
+ * stays on stdout even while an abandoned load is still in flight. The gate
+ * is installed for the first overlapping load and removed after the last.
+ * @template T
+ * @param {() => Promise<T>} load
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(load) {
+  if (loadsInFlight++ === 0) {
+    const write = process.stdout.write;
+    realStdoutWrite = write;
+    process.stdout.write = /** @type {any} */ (
+      function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+        return moduleLoad.getStore()
+          ? process.stderr.write(chunk, ...rest)
+          : write.call(process.stdout, chunk, ...rest);
+      }
+    );
+  }
+  try {
+    return await moduleLoad.run(true, load);
+  } finally {
+    if (--loadsInFlight === 0 && realStdoutWrite) {
+      process.stdout.write = realStdoutWrite;
+      realStdoutWrite = undefined;
+    }
+  }
+}
+
 /**
  * Import a user-authored module. `.ts` is loaded via jiti; `.mjs`/`.js` use
  * native dynamic import for ordinary cached reads. A fresh `.ts` read uses a
@@ -64,12 +103,22 @@ function isCommonJsFile(file) {
  * nearest package.json `type` decides `.js`, matching Node's package scopes.
  * Normal loads retain module caching. `fresh` is an explicit migration-only
  * escape hatch for rereading files that a codemod changed during this process.
+ * Anything the module writes to stdout while it loads goes to stderr.
  *
  * @param {string} file absolute path
  * @param {{fresh?: boolean}} [options]
  * @returns {Promise<Record<string, unknown>>}
  */
 export async function importUserModule(file, {fresh = false} = {}) {
+  return await withStdoutOnStderr(() => importModule(file, fresh));
+}
+
+/**
+ * @param {string} file absolute path
+ * @param {boolean} fresh
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function importModule(file, fresh) {
   if (fresh && file.endsWith('.ts')) {
     return await createJiti(import.meta.url, {moduleCache: false}).import(file);
   }

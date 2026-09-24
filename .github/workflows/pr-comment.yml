@@ -10,9 +10,9 @@
 # drift between a fork path and a same-repo path.
 #
 # Safety: resolves scope and PR identity from the GitHub API. Privileged jobs
-# check out only trusted default-branch code. PR-built static artifacts are
-# published only after exact run/PR/repository checks; report fields remain
-# untrusted data and are rendered by default-branch code.
+# check out only trusted default-branch code. The Storybook URL is resolved
+# from GitHub's exact-head Vercel deployment, while Sandbox Pages proof comes
+# from the validated source CI artifact. PR artifacts remain static data.
 
 name: PR Comment
 
@@ -20,17 +20,13 @@ on:
   workflow_run:
     workflows: ['CI']
     types: [completed]
+  deployment_status:
 
 permissions: {}
 
-# Serialize report publication for a head without cancelling a Pages writer.
-concurrency:
-  group: pr-report-head-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: false
-
 jobs:
   resolve:
-    if: github.event.workflow_run.event == 'pull_request'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -109,8 +105,110 @@ jobs:
             core.setOutput('spec_only', String(changeScope.specOnly));
             core.setOutput('tooling_only', String(changeScope.toolingOnly));
 
+  resolve-preview:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Preview' &&
+      github.event.deployment.creator.login == 'vercel[bot]'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+      deployments: read
+    outputs:
+      valid: ${{ steps.preview.outputs.valid }}
+      pr_number: ${{ steps.preview.outputs.pr_number }}
+      head_sha: ${{ steps.preview.outputs.head_sha }}
+      origin: ${{ steps.preview.outputs.origin }}
+    steps:
+      - name: Checkout trusted default-branch code
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Check trusted resolver availability
+        id: trusted
+        run: |
+          if [ -f .github/scripts/lib/vercel-preview.mjs ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            # A new deployment_status workflow can run before its helper lands
+            # on main. Never load the untrusted PR branch as a substitute.
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Preview resolver is not on trusted main yet; skipping this deployment."
+          fi
+
+      - name: Resolve current Vercel PR preview
+        id: preview
+        if: steps.trusted.outputs.available == 'true'
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const {pathToFileURL} = require('node:url');
+            const {resolveVercelDeploymentEvent} = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/lib/vercel-preview.mjs`).href
+            );
+            const preview = await resolveVercelDeploymentEvent({
+              github,
+              ...context.repo,
+              deployment: context.payload.deployment,
+              status: context.payload.deployment_status,
+            });
+            if (!preview) {
+              core.notice('No current, non-draft PR matches this exact Vercel Preview deployment.');
+              core.setOutput('valid', 'false');
+              return;
+            }
+            core.setOutput('valid', 'true');
+            core.setOutput('pr_number', String(preview.prNumber));
+            core.setOutput('head_sha', preview.headSha);
+            core.setOutput('origin', preview.origin);
+
+  preview-comment:
+    needs: resolve-preview
+    if: needs.resolve-preview.outputs.valid == 'true'
+    concurrency:
+      group: pr-report-${{ needs.resolve-preview.outputs.pr_number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: read
+    steps:
+      - name: Checkout trusted default-branch code
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Post exact-head preview links before CI completes
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.resolve-preview.outputs.head_sha }}
+          PREVIEW_ORIGIN: ${{ needs.resolve-preview.outputs.origin }}
+        with:
+          retries: 3
+          script: |
+            const {pathToFileURL} = require('node:url');
+            const {reconcileEarlyPreviewComment} = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/lib/pr-preview.mjs`).href
+            );
+            await reconcileEarlyPreviewComment({
+              github,
+              ...context.repo,
+              prNumber: Number(process.env.PR_NUMBER),
+              headSha: process.env.HEAD_SHA,
+              origin: process.env.PREVIEW_ORIGIN,
+            });
+
   spec-only-reconcile:
     needs: resolve
+    concurrency:
+      group: pr-report-${{ needs.resolve.outputs.pr_number }}
+      cancel-in-progress: false
     if: >-
       github.event.action == 'completed' &&
       needs.resolve.outputs.valid == 'true' &&
@@ -197,8 +295,11 @@ jobs:
 
   comment:
     needs: [resolve, deploy-preview]
-    # Reconcile after the trusted publisher settles. A failed publisher still
-    # runs this job so stale links are removed rather than retained.
+    concurrency:
+      group: pr-report-${{ needs.resolve.outputs.pr_number }}
+      cancel-in-progress: false
+    # Sandbox Pages publication settles before CI evidence reconciliation;
+    # Storybook links come from the exact-head Vercel deployment independently.
     if: >-
       always() &&
       github.event.action == 'completed' &&
@@ -209,6 +310,7 @@ jobs:
     permissions:
       pull-requests: write
       actions: read
+      deployments: read # resolve the exact-head Vercel Preview deployment
       contents: write # immutable validated visual evidence on gh-pages
     steps:
       - name: Checkout trusted default-branch code

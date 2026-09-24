@@ -28,7 +28,8 @@ export const doc = {
     {
       flag: '-f, --overwrite',
       param: 'options.overwrite',
-      description: 'Overwrite existing files without prompting',
+      description:
+        'Replace existing files. Without it, existing files fail the command with ERR_FILE_EXISTS and nothing is written',
     },
     {flag: '--list', description: 'List available themes'},
     {
