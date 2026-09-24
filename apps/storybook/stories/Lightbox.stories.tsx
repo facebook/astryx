@@ -1,8 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Lightbox.stories.tsx
+ * @input Lightbox, TextInput, Slider, and React state
+ * @output Lightbox examples including editable controls in a mixed gallery
+ * @position Core Lightbox stories for manual interaction checks
+ */
+
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Lightbox, useLightbox} from '@astryxdesign/core/Lightbox';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Slider} from '@astryxdesign/core/Slider';
 
 const meta: Meta<typeof Lightbox> = {
   title: 'Core/Lightbox',
@@ -187,6 +196,8 @@ export const MixedGallery: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     const [index, setIndex] = useState(0);
+    const [title, setTitle] = useState('Editable preview');
+    const [volume, setVolume] = useState(50);
     const items = [
       {src: 'https://picsum.photos/id/10/1200/800', alt: 'Forest path'},
       {
@@ -203,7 +214,13 @@ export const MixedGallery: Story = {
               textAlign: 'center',
             }}>
             <h2 style={{marginTop: 0}}>Custom slide</h2>
-            <p>Images and arbitrary React content share one gallery.</p>
+            <p>Use arrow keys in these controls without changing slides.</p>
+            <TextInput
+              label="Preview title"
+              value={title}
+              onChange={setTitle}
+            />
+            <Slider label="Volume" value={volume} onChange={setVolume} />
             <button onClick={() => alert('Interactive!')}>Click me</button>
           </div>
         ),
