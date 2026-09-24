@@ -37,6 +37,13 @@ may implement this contract; acceptance is not a claim that the implementation
 is complete, verified, or authorized to merge. Architecture projects the decision
 rather than independently approving it.
 
+**Pending metric amendment (DEC-4/OQ4):** This draft changes only the proposed
+`font-size`/`line-height` baseline and its supporting preservation/verification
+wording. The frontmatter and DEC-1–DEC-3 retain the original accepted record;
+they do **not** approve this amendment. The landed baseline remains authoritative
+until the owner explicitly approves and merges a spec change. Implementation
+PR #6457 remains blocked and unmerged; no new metric implementation is authorized.
+
 ### Ownership
 
 AST-038 owns the closed inherited-text baseline, the ancestor visual-group
@@ -82,24 +89,24 @@ PR #6457, not an independent approved contract.
 establish exactly these inherited-property defaults before component and caller
 styles. Unlisted inherited text properties are not reset by FR1.
 
-| Property          | Baseline                   | Reason                                                        |
-| ----------------- | -------------------------- | ------------------------------------------------------------- |
-| `font-family`     | `var(--font-family-body)`  | Do not borrow a code or heading face.                         |
-| `font-size`       | `var(--text-body-size)`    | Start ordinary content in the active theme's body role.       |
-| `line-height`     | `var(--text-body-leading)` | Preserve the theme's body reading rhythm.                     |
-| `font-weight`     | `var(--text-body-weight)`  | Do not borrow trigger emphasis.                               |
-| `font-style`      | `normal`                   | An emphasized ancestor must not italicize the task.           |
-| `text-align`      | `start`                    | Start at the reading edge, including RTL.                     |
-| `text-align-last` | `auto`                     | Do not inherit last-line justification.                       |
-| `text-indent`     | `0`                        | Do not inherit paragraph or icon-replacement indents.         |
-| `text-transform`  | `none`                     | Preserve authored case.                                       |
-| `letter-spacing`  | `normal`                   | Do not inherit heading tracking.                              |
-| `word-spacing`    | `normal`                   | Do not distort reading or intrinsic size.                     |
-| `text-shadow`     | `none`                     | Do not borrow decorative text shadows.                        |
-| `white-space`     | `normal`                   | Permit ordinary wrapping under preformatted/nowrap ancestors. |
-| `word-break`      | `normal`                   | Leave exceptional word breaking to the content owner.         |
-| `overflow-wrap`   | `normal`                   | Leave long-token wrapping to the content owner.               |
-| `hyphens`         | `manual`                   | Do not inherit automatic hyphenation.                         |
+| Property          | Baseline                  | Reason                                                                        |
+| ----------------- | ------------------------- | ----------------------------------------------------------------------------- |
+| `font-family`     | `var(--font-family-body)` | Do not borrow a code or heading face.                                         |
+| `font-size`       | `1rem`                    | Neutral document size, independent of the trigger's size; pending DEC-4.      |
+| `line-height`     | `1.5`                     | Preserve the reset's document rhythm and anonymous line boxes; pending DEC-4. |
+| `font-weight`     | `var(--text-body-weight)` | Do not borrow trigger emphasis.                                               |
+| `font-style`      | `normal`                  | An emphasized ancestor must not italicize the task.                           |
+| `text-align`      | `start`                   | Start at the reading edge, including RTL.                                     |
+| `text-align-last` | `auto`                    | Do not inherit last-line justification.                                       |
+| `text-indent`     | `0`                       | Do not inherit paragraph or icon-replacement indents.                         |
+| `text-transform`  | `none`                    | Preserve authored case.                                                       |
+| `letter-spacing`  | `normal`                  | Do not inherit heading tracking.                                              |
+| `word-spacing`    | `normal`                  | Do not distort reading or intrinsic size.                                     |
+| `text-shadow`     | `none`                    | Do not borrow decorative text shadows.                                        |
+| `white-space`     | `normal`                  | Permit ordinary wrapping under preformatted/nowrap ancestors.                 |
+| `word-break`      | `normal`                  | Leave exceptional word breaking to the content owner.                         |
+| `overflow-wrap`   | `normal`                  | Leave long-token wrapping to the content owner.                               |
+| `hyphens`         | `manual`                  | Do not inherit automatic hyphenation.                                         |
 
 **FR2 — Theme and writing context survive.** The boundary MUST preserve
 `direction`, `writing-mode`, `text-orientation`, language, theme/custom-property
@@ -107,8 +114,11 @@ values, `color-scheme`, font feature/variation settings, and accessibility
 preferences. Scoped layout/presentation values fall under FR7 even when carried
 by custom properties; this does not authorize clearing properties by prefix or
 resetting semantic theme tokens. Theme is not an ancestor layout provider.
-Theme body tokens MUST remain live when a local theme changes. This does not
-promise more context recovery than the existing hosting contract provides.
+The theme font family and explicitly component-owned type roles MUST remain
+live when a local theme changes. Under the pending DEC-4 amendment, anonymous
+content size/leading use neutral document metrics; existing explicit surface
+and content typography still wins under FR5. This does not promise more context
+recovery than the existing hosting contract provides.
 
 **FR3 — Surface and interaction ownership survive.** Color/background pairs,
 geometry, display, positioning, animation, opacity, visibility, cursor,
@@ -264,7 +274,7 @@ and ownership guards MUST remain component-owned when that equivalence is absent
 
 | Existing code                                                                                                                                          | Finding and disposition                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [useLayer](../../../packages/core/src/Layer/useLayer.tsx) base typography                                                                              | Existing body family/size/leading are the one equivalent baseline moved into the private shared reset by the text-only implementation. No token/value or precedence change for those three declarations is intended.                                                                                              |
+| [useLayer](../../../packages/core/src/Layer/useLayer.tsx) base typography                                                                              | Existing body family/size/leading are explicit surface typography. Under pending DEC-4 they are not equivalent to the neutral document metrics and must remain after the shared baseline. Preserve their live tokens, values, and precedence; do not remove them as duplicate resets.                             |
 | [Tooltip](../../../packages/core/src/Tooltip/useTooltip.tsx) painted surface                                                                           | Explicit body type, inverted colors, and content `wordBreak: break-word` are deliberate. Keep them; moving inner declarations outward can change supported overrides even where values match.                                                                                                                     |
 | [Toast](../../../packages/core/src/Toast/Toast.tsx)                                                                                                    | Uses body **defaults** for size/leading, surface inversion, and content `overflowWrap: anywhere`. This is not equivalent to replacing them with inherited live body variables. Keep them.                                                                                                                         |
 | [Lightbox](../../../packages/core/src/Lightbox/Lightbox.tsx), menu rows, keyboard hints, chart/radial tooltips                                         | Centered large captions, menu label/supporting type and start alignment, smaller nowrap keyboard hints, and compact chart wrapping remain intentional local presentation. Do not delete them as redundant resets.                                                                                                 |
@@ -329,6 +339,13 @@ contributor policy, theme-application semantics, or AST-003 claim changes.
 | FR3, FR4     | Existing component behavior tests and browser inspection                                                   | Positioning, focus/dismissal, caption and inverted colors, click-through viewport/non-modal host                                                | Removed or reordered component styles fail existing controls; no broader interaction contract is inferred.                                                                   |
 | FR6, IR1–IR3 | Diff review, existing lint/type/build/knowledge checks                                                     | Export map and barrels, reset declarations, architecture projection, changeset                                                                  | New public reset API, broad selectors, workflow changes, or an approval claim without owner approval fails review.                                                           |
 
+For the pending metric amendment, retain paired screenshots of the same
+**existing** Storybook routes/states from main and the exact implementation head.
+Normal states must have zero changed pixels; only a reproduced layer bug may
+justify a difference. Keep stories and evaluators unchanged. Also verify hostile
+ancestor font-size/leading, raw text, nested layers, and live explicitly owned
+surface/content type roles so document neutrality does not erase intentional type.
+
 Keep focused regression tests at established component/unit seams. For FR7/FR8,
 assert independent controls' disabled/pressed state, size, labels/descriptions,
 and callbacks under hostile outer groups and layout/SizeProvider defaults;
@@ -359,8 +376,10 @@ workflow/artifact wiring. Test success is evidence, not owner approval.
 **Reference:** `spec:AST-038/DEC-1`
 **Decider:** `cixzhang`, `2026-09-23`
 
-Approved the closed FR1 baseline at FR4 boundaries, with FR2/FR3 preservation,
-FR5 precedence, and FR6's compatibility/no-new-API contract. This makes the same
+Approved the original closed FR1 baseline (body-token size/leading) at FR4
+boundaries, with FR2/FR3 preservation, FR5 precedence, and FR6's
+compatibility/no-new-API contract. DEC-4 proposes a metric amendment; this
+historical approval does not extend to it. The accepted intent makes the same
 reading task independent of incidental trigger formatting without erasing its
 theme or intentional content styling.
 
@@ -408,8 +427,59 @@ presentation); silently inheriting trigger providers as content intent (recreate
 the failure). Explicit content provision preserves intentional composition without
 adding an opt-out prop or public reset API.
 
+### DEC-4 — Proposed neutral document metrics (pending)
+
+**Reference:** `spec:AST-038/DEC-4`
+**Status:** Proposed; owner approval required. No decider or approval recorded.
+
+Propose changing only FR1's font-size to `1rem` and line-height to `1.5`, with
+FR2/FR9 wording preserving explicitly owned component typography. Keep the other
+14 defaults, root-only precedence, provider boundaries, and no-new-API rules.
+These values are independent of a trigger's local font size/leading and match
+Astryx's document reset. Existing explicit layer/body type declarations still
+win; the proposal does not standardize every component onto document metrics.
+
+**Evidence:** Unchanged existing Storybook was built for main
+`60b419fb530ce5b620235ec74f897fdfae90278f` and
+[implementation PR #6457](https://github.com/facebook/astryx/pull/6457) at
+`ffa6cb49fc0c23dcc4b6cecec1b7bc3db416d2e9`. Chromium 151.0.7922.71 compared
+20 existing states in light/dark, neutral theme, LTR, identical interactions and
+viewports (1200×900 desktop; 390×844 mobile). Stories/configuration were unchanged.
+34 of 40 pairs were pixel-identical. Dialog Default, Dialog WithSubtitle, and
+BottomSheet TextOnlyFitting each differed in both color modes; these normal
+states are **not** accepted bug-state exceptions.
+
+The cause is the containing block's anonymous line-box strut, not a changed
+Text declaration. Theme supplies font-family only; the document reset supplies
+line-height 1.5. Main roots inherit 16px/24px. Inline Text is already 14px/~20px
+in both builds, but changing its container to that smaller baseline shrinks
+Default Dialog's three-line content from 72px to 60px and the dialog from 184px
+to 172px. Moving the declaration one wrapper down changes the same inherited
+strut. Restoring descendants or content layout would violate FR5/IR1 rather than
+solve this boundary.
+
+Diagnostic root overrides on the built PR, **not implementation changes**, found:
+
+- Keeping 14px and restoring only 24px leading restores height but leaves about
+  4,000 changed pixels per Dialog capture and 1,900 per BottomSheet capture due
+  to different font ascent/descent.
+- `1rem` with unitless `1.5` restores **zero changed pixels in all six affected
+  normal captures**, with no descendant, layout, geometry, or story changes.
+
+Among the evaluated alternatives, this is the only metric pair proven to
+preserve those normal pixels while remaining independent of local hostile
+ancestor metrics. It requires approval before implementation, followed by all
+normal-state and hostile-ancestor verification; diagnostic pixels are not a claim
+that the current implementation passes. The separate host-style fixture mismatch
+is not waived, and no evaluator change or merge is authorized.
+
 ## Open questions
 
-None. OQ1 (baseline/direction), OQ2 (general layout/SizeProvider), and OQ3
+OQ1 (baseline/direction), OQ2 (general layout/SizeProvider), and OQ3
 (explicit owner/content provision) were resolved by `cixzhang` on 2026-09-23.
-Acceptance does not assert implementation or browser verification is complete.
+
+**OQ4 — Pending amendment:** Does the owner approve DEC-4's `1rem`/`1.5`
+neutral baseline while preserving existing explicit component type roles?
+Until approval, the landed body-token baseline remains authoritative and
+implementation PR #6457 remains blocked. Prior approval metadata does not
+approve this draft amendment.
