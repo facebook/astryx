@@ -127,8 +127,21 @@ jobs:
         with:
           ref: main
 
+      - name: Check trusted resolver availability
+        id: trusted
+        run: |
+          if [ -f .github/scripts/lib/vercel-preview.mjs ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            # A new deployment_status workflow can run before its helper lands
+            # on main. Never load the untrusted PR branch as a substitute.
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Preview resolver is not on trusted main yet; skipping this deployment."
+          fi
+
       - name: Resolve current Vercel PR preview
         id: preview
+        if: steps.trusted.outputs.available == 'true'
         uses: actions/github-script@v9
         with:
           retries: 3

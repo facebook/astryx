@@ -1,6 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -64,7 +66,13 @@ describe('PR report and deployment workflow contracts', () => {
       "github.event.deployment.creator.login == 'vercel[bot]'",
     );
     expect(jobs['resolve-preview'].steps[0].with.ref).toBe('main');
-    expect(jobs['resolve-preview'].steps[1].with.script).toContain(
+    const guard = jobs['resolve-preview'].steps[1];
+    expect(guard.run).toContain('available=false');
+    expect(guard.run).toContain('Preview resolver is not on trusted main yet');
+    expect(jobs['resolve-preview'].steps[2].if).toBe(
+      "steps.trusted.outputs.available == 'true'",
+    );
+    expect(jobs['resolve-preview'].steps[2].with.script).toContain(
       'resolveVercelDeploymentEvent',
     );
     expect(jobs['preview-comment'].needs).toBe('resolve-preview');
@@ -74,6 +82,35 @@ describe('PR report and deployment workflow contracts', () => {
     expect(jobs.resolve.if).toContain("github.event_name == 'workflow_run'");
     expect(jobs.comment.needs).toEqual(['resolve', 'deploy-preview']);
     expect(jobs.comment.permissions.deployments).toBe('read');
+  });
+
+  it('skips pre-merge deployment events when the resolver is absent from trusted main', () => {
+    const guard = yaml.parse(workflow('pr-comment.yml')).jobs['resolve-preview']
+      .steps[1];
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-preview-bootstrap-'),
+    );
+    const output = path.join(root, 'outputs');
+    try {
+      const run = () =>
+        execFileSync('bash', ['-e', '-c', guard.run], {
+          cwd: root,
+          env: {...process.env, GITHUB_OUTPUT: output},
+          encoding: 'utf8',
+        });
+      expect(run()).toContain('Preview resolver is not on trusted main yet');
+      expect(fs.readFileSync(output, 'utf8')).toContain('available=false');
+      fs.mkdirSync(path.join(root, '.github/scripts/lib'), {recursive: true});
+      fs.writeFileSync(
+        path.join(root, '.github/scripts/lib/vercel-preview.mjs'),
+        'trusted main',
+      );
+      fs.writeFileSync(output, '');
+      expect(run()).toBe('');
+      expect(fs.readFileSync(output, 'utf8')).toContain('available=true');
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
   });
 
   it('reconciles spec-only comments without creating a preview or extra build', () => {
