@@ -158,6 +158,22 @@ export function parseNpmPackOutput(output) {
 }
 
 /**
+ * Summarize the JSON error npm prints on stdout when `--json` pack fails.
+ * @param {string} output
+ * @returns {string}
+ */
+function npmPackErrorDetail(output) {
+  try {
+    const error = JSON.parse(output)?.error;
+    return [error?.summary, error?.detail]
+      .filter(part => typeof part === 'string' && part.trim() !== '')
+      .join(': ');
+  } catch {
+    return (output || '').trim();
+  }
+}
+
+/**
  * Run `npm pack --json` with output directed to `destDir` so no preexisting
  * tgz is overwritten. This intentionally runs the package lifecycle, matching
  * the artifact `npm publish` would produce. Uses spawnSync with an args array —
@@ -170,16 +186,25 @@ export function parseNpmPackOutput(output) {
 function runNpmPack(packageDir, destDir) {
   const result = spawnSync(
     'npm',
-    ['pack', '--json', '--silent', `--pack-destination=${destDir}`],
+    [
+      'pack',
+      '--json',
+      '--silent',
+      // Lifecycle scripts still run; background mode keeps their output off
+      // the stdout that carries the JSON result.
+      '--foreground-scripts=false',
+      `--pack-destination=${destDir}`,
+    ],
     {cwd: packageDir, encoding: 'utf-8', timeout: 60_000},
   );
   if (result.error) {
     throw new Error(`Could not start npm pack: ${result.error.message}`);
   }
   if (result.status !== 0) {
-    const stderr = (result.stderr || '').trim();
+    const detail =
+      (result.stderr || '').trim() || npmPackErrorDetail(result.stdout);
     throw new Error(
-      `npm pack failed (exit ${result.status})${stderr ? `: ${stderr}` : ''}.`,
+      `npm pack failed (exit ${result.status})${detail ? `: ${detail}` : ''}.`,
     );
   }
   return parseNpmPackOutput(result.stdout);
