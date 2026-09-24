@@ -456,25 +456,33 @@ Every response has a `type` discriminant. The full set is below (generated from 
 
 `astryx doctor` runs read-only health checks against your project and
 environment. Each record uses `[ok]`, `[warn]`, `[fail]`, or `[info]`, and
-includes an actionable `fix` when one is available. The exact checks and values
-depend on the project; the output shape is stable:
+includes an actionable `fix` when one is available. Field names match the
+`--json` keys. The exact checks and values depend on the project; the output
+shape is stable:
 
 ```
 $ astryx doctor
 astryx doctor - diagnosing your setup
 
+id:      node-version
 status:  [ok]
-check:   Node.js version
+label:   Node.js version
 message: Node v24.18.1 meets the minimum (>=22.13.0).
 
+id:      themes
 status:  [warn]
-check:   Theme packages
+label:   Theme packages
 message: No @astryxdesign/theme-* packages are installed.
 fix:     Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.
 
 ...
 
-Summary: 4 passed, 2 warnings, 0 failures, 2 info
+summary
+
+pass: 4
+warn: 2
+fail: 0
+info: 2
 
 No failures - but review the [warn] warnings above when you can.
 ```
