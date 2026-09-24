@@ -1,0 +1,35 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+/*
+ * Full-axis menu fallbacks need safe physical viewport gutters. These rules are
+ * raw CSS because StyleX 0.19 emits direction selectors inside @position-try
+ * when position-area uses logical self-* keywords, which is invalid CSS.
+ */
+
+@position-try --astryx-menu-block-start-full-axis {
+  position-area: self-block-start span-all;
+  justify-self: center;
+  margin-left: max(var(--spacing-4), env(safe-area-inset-left, 0px));
+  margin-right: max(var(--spacing-4), env(safe-area-inset-right, 0px));
+}
+
+@position-try --astryx-menu-block-end-full-axis {
+  position-area: self-block-end span-all;
+  justify-self: center;
+  margin-left: max(var(--spacing-4), env(safe-area-inset-left, 0px));
+  margin-right: max(var(--spacing-4), env(safe-area-inset-right, 0px));
+}
+
+@position-try --astryx-menu-inline-start-full-axis {
+  position-area: self-inline-start span-all;
+  align-self: center;
+  margin-top: max(var(--spacing-4), env(safe-area-inset-top, 0px));
+  margin-bottom: max(var(--spacing-4), env(safe-area-inset-bottom, 0px));
+}
+
+@position-try --astryx-menu-inline-end-full-axis {
+  position-area: self-inline-end span-all;
+  align-self: center;
+  margin-top: max(var(--spacing-4), env(safe-area-inset-top, 0px));
+  margin-bottom: max(var(--spacing-4), env(safe-area-inset-bottom, 0px));
+}

@@ -431,31 +431,50 @@ function getPositionArea(
 /**
  * Compute the `position-try-fallbacks` list for a placement/alignment pair.
  *
- * Flips alone cannot rescue a centered layer — flipping along the alignment
- * axis maps center → center, so overflow on that axis renders clipped
- * (#3671). Centered alignments therefore append span-based fallbacks letting
- * the browser slide the layer along the alignment axis as a last resort
- * (same-side spans first). Flips already resolve non-centered alignments.
+ * Flips preserve the requested placement or alignment before broader movement.
+ * Centered layers append logical span-side fallbacks because flipping along the
+ * alignment axis maps center → center (#3671). Every layer ends with logical
+ * full-axis fallbacks so a surface that fits the viewport can shift within it
+ * instead of being resized merely because neither trigger edge has enough room.
+ * A component may supply named full-axis tries when that fallback also needs
+ * component-owned constraints such as viewport gutters.
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
   alignment: LayerAlignment = 'center',
+  fullAxisFallbacks?: readonly [string, string],
 ): string {
   const flips = 'flip-block, flip-inline, flip-block flip-inline';
 
-  if (alignment !== 'center') {
-    return flips;
-  }
-
   if (placement === 'above' || placement === 'below') {
     const [same, opposite] =
-      placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
-    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
+      placement === 'above'
+        ? ['self-block-start', 'self-block-end']
+        : ['self-block-end', 'self-block-start'];
+    const [sameFullAxis, oppositeFullAxis] = fullAxisFallbacks ?? [
+      `${same} span-all`,
+      `${opposite} span-all`,
+    ];
+    const fullAxis = `${sameFullAxis}, ${oppositeFullAxis}`;
+    if (alignment !== 'center') {
+      return `${flips}, ${fullAxis}`;
+    }
+    return `${flips}, ${same} span-self-inline-start, ${same} span-self-inline-end, ${opposite} span-self-inline-start, ${opposite} span-self-inline-end, ${fullAxis}`;
   }
 
   const [same, opposite] =
-    placement === 'start' ? ['left', 'right'] : ['right', 'left'];
-  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+    placement === 'start'
+      ? ['self-inline-start', 'self-inline-end']
+      : ['self-inline-end', 'self-inline-start'];
+  const [sameFullAxis, oppositeFullAxis] = fullAxisFallbacks ?? [
+    `${same} span-all`,
+    `${opposite} span-all`,
+  ];
+  const fullAxis = `${sameFullAxis}, ${oppositeFullAxis}`;
+  if (alignment !== 'center') {
+    return `${flips}, ${fullAxis}`;
+  }
+  return `${flips}, ${same} span-self-block-start, ${same} span-self-block-end, ${opposite} span-self-block-start, ${opposite} span-self-block-end, ${fullAxis}`;
 }
 
 /**

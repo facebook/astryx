@@ -15,8 +15,8 @@
  *
  * This guard closes that gap. It serves the built Storybook, loads each
  * listed story's iframe in Chromium, and listens on the preview channel for
- * the play outcome: `storyRendered` only fires after `play` resolves, and
- * any thrown assertion surfaces as `playFunctionThrewException` (or one of
+ * the play outcome: `storyFinished` fires after `play` settles, and any
+ * thrown assertion surfaces as `playFunctionThrewException` (or one of
  * its sibling error events). No outcome within the timeout also fails —
  * a story that cannot boot must not pass by silence.
  */
@@ -44,6 +44,33 @@ const TARGETS = [
     guards:
       'ChartTooltip stays continuously open across content-bearing points in ' +
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-before-sizing',
+    viewport: {width: 320, height: 320},
+    guards:
+      'an arbitrary trigger preserves natural menu width before containment ' +
+      'while retaining safe viewport gutters',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-rtl',
+    viewport: {width: 320, height: 320},
+    guards: 'RTL logical start flips to the roomier physical side',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-vertical-writing',
+    viewport: {width: 320, height: 320},
+    guards:
+      'vertical-rl full-axis fallback keeps logical block-end and gutters',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--viewport-fit',
+    viewport: {width: 320, height: 320},
+    guards: 'oversize menu caps to the safe viewport width',
   },
   {
     component: 'TabList',
@@ -120,7 +147,7 @@ function recordStoryOutcome() {
       setTimeout(attach, 50);
       return;
     }
-    channel.on('storyRendered', () => {
+    channel.on('storyFinished', () => {
       window.__storyOutcome.done = true;
     });
     for (const event of ERROR_EVENTS) {
@@ -167,6 +194,9 @@ async function run() {
 
     for (const target of TARGETS) {
       const page = await context.newPage();
+      if (target.viewport != null) {
+        await page.setViewportSize(target.viewport);
+      }
       try {
         const outcome = await probe(page, target);
         if (outcome.errors.length > 0) {

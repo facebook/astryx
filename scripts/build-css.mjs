@@ -2,8 +2,9 @@
 
 /**
  * @file build-css.mjs
- * Post-build script that extracts StyleX CSS from compiled source files
- * and outputs a combined stylesheet wrapped in @layer astryx-base.
+ * Post-build script that extracts StyleX CSS from compiled source files,
+ * appends target-owned raw CSS that StyleX cannot represent, and outputs one
+ * combined stylesheet wrapped in @layer astryx-base.
  *
  * Usage:
  *   node scripts/build-css.mjs                 # core  → packages/core/dist/astryx.css
@@ -39,6 +40,12 @@ const TARGETS = {
     outFile: 'astryx.css',
     banner: 'Astryx Pre-compiled StyleX CSS — all components',
     aliases: {},
+    rawCss: [
+      path.resolve(
+        ROOT,
+        'packages/core/src/DropdownMenu/DropdownMenu.position-try.css',
+      ),
+    ],
   },
   lab: {
     src: path.resolve(ROOT, 'packages/lab/src'),
@@ -164,14 +171,20 @@ async function main() {
   await fs.mkdir(target.dist, {recursive: true});
 
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
+  const rawCSS = (
+    await Promise.all(
+      (target.rawCss ?? []).map(file => fs.readFile(file, 'utf8')),
+    )
+  ).join('\n');
+  const layerCSS = [combinedCSS, rawCSS].filter(Boolean).join('\n');
 
   const outPath = path.resolve(target.dist, target.outFile);
-  const combinedFileContents = `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
+  const combinedFileContents = `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${layerCSS
     .split('\n')
     .map(line => '  ' + line)
     .join('\n')}\n}\n`;
   await fs.writeFile(outPath, combinedFileContents, 'utf8');
-  console.log(`${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
+  console.log(`${target.outFile}: ${(layerCSS.length / 1024).toFixed(1)} KB`);
 }
 
 main().catch(err => {

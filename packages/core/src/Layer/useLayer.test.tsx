@@ -194,36 +194,74 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
 
   it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center)', () => {
     expect(getPositionTryFallbacks('above', 'center')).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      `${FLIPS}, self-block-start span-self-inline-start, self-block-start span-self-inline-end, self-block-end span-self-inline-start, self-block-end span-self-inline-end, self-block-start span-all, self-block-end span-all`,
     );
     expect(getPositionTryFallbacks('below', 'center')).toBe(
-      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right`,
+      `${FLIPS}, self-block-end span-self-inline-start, self-block-end span-self-inline-end, self-block-start span-self-inline-start, self-block-start span-self-inline-end, self-block-end span-all, self-block-start span-all`,
     );
   });
 
   it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center)', () => {
     expect(getPositionTryFallbacks('start', 'center')).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      `${FLIPS}, self-inline-start span-self-block-start, self-inline-start span-self-block-end, self-inline-end span-self-block-start, self-inline-end span-self-block-end, self-inline-start span-all, self-inline-end span-all`,
     );
     expect(getPositionTryFallbacks('end', 'center')).toBe(
-      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom`,
+      `${FLIPS}, self-inline-end span-self-block-start, self-inline-end span-self-block-end, self-inline-start span-self-block-start, self-inline-start span-self-block-end, self-inline-end span-all, self-inline-start span-all`,
     );
   });
 
-  it('keeps flip-only fallbacks for non-centered alignments (flips already resolve overflow there)', () => {
-    const nonCentered: [LayerPlacement, LayerAlignment][] = [
-      ['above', 'start'],
-      ['above', 'end'],
-      ['below', 'start'],
-      ['below', 'end'],
-      ['start', 'start'],
-      ['start', 'end'],
-      ['end', 'start'],
-      ['end', 'end'],
-    ];
-    for (const [placement, alignment] of nonCentered) {
-      expect(getPositionTryFallbacks(placement, alignment)).toBe(FLIPS);
+  it('appends full-axis fallbacks for non-centered layers when neither aligned edge can preserve size', () => {
+    const expected = new Map<`${LayerPlacement}/${LayerAlignment}`, string>([
+      [
+        'above/start',
+        `${FLIPS}, self-block-start span-all, self-block-end span-all`,
+      ],
+      [
+        'above/end',
+        `${FLIPS}, self-block-start span-all, self-block-end span-all`,
+      ],
+      [
+        'below/start',
+        `${FLIPS}, self-block-end span-all, self-block-start span-all`,
+      ],
+      [
+        'below/end',
+        `${FLIPS}, self-block-end span-all, self-block-start span-all`,
+      ],
+      [
+        'start/start',
+        `${FLIPS}, self-inline-start span-all, self-inline-end span-all`,
+      ],
+      [
+        'start/end',
+        `${FLIPS}, self-inline-start span-all, self-inline-end span-all`,
+      ],
+      [
+        'end/start',
+        `${FLIPS}, self-inline-end span-all, self-inline-start span-all`,
+      ],
+      [
+        'end/end',
+        `${FLIPS}, self-inline-end span-all, self-inline-start span-all`,
+      ],
+    ]);
+
+    for (const [key, fallbacks] of expected) {
+      const [placement, alignment] = key.split('/') as [
+        LayerPlacement,
+        LayerAlignment,
+      ];
+      expect(getPositionTryFallbacks(placement, alignment)).toBe(fallbacks);
     }
+  });
+
+  it('uses component-owned full-axis tries in the requested side order', () => {
+    expect(
+      getPositionTryFallbacks('below', 'start', [
+        '--menu-block-end',
+        '--menu-block-start',
+      ]),
+    ).toBe(`${FLIPS}, --menu-block-end, --menu-block-start`);
   });
 
   it('defaults to above/center when called without arguments (matches renderContext defaults)', () => {
@@ -231,7 +269,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
       getPositionTryFallbacks('above', 'center'),
     );
     expect(getPositionTryFallbacks(undefined, undefined)).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      `${FLIPS}, self-block-start span-self-inline-start, self-block-start span-self-inline-end, self-block-end span-self-inline-start, self-block-end span-self-inline-end, self-block-start span-all, self-block-end span-all`,
     );
   });
 
@@ -239,10 +277,10 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const placements: LayerPlacement[] = ['above', 'below', 'start', 'end'];
     const alignments: LayerAlignment[] = ['start', 'center', 'end'];
     const spanPattern: Record<LayerPlacement, RegExp> = {
-      above: /^(top|bottom) span-(left|right)$/,
-      below: /^(top|bottom) span-(left|right)$/,
-      start: /^(left|right) span-(top|bottom)$/,
-      end: /^(left|right) span-(top|bottom)$/,
+      above: /^self-block-(start|end) span-(self-inline-(start|end)|all)$/,
+      below: /^self-block-(start|end) span-(self-inline-(start|end)|all)$/,
+      start: /^self-inline-(start|end) span-(self-block-(start|end)|all)$/,
+      end: /^self-inline-(start|end) span-(self-block-(start|end)|all)$/,
     };
 
     for (const placement of placements) {
@@ -259,7 +297,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
         for (const item of items.slice(3)) {
           expect(item).toMatch(spanPattern[placement]);
         }
-        expect(items.length).toBe(alignment === 'center' ? 7 : 3);
+        expect(items.length).toBe(alignment === 'center' ? 9 : 5);
       }
     }
   });
@@ -271,14 +309,18 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     );
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
-    expect(layerEl.style.positionTryFallbacks).toContain('top span-left');
+    expect(layerEl.style.positionTryFallbacks).toContain(
+      'self-block-start span-self-inline-start',
+    );
 
     rerender(<ContextLayerHarness placement="above" alignment="start" />);
-    expect(layerEl.style.positionTryFallbacks).toBe(FLIPS);
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      `${FLIPS}, self-block-start span-all, self-block-end span-all`,
+    );
 
     rerender(<ContextLayerHarness placement="start" alignment="center" />);
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      `${FLIPS}, self-inline-start span-self-block-start, self-inline-start span-self-block-end, self-inline-end span-self-block-start, self-inline-end span-self-block-end, self-inline-start span-all, self-inline-end span-all`,
     );
   });
 
@@ -301,7 +343,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).not.toBeNull();
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      `${FLIPS}, self-block-start span-self-inline-start, self-block-start span-self-inline-end, self-block-end span-self-inline-start, self-block-end span-self-inline-end, self-block-start span-all, self-block-end span-all`,
     );
   });
 });
