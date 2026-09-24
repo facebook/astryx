@@ -386,6 +386,11 @@ test('captures every visible state in neutral light and dark', async ({
           state === 'assistant-group' ? 'assistant' : 'user',
         );
       }
+      if (state === 'numeric-slots') {
+        expect(receipt.rendered.nameSlots).toBe(1);
+        expect(receipt.rendered.numericNameAligned).toBe(true);
+        expect(receipt.rendered.numericMetadataAligned).toBe(true);
+      }
     }
     expect(errors).toEqual([]);
   }

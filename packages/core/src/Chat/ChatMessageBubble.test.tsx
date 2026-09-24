@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {createRef} from 'react';
+import {createRef, type ReactNode} from 'react';
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {ChatMessage} from './ChatMessage';
@@ -83,6 +83,41 @@ describe('ChatMessageBubble', () => {
     expect(bubble.previousElementSibling).toHaveTextContent('Navi');
     expect(bubble.nextElementSibling).toHaveTextContent('10:32 AM');
   });
+
+  it('keeps numeric zero inside the aligned name and metadata slots', () => {
+    render(
+      <ChatMessageBubble data-testid="bubble" name={0} metadata={0}>
+        Zero slots
+      </ChatMessageBubble>,
+    );
+    const bubble = screen.getByTestId('bubble');
+
+    expect(bubble.previousElementSibling).toHaveAttribute('data-chat-name');
+    expect(bubble.previousElementSibling).toHaveTextContent('0');
+    expect(bubble.nextElementSibling).toHaveTextContent('0');
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['false', false],
+    ['true', true],
+    ['empty string', ''],
+  ] satisfies [string, ReactNode][])(
+    'omits aligned wrappers for %s',
+    (_, value) => {
+      const {container} = render(
+        <ChatMessageBubble data-testid="bubble" name={value} metadata={value}>
+          Empty scalar slots
+        </ChatMessageBubble>,
+      );
+      const bubble = screen.getByTestId('bubble');
+
+      expect(container.querySelector('[data-chat-name]')).toBeNull();
+      expect(bubble.previousElementSibling).toBeNull();
+      expect(bubble.nextElementSibling).toBeNull();
+    },
+  );
 
   it('forwards the ref and neutral DOM props to the bubble root', () => {
     const ref = createRef<HTMLDivElement>();
