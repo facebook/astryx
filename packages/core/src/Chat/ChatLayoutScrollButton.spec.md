@@ -38,15 +38,15 @@ system_specs: [spec:AST-029]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | `isVisible`, `label`, and `onClick`, plus root `div` passthrough, styles, and ref. No public surface changes here.                                                                                                                                     |
-| Behavior                | A pill holding one ghost Button. Hidden state paints nothing and leaves the tab order; a non-empty `label` expands the pill and becomes the visible text; omitted or empty renders icon-only.                                                          |
-| End-user impact         | A theme that restyles the documented target now repaints the pill a reader sees instead of an invisible full-width row behind it.                                                                                                                      |
-| Builder impact          | None. Props, defaults, DOM shape, ref target, and passthrough element are unchanged.                                                                                                                                                                   |
-| Compatibility/readiness | Patch-compatible repair. The public target keeps its name and stays a single target; it moves onto the element that paints, which no `guaranteedProperties` declaration existed to promise before. Two inherited violations remain open (FR1a, FR6a).  |
-| Review checks           | Reject a target on the centring row, a hidden pill that keeps keyboard focus, a non-empty label that is not also the accessible name, or a state that paints identically to its opposite. FR1a and FR6a are recorded open violations, not acceptances. |
-| Governing rules         | `architecture:component-theming-surface/INV4, INV6`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                                   |
+| Area                    | Contract                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `isVisible`, `label`, and `onClick`, plus root `div` passthrough, styles, and ref. No public surface changes here.                                                                                                                                            |
+| Behavior                | A pill holding one ghost Button. Hidden state paints nothing and leaves the tab order; a non-empty `label` expands the pill and becomes the visible text; omitted or empty renders icon-only.                                                                 |
+| End-user impact         | A theme that restyles the documented target now repaints the pill a reader sees instead of an invisible full-width row behind it.                                                                                                                             |
+| Builder impact          | None. Props, defaults, DOM shape, ref target, and passthrough element are unchanged.                                                                                                                                                                          |
+| Compatibility/readiness | Patch-compatible repair. The public target keeps its name and stays a single target; it moves onto the element that paints, which no `guaranteedProperties` declaration existed to promise before. Two inherited violations remain open (FR1a, FR6a).         |
+| Review checks           | Reject a target on the centring row, a hidden pill that keeps keyboard focus, a non-empty label that is not also the accessible name, or a state that paints identically to its opposite. FR1a, FR3a, and FR6a are recorded open violations, not acceptances. |
+| Governing rules         | `architecture:component-theming-surface/INV4, INV6`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                                          |
 
 This table is a review projection; the body below is authoritative.
 
@@ -120,6 +120,7 @@ intentional decision. A `current` contract contains no unresolved rows.
 | FR1a | `label` omitted uses the translated default; a non-empty `label` is the name. **`label=''` currently satisfies neither** — see below. | current behavior, which violates FR1                                   | **violation of FR1**  |
 | FR2  | While `isVisible` is false the pill MUST paint nothing and MUST NOT accept focus, programmatic or sequential.                         | current behavior; WCAG 2.2 SC 2.4.7                                    | settled               |
 | FR3  | While `isVisible` is true the pill MUST remain keyboard reachable and activate on Enter.                                              | current behavior; WCAG 2.2 SC 2.1.1                                    | settled               |
+| FR3a | A focused control MUST paint a visible focus indicator. **The ring is currently clipped away entirely** — see below.                  | WCAG 2.2 SC 2.4.7; `spec:AST-020/FR1`                                  | **violation of FR3a** |
 | FR4  | A **non-empty** `label` MUST render as visible text; omitted or empty renders icon-only with no visible text.                         | current behavior                                                       | settled               |
 | FR5  | The pill MUST take its resolved height from the element-size token so no theme scale makes it clip the Button it wraps.               | current behavior                                                       | settled               |
 | FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.   | `architecture:component-theming-surface/INV4`                          | settled               |
@@ -142,6 +143,20 @@ it. Closing the gap means choosing between falling back to the default name,
 rejecting the value, or treating an empty label as a caller error — a public
 API and compatibility decision that belongs to the owner, not to an audit. See
 OQ7.
+
+**FR3a — the clipped focus ring.** The composed Button declares a focus ring
+as an `outline` at a positive `outline-offset`, so it is painted entirely
+outside the button's border box. The button fills the pill exactly (measured
+32x32 in 32x32 collapsed, 149x32 in 149x32 labelled), and the pill clips with
+`overflow: hidden`, which it needs to keep the collapse/expand animation inside
+its own rounded shape. There is therefore no room for the ring on any side and
+none of it is painted: captured frames of the focused control are byte-identical
+to the resting control in both configurations and both color modes.
+
+Keyboard access itself is intact — the control takes focus and activates — so
+this is a visibility defect, not a reachability one. The remedy is a production
+change to how the pill clips or where the ring is drawn, with its own visual
+review; it is outside an audit's objective-remediation scope. Recorded as OQ8.
 
 **FR6a — the unreflected state axes.** `isVisible` selects visible/hidden
 styles and `label` selects collapsed/expanded styles, both on the painting
@@ -193,6 +208,9 @@ durable constraints and their verification target.
   focusable, because focus landing on it would have no visible indicator
   (WCAG 2.2 SC 2.4.7). `opacity` and `pointer-events` do not achieve this;
   `visibility` does (FR2).
+- **AR3a — Focus is visible.** A focused control MUST paint a focus indicator
+  (WCAG 2.2 SC 2.4.7). The ring is declared but clipped away; recorded as FR3a
+  rather than resolved here.
 - **AR3 — Target size.** The collapsed control MUST fit a 24x24 CSS-px square
   (WCAG 2.2 SC 2.5.8 AA) (FR8).
 - **AR4 — Reduced motion.** The state transition MUST collapse to `0s` under
@@ -298,6 +316,12 @@ of this repair.
   across Core, so no `### Theming anatomy` block is written here: there are no
   published anatomy names for it to map.
 
+- **OQ8 — How should the focus ring escape the pill's clip?** (`human-design`)
+  The pill needs `overflow: hidden` for its collapse/expand animation, and the
+  Button's ring is drawn outside its border box, so the two are in direct
+  conflict. Candidate answers — inset the button so the ring fits, draw the
+  ring on the pill, or clip on a different element — each change rendered
+  geometry and belong to a visual review.
 - **OQ7 — What should `label=''` do?** (`human-api`)
   It currently produces an unnamed control (FR1a). The candidate answers — fall
   back to the translated default, reject the value in the type, or treat it as
