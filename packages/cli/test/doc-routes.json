@@ -2136,7 +2136,7 @@
       "kind": "page",
       "id": "@astryxdesign/core/page",
       "provider": "@astryxdesign/core",
-      "count": 54,
+      "count": 55,
       "oldCliRoute": "astryx template <id> --type page",
       "oldDocsiteUrl": "/templates?preview=<id>",
       "docsiteExceptions": {
