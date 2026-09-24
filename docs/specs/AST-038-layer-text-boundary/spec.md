@@ -27,15 +27,22 @@ region. A layer starts a new reading task while retaining the surrounding theme
 and language context. Native top-layer promotion changes painting, not CSS
 inheritance, so the boundary must be explicit. Nor is the layer another member
 of an ancestor visual group: buttons and inputs inside it must not inherit that
-group's connected borders, sizing, disabled state, labels, or selection ownership.
-The trigger remains a group member; the newly opened task does not.
+group's connected borders, sizing, density, or other presentation defaults.
+The trigger retains its visual group styling; the newly opened surface starts
+its own visual scope. Existing disabled/selected state, labels, accessibility
+semantics, and interaction ownership are preserved, not reset.
 
-This contract was **approved by `cixzhang` on 2026-09-23** (DEC-1–DEC-3).
-The text baseline, inclusive provider boundary, and explicit content-provider
-rule are accepted. [Implementation PR #6457](https://github.com/facebook/astryx/pull/6457)
-may implement this contract; acceptance is not a claim that the implementation
-is complete, verified, or authorized to merge. Architecture projects the decision
-rather than independently approving it.
+The original contract was **approved by `cixzhang` on 2026-09-23** (DEC-1–DEC-3).
+On the same date, `cixzhang` corrected its scope to **text/layout/visual isolation
+only** (DEC-4). **This is a VISUAL RESET ONLY: behavior and accessibility must
+remain unchanged.** Preserve ARIA, focus, selection, disabled/read-only state,
+callbacks, keyboard ownership, dismissal, semantic/data/interaction contexts,
+and DOM/accessibility-tree semantics. This draft records that direction; approval metadata above
+records the original acceptance, not approval or merge of this correction.
+The exact wording awaits review. [Implementation PR #6457](https://github.com/facebook/astryx/pull/6457)
+remains blocked on the correction's approval and subsequent alignment. Neither
+this record nor test success authorizes implementation merge. Architecture
+projects the decision rather than independently approving it.
 
 ### Ownership
 
@@ -60,8 +67,11 @@ PR #6457, not an independent approved contract.
 
 - Redesigning hosting, portals, positioning, modal semantics, focus, dismissal,
   selection, scrolling, motion, or which layers appear above native dialogs.
-  Stopping accidental ancestor-group membership is in scope; replacing a
-  component's own selection or interaction protocol is not.
+  Stopping ancestor visual styling is in scope; changing interaction, collection
+  membership, disabled/selected state, labels/descriptions, or accessibility
+  semantics is not. In particular, do not neutralize `aria-disabled`, change
+  accessibility-tree disabled inheritance, add semantic roles, or introduce
+  corrective portal hosting to satisfy this styling contract.
 - Standardizing foregrounds, backgrounds, geometry, component type roles, or
   deliberate typography inside a layer; changing global document resets or
   non-Astryx elements; neutralizing ancestor text-decoration propagation.
@@ -110,10 +120,14 @@ resetting semantic theme tokens. Theme is not an ancestor layout provider.
 Theme body tokens MUST remain live when a local theme changes. This does not
 promise more context recovery than the existing hosting contract provides.
 
-**FR3 — Surface and interaction ownership survive.** Color/background pairs,
+**FR3 — Surface, behavior, and accessibility ownership survive.** Color/background pairs,
 geometry, display, positioning, animation, opacity, visibility, cursor,
 `pointer-events`, `touch-action`, and `user-select` MUST retain their existing
-owners. Inverted Tooltip and Toast colors, Lightbox captions, and click-through
+owners. ARIA attributes, focus, selection, disabled/read-only state, callbacks,
+keyboard ownership, dismissal, semantic/data/interaction contexts, and DOM/AX
+semantics MUST remain unchanged. A styling boundary is not an interaction
+boundary; do not change event routing, roving focus, or semantic membership
+because content is visually independent. Inverted Tooltip and Toast colors, Lightbox captions, and click-through
 notification/non-modal hosts must not be changed by the text baseline. The
 [container-padding boundary](../../architecture/container-padding.md) is separate.
 `text-decoration` is not inherited; descendant `none` cannot remove decoration
@@ -164,55 +178,62 @@ change; selected component type roles remain component-owned.
 ### Ancestor layout and grouping boundary
 
 **FR7 — Ancestor layout and presentation stop at the layer boundary.** All
-providers that make scoped layout, visual, density, sizing, grouping, or
-presentation adjustments MUST stop at the content boundary by default. This
+providers' scoped layout, visual, density, sizing, grouping, or presentation
+adjustments MUST stop at the content boundary by default; provider behavior and
+semantics MUST NOT stop with them. This
 includes general SizeProvider, not only size supplied by ButtonGroup/InputGroup,
 and applies to **future providers by responsibility**, not a fixed allowlist of
 names or today's evidence ledger. This direction is approved in DEC-2.
 
 The trigger/control remains in its ancestor scope. Layer content must not gain
-ancestor-group orientation, connected corner/border/separator treatment, disabled
-state, label/description association, or shared group membership merely from DOM
-or React ancestry. The boundary applies whether the adjustment is carried by
-context, selectors/markers, or scoped structural custom properties. A CSS text
-reset alone does not satisfy it. Theme and writing context remain covered by FR2.
+ancestor-group connected corner/border/separator treatment, visual orientation,
+density, or sizing merely from DOM or React ancestry. The boundary applies
+whether presentation is carried by context, selectors/markers, or scoped
+structural custom properties. A CSS text reset alone does not satisfy it.
+Theme and writing context remain covered by FR2. Semantic roles and orientation,
+disabled/selected state, accessible naming, collection membership, callbacks,
+and interaction behavior MUST retain their existing ownership and values.
 
-**FR8 — Preserve explicit owner and content providers.** Semantic, data, and
-interaction providers owned by the layer surface may cross only through an
-explicit owner protocol. Any provider intentionally targeting content inside the
-layer may also apply, including a layout or presentation provider, but it MUST
-be provided separately inside/across the layer content boundary rather than
-implicitly inherited from surface-level or trigger context. A provider's name,
-required-provider API, or coincidental React ancestry does not establish this
-intent. These rules apply to future providers by responsibility, not name.
+**FR8 — Preserve semantics; isolate only visual provider ownership.** Semantic,
+data, interaction, and accessibility providers MUST retain their existing
+inheritance and owner protocols. They do not need new explicit re-provisioning
+to cross a styling boundary. A provider is not reset merely because it is
+component-scoped or supplies membership state.
 
-Providers established _inside_ the content boundary govern their descendants up
-to the next layer boundary. Explicit child props continue to work. A mixed
-provider cannot carry presentation settings implicitly merely because it also
-holds useful semantic state; the layer owner must separately establish the
-intended content context. No public opt-out or particular private mechanism is
-implied. Theme and writing context remain preserved by FR2.
+Layout/visual/presentation providers intentionally targeting content inside the
+layer MUST be established separately inside/across its content boundary. Those
+providers govern their descendants up to the next layer boundary. Explicit child
+props continue to work; theme and writing context remain preserved by FR2.
+These rules apply to future providers by responsibility, not name.
+
+For a mixed provider, isolate only visual fields or split private visual
+ownership from semantic ownership; preserve live semantic values, references,
+callbacks, and existing public Context/Provider shapes. Clearing the whole
+context and then reconstructing selected semantic fields at callsites is not
+an acceptable default. If a safe visual projection cannot be made within this
+work, leave the mixed context unchanged and report the smallest remaining
+visual follow-up rather than changing semantics or claiming complete isolation.
+No public opt-out or particular private mechanism is implied.
 
 The layer does not clear all React context or overwrite every descendant's
-geometry. Group corners and separators stop because the child is not implicitly
-an outer member; a grouped trigger stays grouped and an explicit inner group
-works normally.
+geometry. A grouped trigger stays visually grouped and an explicit inner visual
+group works normally. Existing semantic group membership remains unchanged.
 
 These examples illustrate the accepted generic distinction, not a closed list
 of exceptions:
 
-| Surface owner                                                                                                                                           | Explicit owner protocol that survives                                                                                                                                                                                                                         | Ancestor presentation that stops                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [DropdownMenu](../../../packages/core/src/DropdownMenu/DropdownMenu.tsx) and [submenu](../../../packages/core/src/DropdownMenu/DropdownMenuSubMenu.tsx) | Radio selection for that menu, its close chain, and menu-owned sizing explicitly established for its item/submenu surface. The current menu establishes its own context around the rendered content; the submenu composes its close callback with the parent. | Outer ButtonGroup membership and ambient SizeProvider/visual defaults. Menu-owned sizing is deliberately established by the surface owner, not a general sizing-provider exemption. |
-| [Selector](../../../packages/core/src/Selector/Selector.tsx) / [Typeahead](../../../packages/core/src/Typeahead/BaseTypeahead.tsx)                      | The owner's options/results, active option, search query, and selection callbacks remain connected to its own popup. Current code carries these through local state/closures as well as component props; no new context is required by this example.          | Outer InputGroup sizing, connected borders/radii, and other group visuals do not style popup controls. The input/trigger itself remains grouped.                                    |
-| [Table filter](../../../packages/core/src/Table/plugins/filtering/useTableFiltering.tsx)                                                                | Column identity, filter value/draft, and apply/clear behavior belong to the filter surface. Current code establishes a draft FilterStoreContext inside the popover and passes the column key explicitly.                                                      | Outer table/row density, dividers, alignment, and other scoped presentation do not become filter-panel defaults. The filter surface may establish its own local layout.             |
+| Surface owner                                                                                                                                           | Explicit owner protocol that survives                                                                                                                                                                                                                         | Ancestor presentation that stops                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [DropdownMenu](../../../packages/core/src/DropdownMenu/DropdownMenu.tsx) and [submenu](../../../packages/core/src/DropdownMenu/DropdownMenuSubMenu.tsx) | Radio selection for that menu, its close chain, and menu-owned sizing explicitly established for its item/submenu surface. The current menu establishes its own context around the rendered content; the submenu composes its close callback with the parent. | Outer ButtonGroup visual styling and ambient SizeProvider/visual defaults. Menu-owned sizing is deliberately established by the surface owner, not a general sizing-provider exemption. |
+| [Selector](../../../packages/core/src/Selector/Selector.tsx) / [Typeahead](../../../packages/core/src/Typeahead/BaseTypeahead.tsx)                      | The owner's options/results, active option, search query, and selection callbacks remain connected to its own popup. Current code carries these through local state/closures as well as component props; no new context is required by this example.          | Outer InputGroup sizing, connected borders/radii, and other group visuals do not style popup controls. The input/trigger itself remains grouped.                                        |
+| [Table filter](../../../packages/core/src/Table/plugins/filtering/useTableFiltering.tsx)                                                                | Column identity, filter value/draft, and apply/clear behavior belong to the filter surface. Current code establishes a draft FilterStoreContext inside the popover and passes the column key explicitly.                                                      | Outer table/row density, dividers, alignment, and other scoped presentation do not become filter-panel defaults. The filter surface may establish its own local layout.                 |
 
 The table filter's explicit inner store is a content-provider example. A
 SizeProvider or ButtonGroup deliberately placed inside a layer likewise applies
 to that content, but the same provider around its trigger does not. A nested
 layer starts another boundary and requires its own explicit content provisioning.
-Chart data, form models, and layer dismissal coordination follow the same
-owner-protocol rule, not categorical exemption by context name.
+Chart data, form models, and layer dismissal coordination retain their existing
+inheritance and owner protocols; this spec changes only presentation.
 
 ### Grouping evidence and scope ledger
 
@@ -225,18 +246,20 @@ Read-only static-render probes used the text-only implementation at
 Static rendering proves the stated props/associations, **not browser geometry**.
 No group-boundary implementation is claimed by this audit; implementation follows
 the accepted rules below. The ledger records evidence, not an allowlist limiting
-FR7's application to future layout or presentation providers.
+FR7's application to future layout or presentation providers. Disabled, selected,
+and accessible-label observations below are historical descriptions, not reset
+targets; the corrected boundary preserves those semantics.
 
-| Owner / evidence seam                                                                                                                                                                                                                                                                                                                                                                              | Actual mechanism and observation                                                                                                                                                                                                                                                                                                                                                                                                         | Proposed boundary / verification                                                                                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ButtonGroup](../../../packages/core/src/ButtonGroup/ButtonGroup.tsx), [Button](../../../packages/core/src/Button/Button.tsx)                                                                                                                                                                                                                                                                      | React context supplies orientation/disabled; shared SizeContext supplies size. Button applies its own sibling-sensitive radius/separator rules and suppresses standalone elevation/press treatment. Static-render probes under inline Dialog and fixed Layer produced an inner button with `disabled` and `data-size="lg"` from the outer group. No group ancestor marker or group-specific inherited CSS variable supplies these rules. | Stop outer membership/size at layer content; preserve the grouped trigger and an inner ButtonGroup. Check disabled state, size, corners, separator, and standalone elevation.                                                                                                                      |
-| [InputGroup](../../../packages/core/src/InputGroup/InputGroup.tsx), [groupStyles](../../../packages/core/src/InputGroup/groupStyles.ts), [TextInput](../../../packages/core/src/TextInput/TextInput.tsx)                                                                                                                                                                                           | Context carries membership and label/description IDs; SizeContext carries size. Consumers apply 100% height/flex, negative border overlap, sibling corners, and skip their normal Field wrapper. Both probes gave inner TextInput `lg` and an accessible label composed from **outer and inner** labels. The context has no disabled/status boolean: do not invent a blanket state reset.                                                | Stop the outer group's presentation and associations. Preserve inner labels, explicit status/disabled props, and newly established InputGroups. Read-only source confirms the same consumer path in NumberInput, TimeInput, DateInput/native/touch fields, Typeahead, Selector, and MultiSelector. |
-| [AvatarGroup context](../../../packages/core/src/AvatarGroup/AvatarGroupContext.ts), [Avatar](../../../packages/core/src/Avatar/Avatar.tsx)                                                                                                                                                                                                                                                        | Context carries size/shape/overlap; Avatar adds ring/negative overlap and changes its tooltip tab stop. Both probes produced `lg`/`square` inside the layer without local group ownership.                                                                                                                                                                                                                                               | Equivalent visual-group leakage; proposed isolation includes size/shape/ring/overlap and default standalone behavior. Geometry still needs browser proof.                                                                                                                                          |
-| [ToggleButtonGroup](../../../packages/core/src/ToggleButton/ToggleButtonGroup.tsx), [ToggleButton](../../../packages/core/src/ToggleButton/ToggleButton.tsx)                                                                                                                                                                                                                                       | Context carries selected values, toggle callback, size, and disabled state. Both probes produced a pressed `lg` inner toggle from the ancestor group. Source routes activation to that group's callback when `value` is present.                                                                                                                                                                                                         | A standalone toggle in the new task must not join the outer selection owner accidentally. Verify its own callback/pressed state; a locally created group remains functional.                                                                                                                       |
-| [SizeContext](../../../packages/core/src/SizeContext/SizeContext.ts)                                                                                                                                                                                                                                                                                                                               | `sizeProp ?? inherited ?? default`; providers include ButtonGroup/InputGroup and Toolbar/SideNav. The value has no provenance distinguishing an explicit general SizeProvider from a group-supplied default.                                                                                                                                                                                                                             | All ambient SizeProvider defaults stop, regardless of origin (DEC-2, OQ2 resolved). Explicit control props and providers established inside the layer continue to work there.                                                                                                                      |
-| [Collapsible group contexts](../../../packages/core/src/Collapsible/CollapsibleGroupContext.tsx)                                                                                                                                                                                                                                                                                                   | Separate state and presentation contexts. Collapsible already clears presentation around its children; state remains deliberately separate.                                                                                                                                                                                                                                                                                              | Preserve that existing guard. Verify any bypass route before changing it; do not treat the state context as merely a divider style.                                                                                                                                                                |
-| [ListContext](../../../packages/core/src/List/ListContext.tsx), [MetadataListContext](../../../packages/core/src/MetadataList/MetadataListContext.tsx)                                                                                                                                                                                                                                             | Source consumers inherit density/dividers/list markers and metadata orientation/label layout, respectively; no generic layer guard was found. No pixel or interaction reproduction is claimed for these paths.                                                                                                                                                                                                                           | Equivalent presentation candidates: confirm a supported independent-layer composition before adding implementation work. Existing groups inside a layer remain owners.                                                                                                                             |
-| [RadioList](../../../packages/core/src/RadioList/RadioList.tsx), [CheckboxList](../../../packages/core/src/CheckboxList/CheckboxListContext.tsx), [SegmentedControl](../../../packages/core/src/SegmentedControl/SegmentedControlContext.ts), [TabList](../../../packages/core/src/TabList/TabListContext.ts), [menu radio group](../../../packages/core/src/DropdownMenu/DropdownMenuContext.tsx) | These contexts own collection values, callbacks, availability, roles/names, and sometimes sizing. Several child APIs require their provider and throw without it. Source reachability is not evidence that every cross-layer composition is supported or accidental.                                                                                                                                                                     | Stop implicit collection membership and presentation. Preserve only explicit owner protocols or separately established content providers under FR8; required-provider APIs do not create an implicit exception.                                                                                    |
+| Owner / evidence seam                                                                                                                                                                                                                                                                                                                                                                              | Actual mechanism and observation                                                                                                                                                                                                                                                                                                                                                                                                         | Proposed boundary / verification                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [ButtonGroup](../../../packages/core/src/ButtonGroup/ButtonGroup.tsx), [Button](../../../packages/core/src/Button/Button.tsx)                                                                                                                                                                                                                                                                      | React context supplies orientation/disabled; shared SizeContext supplies size. Button applies its own sibling-sensitive radius/separator rules and suppresses standalone elevation/press treatment. Static-render probes under inline Dialog and fixed Layer produced an inner button with `disabled` and `data-size="lg"` from the outer group. No group ancestor marker or group-specific inherited CSS variable supplies these rules. | Isolate outer visual orientation, size, connected corners/separators, and elevation treatment only. Preserve the existing disabled state and interaction membership, grouped trigger, and explicit inner ButtonGroup.                                                                                        |
+| [InputGroup](../../../packages/core/src/InputGroup/InputGroup.tsx), [groupStyles](../../../packages/core/src/InputGroup/groupStyles.ts), [TextInput](../../../packages/core/src/TextInput/TextInput.tsx)                                                                                                                                                                                           | Context carries membership and label/description IDs; SizeContext carries size. Consumers apply 100% height/flex, negative border overlap, sibling corners, and skip their normal Field wrapper. Both probes gave inner TextInput `lg` and an accessible label composed from **outer and inner** labels. The context has no disabled/status boolean: do not invent a blanket state reset.                                                | Isolate only outer sizing and connected-border/layout presentation. Preserve existing label/description IDs and associations, Field semantics, status/disabled/read-only props, and local InputGroups. If presentation cannot be separated safely, retain the mixed context and report the visual follow-up. |
+| [AvatarGroup context](../../../packages/core/src/AvatarGroup/AvatarGroupContext.ts), [Avatar](../../../packages/core/src/Avatar/Avatar.tsx)                                                                                                                                                                                                                                                        | Context carries size/shape/overlap; Avatar adds ring/negative overlap and changes its tooltip tab stop. Both probes produced `lg`/`square` inside the layer without local group ownership.                                                                                                                                                                                                                                               | Isolate size/shape/ring/overlap only. Preserve existing tooltip tab stops, accessibility, and interactions. Mixed visual/behavior consumers require separate visual ownership; geometry still needs browser proof.                                                                                           |
+| [ToggleButtonGroup](../../../packages/core/src/ToggleButton/ToggleButtonGroup.tsx), [ToggleButton](../../../packages/core/src/ToggleButton/ToggleButton.tsx)                                                                                                                                                                                                                                       | Context carries selected values, toggle callback, size, and disabled state. Both probes produced a pressed `lg` inner toggle from the ancestor group. Source routes activation to that group's callback when `value` is present.                                                                                                                                                                                                         | Isolate only the size/presentation default. Preserve inherited selected values, disabled state, callback identity, and selection ownership exactly; the pressed state is not a visual-reset target. Keep local groups functional.                                                                            |
+| [SizeContext](../../../packages/core/src/SizeContext/SizeContext.ts)                                                                                                                                                                                                                                                                                                                               | `sizeProp ?? inherited ?? default`; providers include ButtonGroup/InputGroup and Toolbar/SideNav. The value has no provenance distinguishing an explicit general SizeProvider from a group-supplied default.                                                                                                                                                                                                                             | All ambient SizeProvider defaults stop, regardless of origin (DEC-2, OQ2 resolved). Explicit control props and providers established inside the layer continue to work there.                                                                                                                                |
+| [Collapsible group contexts](../../../packages/core/src/Collapsible/CollapsibleGroupContext.tsx)                                                                                                                                                                                                                                                                                                   | Separate state and presentation contexts. Collapsible already clears presentation around its children; state remains deliberately separate.                                                                                                                                                                                                                                                                                              | Preserve that existing guard. Verify any bypass route before changing it; do not treat the state context as merely a divider style.                                                                                                                                                                          |
+| [ListContext](../../../packages/core/src/List/ListContext.tsx), [MetadataListContext](../../../packages/core/src/MetadataList/MetadataListContext.tsx)                                                                                                                                                                                                                                             | Source consumers inherit density/dividers/list markers and metadata orientation/label layout, respectively; no generic layer guard was found. No pixel or interaction reproduction is claimed for these paths.                                                                                                                                                                                                                           | Equivalent presentation candidates: confirm a supported independent-layer composition before adding implementation work. Existing groups inside a layer remain owners.                                                                                                                                       |
+| [RadioList](../../../packages/core/src/RadioList/RadioList.tsx), [CheckboxList](../../../packages/core/src/CheckboxList/CheckboxListContext.tsx), [SegmentedControl](../../../packages/core/src/SegmentedControl/SegmentedControlContext.ts), [TabList](../../../packages/core/src/TabList/TabListContext.ts), [menu radio group](../../../packages/core/src/DropdownMenu/DropdownMenuContext.tsx) | These contexts own collection values, callbacks, availability, roles/names, and sometimes sizing. Several child APIs require their provider and throw without it. Source reachability is not evidence that every cross-layer composition is supported or accidental.                                                                                                                                                                     | Preserve collection values, callbacks, disabled/read-only availability, roles/names, keyboard ownership, and required-provider behavior. Project or split only sizing/density/other presentation fields; do not reset collection membership.                                                                 |
 
 ButtonGroup's roving-focus boundary already excludes nested groups/popovers;
 Button/InputGroup trailing-edge selectors skip `[popover]`/`template` siblings.
@@ -244,7 +267,7 @@ They protect the **outer trigger's** membership, not descendant controls inside
 the popup. Keep those fixes. Source searches also inspected FormLayout,
 Table/Stepper, and navigation contexts/markers. Their scoped layout/presentation
 responsibilities fall under FR7, whether or not named in this audit; their
-semantic/data/interaction responsibilities follow FR8's explicit owner/content rule.
+semantic/data/interaction/accessibility responsibilities must remain unchanged.
 SegmentedControl also uses inherited private
 `--_segmented-control-radius`/`--_segmented-control-padding` values for item
 corners; Tab/TabMenu consume `--_tab-indicator-bottom` from strip/container
@@ -294,9 +317,10 @@ leaks above therefore survive the proposed text-only reset.
   must be private, ownership-aware, and consistent across FR4 content roots.
   Apply FR7 by responsibility, including future scoped layout/visual providers,
   not a fixed reset allowlist copied from this audit. Do not wipe unrelated
-  contexts or custom properties. Preserve explicitly established owner/content
-  providers under FR8. No DOM wrapper, public boundary API, or general CSS reset
-  is implied; verification must cover both isolation and explicit re-provisioning.
+  contexts or custom properties. Preserve semantics and isolate/project only
+  presentation from mixed providers under FR8. No DOM wrapper, public boundary
+  API, semantic role, ARIA neutralization, portal, or general CSS reset is implied;
+  verification must cover visual isolation and unchanged behavior/accessibility.
 
 ### Platform support
 
@@ -330,22 +354,29 @@ contributor policy, theme-application semantics, or AST-003 claim changes.
 | FR6, IR1–IR3 | Diff review, existing lint/type/build/knowledge checks                                                     | Export map and barrels, reset declarations, architecture projection, changeset                                                                  | New public reset API, broad selectors, workflow changes, or an approval claim without owner approval fails review.                                                           |
 
 Keep focused regression tests at established component/unit seams. For FR7/FR8,
-assert independent controls' disabled/pressed state, size, labels/descriptions,
-and callbacks under hostile outer groups and layout/SizeProvider defaults;
-include native/inline Dialog, inline/correctively-portaled context Layer, fixed
-Layer, and independent roots. Control cases must keep the outer trigger grouped,
-a separately provided inner group/layout provider working, and explicit
-size/state props and menu/submenu protocols unchanged. Verify a future-style
-scoped presentation provider by responsibility, rather than only today's names.
-Nested layers must stop an outer layer's content defaults unless separately
-provided again. Test menu radio selection/close/sizing, Selector/Typeahead
-options/active/search/selection, and Table filter column/draft/apply behavior
-without inheriting unrelated presentation. Real-browser
-checks must establish connected corners, separators, overlap, and standalone
-appearance; static rendering cannot prove those claims. Removing one membership
-barrier must restore the matching leak, while clearing a local/intentional
-provider must fail a preservation control. FR9 requires checking preserved local
-type/wrapping and existing group-tail/keyboard guards against their current tests.
+assert visual size, density, connected corners/separators, overlap, and layout
+under hostile outer groups and SizeProvider defaults. Include native/inline
+Dialog, existing inline/correctively-portaled context Layer paths, fixed Layer,
+and independent roots without adding hosting paths. Keep the outer trigger
+visually grouped and explicit inner visual/layout providers working. Verify a
+future-style scoped presentation provider by responsibility, not only today's
+names; nested layers stop ambient presentation again.
+
+Behavior and accessibility checks are **unchanged-behavior controls**, not new
+a11y requirements: compare ARIA, labels/descriptions, focus/tab stops, keyboard
+ownership, disabled/read-only and selected/pressed state, callback identities
+and results, dismissal, and DOM/AX semantics with the existing behavior. Keep
+semantic/data/interaction contexts live and unchanged across mixed-context
+projections. Preserve menu radio selection/close, Selector/Typeahead active
+option/search/selection, and Table filter draft/apply behavior. Do not assert
+that a previously disabled or selected descendant becomes enabled or unselected;
+do not require a new accessibility-tree disabled boundary.
+
+Real-browser checks establish presentation and preserved behavior; static
+rendering cannot prove pixels. Removing a visual isolation barrier must restore
+the matching visual leak. Changing semantic fields, ARIA, keyboard routing,
+hosting, or callbacks must fail preservation controls. FR9 retains local
+text/wrapping and existing group-tail/keyboard guards unchanged.
 
 Browser
 screenshots and their provenance belong in PR evidence; this styling decision
@@ -379,7 +410,8 @@ Approved FR7: all surface-level layout, visual, density, sizing, grouping, and
 presentation providers stop at the layer content boundary by default, including
 general SizeProvider and future providers with those responsibilities. This is
 not a fixed allowlist. The trigger stays in its surrounding group; independent
-layer content does not implicitly join it. Theme and writing context survive.
+layer content does not implicitly join its visual styling. DEC-4 clarifies that
+semantic membership and behavior remain unchanged. Theme and writing context survive.
 OQ2 is resolved: no distinction between group-origin and general ambient size
 permits either to leak across the boundary.
 
@@ -393,23 +425,43 @@ borders/radii (destroys valid content-owned groups).
 **Reference:** `spec:AST-038/DEC-3`
 **Decider:** `cixzhang`, `2026-09-23`
 
-Approved FR8: semantic/data/interaction providers owned by the layer surface may
-cross only through an explicit owner protocol. Any provider intentionally
-targeting layer content may apply, including layout/visual providers, but must
-be provided separately inside/across the content boundary rather than implicitly
-inherited from surface-level/trigger context. Mixed providers follow the same
-rule. The menu, selection, and table-filter examples illustrate this distinction;
-they are not a closed exemption list. FR9 preserves non-equivalent local styling
-and ownership guards. OQ3 is resolved.
+**Historical record, narrowed by DEC-4:** The original FR8 wording required
+explicit owner protocols for semantic/data/interaction providers and separately
+provided layout/visual content contexts. It also applied that rule to mixed
+providers. That wording conflated presentation and semantic membership.
+DEC-4 removes the semantic-state reset requirement; it preserves existing
+semantic inheritance and narrows explicit content provision to visual/layout
+ownership. FR9's preservation of non-equivalent local styling still applies.
 
-Rejected: treating every context as disposable (breaks content-owned state);
-retaining a mixed provider wholesale because one field is useful (leaks unrelated
-presentation); silently inheriting trigger providers as content intent (recreates
-the failure). Explicit content provision preserves intentional composition without
-adding an opt-out prop or public reset API.
+### DEC-4 — Visual reset only; behavior and accessibility unchanged
+
+**Reference:** `spec:AST-038/DEC-4`
+**Decider:** `cixzhang`, `2026-09-23`
+**Status:** Owner direction recorded; this draft correction's exact wording
+awaits approval. The original approval metadata is unchanged.
+
+Corrected the scope: **VISUAL RESET ONLY**. Preserve ARIA, focus, selection,
+disabled/read-only state, callbacks, keyboard ownership, dismissal,
+semantic/data/interaction contexts, and DOM/AX semantics exactly. The visual
+boundary isolates text, size, density, visual grouping, borders/radii/separators,
+and scoped layout properties only. Mixed providers must project or split visual
+ownership while preserving semantic fields; where that cannot be done safely,
+leave the context unchanged and report the minimal visual follow-up.
+
+This supersedes any semantic-reset interpretation of DEC-2/DEC-3 and the earlier
+FR7/FR8 evidence ledger. `aria-disabled` neutralization, new AX-disabled isolation
+assertions, semantic group roles, and corrective portal hosting are excluded.
+Verification proves visual isolation plus unchanged behavior/accessibility;
+it must not invent a new a11y contract. The FR1 theme-body metrics remain
+unchanged; this is not a revival of the rejected neutral-document-metric proposal.
+
+Rejected: clearing a mixed context wholesale and rebuilding selected semantics
+at popup callsites; changing disabled/selected state to demonstrate isolation;
+adding roles/ARIA/portals to make a styling boundary an accessibility boundary;
+changing focus or keyboard ownership because a surface is visually independent.
 
 ## Open questions
 
-None. OQ1 (baseline/direction), OQ2 (general layout/SizeProvider), and OQ3
-(explicit owner/content provision) were resolved by `cixzhang` on 2026-09-23.
-Acceptance does not assert implementation or browser verification is complete.
+OQ1–OQ3 remain historical decisions, with their semantic-scope interpretation
+corrected by DEC-4. Approval of this one-file correction is pending. Implementation
+alignment follows that approval; neither approval nor validation authorizes merge.
