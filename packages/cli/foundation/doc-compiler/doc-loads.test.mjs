@@ -423,8 +423,12 @@ const LITERALS = new Set([
 
 /** A code file Node or jiti can run. */
 const CODE_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
-/** Directories that hold no code the CLI runs as itself, by name... */
-const UNSCANNED_NAMES = new Set(['node_modules', '__fixtures__', '__tests__']);
+/**
+ * Directories that hold no code the CLI runs as itself, by name: dependencies,
+ * and `__*` test scaffolding (`__tests__`, `__fixtures__`, and the temporary
+ * folders tests create and delete while this scan runs)...
+ */
+const UNSCANNED_NAMES = new Set(['node_modules']);
 /** ...and by path: tests, and the authored docs and templates. */
 const UNSCANNED_PATHS = new Set([
   'assets/docs',
@@ -448,6 +452,7 @@ function sources(dir) {
     if (entry.isDirectory()) {
       const skip =
         entry.name.startsWith('.') ||
+        entry.name.startsWith('__') ||
         UNSCANNED_NAMES.has(entry.name) ||
         UNSCANNED_PATHS.has(relOf(full));
       return skip ? [] : sources(full);
@@ -582,6 +587,7 @@ function targetOf(specifier, rel) {
         .some(
           part =>
             UNSCANNED_NAMES.has(part) ||
+            part.startsWith('__') ||
             (part.startsWith('.') && part !== '..'),
         ) ||
       /\.test\.[^./]+$/.test(resolved);
