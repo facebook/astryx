@@ -321,6 +321,15 @@ export const docs = {
           text: 'Codemod ids (the extension-less relative path under the version folder, e.g. `rename-widget-prop`, `config/rename-integration`) must be unique within a package across all versions. A duplicate id across versions is a hard error.',
         },
         {
+          type: 'prose',
+          text: 'The loader automatically skips test and fixture files so you can colocate tests with transforms. Reserved names: files matching `*.test.*`, `*.spec.*`, or `*.fixture.*`, and any file under a `__tests__/` or `__fixtures__/` directory. These are never loaded as codemods regardless of their extension.',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: 'codemods/\n  0.2.0/\n    rename-widget-prop.ts              # loaded as a codemod\n    rename-widget-prop.test.ts          # skipped (reserved name)\n    __tests__/\n      rename-widget-prop.test.ts        # skipped (reserved directory)',
+        },
+        {
           type: 'code',
           lang: 'typescript',
           code: "// codemods/0.2.0/rename-widget-prop.ts\nexport default {\n  type: 'code',\n  title: 'Rename AcmeWidget oldProp to newProp',\n  description: 'Updates JSX props in consumer source files.',\n  transform(file, api) {\n    // jscodeshift transform\n    return file.source;\n  },\n};",

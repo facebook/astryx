@@ -177,7 +177,7 @@ export const ERROR_CODES = Object.freeze({
   // ── Filesystem ───────────────────────────────────────────────────
   /** A required input file did not exist. */
   ERR_FILE_NOT_FOUND: 'ERR_FILE_NOT_FOUND',
-  /** Refused to overwrite an existing file in non-interactive mode. */
+  /** Refused to overwrite an existing file. */
   ERR_FILE_EXISTS: 'ERR_FILE_EXISTS',
   /** A path escaped its allowed root, or a name contained traversal markers. */
   ERR_PATH_TRAVERSAL: 'ERR_PATH_TRAVERSAL',

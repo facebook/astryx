@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Add typed namespace docs, semantic content blocks, and stable provider-aware documentation identity. Consumers with exhaustive `AuthoredDocKind` or `ReferenceContentBlock` switches must add cases for `namespace`, `workflow`, `collection`, and `reference`; existing authored docs continue to parse unchanged.
+[breaking] Add typed namespace docs, semantic content blocks, and stable provider-aware documentation identity. Consumers with exhaustive `AuthoredDocKind` or `ReferenceContentBlock` switches must add cases for `namespace`, `workflow`, `collection`, and `reference`; existing authored docs continue to parse unchanged. (#6471)
 
 Every doc section now has a stable key: its `id`, or a key derived from its title. `astryx docs <topic> --index` (`docs(topic, undefined, {index: true})`) returns the topic's section index (`docs.index`), and `astryx docs <topic> <key>` reads one section. A topic read still returns the whole doc. `astryx docs authoring` documents every authoring schema, one section each.
 

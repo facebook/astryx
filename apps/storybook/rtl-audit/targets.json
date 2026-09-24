@@ -9,6 +9,15 @@
     }
   },
   {
+    "component": "Button",
+    "storyId": "core-button--icon-with-text",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "[data-testid=\"button-leading-icon\"]",
+      "next": "[data-testid=\"button-label\"]"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": ["D2"],
@@ -123,12 +132,33 @@
   {
     "component": "ScrollableArea",
     "storyId": "core-scrollablearea--rtl-behavior-probe",
-    "dims": [
-      "D3"
-    ],
+    "dims": ["D3"],
     "selectors": {
       "scroller": "[data-rtl-scroll-probe]",
       "nextButton": "[data-rtl-scroll-button]"
+    }
+  },
+  {
+    "component": "ChatMessageBubble",
+    "storyId": "core-chatmessagebubble--states",
+    "dims": ["D9"],
+    "selectors": {
+      "groups": [
+        {
+          "name": "assistant",
+          "logicalSide": "inline-start",
+          "first": "[data-testid=\"assistant-group-first\"]",
+          "middle": "[data-testid=\"assistant-group-middle\"]",
+          "last": "[data-testid=\"assistant-group-last\"]"
+        },
+        {
+          "name": "user",
+          "logicalSide": "inline-end",
+          "first": "[data-testid=\"user-group-first\"]",
+          "middle": "[data-testid=\"user-group-middle\"]",
+          "last": "[data-testid=\"user-group-last\"]"
+        }
+      ]
     }
   },
   {

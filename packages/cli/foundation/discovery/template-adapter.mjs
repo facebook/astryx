@@ -23,12 +23,15 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {createRequire} from 'node:module';
 import {createJiti} from 'jiti';
 import {loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
+
+const require = createRequire(import.meta.url);
 
 /** Identity used for core (built-in) templates in package-scoped listings. */
 const CORE_PACKAGE = CORE_PROVIDER_ID;
@@ -185,17 +188,53 @@ const IMAGE_EXTENSIONS = new Set([
 ]);
 
 /**
- * Demo-asset sources to strip from scaffolded projects. Template demo imagery
+ * First path segment of every Astryx template fixture. Template demo imagery
  * is self-hosted under the docsite's `/template-assets/*` dir (committed there,
- * mirrored into the sandbox preview by scripts/sync-templates.js). Those paths
- * only resolve inside the Astryx docsite/sandbox, so on scaffold they're
- * replaced — a scaffolded project has no `/template-assets/` dir and would
- * otherwise 404. Genuine third-party URLs (e.g. brand logos from
- * paypalobjects.com) are intentionally left untouched.
- *
- * @type {RegExp}
+ * mirrored into the sandbox preview by scripts/sync-templates.js), so those
+ * paths only resolve inside the Astryx docsite/sandbox and are replaced on
+ * scaffold. Only a root-relative URL whose first segment this is counts: the
+ * same text inside a third-party URL or a product path is left untouched.
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.(\w+)/g;
+const FIXTURE_SEGMENT = 'template-assets';
+
+/** Characters that end a URL token in template source, besides whitespace. */
+const TOKEN_DELIMITERS = new Set([
+  "'",
+  '"',
+  '`',
+  '(',
+  ')',
+  '<',
+  '>',
+  '{',
+  '}',
+  '[',
+  ']',
+  '\\',
+  '|',
+  '^',
+]);
+
+/** The closing delimiter each opening delimiter must pair with. */
+const CLOSING_DELIMITERS = new Map([
+  ["'", "'"],
+  ['"', '"'],
+  ['`', '`'],
+  ['(', ')'],
+]);
+const CLOSERS = new Set(CLOSING_DELIMITERS.values());
+
+/** A URL with a scheme: absolute, so never a fixture reference. */
+const ABSOLUTE_URL = /^[a-z][a-z\d+.-]*:/iu;
+
+/** What may lead up to the fixture segment inside a relative product path. */
+const RELATIVE_PATH_PREFIX = /^[\w.~%@/-]+$/u;
+
+/** Punctuation that ends a sentence or list item after a path in text. */
+const PROSE_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?']);
+
+/** `from`, `import` or `require` right before a quoted module specifier. */
+const MODULE_SPECIFIER_LEAD = /(?:^|[^\w$])(?:from|import|require)\s*\(?$/u;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -209,26 +248,246 @@ function toPosixPath(p) {
 }
 
 /**
- * Replace demo asset references with a placeholder so scaffolded pages
- * render with zero setup. Images get a self-contained data URI; videos
- * (which have no equivalent inline placeholder — see VIDEO_EXTENSIONS) are
- * stripped to an empty src instead of being mis-replaced with image data.
- * Builders drop in their own media either way.
+ * Replace each Astryx template fixture reference with a placeholder so
+ * scaffolded pages render with zero setup. Images get a self-contained data
+ * URI; videos (which have no equivalent inline placeholder — see
+ * VIDEO_EXTENSIONS) are stripped to an empty src instead of being
+ * mis-replaced with image data. Builders drop in their own media either way.
+ *
+ * A reference is a URL token that resolves to a root-relative path under
+ * FIXTURE_SEGMENT. It is replaced whole, query and fragment included, and
+ * classified by the suffix of its last path segment. A reference that cannot
+ * be replaced safely throws with its path rather than being guessed at or
+ * left behind. Prose is left as written: in text (JSX text, a word inside a
+ * longer string) trailing punctuation is not part of a path and a path with
+ * no suffix, such as the bare directory, is a mention; inside a comment
+ * nothing throws.
  *
  * @param {string} source - Template source code.
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
-    const ext = extension.toLowerCase();
-    if (VIDEO_EXTENSIONS.has(ext)) {
-      return '';
+  const needle = `/${FIXTURE_SEGMENT}`;
+  let output = '';
+  let copied = 0;
+  /** @type {Array<[number, number]> | undefined} */
+  let comments;
+  let at = source.indexOf(needle);
+  while (at !== -1) {
+    let start = at;
+    while (start > 0 && !isTokenDelimiter(source[start - 1])) start--;
+    let end = at + needle.length;
+    while (end < source.length && !isTokenDelimiter(source[end])) end++;
+    /** @type {{text: string, end: number} | null} */
+    let edit;
+    try {
+      edit = fixtureEdit(source, start, at, end);
+    } catch (err) {
+      comments ??= commentRanges(source);
+      if (!comments.some(([from, to]) => from <= at && at < to)) throw err;
+      edit = null;
     }
-    if (IMAGE_EXTENSIONS.has(ext)) {
-      return PLACEHOLDER_IMAGE;
+    if (edit) {
+      output += source.slice(copied, start) + edit.text;
+      copied = edit.end;
     }
-    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
-  });
+    at = source.indexOf(needle, end);
+  }
+  return output + source.slice(copied);
+}
+
+/** @param {string | undefined} char */
+function isTokenDelimiter(char) {
+  return char === undefined || /\s/u.test(char) || TOKEN_DELIMITERS.has(char);
+}
+
+/**
+ * Whitespace, the source edge, or a tag bracket: what bounds a word of text.
+ * @param {string | undefined} char
+ */
+function isTextDelimiter(char) {
+  return char === undefined || /\s/u.test(char) || char === '<' || char === '>';
+}
+
+/**
+ * The path segments of a root-relative URL under FIXTURE_SEGMENT, or null.
+ * @param {string} reference
+ * @returns {string[] | null}
+ */
+function fixtureSegments(reference) {
+  if (!reference.startsWith('/') || reference.startsWith('//')) return null;
+  const segments = new URL(reference, 'http://template.invalid').pathname.split(
+    '/',
+  );
+  return segments[1] === FIXTURE_SEGMENT ? segments : null;
+}
+
+/**
+ * The replacement for the fixture reference in the URL token [start, end),
+ * which contains FIXTURE_SEGMENT's path at `at`; null when the token is not a
+ * fixture reference or is a prose mention.
+ * @param {string} source
+ * @param {number} start
+ * @param {number} at
+ * @param {number} end
+ * @returns {{text: string, end: number} | null}
+ */
+function fixtureEdit(source, start, at, end) {
+  const token = source.slice(start, end);
+  if (ABSOLUTE_URL.test(token)) return null;
+  if (!token.startsWith('/')) {
+    if (!fixtureSegments(source.slice(at, end))) return null;
+    if (
+      source[start - 1] !== '\\' &&
+      RELATIVE_PATH_PREFIX.test(source.slice(start, at))
+    ) {
+      return null;
+    }
+    throw unsafeFixtureReference(
+      source,
+      at,
+      'it is joined to text the copy cannot parse',
+    );
+  }
+
+  const before = source[start - 1];
+  const after = source[end];
+  if (after === '{' && token.endsWith('$')) {
+    if (!fixtureSegments(token.slice(0, -1))) return null;
+    throw unsafeFixtureReference(
+      source,
+      at,
+      'it is built by a template-literal interpolation',
+    );
+  }
+  const quoted =
+    before !== undefined && CLOSING_DELIMITERS.get(before) === after;
+  const escapedQuoted =
+    (before === "'" || before === '"') &&
+    source[start - 2] === '\\' &&
+    after === '\\' &&
+    source[end + 1] === before;
+  const whole = quoted || escapedQuoted;
+  let referenceEnd = end;
+  if (!whole) {
+    while (
+      referenceEnd > at &&
+      PROSE_PUNCTUATION.has(source[referenceEnd - 1])
+    ) {
+      referenceEnd--;
+    }
+  }
+  const segments = fixtureSegments(source.slice(start, referenceEnd));
+  if (!segments) return null;
+
+  const inText =
+    (isTextDelimiter(before) || CLOSING_DELIMITERS.has(before)) &&
+    (isTextDelimiter(after) || CLOSERS.has(after)) &&
+    (isTextDelimiter(before) || isTextDelimiter(after));
+  if (!whole && !inText) {
+    throw unsafeFixtureReference(
+      source,
+      at,
+      'it is not a whole quoted, url(), or text value',
+    );
+  }
+  if (quoted && before !== '(') {
+    const use = expressionUse(source, start - 1, end);
+    if (use) throw unsafeFixtureReference(source, at, use);
+  }
+
+  const ext = path.posix
+    .extname(segments[segments.length - 1])
+    .slice(1)
+    .toLowerCase();
+  if (VIDEO_EXTENSIONS.has(ext)) return {text: '', end: referenceEnd};
+  if (IMAGE_EXTENSIONS.has(ext)) {
+    return {text: PLACEHOLDER_IMAGE, end: referenceEnd};
+  }
+  if (whole || ext) {
+    throw new Error(
+      `Unrecognized template asset format ${ext || '(none)'} for ${displayReference(source, at)}`,
+    );
+  }
+  return null;
+}
+
+/**
+ * Why the string quoted at `open` and `close` cannot be replaced on its own,
+ * or null when it is a plain value.
+ * @param {string} source
+ * @param {number} open
+ * @param {number} close
+ * @returns {string | null}
+ */
+function expressionUse(source, open, close) {
+  let prev = open - 1;
+  while (prev >= 0 && /\s/u.test(source[prev])) prev--;
+  let next = close + 1;
+  while (next < source.length && /\s/u.test(source[next])) next++;
+  if (
+    source[prev] === '+' ||
+    (source[prev] === '=' && source[prev - 1] === '+') ||
+    source[next] === '+'
+  ) {
+    return 'the string is concatenated with another value';
+  }
+  if (source[next] === '.' && /[A-Za-z_$]/u.test(source[next + 1] ?? '')) {
+    return 'a method is called on the string';
+  }
+  if (
+    MODULE_SPECIFIER_LEAD.test(source.slice(Math.max(0, prev - 16), prev + 1))
+  ) {
+    return 'it is imported as a module';
+  }
+  return null;
+}
+
+/**
+ * The [start, end) range of every comment in `source`, or none when it does
+ * not parse as TSX.
+ * @param {string} source
+ * @returns {Array<[number, number]>}
+ */
+function commentRanges(source) {
+  try {
+    const {parse} = require('@babel/parser');
+    const {comments} = parse(source, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+    return (comments ?? []).map(
+      comment =>
+        /** @type {[number, number]} */ ([
+          comment.start ?? 0,
+          comment.end ?? 0,
+        ]),
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The fixture path at `at`, up to the next whitespace, quote, or tag bracket.
+ * @param {string} source
+ * @param {number} at
+ */
+function displayReference(source, at) {
+  let end = at;
+  while (end < source.length && !/[\s'"`<>]/u.test(source[end])) end++;
+  return source.slice(at, end);
+}
+
+/**
+ * @param {string} source
+ * @param {number} at
+ * @param {string} reason
+ */
+function unsafeFixtureReference(source, at, reason) {
+  return new Error(
+    `Template asset reference ${displayReference(source, at)} cannot be replaced safely: ${reason}. Use the complete path as one static string.`,
+  );
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
@@ -545,9 +804,17 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
   }
 
   for (const integration of loadedIntegrations) {
-    const result = await discoverIntegrationTemplatesForOne(integration);
-    templates.push(...result.templates);
-    errors.push(...result.errors);
+    // One integration's unreadable root must not cost core or the others theirs.
+    try {
+      const result = await discoverIntegrationTemplatesForOne(integration);
+      templates.push(...result.templates);
+      errors.push(...result.errors);
+    } catch (err) {
+      errors.push({
+        package: integration?.name ?? integration?.__spec ?? 'integration',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   return {templates, errors};

@@ -20,7 +20,6 @@ import {defineCommand} from '../../lib/define-command.mjs';
 import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {hook as hookApi} from '../../../../api/hook/hook.mjs';
-import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {doc as hookCommand} from '../hook.doc.mjs';
 import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
 
@@ -169,24 +168,15 @@ export function registerHook(program) {
                   )
                 : formatHookFull(result.data);
 
-          // Show related block templates from relatedComponents
-          const relatedComps = result.data.relatedComponents || [];
-          /** @type {import('../../../../api/template/template.mjs').DiscoveredTemplate[]} */
-          const allBlocks = [];
-          for (const comp of relatedComps) {
-            const blocks = await findRelatedBlocks(comp);
-            for (const b of blocks) {
-              if (!allBlocks.some(existing => existing.dirName === b.dirName)) {
-                allBlocks.push(b);
-              }
-            }
-          }
-
+          // Text projects the envelope only. Block templates are JSON-backed
+          // under `component <name> --blocks`.
+          const related = result.data.relatedComponents ?? [];
           emit(
             code(doc),
-            allBlocks.length > 0 && section('Related block templates'),
-            allBlocks.length > 0 &&
-              records(allBlocks, {fields: ['dirName', 'description']}),
+            related.length > 0 &&
+              text(
+                `Block templates: ${run} component <name> --blocks for ${related.join(', ')}`,
+              ),
           );
           break;
         }

@@ -44,7 +44,10 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'success (including zero matches)'},
-    {code: 1, when: 'invalid --type or a non-positive --limit'},
+    {
+      code: 1,
+      when: 'invalid --type, a non-positive --limit, or a query when @astryxdesign/core cannot be found (the playbook needs no core)',
+    },
   ],
   related: ['search', 'template', 'component', 'hook', 'init'],
 };

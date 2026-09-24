@@ -27,6 +27,20 @@ function defaultTargetDir(slug) {
 }
 
 /**
+ * The bytes to write for one listed file. Only UTF-8 text loses our header;
+ * anything else (a font, an image) is copied verbatim, since decoding it would
+ * corrupt it.
+ * @param {Buffer} bytes
+ * @returns {Buffer | string}
+ */
+function scaffoldContents(bytes) {
+  const text = bytes.toString('utf-8');
+  return Buffer.from(text, 'utf-8').equals(bytes)
+    ? stripCopyrightHeader(text)
+    : bytes;
+}
+
+/**
  * Copy a bundled theme's files into the consumer's project (defaults to
  * `src/themes/<slug>/`). Writes are staged to temp files then renamed, rolling
  * back partials on failure so a failed write never leaves a half-written theme.
@@ -135,8 +149,7 @@ export async function themeAdd(slug, options = {}) {
       });
       fs.mkdirSync(path.dirname(dest), {recursive: true});
       const tmp = `${dest}.${process.pid}.tmp`;
-      const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
-      fs.writeFileSync(tmp, contents);
+      fs.writeFileSync(tmp, scaffoldContents(fs.readFileSync(w.src)));
       staged.push({tmp, dest});
     }
     for (const s of staged) {

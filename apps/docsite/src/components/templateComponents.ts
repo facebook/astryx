@@ -214,6 +214,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
   ),
+  'table-tree': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-tree/page'),
+  ),
   'work-item-detail': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/work-item-detail/page'),

@@ -32,17 +32,19 @@ export const doc = {
       name: 'component',
       type: 'string',
       description:
-        'Component or general design-system area. Required unless listCategories is true.',
+        'Component or general design-system area, up to 120 characters. Required unless listCategories is true.',
     },
     {
       name: 'options.category',
       type: 'GapReportCategory',
-      description: 'Fixed category from the reported category vocabulary.',
+      description:
+        'Fixed category from the reported category vocabulary. Required unless listCategories is true.',
     },
     {
       name: 'options.reason',
       type: 'string',
-      description: 'What capability was missing or difficult.',
+      description:
+        'What capability was missing or difficult, up to 2000 characters. Required unless listCategories is true.',
     },
     {
       name: 'options.detail',
@@ -65,7 +67,8 @@ export const doc = {
     {
       name: 'options.listCategories',
       type: 'boolean',
-      description: 'Return categories without resolving a route or writing.',
+      description:
+        'Return categories without resolving a route or writing; the component and every other option are ignored.',
       default: 'false',
     },
     {

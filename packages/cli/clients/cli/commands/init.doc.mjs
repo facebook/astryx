@@ -19,36 +19,44 @@ export const doc = {
     'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
     'including guidance from configured integrations, and prints getting-started ' +
     'guidance; features/--all add theme and page-building ' +
-    'guidance and can scaffold a starter template.',
+    'guidance and write an annotated theme template.',
   fn: 'init',
   options: [
     {
       flag: '--features <list>',
       param: 'options.features',
       description:
-        'Comma-separated features to install (agents, theme, template)',
+        'Comma-separated features to install (agents, theme, template). An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. ' +
+        'Ignored with --all or --remove-agents',
     },
     {
       flag: '--all',
       param: 'options.all',
-      description: 'Install all features, no prompts',
+      description: 'Install all features (agents, theme, template); overrides --features',
     },
     {
       flag: '--remove-agents',
       param: 'options.removeAgents',
-      description: 'Remove AI agent docs from all agent doc files',
+      description:
+        'Remove the managed block from AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md and HERMES.md ' +
+        "(deleting AGENTS.md or .claude/CLAUDE.md when only init's heading is left) and do nothing else. " +
+        '--features, --all, --agent and --agent-docs-path are ignored; a file written with --agent-docs-path keeps its block',
     },
     {
       flag: '--agent <tool>',
       param: 'options.agent',
       choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
       description:
-        'Target AI tool for agent docs: claude, cursor, codex, hermes, muse, all',
+        'Target AI tool for agent docs: claude, cursor, codex, hermes, muse, all. An unknown tool exits 1 with ERR_UNKNOWN_AGENT. ' +
+        'Used only when agent docs are installed (the default, --all, or --features agents); --agent-docs-path takes precedence',
     },
     {
       flag: '--agent-docs-path <path...>',
       param: 'options.agentDocsPath',
-      description: 'Explicit file path(s) for agent docs',
+      description:
+        'Explicit file path(s) for agent docs, inside the project; takes precedence over --agent. ' +
+        'If any path is outside the project, no agent docs are written and the command exits 1. ' +
+        'Used only when agent docs are installed',
     },
   ],
   examples: [
@@ -57,10 +65,13 @@ export const doc = {
     {label: 'Machine-readable receipt', cli: 'astryx init --json'},
   ],
   exitCodes: [
-    {code: 0, when: 'success'},
+    {
+      code: 0,
+      when: 'success, including agent docs that could not be written for a reason other than a path escape (reported as docsError)',
+    },
     {
       code: 1,
-      when: 'unknown --agent, an unknown feature or template, or a starter template would overwrite an existing page',
+      when: 'an unknown --agent or feature, or an --agent-docs-path outside the project',
     },
   ],
   related: ['doctor', 'upgrade', 'build', 'theme'],

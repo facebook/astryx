@@ -120,7 +120,7 @@ describe('generate-pr-comment preview availability', () => {
       'failure',
     ]);
 
-    expect(stdout).toContain('CI did not succeed');
+    expect(stdout).toContain('CI concluded failure');
     expect(stdout).not.toContain('View Storybook for this PR');
     expect(stdout).not.toContain('View Sandbox for this PR');
   });

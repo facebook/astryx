@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-040
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: josephfarina
+approved_at: 2026-09-23
+phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
