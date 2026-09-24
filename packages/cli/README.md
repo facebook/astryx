@@ -275,11 +275,12 @@ Shape:
 ```
 
 The manifest is **derived from Commander metadata** (commands, arguments, options)
-so it can't drift from the real command definitions. The two facts Commander
-doesn't track (`--json` support and emitted response types) are layered on from
-the `JSON_SUPPORTED` allowlist and a small declarative `RESPONSE_TYPES` map in
-`src/lib/manifest.mjs`, guarded by a drift test (`manifest.test.mjs`) so adding a
-command without describing it fails CI.
+so it can't drift from the real command definitions. The facts Commander doesn't
+track come from each command's docs: examples from its CommandDoc, and emitted
+response types from the returns of the FunctionDoc it wraps (plus the few
+envelopes the CLI layer builds itself). `--json` support comes from the
+`JSON_SUPPORTED` allowlist. Drift tests (`manifest.test.mjs`) fail CI when a
+command is added without describing it.
 
 **Backwards-compat:** the bare `astryx --json` envelope keeps `type: "help"` and its
 original shallow fields (`name`, `version`, `commands` as a `string[]` of names,
@@ -435,6 +436,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `theme.targets`                   | The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.                                                                                       |
 | `theme.palette.generate`          | An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.                                                                                                                                                  |
 | `upgrade.list`                    | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                                                                    |
+| `upgrade.registry`                | Copied-composition receipt: applied, ok, found, the counts current, wouldUpdate, updated, wouldMerge, merged, wouldRefreshReceipt, receiptsRefreshed, conflicts, missing, invalid, failed, and items, each {item, path?, action, message?, files: [{path, action, message?, conflictFile?}]}. |
 | `upgrade.status`                  | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                                                              |
 | `upgrade.run`                     | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                                                                   |
 | `manifest`                        | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.                                                                 |

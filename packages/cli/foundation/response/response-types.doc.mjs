@@ -2,8 +2,8 @@
 
 /**
  * @file EnumDoc for the `type` discriminant carried on every --json success
- * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
- * `jsonOut(...)` call sites) in `clients/cli/lib/manifest.mjs`; a consumer
+ * envelope. The vocabulary equals the manifest's response types (each
+ * command's FunctionDoc returns; see `clients/cli/lib/manifest.mjs`); a consumer
  * switches on `type` to narrow the `data` payload.
  * @position packages/cli/foundation/response — enum documentation
  */
@@ -241,6 +241,11 @@ export const doc = {
       value: 'upgrade.list',
       description:
         'Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.',
+    },
+    {
+      value: 'upgrade.registry',
+      description:
+        'Copied-composition receipt: applied, ok, found, the counts current, wouldUpdate, updated, wouldMerge, merged, wouldRefreshReceipt, receiptsRefreshed, conflicts, missing, invalid, failed, and items, each {item, path?, action, message?, files: [{path, action, message?, conflictFile?}]}.',
     },
     {
       value: 'upgrade.status',
