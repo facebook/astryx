@@ -545,9 +545,17 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
   }
 
   for (const integration of loadedIntegrations) {
-    const result = await discoverIntegrationTemplatesForOne(integration);
-    templates.push(...result.templates);
-    errors.push(...result.errors);
+    // One integration's unreadable root must not cost core or the others theirs.
+    try {
+      const result = await discoverIntegrationTemplatesForOne(integration);
+      templates.push(...result.templates);
+      errors.push(...result.errors);
+    } catch (err) {
+      errors.push({
+        package: integration?.name ?? integration?.__spec ?? 'integration',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   return {templates, errors};
