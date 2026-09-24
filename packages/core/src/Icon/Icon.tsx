@@ -159,7 +159,9 @@ export interface IconProps extends Omit<
    * - 'sm': 1rem (16px at a 16px root)
    * - 'md': 1.25rem (20px at a 16px root)
    * - 'lg': 1.5rem (24px at a 16px root)
-   * @default 'md'
+   *
+   * An explicit value wins. When omitted, Icon uses the nearest default supplied
+   * by an owning Astryx component for its icon slot, then falls back to 'md'.
    */
   size?: IconSize;
   /**
