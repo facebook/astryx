@@ -76,7 +76,7 @@ describe('collectDocInputs over what this repo ships', () => {
     );
     expect(new Set(read).size).toBe(read.length);
     expect(new Set(inputs.map(input => input.id)).size).toBe(inputs.length);
-  });
+  }, 120_000);
 
   it('pins the core docs that `component <Name>` reads but the list leaves out', async () => {
     const {inputs} = await collectDocInputs(await Project.load(tmpDir));

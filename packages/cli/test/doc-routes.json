@@ -73,6 +73,26 @@
     },
     {
       "kind": "section",
+      "id": "authoring#debug-event",
+      "oldCliRoute": "astryx docs authoring debug-event",
+      "oldDocsiteUrl": "/docs/authoring#debugevent",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `debug-event` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "authoring#gap-report-handler",
+      "oldCliRoute": "astryx docs authoring gap-report-handler",
+      "oldDocsiteUrl": "/docs/authoring#gapreporthandler",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `gap-report-handler` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
       "id": "authoring#codemod",
       "oldCliRoute": "astryx docs authoring codemod",
       "oldDocsiteUrl": "/docs/authoring#astryx-codemod",
@@ -2192,13 +2212,13 @@
       "kind": "schema",
       "id": "@astryxdesign/cli/schema",
       "provider": "@astryxdesign/cli",
-      "count": 16,
+      "count": 18,
       "oldCliRoute": null,
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/cli/schema",
       "aliasNeeded": false,
       "evidence": "No schema doc authors a docs-graph placement.",
-      "rationale": "15 are read only as sections of `astryx docs authoring` (see those rows), and `output` has no route. They declare namespace 'authoring' (12) or 'cli' (4), the older field that nothing reads.",
+      "rationale": "17 are read only as sections of `astryx docs authoring` (see those rows), and `output` has no route. They declare namespace 'authoring' (12) or 'cli' (6), the older field that nothing reads.",
       "status": "proposed"
     },
     {

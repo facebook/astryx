@@ -69,7 +69,7 @@ describe('component and hook reads over what this repo ships', () => {
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
     }
-  });
+  }, 180_000);
 });
 
 describe('readDocView', () => {

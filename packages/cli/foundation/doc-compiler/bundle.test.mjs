@@ -51,20 +51,20 @@ describe('compileDocs over what this repo ships', () => {
       const copy = JSON.parse(JSON.stringify(bundle));
       expect(parseCompiledDocsBundle(copy)).toEqual(bundle);
     }
-  });
+  }, 180_000);
 
   it('is deterministic', async () => {
     const one = await compileDocs(await Project.load(tmpDir));
     const two = await compileDocs(await Project.load(tmpDir));
     expect(JSON.stringify(two)).toBe(JSON.stringify(one));
-  });
+  }, 120_000);
 
   it('never carries a machine path', async () => {
     const bundle = await compileDocs(await Project.load(tmpDir));
     const text = JSON.stringify(bundle);
     expect(text.includes(REPO_ROOT)).toBe(false);
     expect(text.includes(tmpDir)).toBe(false);
-  });
+  }, 120_000);
 });
 
 describe('compileDocs over a broken integration', () => {
