@@ -69,6 +69,30 @@ function walk(dir) {
   return out;
 }
 
+/**
+ * Every `*.doc.mjs` under `dir`, group folders included, as `/`-separated paths
+ * relative to `dir`, sorted.
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function docFilesUnder(dir) {
+  /** @type {string[]} */
+  const out = [];
+  const entries = fs
+    .readdirSync(dir, {withFileTypes: true})
+    .sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      for (const file of docFilesUnder(path.join(dir, entry.name))) {
+        out.push(`${entry.name}/${file}`);
+      }
+    } else if (entry.name.endsWith('.doc.mjs')) {
+      out.push(entry.name);
+    }
+  }
+  return out;
+}
+
 /** @type {string[]} */
 const errors = [];
 let doctypeCount = 0;
@@ -280,9 +304,9 @@ export async function checkCommandLayout(cliRoot) {
     await checkDoc(name);
   }
 
-  for (const file of fs.readdirSync(path.join(cliRoot, COMMANDS))) {
+  for (const file of docFilesUnder(path.join(cliRoot, COMMANDS))) {
     const docPath = `${COMMANDS}/${file}`;
-    if (file.endsWith('.doc.mjs') && !expectedDocs.has(docPath)) {
+    if (!expectedDocs.has(docPath)) {
       errors.push(`${docPath} is not the CommandDoc of any registered command`);
     }
   }

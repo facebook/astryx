@@ -66,11 +66,13 @@ function cliTree({
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.writeFileSync(target, 'export {};\n');
   }
-  const writeDoc = (/** @type {string} */ file, /** @type {object} */ doc) =>
+  const writeDoc = (/** @type {string} */ file, /** @type {object} */ doc) => {
+    fs.mkdirSync(path.dirname(path.join(commands, file)), {recursive: true});
     fs.writeFileSync(
       path.join(commands, file),
       `export const doc = ${JSON.stringify(doc)};\n`,
     );
+  };
   for (const [name, subcommands] of Object.entries(docs)) {
     writeDoc(`${name.replaceAll(' ', '-')}.doc.mjs`, {
       type: 'command',
@@ -169,6 +171,15 @@ describe('checkCommandLayout', () => {
     );
     expect(errors).toEqual([
       'clients/cli/commands/beta_two.doc.mjs is not the CommandDoc of any registered command',
+    ]);
+  });
+
+  it('fails when a CommandDoc sits inside a group folder', async () => {
+    const {errors} = await checkCommandLayout(
+      cliTree({...CONFORMING, extraDocs: {'beta/beta-one.doc.mjs': 'beta one'}}),
+    );
+    expect(errors).toEqual([
+      'clients/cli/commands/beta/beta-one.doc.mjs is not the CommandDoc of any registered command',
     ]);
   });
 
