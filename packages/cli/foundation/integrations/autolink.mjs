@@ -229,7 +229,12 @@ export async function autolinkIntegrations({
   fresh = false,
 }) {
   const candidates = findAutolinkCandidates(projectDir, {
-    exclude: loaded.map(integration => integration.__packageDir),
+    // A configured entry that never resolved to a directory has none to exclude.
+    exclude: loaded.flatMap(integration =>
+      typeof integration.__packageDir === 'string'
+        ? [integration.__packageDir]
+        : [],
+    ),
   });
 
   /** @type {import('./integrations.mjs').LoadedIntegration[]} */

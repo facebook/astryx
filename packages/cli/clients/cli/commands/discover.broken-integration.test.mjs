@@ -87,6 +87,54 @@ describe('astryx discover with a manifest that fails to load', () => {
   });
 });
 
+describe('astryx discover with a configured package that is not installed', () => {
+  beforeEach(() => {
+    const healthy = path.join(project, 'node_modules', '@test', 'healthy');
+    fs.mkdirSync(path.join(healthy, 'components'), {recursive: true});
+    fs.writeFileSync(
+      path.join(healthy, 'package.json'),
+      JSON.stringify({name: '@test/healthy', version: '2.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(healthy, 'astryx.integration.mjs'),
+      `export default {components: './components'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(healthy, 'components', 'Widget.doc.mjs'),
+      `export const docs = {name: 'Widget', usage: {description: 'A widget.'}};\n`,
+    );
+    fs.writeFileSync(
+      path.join(healthy, 'components', 'Widget.tsx'),
+      `export function Widget() { return null; }\n`,
+    );
+    fs.writeFileSync(
+      path.join(project, 'astryx.config.mjs'),
+      `export default {integrations: ['@test/missing', '@test/healthy']};\n`,
+    );
+  });
+
+  it('still lists the healthy package and exits 0', async () => {
+    const {status, stdout} = await runCli(['discover', '--json'], {
+      cwd: project,
+    });
+
+    expect(status).toBe(0);
+    expect(JSON.parse(stdout).data).toEqual([
+      expect.objectContaining({name: '@test/healthy', components: ['Widget']}),
+    ]);
+  });
+
+  it('names the missing package in the stderr nudge', async () => {
+    const {status, stderr} = await runCli(['discover'], {cwd: project});
+
+    expect(status).toBe(0);
+    expect(stderr).toContain(
+      'Warning: @test/missing has 1 integration issue(s). ' +
+        'Run: astryx doctor integration validate @test/missing',
+    );
+  });
+});
+
 describe('astryx search with a manifest that fails to load', () => {
   // search needs a resolvable @astryxdesign/core; without one it errors out
   // before it can list anything, which is not the case under test.
