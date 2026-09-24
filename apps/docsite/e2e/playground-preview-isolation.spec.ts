@@ -421,6 +421,10 @@ test.describe('restricted preview capabilities', () => {
           <button onClick={async () => setCopyResult(await copy('Selectable text') ? 'Copied' : 'Copy unavailable')}>Try copy</button>
           <p>{copyResult}</p><p>{isCopied ? 'Copied state' : 'Not copied'}</p>
           <button onClick={async () => {
+            if (!navigator.mediaDevices?.getUserMedia) {
+              setMic('Microphone unavailable');
+              return;
+            }
             try {
               const stream = await navigator.mediaDevices.getUserMedia({audio: true});
               stream.getTracks().forEach(track => track.stop());
@@ -438,6 +442,19 @@ test.describe('restricted preview capabilities', () => {
     );
     await expectPreviewToRender(page, 'Restricted capabilities');
     const frame = currentPreviewFrame(page);
+    await testInfo.attach('browser-capabilities', {
+      body: JSON.stringify(
+        await frame.evaluate(() => ({
+          secureContext: window.isSecureContext,
+          clipboard: typeof navigator.clipboard,
+          getUserMedia: typeof navigator.mediaDevices?.getUserMedia,
+          speechRecognition:
+            'SpeechRecognition' in window ||
+            'webkitSpeechRecognition' in window,
+        })),
+      ),
+      contentType: 'application/json',
+    });
     await frame.getByRole('button', {name: 'Try copy', exact: true}).click();
     await expect(
       frame.getByText('Copy unavailable', {exact: true}),
@@ -447,7 +464,9 @@ test.describe('restricted preview capabilities', () => {
       .getByRole('button', {name: 'Try microphone', exact: true})
       .click();
     await expect(
-      frame.getByText(/Microphone denied: (SecurityError|NotAllowedError)/),
+      frame.getByText(
+        /^Microphone (unavailable|denied: (SecurityError|NotAllowedError))$/,
+      ),
     ).toBeVisible();
     if (
       await frame
