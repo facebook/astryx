@@ -105,6 +105,27 @@ export function uniqueFiles(files) {
 }
 
 /**
+ * Run app code with its stdout writes sent to stderr. Stdout carries only the
+ * command's own output, so a hook that prints cannot corrupt `--json`.
+ * @template T
+ * @param {() => T | Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(fn) {
+  const realWrite = process.stdout.write;
+  process.stdout.write = /** @type {any} */ (
+    function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+      return process.stderr.write(chunk, ...rest);
+    }
+  );
+  try {
+    return await fn();
+  } finally {
+    process.stdout.write = realWrite;
+  }
+}
+
+/**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
@@ -123,7 +144,9 @@ export async function runPostCodemodHooks(hooks, context) {
       );
     }
 
-    const cmd = await hook.buildCommand({packageDir, files});
+    const cmd = await withStdoutOnStderr(() =>
+      hook.buildCommand({packageDir, files}),
+    );
     if (!cmd) {
       logger.log(`Post-codemod hook ${label} produced no command; skipping.`);
       continue;

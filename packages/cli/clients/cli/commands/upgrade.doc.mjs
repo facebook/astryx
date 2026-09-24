@@ -19,6 +19,7 @@ export const doc = {
     'running the registered codemods, and refreshes the fully rendered managed ' +
     'agent-docs block when Core or configured integration guidance changes. ' +
     'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
+    'Anything a post-codemod hook prints goes to stderr, so stdout carries only the result. ' +
     'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
   fn: 'upgrade',
   options: [
