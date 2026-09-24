@@ -878,6 +878,71 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
   }
 }
 
+/** How the CLI-docs audit's problems are fixed. */
+const CLI_DOCS_FIX =
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
+
+/**
+ * Every command, API function, schema, and enum doc the CLI ships declares a
+ * namespace, and the topic that namespace names reads it: `astryx docs cli`
+ * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
+ *   test seams: the CLI root, the docs to audit, and the authoring topic's list
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkCliDocs(_ctx, options = {}) {
+  const id = 'cli-docs';
+  const label = 'CLI docs';
+  try {
+    const {auditCliSelfDocs} =
+      await import('../../foundation/discovery/cli-self-docs.mjs');
+    const audit = await auditCliSelfDocs(options);
+    const problems = [
+      ...audit.missing.map(
+        source =>
+          `${source} has no namespace, so no \`astryx docs\` topic reads it`,
+      ),
+      ...audit.unknown.map(
+        ({source, namespace}) =>
+          `${source} has namespace "${namespace}", which no \`astryx docs\` topic reads`,
+      ),
+      ...audit.misfiled.map(({message}) => message),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
+      ...audit.keyProblems.map(problem => `\`astryx docs cli\`: ${problem}`),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `cli section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: CLI_DOCS_FIX,
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The CLI docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
 /**
  * Every topic reads progressively, in every language it ships: it loads, its
  * section index and each of its sections fit in one read, and no contributed
@@ -1035,6 +1100,7 @@ export async function runChecks(options = {}) {
     }
   }
   checks.push(await checkAuthoringDocs(ctx));
+  checks.push(await checkCliDocs(ctx));
   checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};

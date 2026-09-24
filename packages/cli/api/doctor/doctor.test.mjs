@@ -21,6 +21,7 @@ import {docs} from '../docs/docs.mjs';
 import {
   doctor,
   checkAuthoringDocs,
+  checkCliDocs,
   checkDocsProgressiveDisclosure,
   checkImplicitIntegrations,
   checkProviderIdentity,
@@ -448,6 +449,75 @@ describe('checkAuthoringDocs', () => {
     expect(c).toMatchObject({id: 'authoring-docs', status: 'pass'});
     expect(c.message).toContain('astryx docs authoring');
   }, SLOW);
+});
+
+describe('checkCliDocs', () => {
+  const CLI_DOCS_FIX =
+    'Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
+
+  /** A doc tree under the working directory, as the CLI root. */
+  function writeRoot(/** @type {Record<string, any>} */ docsByPath) {
+    const root = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-cli-docs-'));
+    tmpDirs.push(root);
+    for (const [rel, doc] of Object.entries(docsByPath)) {
+      const file = path.join(root, rel);
+      fs.mkdirSync(path.dirname(file), {recursive: true});
+      fs.writeFileSync(file, `export const doc = ${JSON.stringify(doc)};\n`);
+    }
+    return root;
+  }
+
+  it(
+    'finds every CLI doc no topic reads on this repo today',
+    async () => {
+      const c = await checkCliDocs();
+      expect(c).toMatchObject({id: 'cli-docs', status: 'fail', fix: CLI_DOCS_FIX});
+      expect(c.message).toMatch(/^83 problems: /);
+      const problems = c.message.replace(/^83 problems: /, '').split('; ');
+      expect(
+        problems.filter(p => p.endsWith('has no namespace, so no `astryx docs` topic reads it')),
+      ).toHaveLength(41);
+      expect(
+        problems.filter(p => p.endsWith('has namespace "cli", which no `astryx docs` topic reads')),
+      ).toHaveLength(42);
+    },
+    SLOW,
+  );
+
+  it(
+    'fails on a doc with no namespace and one no topic reads, and names the fix',
+    async () => {
+      const root = writeRoot({
+        'api/alpha/alpha.doc.mjs': {
+          type: 'function',
+          kind: 'api',
+          name: 'alpha',
+          displayName: 'alpha()',
+          summary: 'The alpha function.',
+          params: [],
+          returns: [{type: 'alpha', description: 'The alpha.'}],
+        },
+        'clients/cli/commands/beta.doc.mjs': {
+          type: 'command',
+          name: 'beta',
+          displayName: 'astryx beta',
+          namespace: 'cli',
+          summary: 'Do beta',
+        },
+      });
+      expect(
+        await checkCliDocs(undefined, {root, authoringSources: []}),
+      ).toEqual({
+        id: 'cli-docs',
+        label: 'CLI docs',
+        status: 'fail',
+        message:
+          '2 problems: api/alpha/alpha.doc.mjs has no namespace, so no `astryx docs` topic reads it; clients/cli/commands/beta.doc.mjs has namespace "cli", which no `astryx docs` topic reads',
+        fix: CLI_DOCS_FIX,
+      });
+    },
+    SLOW,
+  );
 });
 
 describe('checkAuthoringDocs against the public authoring surface', () => {

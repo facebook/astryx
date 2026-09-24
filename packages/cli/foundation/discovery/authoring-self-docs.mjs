@@ -138,7 +138,7 @@ function fieldRows(fields) {
  * @param {any} doc
  * @returns {import('../../authoring/doctypes/reference/type').ReferenceSection}
  */
-function selfDocSection(doc) {
+export function selfDocSection(doc) {
   /** @type {any[]} */
   const content = [{type: 'prose', text: doc.description}];
   if (doc.appliesTo) {

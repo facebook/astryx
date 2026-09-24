@@ -224,6 +224,13 @@ test, applicable text, and consumer-documentation projections.
   there is no catalog file under a root and no per-item map or list in the
   manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
   compatibility path, not a second authoring convention.
+- **INV25 — Every CLI doc names the topic that reads it.** Each command, API
+  function, schema, and enum doc the CLI ships declares a `namespace`.
+  `cli/commands` and `cli/api` docs are sections of `astryx docs cli`, keyed
+  `commands-<name>` and `api-<name>`; `authoring` docs are sections of
+  `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
+  CLI doc has no namespace, names one no topic reads, or disagrees with the
+  authoring list, so every doc the CLI ships stays readable from the CLI.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -242,6 +249,8 @@ updated in the same pull request when it moves an invariant:
 - changing the file layout under `clients/cli/commands`;
 - adding an API subject, leaf, adapter, or exported function, or giving an API
   module access to the environment (INV20–INV21);
+- adding a command, API function, schema, or enum doc, or a namespace a CLI
+  doc may declare (INV25);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
 - changing what `integration pack --check` executes, resolves, or proves about
@@ -314,6 +323,7 @@ non-interactive guarantee.
 | INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
 | INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
 | INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
+| INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 
 ## Open questions
 
