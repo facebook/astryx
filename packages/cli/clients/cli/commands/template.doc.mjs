@@ -23,8 +23,21 @@ export const doc = {
     'a discovered template.',
   fn: 'template',
   args: [
-    {name: 'name', param: 'name', required: false},
-    {name: 'path', param: 'options.targetPath', required: false},
+    {
+      name: 'name',
+      param: 'name',
+      required: false,
+      description: 'Template id (see --list). Omit it to list the templates.',
+    },
+    {
+      name: 'path',
+      param: 'options.targetPath',
+      required: false,
+      description:
+        'Where to scaffold the template, relative to the project root. A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; ' +
+        "any other path is a directory, which receives page.tsx for a page template or the block's own file name for a block. " +
+        'Omit it to print the source.',
+    },
   ],
   options: [
     {flag: '--list', param: 'options.list', description: 'List available templates'},
@@ -54,7 +67,8 @@ export const doc = {
     {
       flag: '-f, --overwrite',
       param: 'options.overwrite',
-      description: 'Overwrite existing files without prompting',
+      description:
+        'Replace an existing target file. Without it an existing file is refused (ERR_FILE_EXISTS) and an existing CDN page is left as is',
     },
   ],
   examples: [

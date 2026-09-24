@@ -21,11 +21,28 @@ export const doc = {
     'interactive controls, and splicing referenced blocks. Writes to a path, or returns the code.',
   fn: 'layoutExpand',
   args: [
-    {name: 'expression', param: 'expression', required: false},
-    {name: 'path', param: 'options.targetPath', required: false},
+    {
+      name: 'expression',
+      param: 'expression',
+      required: false,
+      description:
+        'The XLE/XLO expression. Pass - to read it from stdin; --file reads it from a file instead.',
+    },
+    {
+      name: 'path',
+      param: 'options.targetPath',
+      required: false,
+      description:
+        'Where to write the TSX, relative to the project root. A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; ' +
+        'any other path is a directory, which receives <Name>.tsx (see --name). An existing file there is replaced. ' +
+        'Omit it to print the code.',
+    },
   ],
   options: [
-    {flag: '--file <file>', description: 'Read the expression from a file'},
+    {
+      flag: '--file <file>',
+      description: 'Read the expression from a file (used instead of the argument when both are given)',
+    },
     {
       flag: '--form <form>',
       param: 'options.form',

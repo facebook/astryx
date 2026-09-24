@@ -36,7 +36,7 @@ export const doc = {
       name: 'options.targetPath',
       type: 'string',
       description:
-        'Write the generated TSX here (validated to stay within cwd). A directory gets <name>.tsx; a file path is used as-is. Omit to return the code without writing.',
+        'Write the generated TSX here (validated to stay within cwd). A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is used as-is; any other path is a directory that gets <name>.tsx. An existing file is replaced. Omit to return the code without writing.',
     },
     {
       name: 'options.form',
