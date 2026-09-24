@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file List.stories.tsx
+ * @input List, ListItem, and Storybook args
+ * @output List examples, including bounded inline edge compensation
+ * @position Storybook demonstrations for List consumers
+ */
+
 import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
@@ -32,11 +39,12 @@ const meta: Meta<typeof List> = {
       control: 'boolean',
       description: 'Whether to show dividers between items',
     },
-    isFullBleed: {
-      control: 'boolean',
+    edgeCompensation: {
+      control: 'select',
+      options: [undefined, 'inline'],
       description:
         "Cancel each item's inset up to the padded container edge so row " +
-        'text aligns with full-bleed siblings',
+        'text moves toward sibling content',
     },
     listStyle: {
       control: 'select',
@@ -118,7 +126,7 @@ export const Spacious: Story = {
   ),
 };
 
-const fullBleedContainerStyle: CSSProperties & {
+const inlineEdgeCompensationContainerStyle: CSSProperties & {
   '--container-padding-inline-start': string;
   '--container-padding-inline-end': string;
 } = {
@@ -127,13 +135,14 @@ const fullBleedContainerStyle: CSSProperties & {
   '--container-padding-inline-end': '16px',
 };
 
-export const FullBleed: Story = {
+export const InlineEdgeCompensation: Story = {
+  args: {edgeCompensation: 'inline'},
   render: args => (
-    <div style={fullBleedContainerStyle}>
+    <div style={inlineEdgeCompensationContainerStyle}>
       <Text type="label" size="lg">
         Order items
       </Text>
-      <List isFullBleed {...args}>
+      <List {...args}>
         <ListItem
           label="Solstice Mug"
           description="Ceramic, 12 oz"
@@ -156,9 +165,10 @@ export const FullBleed: Story = {
     docs: {
       description: {
         story:
-          "isFullBleed cancels the smaller of each item's horizontal inset " +
-          'and its container padding so row text aligns with full-bleed ' +
-          'siblings like the heading above. The cancelling margin reads the ' +
+          'edgeCompensation="inline" cancels the smaller of each item\'s inline inset ' +
+          'and its container padding on each edge. The 16px container padding ' +
+          'here is sufficient to align row text with the heading; smaller ' +
+          'padding leaves some inset uncompensated. The cancelling margin reads the ' +
           'same variable the items derive their inline padding from, so it ' +
           'tracks density and theme padding overrides automatically while ' +
           'zero-padding containers stay unchanged.',

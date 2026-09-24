@@ -5,6 +5,7 @@
 /**
  * @file List.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, ListContext
+ *   with optional inline edge compensation
  * @output Exports List component, ListProps, ListDensity, ListStyle types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
@@ -59,18 +60,18 @@ export interface ListProps extends BaseProps<
   hasDividers?: boolean;
 
   /**
-   * Lets list item content reach the padded container's content edge by
-   * cancelling as much of the items' built-in horizontal inset as the
-   * container has padding available.
-   * Use when the list sits under full-bleed sibling content such as a
-   * section heading, so row text lines up optically with the heading text.
+   * Compensates for each item's built-in inline inset, up to the container
+   * padding available on each edge. Use "inline" to bring row content toward
+   * sibling content such as a section heading. Content aligns when the
+   * container padding is at least the item inset; smaller padding leaves
+   * some inset uncompensated.
    * The cancelling margin reads the same variable the items derive their
    * inline padding from, so it tracks density and theme padding overrides
    * automatically. Hover and selection backgrounds still extend past the
    * text by the inset.
-   * @default false
+   * Omit to leave item positions unchanged.
    */
-  isFullBleed?: boolean;
+  edgeCompensation?: 'inline';
 
   /**
    * Header content rendered above the list.
@@ -142,9 +143,9 @@ const dynamicStyles = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
- * Set `isFullBleed` when the list sits under full-bleed content such as a
- * section heading; it cancels the items' built-in inline inset so row text
- * aligns flush with the container edge.
+ * Set `edgeCompensation="inline"` to compensate for the items' inline inset
+ * up to the container padding available on each edge, for alignment with
+ * sibling content such as a section heading.
  *
  * @example
  * ```
@@ -162,7 +163,7 @@ export function List({
   children,
   density = 'balanced',
   hasDividers = false,
-  isFullBleed = false,
+  edgeCompensation,
   header,
   listStyle = 'none',
   start,
@@ -178,8 +179,8 @@ export function List({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, listStyle, isFullBleed}),
-    [density, hasDividers, listStyle, isFullBleed],
+    () => ({density, hasDividers, listStyle, edgeCompensation}),
+    [density, hasDividers, listStyle, edgeCompensation],
   );
 
   const listElement = (

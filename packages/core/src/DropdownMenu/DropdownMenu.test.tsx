@@ -3,7 +3,7 @@
 /**
  * @file DropdownMenu.test.tsx
  * @input Uses vitest, @testing-library/react, DropdownMenu component
- * @output Unit tests for DropdownMenu component behavior
+ * @output Unit tests for DropdownMenu behavior and derived bottom-sheet item padding
  * @position Testing; validates DropdownMenu.tsx implementation
  *
  * SYNC: When DropdownMenu.tsx changes, update tests to match new behavior
@@ -165,7 +165,10 @@ describe('DropdownMenu', () => {
     });
     expect(
       screen.getByRole('button', {name: 'Edit project'}).closest('li'),
-    ).toHaveStyle({paddingInline: 'var(--spacing-3)'});
+    ).toHaveStyle({
+      paddingInline: 'var(--_item-inset-inline)',
+      '--_item-inset-inline': 'var(--spacing-3)',
+    });
   });
 
   it('drills into nested data items in bottom-sheet presentation', async () => {

@@ -3,7 +3,7 @@
 /**
  * @file List.test.tsx
  * @input Uses vitest, @testing-library/react, List, ListItem
- * @output Unit tests for List and ListItem components
+ * @output Unit tests for List and ListItem, including bounded inline edge compensation
  * @position Testing; validates List.tsx and ListItem.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -256,25 +256,25 @@ describe('List', () => {
   });
 
   // ===========================================================================
-  // Full bleed
+  // Inline edge compensation
   // ===========================================================================
 
-  it('does not apply full-bleed styles by default', () => {
+  it('does not apply inline edge compensation styles by default', () => {
     const {container} = render(
       <List>
         <ListItem label="Item" />
       </List>,
     );
     const item = container.querySelector('li')!;
-    expect(item.className).not.toContain('fullBleed');
+    expect(item.className).not.toContain('inlineEdgeCompensation');
   });
 
-  it('applies the clamped cancelling margin to each item when isFullBleed', () => {
+  it('applies the clamped cancelling margin to each item when edgeCompensation is inline', () => {
     // The margin lives on the row element itself — the only place that can
     // read --_item-inset-inline, which Item sets on the same element (custom
     // properties cascade downward, so the <ul> cannot read it).
     const {container} = render(
-      <List isFullBleed>
+      <List edgeCompensation="inline">
         <ListItem label="Item 1" />
         <ListItem label="Item 2" />
       </List>,
@@ -282,9 +282,11 @@ describe('List', () => {
     const items = container.querySelectorAll('li');
     expect(items).toHaveLength(2);
     for (const item of items) {
-      expect(item.className).toContain('fullBleed');
+      expect(item.className).toContain('inlineEdgeCompensation');
     }
-    expect(container.querySelector('ul')!.className).not.toContain('fullBleed');
+    expect(container.querySelector('ul')!.className).not.toContain(
+      'inlineEdgeCompensation',
+    );
   });
 
   it('uses the same var-derived cancel for every density', () => {
@@ -293,27 +295,31 @@ describe('List', () => {
     // overrides on `item`) share one style.
     for (const density of ['compact', 'balanced', 'spacious'] as const) {
       const {container, unmount} = render(
-        <List isFullBleed density={density}>
+        <List edgeCompensation="inline" density={density}>
           <ListItem label="Item" />
         </List>,
       );
-      expect(container.querySelector('li')!.className).toContain('fullBleed');
+      expect(container.querySelector('li')!.className).toContain(
+        'inlineEdgeCompensation',
+      );
       unmount();
     }
   });
 
-  it('does not pull the header when isFullBleed', () => {
+  it('does not pull the header when edgeCompensation is inline', () => {
     // The negative margin lives on the row elements, so the header keeps its
     // position and the row text aligns up to it.
     const {container} = render(
-      <List isFullBleed header={<span>Items</span>}>
+      <List edgeCompensation="inline" header={<span>Items</span>}>
         <ListItem label="Item" />
       </List>,
     );
-    expect(container.querySelector('li')!.className).toContain('fullBleed');
+    expect(container.querySelector('li')!.className).toContain(
+      'inlineEdgeCompensation',
+    );
     const ul = container.querySelector('ul')!;
-    expect(ul.className).not.toContain('fullBleed');
-    expect(ul.parentElement?.className).not.toContain('fullBleed');
+    expect(ul.className).not.toContain('inlineEdgeCompensation');
+    expect(ul.parentElement?.className).not.toContain('inlineEdgeCompensation');
   });
 
   it('clamps each inline edge against its own container padding var', () => {
@@ -325,11 +331,13 @@ describe('List', () => {
     // jsdom does no real layout, so assert on the injected StyleX CSS
     // (runtimeInjection is on in the test config).
     const {container} = render(
-      <List isFullBleed>
+      <List edgeCompensation="inline">
         <ListItem label="Item" />
       </List>,
     );
-    expect(container.querySelector('li')!.className).toContain('fullBleed');
+    expect(container.querySelector('li')!.className).toContain(
+      'inlineEdgeCompensation',
+    );
     let out = '';
     for (const sheet of Array.from(document.styleSheets)) {
       try {
@@ -358,7 +366,9 @@ describe('List', () => {
 
   it('does not apply the cancelling margin to a ListItem outside a List', () => {
     const {container} = render(<ListItem label="Standalone" />);
-    expect(container.querySelector('li')!.className).not.toContain('fullBleed');
+    expect(container.querySelector('li')!.className).not.toContain(
+      'inlineEdgeCompensation',
+    );
   });
 
   // ===========================================================================

@@ -6,7 +6,7 @@
  * @file ListContext.tsx
  * @input Uses React createContext
  * @output Exports ListContext for sharing density, dividers, marker style,
- *   and full-bleed alignment between List and ListItem
+ *   and optional inline edge compensation between List and ListItem
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
@@ -19,7 +19,7 @@ export interface ListContextValue {
   density: ListDensity;
   hasDividers: boolean;
   listStyle: ListMarkerStyle;
-  isFullBleed: boolean;
+  edgeCompensation?: 'inline';
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);
