@@ -41,7 +41,7 @@ import {
   markProviderConflicts,
   resolvePackageDir,
 } from '../integrations/integrations.mjs';
-import {autolinkIntegrations} from '../integrations/autolink.mjs';
+import {loadAutolinkCandidates} from '../integrations/autolink.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -312,6 +312,8 @@ export class Project {
   #integrations;
   /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
   #loadedIntegrations;
+  /** @type {import('../integrations/autolink.mjs').AutolinkFailure[]} */
+  #autolinkFailures;
   /** @type {import('./config-cache.mjs').ConfigCache} */
   #cache;
   /** @type {string} */
@@ -334,6 +336,7 @@ export class Project {
    * @param {import('../../authoring/config/type').AstryxConfig} init.config validated AstryxConfig surface
    * @param {string[]} init.integrations
    * @param {import('../integrations/integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
+   * @param {import('../integrations/autolink.mjs').AutolinkFailure[]} [init.autolinkFailures]
    * @param {import('./config-cache.mjs').ConfigCache} init.cache
    * @param {string} init.hash config content hash
    */
@@ -343,6 +346,7 @@ export class Project {
     config,
     integrations,
     loadedIntegrations,
+    autolinkFailures = [],
     cache,
     hash,
   }) {
@@ -351,6 +355,7 @@ export class Project {
     this.#config = config;
     this.#integrations = integrations;
     this.#loadedIntegrations = loadedIntegrations;
+    this.#autolinkFailures = autolinkFailures;
     this.#cache = cache;
     this.#hash = hash;
   }
@@ -405,14 +410,15 @@ export class Project {
     // nothing for want of a line nobody knew to write. Appended AFTER the
     // configured ones so an explicit entry keeps its position and its
     // precedence in every discovery order.
-    loadedIntegrations = [
-      ...loadedIntegrations,
-      ...(await autolinkIntegrations({
-        projectDir,
-        loaded: loadedIntegrations,
-        fresh,
-      })),
-    ];
+    const autolinked = await loadAutolinkCandidates({
+      projectDir,
+      loaded: loadedIntegrations,
+      fresh,
+    });
+    loadedIntegrations = [...loadedIntegrations, ...autolinked.integrations];
+    // Kept OUT of loadedIntegrations on purpose (a dependency's packaging bug
+    // must not take the project down), but not thrown away: doctor reports it.
+    const autolinkFailures = autolinked.failures;
 
     // The package being authored is the one package that cannot install itself.
     // When it carries a manifest, resolve its working bytes directly so every
@@ -467,6 +473,7 @@ export class Project {
       config,
       integrations,
       loadedIntegrations,
+      autolinkFailures,
       cache: resolvedCache,
       hash,
     });
@@ -499,6 +506,17 @@ export class Project {
    */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
+  }
+
+  /**
+   * Installed dependencies that ship an integration manifest the CLI could not
+   * load. They are deliberately absent from {@link Project.loadedIntegrations}
+   * — a dependency the project never named must not be able to break it — so
+   * this is the only place the fact survives. `astryx doctor` reports it.
+   * @returns {import('../integrations/autolink.mjs').AutolinkFailure[]}
+   */
+  get autolinkFailures() {
+    return this.#autolinkFailures;
   }
 
   /** @returns {string} */

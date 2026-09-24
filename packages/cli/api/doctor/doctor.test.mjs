@@ -17,6 +17,7 @@ import {
   checkAuthoringDocs,
   checkDocsProgressiveDisclosure,
   checkImplicitIntegrations,
+  checkIntegrations,
   checkProviderIdentity,
   checkVersionAlignment,
   checkPackageManager,
@@ -323,9 +324,20 @@ describe('checkImplicitIntegrations', () => {
   });
 
   it('names the package, the field, and what it contributes', () => {
+    // Roots must exist on disk: the message claims contributions, and a claim
+    // read from the manifest alone was wrong for every dangling root.
+    const dir = mkProject({
+      'components/.keep': '',
+      'templates/.keep': '',
+      'themes/.keep': '',
+    });
     const c = checkImplicitIntegrations({
       integrations: [
-        autolinked({templates: '/abs/templates', themes: '/abs/themes'}),
+        autolinked({
+          components: path.join(dir, 'components'),
+          templates: path.join(dir, 'templates'),
+          themes: path.join(dir, 'themes'),
+        }),
       ],
     });
     expect(c.message).toContain('@acme/widgets@1.0.0');
@@ -491,5 +503,137 @@ describe('checkDocsProgressiveDisclosure languages', () => {
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);
+  });
+});
+
+describe('doctor validates the integrations it reports on', () => {
+  const CORE = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+
+  /** Installed dependency whose manifest declares roots that do not exist. */
+  const dangling = {
+    'node_modules/@acme/dangling/package.json': JSON.stringify({
+      name: '@acme/dangling',
+      version: '2.0.0',
+    }),
+    'node_modules/@acme/dangling/astryx.integration.mjs':
+      "export default {providerId: 'acme-dangling', components: './components', templates: './templates', docs: './docs'};\n",
+  };
+
+  /** Installed dependency whose manifest cannot be parsed at all. */
+  const broken = {
+    'node_modules/@acme/broken/package.json': JSON.stringify({
+      name: '@acme/broken',
+      version: '1.0.0',
+    }),
+    'node_modules/@acme/broken/astryx.integration.mjs':
+      'export default {  this is not valid javascript ((\n',
+  };
+
+  /** @param {Record<string, string>} extra @param {string[]} deps */
+  const project = (extra, deps) =>
+    mkProject({
+      'package.json': JSON.stringify({
+        name: 'consumer',
+        version: '1.0.0',
+        dependencies: Object.fromEntries(
+          ['@astryxdesign/core', ...deps].map(d => [d, '1.0.0']),
+        ),
+      }),
+      ...CORE,
+      ...extra,
+    });
+
+  /** @param {string} dir */
+  const checkFor = async dir =>
+    (await doctor({cwd: dir})).data.checks.find(c => c.id === 'integrations');
+
+  // doctor reported `fail: 0` over integrations it never validated. The
+  // validator that catches this already existed; doctor just never ran it.
+  it('fails on a package whose declared roots do not exist', async () => {
+    const dir = project(dangling, ['@acme/dangling']);
+    const report = (await doctor({cwd: dir})).data;
+
+    const check = report.checks.find(c => c.id === 'integrations');
+    expect(check).toBeDefined();
+    expect(check.status).toBe('fail');
+    expect(check.message).toContain('@acme/dangling');
+    expect(check.message).toContain('missing_root');
+    expect(report.summary.fail).toBeGreaterThan(0);
+  }, SLOW);
+
+  // An unparseable manifest is kept out of the loaded set on purpose, so it
+  // used to appear on no doctor surface at all.
+  it('reports a package whose manifest cannot be loaded', async () => {
+    const dir = project(broken, ['@acme/broken']);
+    const check = await checkFor(dir);
+
+    expect(check.status).toBe('warn');
+    expect(check.message).toContain('@acme/broken');
+    expect(check.message).toContain('could not be loaded');
+  }, SLOW);
+
+  it('passes, and stays exit-0, for a project with no integrations', async () => {
+    const dir = project({}, []);
+    const report = (await doctor({cwd: dir})).data;
+
+    const check = report.checks.find(c => c.id === 'integrations');
+    expect(check.status).toBe('pass');
+    expect(report.summary.fail).toBe(0);
+  }, SLOW);
+
+  it('does not claim contributions from roots that are missing on disk', () => {
+    const check = checkImplicitIntegrations({
+      cwd: '/x',
+      nodeVersion: process.versions.node,
+      coreDir: null,
+      configPath: null,
+      configTheme: null,
+      integrations: [
+        {
+          name: '@acme/dangling',
+          version: '2.0.0',
+          __spec: '@acme/dangling',
+          __packageDir: '/x/node_modules/@acme/dangling',
+          __manifestFile: '/x/node_modules/@acme/dangling/astryx.integration.mjs',
+          __autolinked: true,
+          __dependencyField: 'dependencies',
+          components: '/x/node_modules/@acme/dangling/components',
+          templates: '/x/node_modules/@acme/dangling/templates',
+        },
+      ],
+    });
+
+    expect(check.message).not.toContain('contributing components');
+    expect(check.message).toContain('contributing nothing');
+  });
+
+  it('says how many integrations could not be read, rather than counting silently', () => {
+    /** @type {any} */
+    const ctx = {
+      cwd: '/x',
+      nodeVersion: process.versions.node,
+      coreDir: null,
+      configPath: null,
+      configTheme: null,
+      integrations: [
+        {name: '@acme/ok', __spec: '@acme/ok', providerId: 'ok'},
+        {name: '@acme/bad', __spec: '@acme/bad', __loadError: 'boom'},
+      ],
+    };
+
+    expect(checkProviderIdentity(ctx).message).toContain('could not be read');
+  });
+
+  it('skips cleanly when the project cannot be read', () => {
+    /** @type {any} */
+    const ctx = {cwd: '/x', nodeVersion: process.versions.node, coreDir: null, configPath: null, configTheme: null, integrations: null, integrationIssues: null};
+    const check = checkIntegrations(ctx);
+    expect(check.status).toBe('info');
+    expect(check.message).toContain('Skipped');
   });
 });

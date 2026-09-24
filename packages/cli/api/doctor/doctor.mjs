@@ -61,6 +61,14 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
  *   Every integration the project loaded, or null when the project could not be
  *   read at all.
+ * @property {Array<{package?: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
+ *   Every issue the project's own validators reported for those integrations
+ *   (the same validators `doctor integration validate` runs), or null when the
+ *   project could not be read.
+ * @property {import('../../foundation/integrations/autolink.mjs').AutolinkFailure[]} [autolinkFailures]
+ *   Installed dependencies shipping an integration manifest that could not be
+ *   loaded. They never reach `integrations`, so this is the only place they
+ *   appear.
  * @property {DocsCatalog|null} [docsCatalog] - The topics a docs read sees.
  * @property {Array<{package?: string, code: string, message: string}>} [docsCatalogIssues]
  *   `invalid_doc` issues from the project's contributed docs.
@@ -428,10 +436,23 @@ export function checkImplicitIntegrations(ctx) {
       integration.__spec && integration.__spec !== integration.name
         ? ` (declared as "${integration.__spec}")`
         : '';
-    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
-      root => integration[/** @type {'components'} */ (root)],
-    );
-    const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
+    const roots = ['components', 'templates', 'themes', 'docs', 'codemods']
+      // A LoadedIntegration's root fields are already absolute resolved paths.
+      // Reading the declared key alone reported a package with dangling roots
+      // as "contributing components, templates, themes, docs" when it
+      // contributes nothing — say what actually resolves.
+      .filter(root => {
+        const declared = integration[/** @type {'components'} */ (root)];
+        return typeof declared === 'string' && fs.existsSync(declared);
+      });
+    const declaredCount = ['components', 'templates', 'themes', 'docs', 'codemods']
+      .filter(root => integration[/** @type {'components'} */ (root)]).length;
+    const contributes =
+      roots.length > 0
+        ? roots.join(', ')
+        : declaredCount > 0
+          ? 'nothing (every declared root is missing on disk)'
+          : 'nothing';
     return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}`;
   });
 
@@ -449,6 +470,128 @@ export function checkImplicitIntegrations(ctx) {
       'source imports will report them as unused. Add them to `integrations` ' +
       'in astryx.config.* to make the link explicit.',
   };
+}
+
+/**
+ * Check 6b — every loaded integration passes the SAME structure validators that
+ * `astryx doctor integration validate <package>` runs.
+ *
+ * Doctor used to report `fail: 0` over integrations it never validated: a
+ * package whose manifest could not be parsed appeared nowhere in the report,
+ * and a package whose declared roots did not exist was described as
+ * contributing. The validators for all of that already exist and `Project`
+ * already runs them to collect `issues()` — this check does not re-implement
+ * them, it reports what they found.
+ *
+ * Severity comes from the validators themselves, unchanged: any `error`
+ * (unparseable manifest, missing root, invalid codemod/template/component/doc/
+ * theme) is a FAIL, because the project's contributions are silently absent;
+ * `warning`s alone (unknown manifest key, duplicate provider) are a WARN.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkIntegrations(ctx) {
+  const id = 'integrations';
+  const label = 'Integration structure';
+
+  if (ctx.integrations == null || ctx.integrationIssues == null) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+
+  const unloadable = ctx.autolinkFailures ?? [];
+  const count = ctx.integrations.length;
+  if (count === 0 && unloadable.length === 0) {
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: 'No integrations are loaded.',
+    };
+  }
+
+  const checked = `${count} loaded integration${count === 1 ? '' : 's'} validated`;
+  const errors = ctx.integrationIssues.filter(i => i.severity === 'error');
+  const warnings = ctx.integrationIssues.filter(i => i.severity === 'warning');
+
+  /** @param {Array<{package?: string, code: string, message: string}>} issues */
+  const describe = issues =>
+    issues
+      .map(i => `${i.package ?? 'integration'}: ${i.code} — ${i.message}`)
+      .join('; ');
+
+  // A dependency whose manifest will not load is never added to the loaded set
+  // (it must not be able to break the project), so its contributions are simply
+  // absent everywhere. That is the consuming project's to know about but not to
+  // fix, so it warns rather than failing a CI gate.
+  const unloadableText = unloadable
+    .map(f => `${f.spec} (${f.field}): ${f.error}`)
+    .join('; ');
+  const unloadableSummary =
+    unloadable.length > 0
+      ? `${unloadable.length} installed ${unloadable.length === 1 ? 'dependency ships' : 'dependencies ship'} ` +
+        `an integration manifest that could not be loaded, so ${unloadable.length === 1 ? 'its' : 'their'} ` +
+        `contributions are absent: ${unloadableText}`
+      : '';
+
+  const run = getCliInvocation(ctx.cwd);
+  /** @param {Array<{package?: string}>} issues */
+  const fixFor = issues => {
+    const packages = [
+      ...new Set([
+        ...issues.map(i => i.package).filter(Boolean),
+        ...unloadable.map(f => f.spec),
+      ]),
+    ];
+    const first = packages[0] ? ` ${packages[0]}` : ' <package>';
+    return (
+      `Run \`${run} doctor integration validate${first}\` for the full report on one package` +
+      (packages.length > 1
+        ? `, and repeat for: ${packages.slice(1).join(', ')}.`
+        : '.')
+    );
+  };
+
+  if (errors.length > 0) {
+    const counts =
+      `${errors.length} error${errors.length === 1 ? '' : 's'}` +
+      (warnings.length > 0
+        ? ` and ${warnings.length} warning${warnings.length === 1 ? '' : 's'}`
+        : '');
+    return {
+      id,
+      label,
+      status: 'fail',
+      message:
+        `${checked}; ${counts}. ${describe(errors)}` +
+        (unloadableSummary ? `. Also: ${unloadableSummary}` : ''),
+      fix: fixFor(errors),
+    };
+  }
+
+  if (warnings.length > 0 || unloadable.length > 0) {
+    const parts = [];
+    if (warnings.length > 0) {
+      parts.push(
+        `${warnings.length} warning${warnings.length === 1 ? '' : 's'}. ${describe(warnings)}`,
+      );
+    }
+    if (unloadableSummary) parts.push(unloadableSummary);
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: `${checked}; ${parts.join('. ')}`,
+      fix: fixFor(warnings),
+    };
+  }
+
+  return {id, label, status: 'pass', message: `${checked}, no issues.`};
 }
 
 /**
@@ -689,12 +832,24 @@ export function checkProviderIdentity(ctx) {
     integration =>
       integration.providerId != null && integration.__loadError == null,
   ).length;
+  // A package whose manifest never loaded has no manifest to read a providerId
+  // from, so it is neither counted nor clearable here. Saying so keeps the
+  // count from reading as a complete survey; the `integrations` check above
+  // fails on the same package.
+  const unreadable = ctx.integrations.filter(
+    integration => integration.__loadError != null,
+  ).length;
+  const skipped =
+    unreadable > 0
+      ? ` ${unreadable} integration${unreadable === 1 ? '' : 's'} could not be read, so ${unreadable === 1 ? 'its identity is' : 'their identities are'} unknown.`
+      : '';
   if (count === 0) {
     return {
       id,
       label,
       status: 'info',
-      message: 'None — no loaded integration has a provider identity.',
+      message:
+        'None — no loaded integration has a provider identity.' + skipped,
     };
   }
   return {
@@ -702,9 +857,10 @@ export function checkProviderIdentity(ctx) {
     label,
     status: 'pass',
     message:
-      count === 1
+      (count === 1
         ? '1 loaded integration has its own provider ID.'
-        : `${count} loaded integrations each have their own provider ID.`,
+        : `${count} loaded integrations each have their own provider ID.`) +
+      skipped,
   };
 }
 
@@ -847,6 +1003,7 @@ export const SYNC_CHECKS = [
   checkVersionAlignment,
   checkThemes,
   checkImplicitIntegrations,
+  checkIntegrations,
   checkProviderIdentity,
   checkAgentDocs,
   checkPeerDeps,
@@ -879,6 +1036,10 @@ export async function runChecks(options = {}) {
   let configTheme = null;
   /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
   let integrations = null;
+  /** @type {Array<{package?: string, code: string, severity: 'warning'|'error', message: string}>|null} */
+  let integrationIssues = null;
+  /** @type {import('../../foundation/integrations/autolink.mjs').AutolinkFailure[]} */
+  let autolinkFailures = [];
   // A docs read falls back to the built-in topics when the project cannot be
   // read, so the docs checks do too; the config check reports the config.
   /** @type {DocsCatalog|null} */
@@ -892,15 +1053,22 @@ export async function runChecks(options = {}) {
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
+    autolinkFailures = project.autolinkFailures;
     try {
       docsCatalog = await project.docs();
-      docsCatalogIssues = (await project.issues()).filter(
-        issue => issue.code === 'invalid_doc',
-      );
     } catch (err) {
       docsCatalog = null;
       docsCatalogError = err instanceof Error ? err.message : String(err);
     }
+    // The project's own integration validators — the same ones
+    // `doctor integration validate` runs — over every loaded integration.
+    // Collected OUTSIDE the docs try on purpose: a broken integration is
+    // exactly what can make docs() throw, and that is the case doctor most
+    // needs to report rather than lose.
+    integrationIssues = await project.issues();
+    docsCatalogIssues = integrationIssues.filter(
+      issue => issue.code === 'invalid_doc',
+    );
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -913,6 +1081,8 @@ export async function runChecks(options = {}) {
     configPath,
     configTheme,
     integrations,
+    integrationIssues,
+    autolinkFailures,
     docsCatalog,
     docsCatalogIssues,
     docsCatalogError,
