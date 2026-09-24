@@ -11,13 +11,17 @@
  * Auto-detected and preset files were never checked at all, so a `CLAUDE.md`
  * or `.claude/` symlinked out of the project had the block written through
  * it. Every case now throws PathSafetyError before any file is touched.
+ *
+ * `removeAgentDocs` (`init --remove-agents`) stripped or deleted a block
+ * through the same kind of link and reported success. It now refuses with
+ * `ERR_PATH_TRAVERSAL` before any file is touched.
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {installAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {PathSafetyError} from '../fs/path-safety.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
@@ -30,6 +34,28 @@ beforeEach(() => {
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
+
+/** A project dir plus a sibling dir outside it. */
+function layout() {
+  const project = path.join(tmpDir, 'project');
+  const outside = path.join(tmpDir, 'outside');
+  fs.mkdirSync(project, {recursive: true});
+  fs.mkdirSync(outside, {recursive: true});
+  return {project, outside};
+}
+
+/**
+ * @param {() => unknown} fn
+ * @returns {unknown} what `fn` threw
+ */
+function thrownBy(fn) {
+  try {
+    fn();
+  } catch (err) {
+    return err;
+  }
+  throw new Error('expected a throw');
+}
 
 describe('installAgentDocs path safety', () => {
   it('rejects --agent-docs-path that escapes the target directory', () => {
@@ -71,15 +97,6 @@ describe('installAgentDocs path safety', () => {
 });
 
 describe('installAgentDocs never writes through a symlink out of the project', () => {
-  /** A project dir plus a sibling dir outside it. */
-  function layout() {
-    const project = path.join(tmpDir, 'project');
-    const outside = path.join(tmpDir, 'outside');
-    fs.mkdirSync(project, {recursive: true});
-    fs.mkdirSync(outside, {recursive: true});
-    return {project, outside};
-  }
-
   it('refuses an auto-detected file that links outside', () => {
     const {project, outside} = layout();
     const shared = path.join(outside, 'CLAUDE.md');
@@ -210,5 +227,102 @@ describe('init --features agents with an agent doc linked outside the project', 
     expect(text.status).toBe(1);
 
     expect(fs.readFileSync(shared, 'utf-8')).toBe('# Shared\n');
+  }, 30_000);
+});
+
+describe('removeAgentDocs never changes a file out of the project', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('refuses to strip a block from a file that links outside', () => {
+    const {project, outside} = layout();
+    const shared = path.join(outside, 'CLAUDE.md');
+    fs.writeFileSync(shared, `# Shared\n\n${BLOCK}\n`);
+    fs.symlinkSync(shared, path.join(project, 'CLAUDE.md'));
+
+    const err = thrownBy(() => removeAgentDocs(project));
+    expect(err).toBeInstanceOf(PathSafetyError);
+    expect(err).toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
+    expect(fs.readFileSync(shared, 'utf-8')).toBe(`# Shared\n\n${BLOCK}\n`);
+  });
+
+  it('refuses to delete a file reached through a symlinked directory', () => {
+    const {project, outside} = layout();
+    const shared = path.join(outside, 'CLAUDE.md');
+    const content = `# CLAUDE\n\nProject-specific guidance for AI coding agents.\n\n${BLOCK}\n`;
+    fs.writeFileSync(shared, content);
+    fs.symlinkSync(outside, path.join(project, '.claude'));
+
+    expect(thrownBy(() => removeAgentDocs(project))).toMatchObject({
+      code: 'ERR_PATH_TRAVERSAL',
+    });
+    expect(fs.readFileSync(shared, 'utf-8')).toBe(content);
+  });
+
+  it('changes nothing when any file of the set escapes', () => {
+    const {project, outside} = layout();
+    const agents = `# Agents\n\nkeep\n\n${BLOCK}\n`;
+    fs.writeFileSync(path.join(project, 'AGENTS.md'), agents);
+    const shared = path.join(outside, 'CLAUDE.md');
+    fs.writeFileSync(shared, `# Shared\n\n${BLOCK}\n`);
+    fs.symlinkSync(shared, path.join(project, 'CLAUDE.md'));
+
+    expect(thrownBy(() => removeAgentDocs(project))).toBeInstanceOf(PathSafetyError);
+    expect(fs.readFileSync(path.join(project, 'AGENTS.md'), 'utf-8')).toBe(agents);
+    expect(fs.readFileSync(shared, 'utf-8')).toBe(`# Shared\n\n${BLOCK}\n`);
+  });
+
+  it('still strips in-project blocks beside an unmarked outside link it skips', () => {
+    const {project, outside} = layout();
+    fs.writeFileSync(path.join(project, 'AGENTS.md'), `# Agents\n\nkeep\n\n${BLOCK}\n`);
+    const shared = path.join(outside, 'rules');
+    fs.writeFileSync(shared, 'rules\n');
+    fs.symlinkSync(shared, path.join(project, '.cursorrules'));
+
+    removeAgentDocs(project);
+    expect(fs.readFileSync(path.join(project, 'AGENTS.md'), 'utf-8')).toBe(
+      '# Agents\n\nkeep\n',
+    );
+    expect(fs.readFileSync(shared, 'utf-8')).toBe('rules\n');
+  });
+
+  it('strips through a symlink that stays inside the project', () => {
+    const {project} = layout();
+    fs.writeFileSync(path.join(project, 'AGENTS.md'), `# Agents\n\nkeep\n\n${BLOCK}\n`);
+    fs.symlinkSync('AGENTS.md', path.join(project, 'CLAUDE.md'));
+
+    removeAgentDocs(project);
+    expect(fs.readFileSync(path.join(project, 'AGENTS.md'), 'utf-8')).toBe(
+      '# Agents\n\nkeep\n',
+    );
+  });
+});
+
+describe('init --remove-agents with an agent doc linked outside the project', () => {
+  it('changes nothing outside, fails with ERR_PATH_TRAVERSAL, and exits 1 in both modes', async () => {
+    const {project, outside} = layout();
+    fs.writeFileSync(path.join(project, 'package.json'), '{"name":"app"}\n');
+    const shared = path.join(outside, 'CLAUDE.md');
+    const content = `# Shared\n\n${BLOCK}\n`;
+    fs.writeFileSync(shared, content);
+    fs.symlinkSync(shared, path.join(project, 'CLAUDE.md'));
+
+    const json = await runCli(['init', '--remove-agents', '--json'], project);
+    expect(json.status).toBe(1);
+    const env = JSON.parse(json.stdout);
+    expect(env).toMatchObject({apiVersion: 1, code: 'ERR_PATH_TRAVERSAL'});
+    expect(env.error).toMatch(/"CLAUDE\.md": resolves outside the project root/);
+    expect(env).not.toHaveProperty('data');
+
+    const text = await runCli(['init', '--remove-agents'], project);
+    expect(text.status).toBe(1);
+    expect(text.stderr).toMatch(/^Error: .*"CLAUDE\.md": resolves outside the project root/m);
+    expect(text.stdout).not.toMatch(/removed/i);
+
+    expect(fs.readFileSync(shared, 'utf-8')).toBe(content);
   }, 30_000);
 });

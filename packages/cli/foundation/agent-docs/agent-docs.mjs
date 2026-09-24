@@ -22,11 +22,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
-import {assertWithin} from '../fs/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {humanLog} from '../response/json.mjs';
+import {ERROR_CODES} from '../response/error-codes.mjs';
 import {
   AGENTS_MD,
   CLAUDE_MD,
@@ -720,7 +721,21 @@ function hasManagedMarker(filePath) {
 }
 
 /**
- * Every file an install writes must resolve inside `targetDir`, symlinks
+ * Whether `removeXdsBlock` would change `filePath`: it holds one well-formed
+ * managed block.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasRemovableBlock(filePath) {
+  try {
+    return findManagedBlock(fs.readFileSync(filePath, 'utf-8')) != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every file a run writes must resolve inside `targetDir`, symlinks
  * included. Checked for the whole write set before the first write, so an
  * escape writes nothing.
  * @param {string} targetDir
@@ -735,9 +750,21 @@ function assertTargetsWithin(targetDir, relPaths) {
 /**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
+ * @throws {PathSafetyError} `ERR_PATH_TRAVERSAL` when a file it would change
+ *   resolves outside `targetDir`; nothing is changed.
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
+  try {
+    assertTargetsWithin(
+      targetDir,
+      allPaths.filter(p => hasRemovableBlock(path.join(targetDir, p))),
+    );
+  } catch (err) {
+    // The code reaches the error envelope as is, so it must be registered.
+    if (!(err instanceof PathSafetyError)) throw err;
+    throw new PathSafetyError(err.message, ERROR_CODES.ERR_PATH_TRAVERSAL);
+  }
 
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
