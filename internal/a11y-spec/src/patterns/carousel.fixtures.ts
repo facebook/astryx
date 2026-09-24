@@ -25,6 +25,7 @@ function facts(overrides: Partial<CarouselStateFacts>): CarouselStateFacts {
     expectedName: 'Featured work',
     slideRelations: ['slide-1', 'slide-2', 'slide-3'],
     offscreen: false,
+    scrollable: false,
     focusable: false,
     preservesControlFocus: false,
     ...overrides,
@@ -112,6 +113,7 @@ export const CAROUSEL_FIXTURES: readonly CarouselFixture[] = [
     summary: 'a scroll container reachable by and escapable with Tab',
     facts: facts({
       part: 'scroller',
+      scrollable: true,
       expectedName: '',
       slideRelations: [],
       focusable: true,
@@ -200,6 +202,7 @@ export const CAROUSEL_FIXTURES: readonly CarouselFixture[] = [
     summary: 'a scroll container outside the tab sequence',
     facts: facts({
       part: 'scroller',
+      scrollable: true,
       expectedName: '',
       slideRelations: [],
       focusable: true,
@@ -211,6 +214,7 @@ export const CAROUSEL_FIXTURES: readonly CarouselFixture[] = [
     summary: 'a scroll container that traps Tab',
     facts: facts({
       part: 'scroller',
+      scrollable: true,
       expectedName: '',
       slideRelations: [],
       focusable: true,

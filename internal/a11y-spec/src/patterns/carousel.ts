@@ -95,6 +95,7 @@ export interface CarouselStateFacts {
   readonly expectedName: string;
   readonly slideRelations: readonly string[];
   readonly offscreen: boolean;
+  readonly scrollable: boolean;
   readonly focusable: boolean;
   readonly preservesControlFocus: boolean;
 }
@@ -304,12 +305,14 @@ export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
       {
         id: 'carousel.scroller.reachable-and-escapable',
         outcome:
-          'Tab reaches the scroll container and Tab again leaves it so keyboard users can operate the overflow without becoming trapped.',
+          'Tab reaches an overflowing scroll container and Tab again leaves it so keyboard users can operate the overflow without becoming trapped.',
         sources: [WCAG_2_1_1, WCAG_2_1_2],
         covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
         appliesWhen: {
-          condition: 'the binding designates a focusable scroll container',
-          test: facts => facts.part === 'scroller' && facts.focusable,
+          condition:
+            'the binding designates a focusable, effectively scrollable container',
+          test: facts =>
+            facts.part === 'scroller' && facts.scrollable && facts.focusable,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'required',
