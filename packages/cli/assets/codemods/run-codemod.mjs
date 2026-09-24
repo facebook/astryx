@@ -110,13 +110,14 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
     log.error(`    ✗ astryx.config.* — ${message}`);
     return {
       filesChanged: 0,
+      changedFiles: [],
       writtenFiles: [],
       errors: [{file: 'astryx.config.*', codemod: name, error: message}],
     };
   }
   if (!configPath) {
     log.info(`  ${codemod.title} — no astryx.config.* found; skipping.`);
-    return {filesChanged: 0, writtenFiles: [], errors: []};
+    return {filesChanged: 0, changedFiles: [], writtenFiles: [], errors: []};
   }
 
   const relativePath = path.relative(process.cwd(), configPath);
@@ -129,7 +130,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
     let result = codemod.transform({source, path: configPath}, api);
 
     if (result == null || result === source) {
-      return {filesChanged: 0, writtenFiles: [], errors: []};
+      return {filesChanged: 0, changedFiles: [], writtenFiles: [], errors: []};
     }
 
     result = fixDirectiveCorruption(result);
@@ -140,6 +141,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
       log.error(`    ✗ ${relativePath} — ${validation.reason}`);
       return {
         filesChanged: 0,
+        changedFiles: [],
         writtenFiles: [],
         errors: [{file: relativePath, codemod: name, error: validation.reason}],
       };
@@ -153,6 +155,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
     }
     return {
       filesChanged: 1,
+      changedFiles: [configPath],
       writtenFiles: apply ? [configPath] : [],
       errors: [],
     };
@@ -161,6 +164,7 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
     log.error(`    ✗ ${relativePath} — ${message}`);
     return {
       filesChanged: 0,
+      changedFiles: [],
       writtenFiles: [],
       errors: [{file: relativePath, codemod: name, error: message}],
     };
@@ -181,6 +185,8 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
   const extensions = new Set(codemod.fileExtensions ?? DEFAULT_CODE_EXTENSIONS);
 
   let filesChanged = 0;
+  /** @type {string[]} */
+  const changedFiles = [];
   /** @type {string[]} */
   const writtenFiles = [];
   /** @type {Array<{file: string, codemod: string, error: string}>} */
@@ -215,6 +221,7 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
       }
 
       filesChanged++;
+      changedFiles.push(filePath);
       if (apply) {
         fs.writeFileSync(filePath, result, 'utf-8');
         writtenFiles.push(filePath);
@@ -229,5 +236,5 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
     }
   }
 
-  return {filesChanged, writtenFiles, errors};
+  return {filesChanged, changedFiles, writtenFiles, errors};
 }

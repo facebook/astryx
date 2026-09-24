@@ -127,7 +127,14 @@ export interface CodemodEntry {
 
 /** The result of running a single codemod over one or more files. */
 export interface CodemodRunResult {
+  /** How many files THIS codemod changed. */
   filesChanged: number;
+  /**
+   * Absolute paths of the files this codemod changed, dry run included.
+   * `writtenFiles` is apply-only; a caller totalling distinct files across
+   * several codemods needs the identities, not a count it would double.
+   */
+  changedFiles: string[];
   writtenFiles: string[];
   errors: Array<{file: string; codemod: string; error: string}>;
 }

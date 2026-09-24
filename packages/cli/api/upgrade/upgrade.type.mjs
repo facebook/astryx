@@ -107,8 +107,8 @@
  * @property {boolean} data.agentDocsRefreshed
  * @property {AgentDocsSummary} data.agentDocs
  * @property {RegistryCompositionSummary} [data.registryCompositions]
- * @property {number} [data.filesChanged] Total files changed across core + integration codemods (apply mode).
- * @property {number} [data.transformsApplied] Total transforms that reported a change.
+ * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods. One file that four codemods each changed counts once.
+ * @property {number} [data.transformsApplied] Total (codemod, file) changes — the same file changed by four codemods counts four times.
  * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
  */
 

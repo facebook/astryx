@@ -204,7 +204,7 @@ function toUnifiedEntry(transformEntry, version) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
- * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
+ * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
@@ -254,7 +254,11 @@ export async function runCodemods(
       (await import('jscodeshift')).default
     );
 
-  let totalFilesChanged = 0;
+  // Distinct files, not (codemod, file) pairs. With one source file and four
+  // codemods this used to report 4 files changed — it equalled
+  // totalTransformsApplied in every run, and the documented meaning is "files".
+  /** @type {Set<string>} */
+  const changedFileSet = new Set();
   let totalTransformsApplied = 0;
   let totalValidationBlocked = 0;
   /** @type {Array<{file: string, codemod: string, error: string}>} */
@@ -299,7 +303,7 @@ export async function runCodemods(
         if (result.errors.length > 0) {
           errors.push(...result.errors);
         } else if (result.filesChanged > 0) {
-          totalFilesChanged += result.filesChanged;
+          for (const file of result.changedFiles) changedFileSet.add(file);
           totalTransformsApplied += result.filesChanged;
           writtenFiles.push(...result.writtenFiles);
         }
@@ -352,7 +356,7 @@ export async function runCodemods(
             }
 
             filesChanged++;
-            totalFilesChanged++;
+            changedFileSet.add(filePath);
             totalTransformsApplied++;
 
             if (apply) {
@@ -378,6 +382,8 @@ export async function runCodemods(
       }
     }
   }
+
+  const totalFilesChanged = changedFileSet.size;
 
   // Summary
   writeBlank();
@@ -438,6 +444,7 @@ export async function runCodemods(
     totalFilesChanged,
     totalTransformsApplied,
     totalValidationBlocked,
+    changedFiles: [...changedFileSet],
     writtenFiles,
     errors,
     skippedOptional,

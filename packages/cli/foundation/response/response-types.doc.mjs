@@ -250,7 +250,7 @@ export const doc = {
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged (distinct files), transformsApplied (per-codemod changes, so higher when several codemods touch one file), and per-codemod errors.',
     },
 
     // manifest

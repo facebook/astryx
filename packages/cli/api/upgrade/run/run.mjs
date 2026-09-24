@@ -299,7 +299,13 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   const registryResult = await reconcileCompositions();
 
-  const mergedFilesChanged = (coreResult?.totalFilesChanged ?? 0) + (integrationResult?.totalFilesChanged ?? 0);
+  // A file a core codemod AND an integration codemod both changed is one file.
+  // `transformsApplied` stays the count of (codemod, file) changes — the two
+  // numbers are different questions, and they used to be the same number.
+  const mergedFilesChanged = new Set([
+    ...(coreResult?.changedFiles ?? []),
+    ...(integrationResult?.changedFiles ?? []),
+  ]).size;
   const mergedTransformsApplied = (coreResult?.totalTransformsApplied ?? 0) + (integrationResult?.totalTransformsApplied ?? 0);
   const mergedWrittenFiles = [
     ...(coreResult?.writtenFiles ?? []),

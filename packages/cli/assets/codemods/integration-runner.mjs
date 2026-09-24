@@ -40,7 +40,7 @@ import {
  * @param {Set<string>} [options.skipCodemods] codemod ids to exclude
  * @param {import('../../authoring/codemod/type').JscodeshiftFactory} options.jscodeshift
  * @param {boolean} [options.silent]
- * @returns {{totalFilesChanged: number, totalTransformsApplied: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type').CodemodEntry>}}
+ * @returns {{totalFilesChanged: number, totalTransformsApplied: number, changedFiles: string[], writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type').CodemodEntry>}}
  */
 export function runIntegrationCodemods(
   versionGroups,
@@ -48,8 +48,11 @@ export function runIntegrationCodemods(
 ) {
   const log = makeLog(silent);
 
-  let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
+  // Distinct files, not (codemod, file) pairs: four codemods that each touch
+  // the same file changed ONE file, and `totalFilesChanged` says "files".
+  /** @type {Set<string>} */
+  const changedFiles = new Set();
   /** @type {string[]} */
   const writtenFiles = [];
   /** @type {Array<{file: string, codemod: string, error: string}>} */
@@ -81,7 +84,7 @@ export function runIntegrationCodemods(
   for (const entry of configEntries) {
     log.info(`  ${entry.codemod.title} (v${entry.version}, ${entry.package})`);
     const r = runConfigCodemod(entry, {apply, log, jscodeshift});
-    totalFilesChanged += r.filesChanged;
+    for (const file of r.changedFiles) changedFiles.add(file);
     totalTransformsApplied += r.filesChanged;
     writtenFiles.push(...r.writtenFiles);
     errors.push(...r.errors);
@@ -98,7 +101,7 @@ export function runIntegrationCodemods(
         `  ${entry.codemod.title} (v${entry.version}, ${entry.package})`,
       );
       const r = runCodeCodemod(entry, files, {apply, log, jscodeshift});
-      totalFilesChanged += r.filesChanged;
+      for (const file of r.changedFiles) changedFiles.add(file);
       totalTransformsApplied += r.filesChanged;
       writtenFiles.push(...r.writtenFiles);
       errors.push(...r.errors);
@@ -106,8 +109,9 @@ export function runIntegrationCodemods(
   }
 
   return {
-    totalFilesChanged,
+    totalFilesChanged: changedFiles.size,
     totalTransformsApplied,
+    changedFiles: [...changedFiles],
     writtenFiles,
     errors,
     skippedOptional,
