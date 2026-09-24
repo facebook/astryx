@@ -45,6 +45,7 @@ export type IconName =
   | 'menu'
   | 'moreHorizontal'
   | 'search'
+  | 'upload'
   | 'arrowUp'
   | 'arrowDown'
   | 'arrowsUpDown'

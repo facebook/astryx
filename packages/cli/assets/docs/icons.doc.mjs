@@ -42,6 +42,7 @@ export const docs = {
             ['menu', 'Hamburger menu, navigation toggle'],
             ['moreHorizontal', 'Overflow menu, additional actions'],
             ['search', 'Search inputs, find'],
+            ['upload', 'Upload files or content'],
             ['arrowUp', 'Sort ascending, move up'],
             ['arrowDown', 'Sort descending, move down'],
             ['arrowsUpDown', 'Sortable column indicator'],

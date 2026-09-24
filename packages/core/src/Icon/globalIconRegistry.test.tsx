@@ -43,6 +43,12 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     expect(icon).not.toBe(defaultIcons.chevronDown);
   });
 
+  it('provides a distinct upload affordance', () => {
+    expect(getIcon('upload')).toBe(defaultIcons.upload);
+    expect(defaultIcons.upload).toBeDefined();
+    expect(defaultIcons.upload).not.toBe(defaultIcons.arrowUp);
+  });
+
   it('returns default icons when nothing is registered', () => {
     const icon = getIcon('close');
     expect(icon).toBeDefined();
