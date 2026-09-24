@@ -112,9 +112,10 @@ export async function template(name, options = {}) {
   let pool = templates;
   if (type) pool = pool.filter(t => t.type === type);
   if (packageFilter) pool = pool.filter(t => pkgOf(t) === packageFilter);
-  const replacements = packageFilter
-    ? []
-    : pool.filter(t => t.replaces === name);
+  // With no name there is nothing to replace; `--skeleton` alone must still
+  // fail as an unknown template.
+  const replacements =
+    packageFilter || name == null ? [] : pool.filter(t => t.replaces === name);
   let candidates = packageFilter
     ? pool.filter(t => t.dirName === (name ?? ''))
     : replacements.length > 0

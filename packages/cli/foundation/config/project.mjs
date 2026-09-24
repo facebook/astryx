@@ -662,15 +662,10 @@ export class Project {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
         try {
-          const {components, errors} =
+          // #collectIssues (above) already reported each withdrawn record,
+          // with its fix, through the same discovery.
+          const {components} =
             await discoverValidIntegrationComponents(integration);
-          for (const error of errors) {
-            this.#pushIssue(pkg, {
-              code: 'invalid_component',
-              severity: 'error',
-              message: error.message,
-            });
-          }
           records.push(...components);
         } catch (err) {
           this.#pushIssue(pkg, {

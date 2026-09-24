@@ -102,7 +102,7 @@ describe('astryx discover with a configured package that is not installed', () =
     );
     fs.writeFileSync(
       path.join(healthy, 'components', 'Widget.doc.mjs'),
-      `export const docs = {name: 'Widget', usage: {description: 'A widget.'}};\n`,
+      `export const docs = {name: 'Widget', usage: {description: 'A widget.'}, props: []};\n`,
     );
     fs.writeFileSync(
       path.join(healthy, 'components', 'Widget.tsx'),
@@ -130,8 +130,7 @@ describe('astryx discover with a configured package that is not installed', () =
 
     expect(status).toBe(0);
     expect(stderr).toContain(
-      'Warning: @test/missing has 1 integration issue(s). ' +
-        'Run: astryx doctor integration validate @test/missing',
+      'Warning: @test/missing has 1 integration issue(s). Run: astryx doctor\n',
     );
   });
 });

@@ -27,7 +27,7 @@ describe('integration template replacement docs', () => {
       'astryx --json template --list --package @astryxdesign/core',
       'astryx template shell-side-nav --package @astryxdesign/core',
       'astryx template acme-app-shell --package @acme/navigation',
-      'templates/acme-app-shell.template.mjs',
+      'templates/acme-app-shell.doc.mjs',
       'AcmeSideNav',
       'AcmeTopNav',
       '<Card>Product content</Card>',
