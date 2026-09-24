@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {once} from 'node:events';
 import {describe, expect, it, vi} from 'vitest';
 import {
   PREVIEW_CONNECT,
@@ -15,8 +16,6 @@ import {
 
 const parent = {} as MessageEventSource;
 const other = {} as MessageEventSource;
-
-const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 function connectEvent(overrides: {
   data?: unknown;
@@ -262,9 +261,13 @@ describe('createPreviewConnector', () => {
 
     h.connector.post({type: 'preview-code', code: 'A'});
     doc.port!.postMessage({type: 'preview-ready'});
-    await flush();
-    expect(doc.inbox.map(m => m.code)).toEqual(['A']);
-    expect(h.received.map(m => m.type)).toEqual(['preview-ready']);
+    // A timer turn does not guarantee delivery from Node's MessagePort queue.
+    await vi.waitFor(() => {
+      expect(doc.inbox.map(m => m.code)).toEqual(['A']);
+      expect(h.received.map(m => m.type)).toEqual(['preview-ready']);
+    });
+    h.connector.stop();
+    doc.port!.close();
   });
 
   it('accepts nothing from any window between issue() and the new element attaching', () => {
@@ -317,7 +320,9 @@ describe('createPreviewConnector', () => {
 
     // Previewed code navigated the frame: a second load in this generation.
     // Whatever the frame shows now is not the document we attested.
+    const closed = once(oldDoc.port!, 'close');
     h.connector.handleFrameLoad();
+    await closed;
     expect(h.onReplaced).toHaveBeenCalledTimes(1);
     expect(h.connector.isAttested()).toBe(false);
 
@@ -331,7 +336,6 @@ describe('createPreviewConnector', () => {
 
     // Nothing posted now reaches anyone: the old port is closed.
     h.connector.post({type: 'preview-code', code: 'secret'});
-    await flush();
     expect(oldDoc.inbox.map(m => m.code)).not.toContain('secret');
 
     // The host issues a new generation and mounts a fresh frame; only the
@@ -348,19 +352,23 @@ describe('createPreviewConnector', () => {
     // The reload-then-edit lifecycle end to end: an edit reaches the NEW
     // document and only it.
     h.connector.post({type: 'preview-code', code: 'B'});
-    await flush();
-    expect(next.inbox.map(m => m.code)).toEqual(['B']);
+    await vi.waitFor(() => {
+      expect(next.inbox.map(m => m.code)).toEqual(['B']);
+    });
     expect(oldDoc.inbox.map(m => m.code)).toEqual([]);
+    h.connector.stop();
+    next.port!.close();
   });
 
   it('stop() closes the port and forgets the nonce and window', async () => {
     const h = connectorHarness();
     const {nonce, doc} = h.mountGeneration();
     h.connector.handleWindowMessage(doc.hello(nonce));
+    const closed = once(doc.port!, 'close');
     h.connector.stop();
+    await closed;
     expect(h.connector.isAttested()).toBe(false);
     h.connector.post({type: 'preview-code', code: 'late'});
-    await flush();
     expect(doc.inbox).toEqual([]);
     h.connector.handleWindowMessage(doc.hello(nonce));
     expect(h.connector.isAttested()).toBe(false);
