@@ -44,7 +44,7 @@ describe('root token values keep their historical acceptance', () => {
 
     expect(theme.tokens['--color-background-body']).toBe(expected);
     expect(generateThemeCSS(theme).component).toContain(
-      `--color-background-body: ${expected};`,
+      `--color-background-body: ${String(expected)};`,
     );
   });
 

@@ -710,7 +710,12 @@ function generateComponentRules(
         if (prop.startsWith(':') && typeof value === 'object') {
           pseudos.push([prop, value]);
         } else if (
-          acceptDeclaration(toKebabCase(prop), `${value}`, location, sink)
+          acceptDeclaration(
+            toKebabCase(prop),
+            `${value as string}`,
+            location,
+            sink,
+          )
         ) {
           props.push([prop, value as string]);
         }

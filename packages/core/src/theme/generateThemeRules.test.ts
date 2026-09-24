@@ -1795,7 +1795,7 @@ describe('declaration assembly keeps values as values', () => {
       },
     });
 
-    generateThemeCSS(theme);
+    const plainCSS = generateThemeCSS(theme);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -1804,10 +1804,14 @@ describe('declaration assembly keeps values as values', () => {
     );
 
     warn.mockClear();
-    const diagnostics: string[] = [];
-    generateThemeCSS(theme, diagnostics);
+    const diagnostics: string[] = ['earlier build warning'];
+    const before = JSON.stringify(theme);
+    expect(generateThemeCSS(theme, diagnostics)).toEqual(plainCSS);
+    expect(JSON.stringify(theme)).toBe(before);
     expect(warn).not.toHaveBeenCalled();
-    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics).toHaveLength(2);
+    expect(diagnostics[0]).toBe('earlier build warning');
+    expect(diagnostics[1]).toContain('dropped "--color-accent" in tokens');
     warn.mockRestore();
   });
 
