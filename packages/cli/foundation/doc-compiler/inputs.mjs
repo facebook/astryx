@@ -243,7 +243,12 @@ class InputList {
       });
       return;
     }
-    const id = `${owner}:${root}:${name}${role === 'extension' ? '+extension' : ''}`;
+    // An extension is named by its file too: one package may extend a topic
+    // from more than one file.
+    const id =
+      role === 'extension'
+        ? `${owner}:${root}:${name}+${path.basename(file).replace(/\.doc\.[cm]?[jt]s$/u, '')}`
+        : `${owner}:${root}:${name}`;
     const taken = this.#byId.get(id);
     if (taken != null) {
       this.problems.push({

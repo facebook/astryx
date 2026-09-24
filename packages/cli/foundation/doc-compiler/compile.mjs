@@ -21,7 +21,6 @@
  *   feeds. Internal to the CLI: the public way in is the docs API.
  */
 
-import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
 import {mergeTopic, problemsInTopic} from '../discovery/docs-discovery.mjs';
@@ -32,8 +31,20 @@ import {
   withSectionKeys,
   withSourceTitle,
 } from '../discovery/docs-section-key.mjs';
-import {diagnostic} from './diagnostics.mjs';
+import {diagnostic as rawDiagnostic} from './diagnostics.mjs';
+import {scrubPaths} from './source.mjs';
 import {overlayAuthoredDoc} from './overlays.mjs';
+import {parseReadableDoc} from './parse-readable.mjs';
+
+/**
+ * A compiler diagnostic whose message names files by package, never by their
+ * location on this machine.
+ * @param {string} code
+ * @param {Parameters<typeof rawDiagnostic>[1]} at
+ */
+function diagnostic(code, at) {
+  return rawDiagnostic(code, {...at, message: scrubPaths(at.message)});
+}
 
 /** Bumped whenever the shape of a compiled node changes. */
 export const COMPILED_DOC_SCHEMA_VERSION = 1;
@@ -224,9 +235,12 @@ function asJson(value, topic) {
   try {
     return JSON.parse(JSON.stringify(value));
   } catch (err) {
-    throw new Error(
-      `${topic} cannot be compiled: ${err instanceof Error ? err.message : String(err)}`,
-      {cause: err},
+    throw Object.assign(
+      new Error(
+        `${topic} cannot be compiled: ${err instanceof Error ? err.message : String(err)}`,
+        {cause: err},
+      ),
+      {code: 'not_json'},
     );
   }
 }
@@ -323,7 +337,7 @@ function applyOverlay(docs, translation) {
 export function parserFor(root) {
   if (root === 'themes') return parseTheme;
   if (root === 'templates') return parseTemplate;
-  return parseDoc;
+  return parseReadableDoc;
 }
 
 /**
@@ -340,53 +354,63 @@ export function parserFor(root) {
  */
 
 /**
- * The result of lowering one doc. `failure` is what the first fatal problem
- * threw, for a reader that has always passed that error on as it was.
+ * The result of lowering one doc.
+ *
+ * `view` is the doc as readers have always read it: the authored export (or,
+ * where a reader has always read it, the parser's result), with its
+ * translation laid over it, not copied and not converted. Readers print from
+ * the view, so nothing they print depends on JSON. `node` is the sealed,
+ * JSON-only form a whole-project compile collects.
+ *
  * @typedef {object} LoweredDoc
- * @property {CompiledDocNode | null} node null when a problem is fatal
+ * @property {any} [view] absent when the file could not be read
+ * @property {CompiledDocNode | null} node null when not asked for, or when a
+ *   problem is fatal to the node
  * @property {CompilerDiagnostic[]} diagnostics
- * @property {unknown} [failure]
+ * @property {unknown} [loadFailure] what importing the file threw
+ * @property {boolean} [missing] the file exports no doc
+ * @property {null | undefined} [missingValue] the empty export, as the reader
+ *   picked it
+ * @property {unknown} [failure] what the kind's parser threw
+ * @property {unknown} [overlayFailure] what laying the translation over threw
  */
 
 /**
- * Lower one doc of any kind but a reference topic: check it against its kind's
- * parser, lay its translation over it, and carry it as JSON.
+ * Lower one doc of any kind but a reference topic.
  *
- * A doc that fails its kind's parser still lowers, carrying an `invalid_doc`
- * diagnostic: readers that never checked docs keep reading them exactly as
- * before, and a reader that checks turns the diagnostic into its error. A doc
- * that cannot load, exports nothing, or has a type its root does not read
- * yields no node. A doc stamped with a kind its root does not read keeps its
- * root's kind and carries a `wrong_kind` diagnostic.
+ * With `check`, the doc is held to its kind's parser, and a failure is
+ * recorded, not fatal: readers that never checked docs keep reading it, and a
+ * checked reader turns it into the error it has always thrown. A doc stamped
+ * with a kind its root does not read keeps its root's kind and carries a
+ * `wrong_kind` diagnostic. With `node`, the view is also carried as JSON; a
+ * value JSON cannot hold withdraws the node, never the view.
  *
  * @param {DocFileInput} input
+ * @param {{check?: boolean, node?: boolean}} [options]
  * @returns {LoweredDoc}
  */
-export function lowerDoc(input) {
+export function lowerDoc(input, {check = true, node: wantNode = true} = {}) {
   const {file} = input;
   const at = {provider: input.provider, source: input.source};
   /** @type {CompilerDiagnostic[]} */
   const diagnostics = [];
-  /**
-   * @param {string} code
-   * @param {string} message
-   * @param {unknown} failure
-   * @returns {LoweredDoc}
-   */
-  const fatal = (code, message, failure) => {
-    diagnostics.push(diagnostic(code, {...at, message}));
-    return {node: null, diagnostics, failure};
-  };
   if ('error' in file) {
-    return fatal(
-      'load_failed',
-      `${file.file} could not be loaded: ${messageOf(file.error)}`,
-      file.error,
+    diagnostics.push(
+      diagnostic('load_failed', {
+        ...at,
+        message: `${file.file} could not be loaded: ${messageOf(file.error)}`,
+      }),
     );
+    return {node: null, diagnostics, loadFailure: file.error};
   }
   if (file.doc == null) {
-    const missing = new Error(`${file.file} exports no doc.`);
-    return fatal('missing_export', missing.message, missing);
+    diagnostics.push(
+      diagnostic('missing_export', {
+        ...at,
+        message: `${file.file} exports no doc.`,
+      }),
+    );
+    return {node: null, diagnostics, missing: true, missingValue: file.doc};
   }
   const allowed = ROOT_KINDS[input.root];
   if (!allowed) throw new Error(`No doc root is named "${input.root}".`);
@@ -394,8 +418,6 @@ export function lowerDoc(input) {
     typeof file.doc === 'object' && 'type' in file.doc
       ? file.doc.type
       : undefined;
-  // A root that finds a doc of another kind still carries it: readers have
-  // always read such a file, and the diagnostic names the mismatch.
   const kindFits = stamped === undefined || allowed.includes(stamped);
   if (!kindFits) {
     diagnostics.push(
@@ -405,52 +427,67 @@ export function lowerDoc(input) {
       }),
     );
   }
-  /** @type {unknown} */
-  let failure;
-  let doc = file.doc;
-  try {
-    const parsed = parserFor(input.root)(file.doc, input.label ?? file.file);
-    // A theme descriptor is read statically; its parse result is the doc.
-    if (input.useParsed || input.root === 'themes') doc = parsed;
-  } catch (error) {
-    failure = error;
-    diagnostics.push(
-      diagnostic('invalid_doc', {...at, message: messageOf(error)}),
-    );
+  /** @type {LoweredDoc} */
+  const result = {node: null, diagnostics};
+  let view = file.doc;
+  // A theme descriptor is read statically; its parse result is the doc.
+  if (check || input.root === 'themes') {
+    try {
+      const parsed = parserFor(input.root)(file.doc, input.label ?? file.file);
+      if (input.useParsed || input.root === 'themes') view = parsed;
+    } catch (error) {
+      result.failure = error;
+      diagnostics.push(
+        diagnostic('invalid_doc', {...at, message: messageOf(error)}),
+      );
+    }
   }
   if ('overlayError' in file) {
-    return fatal(
-      'overlay_failed',
-      `${file.file}'s translation could not be loaded: ${messageOf(file.overlayError)}`,
-      file.overlayError,
-    );
+    result.overlayFailure = file.overlayError;
+  } else if (file.overlay) {
+    try {
+      view = overlayAuthoredDoc(view, file.overlay);
+    } catch (error) {
+      result.overlayFailure = error;
+    }
   }
-  if (file.overlay) doc = overlayAuthoredDoc(doc, file.overlay);
+  if (result.overlayFailure !== undefined) {
+    diagnostics.push(
+      diagnostic('overlay_failed', {
+        ...at,
+        message: `${file.file}'s translation could not be applied: ${messageOf(result.overlayFailure)}`,
+      }),
+    );
+    return result;
+  }
+  result.view = view;
+  if (!wantNode) return result;
   let json;
   try {
-    json = JSON.parse(JSON.stringify(doc));
+    const text = JSON.stringify(view);
+    if (text === undefined) throw new TypeError('the doc is not a JSON value');
+    json = JSON.parse(text);
   } catch (error) {
-    return fatal(
-      'not_json',
-      `${file.file} cannot be compiled: ${messageOf(error)}`,
-      error,
+    diagnostics.push(
+      diagnostic('not_json', {
+        ...at,
+        message: `${file.file} cannot be compiled: ${messageOf(error)}`,
+      }),
     );
+    return result;
   }
-  return {
-    node: {
-      schemaVersion: COMPILED_DOC_SCHEMA_VERSION,
-      kind: /** @type {CompiledDocNode['kind']} */ (
-        kindFits && stamped !== undefined ? stamped : allowed[0]
-      ),
-      stage: 'lowered',
-      id: input.id,
-      lang: input.lang,
-      provenance: {provider: input.provider, source: input.source},
-      doc: json,
-    },
-    diagnostics,
-    ...(failure === undefined ? {} : {failure}),
+  result.node = {
+    schemaVersion: COMPILED_DOC_SCHEMA_VERSION,
+    kind: /** @type {CompiledDocNode['kind']} */ (
+      kindFits && stamped !== undefined ? stamped : allowed[0]
+    ),
+    stage: 'lowered',
+    id: input.id,
+    lang: input.lang,
+    provenance: {provider: input.provider, source: input.source},
+    doc: json,
   };
+  return result;
 }
 
 /** @param {unknown} error */

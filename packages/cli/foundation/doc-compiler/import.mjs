@@ -44,11 +44,11 @@ export function importTemplateModule(file) {
 }
 
 /**
- * Import a doc topic or its translation the way the docs API always has:
- * natively, by file URL.
+ * Import a module natively, by file URL: how the docs API, search, and the
+ * unchecked component and hook readers have always imported docs.
  * @param {string} file
  * @returns {Promise<any>}
  */
-export function importTopicModule(file) {
+export function importNativeModule(file) {
   return import(pathToFileURL(file).href);
 }

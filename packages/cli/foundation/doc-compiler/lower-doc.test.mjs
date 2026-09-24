@@ -164,25 +164,105 @@ describe('lowerDoc', () => {
     expect(diagnostics.map(d => d.code)).toEqual(['wrong_kind']);
   });
 
-  it('yields no node, and the original error, when the file cannot be read', () => {
+  it('yields no node, and records what failed, when the file cannot be read', () => {
     const thrown = new SyntaxError('Unexpected token');
-    const cases = [
-      [{file: 'Card.doc.mjs', error: thrown}, 'load_failed'],
-      [{file: 'Card.doc.mjs', doc: undefined}, 'missing_export'],
-      [
-        {file: 'Card.doc.mjs', doc: card, overlayError: thrown},
-        'overlay_failed',
-      ],
-    ];
-    for (const [file, code] of cases) {
-      const {node, diagnostics, failure} = lowerDoc(input(card, {file}));
-      expect(node).toBeNull();
-      expect(diagnostics.map(d => d.code)).toEqual([code]);
-      expect(failure).toBeInstanceOf(Error);
+    const loaded = lowerDoc(
+      input(card, {file: {file: 'Card.doc.mjs', error: thrown}}),
+    );
+    expect(loaded.node).toBeNull();
+    expect(loaded.loadFailure).toBe(thrown);
+    expect(loaded.diagnostics.map(d => d.code)).toEqual(['load_failed']);
+    const empty = lowerDoc(
+      input(card, {file: {file: 'Card.doc.mjs', doc: null}}),
+    );
+    expect(empty).toMatchObject({
+      node: null,
+      missing: true,
+      missingValue: null,
+    });
+    expect(empty.diagnostics.map(d => d.code)).toEqual(['missing_export']);
+    const overlaid = lowerDoc(
+      input(card, {
+        file: {file: 'Card.doc.mjs', doc: card, overlayError: thrown},
+      }),
+    );
+    expect(overlaid).toMatchObject({node: null, overlayFailure: thrown});
+    expect(overlaid.view).toBeUndefined();
+    expect(overlaid.diagnostics.map(d => d.code)).toEqual(['overlay_failed']);
+  });
+
+  it('keeps the parse failure first when the translation also breaks', () => {
+    const {failure, overlayFailure, diagnostics} = lowerDoc(
+      input(
+        {type: 'component', name: 'Card'},
+        {
+          lang: 'zh',
+          file: {
+            file: 'Card.doc.mjs',
+            doc: {type: 'component', name: 'Card'},
+            overlay: {
+              get props() {
+                throw new TypeError('bad translation');
+              },
+            },
+          },
+        },
+      ),
+    );
+    expect(/** @type {Error} */ (failure).message).toMatch(
+      /Card\.doc\.mjs is invalid/,
+    );
+    expect(overlayFailure).toBeInstanceOf(TypeError);
+    expect(diagnostics.map(d => d.code)).toEqual([
+      'invalid_doc',
+      'overlay_failed',
+    ]);
+  });
+
+  it('refuses a theme descriptor outside the themes root, as readers always did', () => {
+    const theme = {
+      type: 'theme',
+      name: 'ocean',
+      displayName: 'Ocean',
+      description: 'd',
+      maintained: true,
+    };
+    for (const root of ['components', 'hooks', 'self-docs']) {
+      const {failure} = lowerDoc(
+        input(theme, {root, label: '/x/Ocean.doc.mjs'}),
+      );
+      expect(/** @type {Error} */ (failure).message).toBe(
+        '/x/Ocean.doc.mjs has unsupported type "theme".',
+      );
     }
-    expect(
-      lowerDoc(input(card, {file: {file: 'x', error: thrown}})).failure,
-    ).toBe(thrown);
+  });
+
+  it('hands readers the authored value, and only the node goes through JSON', () => {
+    const cyclic = /** @type {any} */ ({
+      ...card,
+      big: 10n,
+      when: new Date(0),
+      fn() {},
+    });
+    cyclic.self = cyclic;
+    cyclic.gone = undefined;
+    const {view, node, diagnostics} = lowerDoc(input(cyclic));
+    expect(view).toBe(cyclic);
+    expect(node).toBeNull();
+    expect(diagnostics.at(-1)?.code).toBe('not_json');
+    expect(diagnostics.at(-1)?.message).not.toMatch(/^\//);
+    const read = lowerDoc(input(cyclic), {check: false, node: false});
+    expect(read).toEqual({node: null, diagnostics: [], view: cyclic});
+  });
+
+  it('never puts a machine path in a diagnostic', () => {
+    const {diagnostics} = lowerDoc(
+      input(
+        {type: 'component', name: 'Card'},
+        {label: '/home/someone/kit/Card.doc.mjs'},
+      ),
+    );
+    expect(diagnostics[0].message).not.toContain('/home/someone');
   });
 
   it('refuses a value JSON cannot hold', () => {
@@ -229,6 +309,20 @@ describe('diagnostics', () => {
       expect(diagnosticProblem(d)).toBeNull();
     }
     expect(() => diagnostic('nope', {message: 'x'})).toThrow(/Unknown/);
+    for (const name of [
+      'toString',
+      'constructor',
+      '__proto__',
+      'hasOwnProperty',
+    ]) {
+      expect(() => diagnostic(name, {message: 'x'})).toThrow(/Unknown/);
+      expect(
+        diagnosticProblem({
+          ...diagnostic('invalid_doc', {message: 'x'}),
+          code: name,
+        }),
+      ).toMatch(/not a compiler diagnostic code/);
+    }
   });
 
   it('rejects a diagnostic a reader reinterpreted', () => {
@@ -241,6 +335,15 @@ describe('diagnostics', () => {
     );
     expect(diagnosticProblem({...d, extra: 1})).toMatch(/unknown fields/);
     expect(diagnosticProblem({...d, source: ''})).toMatch(/source/);
+    for (const source of [
+      '/tmp/x/Card.doc.mjs',
+      'C:\\x\\Card.doc.mjs',
+      '@acme/kit/../x',
+    ]) {
+      expect(diagnosticProblem({...d, source})).toMatch(
+        /not a location on one machine/,
+      );
+    }
   });
 
   it('sorts by source, then phase, code, field, and message', () => {

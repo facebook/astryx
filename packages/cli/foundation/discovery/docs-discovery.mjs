@@ -34,7 +34,7 @@ import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
-import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+import {parseReadableDoc} from '../doc-compiler/parse-readable.mjs';
 import {
   sectionKey,
   sectionKeyProblems,
@@ -363,7 +363,7 @@ export async function discoverIntegrationDocs(integration) {
   for (const file of files) {
     let doc;
     try {
-      doc = parseDoc(await loadTopicModule(file), path.basename(file));
+      doc = parseReadableDoc(await loadTopicModule(file), path.basename(file));
     } catch (err) {
       errors.push(
         new Error(

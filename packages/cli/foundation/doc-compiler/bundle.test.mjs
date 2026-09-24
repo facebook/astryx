@@ -160,6 +160,65 @@ describe('compileDocs over a broken integration', () => {
     expect(bundle.nodes.some(node => node.kind === 'reference')).toBe(true);
   });
 
+  it('withdraws a descriptor that fails its parser, and the bundle still reads back', async () => {
+    write(
+      'components/AcmeCard.doc.mjs',
+      "export default {type: 'component', displayName: 'No name'};\n",
+    );
+    const bundle = await compileDocs(await Project.load(tmpDir));
+    const found = bundle.diagnostics.filter(d => d.provider === '@acme/kit');
+    expect(found.map(d => d.code)).toEqual(['invalid_doc']);
+    expect(
+      bundle.nodes.some(node => node.id === '@acme/kit:components:AcmeCard'),
+    ).toBe(false);
+    expect(() =>
+      parseCompiledDocsBundle(JSON.parse(JSON.stringify(bundle))),
+    ).not.toThrow();
+  });
+
+  it('reports a topic value JSON cannot hold with the same code as any other doc', async () => {
+    write(
+      'docs/acme-guide.doc.mjs',
+      topic({name: 'acme-guide'}).replace('};', ', big: 1n};'),
+    );
+    const bundle = await compileDocs(await Project.load(tmpDir));
+    const found = bundle.diagnostics.filter(d => d.provider === '@acme/kit');
+    expect(found.map(d => d.code)).toContain('not_json');
+    expect(found.map(d => d.code)).not.toContain('invalid_topic');
+  });
+
+  it('gives every extension file its own input, even two from one package', async () => {
+    write('docs/theme-a.doc.mjs', topic({name: 'theme-a', extends: 'theme'}));
+    write('docs/theme-b.doc.mjs', topic({name: 'theme-b', extends: 'theme'}));
+    const project = await Project.load(tmpDir);
+    const {problems} = await collectDocInputs(project);
+    expect(problems.filter(p => p.code === 'duplicate_id')).toEqual([]);
+  });
+
+  it('names a package that has no name by its folder, never by its path', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components', 'Local'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Local', 'Local.tsx'),
+      'export {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Local', 'Local.doc.mjs'),
+      "export default {type: 'component', name: 'Local', displayName: 'Local', usage: {description: 'd'}, props: []};\n",
+    );
+    const bundle = await compileDocs(await Project.load(tmpDir));
+    const text = JSON.stringify(bundle);
+    expect(text.includes(tmpDir)).toBe(false);
+    expect(() => parseCompiledDocsBundle(JSON.parse(text))).not.toThrow();
+  });
+
   it('reports an extension that fails to load against the extension, not its base', async () => {
     write('docs/theme-notes.doc.mjs', "throw new Error('bad extension');\n");
     // Discovery refuses an unloadable topic file, so the catalog never merges

@@ -159,8 +159,10 @@ export function diagnostic(
   code,
   {provider = null, source = null, field = null, message},
 ) {
+  if (!Object.hasOwn(DIAGNOSTIC_CODES, code)) {
+    throw new Error(`Unknown compiler diagnostic code "${code}".`);
+  }
   const rule = DIAGNOSTIC_CODES[code];
-  if (!rule) throw new Error(`Unknown compiler diagnostic code "${code}".`);
   return {
     code,
     phase: rule.phase,
@@ -231,9 +233,10 @@ export function diagnosticProblem(value) {
   }
   const unknown = Object.keys(d).filter(key => !DIAGNOSTIC_FIELDS.has(key));
   if (unknown.length > 0) return `unknown fields: ${unknown.join(', ')}`;
-  const rule = DIAGNOSTIC_CODES[d.code];
-  if (!rule)
+  if (typeof d.code !== 'string' || !Object.hasOwn(DIAGNOSTIC_CODES, d.code)) {
     return `code: ${JSON.stringify(d.code)} is not a compiler diagnostic code`;
+  }
+  const rule = DIAGNOSTIC_CODES[d.code];
   for (const key of /** @type {const} */ ([
     'phase',
     'severity',
@@ -249,8 +252,26 @@ export function diagnosticProblem(value) {
       return `${key}: expected text or null`;
     }
   }
+  if (d.source !== null && !isPortableSource(d.source)) {
+    return 'source: expected a path inside a package, not a location on one machine';
+  }
   if (typeof d.message !== 'string' || d.message === '') {
     return 'message: expected text';
   }
   return null;
+}
+
+/**
+ * A `<package>/<path>` that names no location on one machine: not absolute,
+ * no drive letter or URL scheme, no backslash, no `..` segment.
+ * @param {string} source
+ * @returns {boolean}
+ */
+export function isPortableSource(source) {
+  return (
+    !source.startsWith('/') &&
+    !/^[A-Za-z]:/u.test(source) &&
+    !source.includes('\\') &&
+    !/(^|\/)\.\.(\/|$)/u.test(source)
+  );
 }

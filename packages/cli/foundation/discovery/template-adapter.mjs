@@ -24,7 +24,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {importTemplateModule} from '../doc-compiler/import.mjs';
 import {readDocView} from '../doc-compiler/read.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
@@ -492,7 +491,7 @@ function unsafeFixtureReference(source, at, reason) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
-  return readDocView(docPath, {root: 'templates', load: importTemplateModule});
+  return readDocView(docPath, {root: 'templates', loader: 'template'});
 }
 
 /**

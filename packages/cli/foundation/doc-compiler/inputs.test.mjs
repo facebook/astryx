@@ -206,7 +206,7 @@ describe('collectDocInputs over an integration', () => {
         role: undefined,
       },
       {
-        id: '@acme/kit:docs:theme+extension',
+        id: '@acme/kit:docs:theme+theme-notes',
         source: '@acme/kit/docs/theme-notes.doc.mjs',
         role: 'extension',
       },

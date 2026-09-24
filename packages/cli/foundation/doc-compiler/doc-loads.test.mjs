@@ -61,7 +61,7 @@ const LOADER_CALLS = new Set([
   'loadModuleWithParser',
   'importDocModule',
   'importTemplateModule',
-  'importTopicModule',
+  'importNativeModule',
 ]);
 
 const j = jscodeshift.withParser('babel');

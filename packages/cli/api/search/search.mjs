@@ -542,8 +542,11 @@ async function loadModuleDoc(
   try {
     // Support both the stamped default export and the legacy named export.
     return (
-      (await readDocView(docPath, {root, exports: ['default', exportName]})) ??
-      null
+      (await readDocView(docPath, {
+        root,
+        loader: 'native',
+        exports: ['default', exportName],
+      })) ?? null
     );
   } catch {
     return null;

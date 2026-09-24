@@ -139,6 +139,7 @@ export async function searchComponents(needle, coreDir, components) {
       // Only the legacy `docs` export has ever been indexed here.
       const docs = await readDocView(docPath, {
         root: 'components',
+        loader: 'native',
         exports: ['docs'],
       });
       if (!docs) continue;

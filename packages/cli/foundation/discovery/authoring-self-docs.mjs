@@ -92,6 +92,7 @@ export async function loadAuthoringSelfDocs(
     try {
       const doc = await readDocView(path.join(root, source), {
         root: 'self-docs',
+        loader: 'native',
       });
       if (
         typeof doc?.name !== 'string' ||

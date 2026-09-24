@@ -7,6 +7,7 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -82,7 +83,12 @@ describe('readDocView', () => {
     first.name = 'Changed';
     first.props.push({name: 'x'});
     expect((await loadDocs(file)).name).toBe('Card');
-    const {node} = await compileDocFile(file, {root: 'components'});
+    const {node} = await compileDocFile(
+      file,
+      {root: 'components', check: true},
+      {node: true},
+    );
+    expect(node).not.toBeNull();
     expect(Object.isFrozen(node)).toBe(true);
     expect(Object.isFrozen(node?.doc.props)).toBe(true);
   });
@@ -140,13 +146,98 @@ describe('readDocView', () => {
     ).toBe('Legacy');
   });
 
-  it('compiles an edited file again', async () => {
+  it('reads each file once per process, and retries a file that failed to load', async () => {
     const file = write('Card.doc.mjs', card);
     const before = await compileDocFile(file, {root: 'components'});
-    // A new version on disk is a new key, even if the module cache is stale.
-    fs.utimesSync(file, new Date(), new Date(Date.now() + 60_000));
-    const after = await compileDocFile(file, {root: 'components'});
-    expect(after).not.toBe(before);
-    expect(await compileDocFile(file, {root: 'components'})).toBe(after);
+    expect(await compileDocFile(file, {root: 'components'})).toBe(before);
+    const broken = write('Broken.doc.mjs', 'export default {;\n');
+    const failed = await compileDocFile(broken, {root: 'components'});
+    expect(failed.loadFailure).toBeInstanceOf(Error);
+    expect(await compileDocFile(broken, {root: 'components'})).not.toBe(failed);
+  });
+
+  it('prints what the module holds: no JSON anywhere a reader looks', async () => {
+    const file = write(
+      'Odd.doc.mjs',
+      `const doc = {
+  type: 'component', name: 'Odd', displayName: 'Odd', usage: {description: 'd'},
+  props: undefined, big: 10n, when: new Date(0), limit: Infinity,
+  examples: [{title: 'x', code() { return 1; }}],
+  get lazy() { throw new Error('never read'); },
+};
+doc.self = doc;
+export default doc;
+`,
+    );
+    const view = await loadDocs(file);
+    expect(Object.keys(view)).toContain('props');
+    expect(view.props).toBeUndefined();
+    expect(view.big).toBe(10n);
+    expect(view.when).toBeInstanceOf(Date);
+    expect(view.limit).toBe(Infinity);
+    expect(typeof view.examples[0].code).toBe('function');
+    expect(view.self).toBe(view);
+    expect(() => view.lazy).toThrow('never read');
+    // A checked read of a valid doc with odd values is no different.
+    const ok = write(
+      'Big.doc.mjs',
+      "export default {type: 'component', name: 'Big', displayName: 'Big', usage: {description: 'd'}, props: [], playground: {seed: 10n}};\n",
+    );
+    expect((await loadComponentDoc(ok)).playground.seed).toBe(10n);
+  });
+
+  it('gives each reader its own copy, but shares what the module shares', async () => {
+    const file = write('Card.doc.mjs', card);
+    const one = await loadDocs(file);
+    const two = await loadDocs(file);
+    expect(one).not.toBe(two);
+    expect(one).toEqual(two);
+    const shared = await readDocView(file, {root: 'components'});
+    expect(await readDocView(file, {root: 'components'})).toBe(shared);
+  });
+
+  it('reads an empty export as that value, and checks it as that value', async () => {
+    const file = write('Null.doc.mjs', 'export default null;\n');
+    await expect(
+      readDocView(file, {root: 'templates', exports: ['default']}),
+    ).resolves.toBeNull();
+    await expect(
+      readDocView(file, {
+        root: 'templates',
+        exports: ['default'],
+        strict: true,
+        label: 'Template "t"',
+      }),
+    ).rejects.toThrow(/received null/);
+  });
+
+  it('keeps the unchecked readers on a plain import', () => {
+    // Outside vitest's own loader: a plain import cannot strip types under
+    // node_modules, and the checked loader (jiti) can, as on main.
+    const dir = path.join(tmpDir, 'node_modules', 'kit');
+    fs.mkdirSync(dir, {recursive: true});
+    const file = path.join(dir, 'Typed.doc.ts');
+    fs.writeFileSync(
+      file,
+      "export default {name: 'Typed'} as {name: string};\n",
+    );
+    const loader = path.join(
+      CLI_ROOT,
+      'foundation/discovery/component-loader.mjs',
+    );
+    const run = (/** @type {string} */ call) =>
+      spawnSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `const m = await import(${JSON.stringify(pathToFileURL(loader).href)});
+try { const d = await m.${call}(${JSON.stringify(file)}); console.log('ok', d.name); }
+catch (e) { console.log('threw', e.message.split('\\n')[0]); }`,
+        ],
+        {encoding: 'utf8'},
+      ).stdout.trim();
+    expect(run('loadDocs')).toMatch(/^threw .*node_modules/);
+    expect(run('loadComponentDoc')).toMatch(/^(ok Typed|threw .*is invalid)/);
   });
 });

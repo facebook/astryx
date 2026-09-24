@@ -14,7 +14,6 @@
  *   Internal to the CLI.
  */
 
-import {importTemplateModule} from './import.mjs';
 import {
   readThemeDescriptorValue,
   themeDescriptorLabel,
@@ -24,10 +23,20 @@ import {
   linkReferenceTopic,
   lowerReferenceTopic,
 } from './compile.mjs';
-import {diagnostic, sortDiagnostics} from './diagnostics.mjs';
+import {diagnostic as rawDiagnostic, sortDiagnostics} from './diagnostics.mjs';
 import {collectDocInputs} from './inputs.mjs';
 import {compileDocFile, loadTopicInput} from './read.mjs';
-import {packageSource} from './source.mjs';
+import {packageSource, scrubPaths} from './source.mjs';
+
+/**
+ * A compiler diagnostic whose message names files by package, never by their
+ * location on this machine.
+ * @param {string} code
+ * @param {Parameters<typeof rawDiagnostic>[1]} at
+ */
+function diagnostic(code, at) {
+  return rawDiagnostic(code, {...at, message: scrubPaths(at.message)});
+}
 
 /**
  * @typedef {import('./compile.mjs').CompiledDocNode} CompiledDocNode
@@ -48,7 +57,8 @@ import {packageSource} from './source.mjs';
  * Compile every descriptor the project reads.
  *
  * A problem with one descriptor withdraws that node and is reported; it never
- * stops the rest. A token reference that finds nothing is a warning: readers
+ * stops the rest, so every node in the bundle reads back through the sealed
+ * parser. A token reference that finds nothing is a warning: readers
  * print a placeholder for it, as they always have.
  *
  * @param {import('../config/project.mjs').Project} project
@@ -94,11 +104,14 @@ export async function compileDocs(project, {lang = null} = {}) {
       topics.set(entry.name.toLowerCase(), lowerReferenceTopic(input));
     } catch (error) {
       diagnostics.push(
-        diagnostic('invalid_topic', {
-          provider: entry.package,
-          source: packageSource(entry.path),
-          message: messageOf(error),
-        }),
+        diagnostic(
+          errorCode(error) === 'not_json' ? 'not_json' : 'invalid_topic',
+          {
+            provider: entry.package,
+            source: packageSource(entry.path),
+            message: messageOf(error),
+          },
+        ),
       );
     }
   }
@@ -120,25 +133,34 @@ export async function compileDocs(project, {lang = null} = {}) {
       nodes.push(linked);
       continue;
     }
-    const result = await compileDocFile(input.file, {
-      root: input.root,
-      provider: input.owner,
-      id: input.id,
-      lang: input.root === 'components' || input.root === 'hooks' ? lang : null,
-      ...(input.root === 'templates' ? {load: importTemplateModule} : {}),
-      ...(input.root === 'themes'
-        ? {
-            label: themeDescriptorLabel(input.file, input.owner),
-            readStatic: () =>
-              readThemeDescriptorValue(
-                input.file,
-                themeDescriptorLabel(input.file, input.owner),
-              ),
-          }
-        : {}),
-    });
+    const result = await compileDocFile(
+      input.file,
+      {
+        root: input.root,
+        provider: input.owner,
+        id: input.id,
+        lang:
+          input.root === 'components' || input.root === 'hooks' ? lang : null,
+        check: true,
+        ...(input.root === 'templates' ? {loader: 'template'} : {}),
+        ...(input.root === 'themes'
+          ? {
+              label: themeDescriptorLabel(input.file, input.owner),
+              readStatic: () =>
+                readThemeDescriptorValue(
+                  input.file,
+                  themeDescriptorLabel(input.file, input.owner),
+                ),
+            }
+          : {}),
+      },
+      {node: true},
+    );
     diagnostics.push(...result.diagnostics);
-    if (result.node) nodes.push(result.node);
+    // A descriptor with a problem of its own withdraws its node.
+    if (result.node && !result.diagnostics.some(d => d.severity === 'error')) {
+      nodes.push(result.node);
+    }
   }
 
   return {
@@ -183,4 +205,11 @@ function unresolvedReferences(node, input) {
 /** @param {unknown} error */
 function messageOf(error) {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** @param {unknown} error */
+function errorCode(error) {
+  return error && typeof error === 'object' && 'code' in error
+    ? error.code
+    : undefined;
 }
