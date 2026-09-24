@@ -15,22 +15,32 @@ export const doc = {
   description:
     'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability. The command selects an explicit package first, then a unique component owner, then Core. The report fans out to every effective handler: project config first, then each loaded integration in config order. Public handlers require --confirm-public per handler; internal handlers always run. A handler failure is isolated and does not prevent later handlers.',
   fn: 'gapReport',
-  args: [{name: 'component', param: 'component', required: false}],
+  args: [
+    {
+      name: 'component',
+      param: 'component',
+      required: false,
+      description:
+        'Component or design-system area the gap is about, up to 120 characters. Required unless --list-categories is set.',
+    },
+  ],
   options: [
     {
       flag: '--category <category>',
       param: 'options.category',
-      description: 'Gap category (run --list-categories for values)',
+      description:
+        'Gap category (run --list-categories for values). Required unless --list-categories is set.',
     },
     {
       flag: '--reason <reason>',
       param: 'options.reason',
-      description: 'What capability was missing or difficult',
+      description:
+        'What capability was missing or difficult, up to 2000 characters. Required unless --list-categories is set.',
     },
     {
       flag: '--additional-context <text>',
       param: 'options.detail',
-      description: 'Optional additional context',
+      description: 'Optional additional context, up to 8000 characters',
     },
     {
       flag: '--package <pkg>',
@@ -45,7 +55,8 @@ export const doc = {
     {
       flag: '--list-categories',
       param: 'options.listCategories',
-      description: 'List valid report categories without filing',
+      description:
+        'List valid report categories without filing; the component and the other gap-report options are ignored',
     },
   ],
   examples: [
