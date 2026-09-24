@@ -199,8 +199,9 @@ if (isError(result)) {
 
 Agents don't have to scrape `--help` to learn the CLI. A single call returns a
 **self-describing manifest**: every command, its arguments, flags (with types,
-choices, and defaults), whether it supports `--json`, and the response `type`
-discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
+choices, and defaults), whether it supports `--json`, the response `type`
+discriminators each command can emit, and its documented exit codes. Think of it
+as an OpenAPI spec for the CLI.
 
 ```bash
 astryx manifest --json        # dedicated surface — type: "manifest"
@@ -262,6 +263,10 @@ Shape:
           "…",
         ],
         "examples": ["astryx component Button --props --json"],
+        "exitCodes": [
+          {"code": 0, "when": "success"},
+          {"code": 1, "when": "…"},
+        ],
       },
       // …one entry per command; subcommands (e.g. `theme build`) nest under `subcommands`
     ],
@@ -437,7 +442,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `upgrade.list`                    | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                                                                    |
 | `upgrade.status`                  | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                                                              |
 | `upgrade.run`                     | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                                                                   |
-| `manifest`                        | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.                                                                 |
+| `manifest`                        | The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.            |
 | `doctor`                          | The health-check report: `checks` (each with id, label, status: pass \| warn \| fail \| info, a message, and a fix when not passing) plus a `summary` of counts per status.                                                                                                                   |
 | `integration.add`                 | A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.                                                                                                                               |
 | `integration.pack-check`          | The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.                                                                                                                                                                             |

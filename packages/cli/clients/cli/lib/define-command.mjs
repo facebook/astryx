@@ -25,6 +25,7 @@
  */
 
 import {recordCommandResult} from '../../../foundation/debug/index.mjs';
+import {text} from '../formatters/index.mjs';
 
 /**
  * Marks a Commander command that reports what it answered with, and says HOW:
@@ -78,6 +79,21 @@ export function markReportsResult(cmd) {
   return cmd;
 }
 
+/** The CommandDoc and wrapped FunctionDoc a command was built from. */
+export const COMMAND_DOCS = Symbol.for('astryx.command.docs');
+
+/**
+ * The docs a command was built from; undefined for a hand-registered command.
+ * @param {import('commander').Command} cmd
+ * @returns {{
+ *   doc: import('@astryxdesign/cli/authoring').CommandDoc,
+ *   fn?: import('@astryxdesign/cli/authoring').FunctionDoc,
+ * } | undefined}
+ */
+export function commandDocsOf(cmd) {
+  return /** @type {any} */ (cmd)?.[COMMAND_DOCS];
+}
+
 /**
  * Build a Commander command from a CommandDoc and attach it to `parent`.
  *
@@ -102,6 +118,7 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     .join(' ');
 
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
+  Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   if (doc.summary) cmd.description(doc.summary);
 
   const paramDesc = (/** @type {string | undefined} */ name) =>
@@ -126,12 +143,16 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     cmd.addOption(option);
   }
 
-  // `choices` and `examples` are doc metadata surfaced by `astryx docs` and the
-  // doc site; they are intentionally NOT injected into `--help` here. Choices
-  // stay described in the option text (Commander `.choices()` would also change
-  // validation from the api layer's ERR_INVALID_ARGUMENT), and the current CLI
-  // help carries no per-command examples epilog. Keeping both out preserves the
-  // exact `--help`/manifest surface as registrations migrate to this converter.
+  // Help ends with the documented exit codes. `choices` stay in the option
+  // text: Commander `.choices()` would replace the api layer's
+  // ERR_INVALID_ARGUMENT validation.
+  if (doc.exitCodes?.length) {
+    const lines = doc.exitCodes.map(({code, when}) => `  ${code}  ${when}`);
+    cmd.addHelpText(
+      'after',
+      `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`,
+    );
+  }
 
   if (action) {
     // The recording seam. An action's job ends at "here is what I answered

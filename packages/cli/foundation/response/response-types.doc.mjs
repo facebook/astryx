@@ -257,7 +257,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.',
+        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
     // doctor
