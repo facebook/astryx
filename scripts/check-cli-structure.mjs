@@ -26,11 +26,15 @@
  *      *.doc.mjs    the FunctionDoc
  *      *.test.mjs   coverage (may be nested, e.g. api/theme/build/build.test.mjs)
  *
- * Deliberately NOT checked here: command <-> CommandDoc pairing. That is not a
- * filename convention — subcommand docs (layout-expand, theme-add, ...) live
- * inside their group's handler and `manifest` registers in index.mjs — and the
- * drift harness already validates it semantically against the live manifest,
- * which is strictly stronger than matching filenames.
+ * 3. Every CLI command and CommandDoc sits where cli-surface INV6 puts it:
+ *      clients/cli/commands/<name>.mjs   (or <name>/index.mjs for a group)
+ *      clients/cli/commands/<name>.doc.mjs
+ *      clients/cli/commands/<parent>-<child>.doc.mjs   for each subcommand
+ *    Top-level commands come from clients/cli/index.mjs (its `commands`
+ *    registry and any literal `.command()` call there); subcommands come from
+ *    each CommandDoc's `subcommands`. The docs drift harness holds those docs
+ *    equal to the live CLI (args, options, subcommands); this check owns where
+ *    the files are.
  *
  * Usage: node scripts/check-cli-structure.mjs
  */
@@ -144,6 +148,148 @@ for (const name of dirsIn(API)) {
   }
 }
 
+// ── 3. command files and CommandDocs ────────────────────────────────────
+/**
+ * Layout gaps that predate this section. Each entry is the exact violation it
+ * forgives, so moving the command to its INV6 path makes the entry stale and
+ * fails the check until the entry is deleted. Do not add entries.
+ */
+export const KNOWN_LAYOUT_GAPS = new Set([
+  'command "manifest" is registered in clients/cli/index.mjs, not in its own clients/cli/commands/manifest.mjs',
+  'command "postinstall" is registered in clients/cli/index.mjs, not in its own clients/cli/commands/postinstall.mjs',
+  'command "postinstall" has no CommandDoc at clients/cli/commands/postinstall.doc.mjs',
+  'command "theme" is registered from clients/cli/commands/build-theme.mjs, not clients/cli/commands/theme.mjs or clients/cli/commands/theme/index.mjs',
+]);
+
+/**
+ * Check INV6 (docs/architecture/cli-surface.md) for the CLI rooted at
+ * `cliRoot`: every registered command's file and CommandDoc, every
+ * subcommand's CommandDoc, and no CommandDoc anywhere else.
+ *
+ * @param {string} cliRoot the `packages/cli` directory
+ * @returns {Promise<{errors: string[], commands: number}>}
+ */
+export async function checkCommandLayout(cliRoot) {
+  const {default: ts} = await import('typescript');
+  const {pathToFileURL} = await import('node:url');
+  const COMMANDS = 'clients/cli/commands';
+  const INDEX = 'clients/cli/index.mjs';
+  /** @type {string[]} */
+  const errors = [];
+
+  const indexFile = path.join(cliRoot, INDEX);
+  const source = ts.createSourceFile(
+    indexFile,
+    fs.readFileSync(indexFile, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
+  );
+  /** @type {{name: string, file: string | null}[]} */
+  const registered = [];
+  let registryFound = false;
+  /** @param {import('typescript').Node} node */
+  const visit = node => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'commands' &&
+      node.initializer &&
+      ts.isArrayLiteralExpression(node.initializer)
+    ) {
+      registryFound = true;
+      for (const entry of node.initializer.elements) {
+        if (!ts.isObjectLiteralExpression(entry)) continue;
+        /** @param {string} key */
+        const field = key => {
+          const prop = entry.properties.find(
+            p => ts.isPropertyAssignment(p) && p.name.getText(source) === key,
+          );
+          return prop &&
+            ts.isPropertyAssignment(prop) &&
+            ts.isStringLiteralLike(prop.initializer)
+            ? prop.initializer.text
+            : null;
+        };
+        const name = field('name');
+        const file = field('path');
+        if (name && file) registered.push({name, file});
+      }
+    }
+    // A command registered by hand, e.g. `program.command('manifest')`.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'command' &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      registered.push({name: node.arguments[0].text.split(' ')[0], file: null});
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  if (!registryFound) {
+    errors.push(
+      `found no \`commands\` registry in ${INDEX} — has it moved? Update this check.`,
+    );
+  }
+
+  /** @type {Set<string>} */
+  const expectedDocs = new Set();
+  let commands = 0;
+  /** @param {string} name */
+  const checkDoc = async name => {
+    const docPath = `${COMMANDS}/${name.replaceAll(' ', '-')}.doc.mjs`;
+    expectedDocs.add(docPath);
+    const docFile = path.join(cliRoot, docPath);
+    if (!fs.existsSync(docFile)) {
+      errors.push(`command "${name}" has no CommandDoc at ${docPath}`);
+      return;
+    }
+    const mod = await import(pathToFileURL(docFile).href);
+    const doc = mod.doc ?? mod.docs ?? mod.default;
+    if (doc?.name !== name) {
+      errors.push(`${docPath} documents "${doc?.name}", not "${name}"`);
+      return;
+    }
+    commands++;
+    for (const child of doc.subcommands ?? [])
+      await checkDoc(`${name} ${child}`);
+  };
+
+  for (const {name, file} of registered) {
+    const flat = `${COMMANDS}/${name}.mjs`;
+    const group = `${COMMANDS}/${name}/index.mjs`;
+    if (file === null) {
+      errors.push(
+        `command "${name}" is registered in ${INDEX}, not in its own ${flat}`,
+      );
+    } else {
+      const actual = path.posix.join('clients/cli', file);
+      if (actual !== flat && actual !== group) {
+        errors.push(
+          `command "${name}" is registered from ${actual}, not ${flat} or ${group}`,
+        );
+      } else if (!fs.existsSync(path.join(cliRoot, actual))) {
+        errors.push(
+          `command "${name}" is registered from ${actual}, which does not exist`,
+        );
+      }
+    }
+    await checkDoc(name);
+  }
+
+  for (const file of fs.readdirSync(path.join(cliRoot, COMMANDS))) {
+    const docPath = `${COMMANDS}/${file}`;
+    if (file.endsWith('.doc.mjs') && !expectedDocs.has(docPath)) {
+      errors.push(`${docPath} is not the CommandDoc of any registered command`);
+    }
+  }
+
+  return {errors, commands};
+}
+
 // If a directory is moved or renamed, the loops above simply iterate nothing and
 // this would report a cheerful "0 checked". A check that passes when its subject
 // disappears is worse than no check, so require having found something real.
@@ -158,15 +304,35 @@ if (apiCount === 0) {
   );
 }
 
-if (errors.length > 0) {
-  console.error('❌ CLI structure violations:\n');
-  for (const e of errors) console.error(`  ${e}`);
-  console.error(
-    `\n${errors.length} error(s). See CONTRIBUTING > "Working on the astryx CLI".`,
-  );
-  process.exit(1);
-}
+// Run as a script; stay importable for the tests.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const layout = await checkCommandLayout(CLI);
+  for (const e of layout.errors) {
+    if (!KNOWN_LAYOUT_GAPS.has(e)) errors.push(e);
+  }
+  for (const gap of KNOWN_LAYOUT_GAPS) {
+    if (!layout.errors.includes(gap)) {
+      errors.push(
+        `known layout gap no longer occurs; delete it from KNOWN_LAYOUT_GAPS: ${gap}`,
+      );
+    }
+  }
+  if (layout.commands === 0) {
+    errors.push(
+      'found no CommandDocs under packages/cli/clients/cli/commands — has the directory moved? Update this check.',
+    );
+  }
 
-console.log(
-  `✅ ${doctypeCount} doc-type(s) + ${apiCount} api folder(s) checked — CLI structure is intact.`,
-);
+  if (errors.length > 0) {
+    console.error('❌ CLI structure violations:\n');
+    for (const e of errors) console.error(`  ${e}`);
+    console.error(
+      `\n${errors.length} error(s). See CONTRIBUTING > "Working on the astryx CLI".`,
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `✅ ${doctypeCount} doc-type(s) + ${apiCount} api folder(s) + ${layout.commands} command(s) checked — CLI structure is intact.`,
+  );
+}
