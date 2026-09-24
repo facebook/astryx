@@ -562,7 +562,6 @@ jobs:
     permissions:
       contents: read
     outputs:
-      storybook_url: ${{ steps.urls.outputs.storybook_url }}
       short_hash: ${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
@@ -652,20 +651,16 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
 
-      - name: Compute PR preview path
+      - name: Compute PR artifact identity
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
           SHORT_HASH="${COMMIT_HASH:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          REPO_OWNER="${{ github.repository_owner }}"
 
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-          echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
-          echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
+          echo "short_hash=${SHORT_HASH}" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Identify full release audit scope
         if: github.event_name == 'workflow_dispatch' && needs.check-scope.outputs.tooling_only != 'true'
@@ -715,14 +710,9 @@ jobs:
       - name: Write PR comment metadata
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         run: |
-          # The pr-comment and deploy-preview workflows run on workflow_run
-          # (privileged token), so they can comment on and deploy previews for
-          # fork PRs too. Neither context knows the PR number, preview URLs, or
-          # the artifact hash, so persist them here for the trusted jobs to read.
-          #
-          # Preview URLs are now populated for ALL PRs (fork and same-repo alike)
-          # because deploy-preview.yml deploys every PR's preview from the trusted
-          # context — the old fork/same-repo split (empty URLs on forks) is gone.
+          # The trusted PR Comment workflow reads this analysis and exact CI
+          # identity. Human previews instead come from the Vercel deployment of
+          # the same PR head; this artifact never authorizes a preview URL.
           cat > pr-meta.json <<EOF
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
@@ -756,8 +746,6 @@ jobs:
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
-    outputs:
-      short_hash: ${{ steps.urls.outputs.short_hash }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -767,20 +755,6 @@ jobs:
 
       - name: Build core package
         run: pnpm build
-
-      - name: Compute sandbox preview paths
-        id: urls
-        run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
-          SHORT_HASH="${COMMIT_HASH:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-
-          {
-            echo "short_hash=${SHORT_HASH}"
-            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
-            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Next.js build
         uses: actions/cache@v6
@@ -792,37 +766,17 @@ jobs:
           # export shape and silently produce wrong builds (broke #2941's
           # post-merge deploy). A changed key yields a cold (safe) rebuild.
           #
-          # Keyed by PR number so PRs never share a cache with main (deploy.yml)
-          # or with other PRs: each PR builds with its own basePath
-          # (SANDBOX_BASE_PATH=/<repo>/pr/<n>/sandbox vs /<repo>/sandbox on main),
-          # and Next.js invalidates the webpack cache whenever the resolved config
-          # changes — so a cache built under a different basePath always restores
-          # as dead weight (download cost, zero reuse) and, because the shared key
-          # "hit", the PR could never save a cache for its own basePath either.
-          # Re-pushes to the same PR keep the same key and get real warm builds.
-          # (This job only runs on pull_request events — see the job-level `if:`
-          # above — so github.event.pull_request.number is always set here.)
+          # Keyed by PR number so a changed head can reuse its own safe build
+          # cache without sharing unpublished component code across PRs.
           key: nextjs-sandbox-pr${{ github.event.pull_request.number }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
 
       - name: Build Sandbox
         run: pnpm -F @astryxdesign/sandbox build
         env:
-          # Must match the deployed Pages path (<owner>.github.io/<repo>/pr/<n>/sandbox).
-          # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
-          # drop that segment and 404 — breaking all styles/JS on the preview.
-          SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
-          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
+          # Match the Vercel docsite origin's static Sandbox route.
+          SANDBOX_BASE_PATH: /sandbox
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: /sandbox/template-assets
           NODE_OPTIONS: '--max-old-space-size=8192'
-
-      - name: Remove shared assets from preview artifact
-        run: rm -rf apps/sandbox/out/template-assets
-
-      - name: Upload Sandbox artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: sandbox-${{ steps.urls.outputs.short_hash }}
-          path: apps/sandbox/out/
-          retention-days: 30
 
   # Join gate that keeps the historical `build` check name: anything keyed on
   # "build" being green (branch protection, tooling, habit) keeps working, and
@@ -846,13 +800,9 @@ jobs:
             *) exit 1 ;;
           esac
 
-  # NOTE: PR preview deploy has moved to deploy-preview.yml (workflow_run).
-  # It used to live here as a `deploy-preview` job, but a pull_request job on a
-  # fork gets a read-only GITHUB_TOKEN and can't push to gh-pages — so previews
-  # only ever appeared on same-repo PRs. The trusted workflow_run companion runs
-  # in the base-repo context with a write token, downloads the static artifacts
-  # this workflow already uploads (storybook-<hash>, sandbox-<hash>), and deploys
-  # for EVERY PR (fork and same-repo alike) without executing any PR code.
+  # Human Storybook/Sandbox previews are built by the existing Vercel docsite
+  # project. CI keeps its own Storybook artifact for pr-visual/a11y/RTL only;
+  # fork PRs never need a privileged Pages preview publisher.
 
   # Accessibility audit
   # Skipped when no components changed. Depends only on build-storybook, so it

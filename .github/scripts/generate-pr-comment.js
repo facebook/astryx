@@ -193,7 +193,6 @@ if (storybookUrl) {
   storybookSection = `### 📚 Storybook Preview
 
 **${extLink('View Storybook for this PR', storybookUrl)}**
-_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
@@ -204,13 +203,12 @@ if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
 **${extLink('View Sandbox for this PR', sandboxUrl)}**
-_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
 
-// Explain each independently unavailable target. The reconciler only passes this
-// state after validating the publisher's exact PR/head/source-run result.
+// Vercel previews are independent of CI's conclusion; no missing preview
+// should be attributed to a failed visual, test, or Sandbox check.
 let previewAvailabilitySection = '';
 if (previewState) {
   const missing = [];
@@ -219,8 +217,8 @@ if (previewState) {
   if (missing.length > 0) {
     const reason =
       sourceConclusion === 'success'
-        ? `${missing.join(' and ')} ${missing.length === 1 ? 'was' : 'were'} not published for this CI run.`
-        : 'CI did not succeed, so no preview was published.';
+        ? `${missing.join(' and ')} ${missing.length === 1 ? 'is' : 'are'} not ready for this head.`
+        : `Preview for this head is not ready; CI concluded ${sourceConclusion || 'without a result'}.`;
     previewAvailabilitySection = `> **Preview availability:** ${reason}\n\n`;
   }
 }
