@@ -68,7 +68,8 @@ export const doc = {
     {
       flag: '--install-deps',
       param: 'options.installDeps',
-      description: 'Auto-install jscodeshift without prompting',
+      description:
+        'Install jscodeshift when it is missing. Without it, a missing jscodeshift fails the command with ERR_DEP_MISSING',
       default: false,
     },
     {

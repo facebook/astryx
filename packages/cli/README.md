@@ -175,7 +175,7 @@ if (isError(result)) {
 | `ERR_NO_SOURCE`                   | No source file could be located for the requested component/template.                                                                                    |
 | `ERR_INVALID_DOC`                 | A component's docs failed validation (malformed `.doc.mjs`).                                                                                             |
 | `ERR_FILE_NOT_FOUND`              | A required input file did not exist.                                                                                                                     |
-| `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file in non-interactive mode.                                                                                           |
+| `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file.                                                                                                                   |
 | `ERR_PATH_TRAVERSAL`              | A path escaped its allowed root, or a name contained traversal markers.                                                                                  |
 | `ERR_WRITE_FAILED`                | Writing output files failed (and was rolled back).                                                                                                       |
 | `ERR_THEME_INVALID`               | A theme definition or contributed theme catalog is invalid.                                                                                              |
