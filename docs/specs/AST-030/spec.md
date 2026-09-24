@@ -18,6 +18,17 @@ affects_consumer_docs: []
 
 # Positive CI surface routing system spec
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "testing": ["FR7", "FR11"]
+  }
+}
+```
+
 ## Intent
 
 Route pull-request checks from the repository surfaces a change can affect rather
