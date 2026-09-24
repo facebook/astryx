@@ -25,7 +25,7 @@ import {
   findIntegrationComponentSource,
 } from '../../../foundation/discovery/component-discovery.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 
 /** Default issue tracker for maintainer feedback after swizzling. */
 const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
@@ -290,7 +290,11 @@ export async function swizzleCopy(component, options = {}) {
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+  } catch (err) {
+    throw writeFailed(outputDir, cwd, err);
+  }
 
   const files = fs.readdirSync(componentDir);
   let copied = 0;
@@ -309,7 +313,11 @@ export async function swizzleCopy(component, options = {}) {
     ) {
       usesStyleX = true;
     }
-    fs.writeFileSync(path.join(outputDir, file), content);
+    try {
+      fs.writeFileSync(path.join(outputDir, file), content);
+    } catch (err) {
+      throw writeFailed(path.join(outputDir, file), cwd, err);
+    }
     copied++;
   }
 

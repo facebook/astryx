@@ -98,6 +98,10 @@ export const doc = {
       code: 'ERR_FILE_EXISTS',
       when: 'copying would overwrite existing files and overwrite is not set',
     },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the output directory or a copied file could not be written (no permission, read-only mount, full disk)',
+    },
   ],
   examples: [
     {
