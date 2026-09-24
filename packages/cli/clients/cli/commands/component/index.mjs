@@ -235,6 +235,7 @@ export function registerComponent(program) {
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
           const importHint = result.data.import;
+          if (result.data.parentDoc) emit(record(result.data, {fields: ['parentDoc']}));
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
