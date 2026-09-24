@@ -282,7 +282,7 @@ describe('theme descriptor discovery', () => {
     writeTheme();
     fs.writeFileSync(path.join(tmpDir, 'manifest.json'), '{"version":1}\n');
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
-      /unsupported manifest\.json/u,
+      /the theme catalog Astryx 0\.6 wrote.*astryx upgrade --from 0\.6\.3 --path \. --apply/u,
     );
   });
 

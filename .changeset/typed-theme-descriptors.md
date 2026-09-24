@@ -1,16 +1,11 @@
 ---
-'@astryxdesign/cli': patch
-'@astryxdesign/theme-butter': patch
-'@astryxdesign/theme-chocolate': patch
-'@astryxdesign/theme-gothic': patch
-'@astryxdesign/theme-matcha': patch
-'@astryxdesign/theme-neutral': patch
-'@astryxdesign/theme-stone': patch
-'@astryxdesign/theme-y2k': patch
+'@astryxdesign/cli': minor
 ---
 
-[feat] Author integration themes with typed same-stem descriptors.
+[breaking] Integration themes use typed same-stem descriptors, not a central catalog.
 
-Replace the central integration theme catalog (`themes/manifest.json`, which 0.6.3 writes) with `ThemeDoc` beside every theme source. An integration that still ships the catalog must add a descriptor to each theme directory: its themes root is refused, and until then the package's other contributions are withheld. Theme discovery reads descriptors and checks integration theme sources without executing them, and `theme add` copies an integration theme's complete directory. `astryx doctor integration validate` warns about a folder in the themes root that looks like a theme but is not read as one. New component, topic, and template scaffolds also emit type-annotated `.doc.mjs`; released `.template.*` inputs remain readable.
+A themes root no longer holds `manifest.json`, the theme catalog that `astryx integration add theme` wrote in 0.6 (stable since 0.6.3). Each theme carries a strongly typed `<name>Theme.doc.mjs` beside its source instead, and a themes root that still holds the catalog is refused. To migrate an integration package, run `astryx upgrade --from 0.6.3 --path . --apply` in it: a codemod writes each theme's descriptor from its catalog entry and removes the catalog. Until a package is migrated, apps that install it get none of its themes or doc topics.
+
+Theme discovery reads descriptors and checks integration theme sources without executing them, and `theme add` copies an integration theme's complete directory. `astryx doctor integration validate` warns about a folder in the themes root that looks like a theme but is not read as one. New component, topic, and template scaffolds also emit type-annotated `.doc.mjs`; released `.template.*` inputs remain readable.
 
 @josephfarina

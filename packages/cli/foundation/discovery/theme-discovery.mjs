@@ -1079,7 +1079,7 @@ export function discoverThemeDirectory(
   }
   if (fs.existsSync(path.join(themeRoot, 'manifest.json'))) {
     throw new Error(
-      `Theme root for ${owner} contains unsupported manifest.json. Give every theme a strongly typed same-stem .doc.mjs descriptor instead.`,
+      `Theme root for ${owner} contains manifest.json, the theme catalog Astryx 0.6 wrote; each theme now carries a strongly typed same-stem .doc.mjs descriptor instead. To convert it, run \`astryx upgrade --from 0.6.3 --path . --apply\` in the package, or add each theme's descriptor and delete manifest.json.`,
     );
   }
 

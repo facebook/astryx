@@ -329,11 +329,11 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string}} options
  */
 export async function runCoreCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods},
+  {apply, path: srcPath, codemod, skipCodemods, root},
 ) {
   return runCodemods(versionManifests, {
     apply,
@@ -341,6 +341,7 @@ export async function runCoreCodemods(
     codemod,
     skipCodemods,
     silent: logger.silent,
+    root,
   });
 }
 

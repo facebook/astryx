@@ -127,6 +127,30 @@ describe('integrationAddTheme', () => {
     ).toBe(true);
   });
 
+  it('keeps each theme to its own folder: a second theme touches no shared file', async () => {
+    setup({manifest: "export default {themes: './themes'};\n"});
+    await integrationAddTheme('ocean', {cwd: tmpDir});
+    const shared = ['package.json', 'astryx.integration.mjs'].map(file =>
+      fs.readFileSync(path.join(tmpDir, file), 'utf-8'),
+    );
+
+    const result = await integrationAddTheme('reef', {cwd: tmpDir});
+
+    expect(result.data.files).toEqual([
+      'themes/reef/reefTheme.ts',
+      'themes/reef/reefTheme.doc.mjs',
+    ]);
+    expect(fs.readdirSync(path.join(tmpDir, 'themes')).sort()).toEqual([
+      'ocean',
+      'reef',
+    ]);
+    expect(
+      ['package.json', 'astryx.integration.mjs'].map(file =>
+        fs.readFileSync(path.join(tmpDir, file), 'utf-8'),
+      ),
+    ).toEqual(shared);
+  });
+
   it('refuses an obsolete central catalog without changing its bytes', async () => {
     setup();
     fs.mkdirSync(path.join(tmpDir, 'themes'));

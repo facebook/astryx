@@ -22,6 +22,7 @@ import {
   patchIntegrationRoot,
 } from '../../foundation/integrations/manifest-writer.mjs';
 import {loadManifestObject} from '../../foundation/integrations/integrations.mjs';
+import {themeDescriptorSource} from '../../foundation/integrations/theme-descriptor.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
   applyWrites,
@@ -78,7 +79,13 @@ function themeSource(identity) {
 
 /** @param {{slug: string, displayName: string}} identity */
 function themeDescriptor(identity) {
-  return `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {\n  type: 'theme',\n  name: '${identity.slug}',\n  displayName: '${identity.displayName}',\n  description: '${identity.displayName} theme.',\n  maintained: true,\n};\n`;
+  return themeDescriptorSource({
+    type: 'theme',
+    name: identity.slug,
+    displayName: identity.displayName,
+    description: `${identity.displayName} theme.`,
+    maintained: true,
+  });
 }
 
 /**
