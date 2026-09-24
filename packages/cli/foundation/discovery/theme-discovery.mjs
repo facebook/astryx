@@ -8,7 +8,8 @@
  * a theme source and mandatory same-stem `.doc.mjs`; the directory is the
  * complete copy and pack boundary. Descriptor metadata is parsed without
  * executing theme source. A dot-folder, or a folder holding neither a
- * descriptor nor a `<name>Theme` source, is not a theme.
+ * descriptor nor a `<name>Theme` source, is not a theme. Dot entries and files
+ * npm never publishes belong to no theme.
  *
  * @input a bundled or integration-owned theme root
  * @output validated source-theme records with package ownership
@@ -154,30 +155,13 @@ class ThemeModuleReferenceError extends Error {}
 class ThemeRuntimeExportError extends Error {}
 
 /**
- * Validate that every local static dependency is copied with the theme.
+ * Every string specifier a module imports, re-exports, or imports dynamically.
  * @param {string} file
  * @param {any} jscodeshift
- * @param {string} themeDir
- * @param {Set<string>} allowedFiles
- * @param {string} owner
- * @param {string} entry
- * @param {string} descriptorPath
- * @param {Set<string>} [seen]
+ * @returns {string[]}
  */
-function validateThemeModuleGraph(
-  file,
-  jscodeshift,
-  themeDir,
-  allowedFiles,
-  owner,
-  entry,
-  descriptorPath,
-  seen = new Set(),
-) {
-  if (seen.has(file)) return;
-  seen.add(file);
-
-  const parser = /\.(?:ts|tsx|mts)$/u.test(file) ? 'tsx' : 'babel';
+function moduleSpecifiers(file, jscodeshift) {
+  const parser = /\.(?:ts|tsx|mts|cts)$/u.test(file) ? 'tsx' : 'babel';
   const j = jscodeshift.withParser(parser);
   const root = j(fs.readFileSync(file, 'utf-8'));
   /** @type {string[]} */
@@ -213,7 +197,34 @@ function validateThemeModuleGraph(
     }
   });
 
-  for (const specifier of specifiers) {
+  return specifiers;
+}
+
+/**
+ * Validate that every local static dependency is copied with the theme.
+ * @param {string} file
+ * @param {any} jscodeshift
+ * @param {string} themeDir
+ * @param {Set<string>} allowedFiles
+ * @param {string} owner
+ * @param {string} entry
+ * @param {string} descriptorPath
+ * @param {Set<string>} [seen]
+ */
+function validateThemeModuleGraph(
+  file,
+  jscodeshift,
+  themeDir,
+  allowedFiles,
+  owner,
+  entry,
+  descriptorPath,
+  seen = new Set(),
+) {
+  if (seen.has(file)) return;
+  seen.add(file);
+
+  for (const specifier of moduleSpecifiers(file, jscodeshift)) {
     if (!specifier.startsWith('.')) continue;
     const target = resolveLocalThemeModule(
       specifier,
@@ -483,6 +494,19 @@ function moduleExportsName(
 }
 
 /**
+ * An expression without the parentheses around it.
+ * @param {any} node
+ * @returns {any}
+ */
+function unparenthesized(node) {
+  let current = node;
+  while (current?.type === 'ParenthesizedExpression') {
+    current = current.expression;
+  }
+  return current;
+}
+
+/**
  * Convert one static literal used by ThemeDoc. Theme descriptors intentionally
  * contain data only so synchronous bundled-theme APIs stay synchronous.
  * @param {any} node
@@ -576,7 +600,11 @@ function readDescriptorSource(source, label) {
   /** @type {any} */
   let ast;
   try {
-    ast = descriptorParser().parse(source, {sourceType: 'module'});
+    ast = descriptorParser().parse(source, {
+      sourceType: 'module',
+      tokens: true,
+      createParenthesizedExpressions: true,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`${label} could not be parsed: ${message}`, {cause: error});
@@ -597,13 +625,12 @@ function readDescriptorSource(source, label) {
       `${label} must contain only its static default-exported ThemeDoc object.`,
     );
   }
-  if (
-    defaults.length !== 1 ||
-    defaults[0].declaration?.type !== 'ObjectExpression'
-  ) {
+  const object =
+    defaults.length === 1 && unparenthesized(defaults[0].declaration);
+  if (object?.type !== 'ObjectExpression') {
     throw new Error(`${label} must default-export one static ThemeDoc object.`);
   }
-  if (!declaresThemeDoc(ast.comments ?? [], defaults[0])) {
+  if (!declaresThemeDoc(ast, defaults[0])) {
     throw new Error(
       `${label} must declare its public ThemeDoc type from @astryxdesign/cli/authoring.`,
     );
@@ -611,7 +638,7 @@ function readDescriptorSource(source, label) {
 
   /** @type {Record<string, string | boolean>} */
   const value = {};
-  for (const property of defaults[0].declaration.properties) {
+  for (const property of object.properties) {
     if (property.type !== 'ObjectProperty' || property.computed) {
       throw new Error(`${label} must contain only static object properties.`);
     }
@@ -629,7 +656,7 @@ function readDescriptorSource(source, label) {
     }
     // Defined, not assigned, so `__proto__` stays a key the parser rejects.
     Object.defineProperty(value, key, {
-      value: staticThemeValue(property.value, label),
+      value: staticThemeValue(unparenthesized(property.value), label),
       enumerable: true,
       writable: true,
       configurable: true,
@@ -647,39 +674,209 @@ function isJsdoc(comment) {
   return comment.type === 'CommentBlock' && comment.value.startsWith('*');
 }
 
-/** @param {string} value a JSDoc comment body */
-function jsdocText(value) {
-  return value.replace(/^\s*\*+/gmu, ' ');
+/** @param {string} ch */
+const isSpace = ch => ch === ' ' || ch === '\t';
+
+/**
+ * The tags of one JSDoc comment, found the way TypeScript's JSDoc scanner
+ * finds them: an `@` starts a tag at the start of a line (after the margin
+ * `*`), or after a space and before a non-space, never inside a backtick span
+ * of a tag's text. Each tag's text runs to the next tag, margins removed.
+ * @param {string} value the comment's body, as Babel gives it
+ * @returns {{name: string, text: string}[]}
+ */
+function jsdocTags(value) {
+  const body = value.slice(1);
+  /** @type {number[]} */
+  const starts = [];
+  let lineStart = true;
+  let sawAsterisk = true;
+  let inTag = false;
+  let backticks = false;
+  for (let index = 0; index < body.length; index++) {
+    const ch = body[index];
+    if (ch === '\n' || ch === '\r') {
+      lineStart = true;
+      sawAsterisk = false;
+      backticks = false;
+      continue;
+    }
+    if (lineStart) {
+      if (isSpace(ch)) continue;
+      if (ch === '*' && !sawAsterisk) {
+        sawAsterisk = true;
+        continue;
+      }
+      lineStart = false;
+      if (ch === '@') {
+        starts.push(index);
+        inTag = true;
+        continue;
+      }
+    }
+    if (ch === '`' && inTag) {
+      backticks = !backticks;
+    } else if (
+      ch === '@' &&
+      !backticks &&
+      isSpace(body[index - 1] ?? '') &&
+      !/\s/u.test(body[index + 1] ?? ' ')
+    ) {
+      starts.push(index);
+      inTag = true;
+      backticks = false;
+    }
+  }
+  return starts.map((start, position) => {
+    const raw = body.slice(start + 1, starts[position + 1] ?? body.length);
+    const name = /^[\w$]*/u.exec(raw)?.[0] ?? '';
+    const text = raw.slice(name.length).replace(/(\r?\n)[ \t]*\*?/gu, '$1');
+    return {name, text};
+  });
 }
 
 /**
- * The type names the file's JSDoc binds to ThemeDoc with `@typedef` or
- * `@import`. TypeScript reads these from any JSDoc comment in the module.
- * @param {any[]} comments
+ * The braced type at the start of a tag's text, and what follows it.
+ * @param {string} text
+ * @returns {{type: string, rest: string} | null}
  */
-function themeDocAliases(comments) {
-  const aliases = new Set();
+function bracedType(text) {
+  const open = text.search(/\S/u);
+  if (open === -1 || text[open] !== '{') return null;
+  let depth = 0;
+  /** @type {string | null} */
+  let quote = null;
+  for (let index = open; index < text.length; index++) {
+    const ch = text[index];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch;
+    } else if (ch === '{') {
+      depth++;
+    } else if (ch === '}' && --depth === 0) {
+      return {
+        type: text.slice(open + 1, index).replace(/\s+/gu, ''),
+        rest: text.slice(index + 1),
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Split a type at top-level occurrences of one operator.
+ * @param {string} type
+ * @param {string} operator
+ */
+function splitType(type, operator) {
+  /** @type {string[]} */
+  const parts = [];
+  let depth = 0;
+  /** @type {string | null} */
+  let quote = null;
+  let last = 0;
+  for (let index = 0; index < type.length; index++) {
+    const ch = type[index];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch;
+    } else if ('([{<'.includes(ch)) {
+      depth++;
+    } else if (')]}>'.includes(ch)) {
+      depth--;
+    } else if (ch === operator && depth === 0) {
+      parts.push(type.slice(last, index));
+      last = index + 1;
+    }
+  }
+  parts.push(type.slice(last));
+  return parts;
+}
+
+/** @param {string} type */
+function wrappedInParens(type) {
+  if (!type.startsWith('(') || !type.endsWith(')')) return false;
+  let depth = 0;
+  for (let index = 0; index < type.length; index++) {
+    if (type[index] === '(') depth++;
+    else if (type[index] === ')' && --depth === 0) {
+      return index === type.length - 1;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether a JSDoc type, whitespace removed, checks an object literal exactly
+ * as ThemeDoc does: ThemeDoc or one of its aliases, optionally parenthesized,
+ * marked `!`, `?` or `=`, joined with `null` or `undefined`, or intersected
+ * with `{}`.
+ * @param {string} type
+ * @param {Map<string, string>} aliases alias name to the type it names
+ * @param {Set<string>} [seen]
+ * @returns {boolean}
+ */
+function isThemeDocType(type, aliases, seen = new Set()) {
+  let current = type;
+  for (;;) {
+    if (/^[!?]/u.test(current)) current = current.slice(1);
+    else if (current.endsWith('=')) current = current.slice(0, -1);
+    else if (wrappedInParens(current)) current = current.slice(1, -1);
+    else break;
+  }
+  const members = splitType(current, '|').filter(
+    member => member !== 'null' && member !== 'undefined',
+  );
+  if (members.length !== 1) return false;
+  if (members[0] !== current) return isThemeDocType(members[0], aliases, seen);
+  const parts = splitType(current, '&').filter(part => part !== '{}');
+  if (parts.length !== 1) return false;
+  if (parts[0] !== current) return isThemeDocType(parts[0], aliases, seen);
+  if (THEME_DOC_TYPE.test(current)) return true;
+  const named = aliases.get(current);
+  if (named === undefined || seen.has(current)) return false;
+  seen.add(current);
+  return isThemeDocType(named, aliases, seen);
+}
+
+const AUTHORING = String.raw`(['"])@astryxdesign\/cli\/authoring\2`;
+
+/**
+ * The type names the file's JSDoc binds with `@typedef` or `@import`, from any
+ * JSDoc comment in the module, as TypeScript reads them.
+ * @param {any[]} comments
+ * @returns {Map<string, string>}
+ */
+function jsdocAliases(comments) {
+  /** @type {Map<string, string>} */
+  const aliases = new Map();
+  const theme = "import('@astryxdesign/cli/authoring').ThemeDoc";
   for (const comment of comments.filter(isJsdoc)) {
-    const text = jsdocText(comment.value);
-    for (const [, type, name] of text.matchAll(
-      /@typedef\s*\{([^{}]*)\}\s*([$A-Z_a-z][$\w]*)/gu,
-    )) {
-      if (THEME_DOC_TYPE.test(type.replace(/\s+/gu, ''))) aliases.add(name);
-    }
-    for (const [, names] of text.matchAll(
-      /@import\s*\{([^{}]*)\}\s*from\s*(['"])@astryxdesign\/cli\/authoring\2/gu,
-    )) {
-      for (const specifier of names.split(',')) {
-        const named = /^\s*ThemeDoc(?:\s+as\s+([$A-Z_a-z][$\w]*))?\s*$/u.exec(
-          specifier,
-        );
-        if (named) aliases.add(named[1] ?? 'ThemeDoc');
+    for (const tag of jsdocTags(comment.value)) {
+      if (tag.name === 'typedef') {
+        const typed = bracedType(tag.text);
+        const name = typed && /^\s*([$A-Z_a-z][$\w]*)/u.exec(typed.rest)?.[1];
+        if (typed && name) aliases.set(name, typed.type);
+      } else if (tag.name === 'import') {
+        const named = new RegExp(
+          String.raw`^\s*\{([^{}]*)\}\s*from\s*${AUTHORING}`,
+          'u',
+        ).exec(tag.text);
+        for (const specifier of named?.[1].split(',') ?? []) {
+          const match =
+            /^\s*(?:type\s+)?ThemeDoc(?:\s+as\s+([$A-Z_a-z][$\w]*))?\s*$/u.exec(
+              specifier,
+            );
+          if (match) aliases.set(match[1] ?? 'ThemeDoc', theme);
+        }
+        const namespace = new RegExp(
+          String.raw`^\s*\*\s*as\s+([$A-Z_a-z][$\w]*)\s+from\s*${AUTHORING}`,
+          'u',
+        ).exec(tag.text)?.[1];
+        if (namespace) aliases.set(`${namespace}.ThemeDoc`, theme);
       }
-    }
-    for (const [, namespace] of text.matchAll(
-      /@import\s*\*\s*as\s+([$A-Z_a-z][$\w]*)\s+from\s*(['"])@astryxdesign\/cli\/authoring\2/gu,
-    )) {
-      aliases.add(`${namespace}.ThemeDoc`);
     }
   }
   return aliases;
@@ -687,31 +884,53 @@ function themeDocAliases(comments) {
 
 /**
  * Whether the JSDoc TypeScript reads for the default export types it as the
- * public ThemeDoc: the last JSDoc comment before the statement, or the last
- * one before the opening parenthesis of a JSDoc cast of the object. Line
- * comments, strings, and JSDoc anywhere else never type it.
- * @param {any[]} comments every comment in the file
+ * public ThemeDoc: `@type` in the last JSDoc comment between the previous
+ * token and `export`, or `@type` or `@satisfies` in the last one between the
+ * previous token and the opening parenthesis of a JSDoc cast of the object.
+ * Line comments, strings, code spans, and JSDoc anywhere else never type it.
+ * @param {any} ast parsed with tokens and parenthesized expressions
  * @param {any} exportDefault
  */
-function declaresThemeDoc(comments, exportDefault) {
-  const object = exportDefault.declaration;
-  const parenStart = object.extra?.parenthesized ? object.extra.parenStart : -1;
-  const attached = [
-    (exportDefault.leadingComments ?? []).filter(isJsdoc).at(-1),
-    (object.leadingComments ?? [])
+function declaresThemeDoc(ast, exportDefault) {
+  const tokens = ast.tokens.filter(
+    (/** @type {any} */ token) => typeof token.type !== 'string',
+  );
+  const comments = ast.comments ?? [];
+  /** @param {number} start */
+  const jsdocBefore = start => {
+    const after =
+      tokens.filter((/** @type {any} */ token) => token.end <= start).at(-1)
+        ?.end ?? 0;
+    return comments
       .filter(
         (/** @type {any} */ comment) =>
-          isJsdoc(comment) && comment.end <= parenStart,
+          isJsdoc(comment) && comment.start >= after && comment.end <= start,
       )
-      .at(-1),
+      .at(-1);
+  };
+  /** @type {Array<{comment: any, tags: string[]}>} */
+  const attached = [
+    {comment: jsdocBefore(exportDefault.start), tags: ['type']},
   ];
-  const aliases = themeDocAliases(comments);
-  return attached.some(comment => {
+  for (
+    let node = exportDefault.declaration;
+    node.type === 'ParenthesizedExpression';
+    node = node.expression
+  ) {
+    attached.push({
+      comment: jsdocBefore(node.start),
+      tags: ['type', 'satisfies'],
+    });
+  }
+  const aliases = jsdocAliases(comments);
+  return attached.some(({comment, tags}) => {
     if (!comment) return false;
-    const type = /@type\s*\{([^{}]*)\}/u
-      .exec(jsdocText(comment.value))?.[1]
-      ?.replace(/\s+/gu, '');
-    return type != null && (THEME_DOC_TYPE.test(type) || aliases.has(type));
+    const found = jsdocTags(comment.value);
+    return tags.some(name => {
+      const tag = found.find(candidate => candidate.name === name);
+      const typed = tag && bracedType(tag.text);
+      return typed != null && isThemeDocType(typed.type, aliases);
+    });
   });
 }
 
@@ -719,7 +938,23 @@ function declaresThemeDoc(comments, exportDefault) {
 const THEME_SOURCE_RE = /^[$A-Z_a-z][$\w]*Theme\.(?:mjs|js|mts|ts|tsx|jsx)$/u;
 
 /**
- * Every entry below one folder of a theme root, without following symlinks.
+ * Whether an entry at any depth of a themes root is outside every theme: a dot
+ * entry, or a name npm never publishes (npm-packlist's defaults).
+ * @param {string} name
+ */
+export function isIgnoredThemeEntry(name) {
+  return (
+    name.startsWith('.') ||
+    name === 'node_modules' ||
+    name === 'CVS' ||
+    name === 'npm-debug.log' ||
+    name.endsWith('.orig')
+  );
+}
+
+/**
+ * Every entry below one folder of a theme root, without following symlinks
+ * and without {@link isIgnoredThemeEntry} entries.
  * @param {string} folder
  * @returns {{files: string[], symlinks: string[]}} sorted POSIX paths
  *   relative to the folder
@@ -732,6 +967,7 @@ function listThemeFolder(folder) {
   /** @param {string} directory */
   function walk(directory) {
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (isIgnoredThemeEntry(entry.name)) continue;
       const full = path.join(directory, entry.name);
       const relative = path.relative(folder, full).split(path.sep).join('/');
       if (entry.isSymbolicLink()) symlinks.push(relative);
@@ -763,9 +999,20 @@ function themeEvidence({files, symlinks}) {
  */
 export function isThemeFolder(folder) {
   return (
-    !path.basename(folder).startsWith('.') &&
+    !isIgnoredThemeEntry(path.basename(folder)) &&
     themeEvidence(listThemeFolder(folder)) !== undefined
   );
+}
+
+/**
+ * The files one theme folder ships: every regular file below it except
+ * {@link isIgnoredThemeEntry} entries. What pack-check requires and what
+ * `theme add` copies.
+ * @param {string} folder absolute path
+ * @returns {string[]} sorted POSIX paths relative to the folder
+ */
+export function listThemeFiles(folder) {
+  return listThemeFolder(folder).files;
 }
 
 /** @param {string[]} files */
@@ -841,7 +1088,7 @@ export function discoverThemeDirectory(
   const slugs = new Set();
   const rootEntries = fs
     .readdirSync(themeRoot, {withFileTypes: true})
-    .filter(entry => !entry.name.startsWith('.'));
+    .filter(entry => !isIgnoredThemeEntry(entry.name));
   const rootDescriptor = rootEntries.find(
     entry => entry.isFile() && entry.name.endsWith(THEME_DOC_SUFFIX),
   );
@@ -1014,6 +1261,100 @@ export function discoverThemeDirectory(
   }
 
   return themes;
+}
+
+/** A JavaScript or TypeScript module. */
+const MODULE_FILE_RE = /\.(?:[cm]?[jt]s|[jt]sx)$/u;
+
+/**
+ * Whether a folder's files look like an attempt at a theme: a doc file of any
+ * suffix, a file named for a theme, an index module, or a module named for
+ * the folder.
+ * @param {string} folder
+ * @param {string[]} files
+ */
+function looksLikeTheme(folder, files) {
+  const own = path.basename(folder).toLowerCase();
+  return files.some(file => {
+    const name = path.posix.basename(file).toLowerCase();
+    const stem = name.replace(/\.[^.]+$/u, '');
+    return (
+      /\.doc\.[^.]+$/u.test(name) ||
+      /theme/u.test(name) ||
+      (MODULE_FILE_RE.test(name) && (stem === 'index' || stem === own))
+    );
+  });
+}
+
+/**
+ * Folders under a themes root that look like themes (see looksLikeTheme)
+ * but that discovery does not read as themes, and that no module elsewhere
+ * under the root imports, by a relative path or through the package's own
+ * name. Discovery skips them silently, as the released catalog skipped
+ * unlisted folders; doctor warns.
+ * @param {string} themeRoot
+ * @param {{packageDir?: string, packageName?: string}} [owner]
+ * @returns {string[]} absolute folder paths, sorted
+ */
+export function unreadThemeFolders(themeRoot, {packageDir, packageName} = {}) {
+  if (!fs.existsSync(themeRoot) || !fs.statSync(themeRoot).isDirectory()) {
+    return [];
+  }
+  const folders = fs
+    .readdirSync(themeRoot, {withFileTypes: true})
+    .filter(entry => entry.isDirectory() && !isIgnoredThemeEntry(entry.name))
+    .map(entry => path.join(themeRoot, entry.name))
+    .sort();
+  const unread = folders.filter(folder => {
+    if (isThemeFolder(folder)) return false;
+    const {files} = listThemeFolder(folder);
+    return (
+      files.some(file => MODULE_FILE_RE.test(file)) &&
+      looksLikeTheme(folder, files)
+    );
+  });
+  if (unread.length === 0) return [];
+
+  const modules = [
+    ...fs
+      .readdirSync(themeRoot, {withFileTypes: true})
+      .filter(
+        entry =>
+          entry.isFile() &&
+          !isIgnoredThemeEntry(entry.name) &&
+          MODULE_FILE_RE.test(entry.name),
+      )
+      .map(entry => path.join(themeRoot, entry.name)),
+    ...folders.flatMap(folder =>
+      listThemeFolder(folder)
+        .files.filter(file => MODULE_FILE_RE.test(file))
+        .map(file => path.join(folder, file)),
+    ),
+  ];
+  const self = packageName ? `${packageName}/` : null;
+  /** @type {string[]} */
+  const imported = [];
+  for (const file of modules) {
+    let specifiers;
+    try {
+      specifiers = moduleSpecifiers(file, sourceParser());
+    } catch {
+      continue;
+    }
+    for (const specifier of specifiers) {
+      if (specifier.startsWith('.')) {
+        imported.push(path.resolve(path.dirname(file), specifier));
+      } else if (self && packageDir && specifier.startsWith(self)) {
+        imported.push(path.resolve(packageDir, specifier.slice(self.length)));
+      }
+    }
+  }
+  return unread.filter(
+    folder =>
+      !imported.some(
+        target => target === folder || target.startsWith(folder + path.sep),
+      ),
+  );
 }
 
 /** @type {DiscoveredTheme[] | null} */

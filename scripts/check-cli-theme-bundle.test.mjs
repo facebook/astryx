@@ -10,6 +10,7 @@
  * the regenerated bundle.
  */
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -121,6 +122,58 @@ describe('CLI theme bundle is in sync with source', () => {
     expect(slugs.length).toBeGreaterThan(0);
   });
 
+  it('every public theme package descriptor reads back through the CLI', () => {
+    expect(() => listThemeSlugs()).not.toThrow();
+  });
+
+  it('the generator runs when its path goes through a symlinked directory', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-theme-gen-'));
+    try {
+      const repo = path.join(root, 'repo');
+      const cli = path.join(repo, 'packages', 'cli');
+      fs.mkdirSync(path.join(repo, 'scripts'), {recursive: true});
+      fs.mkdirSync(cli, {recursive: true});
+      fs.copyFileSync(
+        path.join(__dirname, 'generate-cli-themes.mjs'),
+        path.join(repo, 'scripts', 'generate-cli-themes.mjs'),
+      );
+      for (const dir of ['authoring', 'foundation']) {
+        fs.symlinkSync(
+          path.join(REPO_ROOT, 'packages', 'cli', dir),
+          path.join(cli, dir),
+        );
+      }
+      const src = path.join(repo, 'packages', 'themes', 'ocean', 'src');
+      fs.mkdirSync(src, {recursive: true});
+      fs.writeFileSync(
+        path.join(src, '..', 'package.json'),
+        JSON.stringify({name: '@acme/theme-ocean'}),
+      );
+      fs.writeFileSync(
+        path.join(src, 'oceanTheme.ts'),
+        'export const oceanTheme = {};\n',
+      );
+      fs.writeFileSync(
+        path.join(src, 'oceanTheme.doc.mjs'),
+        "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue.', maintained: true};\n",
+      );
+      fs.symlinkSync(repo, path.join(root, 'link'));
+      const run = spawnSync(
+        process.execPath,
+        [path.join(root, 'link', 'scripts', 'generate-cli-themes.mjs')],
+        {cwd: path.parse(root).root, encoding: 'utf-8'},
+      );
+      expect(run.status, run.stderr).toBe(0);
+      expect(
+        fs.readdirSync(
+          path.join(cli, 'assets', 'templates', 'themes', 'ocean'),
+        ),
+      ).toEqual(['oceanTheme.doc.mjs', 'oceanTheme.ts']);
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('every public theme package ships its same-stem descriptor', () => {
     const missing = slugs.filter(slug => {
       const stem = `${toIdentifier(slug)}Theme`;
@@ -151,10 +204,19 @@ describe('CLI theme bundle is in sync with source', () => {
       expect(() => listThemeSlugs(root)).toThrow(
         `Theme package @acme/theme-ocean (${path.basename(root)}/ocean) has src/oceanTheme.ts but no src/oceanTheme.doc.mjs descriptor, so it cannot be bundled.`,
       );
-      fs.writeFileSync(
-        path.join(root, 'ocean', 'src', 'oceanTheme.doc.mjs'),
-        'export default {};\n',
+      const descriptor = path.join(root, 'ocean', 'src', 'oceanTheme.doc.mjs');
+      const named = `Theme package @acme/theme-ocean (${path.basename(root)}/ocean) descriptor src/oceanTheme.doc.mjs`;
+      fs.writeFileSync(descriptor, 'export default {};\n');
+      expect(() => listThemeSlugs(root)).toThrow(
+        `${named} must declare its public ThemeDoc type from @astryxdesign/cli/authoring.`,
       );
+      const typed = (/** @type {string} */ name) =>
+        `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {type: 'theme', name: '${name}', displayName: 'Ocean', description: 'Blue.', maintained: true};\n`;
+      fs.writeFileSync(descriptor, typed('sea'));
+      expect(() => listThemeSlugs(root)).toThrow(
+        `${named} names "sea", but the package folder is "ocean".`,
+      );
+      fs.writeFileSync(descriptor, typed('ocean'));
       expect(listThemeSlugs(root)).toEqual(['ocean']);
     } finally {
       fs.rmSync(root, {recursive: true, force: true});

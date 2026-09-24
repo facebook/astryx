@@ -200,19 +200,22 @@ export async function integrationAddTheme(name, options = {}) {
   const themeDir = assertWithin(identity.slug, root, {
     label: 'theme directory',
   });
-  if (fs.existsSync(themeDir)) {
-    throw new AstryxError(
-      `Refusing to overwrite existing theme directory ${projectPath(path.relative(packageDir, themeDir))}.`,
-      undefined,
-      ERROR_CODES.ERR_FILE_EXISTS,
-    );
-  }
   const sourceFile = assertWithin(identity.entry, themeDir, {
     label: 'theme source file',
   });
   const descriptorFile = assertWithin(identity.descriptor, themeDir, {
     label: 'theme descriptor file',
   });
+  // An existing folder is filled; only a file this would write is refused.
+  for (const file of [sourceFile, descriptorFile]) {
+    if (fs.existsSync(file)) {
+      throw new AstryxError(
+        `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, file))}.`,
+        undefined,
+        ERROR_CODES.ERR_FILE_EXISTS,
+      );
+    }
+  }
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
   const plans = [

@@ -12,6 +12,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {parseTheme} from '../packages/cli/authoring/doctypes/theme/parse.mjs';
+import {readThemeDescriptorValue} from '../packages/cli/foundation/discovery/theme-discovery.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -35,8 +37,9 @@ function readJSON(file) {
 
 /**
  * The public theme packages to bundle: each directory with a package.json and
- * a `src/<name>Theme.ts`, unless the package is private. A public one without
- * its same-stem descriptor throws rather than dropping out of the bundle.
+ * a `src/<name>Theme.ts`, unless the package is private. A public one whose
+ * same-stem descriptor is missing, or is not a ThemeDoc the CLI reads for that
+ * slug, throws rather than dropping out of the bundle or breaking it.
  * @param {string} [themesRoot]
  * @returns {string[]}
  */
@@ -55,14 +58,26 @@ export function listThemeSlugs(themesRoot = THEMES_SRC_ROOT) {
       const manifest = readJSON(pkg);
       // A private theme package is a test fixture, not a selectable theme.
       if (manifest.private === true) return false;
-      if (!fs.existsSync(path.join(sourceDir, `${stem}.doc.mjs`))) {
-        const where = `${path.basename(themesRoot)}/${slug}`;
-        const name =
-          typeof manifest.name === 'string'
-            ? `${manifest.name} (${where})`
-            : where;
+      const where = `${path.basename(themesRoot)}/${slug}`;
+      const name =
+        typeof manifest.name === 'string'
+          ? `${manifest.name} (${where})`
+          : where;
+      const descriptor = path.join(sourceDir, `${stem}.doc.mjs`);
+      if (!fs.existsSync(descriptor)) {
         throw new Error(
           `Theme package ${name} has src/${stem}.ts but no src/${stem}.doc.mjs descriptor, so it cannot be bundled.`,
+        );
+      }
+      // The CLI's own reader and parser, so a bundled theme always reads back.
+      const label = `Theme package ${name} descriptor src/${stem}.doc.mjs`;
+      const doc = parseTheme(
+        readThemeDescriptorValue(descriptor, label),
+        label,
+      );
+      if (doc.name !== slug) {
+        throw new Error(
+          `${label} names "${doc.name}", but the package folder is "${slug}".`,
         );
       }
       return true;
@@ -141,4 +156,16 @@ function main() {
   );
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+/** Whether this module is the entry point, however the path to it was spelled. */
+function isEntryPoint() {
+  try {
+    return (
+      fs.realpathSync(process.argv[1] ?? '') ===
+      fs.realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryPoint()) main();

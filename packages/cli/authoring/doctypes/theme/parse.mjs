@@ -29,7 +29,8 @@ const themeDocSchema = z
       'name must be lowercase kebab-case starting with a letter',
     ),
     displayName: nonBlank('displayName'),
-    description: nonBlank('description'),
+    // Blank is allowed, as the released catalog allowed it.
+    description: z.string(),
     maintained: z.boolean(),
   })
   .strict();

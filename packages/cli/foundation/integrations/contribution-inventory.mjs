@@ -17,6 +17,7 @@ import {isDeepStrictEqual} from 'node:util';
 import {
   discoverIntegrationThemes,
   isThemeFolder,
+  listThemeFiles,
 } from '../discovery/theme-discovery.mjs';
 import {discoverIntegrationComponents} from '../discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../discovery/component-loader.mjs';
@@ -43,17 +44,16 @@ const SKIP_DIRS = new Set([
  * `node_modules` and `.git`. Returns sorted absolute paths.
  * @param {string} dir
  * @param {(name: string) => boolean} filter
- * @param {boolean} [skipIgnored]
  * @returns {string[]}
  */
-function walkDir(dir, filter, skipIgnored = true) {
+function walkDir(dir, filter) {
   if (!dir || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [];
   /** @type {string[]} */
   const out = [];
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-    if (skipIgnored && SKIP_DIRS.has(entry.name)) continue;
+    if (SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walkDir(full, filter, skipIgnored));
+    if (entry.isDirectory()) out.push(...walkDir(full, filter));
     else if (filter(entry.name)) out.push(full);
   }
   return out.sort();
@@ -71,19 +71,15 @@ function enumerateThemeFiles(root, pkgDir) {
   if (!root || !fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     return [];
   }
-  // A theme directory is its complete copy and pack boundary. Do not apply the
-  // generic test/fixture exclusions here: if an author puts a file inside that
-  // boundary, `theme add` copies it and pack-check must require it. Dot entries
-  // and folders discovery does not read as themes are not required.
+  // Exactly what `theme add` copies: each theme folder's files, including
+  // tests and fixtures, but no dot entry or file npm never publishes. Files
+  // beside the theme folders belong to no theme.
   /** @type {string[]} */
   const files = [];
   for (const entry of fs.readdirSync(root, {withFileTypes: true})) {
-    if (entry.name.startsWith('.')) continue;
     const full = path.join(root, entry.name);
-    if (!entry.isDirectory()) {
-      files.push(full);
-    } else if (isThemeFolder(full)) {
-      files.push(...walkDir(full, () => true, false));
+    if (entry.isDirectory() && isThemeFolder(full)) {
+      files.push(...listThemeFiles(full).map(file => path.join(full, file)));
     }
   }
   return files.sort().map(file => rel(pkgDir, file));

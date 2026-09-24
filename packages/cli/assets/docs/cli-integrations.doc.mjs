@@ -119,7 +119,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: "Kind        Metadata file              type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.mjs               'component'    Name.tsx (same stem)\nTemplate    Name.doc.mjs               'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.mjs              'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       <slug>/nameTheme.doc.mjs   'theme'        <slug>/nameTheme.ts (same stem)\n\nReleased component and template .doc.ts / .doc.js files and .template.{ts,mjs,js}\ntemplates still load. Doc topics must be .doc.mjs or .doc.js: an installed\npackage's .doc.ts topic is listed but cannot be read.",
+          code: "Kind        Metadata file              type stamp     Source file\n────────    ─────────────────────────  ─────────────  ──────────────────────\nComponent   Name.doc.mjs               'component'    Name.tsx (same stem)\nTemplate    Name.doc.mjs               'page'/'block' Name.tsx (same stem)\nDoc topic   topic.doc.mjs              'generic'      (none — docs are prose)\nCodemod     <version>/<id>.{ts,mjs,js} 'code'/'config' (the codemod IS the source)\nTheme       <slug>/nameTheme.doc.mjs   'theme'        <slug>/nameTheme.ts (same stem)\n\nReleased .doc.js files, template .doc.ts files, and .template.{ts,mjs,js}\ntemplates still load. A component or topic .doc.ts loads only from a package\nlinked from outside node_modules; installed, it is listed but cannot be read.",
         },
         {
           type: 'prose',
@@ -152,7 +152,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a strongly typed `.doc.mjs` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.mjs`. The doc file must default-export an object with `type: 'component'` — not `'generic'` (that is for reference docs) and not `'page'`/`'block'` (those are for templates). Released `.doc.ts` and `.doc.js` inputs remain readable for compatibility, but new authoring uses `.doc.mjs`.",
+          text: "Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a strongly typed `.doc.mjs` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.mjs`. The doc file must default-export an object with `type: 'component'` — not `'generic'` (that is for reference docs) and not `'page'`/`'block'` (those are for templates). Released `.doc.js` docs remain readable for compatibility. A `.doc.ts` component doc reads only when the package is linked from outside node_modules, not once it is installed. New authoring uses `.doc.mjs`.",
         },
         {
           type: 'prose',

@@ -173,9 +173,11 @@ test, applicable text, and consumer-documentation projections.
   derives the source entry and required named runtime export from the shared stem,
   parses source without executing it, and rejects escaped local imports and missing
   or type-only runtime exports. The theme directory is the recursive copy and pack
-  boundary. A dot-folder, or a folder holding neither a descriptor nor a
-  `<name>Theme` source, is not a theme and is neither read nor packed; a folder
-  with a theme source and no descriptor fails. `theme list` retains package
+  boundary; dot entries and files npm never publishes belong to no theme. A
+  dot-folder, or a folder holding neither a descriptor nor a `<name>Theme`
+  source, is not a theme and is neither read nor packed, and doctor warns about
+  one that looks like a theme; a folder with a theme source and no descriptor
+  fails. `theme list` retains package
   ownership, and `theme add --package` copies the complete directory before
   `theme build` compiles the consumer-owned copy.
 - **INV20 — A command's API subject has one layout.** A command's behavior lives

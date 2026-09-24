@@ -257,20 +257,20 @@ describe('cli-integrations guide required content', () => {
   it('names .doc.mjs as the authoring suffix and the released ones it still reads', () => {
     expect(text).toContain('strongly typed `.doc.mjs`');
     expect(text).toContain(
-      'Released `.doc.ts` and `.doc.js` inputs remain readable',
+      'Released `.doc.js` docs remain readable for compatibility. A `.doc.ts` component doc reads only when the package is linked from outside node_modules, not once it is installed.',
     );
     expect(text).toContain('Released `.template.*` files remain readable');
   });
 
   it('says which released suffixes still load for each kind', () => {
     expect(text).toContain(
-      'Released component and template .doc.ts / .doc.js files and .template.{ts,mjs,js}\ntemplates still load.',
+      'Released .doc.js files, template .doc.ts files, and .template.{ts,mjs,js}\ntemplates still load.',
     );
     expect(text).toContain(
-      "Doc topics must be .doc.mjs or .doc.js: an installed\npackage's .doc.ts topic is listed but cannot be read.",
+      'A component or topic .doc.ts loads only from a package\nlinked from outside node_modules; installed, it is listed but cannot be read.',
     );
     expect(text).not.toContain(
-      'Released .doc.ts / .doc.js and .template.{ts,mjs,js} files still load.',
+      'Released `.doc.ts` and `.doc.js` inputs remain readable',
     );
   });
 

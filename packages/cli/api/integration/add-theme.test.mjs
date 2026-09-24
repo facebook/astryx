@@ -180,12 +180,32 @@ describe('integrationAddTheme', () => {
     ).rejects.toMatchObject({code: 'ERR_THEME_INVALID'});
   });
 
-  it('refuses to write into an existing folder that is not yet a theme', async () => {
+  it.each([
+    ['an empty folder', []],
+    ['a folder holding .gitkeep', ['.gitkeep']],
+    ['a folder holding NOTES.md', ['NOTES.md']],
+  ])('fills %s', async (_, files) => {
     setup();
-    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+    const dir = path.join(tmpDir, 'themes', 'ocean');
+    fs.mkdirSync(dir, {recursive: true});
+    for (const file of files) fs.writeFileSync(path.join(dir, file), 'x\n');
+    const result = await integrationAddTheme('ocean', {cwd: tmpDir});
+    expect(result.data.written).toBe(true);
+    expect(fs.readdirSync(dir).sort()).toEqual(
+      [...files, 'oceanTheme.doc.mjs', 'oceanTheme.ts'].sort(),
+    );
+  });
+
+  it('refuses to overwrite a file it would write', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir});
     await expect(
       integrationAddTheme('ocean', {cwd: tmpDir}),
-    ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
+    ).rejects.toMatchObject({
+      code: 'ERR_FILE_EXISTS',
+      message:
+        'Refusing to overwrite existing file themes/ocean/oceanTheme.ts.',
+    });
   });
 
   it.each(['../ocean', 'Ocean', 'ocean theme', '.ocean'])(

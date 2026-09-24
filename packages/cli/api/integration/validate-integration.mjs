@@ -35,6 +35,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
+  THEME_SLUG_RE,
+  unreadThemeFolders,
+} from '../../foundation/discovery/theme-discovery.mjs';
+import {
   createFixContext,
   DOC_CANDIDATE_RE,
   pathIsInside,
@@ -97,6 +101,37 @@ const UNREACHABLE_SKIP_DIRS = new Set([
   '.next',
   'out',
 ]);
+/**
+ * A warning for each folder under the themes root that holds modules but is
+ * not read as a theme. Either branch of its fix leaves nothing to warn about:
+ * the folder becomes a theme, or a dot-folder discovery skips.
+ * @param {string} packageDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {Issue[]}
+ */
+function unreadThemeFolderIssues(packageDir, loaded) {
+  const themes = /** @type {string} */ (loaded.themes);
+  return unreadThemeFolders(themes, {
+    packageDir,
+    packageName: loaded.name,
+  }).map(folder => {
+    const name = path.basename(folder);
+    const shown = `${path.relative(packageDir, folder).split(path.sep).join('/')}/`;
+    const hide = `rename it to .${name} so Astryx skips it`;
+    let fix;
+    if (THEME_SLUG_RE.test(name)) {
+      const stem = `${name.replace(/-([a-z0-9])/gu, (_, character) => character.toUpperCase())}Theme`;
+      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`astryx integration add theme ${name}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
+    } else {
+      fix = `${hide}; a theme folder needs a lower-kebab name.`;
+    }
+    return warning(
+      'unread_theme_folder',
+      `Folder "${shown}" holds modules but no <name>Theme source or .doc.mjs descriptor, so Astryx does not read it as a theme. Fix: ${fix}`,
+    );
+  });
+}
+
 /**
  * Find real contribution metadata that sits outside every declared root. The
  * scan is local-authoring-only, skips dependency/build output, never follows
@@ -277,6 +312,8 @@ async function validateAtPackageDir(
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
+  if (loaded.themes)
+    issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(packageDir, loaded)),

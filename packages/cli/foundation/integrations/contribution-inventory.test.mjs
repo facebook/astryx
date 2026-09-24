@@ -51,6 +51,21 @@ function writeTheme(slug, files = [`${slug}Theme.ts`]) {
   return root;
 }
 
+const UNPUBLISHED = [
+  '.DS_Store',
+  '._oceanTheme.ts',
+  '.gitignore',
+  '.npmignore',
+  '.npmrc',
+  'oceanTheme.ts.orig',
+  'npm-debug.log',
+  'palette/.DS_Store',
+  'palette/npm-debug.log',
+  '.git/HEAD',
+  'CVS/Entries',
+  'node_modules/dep/index.js',
+];
+
 describe('computeRequiredFiles', () => {
   it('enumerates each complete descriptor-owned theme directory', () => {
     const root = writeTheme('ocean', ['oceanTheme.ts', 'tokens.ts']);
@@ -69,6 +84,25 @@ describe('computeRequiredFiles', () => {
     expect(inv.allFiles).toContain('astryx.integration.mjs');
     expect(inv.allFiles).toContain('themes/ocean/oceanTheme.doc.mjs');
     expect(inv.allFiles).not.toContain('themes/manifest.json');
+  });
+
+  it('requires no file npm leaves out, at any depth, and none beside the themes', () => {
+    const root = writeTheme('ocean', ['oceanTheme.ts', 'palette/tokens.ts']);
+    for (const file of [
+      ...UNPUBLISHED.map(name => `ocean/${name}`),
+      'README.md',
+      'npm-debug.log',
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
+      fs.writeFileSync(path.join(root, file), 'x\n');
+    }
+    expect(computeRequiredFiles(loaded({themes: root})).roots[0].files).toEqual(
+      [
+        'themes/ocean/oceanTheme.doc.mjs',
+        'themes/ocean/oceanTheme.ts',
+        'themes/ocean/palette/tokens.ts',
+      ],
+    );
   });
 
   it('requires only the folders theme discovery reads', () => {

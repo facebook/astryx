@@ -437,6 +437,28 @@ describe('theme descriptor type annotation', () => {
       `/** @import * as authoring from '@astryxdesign/cli/authoring' */\n/** @type {authoring.ThemeDoc} */\nexport default ${BODY};\n`,
     ],
     ['a JSDoc cast of the object', `export default ${TYPE} (${BODY});\n`],
+    [
+      'a JSDoc cast inside outer parentheses',
+      `export default (${TYPE} (${BODY}));\n`,
+    ],
+    [
+      'a @satisfies cast',
+      `export default ${TYPE.replace('@type', '@satisfies')} (${BODY});\n`,
+    ],
+    ...['!T', '?T', 'T=', '(T)', 'T | null', 'undefined | T', 'T & {}'].map(
+      form => [
+        `the type written {${form}}`,
+        `/** @type {${form.replace('T', "import('@astryxdesign/cli/authoring').ThemeDoc")}} */\nexport default ${BODY};\n`,
+      ],
+    ),
+    [
+      'an @import with a type modifier',
+      `/** @import {type ThemeDoc} from '@astryxdesign/cli/authoring' */\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a chain of typedef aliases',
+      `/** @typedef {import('@astryxdesign/cli/authoring').ThemeDoc} A */\n/** @typedef {A} B */\n/** @type {B} */\nexport default ${BODY};\n`,
+    ],
   ])('accepts %s', (_, source) => {
     writeDescriptor(source);
     expect(discoverThemeDirectory(tmpDir, '@acme/themes')).toHaveLength(1);
@@ -481,6 +503,34 @@ describe('theme descriptor type annotation', () => {
       'a ThemeDoc from another module',
       `/** @type {import('@astryxdesign/core').ThemeDoc} */\nexport default ${BODY};\n`,
     ],
+    [
+      'a type in a code span before the real @type {object}',
+      `/** Not \`${TYPE.slice(4, -3)}\` here. @type {object} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a typedef in a code span',
+      `/** Declare \`@typedef {import('@astryxdesign/cli/authoring').ThemeDoc} TD\` first. */\n/** @type {TD} */\nexport default ${BODY};\n`,
+    ],
+    [
+      'a type in a code span of a tag',
+      `/**\n * @see \` ${TYPE.slice(4, -3)}\` here\n */\nexport default ${BODY};\n`,
+    ],
+    [
+      '@import type {...}, which is not @import syntax',
+      `/** @import type {ThemeDoc} from '@astryxdesign/cli/authoring' */\n/** @type {ThemeDoc} */\nexport default ${BODY};\n`,
+    ],
+    [
+      '@satisfies on the export statement',
+      `${TYPE.replace('@type', '@satisfies')}\nexport default ${BODY};\n`,
+    ],
+    [
+      'an annotation before default, not before the parenthesis',
+      `export ${TYPE} default (${BODY});\n`,
+    ],
+    [
+      'a union with another type',
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc | string} */\nexport default ${BODY};\n`,
+    ],
   ])('rejects %s', (_, source) => {
     writeDescriptor(source);
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
@@ -492,12 +542,18 @@ describe('theme descriptor type annotation', () => {
 describe('theme descriptor values', () => {
   it.each([
     ['displayName', {displayName: '   '}],
-    ['description', {description: ''}],
     ['name', {name: ' '}],
   ])('rejects a blank %s', (field, doc) => {
     writeTheme({doc});
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
       `Theme descriptor oceanTheme.doc.mjs for @acme/themes is invalid: ${field}: ${field} must not be blank`,
+    );
+  });
+
+  it.each(['', '   '])('accepts a blank description (%j)', description => {
+    writeTheme({doc: {description}});
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].description).toBe(
+      description,
     );
   });
 
@@ -576,6 +632,39 @@ describe('theme folder messages', () => {
     expect(() => discoverThemeDirectory(tmpDir, '@acme/themes')).toThrow(
       'Theme "ocean" for @acme/themes contains more than one .doc.mjs descriptor: "oceanTheme.doc.mjs" and "extra/otherTheme.doc.mjs".',
     );
+  });
+});
+
+const UNPUBLISHED = [
+  '.DS_Store',
+  '._oceanTheme.ts',
+  '.gitignore',
+  '.npmignore',
+  '.npmrc',
+  'oceanTheme.ts.orig',
+  'npm-debug.log',
+  'palette/.DS_Store',
+  'palette/npm-debug.log',
+  '.git/HEAD',
+  'CVS/Entries',
+  'node_modules/dep/index.js',
+];
+
+describe('files a theme leaves out', () => {
+  it('leaves out dot entries and files npm never publishes, at any depth', () => {
+    const dir = writeTheme({files: {'palette/tokens.ts': 'export {};\n'}});
+    for (const file of UNPUBLISHED) {
+      fs.mkdirSync(path.dirname(path.join(dir, file)), {recursive: true});
+      fs.writeFileSync(path.join(dir, file), 'x\n');
+    }
+    fs.symlinkSync(path.join(dir, 'palette'), path.join(dir, '.linked'));
+    fs.mkdirSync(path.join(tmpDir, 'node_modules', 'dep'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'npm-debug.log'), 'x\n');
+    expect(discoverThemeDirectory(tmpDir, '@acme/themes')[0].files).toEqual([
+      'oceanTheme.ts',
+      'oceanTheme.doc.mjs',
+      'palette/tokens.ts',
+    ]);
   });
 });
 
