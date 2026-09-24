@@ -93,6 +93,25 @@ describe('where loading is deliberately looser than the type', () => {
     ).not.toThrow();
   });
 
+  it('each entry of a stamped group doc needs a name, and nothing more', () => {
+    const group = (/** @type {unknown[]} */ components) => ({
+      type: 'component',
+      name: 'Tabs',
+      components,
+    });
+    expect(() =>
+      parseDoc(
+        group([{name: 'Tab'}, {name: 'TabPanel', description: 'x'}]),
+        'Tabs.doc.mjs',
+      ),
+    ).not.toThrow();
+    for (const bad of [null, 5, 'Tab', {}, {name: ''}, {displayName: 'Tab'}]) {
+      expect(() => parseDoc(group([bad]), 'Tabs.doc.mjs')).toThrow(
+        /components\.0/,
+      );
+    }
+  });
+
   it('a stamped function needs no displayName; usage is unchecked', () => {
     expect(() =>
       parseDoc(

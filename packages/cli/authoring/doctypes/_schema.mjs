@@ -260,6 +260,15 @@ const ComponentBaseSchema = z
   .passthrough();
 
 /**
+ * One entry in a group doc's `components`: a full ComponentEntry or a
+ * name-only ComponentRef. Readers look every entry up by `name`, so that much
+ * is checked here; the rest passes through, as on an unstamped doc.
+ */
+const ComponentGroupEntrySchema = z
+  .object({name: z.string().min(1, 'component name is required')})
+  .passthrough();
+
+/**
  * New-format stamped component doc (`type: 'component'`): one component's
  * `props`, or the `components` a group doc documents together. These are the
  * shapes the published ComponentDoc type allows, and the ones an unstamped doc
@@ -267,7 +276,7 @@ const ComponentBaseSchema = z
  */
 export const ComponentDocKindSchema = ComponentBaseSchema.extend({
   props: z.array(PropSchema).optional(),
-  components: z.array(z.unknown()).optional(),
+  components: z.array(ComponentGroupEntrySchema).optional(),
 }).superRefine((doc, context) => {
   if (doc.props == null && doc.components == null) {
     context.addIssue({
@@ -284,13 +293,14 @@ export const ComponentDocKindSchema = ComponentBaseSchema.extend({
  * format always accepted, so stamping an existing doc never breaks it:
  * `displayName` may be missing, `category` is any string, `usage`, `theming`,
  * `playground` and `examples` pass through unchecked, and a doc has `props`,
- * `components`, or both. Every other field matches the published type.
+ * `components`, or both; each `components` entry needs only a `name`. Every
+ * other field matches the published type.
  *
  * @typedef {Omit<SingleComponentDoc,
  *     'type' | 'displayName' | 'category' | 'usage' | 'theming' | 'examples' | 'playground' | 'props'>
  *   & {type: 'component', displayName?: string, category?: string, usage?: unknown,
  *     theming?: unknown, examples?: unknown[], playground?: unknown,
- *     props?: ComponentPropDoc[], components?: unknown[]}} LoadedComponentDoc
+ *     props?: ComponentPropDoc[], components?: Array<{name: string}>}} LoadedComponentDoc
  */
 /**
  * @typedef {import('../_shared/contract.js').Expect<
