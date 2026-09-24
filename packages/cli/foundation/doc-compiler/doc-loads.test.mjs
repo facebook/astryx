@@ -283,8 +283,8 @@ const RUNNERS = {
     sites: ['importUserModule'],
   },
   'scripts/generate-cli-readme.mjs': {
-    runs: 'self-docs, the API entries, and the CLI, to write the README (build time, not shipped)',
-    sites: ['child_process.spawnSync', 'import(<computed>) ×3'],
+    runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',
+    sites: ['child_process.spawnSync', 'import(<computed>)'],
   },
   'scripts/sync-api-types.mjs': {
     runs: '`tsc`, to emit the API declarations (build time, not shipped)',
