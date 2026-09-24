@@ -1,19 +1,30 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Generate the drift-prone reference tables in packages/cli/README.md from
- * the sources of truth, so they can't fall out of sync again:
- *   - the Commands table    <- `astryx manifest --json` (the live command set)
- *   - the Error codes table <- the error-codes EnumDoc (== ERROR_CODES, enforced
- *                              by the docs drift harness)
+ * @file Generate the reference sections of packages/cli/README.md from the
+ * CLI's self-documentation, so they can't fall out of sync again:
+ *   - the Commands table     <- `astryx manifest --json` (the live command set)
+ *   - the Command reference  <- every CommandDoc (usage, options, examples)
+ *   - the search options and the `doctor integration` table <- their CommandDocs
+ *   - the API function list  <- the FunctionDocs under api/, checked against
+ *                               what each import path exports
+ *   - the Error codes and Type discriminators tables <- their EnumDocs
+ *   - the config and integration field lists <- their SchemaDocs, pointing at
+ *     the `astryx docs authoring` section that serves the rest
  *
  * Content is written between `<!-- BEGIN GENERATED: <name> -->` and
- * `<!-- END GENERATED: <name> -->` markers. `--check` verifies the committed
- * README matches (CI gate); without it, the README is rewritten in place.
+ * `<!-- END GENERATED: <name> -->` markers; every byte outside them is kept.
+ * `--check` verifies the committed README matches (CI gate); without it, the
+ * README is rewritten in place. Importing this module runs nothing.
  *
- * @input astryx manifest + foundation/response/error-codes.doc.mjs
+ * @input The CommandDocs under clients/cli/commands, the FunctionDocs under
+ *   api, the error-codes and response-types EnumDocs, the config and
+ *   integration SchemaDocs, `astryx manifest --json`, the section keys that
+ *   `astryx docs <topic> --index` lists (read through the `docs()` API), and
+ *   the functions each public import path exports.
  * @output packages/cli/README.md (between generated markers)
- * @position packages/cli/scripts — README table generator
+ * @position packages/cli/scripts — README generator, run at build time only;
+ *   not published.
  *
  * Usage:
  *   node packages/cli/scripts/generate-cli-readme.mjs          # write
@@ -26,32 +37,76 @@ import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import prettier from 'prettier';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CLI_ROOT = path.resolve(HERE, '..');
-const BIN = path.join(CLI_ROOT, 'clients/cli/bin/astryx.mjs');
-const README = path.join(CLI_ROOT, 'README.md');
+/** The CLI package root. */
+export const CLI_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+);
 
-function getManifest() {
-  const res = spawnSync('node', [BIN, 'manifest', '--json'], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  // Report a CLI that failed to boot as itself. Without this, the parse below
-  // turns it into "Unexpected end of JSON input", which says nothing useful
-  // when this runs as a CI gate.
-  if (res.error) throw res.error;
-  if (res.status !== 0 || !res.stdout.trim()) {
-    throw new Error(
-      `\`astryx manifest --json\` failed (exit ${res.status}).\n${res.stderr}`,
-    );
-  }
-  return JSON.parse(res.stdout).data;
+/** The README this generator writes. */
+export const README = path.join(CLI_ROOT, 'README.md');
+
+/** The command that regenerates the README. */
+export const REGENERATE = 'pnpm -F @astryxdesign/cli readme';
+
+/** Directories that hold test inputs, never shipped docs. */
+const SKIPPED_DIRS = new Set([
+  '__tests__',
+  '__fixtures__',
+  'fixtures',
+  'node_modules',
+]);
+
+/** The docs topics whose section keys a pointer section may name. */
+const POINTER_TOPICS = ['authoring', 'cli-integrations'];
+
+/**
+ * Everything a section renders from.
+ * @typedef {object} ReadmeSources
+ * @property {any} manifest the `astryx manifest --json` payload
+ * @property {any[]} commandDocs
+ * @property {any[]} functionDocs
+ * @property {Record<string, string[]>} exports the functions (not classes or
+ *   values) each import path exports, sorted
+ * @property {any} errorCodes the error-codes EnumDoc
+ * @property {any} responseTypes the response-types EnumDoc
+ * @property {any} configSchema the config SchemaDoc
+ * @property {any} integrationSchema the integration SchemaDoc
+ * @property {Record<string, string[]>} docsSections section keys per topic
+ */
+
+/**
+ * One generated section.
+ * @typedef {object} ReadmeSection
+ * @property {string} name the name in the section's markers
+ * @property {string} source what the section is generated from; the comment
+ *   after its END marker must say so
+ * @property {(sources: ReadmeSources, warn: (message: string) => void) => string} render
+ *   the section as unformatted markdown
+ */
+
+/**
+ * The comment that must follow a section's END marker.
+ * @param {string} source
+ * @returns {string}
+ */
+export function sourceComment(source) {
+  return `<!-- Generated by scripts/generate-cli-readme.mjs from ${source}. Run \`${REGENERATE}\`. -->`;
 }
 
-/** @param {string} rel @returns {Promise<any>} */
-async function loadDoc(rel) {
-  const mod = await import(pathToFileURL(path.join(CLI_ROOT, rel)).href);
-  return mod.doc ?? mod.docs;
+/** @param {string} a @param {string} b */
+function compareStrings(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Group commands before their subcommands: `theme` < `theme add` < `upgrade`. */
+function byCommandPath(/** @type {any} */ a, /** @type {any} */ b) {
+  const x = String(a.name).split(' ');
+  const y = String(b.name).split(' ');
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    if (x[i] !== y[i]) return compareStrings(x[i], y[i]);
+  }
+  return x.length - y.length;
 }
 
 /** @param {string[]} headers @param {string[][]} rows */
@@ -63,57 +118,666 @@ function table(headers, rows) {
   return [head, sep, body].join('\n');
 }
 
-/** @param {string} content @param {string} name @param {string} block */
-function replaceBlock(content, name, block) {
-  const begin = `<!-- BEGIN GENERATED: ${name} -->`;
-  const end = `<!-- END GENERATED: ${name} -->`;
-  const re = new RegExp(
-    `${begin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+/** @param {any} doc @param {string[]} headers */
+function enumTable(doc, headers) {
+  return table(
+    headers,
+    doc.members.map((/** @type {any} */ m) => [
+      `\`${m.value}\``,
+      m.description,
+    ]),
   );
-  if (!re.test(content)) throw new Error(`README markers for "${name}" not found`);
-  return content.replace(re, `${begin}\n\n${block}\n\n${end}`);
 }
 
-async function build() {
-  const manifest = getManifest();
-  const commandRows = manifest.commands
-    .filter((/** @type {any} */ c) => c.name !== 'manifest')
-    .map((/** @type {any} */ c) => [`\`${c.name}\``, c.description]);
-
-  const errorCodes = await loadDoc('foundation/response/error-codes.doc.mjs');
-  const errorRows = errorCodes.members.map((/** @type {any} */ m) => [`\`${m.value}\``, m.description]);
-
-  const responseTypes = await loadDoc('foundation/response/response-types.doc.mjs');
-  const rtRows = responseTypes.members.map((/** @type {any} */ m) => [`\`${m.value}\``, m.description]);
-
-  let content = fs.readFileSync(README, 'utf8');
-  content = replaceBlock(content, 'commands', table(['Command', 'Description'], commandRows));
-  content = replaceBlock(content, 'error-codes', table(['Code', 'Meaning'], errorRows));
-  content = replaceBlock(content, 'response-types', table(['Type', 'What `data` carries'], rtRows));
-
-  // Format through the repo's prettier config so the generated tables match what
-  // the commit hook (lint-staged prettier over *.md) would produce; otherwise
-  // `--check` would flag the file as drifted right after a commit reformats it.
-  const config = (await prettier.resolveConfig(README)) ?? {};
-  return prettier.format(content, {...config, parser: 'markdown', filepath: README});
+/** @param {ReadmeSources} sources @param {string} name */
+function commandNamed(sources, name) {
+  const doc = sources.commandDocs.find(d => d.name === name);
+  if (doc == null) throw new Error(`No CommandDoc for \`astryx ${name}\`.`);
+  return doc;
 }
 
-async function main() {
-  const check = process.argv.includes('--check');
-  const next = await build();
-  const current = fs.readFileSync(README, 'utf8');
-  if (check) {
-    if (current !== next) {
-      console.error(
-        'README generated tables are out of date. Run: pnpm -F @astryxdesign/cli readme',
+/**
+ * A command and its positional args, spelled the way the CLI's converter
+ * registers them: `<required>`, `[optional]`, `name...` when variadic.
+ * @param {any} cmd
+ */
+function usage(cmd) {
+  const args = (cmd.args ?? []).map((/** @type {any} */ a) => {
+    const inner = a.variadic ? `${a.name}...` : a.name;
+    return a.required ? `<${inner}>` : `[${inner}]`;
+  });
+  return [cmd.name, ...args].join(' ');
+}
+
+/** `false`, `''` and `[]` are what an unset flag already means. */
+function defaultText(/** @type {unknown} */ value) {
+  if (value == null || value === false || value === '') return '';
+  if (Array.isArray(value)) {
+    return value.length > 0 ? ` (default: \`${value.join(' ')}\`)` : '';
+  }
+  return ` (default: \`${String(value)}\`)`;
+}
+
+/**
+ * One list item per option, described as `--help` describes it: the option's
+ * own text, else the text of the FunctionDoc param it maps to.
+ * @param {any} cmd
+ * @param {ReadmeSources} sources
+ * @returns {string[]}
+ */
+function optionLines(cmd, sources) {
+  const fn = sources.functionDocs.find(f => f.name === cmd.fn);
+  return (cmd.options ?? []).map((/** @type {any} */ o) => {
+    const inherited = o.param
+      ? ((fn?.params ?? []).find((/** @type {any} */ p) => p.name === o.param)
+          ?.description ?? '')
+      : '';
+    const text =
+      `${o.description ?? inherited}${defaultText(o.default)}`.trim();
+    return text ? `- \`${o.flag}\`: ${text}` : `- \`${o.flag}\``;
+  });
+}
+
+/**
+ * Every live command's usage, summary, options and examples. A live command
+ * without a CommandDoc fails: leaving it out would say the CLI has no such
+ * command. A CommandDoc for no live command is left out, with a warning.
+ * @param {ReadmeSources} sources
+ * @param {(message: string) => void} warn
+ */
+function commandReference(sources, warn) {
+  /** @type {Set<string>} */
+  const live = new Set();
+  const visit = (/** @type {any} */ c) => {
+    live.add(c.name);
+    (c.subcommands ?? []).forEach(visit);
+  };
+  sources.manifest.commands.forEach(visit);
+
+  const documented = new Set(sources.commandDocs.map(d => d.name));
+  const undocumented = [...live].filter(name => !documented.has(name));
+  if (undocumented.length > 0) {
+    throw new Error(
+      `No CommandDoc under clients/cli/commands for: ${undocumented.map(n => `\`astryx ${n}\``).join(', ')}.`,
+    );
+  }
+
+  const docs = [];
+  for (const cmd of [...sources.commandDocs].sort(byCommandPath)) {
+    if (live.has(cmd.name)) {
+      docs.push(cmd);
+    } else {
+      warn(
+        `\`astryx ${cmd.name}\` is not a command; its CommandDoc is left out.`,
       );
-      process.exit(1);
     }
-    console.log('README generated tables are in sync.');
-  } else {
-    fs.writeFileSync(README, next);
-    console.log('README generated tables written.');
+  }
+  return docs
+    .map(cmd => {
+      const parts = [`### \`astryx ${usage(cmd)}\``, cmd.summary];
+      const options = optionLines(cmd, sources);
+      if (options.length > 0) parts.push(options.join('\n'));
+      const examples = (cmd.examples ?? []).flatMap((/** @type {any} */ e) =>
+        e.label ? [`# ${e.label}`, e.cli] : [e.cli],
+      );
+      if (examples.length > 0) {
+        parts.push(['```bash', ...examples, '```'].join('\n'));
+      }
+      return parts.join('\n\n');
+    })
+    .join('\n\n');
+}
+
+/**
+ * The functions each import path exports, with their signatures. An exported
+ * function without a FunctionDoc fails: leaving it out would hide part of the
+ * API. A FunctionDoc its import path does not export is left out, with a
+ * warning, because a reader could not import it.
+ * @param {ReadmeSources} sources
+ * @param {(message: string) => void} warn
+ */
+function apiFunctions(sources, warn) {
+  for (const [importPath, exported] of Object.entries(sources.exports)) {
+    const documented = new Set(
+      sources.functionDocs
+        .filter(f => f.importPath === importPath)
+        .map(f => f.name),
+    );
+    const undocumented = exported.filter(name => !documented.has(name));
+    if (undocumented.length > 0) {
+      throw new Error(
+        `${importPath} exports functions with no FunctionDoc under api/: ${undocumented.join(', ')}.`,
+      );
+    }
+  }
+
+  /** @type {Map<string, string[]>} */
+  const byPath = new Map();
+  for (const fn of [...sources.functionDocs].sort((a, b) =>
+    compareStrings(a.name, b.name),
+  )) {
+    if (!(sources.exports[fn.importPath] ?? []).includes(fn.name)) {
+      warn(
+        `${fn.name}() is documented as part of ${fn.importPath ?? 'no import path'}, which does not export it; left out.`,
+      );
+      continue;
+    }
+    const text = [
+      fn.summary,
+      fn.command ? `CLI: \`astryx ${fn.command}\`.` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const signature = `\`${fn.signature ?? `${fn.name}()`}\``;
+    const lines = byPath.get(fn.importPath) ?? [];
+    lines.push(text ? `- ${signature}: ${text}` : `- ${signature}`);
+    byPath.set(fn.importPath, lines);
+  }
+
+  return [...byPath.keys()]
+    .sort(compareStrings)
+    .map(p => `#### \`${p}\`\n\n${(byPath.get(p) ?? []).join('\n')}`)
+    .join('\n\n');
+}
+
+/**
+ * The `doctor integration` subcommands, in the order the group lists them.
+ * @param {ReadmeSources} sources
+ */
+function doctorIntegration(sources) {
+  const group = commandNamed(sources, 'doctor integration');
+  return table(
+    ['Command', 'What it does', 'Exit `1` when'],
+    (group.subcommands ?? []).map((/** @type {string} */ sub) => {
+      const cmd = commandNamed(sources, `${group.name} ${sub}`);
+      const exit = (cmd.exitCodes ?? []).find(
+        (/** @type {any} */ e) => e.code === 1,
+      );
+      return [`\`${usage(cmd)}\``, cmd.summary, exit?.when ?? ''];
+    }),
+  );
+}
+
+/**
+ * The key, once `astryx docs <topic> --index` is known to list it: a pointer
+ * to a section the CLI does not serve would send the reader nowhere.
+ * @param {ReadmeSources} sources
+ * @param {string} topic
+ * @param {string} key
+ */
+function requireSection(sources, topic, key) {
+  if (!(sources.docsSections[topic] ?? []).includes(key)) {
+    throw new Error(`\`astryx docs ${topic}\` has no section "${key}".`);
+  }
+  return key;
+}
+
+/**
+ * A SchemaDoc's field names, pointing at the `astryx docs` section that serves
+ * the rest instead of copying it. The key is the SchemaDoc's name, which is
+ * how the authoring topic keys its sections.
+ * @param {ReadmeSources} sources
+ * @param {any} schema
+ * @param {string} topic
+ */
+function schemaPointer(sources, schema, topic) {
+  const key = requireSection(sources, topic, schema.name);
+  const fields = (schema.fields ?? [])
+    .map((/** @type {any} */ f) => `\`${f.name}\``)
+    .join(', ');
+  return `Fields: ${fields}. Run \`astryx docs ${topic} ${key}\` for each field's type and description.`;
+}
+
+/**
+ * Every generated section of the README, and what it is generated from.
+ * @type {ReadmeSection[]}
+ */
+export const SECTIONS = [
+  {
+    name: 'search-options',
+    source: 'the `search` CommandDoc',
+    render: sources =>
+      optionLines(commandNamed(sources, 'search'), sources).join('\n'),
+  },
+  {
+    name: 'commands',
+    source: '`astryx manifest`',
+    render: ({manifest}) =>
+      table(
+        ['Command', 'Description'],
+        manifest.commands
+          .filter((/** @type {any} */ c) => c.name !== 'manifest')
+          .map((/** @type {any} */ c) => [`\`${c.name}\``, c.description]),
+      ),
+  },
+  {
+    name: 'error-codes',
+    source: 'the error-codes EnumDoc (== ERROR_CODES)',
+    render: ({errorCodes}) => enumTable(errorCodes, ['Code', 'Meaning']),
+  },
+  {
+    name: 'api-functions',
+    source: 'the FunctionDocs under api/',
+    render: apiFunctions,
+  },
+  {
+    name: 'response-types',
+    source: 'the response-types EnumDoc',
+    render: ({responseTypes}) =>
+      enumTable(responseTypes, ['Type', 'What `data` carries']),
+  },
+  {
+    name: 'doctor-integration',
+    source: 'the `doctor integration` CommandDocs',
+    render: doctorIntegration,
+  },
+  {
+    name: 'config-fields',
+    source: 'the config SchemaDoc and `astryx docs authoring --index`',
+    render: sources =>
+      schemaPointer(sources, sources.configSchema, 'authoring'),
+  },
+  {
+    name: 'integration-fields',
+    source: 'the integration SchemaDoc and `astryx docs authoring --index`',
+    render: sources =>
+      schemaPointer(sources, sources.integrationSchema, 'authoring'),
+  },
+  {
+    name: 'integration-how-it-works',
+    source: '`astryx docs cli-integrations --index`',
+    render: sources =>
+      `Read it with \`astryx docs cli-integrations ${requireSection(sources, 'cli-integrations', 'how-it-works')}\`.`,
+  },
+  {
+    name: 'command-reference',
+    source: 'the CommandDocs under clients/cli/commands',
+    render: commandReference,
+  },
+];
+
+const MARKER = /<!-- (BEGIN|END) GENERATED: (\S+) -->/g;
+
+/**
+ * Where each generated section sits, in file order.
+ * @param {string} readme
+ * @returns {{name: string, bodyStart: number, bodyEnd: number, after: number}[]}
+ *   `bodyStart..bodyEnd` is the text between the markers; `after` is just past
+ *   the END marker.
+ */
+export function findSections(readme) {
+  const markers = [...readme.matchAll(MARKER)];
+  const found = [];
+  /** @type {Set<string>} */
+  const seen = new Set();
+  for (let i = 0; i < markers.length; i += 2) {
+    const begin = markers[i];
+    const end = markers[i + 1];
+    const name = begin[2];
+    if (
+      begin[1] !== 'BEGIN' ||
+      end == null ||
+      end[1] !== 'END' ||
+      end[2] !== name
+    ) {
+      throw new Error(
+        `README markers do not pair up at "${begin[0]}": each BEGIN GENERATED needs its own END GENERATED before the next marker.`,
+      );
+    }
+    if (seen.has(name)) throw new Error(`README has two "${name}" sections.`);
+    seen.add(name);
+    found.push({
+      name,
+      bodyStart: begin.index + begin[0].length,
+      bodyEnd: end.index,
+      after: end.index + end[0].length,
+    });
+  }
+  return found;
+}
+
+/** What goes between a section's markers: its text set off by blank lines. */
+function sectionBody(/** @type {string} */ text) {
+  return text ? `\n\n${text}\n\n` : '\n\n';
+}
+
+/**
+ * Write each block between its section's markers. Every byte outside the
+ * markers is kept, including the source comment each END marker must be
+ * followed by.
+ * @param {string} readme
+ * @param {{name: string, source: string, text: string}[]} blocks
+ * @returns {string}
+ */
+export function spliceSections(readme, blocks) {
+  const byName = new Map(blocks.map(b => [b.name, b]));
+  const found = findSections(readme);
+  const present = new Set(found.map(s => s.name));
+  for (const {name} of blocks) {
+    if (!present.has(name)) {
+      throw new Error(`README markers for "${name}" not found.`);
+    }
+  }
+
+  let out = '';
+  let cursor = 0;
+  for (const section of found) {
+    const block = byName.get(section.name);
+    if (block == null) {
+      throw new Error(
+        `README has a "${section.name}" section this generator does not write; remove its markers or add it to SECTIONS.`,
+      );
+    }
+    const comment = sourceComment(block.source);
+    if (!readme.startsWith(`\n${comment}`, section.after)) {
+      throw new Error(
+        `README section "${section.name}" must be followed, on the next line, by:\n${comment}`,
+      );
+    }
+    out += readme.slice(cursor, section.bodyStart);
+    out += sectionBody(block.text);
+    cursor = section.bodyEnd;
+  }
+  return out + readme.slice(cursor);
+}
+
+/** @type {Promise<import('prettier').Options> | undefined} */
+let prettierOptions;
+
+function markdownOptions() {
+  prettierOptions ??= prettier
+    .resolveConfig(README)
+    .then(config => ({...config, parser: 'markdown'}));
+  return prettierOptions;
+}
+
+/**
+ * Format one block on its own. Formatting only the blocks is what leaves the
+ * text outside them alone; {@link assertHookStable} proves the result is what
+ * a whole-file pass would produce.
+ * @param {string} markdown
+ */
+async function formatBlock(markdown) {
+  return (await prettier.format(markdown, await markdownOptions())).trimEnd();
+}
+
+/** A section's markers around its text, exactly as the README holds them. */
+function wrap(/** @type {string} */ name, /** @type {string} */ text) {
+  return `<!-- BEGIN GENERATED: ${name} -->${sectionBody(text)}<!-- END GENERATED: ${name} -->`;
+}
+
+/**
+ * Fail when a block would not come out of a whole-file prettier pass as it
+ * went in. The commit hook runs that pass over the README, so such a block
+ * would leave the committed README out of sync with the generator.
+ * @param {{name: string, text: string}[]} blocks
+ */
+export async function assertHookStable(blocks) {
+  const file = `${blocks.map(b => wrap(b.name, b.text)).join('\n\n')}\n`;
+  const formatted = await prettier.format(file, await markdownOptions());
+  if (formatted !== file) {
+    const changed = driftedSections(file, formatted);
+    throw new Error(
+      `Prettier lays out ${changed.length > 0 ? changed.map(n => `"${n}"`).join(', ') : 'the generated sections'} differently inside the README than alone, so the commit hook would change it.`,
+    );
   }
 }
 
-main();
+/**
+ * Render every section from `sources` and write it into `readme`.
+ * @param {string} readme
+ * @param {ReadmeSources} sources
+ * @param {{
+ *   sections?: ReadmeSection[],
+ *   format?: (markdown: string) => Promise<string>,
+ * }} [options] `format` lays out one block; prettier's markdown by default.
+ * @returns {Promise<{content: string, warnings: string[]}>}
+ */
+export async function generateReadme(
+  readme,
+  sources,
+  {sections = SECTIONS, format = formatBlock} = {},
+) {
+  /** @type {string[]} */
+  const warnings = [];
+  const blocks = [];
+  for (const section of sections) {
+    const markdown = section.render(sources, message =>
+      warnings.push(`${section.name}: ${message}`),
+    );
+    blocks.push({
+      name: section.name,
+      source: section.source,
+      text: await format(markdown),
+    });
+  }
+  await assertHookStable(blocks);
+  return {content: spliceSections(readme, blocks), warnings};
+}
+
+/**
+ * The sections whose text differs between two READMEs.
+ * @param {string} current
+ * @param {string} next
+ * @returns {string[]}
+ */
+export function driftedSections(current, next) {
+  const bodies = (/** @type {string} */ text) =>
+    new Map(
+      findSections(text).map(s => [s.name, text.slice(s.bodyStart, s.bodyEnd)]),
+    );
+  const before = bodies(current);
+  return [...bodies(next)]
+    .filter(([name, body]) => before.get(name) !== body)
+    .map(([name]) => name);
+}
+
+/**
+ * Every `*.doc.mjs` export under `dir`, in path order.
+ * @param {string} dir
+ * @returns {Promise<any[]>}
+ */
+export async function loadDocFiles(dir) {
+  /** @type {string[]} */
+  const files = [];
+  const walk = (/** @type {string} */ d) => {
+    const entries = fs
+      .readdirSync(d, {withFileTypes: true})
+      .sort((a, b) => compareStrings(a.name, b.name));
+    for (const entry of entries) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) {
+        if (!SKIPPED_DIRS.has(entry.name)) walk(full);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        files.push(full);
+      }
+    }
+  };
+  walk(dir);
+  const docs = [];
+  for (const file of files) docs.push(await loadDoc(file));
+  return docs.filter(doc => doc != null);
+}
+
+/** @param {string} file @returns {Promise<any>} */
+async function loadDoc(file) {
+  const mod = await import(pathToFileURL(file).href);
+  return mod.doc ?? mod.docs;
+}
+
+/** A callable export that is not a class: a class's `prototype` is read-only. */
+function isFunction(/** @type {unknown} */ value) {
+  return (
+    typeof value === 'function' &&
+    Object.getOwnPropertyDescriptor(value, 'prototype')?.writable !== false
+  );
+}
+
+/**
+ * The functions each import path exports, resolved through the package's
+ * `exports` map the way a consumer's import is.
+ * @param {string} cliRoot
+ * @param {unknown[]} importPaths
+ * @returns {Promise<Record<string, string[]>>}
+ */
+export async function loadExports(cliRoot, importPaths) {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(cliRoot, 'package.json'), 'utf8'),
+  );
+  /** @type {Record<string, string[]>} */
+  const out = {};
+  for (const importPath of new Set(importPaths)) {
+    if (typeof importPath !== 'string') continue;
+    const subpath =
+      importPath === pkg.name
+        ? '.'
+        : importPath.startsWith(`${pkg.name}/`)
+          ? `.${importPath.slice(pkg.name.length)}`
+          : null;
+    const entry = subpath == null ? undefined : pkg.exports?.[subpath];
+    const target = typeof entry === 'string' ? entry : entry?.import;
+    if (typeof target !== 'string') {
+      out[importPath] = [];
+      continue;
+    }
+    const mod = await import(pathToFileURL(path.join(cliRoot, target)).href);
+    out[importPath] = Object.keys(mod)
+      .filter(name => isFunction(mod[name]))
+      .sort(compareStrings);
+  }
+  return out;
+}
+
+/**
+ * Run `astryx <args> --json` and return its `data`.
+ * @param {string} cliRoot
+ * @param {string[]} args
+ * @returns {any}
+ */
+function runAstryxJson(cliRoot, args) {
+  const res = spawnSync(
+    process.execPath,
+    [path.join(cliRoot, 'clients/cli/bin/astryx.mjs'), ...args, '--json'],
+    {cwd: cliRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024},
+  );
+  // Report a CLI that failed to boot as itself; parsing its empty stdout would
+  // only say "Unexpected end of JSON input".
+  if (res.error) throw res.error;
+  if (res.status !== 0 || !res.stdout.trim()) {
+    throw new Error(
+      `\`astryx ${args.join(' ')} --json\` failed (exit ${res.status}).\n${res.stderr}`,
+    );
+  }
+  return JSON.parse(res.stdout).data;
+}
+
+/**
+ * The section keys `astryx docs <topic> --index` lists, read from the `docs()`
+ * API that command wraps; the API entry is already loaded for its exports.
+ * @param {string} cliRoot
+ * @param {string} topic
+ * @returns {Promise<string[]>}
+ */
+async function docsIndexKeys(cliRoot, topic) {
+  const api = await import(
+    pathToFileURL(path.join(cliRoot, 'api/index.mjs')).href
+  );
+  const index = await api.docs(topic, undefined, {index: true, cwd: cliRoot});
+  return index.data.sections.map((/** @type {any} */ s) => s.id);
+}
+
+/**
+ * Load every source the sections render from.
+ * @param {{
+ *   cliRoot?: string,
+ *   runCliJson?: (args: string[]) => any,
+ *   docsIndex?: (topic: string) => Promise<string[]> | string[],
+ * }} [options] `runCliJson` runs `astryx <args> --json` and returns its
+ *   `data`; `docsIndex` lists a docs topic's section keys.
+ * @returns {Promise<ReadmeSources>}
+ */
+export async function loadSources({
+  cliRoot = CLI_ROOT,
+  runCliJson = args => runAstryxJson(cliRoot, args),
+  docsIndex = topic => docsIndexKeys(cliRoot, topic),
+} = {}) {
+  const functionDocs = (await loadDocFiles(path.join(cliRoot, 'api'))).filter(
+    doc => doc.type === 'function',
+  );
+  const commandDocs = (
+    await loadDocFiles(path.join(cliRoot, 'clients/cli/commands'))
+  ).filter(doc => doc.type === 'command');
+  const doc = (/** @type {string} */ rel) => loadDoc(path.join(cliRoot, rel));
+  /** @type {Record<string, string[]>} */
+  const docsSections = {};
+  for (const topic of POINTER_TOPICS) {
+    docsSections[topic] = await docsIndex(topic);
+  }
+  return {
+    manifest: runCliJson(['manifest']),
+    commandDocs,
+    functionDocs,
+    exports: await loadExports(
+      cliRoot,
+      functionDocs.map(f => f.importPath),
+    ),
+    errorCodes: await doc('foundation/response/error-codes.doc.mjs'),
+    responseTypes: await doc('foundation/response/response-types.doc.mjs'),
+    configSchema: await doc('authoring/config/config.doc.mjs'),
+    integrationSchema: await doc('authoring/integration/integration.doc.mjs'),
+    docsSections,
+  };
+}
+
+/**
+ * The generator's command line: write the README, or with `--check` report
+ * drift and exit 1.
+ * @param {string[]} argv
+ * @param {{
+ *   readmePath?: string,
+ *   load?: () => Promise<ReadmeSources>,
+ *   log?: (message: string) => void,
+ *   error?: (message: string) => void,
+ * }} [options]
+ * @returns {Promise<number>} the exit code
+ */
+export async function runCli(
+  argv,
+  {
+    readmePath = README,
+    load = loadSources,
+    log = console.log,
+    error = console.error,
+  } = {},
+) {
+  const current = fs.readFileSync(readmePath, 'utf8');
+  const {content, warnings} = await generateReadme(current, await load());
+  for (const warning of warnings) error(`warning: ${warning}`);
+  if (!argv.includes('--check')) {
+    fs.writeFileSync(readmePath, content);
+    log('README generated sections written.');
+    return 0;
+  }
+  if (content === current) {
+    log('README generated sections are in sync.');
+    return 0;
+  }
+  error(
+    `README generated sections are out of date: ${driftedSections(current, content).join(', ')}.\nRun: ${REGENERATE}`,
+  );
+  return 1;
+}
+
+/** Whether node was asked to run this file, rather than a test importing it. */
+function isEntryPoint() {
+  const entry = process.argv[1];
+  if (entry == null) return false;
+  try {
+    return fs.realpathSync(entry) === fileURLToPath(import.meta.url);
+  } catch {
+    // `node -e` puts its first argument here, which need not be a path.
+    return false;
+  }
+}
+
+if (isEntryPoint()) process.exitCode = await runCli(process.argv.slice(2));
