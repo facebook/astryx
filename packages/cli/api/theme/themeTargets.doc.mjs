@@ -46,7 +46,7 @@ export const doc = {
       name: 'ctx.cwd',
       type: 'string',
       description:
-        "Directory the project's @astryxdesign/core is resolved from.",
+        "Directory the project's @astryxdesign/core is resolved from. When that project has no Core of its own, the Core installed beside the CLI answers instead.",
     },
   ],
   returns: [
@@ -59,7 +59,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core cannot be resolved from cwd',
+      when: '@astryxdesign/core cannot be resolved from cwd, and none is installed beside the CLI',
     },
     {code: 'ERR_UNKNOWN_COMPONENT', when: 'a filter matches no target'},
   ],

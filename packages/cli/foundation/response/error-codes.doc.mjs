@@ -68,7 +68,7 @@ export const doc = {
     {
       value: 'ERR_CORE_NOT_FOUND',
       description:
-        '`@astryxdesign/core` could not be located (not installed / not in a monorepo).',
+        '`@astryxdesign/core` could not be located (not installed / not in a monorepo). Catalog reads also look for a Core installed beside the CLI.',
     },
     {
       value: 'ERR_CORE_INCOMPATIBLE',

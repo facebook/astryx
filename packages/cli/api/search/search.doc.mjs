@@ -46,7 +46,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to resolve @astryxdesign/core from.',
+      description:
+        'Directory to resolve @astryxdesign/core from. When the project there has no Core of its own, the Core installed beside the CLI answers instead.',
     },
   ],
   returns: [
