@@ -37,7 +37,12 @@ const CODEMOD_EXTENSIONS = ['.ts', '.mjs', '.js'];
  * the natural place to put its test, and every file found here is loaded and
  * validated as a codemod.
  */
-const SKIP_DIRS = new Set(['node_modules', '.git', '__tests__', '__fixtures__']);
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '__tests__',
+  '__fixtures__',
+]);
 
 /**
  * Whether a file name is a test or fixture rather than a codemod.
@@ -86,7 +91,10 @@ function collectCodemodFiles(versionDir) {
       if (!CODEMOD_EXTENSIONS.includes(ext)) continue;
       if (isTestFile(entry.name)) continue;
       const rel = path.relative(versionDir, full);
-      const id = rel.slice(0, rel.length - ext.length).split(path.sep).join('/');
+      const id = rel
+        .slice(0, rel.length - ext.length)
+        .split(path.sep)
+        .join('/');
       out.push({id, file: full});
     }
   }
