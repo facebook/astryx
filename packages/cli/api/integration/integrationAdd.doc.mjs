@@ -33,7 +33,8 @@ export const doc = {
     {
       name: 'name',
       type: 'string',
-      description: 'Contribution name, or the literal agent-doc line.',
+      description:
+        'Contribution name: PascalCase for component, lowercase kebab-case for template, codemod, and theme, letters, digits, _ and - for doc, or the literal agent-doc line.',
       required: true,
     },
     {
@@ -56,12 +57,14 @@ export const doc = {
     {
       name: 'options.replaces',
       type: 'string',
-      description: 'Existing topic to replace. Only valid for doc.',
+      description:
+        'Existing topic to replace. Only valid for doc, and not with options.extends.',
     },
     {
       name: 'options.extends',
       type: 'string',
-      description: 'Existing topic to extend. Only valid for doc.',
+      description:
+        'Existing topic to extend. Only valid for doc, and not with options.replaces.',
     },
     {
       name: 'options.to',
