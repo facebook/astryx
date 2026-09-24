@@ -25,7 +25,7 @@ export const doc = {
     {
       value: 'init.remove',
       description:
-        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+        'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
     // component
     {
