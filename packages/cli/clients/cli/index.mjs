@@ -557,16 +557,18 @@ export async function createProgram() {
       mod[cmd.register](program);
     } catch (e) {
       // Command fails to load but CLI still works
+      const reason = /** @type {any} */ (e).message;
       const stub = program
         .command(cmd.name)
-        .description(`(failed to load: ${/** @type {any} */ (e).message})`)
+        .description(`(failed to load: ${reason})`)
         .action(() => {
           // Nothing loaded, so nothing was answered — say that rather than
           // leaving the run's result unreported.
           debug.recordCommandResult(debug.NO_RESULT_SET);
-          console.error(`Command "${cmd.name}" failed to load:`);
-          console.error(/** @type {any} */ (e).message);
-          process.exit(1);
+          // cliError, so --json still gets its one envelope.
+          cliError(`Command "${cmd.name}" failed to load: ${reason}`, {
+            code: ERROR_CODES.ERR_UNKNOWN,
+          });
         });
       markReportsResult(stub);
     }
