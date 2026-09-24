@@ -1003,6 +1003,9 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      - name: Verify packed consumer dependency contract
+        run: pnpm vitest run packages/build/src/packed-consumer.test.mjs --project node --maxWorkers=1
+
       - name: Install Playwright
         run: npx playwright install chromium
 
