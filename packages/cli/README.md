@@ -70,8 +70,8 @@ Options:
 
 - `--type <component|hook|doc|template>`: restrict to a single domain
 - `--limit <n>`: cap the number of results (default 20)
-- `--detail`: include the import path and the match reason/score
-- `--json`: typed `{ type: 'search', data: { query, matchCount, results } }` envelope — `matchCount` is how many candidates matched in total, `results` the slice `--limit` allowed
+- `--verbose`: also print each result's match score and reason
+- `--json`: typed `{ apiVersion, type: 'search', data: { query, matchCount, results } }` envelope — `matchCount` is how many candidates matched in total, `results` the slice `--limit` allowed
 
 ## Commands
 
@@ -103,7 +103,7 @@ Options:
 
 These flags work with any command:
 
-- `--json`: Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
+- `--json`: Output as typed JSON envelope: `{ apiVersion, type, data, meta? }` (errors: `{ apiVersion, error, code, suggestions? }`)
 - `--detail <level>`: Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
 - `--zh`: Output docs in Chinese Simplified
 - `--dense`: Compressed format (token-efficient, useful for AI agents)
@@ -114,13 +114,14 @@ These flags work with any command:
 Every command supports `--json` for machine-readable output. Responses are typed envelopes:
 
 ```json
-{"type": "component.detail", "data": {"name": "Button", ...}}
+{"apiVersion": 1, "type": "component.detail", "data": {"name": "Button", ...}}
 ```
 
 Errors:
 
 ```json
 {
+  "apiVersion": 1,
   "error": "No component named \"Buttn\"",
   "code": "ERR_UNKNOWN_COMPONENT",
   "suggestions": [{"name": "Button", "reason": "similar name"}]
@@ -194,7 +195,7 @@ if (isError(result)) {
 | `ERR_NO_SOURCE`                   | No source file could be located for the requested component/template.                                                                                    |
 | `ERR_INVALID_DOC`                 | A component's docs failed validation (malformed `.doc.mjs`).                                                                                             |
 | `ERR_FILE_NOT_FOUND`              | A required input file did not exist.                                                                                                                     |
-| `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file in non-interactive mode.                                                                                           |
+| `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file.                                                                                                                   |
 | `ERR_PATH_TRAVERSAL`              | A path escaped its allowed root, or a name contained traversal markers.                                                                                  |
 | `ERR_WRITE_FAILED`                | Writing output files failed (and was rolled back).                                                                                                       |
 | `ERR_THEME_INVALID`               | A theme definition or contributed theme descriptor is invalid.                                                                                           |
@@ -218,8 +219,9 @@ if (isError(result)) {
 
 Agents don't have to scrape `--help` to learn the CLI. A single call returns a
 **self-describing manifest**: every command, its arguments, flags (with types,
-choices, and defaults), whether it supports `--json`, and the response `type`
-discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
+choices, and defaults), whether it supports `--json`, the response `type`
+discriminators each command can emit, and its documented exit codes. Think of it
+as an OpenAPI spec for the CLI.
 
 ```bash
 astryx manifest --json        # dedicated surface — type: "manifest"
@@ -281,6 +283,10 @@ Shape:
           "…",
         ],
         "examples": ["astryx component Button --props --json"],
+        "exitCodes": [
+          {"code": 0, "when": "success"},
+          {"code": 1, "when": "…"},
+        ],
       },
       // …one entry per command; subcommands (e.g. `theme build`) nest under `subcommands`
     ],
@@ -362,9 +368,9 @@ import type {
   // ...import the response types for the commands you consume
 } from '@astryxdesign/cli/json';
 
-// parseResponse returns the structural { type, data, meta? } envelope; `data`
-// is `unknown` until you narrow it. Reconstruct the union you care about from
-// the per-command response types, then narrow on `type`:
+// parseResponse returns the structural { apiVersion, type, data, meta? }
+// envelope; `data` is `unknown` until you narrow it. Reconstruct the union you
+// care about from the per-command response types, then narrow on `type`:
 type MyResponse =
   ComponentDetailResponse | ComponentListResponse | DocsListResponse;
 
@@ -431,7 +437,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `discover.detail.doc`             | The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.                                                                                                                                                |
 | `discover.search`                 | The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.                                                                                                                                                                              |
 | `search`                          | The echoed query, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit` (domain, name, score, reason, description, follow-up command, and import path where relevant).                                                    |
-| `build.help`                      | A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.                                                                                                                                                                  |
+| `build.help`                      | The how-to-build-a-page playbook, emitted when no query is given: `playbook: true`, a title, the ordered steps (title, commands, optional returns), the on-system rules, and related lookups. Commands are bare subcommands for the caller to render with its own invocation.                 |
 | `build.kit`                       | The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields (matchCount is the total matched, never a cap read back), the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays. |
 | `swizzle.list`                    | The names of swizzlable components discoverable from cwd's @astryxdesign/core.                                                                                                                                                                                                                |
 | `swizzle.copy`                    | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                                                                                |
@@ -445,7 +451,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `hook.list`                       | The hook catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.                                                                                                             |
 | `hook.detail`                     | One hook's full authored HookDoc.                                                                                                                                                                                                                                                             |
 | `hook.detail.params`              | Just one hook's parameters table (HookParamDoc[]).                                                                                                                                                                                                                                            |
-| `theme.build`                     | A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.                                                                                                             |
+| `theme.build`                     | A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).                  |
 | `theme.build.check`               | The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing \| outdated}), and the full list of checked paths. Writes nothing.                                                                                                                          |
 | `theme.build.batch`               | Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.                                                                             |
 | `theme.list`                      | Every bundled or installed integration theme as a ThemeListEntry[]: each with slug, displayName, description, maintained flag, and owner package.                                                                                                                                             |
@@ -456,7 +462,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `upgrade.list`                    | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                                                                    |
 | `upgrade.status`                  | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                                                              |
 | `upgrade.run`                     | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                                                                   |
-| `manifest`                        | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.                                                                 |
+| `manifest`                        | The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.            |
 | `doctor`                          | The health-check report: `checks` (each with id, label, status: pass \| warn \| fail \| info, a message, and a fix when not passing) plus a `summary` of counts per status.                                                                                                                   |
 | `integration.add`                 | A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.                                                                                                                               |
 | `integration.pack-check`          | The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.                                                                                                                                                                             |
@@ -475,25 +481,33 @@ Every response has a `type` discriminant. The full set is below (generated from 
 
 `astryx doctor` runs read-only health checks against your project and
 environment. Each record uses `[ok]`, `[warn]`, `[fail]`, or `[info]`, and
-includes an actionable `fix` when one is available. The exact checks and values
-depend on the project; the output shape is stable:
+includes an actionable `fix` when one is available. Field names match the
+`--json` keys. The exact checks and values depend on the project; the output
+shape is stable:
 
 ```
 $ astryx doctor
 astryx doctor - diagnosing your setup
 
+id:      node-version
 status:  [ok]
-check:   Node.js version
+label:   Node.js version
 message: Node v24.18.1 meets the minimum (>=22.13.0).
 
+id:      themes
 status:  [warn]
-check:   Theme packages
+label:   Theme packages
 message: No @astryxdesign/theme-* packages are installed.
 fix:     Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.
 
 ...
 
-Summary: 4 passed, 2 warnings, 0 failures, 2 info
+summary
+
+pass: 4
+warn: 2
+fail: 0
+info: 2
 
 No failures - but review the [warn] warnings above when you can.
 ```

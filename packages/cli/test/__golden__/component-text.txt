@@ -13,6 +13,6 @@ A zorblax card that groups one topic.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `title` | `string` | — | Heading text. **(required)** |
+| `title` | `string` | - | Heading text. **(required)** |
 | `tone` | `'calm' \| 'loud'` | `'calm'` | Visual weight. |
 

@@ -232,8 +232,12 @@ const RUNNERS = {
     ],
   },
   'clients/cli/index.mjs': {
-    runs: 'the command modules, to register each command',
-    sites: ['import(<computed>)'],
+    runs: 'the command modules, to register each command, and the manifest command doc',
+    sites: ['import ./commands/manifest.doc.mjs', 'import(<computed>)'],
+  },
+  'clients/cli/lib/manifest.mjs': {
+    runs: 'the manifest command doc, for the exit codes the manifest reports',
+    sites: ['import ../commands/manifest.doc.mjs'],
   },
   'clients/cli/lib/resolve-theme.mjs': {
     runs: 'the configured theme (ASTRYX_THEME or package.json), by path or package name',
@@ -246,6 +250,10 @@ const RUNNERS = {
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
+  },
+  'foundation/discovery/template-adapter.mjs': {
+    runs: '@babel/parser, to find the fixture references in template source',
+    sites: ['require(@babel/parser)'],
   },
   'foundation/discovery/theme-discovery.mjs': {
     runs: '@babel/parser and jscodeshift (CommonJS), each on first use, so listing bundled themes never loads jscodeshift',
