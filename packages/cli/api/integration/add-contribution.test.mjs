@@ -680,7 +680,7 @@ describe('custom root preservation', () => {
   });
 });
 
-describe('AST-039 descriptor conformance', () => {
+describe('typed descriptor conformance', () => {
   it('emits a strongly typed .doc.mjs for every canonical item writer', async () => {
     setup();
     await integrationAdd('component', 'MyWidget', {cwd: tmpDir});
@@ -688,8 +688,8 @@ describe('AST-039 descriptor conformance', () => {
     await integrationAdd('template', 'my-page', {cwd: tmpDir});
     await integrationAdd('theme', 'ocean', {cwd: tmpDir});
 
-    // Codemod and agent-doc retain released compatibility formats until their
-    // AST-039 migrations; no new kind may copy those exceptions.
+    // Codemod and agent-doc keep their released formats for compatibility;
+    // no new kind may copy those exceptions.
     for (const [relativePath, type] of [
       ['components/MyWidget.doc.mjs', 'ComponentDoc'],
       ['docs/my-guide.doc.mjs', 'ReferenceDoc'],

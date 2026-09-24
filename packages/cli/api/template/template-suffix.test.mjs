@@ -4,8 +4,8 @@
  * @file The canonical `.doc.{mjs,ts,js}` suffix is discovered identically
  * to the released `.template.{ts,mjs,js}` compatibility suffix.
  *
- * AST-039 makes `.doc.mjs` the canonical typed descriptor for every
- * contribution kind. Stable 0.6.0 already accepted `.template.*`, so these tests
+ * New authoring writes `.doc.mjs`, the canonical typed descriptor. Stable
+ * 0.6.0 already accepted `.template.*`, so these tests
  * keep that family as a compatibility input and assert equivalent discovery +
  * scaffolding.
  */

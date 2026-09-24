@@ -163,24 +163,6 @@ manifest are generated from it, so an undocumented flag is an invisible flag.
 Give at least one example that an agent would actually run, including a `--json`
 one.
 
-## Every integration item ships a typed doc
-
-A discoverable contribution is not done without a strongly typed
-`<source-stem>.doc.mjs` beside its source or payload. Export the descriptor type
-from `@astryxdesign/cli/authoring`, annotate the descriptor with that type, and
-use the kind's canonical typed export. New descriptor kinds use the stamped
-default export. The descriptor is the only place for item metadata. The root integration manifest points at directories;
-it does not enumerate the items inside them.
-
-When an item spans several files, define one confined item-local ownership
-boundary and make discovery, materialization, and pack verification enumerate the
-same complete set. Never add a second JSON catalog or repeat source identity in
-the descriptor when the same-stem pair proves it.
-
-Released alternate readers may remain for compatibility, but new writers,
-examples, and contribution kinds use `.doc.mjs`. See `spec:AST-039` for the
-compatibility transition and the mandatory theme descriptor contract.
-
 ## Marking work in progress
 
 Some of the surface is not finished, and today nothing on it says so. Callers
@@ -198,8 +180,6 @@ change.
 - [ ] The handler only parses, calls one exported `api/` function, and renders;
       the subject's adapter does any file, network, or project access.
 - [ ] One file per command, with its sibling doc file.
-- [ ] Every new integration item has a typed, same-stem `.doc.mjs`; the root
-      manifest only locates its directory.
 - [ ] `--json` returns one envelope; the `type` matches the API function.
 - [ ] Every failure path carries a code; new codes are appended, never edited.
 - [ ] No `console.log`; all human output goes through the formatters, with no
@@ -214,8 +194,6 @@ change.
 
 ## Common review smells
 
-- **An item catalog below an integration root.** Put metadata in the typed,
-  same-stem `.doc.mjs`; the root manifest points at the directory.
 - **A flag that only a maintainer would pass.** It is a debugging affordance;
   keep it out of the surface.
 - **A new command whose summary contains "and".** Two commands.
