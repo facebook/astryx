@@ -2,8 +2,8 @@
 
 /**
  * @file TokenizerSelectionA11y.stories.tsx
- * @input Uses controlled Tokenizer fixtures and deterministic SearchSource values
- * @output Real-browser fixtures for the focus-bootstrap selection lifecycle
+ * @input Uses controlled Tokenizer, BaseTypeahead, and Typeahead fixtures with deterministic SearchSource values
+ * @output Real-browser fixtures for Tokenizer selection and direct disabled-transition compatibility
  * @position Reproduction surfaces for TokenizerSelection.a11y.chromium.spec.ts
  *
  * SYNC: The Chromium spec navigates to these story ids by export name.
@@ -12,7 +12,7 @@
 import {useMemo, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
-import {BaseTypeahead} from '@astryxdesign/core/Typeahead';
+import {BaseTypeahead, Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const choices: SearchableItem[] = [
@@ -113,6 +113,7 @@ function DelayedSearchFixture() {
 
 function DirectBaseTypeaheadFixture() {
   const [value, setValue] = useState<SearchableItem | null>(null);
+  const [isDisabled, setIsDisabled] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -129,8 +130,36 @@ function DirectBaseTypeaheadFixture() {
           value={value}
           onChange={setValue}
           debounceMs={0}
+          isDisabled={isDisabled}
+          isFocusableDisabled={isDisabled}
         />
       </div>
+      <button type="button" onClick={() => setIsDisabled(true)}>
+        Disable direct BaseTypeahead
+      </button>
+      <output data-selected-id>{value?.id ?? ''}</output>
+    </div>
+  );
+}
+
+function DirectTypeaheadFixture() {
+  const [value, setValue] = useState<SearchableItem | null>(null);
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  return (
+    <div>
+      <Typeahead
+        label="Framework"
+        searchSource={frameworkSource}
+        value={value}
+        onChange={setValue}
+        debounceMs={0}
+        isDisabled={isDisabled}
+        disabledMessage="Framework selection is unavailable"
+      />
+      <button type="button" onClick={() => setIsDisabled(true)}>
+        Disable public Typeahead
+      </button>
       <output data-selected-id>{value?.id ?? ''}</output>
     </div>
   );
@@ -177,4 +206,8 @@ export const DelayedSearchDismissal: StoryObj = {
 
 export const DirectBaseTypeahead: StoryObj = {
   render: () => <DirectBaseTypeaheadFixture />,
+};
+
+export const DirectTypeahead: StoryObj = {
+  render: () => <DirectTypeaheadFixture />,
 };
