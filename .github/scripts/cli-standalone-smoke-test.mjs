@@ -2,61 +2,41 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Smoke test for the standalone CLI runtime (scripts/build-cli-standalone.mjs).
+ * Tests the standalone CLI runtime (scripts/build-cli-standalone.mjs).
  *
- * Extracts the tarball twice, into fresh directories with no node_modules
- * above them and a scrubbed environment, then proves:
- *   1. it runs with nothing installed: each command below exits and prints
- *      exactly what the workspace CLI prints (stdout, stderr, exit code);
- *   2. it is relocatable: both extractions print the same bytes;
- *   3. a project's own Core wins over the bundled one;
- *   4. doctor still describes the project: the bundled Core never reads as
- *      installed in it;
- *   5. read-only commands write nothing, neither where they run nor into the
- *      runtime itself;
- *   6. the manifest matches the tree.
+ * The runtime is not a copy of the CLI to compare against it. It is the
+ * published `@astryxdesign/cli` and `@astryxdesign/core` packages plus their
+ * locked dependencies. So this test proves exactly that, then runs the CLI's
+ * own suites against it:
  *
- * Usage: node .github/scripts/cli-standalone-smoke-test.mjs <tarball>
+ *   1. The packages are the published ones: the runtime's CLI and Core hold
+ *      byte for byte the files of the tarballs `pnpm pack` produced for this
+ *      build, and those tarballs match the integrity in the runtime manifest.
+ *   2. The CLI's own smoke suites (cli-smoke-test.mjs, cli-json-smoke-test.mjs)
+ *      pass, run from the extracted runtime in an empty directory with a
+ *      scrubbed environment: no node_modules anywhere above it, no NODE_PATH.
+ *   3. Commands that write files work: init, template, theme template, and
+ *      theme build, in an empty project.
+ *   4. A project's own Core wins over the bundled one, and doctor never counts
+ *      the bundled Core as installed in the project.
+ *   5. It runs from wherever it is extracted, and nothing it runs writes into
+ *      the runtime itself.
+ *   6. The manifest lists the tree.
+ *
+ * Usage: node .github/scripts/cli-standalone-smoke-test.mjs <runtime tarball>
+ *   The build's packed packages (astryxdesign-cli-<version>.tgz and
+ *   astryxdesign-core-<version>.tgz) must sit beside the runtime tarball.
  */
 
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const REPO_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../..',
-);
-const WORKSPACE_CLI = path.join(REPO_ROOT, 'packages/cli');
-const WORKSPACE_BIN = path.join(WORKSPACE_CLI, 'clients/cli/bin/astryx.mjs');
-
-/**
- * Read-only commands whose output must match the workspace CLI byte for byte.
- * Text and --json both: the text renderers resolve some state on their own.
- */
-const PARITY_COMMANDS = [
-  ['--version'],
-  ['--help'],
-  ['search', 'button'],
-  ['search', 'button', '--json'],
-  ['component', 'Button'],
-  ['component', '--list'],
-  ['component', '--list', '--json'],
-  ['hook', '--list'],
-  ['hook', '--list', '--json'],
-  ['build', 'settings page'],
-  ['docs', 'spacing'],
-  ['manifest', '--json'],
-  ['template', '--list'],
-  ['template', '--list', '--json'],
-  ['theme', 'list'],
-  ['theme', 'list', '--json'],
-  ['theme', 'targets', 'Button'],
-  ['theme', 'targets', 'Button', '--json'],
-  ['doctor', '--json'],
-];
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SUITES = ['cli-smoke-test.mjs', 'cli-json-smoke-test.mjs'];
 
 /** @type {string[]} */
 const failures = [];
@@ -71,11 +51,12 @@ const tempDir = prefix =>
   fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
 
 /**
- * The environment every run gets: enough to find `node`, nothing that could
- * reach a package (NODE_PATH, npm_*, INIT_CWD) or change output (color, CI).
+ * Enough to find `node` and nothing that could reach a package (NODE_PATH,
+ * npm_*, INIT_CWD) or change output (color, CI).
  * @param {string} home
+ * @param {Record<string, string>} [extra]
  */
-function cleanEnv(home) {
+function cleanEnv(home, extra = {}) {
   /** @type {Record<string, string>} */
   const env = {
     PATH: process.env.PATH ?? '',
@@ -93,44 +74,65 @@ function cleanEnv(home) {
   ]) {
     if (process.env[key]) env[key] = process.env[key];
   }
-  return env;
+  return {...env, ...extra};
 }
 
 /**
- * @param {string} bin
- * @param {string[]} args
- * @param {{cwd: string, env: Record<string, string>}} opts
+ * @param {string[]} argv - Arguments to node.
+ * @param {{cwd: string, env: Record<string, string>, stdio?: 'pipe' | 'inherit'}} opts
  */
-function run(bin, args, {cwd, env}) {
-  const started = performance.now();
-  const result = spawnSync(process.execPath, [bin, ...args], {
+function node(argv, {cwd, env, stdio = 'pipe'}) {
+  const result = spawnSync(process.execPath, argv, {
     cwd,
     env,
     encoding: 'utf8',
+    stdio: ['ignore', stdio, stdio],
     maxBuffer: 64 * 1024 * 1024,
   });
   return {
     status: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr,
-    ms: performance.now() - started,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
   };
 }
 
+/** @param {string} tarball @param {string} dest */
+function extract(tarball, dest) {
+  fs.mkdirSync(dest, {recursive: true});
+  const result = spawnSync('tar', ['-xzf', tarball, '-C', dest], {
+    encoding: 'utf8',
+  });
+  if (result.status !== 0)
+    throw new Error(`tar -xzf ${tarball} failed: ${result.stderr}`);
+  return path.join(dest, 'package');
+}
+
 /**
- * Replace the install locations a run can print with stable tokens, so two
- * runs from different places compare on what they said, not where they live.
- * @param {string} text
- * @param {Array<[string, string]>} roots - [absolute path, token], longest first
+ * Every file under dir, as relative path -> sha256.
+ * @param {string} dir
+ * @returns {Map<string, string>}
  */
-function normalize(text, roots) {
-  let out = text;
-  for (const [abs, token] of roots) out = out.split(abs).join(token);
+function hashTree(dir) {
+  /** @type {Map<string, string>} */
+  const out = new Map();
+  /** @param {string} current */
+  const walk = current => {
+    for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else
+        out.set(
+          path.relative(dir, full).split(path.sep).join('/'),
+          createHash('sha256').update(fs.readFileSync(full)).digest('hex'),
+        );
+    }
+  };
+  walk(dir);
   return out;
 }
 
 /**
- * Every file under dir with its size and mtime, for before/after comparison.
+ * Every file under dir with its size and mtime, for a before/after check.
  * @param {string} dir
  */
 function snapshot(dir) {
@@ -153,51 +155,182 @@ function snapshot(dir) {
   return out.sort().join('\n');
 }
 
-/** @param {string} tarball @param {string} dest */
-function extract(tarball, dest) {
-  const result = spawnSync('tar', ['-xzf', tarball, '-C', dest], {
-    encoding: 'utf8',
-  });
-  if (result.status !== 0)
-    throw new Error(`tar -xzf ${tarball} failed: ${result.stderr}`);
-  return path.join(dest, 'package');
+/**
+ * The runtime's package dir holds exactly the packed package's files.
+ * @param {string} packed - `pnpm pack` tarball
+ * @param {string} installed - the package's directory inside the runtime
+ */
+function samePackage(packed, installed) {
+  const want = hashTree(extract(packed, tempDir('astryx-sa-packed-')));
+  const got = hashTree(installed);
+  got.delete('node_modules'); // never a file, but be explicit about scope
+  for (const file of [...got.keys()]) {
+    if (file.startsWith('node_modules/')) got.delete(file);
+  }
+  const missing = [...want.keys()].filter(f => !got.has(f));
+  const extra = [...got.keys()].filter(f => !want.has(f));
+  const changed = [...want.keys()].filter(
+    f => got.has(f) && got.get(f) !== want.get(f),
+  );
+  return {count: want.size, missing, extra, changed};
 }
 
 function main() {
   const tarball = process.argv[2] && path.resolve(process.argv[2]);
   if (!tarball || !fs.existsSync(tarball)) {
     console.error(
-      'Usage: node .github/scripts/cli-standalone-smoke-test.mjs <tarball>',
+      'Usage: node .github/scripts/cli-standalone-smoke-test.mjs <runtime tarball>',
     );
     process.exit(2);
   }
 
-  // Two extractions at different depths: nothing may depend on where it lands.
-  const runtimeA = extract(tarball, tempDir('astryx-sa-a-'));
-  const deepB = path.join(tempDir('astryx-sa-b-'), 'nested', 'deeper');
-  fs.mkdirSync(deepB, {recursive: true});
-  const runtimeB = extract(tarball, deepB);
-  const binA = path.join(runtimeA, 'bin/astryx.mjs');
-  const binB = path.join(runtimeB, 'bin/astryx.mjs');
-
-  // ── 6. The manifest matches the tree ──────────────────────────────────
+  const runtime = extract(tarball, tempDir('astryx-sa-a-'));
+  const bin = path.join(runtime, 'bin/astryx.mjs');
   const manifest = JSON.parse(
-    fs.readFileSync(path.join(runtimeA, 'astryx-standalone.json'), 'utf8'),
+    fs.readFileSync(path.join(runtime, 'astryx-standalone.json'), 'utf8'),
   );
-  const cliVersion = JSON.parse(
-    fs.readFileSync(path.join(WORKSPACE_CLI, 'package.json'), 'utf8'),
-  ).version;
+  const before = snapshot(runtime);
+  const home = tempDir('astryx-sa-home-');
+  const env = cleanEnv(home);
+
+  // ── 1. The packages are the published ones ────────────────────────────
+  for (const [key, dir] of [
+    ['cli', 'node_modules/@astryxdesign/cli'],
+    ['core', 'node_modules/@astryxdesign/core'],
+  ]) {
+    const {name, version, integrity} = manifest[key];
+    const packed = path.join(
+      path.dirname(tarball),
+      `${name.slice(1).replace('/', '-')}-${version}.tgz`,
+    );
+    if (!fs.existsSync(packed)) {
+      check(
+        false,
+        `${name}: the packed tarball ${path.basename(packed)} sits beside the runtime`,
+      );
+      continue;
+    }
+    const actual = `sha512-${createHash('sha512').update(fs.readFileSync(packed)).digest('base64')}`;
+    check(
+      actual === integrity,
+      `${name}@${version}: the packed tarball matches the manifest's integrity`,
+    );
+    const diff = samePackage(packed, path.join(runtime, dir));
+    const ok =
+      !diff.missing.length && !diff.extra.length && !diff.changed.length;
+    check(
+      ok,
+      `${name}@${version}: the runtime holds all ${diff.count} published files, byte for byte${ok ? '' : ` (missing ${diff.missing.slice(0, 3).join(', ')}; extra ${diff.extra.slice(0, 3).join(', ')}; changed ${diff.changed.slice(0, 3).join(', ')})`}`,
+    );
+  }
+
+  // ── 2. The CLI's own suites, run from the runtime ─────────────────────
+  const empty = tempDir('astryx-sa-cwd-');
+  for (const suite of SUITES) {
+    console.log(`\n── ${suite} against the runtime ──`);
+    const started = performance.now();
+    const result = node([path.join(HERE, suite)], {
+      cwd: empty,
+      env: cleanEnv(home, {ASTRYX_SMOKE_BIN: bin, ASTRYX_SMOKE_CWD: empty}),
+      stdio: 'inherit',
+    });
+    check(
+      result.status === 0,
+      `${suite} passes against the runtime (${Math.round((performance.now() - started) / 1000)} s)`,
+    );
+  }
+  console.log('');
+
+  // ── 3. Commands that write files ──────────────────────────────────────
+  const project = tempDir('astryx-sa-project-');
+  fs.writeFileSync(
+    path.join(project, 'package.json'),
+    '{"name":"standalone-check","private":true}\n',
+  );
+  const astryx = (/** @type {string[]} */ ...args) =>
+    node([bin, ...args], {cwd: project, env});
+  const init = astryx('init', '--features', 'agents');
   check(
-    manifest.cli.version === cliVersion,
-    `manifest CLI version ${manifest.cli.version} is the workspace CLI's ${cliVersion}`,
+    init.status === 0 && fs.existsSync(path.join(project, 'AGENTS.md')),
+    `astryx init --features agents writes AGENTS.md (exit ${init.status})`,
+  );
+  const blocks =
+    JSON.parse(
+      astryx('template', '--list', '--type', 'block', '--json').stdout || '{}',
+    ).data ?? [];
+  const block = Array.isArray(blocks) ? blocks[0]?.id : undefined;
+  const template = block
+    ? astryx('template', block, 'src/blocks')
+    : {status: null, stdout: '', stderr: 'no block template listed'};
+  const written = fs.existsSync(path.join(project, 'src/blocks'))
+    ? fs.readdirSync(path.join(project, 'src/blocks'), {recursive: true}).length
+    : 0;
+  check(
+    template.status === 0 && written > 0,
+    `astryx template ${block ?? '<none>'} src/blocks writes files (exit ${template.status}, ${written} entries)`,
+  );
+  const themeTemplate = astryx('theme', 'template', 'theme.ts');
+  check(
+    themeTemplate.status === 0 && fs.existsSync(path.join(project, 'theme.ts')),
+    `astryx theme template theme.ts writes the theme source (exit ${themeTemplate.status})`,
+  );
+  const themeBuild = astryx('theme', 'build', 'theme.ts');
+  const css = fs.readdirSync(project).filter(f => f.endsWith('.css'));
+  check(
+    themeBuild.status === 0 && css.length > 0,
+    `astryx theme build theme.ts compiles CSS (exit ${themeBuild.status}, ${css.join(', ') || 'no css'})`,
+  );
+
+  // ── 4. A project's own Core wins; doctor sees only the project ───────
+  // A Core with no components: if the bundled Core leaked through, the list
+  // would still hold Button.
+  const withCore = tempDir('astryx-sa-own-core-');
+  const ownCore = path.join(withCore, 'node_modules/@astryxdesign/core');
+  fs.mkdirSync(path.join(ownCore, 'src'), {recursive: true});
+  fs.writeFileSync(
+    path.join(ownCore, 'package.json'),
+    JSON.stringify({name: '@astryxdesign/core', version: '0.0.0-fixture'}),
+  );
+  const listed = node([bin, 'component', '--list', '--json'], {
+    cwd: withCore,
+    env,
+  });
+  check(
+    listed.status === 0 && !listed.stdout.includes('"Button"'),
+    `a project's own Core wins over the bundled one (exit ${listed.status}, Button ${listed.stdout.includes('"Button"') ? 'listed' : 'absent'})`,
+  );
+  const doctor = JSON.parse(
+    node([bin, 'doctor', '--json'], {cwd: empty, env}).stdout || '{}',
+  );
+  const coreCheck = doctor.data?.checks?.find(
+    (/** @type {{id: string}} */ c) => c.id === 'core-installed',
   );
   check(
-    manifest.core.version === manifest.cli.version,
-    `manifest pairs CLI ${manifest.cli.version} with Core ${manifest.core.version}`,
+    coreCheck?.status === 'fail',
+    `doctor does not count the bundled Core as installed in the project (core-installed: ${coreCheck?.status ?? 'missing'})`,
   );
+
+  // ── 5. Relocatable, and nothing writes into the runtime ──────────────
+  const deep = path.join(tempDir('astryx-sa-b-'), 'nested', 'deeper');
+  const elsewhere = extract(tarball, deep);
+  const here = node([bin, 'component', 'Button', '--json'], {cwd: empty, env});
+  const there = node(
+    [path.join(elsewhere, 'bin/astryx.mjs'), 'component', 'Button', '--json'],
+    {cwd: empty, env},
+  );
+  check(
+    here.status === 0 && there.status === 0 && here.stdout === there.stdout,
+    'a second extraction at another depth answers the same',
+  );
+  check(
+    snapshot(runtime) === before,
+    'nothing written into the runtime by any command above',
+  );
+
+  // ── 6. The manifest lists the tree ────────────────────────────────────
   const drift = manifest.packages.filter(
     (/** @type {{path: string, name: string, version: string}} */ p) => {
-      const file = path.join(runtimeA, p.path, 'package.json');
+      const file = path.join(runtime, p.path, 'package.json');
       if (!fs.existsSync(file)) return true;
       const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
       return pkg.name !== p.name || pkg.version !== p.version;
@@ -205,114 +338,7 @@ function main() {
   );
   check(
     drift.length === 0,
-    `all ${manifest.packages.length} manifest packages are in the tree at their recorded versions${
-      drift.length
-        ? ` (drift: ${drift
-            .slice(0, 3)
-            .map((/** @type {{path: string}} */ p) => p.path)
-            .join(', ')})`
-        : ''
-    }`,
-  );
-
-  // ── 1, 2, 4, 5. Parity, relocation, doctor, no writes ────────────────
-  const home = tempDir('astryx-sa-home-');
-  const env = cleanEnv(home);
-  const cwd = tempDir('astryx-sa-cwd-');
-  const before = {cwd: snapshot(cwd), runtime: snapshot(runtimeA)};
-
-  const workspaceRoots = /** @type {Array<[string, string]>} */ ([
-    [path.join(WORKSPACE_CLI, 'node_modules/@astryxdesign/core'), '<CORE>'],
-    [path.join(REPO_ROOT, 'packages/core'), '<CORE>'],
-    [WORKSPACE_CLI, '<CLI>'],
-    [cwd, '<CWD>'],
-    [home, '<HOME>'],
-  ]);
-  /** @param {string} runtime @returns {Array<[string, string]>} */
-  const runtimeRoots = runtime => [
-    [path.join(runtime, 'node_modules/@astryxdesign/core'), '<CORE>'],
-    [path.join(runtime, 'node_modules/@astryxdesign/cli'), '<CLI>'],
-    [cwd, '<CWD>'],
-    [home, '<HOME>'],
-  ];
-
-  for (const args of PARITY_COMMANDS) {
-    const label = `astryx ${args.map(a => (a.includes(' ') ? JSON.stringify(a) : a)).join(' ')}`;
-    const want = run(WORKSPACE_BIN, args, {cwd, env});
-    const a = run(binA, args, {cwd, env});
-    const b = run(binB, args, {cwd, env});
-    const same = (
-      /** @type {typeof a} */ got,
-      /** @type {Array<[string, string]>} */ roots,
-    ) =>
-      got.status === want.status &&
-      normalize(got.stdout, roots) === normalize(want.stdout, workspaceRoots) &&
-      normalize(got.stderr, roots) === normalize(want.stderr, workspaceRoots);
-    check(
-      want.status === 0 || args[0] === 'doctor',
-      `${label}: the workspace CLI itself succeeds (exit ${want.status})`,
-    );
-    check(
-      same(a, runtimeRoots(runtimeA)),
-      `${label}: standalone matches the workspace CLI (${Math.round(a.ms)} ms vs ${Math.round(want.ms)} ms)`,
-    );
-    check(
-      same(b, runtimeRoots(runtimeB)),
-      `${label}: a second extraction elsewhere matches too`,
-    );
-    if (!same(a, runtimeRoots(runtimeA))) {
-      console.log(
-        `  exit ${a.status} vs ${want.status}; first differing stdout line:`,
-      );
-      const got = normalize(a.stdout, runtimeRoots(runtimeA)).split('\n');
-      const exp = normalize(want.stdout, workspaceRoots).split('\n');
-      const i = got.findIndex((line, n) => line !== exp[n]);
-      console.log(
-        `    standalone: ${JSON.stringify(got[i])}\n    workspace:  ${JSON.stringify(exp[i])}`,
-      );
-      if (a.stderr !== want.stderr)
-        console.log(`    stderr: ${JSON.stringify(a.stderr.slice(0, 300))}`);
-    }
-  }
-
-  const doctor = JSON.parse(run(binA, ['doctor', '--json'], {cwd, env}).stdout);
-  const coreCheck = JSON.stringify(doctor).match(/"id":"core[^}]*}/)?.[0] ?? '';
-  check(
-    !/"status":"pass"/.test(coreCheck),
-    `doctor does not report the bundled Core as installed in the project (${coreCheck.slice(0, 120) || 'no core check found'})`,
-  );
-
-  check(
-    snapshot(cwd) === before.cwd,
-    'read-only commands wrote nothing into the directory they ran in',
-  );
-  check(
-    snapshot(runtimeA) === before.runtime,
-    'read-only commands wrote nothing into the runtime',
-  );
-
-  // ── 3. A project's own Core wins ──────────────────────────────────────
-  // A Core with no components: if the bundled Core leaked through, the list
-  // would still hold Button.
-  const project = tempDir('astryx-sa-project-');
-  const projectCore = path.join(project, 'node_modules/@astryxdesign/core');
-  fs.mkdirSync(path.join(projectCore, 'src'), {recursive: true});
-  fs.writeFileSync(
-    path.join(projectCore, 'package.json'),
-    JSON.stringify({name: '@astryxdesign/core', version: '0.0.0-fixture'}),
-  );
-  const listed = run(binA, ['component', '--list', '--json'], {
-    cwd: project,
-    env,
-  });
-  check(
-    listed.status === 0 && !listed.stdout.includes('"Button"'),
-    `a project's own Core wins over the bundled one (exit ${listed.status}, Button ${listed.stdout.includes('"Button"') ? 'listed' : 'absent'})`,
-  );
-  const bundled = run(binA, ['component', '--list', '--json'], {cwd, env});
-  check(
-    bundled.stdout.includes('"Button"'),
-    'with no project Core, the bundled Core answers (Button listed)',
+    `all ${manifest.packages.length} manifest packages are in the tree at their recorded versions`,
   );
 
   if (failures.length > 0) {
