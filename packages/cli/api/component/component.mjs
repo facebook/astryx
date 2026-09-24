@@ -156,6 +156,13 @@ export async function component(name, options = {}) {
     }
     const extDocPath = resolveLegacyExternalDoc(scoped.ext, dirName);
     if (extDocPath) {
+      // Legacy packages ship docs, never source.
+      if (source) {
+        return componentDetailSource(dirName, null, {name, notFoundInPackage: packageScope});
+      }
+      if (blocks) {
+        return componentDetailBlocks(dirName);
+      }
       const docs = await loadComponentDoc(extDocPath, docOpts);
       if (props) return componentDetailProps(docs);
       return componentDetail(docs, {package: scoped.ext.name, sourcePath: null}, dirName, coreDir);
