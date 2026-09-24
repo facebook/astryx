@@ -192,4 +192,16 @@ describe('--json contract: the flag describes the envelopes it emits', () => {
     expect(Object.keys(failure)).toContain('suggestions');
     for (const key of Object.keys(failure)) expect(fields(error)).toContain(key);
   });
+
+  it('the CLI README describes the same envelopes', () => {
+    const readme = fs.readFileSync(new URL('../../../README.md', import.meta.url), 'utf8');
+    const line = readme
+      .split('\n')
+      .find(l => l.startsWith('- `--json`: Output as typed JSON envelope:'));
+    expect(line, 'README global --json line').toBeDefined();
+    const [success, error] = [...String(line).matchAll(/`\{([^}]*)\}`/g)].map(m => fields(m[1]));
+    expect(success).toEqual(expect.arrayContaining(['apiVersion', 'type', 'data', 'meta']));
+    expect(error).toEqual(expect.arrayContaining(['apiVersion', 'error', 'code', 'suggestions']));
+    expect(readme).toContain('{"apiVersion": 1, "type": "component.detail"');
+  });
 });

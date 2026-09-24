@@ -84,7 +84,7 @@ Options:
 
 These flags work with any command:
 
-- `--json`: Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
+- `--json`: Output as typed JSON envelope: `{ apiVersion, type, data, meta? }` (errors: `{ apiVersion, error, code, suggestions? }`)
 - `--detail <level>`: Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
 - `--zh`: Output docs in Chinese Simplified
 - `--dense`: Compressed format (token-efficient, useful for AI agents)
@@ -95,13 +95,14 @@ These flags work with any command:
 Every command supports `--json` for machine-readable output. Responses are typed envelopes:
 
 ```json
-{"type": "component.detail", "data": {"name": "Button", ...}}
+{"apiVersion": 1, "type": "component.detail", "data": {"name": "Button", ...}}
 ```
 
 Errors:
 
 ```json
 {
+  "apiVersion": 1,
   "error": "No component named \"Buttn\"",
   "code": "ERR_UNKNOWN_COMPONENT",
   "suggestions": [{"name": "Button", "reason": "similar name"}]
@@ -343,9 +344,9 @@ import type {
   // ...import the response types for the commands you consume
 } from '@astryxdesign/cli/json';
 
-// parseResponse returns the structural { type, data, meta? } envelope; `data`
-// is `unknown` until you narrow it. Reconstruct the union you care about from
-// the per-command response types, then narrow on `type`:
+// parseResponse returns the structural { apiVersion, type, data, meta? }
+// envelope; `data` is `unknown` until you narrow it. Reconstruct the union you
+// care about from the per-command response types, then narrow on `type`:
 type MyResponse =
   ComponentDetailResponse | ComponentListResponse | DocsListResponse;
 
