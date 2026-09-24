@@ -55,7 +55,6 @@ export async function loadComponentDoc(docPath, opts = {}) {
     lang: localeOf(opts),
     label: docPath,
     strict: true,
-    copy: true,
   });
 }
 
@@ -74,6 +73,5 @@ export async function loadDocs(readmePath, opts = {}) {
     lang: localeOf(opts),
     label: readmePath,
     loader: 'native',
-    copy: true,
   });
 }

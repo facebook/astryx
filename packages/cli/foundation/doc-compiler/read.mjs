@@ -142,10 +142,9 @@ export function compileDocFile(file, options, {node = false} = {}) {
  * error, the parser's error (for an empty export too), then a failed
  * translation. Other readers skip the check, throw only what importing or
  * translating threw, and read an empty export as the empty value itself.
- * With `copy`, the reader gets its own copy (containers copied, every other
- * value shared); without it, the shared view, as a module export always was.
+ * The view is shared, as the module's own export always was.
  * @param {string} file absolute path
- * @param {ReadOptions & {strict?: boolean, copy?: boolean}} options
+ * @param {ReadOptions & {strict?: boolean}} options
  * @returns {Promise<any>}
  */
 export async function readDocView(file, options) {
@@ -162,7 +161,7 @@ export async function readDocView(file, options) {
   }
   if (strict && result.failure !== undefined) throw result.failure;
   if (result.overlayFailure !== undefined) throw result.overlayFailure;
-  return options.copy === true ? copyDoc(result.view) : result.view;
+  return result.view;
 }
 
 /**
@@ -203,37 +202,6 @@ async function loadAuthored(file, options, lang) {
       ? translationFor(mod, lang)
       : null;
   return overlay ? {file: name, doc, overlay} : {file: name, doc};
-}
-
-/**
- * A reader's own copy of a doc: plain objects and arrays are copied with their
- * property descriptors (so a getter is never run and `undefined` keys stay),
- * cycles are kept, and every other value (functions, dates, class instances)
- * is shared, as the module's own export would be.
- * @param {unknown} value
- * @param {Map<object, object>} [seen]
- * @returns {any}
- */
-export function copyDoc(value, seen = new Map()) {
-  if (value === null || typeof value !== 'object') return value;
-  const isArray = Array.isArray(value);
-  const proto = Object.getPrototypeOf(value);
-  if (!isArray && proto !== Object.prototype && proto !== null) return value;
-  const known = seen.get(value);
-  if (known) return known;
-  const copy = isArray ? new Array(value.length) : Object.create(proto);
-  seen.set(value, copy);
-  for (const key of Reflect.ownKeys(value)) {
-    if (isArray && key === 'length') continue;
-    const descriptor = /** @type {PropertyDescriptor} */ (
-      Object.getOwnPropertyDescriptor(value, key)
-    );
-    if ('value' in descriptor)
-      descriptor.value = copyDoc(descriptor.value, seen);
-    Object.defineProperty(copy, key, descriptor);
-  }
-  if (!Object.isExtensible(value)) Object.preventExtensions(copy);
-  return copy;
 }
 
 /**

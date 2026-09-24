@@ -43,7 +43,10 @@ import {parseReadableDoc} from './parse-readable.mjs';
  * @param {Parameters<typeof rawDiagnostic>[1]} at
  */
 function diagnostic(code, at) {
-  return rawDiagnostic(code, {...at, message: scrubPaths(at.message)});
+  return rawDiagnostic(code, {
+    ...at,
+    message: scrubPaths(at.message) || '(the error had no message)',
+  });
 }
 
 /** Bumped whenever the shape of a compiled node changes. */

@@ -77,12 +77,8 @@ describe('readDocView', () => {
   const card =
     "export default {type: 'component', name: 'Card', displayName: 'Card', usage: {description: 'A card.'}, props: []};\n";
 
-  it('hands every reader its own copy of a frozen node', async () => {
+  it('freezes the node a whole-project compile collects', async () => {
     const file = write('Card.doc.mjs', card);
-    const first = await loadDocs(file);
-    first.name = 'Changed';
-    first.props.push({name: 'x'});
-    expect((await loadDocs(file)).name).toBe('Card');
     const {node} = await compileDocFile(
       file,
       {root: 'components', check: true},
@@ -186,14 +182,35 @@ export default doc;
     expect((await loadComponentDoc(ok)).playground.seed).toBe(10n);
   });
 
-  it('gives each reader its own copy, but shares what the module shares', async () => {
-    const file = write('Card.doc.mjs', card);
-    const one = await loadDocs(file);
-    const two = await loadDocs(file);
-    expect(one).not.toBe(two);
-    expect(one).toEqual(two);
-    const shared = await readDocView(file, {root: 'components'});
-    expect(await readDocView(file, {root: 'components'})).toBe(shared);
+  it("hands readers the module's own doc, as main always did", async () => {
+    const file = write(
+      'Deep.doc.mjs',
+      `let deep = {};
+const root = deep;
+for (let i = 0; i < 5000; i++) deep = deep.next = {};
+const doc = new Proxy(
+  {type: 'component', name: 'Deep', displayName: 'Deep', usage: {description: 'd'}, props: [], root},
+  {get: (target, key) => (key === 'displayName' ? 'From the proxy' : target[key])},
+);
+export default doc;
+`,
+    );
+    const mod = await import(pathToFileURL(file).href);
+    const view = await loadDocs(file);
+    expect(view).toBe(mod.default);
+    expect(view.displayName).toBe('From the proxy');
+    expect(await loadComponentDoc(file)).toBe(mod.default);
+  });
+
+  it('never lets a message that is not a path break a read', async () => {
+    const file = write(
+      'Odd.doc.mjs',
+      "throw new Error('Could not read file:///tmp/data/100%-coverage.json');\n",
+    );
+    await expect(loadDocs(file)).rejects.toThrow('100%-coverage.json');
+    const empty = write('Empty.doc.mjs', "throw new Error('');\n");
+    const {diagnostics} = await compileDocFile(empty, {root: 'components'});
+    expect(diagnostics[0].message).not.toBe('');
   });
 
   it('reads an empty export as that value, and checks it as that value', async () => {

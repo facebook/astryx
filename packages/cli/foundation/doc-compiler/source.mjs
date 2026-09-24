@@ -62,7 +62,7 @@ export function packageOf(file) {
 export function scrubPaths(message) {
   return message
     .replace(/file:\/\/(\/[^\s'"`)]+)/gu, (_, file) =>
-      packageSource(decodeURI(file)),
+      packageSource(safeDecode(file)),
     )
     .replace(/(?<![\w:/.-])((?:\/[^\s'"`:()/]+)+)/gu, (_, file) =>
       packageSource(file),
@@ -112,4 +112,17 @@ function packageRootsOf(dir) {
     : {named: above.named, any: here ?? above.any};
   packageRoots.set(dir, found);
   return found;
+}
+
+/**
+ * A file URL path decoded, or as written when it is not valid percent-encoding
+ * (a message may hold any text).
+ * @param {string} text
+ */
+function safeDecode(text) {
+  try {
+    return decodeURI(text);
+  } catch {
+    return text;
+  }
 }

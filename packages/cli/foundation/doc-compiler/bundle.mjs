@@ -9,7 +9,7 @@
  *   node per descriptor (a doc topic with its extensions is one linked node),
  *   and every compiler diagnostic, in one deterministic order.
  * @position The whole-project view of the compiler, for checks that need every
- *   node at once (completeness, Doctor, pack checks). Single reads stay lazy:
+ *   node at once; today only tests call it. Single reads stay lazy:
  *   ./read.mjs and api/docs/_adapter.mjs compile only what a read touches.
  *   Internal to the CLI.
  */
@@ -35,7 +35,10 @@ import {packageSource, scrubPaths} from './source.mjs';
  * @param {Parameters<typeof rawDiagnostic>[1]} at
  */
 function diagnostic(code, at) {
-  return rawDiagnostic(code, {...at, message: scrubPaths(at.message)});
+  return rawDiagnostic(code, {
+    ...at,
+    message: scrubPaths(at.message) || '(the error had no message)',
+  });
 }
 
 /**
