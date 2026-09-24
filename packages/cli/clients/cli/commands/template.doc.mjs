@@ -27,7 +27,12 @@ export const doc = {
     {name: 'path', param: 'options.targetPath', required: false},
   ],
   options: [
-    {flag: '--list', param: 'options.list', description: 'List available templates'},
+    {
+      flag: '--list',
+      param: 'options.list',
+      description:
+        'List available templates (narrow with --type and --package) and do nothing else: <name>, <path>, --skeleton and --overwrite are ignored',
+    },
     {
       flag: '--type <type>',
       param: 'options.type',
@@ -43,13 +48,16 @@ export const doc = {
       flag: '--skeleton',
       param: 'options.skeleton',
       description:
-        'Show layout skeleton with spatial annotations (padding, gap, nesting)',
+        'Show layout skeleton with spatial annotations (padding, gap, nesting) instead of the source. Needs <name>. ' +
+        'It writes nothing, so <path> and --overwrite are ignored; --list and --cdn take precedence',
     },
     {
       flag: '--cdn [path]',
       param: 'options.cdn',
       description:
-        'Write the no-build-step CDN starter page (default: cdn.template.html)',
+        'Write the no-build-step CDN starter page and do nothing else: <name>, --list, --skeleton, --type and --package are ignored. ' +
+        'The page goes to the --cdn value, else to <path>, else cdn.template.html, and that path is always the file itself. ' +
+        'A value right after --cdn (anything not starting with -) is taken as that path',
     },
     {
       flag: '-f, --overwrite',
