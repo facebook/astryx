@@ -16,10 +16,18 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
+ * - /apps/storybook/stories/ChatMessage.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ChatMessage/ (block examples)
  */
 
-import {type ReactNode, useMemo, useId} from 'react';
+import {
+  createElement,
+  Fragment,
+  isValidElement,
+  type ReactNode,
+  useMemo,
+  useId,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -33,7 +41,7 @@ import {
   type ChatMessageSender,
   type ChatDensity,
 } from './ChatContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -49,9 +57,20 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
    * should span the full message column.
    */
   children: ReactNode;
+  /**
+   * Avatar content rendered beside a non-system message.
+   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
+   * with no renderable descendants do not create a slot. Non-Fragment elements
+   * are treated as content; component output is not inspected. Cyclic composite
+   * content is rejected.
+   */
   avatar?: ReactNode;
   /**
    * Sender name rendered above the message body.
+   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
+   * with no renderable descendants use the translated sender fallback label.
+   * Non-Fragment elements are treated as content; component output is not
+   * inspected. Cyclic composite content is rejected.
    * Use when the first child is raw content (not a bubble).
    * If the first child is a ChatMessageBubble, put the name on the
    * bubble's `name` prop instead — it aligns with the bubble's padding.
@@ -59,12 +78,96 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
   name?: ReactNode;
   /**
    * Metadata rendered below the message body.
+   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
+   * with no renderable descendants do not create a slot. Non-Fragment elements
+   * are treated as content; component output is not inspected. Cyclic composite
+   * content is rejected.
    * Use when the last child is raw content (not a bubble).
    * If the last child is a ChatMessageBubble, put metadata on the
    * bubble's `metadata` prop instead — it aligns with the bubble's padding.
    */
   metadata?: ReactNode;
   density?: ChatDensity;
+}
+
+type SlotContentInspection = {
+  content: ReactNode;
+  hasContent: boolean;
+};
+
+const emptySlot: SlotContentInspection = {content: null, hasContent: false};
+
+function getInspectedContent(child: SlotContentInspection): ReactNode {
+  return child.content;
+}
+
+function inspectSlotContent(
+  node: ReactNode,
+  ancestors: Set<object> = new Set(),
+): SlotContentInspection {
+  if (!isRenderable(node)) {
+    return {content: node, hasContent: false};
+  }
+
+  if (Array.isArray(node)) {
+    if (ancestors.has(node)) {
+      throw new TypeError('ChatMessage slot content cannot contain a cycle');
+    }
+    ancestors.add(node);
+    try {
+      const children = node.map(child => inspectSlotContent(child, ancestors));
+      return {
+        content: children.map(getInspectedContent),
+        hasContent: children.some(child => child.hasContent),
+      };
+    } finally {
+      ancestors.delete(node);
+    }
+  }
+
+  if (isValidElement<{children?: ReactNode}>(node) && node.type === Fragment) {
+    if (ancestors.has(node)) {
+      throw new TypeError('ChatMessage slot content cannot contain a cycle');
+    }
+    ancestors.add(node);
+    try {
+      const children = inspectSlotContent(node.props.children, ancestors);
+      return {
+        content: createElement(Fragment, {key: node.key}, children.content),
+        hasContent: children.hasContent,
+      };
+    } finally {
+      ancestors.delete(node);
+    }
+  }
+
+  if (typeof node === 'object' && node !== null) {
+    const iterator = (node as Iterable<ReactNode>)[Symbol.iterator];
+    if (typeof iterator === 'function') {
+      if (ancestors.has(node)) {
+        throw new TypeError('ChatMessage slot content cannot contain a cycle');
+      }
+      ancestors.add(node);
+      try {
+        const children: SlotContentInspection[] = [];
+        for (const child of node as Iterable<ReactNode>) {
+          children.push(inspectSlotContent(child, ancestors));
+        }
+        return {
+          // Materialize iterables so one-shot iterators are not consumed before
+          // React renders the slot.
+          content: children.map(getInspectedContent),
+          hasContent: children.some(child => child.hasContent),
+        };
+      } finally {
+        ancestors.delete(node);
+      }
+    }
+  }
+
+  // Non-Fragment elements are content. Component output cannot be inspected
+  // without executing caller code.
+  return {content: node, hasContent: true};
 }
 
 const styles = stylex.create({
@@ -219,8 +322,9 @@ export function ChatMessage({
         : styles.childrenAssistant;
 
   const isSystem = sender === 'system';
-  const hasAvatar = avatar != null && !isSystem;
-  const hasName = name != null && !isSystem;
+  const avatarSlot = isSystem ? emptySlot : inspectSlotContent(avatar);
+  const nameSlot = isSystem ? emptySlot : inspectSlotContent(name);
+  const metadataSlot = isSystem ? emptySlot : inspectSlotContent(metadata);
   const nameId = useId();
 
   return (
@@ -230,26 +334,30 @@ export function ChatMessage({
         ref={ref}
         data-testid={testId}
         aria-label={
-          !hasName ? t('@astryx.chatMessage.messageFrom', {sender}) : undefined
+          !nameSlot.hasContent
+            ? t('@astryx.chatMessage.messageFrom', {sender})
+            : undefined
         }
-        aria-labelledby={hasName ? nameId : undefined}
+        aria-labelledby={nameSlot.hasContent ? nameId : undefined}
         {...mergeProps(
           themeProps('chat-message', {sender, density}),
           stylex.props(
             styles.root,
             rootAlignment,
-            hasAvatar && rootGap,
+            avatarSlot.hasContent && rootGap,
             xstyle,
           ),
           className,
           styleProp,
         )}>
-        {hasAvatar && <div {...stylex.props(styles.avatarWrap)}>{avatar}</div>}
+        {avatarSlot.hasContent && (
+          <div {...stylex.props(styles.avatarWrap)}>{avatarSlot.content}</div>
+        )}
 
         <div {...stylex.props(styles.contentColumn, columnAlignment)}>
-          {hasName && (
+          {nameSlot.hasContent && (
             <div id={nameId} {...stylex.props(styles.name)}>
-              {name}
+              {nameSlot.content}
             </div>
           )}
 
@@ -262,7 +370,7 @@ export function ChatMessage({
             {children}
           </div>
 
-          {metadata != null && !isSystem && <div>{metadata}</div>}
+          {metadataSlot.hasContent && <div>{metadataSlot.content}</div>}
         </div>
       </article>
     </ChatMessageContext>
