@@ -200,10 +200,15 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
+          const {outputDir, fileName, demoMediaReplaced} = result.data;
+          const file = `${outputDir}/${fileName}`;
           emit(
-            text(
-              `Copied template to ${result.data.outputDir}/${result.data.fileName}`,
-            ),
+            text(`Copied template to ${file}`),
+            demoMediaReplaced > 0 &&
+              text(
+                `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${file}: ` +
+                  'images now show a neutral placeholder and videos have an empty source. Supply your own media there.',
+              ),
           );
           break;
         }

@@ -18,7 +18,7 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {assertWithin, isFilePathArg, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {detectForm} from '../../../foundation/xle/parse.mjs';
 import {expand} from '../../../foundation/xle/expand.mjs';
-import {stripTemplateAssetRefs} from '../../template/template.mjs';
+import {replaceDemoMedia} from '../../template/copy/copy.mjs';
 import {analyze, formatIssue} from '../_adapter.mjs';
 
 /** @param {string} name */
@@ -59,28 +59,32 @@ function collectHintNames(doc) {
 /**
  * Build the blockModules map expand() needs: import-mode for app components,
  * splice-mode (reading + asset-stripping the block source) for template blocks.
- * Only blocks actually referenced are read.
+ * Only blocks actually referenced are read. Also returns how many demo media
+ * references the splice-mode sources had replaced.
  *
  * @param {import('../../../foundation/xle/xle-ast').XLEDoc} doc
  * @param {import('../_adapter.mjs').LayoutBlock[]} blocks
- * @returns {Map<string, import('../../../foundation/xle/xle-ast').BlockModule>}
+ * @returns {{modules: Map<string, import('../../../foundation/xle/xle-ast').BlockModule>, demoMediaReplaced: number}}
  */
 function buildBlockModules(doc, blocks) {
   const referenced = collectHintNames(doc);
-  if (referenced.size === 0) return new Map();
+  if (referenced.size === 0) return {modules: new Map(), demoMediaReplaced: 0};
   const byKey = new Map(blocks.map(b => [normKey(b.dirName), b]));
   /** @type {Map<string, import('../../../foundation/xle/xle-ast').BlockModule>} */
   const modules = new Map();
+  let demoMediaReplaced = 0;
   for (const name of referenced) {
     const block = byKey.get(normKey(name));
     if (!block) continue;
     if (block.kind === 'component') {
       modules.set(name, /** @type {import('../../../foundation/xle/xle-ast').BlockModule} */ (/** @type {unknown} */ ({mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault})));
     } else if (block.filePath && fs.existsSync(block.filePath)) {
-      modules.set(name, /** @type {import('../../../foundation/xle/xle-ast').BlockModule} */ ({mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))}));
+      const spliced = replaceDemoMedia(fs.readFileSync(block.filePath, 'utf-8'));
+      demoMediaReplaced += spliced.demoMediaReplaced;
+      modules.set(name, /** @type {import('../../../foundation/xle/xle-ast').BlockModule} */ ({mode: 'splice', componentName: block.dirName, source: spliced.source}));
     }
   }
-  return modules;
+  return {modules, demoMediaReplaced};
 }
 
 /**
@@ -115,7 +119,7 @@ export async function layoutExpand(expression, options = {}) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  const blockModules = buildBlockModules(doc, blocks);
+  const {modules: blockModules, demoMediaReplaced} = buildBlockModules(doc, blocks);
   const result = expand(doc, registry, {componentName, blockModules});
 
   let written = null;
@@ -148,6 +152,7 @@ export async function layoutExpand(expression, options = {}) {
       blocksReferenced: [...blockModules.entries()].map(([name, m]) => ({name, mode: m.mode})),
       warnings: warnings.map(formatIssue),
       written,
+      demoMediaReplaced,
     },
   };
 }

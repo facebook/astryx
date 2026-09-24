@@ -69,7 +69,7 @@ export const doc = {
     {
       type: 'layout.expand',
       description:
-        'The expansion: the parsed form, the generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the relative output path, or null when nothing was written).',
+        'The expansion: the parsed form, the generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the relative output path, or null when nothing was written), and demoMediaReplaced (how many Astryx demo media references in the spliced template blocks, such as images, posters and videos, were replaced with placeholders for you to swap for your own media).',
     },
   ],
   throws: [

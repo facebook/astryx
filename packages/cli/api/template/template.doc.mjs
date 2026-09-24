@@ -109,7 +109,7 @@ export const doc = {
     {
       type: 'template.copy',
       description:
-        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, and file count.',
+        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, file count, and `demoMediaReplaced` — how many Astryx demo media references (images, posters, videos) in the written file were replaced with placeholders for you to swap for your own media.',
     },
     {
       type: 'template.cdn',
