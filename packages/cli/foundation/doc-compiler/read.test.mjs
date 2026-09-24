@@ -202,6 +202,37 @@ export default doc;
     expect(await loadComponentDoc(file)).toBe(mod.default);
   });
 
+  it('translates and checks afresh on every read, as main did', async () => {
+    const file = write(
+      'Counted.doc.mjs',
+      `let reads = 0;
+export default {
+  type: 'component', name: 'Counted', displayName: 'Counted', props: [],
+  get usage() { reads += 1; return {description: 'read ' + reads}; },
+};
+export const docsZh = {get props() { throw new TypeError('bad translation'); }};
+`,
+    );
+    const first = await loadDocs(file, {lang: 'zh'}).catch(error => error);
+    const second = await loadDocs(file, {lang: 'zh'}).catch(error => error);
+    expect(first).toBeInstanceOf(TypeError);
+    expect(second).not.toBe(first);
+    const template = write(
+      'Block.doc.mjs',
+      "export default {type: 'block', name: 'Block', description: 'd', componentsUsed: ['A']};\n",
+    );
+    const read = () =>
+      readDocView(template, {
+        root: 'templates',
+        exports: ['default'],
+        strict: true,
+        value: 'parsed',
+      });
+    const one = await read();
+    one.componentsUsed.push('mutated');
+    expect((await read()).componentsUsed).toEqual(['A']);
+  });
+
   it('never lets a message that is not a path break a read', async () => {
     const file = write(
       'Odd.doc.mjs',

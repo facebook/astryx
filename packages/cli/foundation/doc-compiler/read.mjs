@@ -6,11 +6,11 @@
  * @input A descriptor file, the root that reads it (components, hooks,
  *   templates, themes, self-docs, or doc topics), the reading language, and
  *   how strictly the reader checks.
- * @output The lowered doc for that file, memoized per file for the life of the
- *   process, as Node's module cache holds the file itself. Readers get the
- *   view they have always read; a whole-project compile also gets the sealed
- *   node. For doc topics: the compiler input for a topic, with its extensions
- *   and overlays loaded.
+ * @output The lowered doc for that file. Readers get the view they have always
+ *   read, lowered afresh on every read; a whole-project compile also gets the
+ *   sealed node, memoized per file for the life of the process. For doc
+ *   topics: the compiler input for a topic, with its extensions and overlays
+ *   loaded.
  * @position Loads authored doc files for the readers in api/ and clients/ and
  *   hands each to ./compile.mjs. Each reader keeps its own loader, export
  *   order, and strictness, so what it prints is what it printed before.
@@ -149,10 +149,24 @@ export function compileDocFile(file, options, {node = false} = {}) {
  */
 export async function readDocView(file, options) {
   const strict = options.strict === true;
-  const result = await compileDocFile(file, {
-    ...options,
-    check: strict || options.check === true,
-  });
+  const lang = options.lang ?? null;
+  // Lowered on every read, as the readers always loaded: Node caches the
+  // module, and the translation and the check run fresh each time, so a
+  // reader never shares a translated or parsed result with the next one.
+  const provider = options.provider ?? packageOf(file);
+  const result = lowerDoc(
+    {
+      id: options.id ?? `${provider}:${options.root}:${path.basename(file)}`,
+      root: options.root,
+      provider,
+      source: packageSource(file),
+      lang,
+      file: await loadAuthored(file, options, lang),
+      ...(options.label ? {label: options.label} : {}),
+      ...(options.value === 'parsed' ? {useParsed: true} : {}),
+    },
+    {check: strict || options.check === true, node: false},
+  );
   if (result.loadFailure !== undefined) throw result.loadFailure;
   if (result.missing) {
     if (strict)
