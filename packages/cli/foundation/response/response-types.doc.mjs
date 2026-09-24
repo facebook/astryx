@@ -173,7 +173,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, and file count.',
+        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).',
     },
 
     {

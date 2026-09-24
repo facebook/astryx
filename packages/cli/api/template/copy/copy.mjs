@@ -20,6 +20,12 @@ import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
 
+/** The template-fixture namespace Astryx demo media lives under. */
+const FIXTURE_NAMESPACE = '/template-assets/';
+
+/** @param {string} source */
+const countFixtureRefs = source => source.split(FIXTURE_NAMESPACE).length - 1;
+
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
  * return the `template.copy` receipt.
@@ -93,6 +99,10 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   const source = fs.readFileSync(match.filePath, 'utf-8');
   const outputSource = stripTemplateAssetRefs(source);
   fs.writeFileSync(outputFilePath, outputSource);
+  // A replaced reference leaves the fixture namespace, so the drop in count is
+  // exactly what the receipt must disclose.
+  const demoMediaReplaced =
+    countFixtureRefs(source) - countFixtureRefs(outputSource);
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
@@ -102,6 +112,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      demoMediaReplaced,
     },
   };
 }
