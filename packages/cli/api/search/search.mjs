@@ -921,7 +921,11 @@ export async function search(query, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package');
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
 
   // Gather candidates from each requested domain in parallel.

@@ -21,6 +21,7 @@
 
 import {describe, it, expect} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
@@ -159,6 +160,17 @@ describe('search leaf — error paths (pinned)', () => {
     await expect(
       search('button', {cwd, type: /** @type {any} */ ('bogus')}),
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  }, SLOW);
+
+  it('throws ERR_CORE_NOT_FOUND when @astryxdesign/core cannot be found', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
+    try {
+      await expect(search('button', {cwd: empty})).rejects.toMatchObject({
+        code: 'ERR_CORE_NOT_FOUND',
+      });
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
   }, SLOW);
 });
 

@@ -61,6 +61,10 @@ export const doc = {
       code: 'ERR_INVALID_ARGUMENT',
       when: 'the query is empty, --type is unknown, or --limit is not a positive integer',
     },
+    {
+      code: 'ERR_CORE_NOT_FOUND',
+      when: '@astryxdesign/core cannot be found from the cwd',
+    },
   ],
   examples: [
     {label: 'Find a component', code: "const r = await search('button');"},

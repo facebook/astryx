@@ -11,6 +11,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {search, scoreCandidate, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
@@ -235,5 +237,18 @@ describe('search CLI — exit codes + JSON contract', () => {
     // line; it's now separate `score:` / `reason:` record fields mirroring --json.
     expect(r.stdout).toContain('score:');
     expect(r.stdout).toContain('reason:');
+  });
+
+  it('exits 1 with ERR_CORE_NOT_FOUND when no @astryxdesign/core is reachable', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
+    try {
+      const json = await runCli(['--json', 'search', 'button'], empty);
+      expect(json.status).toBe(1);
+      expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
+      const text = await runCli(['search', 'button'], empty);
+      expect(text.status).toBe(1);
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
   });
 }, SCAN_TIMEOUT);

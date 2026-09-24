@@ -45,7 +45,10 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'success (including zero matches)'},
-    {code: 1, when: 'invalid --type or a non-positive --limit'},
+    {
+      code: 1,
+      when: 'invalid --type or a non-positive --limit, or @astryxdesign/core cannot be found',
+    },
   ],
   related: ['component', 'hook', 'docs', 'template', 'build'],
 };
