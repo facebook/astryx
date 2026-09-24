@@ -339,14 +339,19 @@ These are not free-form. `parseDoc` validates each at load, and a **drift harnes
 
 Most of the conventions above are mechanical, so they're checked rather than reviewed:
 
-| Rule                                                                                                                                              | Enforced by                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`) |
-| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`) |
-| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)  |
-| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`       |
-| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
-| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
+| Rule                                                                                                                                              | Enforced by                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`)                             |
+| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`)                             |
+| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)                              |
+| a command handler must not access the environment: no filesystem, network, subprocess, Project, or discovery imports (INV22)                      | `pnpm check:cli-structure`                                   |
+| an API module (other than an adapter or private helper) must not access the environment (INV21)                                                   | `pnpm check:cli-structure`                                   |
+| a command handler must not build text with `.padEnd()`, `.padStart()`, `.repeat()`, or `new Block()` (INV23, FR3)                                 | ESLint (`no-restricted-syntax`) + `pnpm check:cli-structure` |
+| every executable `CommandDoc` `fn` must name a function exported from `api/index.mjs` (FR1)                                                       | `pnpm check:cli-structure`                                   |
+| every function exported from `api/index.mjs` must have a `FunctionDoc` whose `name` matches (FR2)                                                 | `pnpm check:cli-structure`                                   |
+| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`                                   |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`                                   |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                                            |
 
 You never hand-write the `.d.mts` declarations. `packages/cli/scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
 
