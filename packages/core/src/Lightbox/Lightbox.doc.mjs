@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Lightbox.doc.mjs
+ * @input Lightbox public props and custom content keyboard behavior
+ * @output Consumer documentation for media and custom galleries
+ * @position Lightbox docs consumed by the CLI and docsite
+ */
+
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
@@ -57,6 +64,7 @@ export const docs = {
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the same gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
+      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
       { guidance: true, description: 'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
       { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.' },
@@ -134,6 +142,7 @@ export const docsZh = {
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the same gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
+      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
       { guidance: true, description: 'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
       { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.' },
@@ -150,6 +159,7 @@ export const docsDense = {
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
+      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
       { guidance: true, description: 'Always provide alt text for every image and a label for every custom item.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
       { guidance: true, description: 'Enable hasZoom only for high-resolution images; zoom and pan apply to images only.' },

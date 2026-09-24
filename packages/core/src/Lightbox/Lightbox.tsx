@@ -6,7 +6,7 @@
  * @file Lightbox.tsx
  * @input Uses React, native dialog, StyleX, IconButton, theme tokens
  * @output Exports Lightbox component, LightboxProps, LightboxMedia,
- *   LightboxCustomItem, LightboxItem
+ *   LightboxCustomItem, LightboxItem; custom content retains its keyboard events
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -76,7 +76,7 @@ export interface LightboxCustomItem {
    * navigation. Required because custom items have no `alt` text.
    */
   label: string;
-  /** Optional caption or footer displayed below the content. */
+  /** Optional noninteractive caption displayed below the content. */
   caption?: ReactNode;
 }
 
@@ -346,6 +346,7 @@ export function Lightbox({
 }: LightboxProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
+  const customContentRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
 
   // Index state (controlled + uncontrolled)
@@ -481,6 +482,15 @@ export function Lightbox({
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Custom subtrees own their keyboard interaction, including native input
+      // defaults and composite widgets. Keep shortcuts on the viewer/chrome.
+      if (
+        e.defaultPrevented ||
+        (e.target instanceof Node &&
+          customContentRef.current?.contains(e.target))
+      ) {
+        return;
+      }
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goToPrev();
@@ -574,8 +584,8 @@ export function Lightbox({
         onClickProp?.(e);
       }}
       onKeyDown={e => {
-        handleKeyDown(e);
         onKeyDownProp?.(e);
+        handleKeyDown(e);
       }}
       aria-label={currentLabel}
       {...mergeProps(
@@ -618,7 +628,7 @@ export function Lightbox({
             zoom/pan (images only). */}
         <div {...stylex.props(styles.mediaGroup)}>
           {isCustomItem(currentItem) ? (
-            <div {...stylex.props(styles.customContent)}>
+            <div ref={customContentRef} {...stylex.props(styles.customContent)}>
               {currentItem.content}
             </div>
           ) : (

@@ -1,8 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Lightbox.test.tsx
+ * @input Lightbox, Slider, React Testing Library, and keyboard events
+ * @output Regression coverage for gallery navigation and custom content interaction
+ * @position Colocated Lightbox behavior tests
+ */
+
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
+import {Slider} from '../Slider';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // Mock showModal/close for jsdom
@@ -488,7 +496,7 @@ describe('Lightbox', () => {
       );
     });
 
-    it('renders a ReactNode caption/footer for a custom item', () => {
+    it('renders a noninteractive ReactNode caption for a custom item', () => {
       render(
         <Lightbox
           isOpen={true}
@@ -497,15 +505,11 @@ describe('Lightbox', () => {
             type: 'custom',
             label: 'Preview',
             content: <div>Body</div>,
-            caption: (
-              <button type="button" data-testid="footer-action">
-                Copy command
-              </button>
-            ),
+            caption: <span>Preview description</span>,
           }}
         />,
       );
-      expect(screen.getByTestId('footer-action')).toBeInTheDocument();
+      expect(screen.getByText('Preview description')).toBeInTheDocument();
     });
 
     it('keeps interactive controls inside custom content interactive', () => {
@@ -527,6 +531,167 @@ describe('Lightbox', () => {
       );
       fireEvent.click(screen.getByTestId('inner'));
       expect(onClick).toHaveBeenCalled();
+    });
+
+    describe('keyboard ownership', () => {
+      const controls = [
+        [
+          'text input',
+          <input key="input" aria-label="Title" data-testid="control" />,
+        ],
+        [
+          'textarea',
+          <textarea key="textarea" aria-label="Notes" data-testid="control" />,
+        ],
+        [
+          'range',
+          <input
+            key="input"
+            type="range"
+            aria-label="Volume"
+            data-testid="control"
+          />,
+        ],
+        [
+          'select',
+          <select key="select" aria-label="Size" data-testid="control">
+            <option>Small</option>
+          </select>,
+        ],
+        [
+          'button',
+          <button key="button" type="button" data-testid="control">
+            Action
+          </button>,
+        ],
+        [
+          'editable descendant',
+          <div key="editable" contentEditable suppressContentEditableWarning>
+            <span data-testid="control">Edit me</span>
+          </div>,
+        ],
+        [
+          'focusable widget',
+          <div key="widget" tabIndex={0} data-testid="control">
+            Custom keyboard surface
+          </div>,
+        ],
+      ] as const;
+
+      it.each(controls)(
+        'preserves both arrow keys inside a %s',
+        (_name, content) => {
+          const onIndexChange = vi.fn();
+          const onKeyDown = vi.fn();
+          render(
+            <Lightbox
+              isOpen
+              onOpenChange={() => {}}
+              index={1}
+              onIndexChange={onIndexChange}
+              media={[
+                {src: '/before.jpg', alt: 'Before'},
+                {
+                  type: 'custom',
+                  label: 'Editor',
+                  content: <div onKeyDown={onKeyDown}>{content}</div>,
+                },
+                {src: '/after.jpg', alt: 'After'},
+              ]}
+            />,
+          );
+          for (const key of ['ArrowLeft', 'ArrowRight']) {
+            const event = new KeyboardEvent('keydown', {
+              key,
+              bubbles: true,
+              cancelable: true,
+            });
+            fireEvent(screen.getByTestId('control'), event);
+            expect(event.defaultPrevented).toBe(false);
+          }
+          expect(onKeyDown).toHaveBeenCalledTimes(2);
+          expect(onIndexChange).not.toHaveBeenCalled();
+          expect(screen.getByText('2 / 3')).toBeInTheDocument();
+        },
+      );
+
+      it('lets a nested Slider handle arrows without changing the gallery', () => {
+        const onIndexChange = vi.fn();
+        const onChange = vi.fn();
+        render(
+          <Lightbox
+            isOpen
+            onOpenChange={() => {}}
+            index={1}
+            onIndexChange={onIndexChange}
+            media={[
+              {src: '/before.jpg', alt: 'Before'},
+              {
+                type: 'custom',
+                label: 'Editor',
+                content: (
+                  <Slider label="Volume" value={50} onChange={onChange} />
+                ),
+              },
+              {src: '/after.jpg', alt: 'After'},
+            ]}
+          />,
+        );
+        fireEvent.keyDown(screen.getByRole('slider'), {key: 'ArrowLeft'});
+        expect(onChange).toHaveBeenLastCalledWith(49);
+        fireEvent.keyDown(screen.getByRole('slider'), {key: 'ArrowRight'});
+        expect(onChange).toHaveBeenLastCalledWith(51);
+        expect(onIndexChange).not.toHaveBeenCalled();
+      });
+
+      it('lets the consumer prevent dialog-level gallery navigation', () => {
+        const onIndexChange = vi.fn();
+        render(
+          <Lightbox
+            isOpen
+            onOpenChange={() => {}}
+            onKeyDown={event => event.preventDefault()}
+            onIndexChange={onIndexChange}
+            media={[
+              {src: '/a.jpg', alt: 'A'},
+              {src: '/b.jpg', alt: 'B'},
+            ]}
+          />,
+        );
+        fireEvent.keyDown(screen.getByRole('dialog'), {key: 'ArrowRight'});
+        expect(onIndexChange).not.toHaveBeenCalled();
+      });
+
+      it('keeps both gallery shortcuts on the dialog and gallery chrome', () => {
+        const onIndexChange = vi.fn();
+        render(
+          <Lightbox
+            isOpen
+            onOpenChange={() => {}}
+            index={1}
+            onIndexChange={onIndexChange}
+            media={[
+              {src: '/before.jpg', alt: 'Before'},
+              {
+                type: 'custom',
+                label: 'Preview',
+                content: <div>Preview body</div>,
+              },
+              {src: '/after.jpg', alt: 'After'},
+            ]}
+          />,
+        );
+        for (const target of [
+          screen.getByRole('dialog'),
+          screen.getByLabelText('Next'),
+        ]) {
+          fireEvent.keyDown(target, {key: 'ArrowLeft'});
+          expect(onIndexChange).toHaveBeenLastCalledWith(0);
+          fireEvent.keyDown(target, {key: 'ArrowRight'});
+          expect(onIndexChange).toHaveBeenLastCalledWith(2);
+        }
+        expect(onIndexChange).toHaveBeenCalledTimes(4);
+      });
     });
 
     describe('zoom-pan gating', () => {
