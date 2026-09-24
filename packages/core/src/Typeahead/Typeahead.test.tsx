@@ -2304,6 +2304,78 @@ describe('direct single-select callback order', () => {
   });
 });
 
+describe('direct focusable-disabled transition compatibility', () => {
+  it.each([
+    ['BaseTypeahead', 'keyboard'],
+    ['BaseTypeahead', 'pointer'],
+    ['Typeahead', 'keyboard'],
+    ['Typeahead', 'pointer'],
+  ] as const)(
+    'lets %s commit an already-open highlighted option by %s',
+    async (component, interaction) => {
+      const events: string[] = [];
+      const renderSubject = (isDisabled: boolean) =>
+        component === 'BaseTypeahead' ? (
+          <BaseTypeahead
+            aria-label="Fruit"
+            searchSource={fruitSource}
+            value={null}
+            onChange={item => events.push(`change:${item?.id ?? 'none'}`)}
+            onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+            hasEntriesOnFocus
+            debounceMs={0}
+            isDisabled={isDisabled}
+            isFocusableDisabled={isDisabled}
+          />
+        ) : (
+          <Typeahead
+            label="Fruit"
+            searchSource={fruitSource}
+            value={null}
+            onChange={item => events.push(`change:${item?.id ?? 'none'}`)}
+            onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+            hasEntriesOnFocus
+            debounceMs={0}
+            isDisabled={isDisabled}
+            disabledMessage="Fruit selection is unavailable"
+          />
+        );
+
+      const {rerender} = render(renderSubject(false));
+      const input = screen.getByRole('combobox', {name: 'Fruit'});
+      fireEvent.focus(input);
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'true'),
+      );
+      const option = screen.getByRole('option', {
+        name: 'Apple',
+        hidden: true,
+      });
+      expect(input).toHaveAttribute('aria-activedescendant', option.id);
+
+      rerender(renderSubject(true));
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(input).toHaveAttribute('aria-activedescendant', option.id);
+
+      events.length = 0;
+      if (interaction === 'keyboard') {
+        fireEvent.keyDown(input, {key: 'Enter'});
+      } else {
+        fireEvent.click(option);
+      }
+
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'false'),
+      );
+      expect(events).toEqual(['change:1', 'close']);
+      expect(input).toHaveValue('');
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+    },
+  );
+});
+
 describe('direct pending Escape compatibility', () => {
   it.each(['BaseTypeahead', 'Typeahead'] as const)(
     'lets a cancel-free late result reopen public %s after Escape',

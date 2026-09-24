@@ -174,7 +174,7 @@ export const docs = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable. It blocks text entry and selection, including results that were already open when the component became disabled.',
+        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable. It blocks text entry, but when applied after results are already open, Enter can still select the highlighted option.',
       default: 'false',
     },
     {
@@ -332,7 +332,7 @@ export const docsZh = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。它会阻止文本输入和选择，包括组件进入禁用状态时已打开的结果。',
+        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。它会阻止文本输入，但如果结果已打开，按 Enter 仍可选择高亮选项。',
       default: 'false',
     },
     {
@@ -465,7 +465,7 @@ export const docsDense = {
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',
     isFocusableDisabled:
-      'Keeps disabled input focusable and blocks text entry and selection, including already-open results.',
+      'Keeps disabled input focusable and blocks text entry; an already-open highlight can still be selected with Enter.',
     hasAutoFocus: 'Auto-focus on mount.',
     debounceMs: 'Search debounce ms. 0 for sync.',
     size: 'Dropdown option padding size.',

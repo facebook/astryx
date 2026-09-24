@@ -3,8 +3,9 @@
 /**
  * @file TokenizerSelection.a11y.chromium.spec.ts
  * @input Uses @playwright/test, the a11y-spec static Storybook server, and
- *   checked-in Tokenizer/BaseTypeahead stories
- * @output Real-Chromium evidence for component:Tokenizer FR13-FR15 and AR5
+ *   checked-in Tokenizer/BaseTypeahead/Typeahead stories
+ * @output Real-Chromium evidence for component:Tokenizer FR13-FR15 and direct
+ *   disabled-transition compatibility
  * @position Browser lane for focus, native popover, pointer, keyboard, and
  *   stale-result behavior that jsdom cannot prove
  *
@@ -190,6 +191,54 @@ test('direct BaseTypeahead still closes after a typed selection', async ({
   await input.fill('React');
   await page.getByRole('option', {name: 'React'}).waitFor();
   await input.press('Enter');
+
+  await expect(page.locator('[data-selected-id]')).toHaveText('react');
+  await expect(input).toHaveValue('');
+  await expect(input).toHaveAttribute('aria-expanded', 'false');
+  await expect(input).not.toHaveAttribute('aria-activedescendant');
+});
+
+test('direct BaseTypeahead preserves keyboard selection after focusable disable', async ({
+  page,
+}) => {
+  await mountStory(page, `${TOKENIZER_STORY_BASE}--direct-base-typeahead`);
+  const input = page.getByRole('combobox', {name: 'Framework'});
+
+  await input.fill('React');
+  const option = page.getByRole('option', {name: 'React'});
+  await expectActive(input, option);
+  await page
+    .getByRole('button', {name: 'Disable direct BaseTypeahead'})
+    .evaluate(button => (button as HTMLButtonElement).click());
+
+  await expect(input).toHaveAttribute('aria-disabled', 'true');
+  await expect(input).toHaveAttribute('readonly', '');
+  await expectActive(input, option);
+  await input.press('Enter');
+
+  await expect(page.locator('[data-selected-id]')).toHaveText('react');
+  await expect(input).toHaveValue('');
+  await expect(input).toHaveAttribute('aria-expanded', 'false');
+  await expect(input).not.toHaveAttribute('aria-activedescendant');
+});
+
+test('public Typeahead preserves pointer selection after focusable disable', async ({
+  page,
+}) => {
+  await mountStory(page, `${TOKENIZER_STORY_BASE}--direct-typeahead`);
+  const input = page.getByRole('combobox', {name: 'Framework'});
+
+  await input.fill('React');
+  const option = page.getByRole('option', {name: 'React'});
+  await expectActive(input, option);
+  await page
+    .getByRole('button', {name: 'Disable public Typeahead'})
+    .evaluate(button => (button as HTMLButtonElement).click());
+
+  await expect(input).toHaveAttribute('aria-disabled', 'true');
+  await expect(input).toHaveAttribute('readonly', '');
+  await expectActive(input, option);
+  await option.click();
 
   await expect(page.locator('[data-selected-id]')).toHaveText('react');
   await expect(input).toHaveValue('');
