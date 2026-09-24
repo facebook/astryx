@@ -524,12 +524,22 @@ test('the interaction states are driven and photographed while engaged', async (
   for (const colorMode of ['light', 'dark'] as const) {
     /** Rest, for the same page and color mode, as the comparison baseline. */
     await openStory(page, {colorMode});
+    // Park the pointer FIRST. A reload does not move the physical mouse, so
+    // without this the second color mode reads its "rest" through whichever
+    // button the previous pass left the cursor over — and that reading is a
+    // hover reading, which then makes hover look like it paints nothing. The
+    // engagement assertion below caught exactly that, so it is load-bearing.
+    await page.mouse.move(0, 0);
     const rest: Record<
       string,
       Awaited<ReturnType<typeof readButtonPaint>>
     > = {};
     for (const state of INTERACTION_STATES) {
       rest[state] = await readButtonPaint(page, state);
+      expect(
+        rest[state].matchesHover,
+        `${state}/${colorMode}: the rest baseline must not itself be hovered`,
+      ).toBe(false);
     }
 
     // ---- hover ------------------------------------------------------------
