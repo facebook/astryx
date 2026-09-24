@@ -71,7 +71,10 @@ function NavigationFixture({href}: {href: string}) {
             Provider router
           </Link>
         </div>
-        <ClickableCard href={href} data-testid="delegated">
+        <ClickableCard
+          href={href}
+          label="Delegated card surface"
+          data-testid="delegated">
           <span>Delegated card surface</span>
         </ClickableCard>
       </LinkProvider>
