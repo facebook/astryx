@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
+import {isErrorCode} from '../../../../foundation/response/error-codes.mjs';
 import {themePaletteGenerate} from './generate.mjs';
 
 const temporaryDirectories = [];
@@ -266,5 +267,24 @@ describe('themePaletteGenerate', () => {
     expect(() =>
       themePaletteGenerate('palette.config.json', {}, {cwd}),
     ).toThrow('Could not parse palette config');
+  });
+
+  it('reports an output path it cannot use with a registered error code', () => {
+    const cwd = fixture();
+    fs.writeFileSync(path.join(cwd, 'blocker'), '');
+
+    for (const options of [
+      {out: 'blocker/ocean.palette.json'},
+      {preview: 'blocker/ocean.palette.html'},
+    ]) {
+      let error;
+      try {
+        themePaletteGenerate('palette.config.json', options, {cwd});
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).toMatchObject({code: 'ERR_WRITE_FAILED'});
+      expect(isErrorCode(error.code)).toBe(true);
+    }
   });
 });

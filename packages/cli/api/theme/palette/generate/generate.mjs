@@ -168,7 +168,11 @@ function existingFileIdentity(filePath) {
     ) {
       return null;
     }
-    throw error;
+    throw new AstryxError(
+      `Could not write palette candidate: ${error instanceof Error ? error.message : String(error)}`,
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
   }
 }
 
