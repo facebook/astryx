@@ -2,10 +2,10 @@
 
 /**
  * @file packed-consumer.test.mjs
- * @input Packs @astryxdesign/build, installs the tarball with pnpm's isolated
- *   linker, and exercises the public PostCSS helper and Vite plugin
- * @output Proves shipped build integrations resolve only declared package or
- *   consumer dependencies and preserve generated browser compatibility CSS
+ * @input Packs @astryxdesign/build, reconstructs only the dependencies declared
+ *   by its tarball, and exercises the public PostCSS helper and Vite plugin
+ * @output Proves shipped build integrations need no ambient workspace packages
+ *   and preserve generated browser compatibility CSS
  * @position Consumer-package regression for @astryxdesign/build
  */
 
@@ -15,7 +15,9 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -25,6 +27,7 @@ import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageDir = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(packageDir, '../..');
 
 function run(command, args, cwd) {
   try {
@@ -44,59 +47,70 @@ function run(command, args, cwd) {
   }
 }
 
+function linkPackage(sourceRoot, name, targetRoot) {
+  const source = realpathSync(path.join(sourceRoot, 'node_modules', name));
+  const target = path.join(targetRoot, 'node_modules', name);
+  mkdirSync(path.dirname(target), {recursive: true});
+  symlinkSync(source, target, 'junction');
+}
+
 describe('the packed @astryxdesign/build consumer contract', () => {
   let root;
+  let appDir;
+  let packedPackageDir;
 
   beforeAll(() => {
     root = mkdtempSync(path.join(tmpdir(), 'astryx-build-consumer-'));
     const packDir = path.join(root, 'pack');
-    const appDir = path.join(root, 'app');
+    appDir = path.join(root, 'app');
+    packedPackageDir = path.join(root, 'packed-build');
     mkdirSync(packDir);
+    mkdirSync(path.join(appDir, 'node_modules/@astryxdesign'), {
+      recursive: true,
+    });
     mkdirSync(path.join(appDir, 'src'), {recursive: true});
+    mkdirSync(packedPackageDir);
 
     run('pnpm', ['pack', '--pack-destination', packDir], packageDir);
     const tarball = path.join(
       packDir,
       readdirSync(packDir).find(name => name.endsWith('.tgz')),
     );
+    run(
+      'tar',
+      ['-xzf', tarball, '-C', packedPackageDir, '--strip-components=1'],
+      root,
+    );
+
+    const manifest = JSON.parse(
+      readFileSync(path.join(packedPackageDir, 'package.json'), 'utf8'),
+    );
+    // Recreate strict dependency visibility from the packed manifest rather
+    // than letting the monorepo's hoisted packages satisfy missing entries.
+    for (const dependency of Object.keys(manifest.dependencies || {})) {
+      linkPackage(packageDir, dependency, packedPackageDir);
+    }
+    for (const peer of Object.keys(manifest.peerDependencies || {})) {
+      linkPackage(packageDir, peer, packedPackageDir);
+      linkPackage(packageDir, peer, appDir);
+    }
+
+    symlinkSync(
+      packedPackageDir,
+      path.join(appDir, 'node_modules/@astryxdesign/build'),
+      'junction',
+    );
+    const virtualStoreRoot = path.join(repoRoot, 'node_modules/.pnpm');
+    linkPackage(virtualStoreRoot, 'postcss', appDir);
+    linkPackage(virtualStoreRoot, '@stylexjs/stylex', appDir);
 
     writeFileSync(
       path.join(appDir, 'package.json'),
-      JSON.stringify(
-        {
-          name: 'astryx-build-consumer-contract',
-          private: true,
-          type: 'module',
-          scripts: {build: 'vite build'},
-          devDependencies: {
-            '@astryxdesign/build': `file:${tarball}`,
-            '@babel/core': '7.29.7',
-            '@stylexjs/babel-plugin': '0.19.0',
-            '@stylexjs/stylex': '0.19.0',
-            '@stylexjs/unplugin': '0.19.0',
-            postcss: '8.5.25',
-            unplugin: '2.3.11',
-            vite: '8.1.3',
-          },
-        },
-        null,
-        2,
-      ),
-    );
-    writeFileSync(
-      path.join(appDir, '.npmrc'),
-      'node-linker=isolated\nstrict-peer-dependencies=true\n',
-    );
-    writeFileSync(
-      path.join(appDir, 'pnpm-workspace.yaml'),
-      [
-        "packages: ['.']",
-        'overrides:',
-        "  autoprefixer: '10.5.2'",
-        "  browserslist: '4.28.4'",
-        "  lightningcss: '1.32.0'",
-        '',
-      ].join('\n'),
+      JSON.stringify({
+        name: 'astryx-build-consumer-contract',
+        private: true,
+        type: 'module',
+      }),
     );
     writeFileSync(
       path.join(appDir, 'index.html'),
@@ -144,8 +158,6 @@ describe('the packed @astryxdesign/build consumer contract', () => {
         '',
       ].join('\n'),
     );
-
-    run('pnpm', ['install', '--offline', '--ignore-scripts'], appDir);
   }, 120_000);
 
   afterAll(() => {
@@ -153,15 +165,17 @@ describe('the packed @astryxdesign/build consumer contract', () => {
   });
 
   it('loads the public PostCSS helper without undeclared consumer packages', () => {
-    const appDir = path.join(root, 'app');
     expect(run(process.execPath, ['check-postcss.cjs'], appDir)).toBe(
       'postcss-ok\n',
     );
   });
 
   it('keeps the Vite compatibility pass inside the package boundary', () => {
-    const appDir = path.join(root, 'app');
-    run('pnpm', ['build'], appDir);
+    const viteCli = path.join(
+      packedPackageDir,
+      'node_modules/vite/bin/vite.js',
+    );
+    run(process.execPath, [viteCli, 'build'], appDir);
     const assetsDir = path.join(appDir, 'dist/assets');
     const cssFile = readdirSync(assetsDir).find(name => name.endsWith('.css'));
     expect(cssFile).toBeDefined();
