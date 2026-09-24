@@ -290,11 +290,13 @@ export function registerDoctor(program) {
     fn: doctorFn,
     action: async () => runProjectDoctor(program),
   });
+  // Generated from the CommandDoc, so help cannot drift from it.
+  const exitCodes = (doctorCommand.exitCodes ?? []).map(
+    ({code, when}) => `  ${code}  ${when}`,
+  );
   doctorCmd.addHelpText(
     'after',
-    '\nExit code:\n' +
-      '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
-      '  1  one or more checks failed\n',
+    `\n${text(['Exit code:', ...exitCodes].join('\n')).toString()}\n`,
   );
 
   /** @type {import('commander').Command} */
