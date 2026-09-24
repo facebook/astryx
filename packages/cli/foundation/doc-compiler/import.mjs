@@ -1,15 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Doc module importers — the only code that executes an authored doc
- *   file.
+ * @file Doc module importers: how the doc reader and discovery execute an
+ *   authored doc file.
  *
  * @input An absolute path to a `.doc.{ts,mjs,js}` (or legacy template) file.
  * @output The module's namespace object.
- * @position Called by ./read.mjs, which compiles what comes back, and by
- *   discovery, which reads a contributed topic's name and relationships to
- *   build the catalog. A test holds every other module to not importing doc
- *   files at all.
+ * @position Called by ./read.mjs, which hands what comes back to the compiler,
+ *   and by discovery, which reads a contributed topic's name and relationships
+ *   to build the catalog. Doc files also run outside these importers: each CLI
+ *   command imports its own self-docs statically for its help text, and the
+ *   README script imports them at build time. ./doc-loads.test.mjs lists, site
+ *   by site, every use of these importers and every other place the CLI runs
+ *   anything but its static imports of other CLI code (a static doc import is
+ *   one); a new site fails it.
  */
 
 import {pathToFileURL} from 'node:url';

@@ -14,7 +14,11 @@
  * @position Loads authored doc files for the readers in api/ and clients/ and
  *   hands each to ./compile.mjs. Each reader keeps its own loader, export
  *   order, and strictness, so what it prints is what it printed before.
- *   Internal to the CLI: nothing here is public API.
+ *   ./doc-loads.test.mjs lists, site by site, every other place the CLI runs
+ *   anything but its static imports of other CLI code, the doc reads that skip
+ *   this module among them: discovery's catalog fields, each command's
+ *   self-docs for its help text, and the build-time README. A new site fails
+ *   it. Internal to the CLI: nothing here is public API.
  */
 
 import * as fs from 'node:fs';
