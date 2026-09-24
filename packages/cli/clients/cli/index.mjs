@@ -601,16 +601,16 @@ export async function createProgram() {
       }
       // Human-readable summary as greppable records (agents should use --json).
       // One record per command: name, whether it supports --json, and the
-      // description.
+      // description. Field names are the manifest entry's own keys.
       emit(
         section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
         records(
           manifest.commands.map(c => ({
-            command: c.name,
+            name: c.name,
             json: c.json ? 'yes' : '',
             description: c.description || '',
           })),
-          {fields: ['command', 'json', 'description']},
+          {fields: ['name', 'json', 'description']},
         ),
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
