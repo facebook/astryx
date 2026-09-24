@@ -54,6 +54,10 @@ describe('@astryxdesign/cli/json envelope types', () => {
             noEmit: true,
             skipLibCheck: true,
             allowImportingTsExtensions: true,
+            // index.ts re-exports JSDoc types from .type.mjs files; read them
+            // from source, as tsconfig.json-api.json does, not from generated
+            // declarations that exist only after a build.
+            allowJs: true,
             types: [],
           },
           files: ['fixture.ts'],
