@@ -176,7 +176,8 @@ describe('ResizeHandle', () => {
     expect(warn).toHaveBeenCalledWith(
       'ResizeHandle: direction="horizontal" but its useResizable region is ' +
         '"vertical". They must match: the hook measures one axis and the ' +
-        'handle drags the other.',
+        'handle drags the other.' +
+        '\nAstryx CLI: npx @astryxdesign/cli search "ResizeHandle"',
     );
     warn.mockRestore();
   });
