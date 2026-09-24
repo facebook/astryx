@@ -120,4 +120,15 @@ describe('component() with --package option', () => {
     expect(result.data.source).toContain('ProfileCardShowcase');
     expect(result.data.aspectRatio).toBeCloseTo(16 / 9);
   });
+
+  // `cwd` is an explicit API input: --blocks must discover from it, as
+  // --showcase does, not from the process working directory.
+  it('--blocks discovers blocks from options.cwd, like --showcase', async () => {
+    const showcase = await component('ProfileCard', {cwd: tmpDir, showcase: true});
+    expect(showcase.data.source).toContain('ProfileCardShowcase');
+
+    const blocks = await component('ProfileCard', {cwd: tmpDir, blocks: true});
+    expect(blocks.type).toBe('component.detail.blocks');
+    expect(blocks.data.showcase?.name).toBe('ProfileCardShowcase');
+  });
 });
