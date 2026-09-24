@@ -229,9 +229,12 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('has_stable_visual=false');
   });
 
-  it('broadens both browser audits for unresolved canonical source ownership', () => {
+  it('keeps PR accessibility scoped while RTL retains its canonical resolver', () => {
     expect(runLines(workflow.jobs['pr-a11y'])).toContain(
-      '.forceFullComponentAudits // false',
+      '.github/scripts/a11y-pr-scope.mjs',
+    );
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      'SCOPE_ARGS=(--components "$COMPONENTS")',
     );
     expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
   });

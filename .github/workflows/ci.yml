@@ -11,14 +11,14 @@ on:
   pull_request:
     branches: ['main']
   merge_group:
-  # Explicit baseline maintenance shares the PR visual owner. It never runs as
-  # a release gate and never changes the baseline without a reviewed promotion.
+  # Explicit release checks and baseline maintenance share the canonical owners.
+  # Only a reviewed promotion may change the baseline.
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Capture canonical baseline candidates or promote a reviewed capture'
+        description: 'Check exact main for release, capture candidates, or promote a reviewed capture'
         type: choice
-        options: [capture, promote]
+        options: [capture, promote, release-check]
         default: capture
         required: true
       run_id:
@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   maintenance-request:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'release-check'
     runs-on: ubuntu-slim
     steps:
       - name: Require explicit main-branch maintenance
@@ -76,7 +76,7 @@ jobs:
 
   # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -85,8 +85,22 @@ jobs:
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
     steps:
+      - name: Require exact current main for release
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (context.ref !== 'refs/heads/main') {
+              throw new Error('Release checks must be dispatched from main.');
+            }
+            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
+            if (data.object.sha !== context.sha) {
+              throw new Error('Main changed since dispatch; dispatch release-check again.');
+            }
+
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 50
 
       - name: Fetch base branch
@@ -186,7 +200,7 @@ jobs:
   # runner or fan out into visual, accessibility, or RTL work.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true'
+    if: (github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -210,11 +224,16 @@ jobs:
           fetch-depth: 50
 
       - name: Fetch base branch
+        if: github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Check for component changes
         id: check
         run: |
+          if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
+            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\nhas_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ needs.check-scope.outputs.docsite_only }}" = "true" ] \
             || [ "${{ needs.check-scope.outputs.spec_only }}" = "true" ] \
             || [ "${{ needs.check-scope.outputs.tooling_only }}" = "true" ]; then
@@ -476,13 +495,13 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
-      short_hash: ${{ steps.urls.outputs.short_hash }}
+      short_hash: ${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
@@ -586,11 +605,19 @@ jobs:
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
+      - name: Identify full release audit scope
+        if: github.event_name == 'workflow_dispatch' && needs.check-scope.outputs.tooling_only != 'true'
+        id: release
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "short_hash=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          printf '{"forceFullComponentAudits":true}\n' > analysis.json
+
       - name: Upload Storybook artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
-          name: storybook-${{ steps.urls.outputs.short_hash }}
+          name: storybook-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
           retention-days: 30
 
@@ -606,10 +633,10 @@ jobs:
       # Two paths, so the artifact is rooted at their common ancestor
       # (packages/) — the download below unpacks it there.
       - name: Upload built themes and core
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
-          name: dists-${{ steps.urls.outputs.short_hash }}
+          name: dists-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: |
             packages/themes/*/dist/
             packages/core/dist/
@@ -648,7 +675,7 @@ jobs:
           EOF
 
       - name: Upload analysis artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
@@ -771,7 +798,7 @@ jobs:
   # for the slower sandbox build.
   pr-a11y:
     needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -805,13 +832,13 @@ jobs:
       # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
-          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
-          ANALYSIS_FORCE_FULL=$(jq -r '.forceFullComponentAudits // false' analysis.json)
           SCOPE_ARGS=()
-          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ "$ANALYSIS_FORCE_FULL" != "true" ] && [ -n "$COMPONENTS" ]; then
+          if [ "${{ github.event_name }}" = 'pull_request' ]; then
+            COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+            # An explicit empty filter means no changed components, never all
+            # stories. Shared-surface full sweeps belong to release-check.
             SCOPE_ARGS=(--components "$COMPONENTS")
-          else
-            echo "Component scope is policy-sensitive or unresolved — running the full accessibility audit."
+            echo "PR accessibility scope: ${COMPONENTS:-no changed components; fast browser guards still run}"
           fi
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
@@ -858,20 +885,17 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
-      # The reusable accessibility spec-test contracts (internal/a11y-spec) and
-      # the component bindings that adopt them. jsdom cannot compute a role or
-      # an accessible name, resolve a real tab sequence, or turn a key press
-      # into an activation, so those expectations are reported `unrun` in the
-      # unit lane and proven here or not at all. Hosted with the sibling
-      # Chromium guards for the same reason they are: pr-a11y is the blocking
-      # job that runs whenever components change.
+      # Run the exhaustive contract/fixture matrix at release time. PRs retain
+      # scoped axe validation and the fast interaction guards above; they must
+      # not pay for every component's browser bindings on every change.
       - name: Run accessibility spec-test contracts
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         env:
-          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: pnpm test:a11y-contract
 
       - name: Upload pressed-state pixel evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -884,7 +908,7 @@ jobs:
       # so the frames and their sensor receipts are produced here, bound to the
       # same exact head as every other check in this job.
       - name: Upload component-audit browser evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: component-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -895,6 +919,7 @@ jobs:
       # Baseline-free target/axis diagnostics are not a visual-regression lane.
       # Keep their existing report-only behavior with the other browser guards.
       - name: Check Probe theme reach
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         continue-on-error: true
         run: |
           node .github/scripts/visual-gate/gate.mjs reach \
@@ -902,7 +927,7 @@ jobs:
             --out .visual-reach
 
       - name: Upload Probe reach report
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: visual-reach
@@ -977,7 +1002,10 @@ jobs:
         needs.check-components.result == 'success' &&
         needs.check-components.outputs.has_stable_visual == 'true') ||
        (github.event_name == 'workflow_dispatch' &&
-        needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))
+        ((inputs.operation == 'release-check' &&
+          needs.build-storybook.result == 'success' &&
+          needs.check-components.result == 'success') ||
+         (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -997,7 +1025,7 @@ jobs:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
@@ -1005,7 +1033,7 @@ jobs:
 
       # If the optional theme artifact is missing, the gate builds the themes.
       - name: Download built themes and core
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -1017,11 +1045,11 @@ jobs:
 
       # Downloaded theme builds import Core's consumer-facing dist files.
       - name: Build Core dependency for theme inspection
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         run: pnpm -F @astryxdesign/core build
 
       - name: Build canonical maintenance Storybook
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
         run: pnpm build && pnpm -F @astryxdesign/storybook build
 
       - name: Fetch visual baseline from gh-pages
@@ -1113,9 +1141,42 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Run full release visual check
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
+        run: |
+          set -eu
+          set +e
+          node .github/scripts/visual-gate/gate.mjs release \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --summary-output visual-summary.md
+          code=$?
+          set -e
+          case "$code" in 0|2) ;; *) exit "$code" ;; esac
+          STATUS=$(jq -er '.status' .visual-run/verdict.json)
+          case "$STATUS" in
+            pass|changed) ;;
+            *) echo "Visual evidence is incomplete: $STATUS"; exit 1 ;;
+          esac
+          cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release visual verdict and report
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-release-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/manifest.json
+            .visual-run/shots/
+            .visual-run/report/
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Capture canonical visual baseline
         id: maintenance-capture
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
         # A complete browser-refresh capture can be incomparable with the old
         # baseline. The next step requires full capture, not a clean comparison.
         continue-on-error: true
@@ -1129,7 +1190,7 @@ jobs:
       - name: Validate canonical baseline capture
         id: maintenance-validation
         if: >-
-          always() && github.event_name == 'workflow_dispatch' &&
+          always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'capture' &&
           steps.maintenance-capture.outcome != 'skipped'
         env:
           CAPTURE_SHA: ${{ github.sha }}
@@ -1285,7 +1346,8 @@ jobs:
     name: pr-rtl (${{ matrix.package }})
     needs: [build-storybook, check-components]
     if: >-
-      github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request' ||
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) &&
       (needs.check-components.outputs.has_rtl_components == 'true' ||
        needs.check-components.outputs.has_rtl_harness == 'true' ||
        needs.check-components.outputs.force_full_component_audits == 'true')
@@ -1504,7 +1566,7 @@ jobs:
   # Stable required context joining the five package shards above.
   pr-rtl:
     needs: [check-scope, check-components, pr-rtl-shard]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ always() && !cancelled() && ((github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -1527,3 +1589,45 @@ jobs:
             --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
             --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
+
+  # Release-time projection only: the existing owners above do all measurement.
+  # A skipped owner or main drift must never look like passing release evidence.
+  release-check:
+    needs:
+      [
+        check-scope,
+        check-components,
+        build-storybook,
+        pr-visual,
+        pr-a11y,
+        pr-rtl,
+      ]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    steps:
+      - name: Require complete exact-main release checks
+        uses: actions/github-script@v9
+        env:
+          RELEASE_NEEDS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const needs = JSON.parse(process.env.RELEASE_NEEDS);
+            for (const name of ['check-scope', 'check-components', 'build-storybook', 'pr-visual', 'pr-a11y', 'pr-rtl']) {
+              if (needs[name]?.result !== 'success') {
+                throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
+              }
+            }
+            if (context.ref !== 'refs/heads/main') {
+              throw new Error('Release checks must be dispatched from main.');
+            }
+            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
+            if (data.object.sha !== context.sha) {
+              throw new Error('Main changed during checks; dispatch release-check again.');
+            }
+            await core.summary
+              .addHeading('Release checks complete')
+              .addRaw(`Exact main SHA: ${context.sha}\n\n`)
+              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Recheck main before release mutation; this run does not approve or publish a baseline.')
+              .write();
