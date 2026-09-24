@@ -423,12 +423,13 @@ const LITERALS = new Set([
 
 /** A code file Node or jiti can run. */
 const CODE_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
+/** Directories that hold no code the CLI runs as itself, by name... */
+const UNSCANNED_NAMES = new Set(['node_modules', '__fixtures__', '__tests__']);
 /**
- * Directories that hold no code the CLI runs as itself, by name: dependencies,
- * and `__*` test scaffolding (`__tests__`, `__fixtures__`, and the temporary
- * folders tests create and delete while this scan runs)...
+ * ...and the temporary folders tests create with mkdtemp (`__<prefix>_XXXXXX`)
+ * and delete while this scan runs. Any other `__*` folder is scanned.
  */
-const UNSCANNED_NAMES = new Set(['node_modules']);
+const TRANSIENT_DIR = /^__[a-z][a-z_]*_[A-Za-z0-9]{6}$/;
 /** ...and by path: tests, and the authored docs and templates. */
 const UNSCANNED_PATHS = new Set([
   'assets/docs',
@@ -452,7 +453,7 @@ function sources(dir) {
     if (entry.isDirectory()) {
       const skip =
         entry.name.startsWith('.') ||
-        entry.name.startsWith('__') ||
+        TRANSIENT_DIR.test(entry.name) ||
         UNSCANNED_NAMES.has(entry.name) ||
         UNSCANNED_PATHS.has(relOf(full));
       return skip ? [] : sources(full);
@@ -587,7 +588,7 @@ function targetOf(specifier, rel) {
         .some(
           part =>
             UNSCANNED_NAMES.has(part) ||
-            part.startsWith('__') ||
+            TRANSIENT_DIR.test(part) ||
             (part.startsWith('.') && part !== '..'),
         ) ||
       /\.test\.[^./]+$/.test(resolved);
@@ -1604,6 +1605,30 @@ describe('the scan', () => {
       expect(violations(LEAF, code, listed)).toEqual([
         `${LEAF}: loadModuleWithParser(..., ${parser}) loads a doc outside the compiler`,
       ]);
+    }
+  });
+});
+
+describe('the scan walks every folder that can ship', () => {
+  it('skips only test scaffolding and the temporary folders tests create', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-loads-walk-'));
+    try {
+      for (const dir of [
+        '__generated__',
+        '__tests__',
+        '__fixtures__',
+        '__import_hint_integration_Ab12Cd',
+        '.hidden',
+        'node_modules',
+      ]) {
+        fs.mkdirSync(path.join(root, dir));
+        fs.writeFileSync(path.join(root, dir, 'run.mjs'), "eval('1');\n");
+      }
+      expect(
+        sources(root).map(file => path.basename(path.dirname(file))),
+      ).toEqual(['__generated__']);
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
     }
   });
 });
