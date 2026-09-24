@@ -54,7 +54,7 @@ import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
-  discoverIntegrationComponents,
+  discoverValidIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
   resolveIntegrationImportPath,
@@ -66,6 +66,7 @@ import {
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
+import {templateLookupIds} from '../../foundation/discovery/template-adapter.mjs';
 import {loadDocsCatalog, lowerTopic} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
@@ -86,6 +87,8 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string} [_title]
  * @property {string} [_displayName]
  * @property {'page'|'block'} [_kind]
+ * @property {string} [_resultName]
+ * @property {string} [_commandName]
  */
 
 /**
@@ -647,7 +650,8 @@ async function gatherIntegrationComponents(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
   for (const integration of loadedIntegrations) {
-    for (const rec of discoverIntegrationComponents(integration)) {
+    const {components} = await discoverValidIntegrationComponents(integration);
+    for (const rec of components) {
       const doc = await loadModuleDoc(rec.docPath);
       candidates.push({
         domain: 'component',
@@ -793,6 +797,13 @@ async function gatherTemplates(cwd) {
     return [];
   }
   return templates.map(t => {
+    // A replacement's target is its canonical unqualified lookup id. Keep the
+    // integration-owned id as a keyword and response label, but score and print
+    // commands against the id that `template()` resolves back to this entry.
+    // This matters for replacement chains: one replacement's own id can be the
+    // target of another, so using that shadowed id as the command would select
+    // the other template.
+    const commandName = t.replaces ?? t.dirName;
     // Blocks ship an authored componentsUsed; page templates don't, so derive
     // them from the source. Category words (e.g. "Dashboard - Analytics") are
     // strong intent signal for pages, which otherwise only index on name +
@@ -805,6 +816,7 @@ async function gatherTemplates(cwd) {
     const keywords = Array.isArray(t.componentsUsed)
       ? [...t.componentsUsed]
       : [];
+    keywords.push(...templateLookupIds(t).filter(id => id !== commandName));
     /** @type {string[]} */
     let weakKeywords = [];
     if (t.type === 'page') {
@@ -820,12 +832,14 @@ async function gatherTemplates(cwd) {
     }
     return {
       domain: 'template',
-      name: t.dirName,
+      name: commandName,
       keywords,
       weakKeywords,
       description: t.description || '',
       _displayName: t.name,
       _kind: t.type, // 'page' | 'block'
+      _resultName: t.dirName,
+      _commandName: commandName,
     };
   });
 }
@@ -844,7 +858,7 @@ async function gatherTemplates(cwd) {
 function toResult(c, score, reason, matchedTerms, queryTerms) {
   const base = {
     domain: c.domain,
-    name: c.name,
+    name: c._resultName ?? c.name,
     score,
     reason,
     description: c.description || '',
@@ -877,7 +891,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         ...base,
         displayName: c._displayName,
         kind: c._kind,
-        command: `astryx template ${c.name}`,
+        command: `astryx template ${c._commandName ?? c.name} --type ${c._kind}`,
       };
       break;
     default:

@@ -66,6 +66,8 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  *   `invalid_doc` issues from the project's contributed docs.
  * @property {string|null} [docsCatalogError] - Why the project's docs catalog
  *   could not be built, when it could not.
+ * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
+ *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -585,7 +587,43 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 9 — report the detected package manager, and say so when the project's
+ * Summarize the combined integration graph, including cross-package warnings.
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkIntegrationIssues(ctx) {
+  const issues = ctx.integrationIssues;
+  if (issues == null) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message: 'Skipped — the project integration graph could not be loaded.',
+    };
+  }
+  if (issues.length === 0) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'pass',
+      message: 'Integration contributions and cross-package relationships are valid.',
+    };
+  }
+  const errors = issues.filter(issue => issue.severity === 'error').length;
+  const details = issues
+    .map(issue => `${issue.package}: ${issue.message}`)
+    .join(' | ');
+  return {
+    id: 'integration-issues',
+    label: 'Integration contributions',
+    status: errors > 0 ? 'fail' : 'warn',
+    message: `${issues.length} integration issue(s): ${details}`,
+    fix: 'Run `astryx doctor integration` for package-specific diagnostics and resolve cross-package precedence in astryx.config.',
+  };
+}
+
+/**
+ * Check 10 — report the detected package manager, and say so when the project's
  * own declaration disagrees with what is on disk.
  *
  * Two states are worth surfacing rather than guessing past, because in both the
@@ -1019,6 +1057,7 @@ export const SYNC_CHECKS = [
   checkThemes,
   checkImplicitIntegrations,
   checkProviderIdentity,
+  checkIntegrationIssues,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -1058,6 +1097,8 @@ export async function runChecks(options = {}) {
   let docsCatalogIssues = [];
   /** @type {string|null} */
   let docsCatalogError = null;
+  /** @type {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} */
+  let integrationIssues = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
@@ -1072,6 +1113,7 @@ export async function runChecks(options = {}) {
       docsCatalog = null;
       docsCatalogError = err instanceof Error ? err.message : String(err);
     }
+    integrationIssues = await project.issues();
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -1087,6 +1129,7 @@ export async function runChecks(options = {}) {
     docsCatalog,
     docsCatalogIssues,
     docsCatalogError,
+    integrationIssues,
     configError,
   };
 

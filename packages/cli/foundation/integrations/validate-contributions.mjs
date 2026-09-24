@@ -236,7 +236,11 @@ async function checkTemplates(integration, issues) {
   try {
     const {errors} = await discoverIntegrationTemplatesForOne(integration);
     for (const e of errors) {
-      issues.push(issueError('invalid_template', e.message));
+      issues.push({
+        code: e.code ?? 'invalid_template',
+        severity: e.severity ?? 'error',
+        message: e.message,
+      });
     }
   } catch (err) {
     issues.push(
@@ -246,41 +250,35 @@ async function checkTemplates(integration, issues) {
 }
 
 /**
- * Validate the integration's components via the landed ownership discovery.
- * Feature-detected: if the component-ownership export isn't present in this
- * build (sibling PR not yet merged), component validation is skipped rather
- * than hard-failing.
- *
- * `discoverIntegrationComponents` returns ownership records and does not throw
- * on a missing same-stem source — it records `sourcePath: null`. We surface
- * each such record as an `invalid_component` error.
+ * Validate the integration's components through the same load-and-parse boundary
+ * that component detail uses. Missing source and invalid metadata are reported
+ * per component so valid siblings remain available.
  * @param {LoadedIntegration} integration loaded-integration-shaped object
  * @param {Issue[]} issues
  */
 async function checkComponents(integration, issues) {
   if (!integration.components || !fs.existsSync(integration.components)) return;
-  const discover = componentDiscovery.discoverIntegrationComponents;
+  const discover = componentDiscovery.discoverValidIntegrationComponents;
   if (typeof discover !== 'function') return; // feature not present yet
   try {
-    const records = (await discover(integration)) ?? [];
+    const {discovered, errors} = await discover(integration);
     /** @type {import('./contribution-fixes.mjs').FixContext | undefined} */
     let context;
-    for (const record of records) {
-      if (record?.sourcePath == null) {
-        const docPath = record?.docPath;
-        let fix = `Fix: add ${record?.name}.tsx beside ${docPath ? path.basename(docPath) : `${record?.name}.doc.mjs`}.`;
-        const stamp = docPath ? readContributionStamp(docPath, false) : null;
-        if (stamp && stamp.type !== 'component' && integration.__packageDir) {
-          context ??= createFixContext(integration.__packageDir, integration);
-          fix = notAComponentFix(context, docPath, stamp);
-        }
-        issues.push(
-          issueError(
-            'invalid_component',
-            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx. ${fix}`,
-          ),
-        );
+    const byName = new Map(discovered.map(record => [record.name, record]));
+    for (const error of errors) {
+      const record = byName.get(error.name);
+      if (record == null || record.sourcePath != null) {
+        issues.push(issueError('invalid_component', error.message));
+        continue;
       }
+      const docPath = record.docPath;
+      let fix = `Fix: add ${record.name}.tsx beside ${docPath ? path.basename(docPath) : `${record.name}.doc.mjs`}.`;
+      const stamp = docPath ? readContributionStamp(docPath, false) : null;
+      if (stamp && stamp.type !== 'component' && integration.__packageDir) {
+        context ??= createFixContext(integration.__packageDir, integration);
+        fix = notAComponentFix(context, docPath, stamp);
+      }
+      issues.push(issueError('invalid_component', `${error.message} ${fix}`));
     }
     const overlap = integration.__packageDir
       ? newComponentDocNote(
@@ -289,7 +287,7 @@ async function checkComponents(integration, issues) {
       : '';
     for (const name of findSourceOnlyCandidates(
       integration.components,
-      records.map(record => record.name),
+      discovered.map(record => record.name),
     )) {
       // A hidden doc still pairs with its source; discovery just skips it.
       if (
