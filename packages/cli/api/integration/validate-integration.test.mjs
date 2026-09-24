@@ -270,6 +270,11 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
         message: expect.stringContaining('InvisibleWidget.doc.mjs'),
       }),
     ]);
+    expect(
+      byCode(result.issues, 'source_without_component_doc')[0].message,
+    ).toContain(
+      "Fix: add InvisibleWidget.doc.mjs beside it with type: 'component'",
+    );
   });
 
   it('reports codemods outside semver folders and invalid folder names', async () => {
@@ -285,8 +290,12 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
 
     const result = await validateLocalIntegration(pkgDir);
 
-    expect(byCode(result.issues, 'codemod_outside_version')).toHaveLength(1);
-    expect(byCode(result.issues, 'invalid_codemod_version')).toHaveLength(1);
+    const [stray] = byCode(result.issues, 'codemod_outside_version');
+    expect(stray.message).toContain('"codemods/forgotten.mjs"');
+    expect(stray.message).toContain('codemods/1.2.0/forgotten.mjs');
+    expect(stray.message).not.toContain(tmpDir);
+    const [folder] = byCode(result.issues, 'invalid_codemod_version');
+    expect(folder.message).toContain('Fix: rename it');
   });
 
   it('warns about valid contribution metadata outside every declared root', async () => {
@@ -328,6 +337,30 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     const unreachable = byCode(result.issues, 'unreachable_contribution');
     expect(unreachable).toHaveLength(1);
     expect(unreachable[0].message).toContain('src/orphan.doc.mjs');
+    // No docs root is declared, so the fix is to declare this folder as one.
+    expect(unreachable[0].message).toContain(
+      "Fix: set `docs: './src'` in astryx.integration.mjs.",
+    );
+  });
+
+  it('names the root that reads misplaced metadata when one is declared', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { templates: './templates' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'templates'));
+    fs.mkdirSync(path.join(pkgDir, 'src', 'blocks'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'src', 'blocks', 'Carousel.doc.mjs'),
+      `export default {type: 'block', name: 'Carousel', displayName: 'Carousel', aspectRatio: 1};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    const [issue] = byCode(result.issues, 'unreachable_contribution');
+    expect(issue.message).toContain(
+      "Fix: move it under templates/ (the templates root), or set `templates: './src/blocks'` in astryx.integration.mjs.",
+    );
   });
 
   it('never executes unreachable metadata while diagnosing it', async () => {

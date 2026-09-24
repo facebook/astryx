@@ -100,6 +100,15 @@ const STATIC_DOC_TYPES = new Set([
   'theme',
 ]);
 const STATIC_TEMPLATE_TYPES = new Set(['page', 'block']);
+
+/** The manifest root that reads each kind of contribution metadata. */
+const ROOT_FOR_TYPE = /** @type {Record<string, string>} */ ({
+  component: 'components',
+  generic: 'docs',
+  page: 'templates',
+  block: 'templates',
+  theme: 'themes',
+});
 const j = jscodeshift.withParser('tsx');
 
 /** @param {any} node @returns {any} */
@@ -145,13 +154,15 @@ function staticPropertyNamed(property, name) {
  *
  * @param {string} file
  * @param {boolean} templateOnly
+ * @returns {string | null} the metadata's `type` stamp, or null when it is not
+ *   contribution metadata
  */
-function isStaticContributionMetadata(file, templateOnly) {
+function staticContributionType(file, templateOnly) {
   let ast;
   try {
     ast = j(fs.readFileSync(file, 'utf-8'));
   } catch {
-    return false;
+    return null;
   }
   /** @type {any[]} */
   const candidates = [];
@@ -187,10 +198,37 @@ function isStaticContributionMetadata(file, templateOnly) {
       ['Literal', 'StringLiteral'].includes(value?.type) &&
       allowedTypes.has(value.value)
     ) {
-      return true;
+      return value.value;
     }
   }
-  return false;
+  return null;
+}
+
+/**
+ * The fix for contribution metadata no root reads: move it under the root that
+ * reads its kind, or make its folder that root.
+ *
+ * @param {string} packageDir
+ * @param {string} file
+ * @param {string} type
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {string}
+ */
+function unreachableFix(packageDir, file, type, loaded) {
+  const key = ROOT_FOR_TYPE[type];
+  // A theme is a directory under the themes root, so the root is its parent.
+  const folder = path.dirname(type === 'theme' ? path.dirname(file) : file);
+  const folderRef = `./${path.relative(packageDir, folder).split(path.sep).join('/')}`;
+  const manifest = loaded.__manifestFile
+    ? path.basename(loaded.__manifestFile)
+    : 'astryx.integration.mjs';
+  const declared = /** @type {Record<string, string | undefined>} */ (
+    /** @type {unknown} */ (loaded)
+  )[key];
+  const declare = `set \`${key}: '${folderRef}'\` in ${manifest}`;
+  if (!declared) return `Fix: ${declare}.`;
+  const root = path.relative(packageDir, declared).split(path.sep).join('/');
+  return `Fix: move it under ${root}/ (the ${key} root), or ${declare}.`;
 }
 
 /** @param {string} candidate @param {string} root */
@@ -245,11 +283,12 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
       }
       const isTemplate = TEMPLATE_CANDIDATE_RE.test(entry.name);
       if (!isTemplate && !DOC_CANDIDATE_RE.test(entry.name)) continue;
-      if (!isStaticContributionMetadata(full, isTemplate)) continue;
+      const type = staticContributionType(full, isTemplate);
+      if (type == null) continue;
       issues.push(
         warning(
           'unreachable_contribution',
-          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. Move it under the matching root or update the manifest root.`,
+          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. ${unreachableFix(packageDir, full, type, loaded)}`,
         ),
       );
     }

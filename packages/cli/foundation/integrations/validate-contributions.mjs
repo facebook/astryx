@@ -127,10 +127,18 @@ async function checkCodemods(integration, issues) {
       /\.(?:ts|mjs|js)$/u.test(entry.name) &&
       !/\.(?:test|spec|fixture)\.(?:ts|mjs|js)$/u.test(entry.name)
     ) {
+      const shown = path
+        .relative(
+          integration.__packageDir ?? path.dirname(integration.codemods),
+          path.join(integration.codemods, entry.name),
+        )
+        .split(path.sep)
+        .join('/');
+      const root = path.dirname(shown);
       issues.push(
         issueWarning(
           'codemod_outside_version',
-          `Codemod file "${path.join(integration.codemods, entry.name)}" is outside a version folder, so upgrade will never load it.`,
+          `Codemod file "${shown}" is outside a version folder, so upgrade will never load it. Fix: move it into the folder named for the version it migrates to, for example ${root}/1.2.0/${entry.name}.`,
         ),
       );
     }
@@ -144,7 +152,7 @@ async function checkCodemods(integration, issues) {
       issues.push(
         issueError(
           'invalid_codemod_version',
-          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0.`,
+          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0. Fix: rename it to the exact version its codemods migrate to.`,
         ),
       );
     }
@@ -201,7 +209,7 @@ async function checkComponents(integration, issues) {
         issues.push(
           issueError(
             'invalid_component',
-            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx.`,
+            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx. Fix: add ${record?.name}.tsx beside ${record?.name}.doc.mjs, or delete the doc.`,
           ),
         );
       }
@@ -213,7 +221,7 @@ async function checkComponents(integration, issues) {
       issues.push(
         issueWarning(
           'source_without_component_doc',
-          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it.`,
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields.`,
         ),
       );
     }
