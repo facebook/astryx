@@ -33,8 +33,15 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {
+  createFixContext,
+  DOC_CANDIDATE_RE,
+  pathIsInside,
+  stampOf,
+  TEMPLATE_CANDIDATE_RE,
+  unreachableFix,
+} from '../../foundation/integrations/contribution-fixes.mjs';
 import {
   findManifestPaths,
   loadManifest,
@@ -90,152 +97,6 @@ const UNREACHABLE_SKIP_DIRS = new Set([
   '.next',
   'out',
 ]);
-const DOC_CANDIDATE_RE = /\.doc\.(?:ts|mjs|js)$/u;
-const TEMPLATE_CANDIDATE_RE = /\.template\.(?:ts|mjs|js)$/u;
-const STATIC_DOC_TYPES = new Set([
-  'component',
-  'generic',
-  'page',
-  'block',
-  'theme',
-]);
-const STATIC_TEMPLATE_TYPES = new Set(['page', 'block']);
-
-/** The manifest root that reads each kind of contribution metadata. */
-const ROOT_FOR_TYPE = /** @type {Record<string, string>} */ ({
-  component: 'components',
-  generic: 'docs',
-  page: 'templates',
-  block: 'templates',
-  theme: 'themes',
-});
-const j = jscodeshift.withParser('tsx');
-
-/** @param {any} node @returns {any} */
-function unwrapStaticExpression(node) {
-  let current = node;
-  while (
-    current &&
-    [
-      'TSSatisfiesExpression',
-      'TSAsExpression',
-      'TypeCastExpression',
-      'ParenthesizedExpression',
-    ].includes(current.type)
-  ) {
-    current = current.expression;
-  }
-  if (current?.type === 'CallExpression' && current.arguments.length > 0) {
-    current = unwrapStaticExpression(current.arguments[0]);
-  }
-  return current;
-}
-
-/** @param {any} property @param {string} name */
-function staticPropertyNamed(property, name) {
-  if (
-    !property ||
-    !['ObjectProperty', 'Property'].includes(property.type) ||
-    property.computed
-  ) {
-    return false;
-  }
-  return (
-    (property.key?.type === 'Identifier' && property.key.name === name) ||
-    (['Literal', 'StringLiteral'].includes(property.key?.type) &&
-      property.key.value === name)
-  );
-}
-
-/**
- * Identify contribution metadata without importing it. Doctor scans files that
- * the manifest does not declare, so executing those files would run code the
- * package never asked Astryx to load.
- *
- * @param {string} file
- * @param {boolean} templateOnly
- * @returns {string | null} the metadata's `type` stamp, or null when it is not
- *   contribution metadata
- */
-function staticContributionType(file, templateOnly) {
-  let ast;
-  try {
-    ast = j(fs.readFileSync(file, 'utf-8'));
-  } catch {
-    return null;
-  }
-  /** @type {any[]} */
-  const candidates = [];
-  ast
-    .find(j.ExportDefaultDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      candidates.push(exportPath.value.declaration);
-    });
-  ast
-    .find(j.ExportNamedDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      const declaration = exportPath.value.declaration;
-      if (declaration?.type !== 'VariableDeclaration') return;
-      for (const declarator of declaration.declarations) {
-        if (
-          declarator.id?.type === 'Identifier' &&
-          declarator.id.name === 'docs'
-        ) {
-          candidates.push(declarator.init);
-        }
-      }
-    });
-
-  const allowedTypes = templateOnly ? STATIC_TEMPLATE_TYPES : STATIC_DOC_TYPES;
-  for (const candidate of candidates) {
-    const object = unwrapStaticExpression(candidate);
-    if (object?.type !== 'ObjectExpression') continue;
-    const typeProperty = object.properties.find((/** @type {any} */ property) =>
-      staticPropertyNamed(property, 'type'),
-    );
-    const value = unwrapStaticExpression(typeProperty?.value);
-    if (
-      ['Literal', 'StringLiteral'].includes(value?.type) &&
-      allowedTypes.has(value.value)
-    ) {
-      return value.value;
-    }
-  }
-  return null;
-}
-
-/**
- * The fix for contribution metadata no root reads: move it under the root that
- * reads its kind, or make its folder that root.
- *
- * @param {string} packageDir
- * @param {string} file
- * @param {string} type
- * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
- * @returns {string}
- */
-function unreachableFix(packageDir, file, type, loaded) {
-  const key = ROOT_FOR_TYPE[type];
-  // A theme is a directory under the themes root, so the root is its parent.
-  const folder = path.dirname(type === 'theme' ? path.dirname(file) : file);
-  const folderRef = `./${path.relative(packageDir, folder).split(path.sep).join('/')}`;
-  const manifest = loaded.__manifestFile
-    ? path.basename(loaded.__manifestFile)
-    : 'astryx.integration.mjs';
-  const declared = /** @type {Record<string, string | undefined>} */ (
-    /** @type {unknown} */ (loaded)
-  )[key];
-  const declare = `set \`${key}: '${folderRef}'\` in ${manifest}`;
-  if (!declared) return `Fix: ${declare}.`;
-  const root = path.relative(packageDir, declared).split(path.sep).join('/');
-  return `Fix: move it under ${root}/ (the ${key} root), or ${declare}.`;
-}
-
-/** @param {string} candidate @param {string} root */
-function pathIsInside(candidate, root) {
-  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
-}
-
 /**
  * Find real contribution metadata that sits outside every declared root. The
  * scan is local-authoring-only, skips dependency/build output, never follows
@@ -258,6 +119,7 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
   );
   /** @type {Issue[]} */
   const issues = [];
+  const context = createFixContext(packageDir, loaded);
   let scanned = 0;
   let truncated = false;
 
@@ -281,14 +143,18 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
         truncated = true;
         return;
       }
-      const isTemplate = TEMPLATE_CANDIDATE_RE.test(entry.name);
-      if (!isTemplate && !DOC_CANDIDATE_RE.test(entry.name)) continue;
-      const type = staticContributionType(full, isTemplate);
-      if (type == null) continue;
+      if (
+        !TEMPLATE_CANDIDATE_RE.test(entry.name) &&
+        !DOC_CANDIDATE_RE.test(entry.name)
+      ) {
+        continue;
+      }
+      const stamp = stampOf(context, full);
+      if (stamp == null) continue;
       issues.push(
         warning(
           'unreachable_contribution',
-          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. ${unreachableFix(packageDir, full, type, loaded)}`,
+          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. ${unreachableFix(context, full, stamp)}`,
         ),
       );
     }

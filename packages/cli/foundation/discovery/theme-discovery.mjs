@@ -96,7 +96,17 @@ function resolveThemePath(value, root, label) {
   }
 }
 
-const THEME_MODULE_EXTENSIONS = ['.mjs', '.js', '.mts', '.ts', '.tsx', '.jsx'];
+export const THEME_MODULE_EXTENSIONS = [
+  '.mjs',
+  '.js',
+  '.mts',
+  '.ts',
+  '.tsx',
+  '.jsx',
+];
+
+/** A theme directory's name: lower-kebab, starting with a letter. */
+export const THEME_SLUG_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
 
 /**
  * @param {unknown} specifier
@@ -855,7 +865,7 @@ export function discoverThemeDirectory(
     const listing = listThemeFolder(path.join(themeRoot, slug));
     const evidence = themeEvidence(listing);
     if (evidence === undefined) continue;
-    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(slug)) {
+    if (!THEME_SLUG_RE.test(slug)) {
       throw new Error(
         `Theme root for ${owner} has invalid directory "${slug}"; use lowercase kebab-case starting with a letter.`,
       );

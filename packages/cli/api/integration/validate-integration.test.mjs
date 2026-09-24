@@ -193,6 +193,39 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_codemod')).toHaveLength(1);
   });
 
+  it('names a broken codemod of an installed package by its path inside the package', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    const pkgDir = path.join(consumer, 'node_modules', '@acme', 'kit');
+    writePackage(pkgDir, {
+      name: '@acme/kit',
+      manifest: `export default { codemods: './codemods' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'codemods', '1.1.0'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'codemods', '1.1.0', 'no-default.mjs'),
+      'export const nope = 1;\n',
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'codemods', 'stray.mjs'),
+      `export default {type: 'code', title: 'Stray', transform: file => file.source};\n`,
+    );
+
+    const result = await validateInstalledIntegration('@acme/kit', consumer);
+
+    const [broken] = byCode(result.issues, 'invalid_codemod');
+    expect(broken.message).toContain('(codemods/1.1.0/no-default.mjs)');
+    const [stray] = byCode(result.issues, 'codemod_outside_version');
+    expect(stray.message).toContain('"codemods/stray.mjs"');
+    for (const issue of result.issues) {
+      expect(issue.message).not.toContain(tmpDir);
+    }
+  });
+
   it('flags a broken template as invalid_template error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
@@ -337,9 +370,10 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     const unreachable = byCode(result.issues, 'unreachable_contribution');
     expect(unreachable).toHaveLength(1);
     expect(unreachable[0].message).toContain('src/orphan.doc.mjs');
-    // No docs root is declared, so the fix is to declare this folder as one.
+    // No docs root is declared, but src/ also holds a .doc.mjs that is not a
+    // topic, which a docs root at src/ would read too; so the fix moves it.
     expect(unreachable[0].message).toContain(
-      "Fix: set `docs: './src'` in astryx.integration.mjs.",
+      "Fix: move it into docs/ and set `docs: './docs'` in astryx.integration.mjs.",
     );
   });
 
