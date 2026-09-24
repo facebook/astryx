@@ -21,6 +21,11 @@ verified_by:
   [
     scripts/check-knowledge.test.mjs,
     .github/scripts/change-scope.test.mjs,
+    .github/scripts/component-design-decisions.test.mjs,
+    .github/scripts/lib/classify-visual.test.mjs,
+    .github/scripts/review-clear-workflow.test.mjs,
+    .github/scripts/review-signal-decision.test.mjs,
+    .github/scripts/review-signal-workflow.test.mjs,
     .github/scripts/spec-owner-decision.test.mjs,
   ]
 deciding_specs: []
@@ -41,7 +46,9 @@ deciding_specs: []
       "INV16",
       "INV18",
       "INV20",
-      "DEC-9"
+      "INV21",
+      "DEC-9",
+      "DEC-10"
     ]
   }
 }
@@ -63,6 +70,9 @@ Astryx keeps different facts in different places:
 - Module contracts describe an independently contractible public hook, plugin,
   utility, or subsystem owned by one component. Private implementation helpers do
   not require records.
+- An optional `Design decisions` table inside a component or module contract
+  records durable visual intent local to that owner. It does not hold exact pixel
+  tuning or rules shared across components.
 - Family contracts describe behavior sibling components share.
 - Design specs record human-owned visual and interaction decisions, including the
   cross-theme accessibility and contrast methodology used to judge token/color
@@ -224,6 +234,17 @@ Every record is either:
   the whole record, adjacent claims, drafts, or proposed-head authority govern.
   Every routed match records the base authority commit, record digest, record id,
   path, trigger, claim id, claim title, and deterministic match reason.
+- **INV21 — Component-local visual intent stays local and durable.** The optional
+  `### Design decisions` table under `## Design relationships` belongs only to
+  component- or module-local appearance intent that a future redesign must
+  reconsider. Authors cite, reuse, or amend stable `DD1`, `DD2`, … rows before
+  adding one. Exact pixel tuning normally remains in code and visual evidence;
+  shared or cross-component rules remain in `docs/design/`. Team design owners
+  may commit a row with the pixels and evidence in one atomic appearance-only
+  pull request. External contributors follow the normal contribution flow and
+  MUST NOT be asked to author specifications; maintainers own any missing
+  authority. A human request supplies intent but becomes committed current
+  authority only through exact-head owner approval.
 
 ## Global review applicability
 
@@ -320,6 +341,15 @@ Then write the authoritative body:
   current audit dumps, or implementation steps. Link their canonical owners.
 - Use readable tables for branches or state matrices when they improve scanning.
   Never remove contract content merely to shorten a record.
+
+For routine local appearance intent, a component or module record may include the
+optional versioned `Design decisions` table under `Design relationships`. Each row
+uses a stable, unique `DD` id and states the decision, its intent or reason, where
+it applies, and allowed variation. Add a row only when the intent is durable enough
+that a future redesign must reconsider it. Reuse or amend an existing row first.
+Do not copy exact pixel tuning out of code/evidence or shared rules out of
+`docs/design/`. A header-only table is valid in a template; an authored block has
+at least one complete row.
 
 Plain language must preserve normative force, predicates, cardinality, defaults,
 compatibility, authority, owners, IDs, evidence state, and decision status. Do not
@@ -459,8 +489,9 @@ contraction. It does not merely report that authority is missing.
 ### Recording a new human decision
 
 1. A contributor explains the intended behavior and primary intent in normal
-   pull-request language and responds to review. They do not need to know the
-   repository's spec system.
+   pull-request language and responds to review. External contributors keep the
+   normal contribution flow: they are never asked to author or update a
+   specification.
 2. A reviewer or agent applies the contraction path above. Only a surviving,
    intentional `novel-human` question proceeds; the contributor does not invent
    the answer or specify unrelated adjacent behavior.
@@ -546,14 +577,38 @@ this flow passes the historical review benchmark and is enforced on pull request
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
-- `scripts/check-knowledge.mjs` validates templates, records, and approval
-  metadata.
+- `scripts/check-knowledge.mjs` validates templates, records, approval metadata,
+  and optional component/module design-decision tables.
+- `.github/scripts/component-design-decisions.cjs` classifies current
+  component/module changes as no DD change, DD-only, or mixed from trusted base
+  and head bytes. DD-only requires unchanged path, kind, authority, and every byte
+  outside a valid optional block.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
   request head. Approval for every record kind derives from `.github/ENGOWNERS`;
-  current design and theme records and normative design assets additionally accept
-  `.github/DESIGNOWNERS`. Record metadata never self-authorizes. The workflow
-  enables auto-merge only for pure spec changes.
+  current design and theme records, normative design assets, and DD-only current
+  component/module changes additionally accept `.github/DESIGNOWNERS`. A mixed
+  DD plus other component/module edit requires both groups. Record metadata never
+  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+- `.github/workflows/review-signal.yml` lets a DESIGNOWNER author bypass the
+  engineering gate only when trusted-base code verifies every changed Core line
+  against the fetched base/head source bytes as a conservative declaration inside
+  a real `stylex.create` call, and no other code reason applies. The classifier
+  also rejects direct interaction, operability, and scroll-control
+  declarations—including hit testing, touch behavior, selection, resize,
+  cursor, visibility, overflow, snapping, and scrollbar affordance—on either
+  diff side. Contributors and mixed or behavioral changes remain gated.
+  Safe-space classification considers both current and previous paths: only
+  changes whose every path is safe are excluded, and any rename crossing that
+  boundary is an engineering reason.
+  Engineering and design reviews count only when their `commit_id` equals the
+  current pull-request head. The direct reconciler clears only a current-head
+  gate already owned by `review-signal`; an effective ENGOWNER
+  `CHANGES_REQUESTED` or `DISMISSED` state first restores the hard status gate to
+  pending, then restores its advisory label. A failed status write performs no
+  preceding label mutation.
+  Approval, withdrawal, and dismissal all recheck the head immediately before
+  mutation, and an ungated head never acquires a gate from review state alone.
 
 ## Deciding specs
 
@@ -704,21 +759,53 @@ Rejected: treating a `global` marker as authority for every statement in a file,
 because that would erase claim boundaries and let unrelated or draft material
 silently govern a change.
 
+### DEC-10 — Routine visual intent lives with its component or module
+
+**Reference:** `architecture:knowledge-contracts/DEC-10`
+**Decider:** `cixzhang`, `2026-09-23`
+
+A small structured `Design decisions` table in the owning component or module
+spec records only durable local visual intent. One row may cover a coherent local
+direction; tiny visual tuning does not create one decision record per tweak.
+Existing rows are cited, reused, or amended before new rows are added. Exact
+pixels remain in code and evidence, while shared and cross-component direction
+remains in `docs/design/`.
+
+A team DESIGNOWNER may include the local decision, implementation, and evidence
+in one atomic appearance-only pull request. DD-only current-record changes route
+to design approval; mixing a DD edit with another component/module contract edit
+requires both design and engineering. A DESIGNOWNER's exact-head ready transition
+may satisfy the design group. The Core code gate is bypassed only when trusted-base
+classification proves an existing-file declaration-only appearance diff and no
+other code reason applies. Any uncertainty, contributor-authored change, behavior,
+JSX, API, package, barrel, new component, or unknown runtime path fails closed to
+engineering review.
+
+External contributors explain intent and supply normal evidence; maintainers own
+specification work and never require contributors to author it. A request or
+conversation is decision input, not committed authority. The edited current
+record becomes reusable only after exact-head owner approval.
+
+Rejected: sidecar records or one design record per pixel tweak, because they split
+routine intent from its owner; treating a design request as authority before
+exact-head approval, because reviewable intent is not yet committed policy.
+
 ## Verification
 
-| Invariant                         | Evidence                                                                     | Failure signal                                                                                                                                                                                        |
-| --------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                                           | An unapproved current record or unmigrated active record passes                                                                                                                                       |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                                      | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`                               | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                         |
-| INV3, INV4, INV11                 | Blinded historical review benchmark                                          | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
-| INV10                             | Record-content and review-disposition fixtures                               | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
-| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt                  | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
-| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures                             | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy                                           |
-| INV16, INV17                      | Spec-first review and missing-context fixtures                               | Generated checklist completeness overrides authority, review invents product direction, restates supplied context, or fails to identify an unrelated tagalong or affected caller state                |
-| INV18                             | Spec-review mechanism analysis plus owner migration receipt                  | A new/amended product spec requires a private mechanism without proving it is public, silently invalidates an existing current record, or leaves touched architecture wording in the product contract |
-| INV19                             | Spec-review ownership-collision receipt and human decision                   | Automated review approves a product contract, omits current/open owner overlap, misses a collision or architecture leak, or returns only a human hold without actionable written analysis             |
-| INV20, DEC-9                      | `scripts/check-knowledge.test.mjs` and `scripts/review-global-baselines.mjs` | A matching review misses a current global claim, loads a draft/nonmatching claim, loses base-commit provenance, or treats the rest of a routed record as authority                                    |
+| Invariant                         | Evidence                                                                                                                                                                                                     | Failure signal                                                                                                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                                                                                                                                                                           | An unapproved current record or unmigrated active record passes                                                                                                                                       |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                                                                                                                                                                      | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                      |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`                                                                                                                                                               | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                         |
+| INV3, INV4, INV11                 | Blinded historical review benchmark                                                                                                                                                                          | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                    |
+| INV10                             | Record-content and review-disposition fixtures                                                                                                                                                               | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                              |
+| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt                                                                                                                                                  | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                           |
+| INV14, INV15                      | Narrow-decision and mixed-intent review fixtures                                                                                                                                                             | A current visual slice is forced to contract its whole module, a separable tagalong blocks a repair, or review reports a gap without a landing-ready remedy                                           |
+| INV16, INV17                      | Spec-first review and missing-context fixtures                                                                                                                                                               | Generated checklist completeness overrides authority, review invents product direction, restates supplied context, or fails to identify an unrelated tagalong or affected caller state                |
+| INV18                             | Spec-review mechanism analysis plus owner migration receipt                                                                                                                                                  | A new/amended product spec requires a private mechanism without proving it is public, silently invalidates an existing current record, or leaves touched architecture wording in the product contract |
+| INV19                             | Spec-review ownership-collision receipt and human decision                                                                                                                                                   | Automated review approves a product contract, omits current/open owner overlap, misses a collision or architecture leak, or returns only a human hold without actionable written analysis             |
+| INV20, DEC-9                      | `scripts/check-knowledge.test.mjs` and `scripts/review-global-baselines.mjs`                                                                                                                                 | A matching review misses a current global claim, loads a draft/nonmatching claim, loses base-commit provenance, or treats the rest of a routed record as authority                                    |
+| INV21, DEC-10                     | `.github/scripts/component-design-decisions.test.mjs`, `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/spec-owner-decision.test.mjs`, and `.github/scripts/lib/classify-visual.test.mjs` | A malformed/local DD escapes validation, stale approval clears a new head, owner routing loses mixed-change gates, or executable/API/unknown runtime code is misclassified as appearance-only         |
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,

@@ -11,10 +11,12 @@ import {
   discoverKnowledgeRecords,
   extractKnowledgeClaims,
   parseAnatomyThemingBlock,
+  parseDesignDecisionsBlock,
   parseKnowledgeDocument,
   parseReviewApplicabilityBlock,
   routeGlobalReviewBaselinesAtRevision,
   validateAnatomyThemingMap,
+  validateDesignDecisionsBlock,
   validateDelegations,
   validateKnowledgeRoot,
   validateReviewApplicability,
@@ -661,6 +663,74 @@ describe('schema evolution', () => {
         new Map([['docs/schemas/knowledge/v1.json', 'changed']]),
       ).join('\n'),
     ).toMatch(/immutable.*append-only/s);
+  });
+});
+
+describe('component-local design decisions', () => {
+  const row =
+    '| DD1 | Keep the label visually quiet. | Preserve primary-action emphasis. | Default label | Theme token substitutions may preserve contrast. |';
+  const block = `${[
+    '### Design decisions',
+    '',
+    '<!-- design-decisions:v1 -->',
+    '',
+    '| ID | Decision | Intent or reason | Applies to | Allowed variation |',
+    '| --- | --- | --- | --- | --- |',
+    row,
+  ].join('\n')}\n`;
+
+  it('parses a valid optional table under Design relationships', () => {
+    const parsed = parseDesignDecisionsBlock(
+      `## Design relationships\n\nBody.\n\n${block}\n### Theming anatomy\n`,
+    );
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].id).toBe('DD1');
+    expect(validateDesignDecisionsBlock(parsed)).toEqual([]);
+  });
+
+  it('keeps absence valid and permits header-only template guidance', () => {
+    expect(
+      validateDesignDecisionsBlock(
+        parseDesignDecisionsBlock('## Design relationships\n\nBody.\n'),
+      ),
+    ).toEqual([]);
+    const headerOnly = parseDesignDecisionsBlock(
+      `## Design relationships\n\n${block.replace(`\n${row}`, '')}`,
+    );
+    expect(
+      validateDesignDecisionsBlock(headerOnly, {allowHeaderOnly: true}),
+    ).toEqual([]);
+  });
+
+  it('keeps the optional header-only table in component and module templates', () => {
+    for (const template of ['component-spec.md', 'module-spec.md']) {
+      const parsed = parseDesignDecisionsBlock(
+        fs.readFileSync(
+          path.join(repoRoot, 'docs/templates/knowledge', template),
+          'utf8',
+        ),
+        template,
+      );
+      expect(parsed.present, template).toBe(true);
+      expect(parsed.rows, template).toEqual([]);
+      expect(
+        validateDesignDecisionsBlock(parsed, {allowHeaderOnly: true}),
+        template,
+      ).toEqual([]);
+    }
+  });
+
+  it('rejects malformed, empty, and duplicate authored rows', () => {
+    const malformed = block
+      .replace('Intent or reason', 'Rationale')
+      .replace(row, `${row}\n${row.replace('DD1', 'bad')}`);
+    const parsed = parseDesignDecisionsBlock(
+      `## Design relationships\n\n${malformed}`,
+      'Button.spec.md',
+    );
+    expect(validateDesignDecisionsBlock(parsed).join('\n')).toMatch(
+      /columns must be exactly.*must match DD1/s,
+    );
   });
 });
 
@@ -1985,10 +2055,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '6'}),
+      componentRecord({template_version: '7'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 6 is newer than 5/,
+      /template_version 7 is newer than 6/,
     );
   });
 

@@ -30,6 +30,13 @@ nested `AGENTS.md`.
   route exposes only the listed claim; it never makes the whole record govern
   the component or change. Preserve each matched record, claim, trigger, and
   match reason in the review receipt.
+- Component-local visual intent: reuse or amend the optional `Design decisions`
+  table in the current component/module spec only when durable local intent must
+  survive future redesigns. Keep exact tuning in code/evidence and shared rules
+  in `docs/design/`. DESIGNOWNER authors may include that local intent with the
+  pixels and evidence in one atomic appearance-only PR. External contributors
+  follow the normal contribution flow and are never asked to author specs;
+  maintainers own missing authority.
 - Cross-component work: read the relevant contract under `docs/families/`,
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.

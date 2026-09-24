@@ -269,6 +269,9 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
     expect(reconciler).toContain('scope.touchesDesignAssets');
     expect(reconciler).toContain('requiredApprovalGroups(records');
+    expect(read('.github/scripts/spec-owner-decision.cjs')).toContain(
+      "require('./component-design-decisions.cjs')",
+    );
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
     expect(reconciler).toContain("'.github/ENGOWNERS'");
     expect(workflow).not.toContain('SPEC_OWNERS:');

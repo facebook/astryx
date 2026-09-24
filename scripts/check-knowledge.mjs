@@ -19,6 +19,10 @@ const {
   parseOwnerFile,
 } = require('../.github/scripts/knowledge-frontmatter.cjs');
 const {
+  parseDesignDecisionsBlock,
+  validateDesignDecisionsBlock,
+} = require('../.github/scripts/component-design-decisions.cjs');
+const {
   classifyComponentKnowledgePath,
   isComponentSpecRecordPath,
   isIgnoredComponentKnowledgeSegment,
@@ -34,6 +38,8 @@ const READER_FIRST_TEMPLATE_KINDS = new Set([
   'module',
 ]);
 const CONTRACT_AT_A_GLANCE_SECTION = 'Contract at a glance';
+
+export {parseDesignDecisionsBlock, validateDesignDecisionsBlock};
 
 function expectedTemplateSections(kind, requiredSections) {
   return READER_FIRST_TEMPLATE_KINDS.has(kind)
@@ -1612,8 +1618,9 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       );
       continue;
     }
+    const templateContent = fs.readFileSync(templatePath, 'utf8');
     const template = parseKnowledgeDocument(
-      fs.readFileSync(templatePath, 'utf8'),
+      templateContent,
       kindSchema.template,
     );
     problems.push(
@@ -1630,6 +1637,18 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     );
     if (template.frontmatter.get('kind') !== kind) {
       problems.push(`${kindSchema.template}: template kind must be ${kind}.`);
+    }
+    if (kind === 'component' || kind === 'module') {
+      const designDecisions = parseDesignDecisionsBlock(
+        templateContent,
+        kindSchema.template,
+      );
+      problems.push(
+        ...validateDesignDecisionsBlock(designDecisions, {
+          allowHeaderOnly: true,
+          filePath: kindSchema.template,
+        }),
+      );
     }
   }
 
@@ -1680,6 +1699,10 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       );
     }
     if (kind === 'component' || kind === 'module') {
+      const designDecisions = parseDesignDecisionsBlock(content, filePath);
+      problems.push(
+        ...validateDesignDecisionsBlock(designDecisions, {filePath}),
+      );
       const parsed = parseAnatomyThemingBlock(content, filePath);
       problems.push(...parsed.problems);
       if (parsed.mapping != null) {

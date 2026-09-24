@@ -2,8 +2,10 @@
 
 # Current knowledge records are consequential to future reviewers. Creating,
 # changing, or archiving one waits for owner approval. ENGOWNERS may approve
-# every record kind. Current design and theme records and normative design
-# assets also accept DESIGNOWNERS. Mixed PRs keep every applicable owner-group
+# every record kind. Current design and theme records, component/module
+# Design-decision-only changes, and normative design assets also accept
+# DESIGNOWNERS. Mixed DD plus other component/module spec edits require both
+# design and engineering. Other mixed PRs keep every applicable owner-group
 # requirement. Pure spec-record PRs
 # skip heavy CI only when every changed path is recognized; draft-only records
 # can auto-merge after validation, while current records also need approval on
