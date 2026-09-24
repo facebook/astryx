@@ -640,12 +640,17 @@ describe('readers go through the compiler', () => {
     return found;
   }
 
+  /** Temporary folders other tests create with mkdtemp and delete mid-run. */
+  const TRANSIENT_DIR = /^__[a-z][a-z_]*_[A-Za-z0-9]{6}$/;
+
   /** @param {string} dir @returns {string[]} */
   const sources = dir =>
     fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        return entry.name === 'node_modules' ? [] : sources(full);
+        const skip =
+          entry.name === 'node_modules' || TRANSIENT_DIR.test(entry.name);
+        return skip ? [] : sources(full);
       }
       return entry.name.endsWith('.mjs') && !entry.name.endsWith('.test.mjs')
         ? [full]
