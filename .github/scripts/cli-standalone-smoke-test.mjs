@@ -32,20 +32,28 @@ const REPO_ROOT = path.resolve(
 const WORKSPACE_CLI = path.join(REPO_ROOT, 'packages/cli');
 const WORKSPACE_BIN = path.join(WORKSPACE_CLI, 'clients/cli/bin/astryx.mjs');
 
-/** Read-only commands whose output must match the workspace CLI byte for byte. */
+/**
+ * Read-only commands whose output must match the workspace CLI byte for byte.
+ * Text and --json both: the text renderers resolve some state on their own.
+ */
 const PARITY_COMMANDS = [
   ['--version'],
   ['--help'],
   ['search', 'button'],
   ['search', 'button', '--json'],
   ['component', 'Button'],
+  ['component', '--list'],
   ['component', '--list', '--json'],
+  ['hook', '--list'],
   ['hook', '--list', '--json'],
   ['build', 'settings page'],
   ['docs', 'spacing'],
   ['manifest', '--json'],
+  ['template', '--list'],
   ['template', '--list', '--json'],
+  ['theme', 'list'],
   ['theme', 'list', '--json'],
+  ['theme', 'targets', 'Button'],
   ['theme', 'targets', 'Button', '--json'],
   ['doctor', '--json'],
 ];

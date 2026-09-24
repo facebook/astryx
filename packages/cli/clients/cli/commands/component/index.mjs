@@ -6,7 +6,7 @@
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
-import {findCoreDir} from '../../../../foundation/fs/paths.mjs';
+import {findCatalogCoreDir} from '../../../../foundation/fs/paths.mjs';
 import {
   resolveImportPath,
 } from '../../../../foundation/discovery/component-discovery.mjs';
@@ -145,8 +145,10 @@ export function registerComponent(program) {
 
       // ── Text output ────────────────────────────────────────────
       // The api layer already resolved against core (result exists), so core is
-      // present on this path; narrow away the null branch findCoreDir allows.
-      const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
+      // present on this path; narrow away the null branch the lookup allows. It
+      // must be the api's own catalog lookup, or a Core found beside the CLI
+      // answers --json and then vanishes for text.
+      const coreDir = /** @type {string} */ (findCatalogCoreDir(process.cwd()));
       const themeData = resolveTheme(process.cwd());
 
       // Footer shared by the compact + names list views (prose → text()).
