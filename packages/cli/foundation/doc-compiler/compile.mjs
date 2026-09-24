@@ -243,7 +243,7 @@ function asJson(value, topic) {
         `${topic} cannot be compiled: ${err instanceof Error ? err.message : String(err)}`,
         {cause: err},
       ),
-      {code: 'not_json'},
+      {compilerCode: 'not_json'},
     );
   }
 }

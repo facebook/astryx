@@ -212,7 +212,7 @@ function messageOf(error) {
 
 /** @param {unknown} error */
 function errorCode(error) {
-  return error && typeof error === 'object' && 'code' in error
-    ? error.code
+  return error && typeof error === 'object' && 'compilerCode' in error
+    ? error.compilerCode
     : undefined;
 }

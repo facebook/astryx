@@ -185,6 +185,13 @@ describe('compileDocs over a broken integration', () => {
     const found = bundle.diagnostics.filter(d => d.provider === '@acme/kit');
     expect(found.map(d => d.code)).toContain('not_json');
     expect(found.map(d => d.code)).not.toContain('invalid_topic');
+    // The compiler's code never reaches the error a reader throws.
+    const {lowerTopic} = await import('../../api/docs/_adapter.mjs');
+    const catalog = await (await Project.load(tmpDir)).docs();
+    const entry = /** @type {any} */ (catalog.resolve('acme-guide'));
+    const thrown = await lowerTopic(catalog, entry).catch(error => error);
+    expect(thrown).toBeInstanceOf(Error);
+    expect(/** @type {any} */ (thrown).code).toBeUndefined();
   });
 
   it('gives every extension file its own input, even two from one package', async () => {

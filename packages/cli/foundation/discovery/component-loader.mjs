@@ -5,11 +5,10 @@
  *
  * @input A component or hook `.doc.{ts,mjs,js}` path and the reading language
  *   (`lang`, or the legacy `zh`/`dense` flags).
- * @output A fresh copy of the doc, compiled: its translation laid over it and
- *   carried as JSON.
+ * @output The module's own doc, with its translation laid over it for `lang`.
  * @position The loaders every component and hook reader calls. Both read
- *   through the doc compiler (foundation/doc-compiler/read.mjs), so a reader
- *   never sees a raw module export. The two differ only in how strict they are:
+ *   through the doc compiler (foundation/doc-compiler/read.mjs), which lowers
+ *   the doc on every read. The two differ only in how strict they are:
  *   {@link loadComponentDoc} reports a doc that fails its kind's parser, and
  *   {@link loadDocs}, which has never checked docs, still reads one.
  */
