@@ -80,6 +80,6 @@ export const doc = {
       code: "await integrationAddTheme('ocean', {dryRun: true});",
     },
   ],
-  command: 'integration add',
+  command: 'integration add theme',
   related: ['themeList', 'themeAdd', 'validateIntegration'],
 };

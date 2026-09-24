@@ -356,7 +356,7 @@ The CLI command handlers are thin wrappers around these functions: they parse ar
 - `integrationAddComponent(name: string, options?: IntegrationAddComponentOptions): Promise<IntegrationAddResponse>`: Add a complete component contribution. CLI: `astryx integration add component`.
 - `integrationAddDoc(name: string, options?: IntegrationAddDocOptions): Promise<IntegrationAddResponse>`: Add a complete reference-doc contribution. CLI: `astryx integration add doc`.
 - `integrationAddTemplate(name: string, options?: IntegrationAddTemplateOptions): Promise<IntegrationAddResponse>`: Add a complete page or block template contribution. CLI: `astryx integration add template`.
-- `integrationAddTheme(name: string, options?: IntegrationAddThemeOptions): Promise<IntegrationAddResponse>`: Add a source theme to an integration package. CLI: `astryx integration add`.
+- `integrationAddTheme(name: string, options?: IntegrationAddThemeOptions): Promise<IntegrationAddResponse>`: Add a source theme to an integration package. CLI: `astryx integration add theme`.
 - `integrationComponentConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationComponentConflictResponse>`: Find integration component names that also exist in Core. CLI: `astryx doctor integration components`.
 - `integrationDocConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationDocConflictResponse>`: Classify integration doc overlaps with Core topics. CLI: `astryx doctor integration docs`.
 - `integrationPackCheck(options?: IntegrationPackCheckOptions): Promise<IntegrationPackCheckResponse>`: Prove an integration package survives npm packing. CLI: `astryx integration pack`.
