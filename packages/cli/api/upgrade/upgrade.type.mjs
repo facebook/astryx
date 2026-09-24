@@ -106,6 +106,7 @@
  * @property {string[]} data.integrations Integration packages processed in this upgrade (by name/spec).
  * @property {boolean} data.agentDocsRefreshed
  * @property {AgentDocsSummary} data.agentDocs
+ * @property {boolean} data.sourcePathFound Whether the resolved source directory (`path`, default `./src`) exists. False means no source file was read, so a zero `filesChanged` says nothing about the project being migrated.
  * @property {RegistryCompositionSummary} [data.registryCompositions]
  * @property {number} [data.filesChanged] Total files changed across core + integration codemods (apply mode).
  * @property {number} [data.transformsApplied] Total transforms that reported a change.

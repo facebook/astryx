@@ -3,7 +3,8 @@
 /**
  * @file Colocated tests for the upgrade.run leaf — the --path scan dir must be
  * confined to cwd (upgrade rewrites source in place with --apply, so an escaping
- * or out-of-tree path must be rejected).
+ * or out-of-tree path must be rejected), and the receipt must say whether that
+ * dir existed at all.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
@@ -49,5 +50,48 @@ describe('upgrade.run — --path confinement', () => {
     await expect(
       upgrade({from: '0.0.1', path: os.tmpdir()}, {cwd: dir}),
     ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
+  }, SLOW);
+});
+
+describe('upgrade.run — sourcePathFound', () => {
+  let dir;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'upg-srcpath-'));
+    seedProject(dir);
+  });
+  afterEach(() => fs.rmSync(dir, {recursive: true, force: true}));
+
+  // The receipt for a project whose source lives somewhere other than ./src was
+  // byte-identical to a fully migrated one: exit 0, filesChanged 0, errors [].
+  // The only signal was a human log line --json suppresses by design.
+  it('reports false when the resolved source directory is missing, and still counts nothing', async () => {
+    fs.rmSync(path.join(dir, 'src'), {recursive: true, force: true});
+    fs.mkdirSync(path.join(dir, 'app'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'app', 'index.ts'), 'const x = 1;\n');
+
+    const res = await upgrade({from: '0.0.1', apply: true}, {cwd: dir});
+
+    expect(res.type).toBe('upgrade.run');
+    expect(res.data.sourcePathFound).toBe(false);
+    expect(res.data.filesChanged).toBe(0);
+    expect(res.data.errors).toEqual([]);
+  }, SLOW);
+
+  it('reports true for a source directory that exists', async () => {
+    const res = await upgrade({from: '0.0.1', apply: true}, {cwd: dir});
+
+    expect(res.type).toBe('upgrade.run');
+    expect(res.data.sourcePathFound).toBe(true);
+  }, SLOW);
+
+  it('follows --path, so the right directory under another name reports true', async () => {
+    fs.rmSync(path.join(dir, 'src'), {recursive: true, force: true});
+    fs.mkdirSync(path.join(dir, 'app'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'app', 'index.ts'), 'const x = 1;\n');
+
+    const res = await upgrade({from: '0.0.1', path: 'app'}, {cwd: dir});
+
+    expect(res.type).toBe('upgrade.run');
+    expect(res.data.sourcePathFound).toBe(true);
   }, SLOW);
 });

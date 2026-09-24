@@ -25,7 +25,7 @@ export const doc = {
     {
       type: 'integration.component-conflicts',
       description:
-        'Integration identity, structural issues, and Core component-name conflicts with package-qualified commands.',
+        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural issues, and Core component-name conflicts with package-qualified commands.',
     },
   ],
   examples: [

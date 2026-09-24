@@ -17,6 +17,7 @@
  * integration; execution errors abort before the agent-doc write.
  */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
@@ -80,6 +81,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     throw err;
   }
   const apply = options.apply ?? false;
+
+  // One fact about the resolved source directory, captured before anything
+  // runs. `--path` defaults to `./src`, so a project laid out as `app/` (or a
+  // typo) skips every code codemod; without this the receipt is byte-identical
+  // to a clean, fully migrated project.
+  const sourcePathFound = fs.existsSync(path_);
 
   const currentVersion = /** @type {string} */ (options.from);
   const installed = detectInstalledTargetVersion(cwd);
@@ -272,7 +279,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   /**
-   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
+   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, sourcePathFound: boolean, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
    */
   const receipt = {
     from: currentVersion,
@@ -284,6 +291,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       status: 'current', installedVersion: targetVersion,
       fromVersions: [], files: [], refreshed: false, action: 'none',
     }),
+    // A missing source directory is the one way this command can migrate
+    // nothing and still look complete: every codemod is skipped, filesChanged
+    // stays 0, and errors stays empty. The receipt carries the fact so a
+    // machine consumer can tell "nothing needed changing" from "nothing was
+    // ever read" — the human text says so via the runner's own error line.
+    sourcePathFound,
   };
 
   let integrationResult = null;
@@ -347,10 +360,14 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
 
   const registryOk = receipt.registryCompositions?.ok ?? true;
+  const done = apply ? 'Upgrade complete' : 'Dry run complete';
   logger.log(
-    registryOk
-      ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
-      : 'Upgrade finished with unresolved registry items\n',
+    !registryOk
+      ? 'Upgrade finished with unresolved registry items\n'
+      : sourcePathFound
+        ? done + '\n'
+        : `${done}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
+          `Pass --path <your source directory> if your code does not live in ./src.\n`,
   );
   return {
     type: 'upgrade.run',

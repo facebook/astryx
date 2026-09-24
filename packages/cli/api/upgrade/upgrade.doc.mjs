@@ -120,7 +120,7 @@ export const doc = {
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, an optional copied-composition registry summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
+        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), an optional copied-composition registry summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
     },
   ],
   throws: [

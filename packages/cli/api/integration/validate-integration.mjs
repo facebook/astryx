@@ -479,8 +479,10 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 /**
  * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
  * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
- * local case is guidance, not an error — it comes back with `name: null` and no
- * issues so the CLI can print a hint and stay exit-0.
+ * local case is guidance, not an error — it comes back with `validated: false`,
+ * `name: null` and no issues so the CLI can print a hint and stay exit-0.
+ * `validated` is what tells a machine consumer that empty `issues` means
+ * "nothing was checked" rather than "checked and healthy".
  *
  * This is the seam that keeps the CLI a thin wrapper: the command handler calls
  * this and only chooses how to render (human vs --json) + the exit code.
@@ -497,6 +499,9 @@ export async function validateIntegration(pkg, options = {}) {
   return {
     type: 'integration.validate',
     data: {
+      // The one bit that separates "checked and clean" from "never checked":
+      // with no manifest there is nothing to validate, and issues stays [].
+      validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
       issues: result.issues,
