@@ -208,6 +208,14 @@ test, applicable text, and consumer-documentation projections.
   no renderer of its own; it maps its data onto records, lists, and sections. A
   block kind is added to the kit, with its tests and its line in the help
   "Output format" list, only as `spec:AST-042` FR3 allows.
+- **INV24 — Every discoverable integration item owns one typed descriptor.** New
+  authoring emits `<source-stem>.doc.mjs`, annotated with its public type from
+  `@astryxdesign/cli/authoring`, beside the source or payload it describes. The
+  descriptor is the sole per-item metadata authority; `astryx.integration.*`
+  locates roots and integration-level capabilities but never catalogs items:
+  there is no catalog file under a root and no per-item map or list in the
+  manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
+  compatibility path, not a second authoring convention.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -297,6 +305,7 @@ non-interactive guarantee.
 | INV21     | Review of imports under `api/**`; no mechanical check yet                                                                                                  | A module other than a subject's adapter reads or writes files, contacts the network, starts a subprocess, loads the project, or runs discovery. |
 | INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
 | INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
+| INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
 
 ## Open questions
 
