@@ -112,6 +112,16 @@ describe('doctor leaf — degradation & error paths', () => {
     expect(config.message).toMatch(/not an object/i);
   }, SLOW);
 
+  it('reports Core missing from a project that has none, even with one beside the CLI', async () => {
+    // Catalog reads may answer from the Core installed beside the CLI
+    // (findCatalogCoreDir); doctor describes the project, so it must not. The
+    // workspace CLI under test has a Core beside it, so this catches a swap.
+    const dir = mkProject({'package.json': '{"name":"x"}'});
+    const r = await doctor({cwd: dir});
+    const core = r.data.checks.find(c => c.id === 'core-installed');
+    expect(core.status).toBe('fail');
+  }, SLOW);
+
   it('degrades gracefully on invalid package.json', async () => {
     const dir = mkProject({'package.json': '{ not json }'});
     const r = await doctor({cwd: dir});

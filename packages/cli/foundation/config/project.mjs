@@ -51,7 +51,7 @@ import {
   discoverOwnedComponents,
   discoverIntegrationComponents,
 } from '../discovery/component-discovery.mjs';
-import {findCoreDir} from '../fs/paths.mjs';
+import {findCatalogCoreDir} from '../fs/paths.mjs';
 import {
   discoverAll as discoverTemplates,
   discoverIntegrationTemplatesForOne,
@@ -514,7 +514,7 @@ export class Project {
    */
   async components() {
     return this.#memo('components', async () => {
-      const coreDir = findCoreDir(this.#cwd);
+      const coreDir = findCatalogCoreDir(this.#cwd);
       /** @type {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>} */
       const records = [];
 

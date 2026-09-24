@@ -12,7 +12,7 @@
  */
 
 import * as path from 'node:path';
-import {findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {findCatalogCoreDir} from '../../../foundation/fs/paths.mjs';
 import {collectThemingTargets} from '../../../foundation/discovery/theming-targets.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
@@ -46,7 +46,7 @@ function matchesLoosely(target, filter) {
  * @returns {Promise<import('../theme.type.mjs').ThemeTargetsResponse>}
  */
 export async function themeTargets(filter, {cwd = process.cwd()} = {}) {
-  const coreDir = findCoreDir(cwd);
+  const coreDir = findCatalogCoreDir(cwd);
   if (!coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',

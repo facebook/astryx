@@ -20,7 +20,7 @@
 
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
-  findCoreDir,
+  findCatalogCoreDir,
   discoverExternalPackages,
 } from '../../foundation/fs/paths.mjs';
 import {
@@ -110,7 +110,7 @@ export {CORE_PACKAGE};
  * @returns {string}
  */
 export function requireCoreDir(cwd) {
-  const coreDir = findCoreDir(cwd);
+  const coreDir = findCatalogCoreDir(cwd);
   if (!coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
