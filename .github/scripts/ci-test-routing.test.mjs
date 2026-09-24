@@ -254,9 +254,14 @@ describe('ci.yml RTL package sharding', () => {
     const evidence = read(
       'packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts',
     );
+    const provenance = read(
+      'packages/core/src/Chat/__tests__/ChatMessageBubble.auditProvenance.ts',
+    );
     expect(evidence).toContain("execFileSync('git', ['rev-parse', 'HEAD']");
-    expect(evidence).toContain('/astryx-build-sha.txt');
-    expect(evidence).toContain('storybookSha !== checkoutSha');
+    expect(evidence).toContain('resolveChatMessageBubbleAuditProvenance');
+    expect(provenance).toContain('/astryx-build-sha.txt');
+    expect(provenance).toContain('storybookSha !== checkoutSha');
+    expect(provenance).toContain("mode: 'local-unstamped'");
   });
 
   it('keeps PR accessibility scoped while RTL retains its canonical resolver', () => {

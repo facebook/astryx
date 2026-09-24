@@ -19,6 +19,10 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
+import {
+  type ChatMessageBubbleAuditProvenance,
+  resolveChatMessageBubbleAuditProvenance,
+} from './ChatMessageBubble.auditProvenance';
 
 const OUTPUT = path.resolve('test-results/chat-message-bubble-audit-evidence');
 const STATES_STORY = 'core-chatmessagebubble--states';
@@ -53,8 +57,7 @@ interface Receipt {
 const receipts: Receipt[] = [];
 let storybook: StaticServer;
 let browserVersion = 'unknown';
-let checkoutSha = 'unknown';
-let storybookSha = 'unknown';
+let auditProvenance: ChatMessageBubbleAuditProvenance | null = null;
 
 function pageErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -63,36 +66,25 @@ function pageErrors(page: Page): string[] {
 }
 
 test.beforeAll(async () => {
-  checkoutSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+  const checkoutSha = execFileSync('git', ['rev-parse', 'HEAD'], {
     encoding: 'utf8',
   }).trim();
-  const expectedHead = process.env.ASTRYX_HEAD_SHA;
-  if (expectedHead != null && checkoutSha !== expectedHead) {
-    throw new Error(
-      `ChatMessageBubble evidence checkout ${checkoutSha} does not match reviewed head ${expectedHead}`,
-    );
-  }
   fs.mkdirSync(OUTPUT, {recursive: true});
   storybook = await serveStorybook(
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
   );
-  const sourceResponse = await fetch(
-    `${storybook.origin}/astryx-build-sha.txt`,
-  );
-  if (!sourceResponse.ok) {
-    throw new Error(
-      'ChatMessageBubble evidence requires Storybook source provenance',
-    );
-  }
-  storybookSha = (await sourceResponse.text()).trim();
-  if (storybookSha !== checkoutSha) {
-    throw new Error(
-      `ChatMessageBubble Storybook ${storybookSha} does not match checkout ${checkoutSha}`,
-    );
-  }
+  auditProvenance = await resolveChatMessageBubbleAuditProvenance({
+    checkoutSha,
+    expectedHeadSha: process.env.ASTRYX_HEAD_SHA,
+    storybookOrigin: storybook.origin,
+  });
 });
 
 test.afterAll(async () => {
+  if (auditProvenance == null) {
+    await storybook?.close();
+    return;
+  }
   const manifestPath = path.join(OUTPUT, 'manifest.json');
   const previous = fs.existsSync(manifestPath)
     ? (JSON.parse(fs.readFileSync(manifestPath, 'utf8')).frames ?? [])
@@ -111,11 +103,12 @@ test.afterAll(async () => {
     manifestPath,
     `${JSON.stringify(
       {
-        version: 1,
+        version: 2,
         component: 'core/ChatMessageBubble',
-        headSha: checkoutSha,
-        checkoutSha,
-        storybookSha,
+        headSha: auditProvenance.headSha,
+        checkoutSha: auditProvenance.checkoutSha,
+        storybookSha: auditProvenance.storybookSha,
+        provenanceMode: auditProvenance.mode,
         browser: browserVersion,
         frames,
       },
@@ -300,10 +293,13 @@ async function capture(
   const bytes = await locator.screenshot({animations: 'disabled'});
   const file = `chat-message-bubble__${state}__${colorMode}__${direction}.png`;
   fs.writeFileSync(path.join(OUTPUT, file), bytes);
+  if (auditProvenance == null) {
+    throw new Error('ChatMessageBubble audit provenance is unresolved');
+  }
   const receipt: Receipt = {
     state,
     storyId,
-    build: storybookSha,
+    build: auditProvenance.build,
     browser: browserVersion,
     theme:
       (await page
