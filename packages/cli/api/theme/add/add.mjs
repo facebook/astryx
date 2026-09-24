@@ -134,9 +134,13 @@ export async function themeAdd(slug, options = {}) {
         label: `theme destination for ${w.name}`,
       });
       fs.mkdirSync(path.dirname(dest), {recursive: true});
-      const tmp = `${dest}.${process.pid}.tmp`;
+      // The staging file is an output path too: confine it, and never write
+      // through an entry that already exists under its name.
+      const tmp = assertWithin(`${w.name}.${process.pid}.tmp`, resolvedDir, {
+        label: `theme staging file for ${w.name}`,
+      });
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
-      fs.writeFileSync(tmp, contents);
+      fs.writeFileSync(tmp, contents, {flag: 'wx'});
       staged.push({tmp, dest});
     }
     for (const s of staged) {
