@@ -125,8 +125,12 @@ describe('PR report and deployment workflow contracts', () => {
       'utf8',
     );
     expect(builder).toContain("deploymentEnv !== 'preview'");
-    expect(builder).toContain("'@astryxdesign/storybook', 'build'");
-    expect(builder).toContain("'@astryxdesign/sandbox', 'build'");
+    expect(builder).toContain(
+      "runPreviewBuild(run, root, '@astryxdesign/storybook')",
+    );
+    expect(builder).toContain(
+      "runPreviewBuild(run, root, '@astryxdesign/sandbox'",
+    );
     const comment = workflow('pr-comment.yml');
     expect(comment).not.toContain('deploy-preview.yml');
     expect(comment).not.toContain('preview-deployment-');

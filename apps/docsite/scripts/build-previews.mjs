@@ -58,6 +58,30 @@ export function stagePreviews(storybookSource, sandboxSource, publicDir) {
   );
 }
 
+function runPreviewBuild(run, root, packageName, env = process.env) {
+  const args = ['-F', packageName, 'build'];
+  try {
+    const output = run('pnpm', args, {
+      cwd: root,
+      env,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (output) process.stdout.write(output);
+  } catch (error) {
+    // execFileSync with inherited stdio throws with null stdout/stderr, hiding
+    // the build error behind its generic stack. Keep the actionable tail.
+    const detail = [error.stdout, error.stderr]
+      .filter(Boolean)
+      .join('\n')
+      .slice(-12000);
+    throw new Error(
+      `${packageName} preview build failed (${error.status ?? error.signal ?? 'unknown exit'}):\n${detail || error.message}`,
+      {cause: error},
+    );
+  }
+}
+
 export function buildPreviews(deploymentEnv, root, run = execFileSync) {
   const publicDir = path.join(root, 'apps/docsite/public');
   if (deploymentEnv !== 'preview') {
@@ -66,18 +90,13 @@ export function buildPreviews(deploymentEnv, root, run = execFileSync) {
     return;
   }
 
-  run('pnpm', ['-F', '@astryxdesign/storybook', 'build'], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-  run('pnpm', ['-F', '@astryxdesign/sandbox', 'build'], {
-    cwd: root,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      SANDBOX_BASE_PATH: '/sandbox',
-      SANDBOX_TEMPLATE_ASSETS_BASE_PATH: '/sandbox/template-assets',
-    },
+  runPreviewBuild(run, root, '@astryxdesign/storybook');
+  runPreviewBuild(run, root, '@astryxdesign/sandbox', {
+    ...process.env,
+    SANDBOX_BASE_PATH: '/sandbox',
+    SANDBOX_TEMPLATE_ASSETS_BASE_PATH: '/sandbox/template-assets',
+    NODE_OPTIONS:
+      `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=8192`.trim(),
   });
   stagePreviews(
     path.join(root, 'apps/storybook/dist'),

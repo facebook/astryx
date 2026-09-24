@@ -513,7 +513,20 @@ export async function reconcileEarlyPreviewComment({
     ) {
       return {action: 'unchanged'};
     }
+    const oldOrigins = new Set(
+      existing.body.match(
+        /https:\/\/astryx-[a-z0-9]{9}-fbopensource\.vercel\.app/g,
+      ) ?? [],
+    );
     if (
+      oldOrigins.size === 1 &&
+      existing.body.includes('View Storybook for this PR') &&
+      existing.body.includes('View Sandbox for this PR')
+    ) {
+      // A same-head Vercel redeploy changes only the deployment origin. Keep
+      // the already-enriched CI, a11y, and canonical visual evidence intact.
+      body = existing.body.replaceAll([...oldOrigins][0], origin);
+    } else if (
       !existing.body.includes('View Storybook for this PR') &&
       !existing.body.includes('View Sandbox for this PR')
     ) {

@@ -857,6 +857,35 @@ describe('PR comment preview reconciliation', () => {
     expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
   });
 
+  it('refreshes a same-head redeployment without losing CI, a11y, or visual evidence', async () => {
+    const value = identity();
+    const {github, state} = await reconcile({value, previewAvailable: true});
+    const prior = state.comments[0].body;
+    const visualEvidence =
+      '[Visual evidence](https://facebook.github.io/astryx/pr/5697/visual/example/)';
+    state.comments[0].body += `\n${visualEvidence}`;
+    const nextOrigin = 'https://astryx-atz4b1yim-fbopensource.vercel.app';
+
+    const result = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: nextOrigin,
+      lookupPreview: async () => nextOrigin,
+    });
+    expect(result.action).toBe('updated');
+    expect(state.comments).toHaveLength(1);
+    expect(state.comments[0].body).toContain('Modified Components');
+    expect(state.comments[0].body).toContain('Accessibility Audit');
+    expect(state.comments[0].body).toContain(visualEvidence);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/storybook/`);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/sandbox/`);
+    expect(state.comments[0].body).not.toContain(VERCEL_ORIGIN);
+    expect(prior).toContain(VERCEL_ORIGIN);
+  });
+
   it('refuses an early comment when the deployment head becomes stale or draft', async () => {
     for (const value of [
       identity({headSha: 'f'.repeat(40)}),

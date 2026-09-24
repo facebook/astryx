@@ -129,6 +129,7 @@ test('preview builds both exports with the sandbox paths before docsite build', 
     ],
   );
   assert.equal(calls[1].options.env.SANDBOX_BASE_PATH, '/sandbox');
+  assert.match(calls[1].options.env.NODE_OPTIONS, /--max-old-space-size=8192/);
   assert.equal(
     calls[1].options.env.SANDBOX_TEMPLATE_ASSETS_BASE_PATH,
     '/sandbox/template-assets',
@@ -148,6 +149,22 @@ test('preview builds both exports with the sandbox paths before docsite build', 
   assert.match(
     buildCommand,
     /pnpm build && node apps\/docsite\/scripts\/build-previews\.mjs && pnpm -F @astryxdesign\/docsite build/,
+  );
+});
+
+test('includes captured Sandbox stdout and stderr in a failed Vercel build', () => {
+  const {root} = fixture();
+  const failure = Object.assign(new Error('Command failed'), {
+    status: 1,
+    stdout: 'Generating static pages...',
+    stderr: 'FATAL ERROR: Reached heap limit',
+  });
+  assert.throws(
+    () =>
+      buildPreviews('preview', root, (_command, args) => {
+        if (args[1] === '@astryxdesign/sandbox') throw failure;
+      }),
+    /@astryxdesign\/sandbox preview build failed \(1\):\nGenerating static pages\.\.\.\nFATAL ERROR: Reached heap limit/,
   );
 });
 
