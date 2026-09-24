@@ -180,6 +180,15 @@
     }
   },
   {
+    "component": "ChatMessage",
+    "storyId": "core-chatmessage--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "section[aria-label=\"Density precedence\"] article[data-sender=\"assistant\"] .astryx-chat-message-bubble",
+      "next": "section[aria-label=\"Density precedence\"] article[data-sender=\"user\"] .astryx-chat-message-bubble"
+    }
+  },
+  {
     "component": "ChatSendButton",
     "storyId": "core-chatcomposer--with-streaming",
     "dims": []
