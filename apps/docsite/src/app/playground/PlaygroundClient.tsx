@@ -1214,10 +1214,9 @@ export function PlaygroundClient() {
           )}
           {process.env.NODE_ENV !== 'development' && (
             <Text type="supporting" color="secondary" xstyle={s.previewNotice}>
-              Ephemeral preview: no storage or parent-page access. Clipboard,
-              microphone, and some native pickers are restricted. Page
-              navigation restarts the preview; test app capabilities in your own
-              project.
+              Ephemeral preview: no local storage or parent-page access.
+              Reloading or navigating the preview resets runtime state, then
+              restores your code and theme.
             </Text>
           )}
           <PreviewStage
