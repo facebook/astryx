@@ -26,7 +26,6 @@ import {defineCommand} from '../../lib/define-command.mjs';
 import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
-import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {Project} from '../../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
 import {doc as componentCommand} from '../component.doc.mjs';
@@ -241,12 +240,7 @@ export function registerComponent(program) {
               : detail === 'compact'
                 ? code(formatCompact(result.data, resolvedName, importHint))
                 : code(formatFull(result.data, {themeData, importHint}));
-          const related = await findRelatedBlocks(resolvedName);
-          emit(
-            doc,
-            related.length > 0 && section('Related block templates'),
-            related.length > 0 && records(related, {fields: ['dirName', 'description']}),
-          );
+          emit(doc);
           break;
         }
 
