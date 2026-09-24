@@ -123,7 +123,7 @@ export const doc = {
     {
       value: 'build.help',
       description:
-        'A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.',
+        'The how-to-build-a-page playbook, emitted when no query is given: `playbook: true`, a title, the ordered steps (title, commands, optional returns), the on-system rules, and related lookups. Commands are bare subcommands for the caller to render with its own invocation.',
     },
     {
       value: 'build.kit',
@@ -257,7 +257,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.',
+        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
     // doctor

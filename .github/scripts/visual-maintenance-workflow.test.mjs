@@ -84,6 +84,7 @@ describe('CI baseline maintenance routing', () => {
     expect(workflow.on.workflow_dispatch.inputs.operation.options).toEqual([
       'capture',
       'promote',
+      'release-check',
     ]);
     expect(visual.name).toBe('Stable visual regression');
     expect(visual['runs-on']).toBe('2-core-ubuntu-arm');
@@ -195,12 +196,16 @@ describe('CI baseline maintenance routing', () => {
 describe('canonical capture and publication separation', () => {
   it('builds full maintenance Storybook only inside the existing visual owner', () => {
     const build = step(visual, 'Build canonical maintenance Storybook');
-    expect(build.if).toBe("github.event_name == 'workflow_dispatch'");
+    expect(build.if).toBe(
+      "github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'",
+    );
     expect(build.run).toBe(
       'pnpm build && pnpm -F @astryxdesign/storybook build',
     );
     const capture = step(visual, 'Capture canonical visual baseline');
-    expect(capture.if).toBe("github.event_name == 'workflow_dispatch'");
+    expect(capture.if).toBe(
+      "github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'",
+    );
     expect(capture.run).toContain('gate.mjs release');
     expect(capture.run).not.toMatch(
       /--(?:sample|only|components|themes|max-shots|tiers)\b/,

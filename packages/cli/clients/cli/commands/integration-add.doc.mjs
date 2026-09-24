@@ -22,7 +22,7 @@ export const doc = {
       param: 'name',
       required: true,
       description:
-        'Contribution name; for agent-doc this is the literal guidance line',
+        'Contribution name: PascalCase for component (AcmeWidget); lowercase kebab-case for template, codemod, and theme (account-card); letters, digits, _ and - for doc; the literal guidance line for agent-doc',
     },
   ],
   options: [
@@ -35,22 +35,26 @@ export const doc = {
       flag: '--type <type>',
       param: 'options.templateType',
       choices: ['page', 'block'],
-      description: 'Template type (page or block); only valid for template',
+      description:
+        'Template type: page (default) or block; only valid for template',
     },
     {
       flag: '--replaces <topic>',
       param: 'options.replaces',
-      description: 'Replace an existing doc topic; only valid for doc',
+      description:
+        'Existing doc topic this one replaces (letters, digits, _ and -); only valid for doc and not with --extends',
     },
     {
       flag: '--extends <topic>',
       param: 'options.extends',
-      description: 'Extend an existing doc topic; only valid for doc',
+      description:
+        'Existing doc topic this one extends (letters, digits, _ and -); only valid for doc and not with --replaces',
     },
     {
       flag: '--to <version>',
       param: 'options.to',
-      description: 'Target version for a codemod; required for codemod',
+      description:
+        'Exact semver the codemod migrates to (e.g. 1.2.0); required for codemod and only valid there',
     },
   ],
   examples: [
@@ -62,6 +66,18 @@ export const doc = {
     {
       label: 'Add a page template',
       cli: 'astryx integration add template dashboard',
+    },
+    {
+      label: 'Add a block template',
+      cli: 'astryx integration add template account-card --type block',
+    },
+    {
+      label: 'Replace a doc topic',
+      cli: 'astryx integration add doc acme-getting-started --replaces getting-started',
+    },
+    {
+      label: 'Extend a doc topic',
+      cli: 'astryx integration add doc acme-theming --extends theme',
     },
     {
       label: 'Add a codemod',

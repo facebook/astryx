@@ -400,8 +400,10 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
   } catch (err) {
+    // A null name means "no manifest here"; this package has one.
     return {
       found: true,
+      name: '(local package)',
       manifestFile: manifests[0],
       issues: [
         error(

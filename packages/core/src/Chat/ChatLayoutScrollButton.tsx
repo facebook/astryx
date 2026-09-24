@@ -139,20 +139,25 @@ export function ChatLayoutScrollButton({
 }: ChatLayoutScrollButtonProps) {
   const t = useTranslator();
   return (
+    // Two elements, two responsibilities. The outer one centres the pill and
+    // holds the gap above the composer — spacing outside the pill's border
+    // box, which the pill cannot own itself. The inner one is the pill: it is
+    // what a reader sees, so it carries the painted surface AND the public
+    // theming target. Keeping the target on the outer element would satisfy
+    // every automated check while leaving a theme styling an invisible
+    // full-width row (architecture:component-theming-surface INV4).
     <div
       ref={ref}
-      {...mergeProps(
-        themeProps('chat-layout-scroll-button'),
-        stylex.props(styles.wrapper, xstyle),
-        className,
-        style,
-      )}
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
       {...rest}>
       <div
-        {...stylex.props(
-          styles.container,
-          isVisible ? styles.visible : styles.hidden,
-          label ? styles.expanded : styles.collapsed,
+        {...mergeProps(
+          themeProps('chat-layout-scroll-button'),
+          stylex.props(
+            styles.container,
+            isVisible ? styles.visible : styles.hidden,
+            label ? styles.expanded : styles.collapsed,
+          ),
         )}>
         <Button
           label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}

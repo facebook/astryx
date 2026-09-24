@@ -21,9 +21,20 @@ export const doc = {
     'echoes it back in both canonical surfaces (compact and outline). An invalid but ' +
     'parseable expression is reported with line/col and suggestions, and exits non-zero.',
   fn: 'layoutCheck',
-  args: [{name: 'expression', param: 'expression', required: false}],
+  args: [
+    {
+      name: 'expression',
+      param: 'expression',
+      required: false,
+      description:
+        'The XLE/XLO expression. Pass - to read it from stdin; --file reads it from a file instead.',
+    },
+  ],
   options: [
-    {flag: '--file <file>', description: 'Read the expression from a file'},
+    {
+      flag: '--file <file>',
+      description: 'Read the expression from a file (used instead of the argument when both are given)',
+    },
     {
       flag: '--form <form>',
       param: 'options.form',
@@ -47,7 +58,7 @@ export const doc = {
     {code: 0, when: 'the expression is valid'},
     {
       code: 1,
-      when: 'the expression is invalid or empty, has a syntax error, or a bad --form',
+      when: 'the expression is invalid, empty or over 5 MB (from stdin or --file), has a syntax error, or a bad --form',
     },
   ],
   related: ['layout expand', 'layout grammar'],

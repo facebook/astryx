@@ -1336,9 +1336,8 @@ export async function publishManualVisualBaseline({
 }
 
 const PREVIEW_MANIFEST = '.astryx-preview.json';
-const PREVIEW_RESERVED_ROOTS = new Set([PREVIEW_MANIFEST, 'sandbox', 'visual']);
 
-function previewDirectory(value, name, {storybook = false} = {}) {
+function previewDirectory(value, name) {
   if (!value) return null;
   const directory = path.resolve(value);
   if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
@@ -1347,13 +1346,6 @@ function previewDirectory(value, name, {storybook = false} = {}) {
   const index = path.join(directory, 'index.html');
   if (!fs.existsSync(index) || !fs.statSync(index).isFile()) {
     refuse(`${name} must contain index.html`);
-  }
-  if (storybook) {
-    for (const reserved of PREVIEW_RESERVED_ROOTS) {
-      if (fs.existsSync(path.join(directory, reserved))) {
-        refuse(`${name} contains reserved path ${reserved}`);
-      }
-    }
   }
   return directory;
 }
@@ -1364,12 +1356,10 @@ function sha256(file) {
 
 function clearPreviewContents(destination) {
   fs.mkdirSync(destination, {recursive: true});
-  for (const entry of fs.readdirSync(destination, {withFileTypes: true})) {
-    if (entry.name === 'visual') continue;
-    fs.rmSync(path.join(destination, entry.name), {
-      recursive: true,
-      force: true,
-    });
+  // Sandbox remains on Pages until its own migration. Keep Storybook and the
+  // immutable visual evidence untouched when replacing Sandbox for this PR.
+  for (const name of ['sandbox', PREVIEW_MANIFEST]) {
+    fs.rmSync(path.join(destination, name), {recursive: true, force: true});
   }
 }
 
@@ -1400,11 +1390,11 @@ export async function publishPrPreview({
   if (baseRepo !== repository) {
     refuse('preview base repository does not match publisher repository');
   }
-  const storybookDir = previewDirectory(storybook, '--storybook', {
-    storybook: true,
-  });
+  if (storybook) {
+    refuse('Storybook previews are hosted on Vercel, not gh-pages');
+  }
   const sandboxDir = previewDirectory(sandbox, '--sandbox');
-  if (sourceConclusion !== 'success' && (storybookDir || sandboxDir)) {
+  if (sourceConclusion !== 'success' && sandboxDir) {
     refuse('failed source CI cannot publish preview targets');
   }
   const identity = {
@@ -1418,9 +1408,7 @@ export async function publishPrPreview({
     sourceRunAttempt,
     sourceConclusion,
   };
-  const storybookIndexSha256 = storybookDir
-    ? sha256(path.join(storybookDir, 'index.html'))
-    : null;
+  const storybookIndexSha256 = null;
   const sandboxIndexSha256 = sandboxDir
     ? sha256(path.join(sandboxDir, 'index.html'))
     : null;
@@ -1441,7 +1429,6 @@ export async function publishPrPreview({
     try {
       const destination = path.join(checkout, destinationRel);
       clearPreviewContents(destination);
-      if (storybookDir) copyContents(storybookDir, destination);
       if (sandboxDir) {
         const sandboxDestination = path.join(destination, 'sandbox');
         fs.mkdirSync(sandboxDestination, {recursive: true});
@@ -1453,12 +1440,6 @@ export async function publishPrPreview({
             {recursive: true, force: true},
           );
         }
-      }
-      if (
-        storybookDir &&
-        sha256(path.join(destination, 'index.html')) !== storybookIndexSha256
-      ) {
-        refuse('published Storybook index does not match its source artifact');
       }
       if (
         sandboxDir &&

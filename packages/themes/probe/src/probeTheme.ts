@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  285 targets, 920 selectors (generated from the docs)
+//   components  288 targets, 923 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2094,6 +2094,22 @@ export const probeTheme = defineTheme({
         color: 'hsl(55.2 71% 12%)',
         borderColor: 'hsl(180.8 84% 25%)',
         outlineColor: 'hsl(215.4 89% 25%)',
+      },
+    },
+    'dialog-header-end-content': {
+      base: {
+        backgroundColor: 'hsl(269.1 83% 60%)',
+        color: 'hsl(133.4 73% 12%)',
+        borderColor: 'hsl(189.3 71% 25%)',
+        outlineColor: 'hsl(51.2 80% 25%)',
+      },
+    },
+    'dialog-header-start-content': {
+      base: {
+        backgroundColor: 'hsl(254.7 74% 47%)',
+        color: 'hsl(179.3 84% 12%)',
+        borderColor: 'hsl(189.4 72% 25%)',
+        outlineColor: 'hsl(294.3 81% 25%)',
       },
     },
     'dialog-header-title-block': {
@@ -5489,6 +5505,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(259.7 79% 12%)',
         borderColor: 'hsl(26.1 87% 25%)',
         outlineColor: 'hsl(254.9 79% 25%)',
+      },
+    },
+    timer: {
+      base: {
+        backgroundColor: 'hsl(163.4 81% 49%)',
+        color: 'hsl(216.3 76% 12%)',
+        borderColor: 'hsl(51.6 92% 25%)',
+        outlineColor: 'hsl(349.5 72% 25%)',
       },
     },
     timestamp: {
