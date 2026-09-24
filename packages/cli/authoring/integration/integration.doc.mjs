@@ -11,7 +11,7 @@ export const doc = {
   type: 'schema',
   name: 'integration',
   displayName: 'Astryx Integration',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. It can preserve a stable provider identity across a package rename, " +

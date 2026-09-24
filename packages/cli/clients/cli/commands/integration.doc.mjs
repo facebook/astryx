@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'integration',
   displayName: 'astryx integration',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Author and verify an Astryx integration package',
   description:
     'Add contributions that are valid on arrival, then prove the packed package exposes the same contributions a consumer will receive.',

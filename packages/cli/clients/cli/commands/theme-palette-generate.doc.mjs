@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'theme palette generate',
   displayName: 'astryx theme palette generate',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Generate an OKLCH palette candidate for human review',
   description:
     'Reads an explicit JSON request and runs the versioned astryx-oklch-v1 recipe. ' +

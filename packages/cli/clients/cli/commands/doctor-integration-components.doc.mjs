@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration components',
   displayName: 'astryx doctor integration components',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Warn when integration component names conflict with Core',
   description:
     'Compares one local or installed integration with Core component names. A ' +

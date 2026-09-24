@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'layout',
   displayName: 'astryx layout',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Generate XDS layouts from compressed expressions (XLE/XLO)',
   description:
     'The layout command group. Running astryx layout with no subcommand prints the ' +

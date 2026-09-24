@@ -13,7 +13,7 @@ export const doc = {
   type: 'schema',
   name: 'gap-report-handler',
   displayName: 'GapReportHandler',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'A handler for `astryx gap-report`: a plain object with an `audience` and a `handle` function. Set it as `gapReport` in astryx.config, or export it as `gapReport` from an integration manifest. Every handler runs: the project handler first, then each integration handler in config order.',
   appliesTo:

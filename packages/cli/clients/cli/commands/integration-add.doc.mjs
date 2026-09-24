@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'integration add',
   displayName: 'astryx integration add',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Add one working contribution to an integration package',
   description:
     'Writes the complete minimum shape the selected contribution needs, creates the integration manifest on first use, declares the root only after a valid contribution exists, and verifies the result through the same discovery contract the packed-package check uses.',

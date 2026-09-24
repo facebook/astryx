@@ -18,6 +18,7 @@ import {
   auditAuthoringSelfDocs,
 } from '../../foundation/discovery/authoring-self-docs.mjs';
 import {docs} from '../docs/docs.mjs';
+import {auditCliSelfDocs} from '../../foundation/discovery/cli-self-docs.mjs';
 import {
   doctor,
   checkAuthoringDocs,
@@ -468,18 +469,15 @@ describe('checkCliDocs', () => {
   }
 
   it(
-    'finds every CLI doc no topic reads on this repo today',
+    'passes on this repo, counting where each CLI doc is read',
     async () => {
-      const c = await checkCliDocs();
-      expect(c).toMatchObject({id: 'cli-docs', status: 'fail', fix: CLI_DOCS_FIX});
-      expect(c.message).toMatch(/^83 problems: /);
-      const problems = c.message.replace(/^83 problems: /, '').split('; ');
-      expect(
-        problems.filter(p => p.endsWith('has no namespace, so no `astryx docs` topic reads it')),
-      ).toHaveLength(41);
-      expect(
-        problems.filter(p => p.endsWith('has namespace "cli", which no `astryx docs` topic reads')),
-      ).toHaveLength(42);
+      const audit = await auditCliSelfDocs();
+      expect(await checkCliDocs()).toEqual({
+        id: 'cli-docs',
+        label: 'CLI docs',
+        status: 'pass',
+        message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+      });
     },
     SLOW,
   );

@@ -20,10 +20,13 @@ import {
   CLI_DOC_NAMESPACES,
   auditCliSelfDocs,
   buildCliReferenceDoc,
+  buildCliTopic,
   cliSectionKey,
   discoverCliSelfDocSources,
   keySegment,
+  loadCliSelfDocs,
 } from './cli-self-docs.mjs';
+import * as api from '../../api/index.mjs';
 
 const SLOW = 60_000;
 
@@ -96,16 +99,84 @@ const audit = (/** @type {string} */ root, authoringSources = []) =>
 
 describe('the CLI docs this package ships', () => {
   it(
-    'are not all readable yet: 41 have no namespace and 42 name one no topic reads',
+    'each declare a namespace a topic reads, and none fails, clashes, or overflows',
     async () => {
       const result = await auditCliSelfDocs();
-      expect(result.missing).toHaveLength(41);
-      expect(result.missing.every(source => source.startsWith('api/'))).toBe(true);
-      expect(result.unknown).toHaveLength(42);
-      expect(new Set(result.unknown.map(entry => entry.namespace))).toEqual(
-        new Set(['cli']),
+      expect({
+        missing: result.missing,
+        unknown: result.unknown,
+        misfiled: result.misfiled,
+        failed: result.failed,
+        keyProblems: result.keyProblems,
+        oversized: result.oversized,
+      }).toEqual({
+        missing: [],
+        unknown: [],
+        misfiled: [],
+        failed: [],
+        keyProblems: [],
+        oversized: [],
+      });
+      expect(result.docs).toBeGreaterThan(0);
+      expect(result.sections + result.authoring).toBe(result.docs);
+    },
+    SLOW,
+  );
+
+  it(
+    'give every function @astryxdesign/cli/api exports a section of astryx docs cli',
+    async () => {
+      const topic = await buildCliTopic();
+      const keys = new Set(topic.sections.map(section => section.id));
+      const exported = Object.entries(api)
+        .filter(
+          ([, value]) =>
+            typeof value === 'function' &&
+            Object.getOwnPropertyDescriptor(value, 'prototype')?.writable !==
+              false,
+        )
+        .map(([name]) => `api-${keySegment(name)}`);
+      expect(exported.length).toBeGreaterThan(0);
+      expect(exported.filter(key => !keys.has(key))).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    'give every command doc a section, keyed commands-<name>',
+    async () => {
+      const {loaded} = await loadCliSelfDocs();
+      const commands = loaded.filter(({doc}) => doc.type === 'command');
+      expect(commands.length).toBeGreaterThan(0);
+      const keys = new Set(
+        (await buildCliTopic()).sections.map(section => section.id),
       );
-      expect(result.failed).toEqual([]);
+      expect(
+        commands
+          .map(({doc}) => `commands-${keySegment(doc.name)}`)
+          .filter(key => !keys.has(key)),
+      ).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    'are read one section at a time through docs()',
+    async () => {
+      const search = await api.docs('cli', 'api-search');
+      expect(search).toMatchObject({type: 'docs.detail.section'});
+      expect(JSON.stringify(search.data)).toContain('search()');
+      const command = await api.docs('cli', 'commands-integration-add');
+      expect(JSON.stringify(command.data)).toContain(
+        'astryx integration add <kind> <name>',
+      );
+      const codes = await api.docs('cli', 'api-error-codes');
+      expect(JSON.stringify(codes.data)).toContain('ERR_UNKNOWN_SECTION');
+      const index = await api.docs('cli', undefined, {index: true});
+      expect(index.type).toBe('docs.index');
+      expect(index.data.sections.length).toBe(
+        (await buildCliTopic()).sections.length,
+      );
     },
     SLOW,
   );

@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'build',
   displayName: 'astryx build',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary:
     'Build a page: composition kit for an idea, or the workflow playbook (no args)',
   description:

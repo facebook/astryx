@@ -54,7 +54,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Docs namespace path. Defaults to 'cli' when applied by the docs index.",
+        "The `astryx docs` topic that reads this doc. The CLI's commands use 'cli/commands' (the section `commands-<name>` of the `cli` topic). Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads.",
     },
     {
       name: 'aliases',

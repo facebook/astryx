@@ -21,6 +21,10 @@ The CLI documents itself, so these commands print what the installed version doe
 
 - `astryx <command> --help`: one command's arguments and options.
 - `astryx manifest --json`: every command, option, and response type, as JSON.
+- `astryx docs cli --index`: one section for each command (`commands-<name>`)
+  and each API function, plus the JSON output envelope, error codes, and
+  response types (`api-<name>`). Read one with `astryx docs cli <key>`, for
+  example `astryx docs cli api-search`.
 - `astryx docs authoring --index`: the authoring reference, with one section for
   each file an author writes: the `astryx.config.*` file, the
   `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,

@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'swizzle',
+  namespace: 'cli/api',
   displayName: 'swizzle()',
   summary: "Eject a component's source into your project for customization.",
   description:

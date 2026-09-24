@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'layoutExpand',
+  namespace: 'cli/api',
   displayName: 'layoutExpand()',
   summary: 'Expand a validated layout expression into XDS TSX.',
   description:

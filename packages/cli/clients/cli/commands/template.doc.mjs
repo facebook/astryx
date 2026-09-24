@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'template',
   displayName: 'astryx template',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Inject a page or block template',
   description:
     'One entry point for the template family: with no name it lists the discovered ' +

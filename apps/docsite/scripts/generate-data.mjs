@@ -1698,6 +1698,10 @@ async function generateDocsRegistry() {
     if (DOCSITE_TARGET !== 'canary' && topic === 'shadcn-compatibility') {
       continue;
     }
+    // /docs/cli is the @astryxdesign/cli package page. The CLI reference topic
+    // (`astryx docs cli`) joins the site when its namespace page takes that
+    // URL; packages/cli/test/doc-routes.test.mjs records the same skip.
+    if (topic === 'cli') continue;
     const docPath = path.join(DOCS_DIR, file);
 
     let title = '';

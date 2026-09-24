@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme build',
   displayName: 'astryx theme build',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Compile standalone themes or one keyed theme family',
   description:
     'Compiles defineTheme() sources through the same theme pipeline into scoped CSS, ' +

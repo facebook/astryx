@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme add',
   displayName: 'astryx theme add',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Scaffold a theme into your project as editable source',
   description:
     "Copies a bundled or installed integration theme's source into your project so you own it. " +

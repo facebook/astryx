@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration docs',
   displayName: 'astryx doctor integration docs',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Classify integration doc overlaps with Core topics',
   description:
     'Reports intentional Core topic replacements and extensions as information. ' +

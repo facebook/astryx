@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'component',
+  namespace: 'cli/api',
   displayName: 'component()',
   summary:
     'Resolve a component by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',

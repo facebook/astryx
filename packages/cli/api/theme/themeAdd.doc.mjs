@@ -9,6 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeAdd',
+  namespace: 'cli/api',
   displayName: 'themeAdd()',
   summary: 'Copy an available theme into a project as editable source.',
   description:

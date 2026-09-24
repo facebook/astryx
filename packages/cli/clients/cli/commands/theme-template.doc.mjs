@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme template',
   displayName: 'astryx theme template',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Write the annotated theme template into your project',
   description:
     'Writes theme.template.ts: the annotated reference for the whole theme surface, covering every ' +

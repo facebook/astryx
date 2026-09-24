@@ -9,6 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeListAvailable',
+  namespace: 'cli/api',
   displayName: 'themeListAvailable()',
   summary: 'List bundled and installed integration themes.',
   description:

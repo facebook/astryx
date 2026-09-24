@@ -129,6 +129,13 @@ afterAll(() => {
 });
 
 /**
+ * Topics the docsite does not publish: /docs/cli is the @astryxdesign/cli
+ * package page, so apps/docsite/scripts/generate-data.mjs skips the cli topic
+ * until the namespace page takes that URL.
+ */
+const DOCSITE_SKIPPED_TOPICS = new Set(['cli']);
+
+/**
  * Every built-in topic and section key, with the docsite URL for each.
  * @param {string} cwd
  * @returns {Promise<Map<string, Route>>}
@@ -138,9 +145,13 @@ async function currentTopicRoutes(cwd) {
   const found = new Map();
   const list = /** @type {any} */ (await docs(undefined, undefined, {cwd}));
   for (const {topic} of list.data) {
-    // The docsite builds one page per topic file the CLI ships.
+    // The docsite builds one page per topic file the CLI ships, except the
+    // topics apps/docsite/scripts/generate-data.mjs skips.
     const file = path.join(CLI_ROOT, 'assets', 'docs', `${topic}.doc.mjs`);
-    const page = fs.existsSync(file) ? `/docs/${topic}` : null;
+    const page =
+      fs.existsSync(file) && !DOCSITE_SKIPPED_TOPICS.has(topic)
+        ? `/docs/${topic}`
+        : null;
     found.set(topic, {
       kind: 'topic',
       id: topic,

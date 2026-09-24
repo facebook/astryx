@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAdd',
+  namespace: 'cli/api',
   displayName: 'integrationAdd()',
   summary: 'Add one working contribution to an integration package.',
   description:

@@ -9,6 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'listThemes',
+  namespace: 'cli/api',
   displayName: 'listThemes()',
   summary: 'Read the CLI bundled-theme descriptors.',
   description:

@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'docs',
   displayName: 'astryx docs',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Print reference docs',
   description:
     'Reads the reference docs: with no topic it lists every topic; a topic prints that ' +

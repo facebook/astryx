@@ -12,7 +12,7 @@ export const doc = {
   type: 'schema',
   name: 'debug-event',
   displayName: 'DebugEvent',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'One recorded CLI run: what a `debug` handler receives, whether it is set in astryx.config or exported by an integration manifest. There is exactly one event per run, and every field is present by the time a handler sees it.',
   appliesTo: 'The argument of a `debug` handler',

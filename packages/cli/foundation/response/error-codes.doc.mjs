@@ -12,7 +12,7 @@ export const doc = {
   type: 'enum',
   name: 'error-codes',
   displayName: 'Error Codes',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'Stable, append-only machine-readable error codes on the --json error envelope (envelope.code). Codes never change or get removed; branch on these, not on prose.',
   members: [
