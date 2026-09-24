@@ -251,12 +251,7 @@ export function registerBuild(program) {
           'FRAME + FOUNDATION',
           'Always-available shell + layout/text/action primitives.',
         ),
-        record({
-          frame,
-          foundation,
-          setup:
-            'import "@astryxdesign/core/reset.css" + "astryx.css"; no <div>/style for layout — use Stack/Grid + tokens',
-        }),
+        record({frame, foundation}),
       );
 
       // Last, so it is the line the reader leaves with — and only when the kit
