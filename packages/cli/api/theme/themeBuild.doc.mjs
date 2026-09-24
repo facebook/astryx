@@ -87,7 +87,10 @@ export const doc = {
       code: 'ERR_THEME_LOAD',
       when: 'the file cannot be loaded or parsed into a defineTheme() result',
     },
-    {code: 'ERR_THEME_INVALID', when: 'the resolved theme has no name'},
+    {
+      code: 'ERR_THEME_INVALID',
+      when: 'the resolved theme is invalid, for example it has no name, or a custom Heading type has no standalone rule with a declaration the compiler can emit',
+    },
     {
       code: 'ERR_PATH_TRAVERSAL',
       when: 'the theme name contains a path separator or traversal marker',

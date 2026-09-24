@@ -1931,20 +1931,7 @@ function getThemeComponentLayers(themeDef) {
  */
 function validateCustomHeadingTypes(themeDef) {
   const layers = getThemeComponentLayers(themeDef);
-  const customTypes = new Set();
-  for (const {components} of layers) {
-    const headingRules = components.heading;
-    if (!headingRules || typeof headingRules !== 'object') continue;
-
-    for (const key of Object.keys(headingRules)) {
-      for (const pair of key.split('+')) {
-        const colon = pair.indexOf(':');
-        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
-        const value = pair.slice(colon + 1);
-        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
-      }
-    }
-  }
+  const customTypes = customHeadingTypes(themeDef);
 
   const errors = [];
   for (const type of customTypes) {
@@ -1972,9 +1959,64 @@ function validateCustomHeadingTypes(themeDef) {
 }
 
 /**
+ * Custom Heading type names declared on the root or media-surface component
+ * maps: the names the generated `HeadingTypeMap` augmentation enrolls.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {Set<string>}
+ */
+function customHeadingTypes(themeDef) {
+  /** @type {Set<string>} */
+  const customTypes = new Set();
+  for (const {components} of getThemeComponentLayers(themeDef)) {
+    const headingRules = components.heading;
+    if (!headingRules || typeof headingRules !== 'object') continue;
+
+    for (const key of Object.keys(headingRules)) {
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+        const value = pair.slice(colon + 1);
+        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+      }
+    }
+  }
+  return customTypes;
+}
+
+/**
+ * Custom Heading types with no standalone rule in the generated CSS. A type
+ * whose every declaration the compiler dropped still passes the source check,
+ * and its augmentation would then name a type that has no styles.
+ *
+ * @param {Set<string>} types
+ * @param {string} css - Generated root component and media-surface rules.
+ * @returns {string[]}
+ */
+function headingTypesWithoutEmittedRule(types, css) {
+  /** @type {string[]} */
+  const missing = [];
+  for (const type of types) {
+    const selector = `.astryx-heading[data-type="${type}"]`;
+    let emitted = false;
+    for (
+      let at = css.indexOf(selector);
+      at !== -1 && !emitted;
+      at = css.indexOf(selector, at + 1)
+    ) {
+      // A following attribute is a combined selector, not the standalone rule.
+      emitted = css[at + selector.length] !== '[';
+    }
+    if (!emitted) missing.push(type);
+  }
+  return missing;
+}
+
+/**
  * Return true when a style object contains a declaration that the theme
- * generator can emit. Empty pseudo blocks do not count: they produce no CSS
- * and would leave the generated type augmentation without a usable rule.
+ * generator can emit. Empty pseudo blocks and blank values do not count: they
+ * produce no usable CSS and would leave the generated type augmentation
+ * without a usable rule.
  *
  * @param {unknown} styles
  * @returns {boolean}
@@ -1988,7 +2030,12 @@ function hasUsableStyleDeclaration(styles) {
       if (hasUsableStyleDeclaration(value)) return true;
       continue;
     }
-    if (value !== undefined && value !== null && typeof value !== 'object') {
+    if (
+      value !== undefined &&
+      value !== null &&
+      typeof value !== 'object' &&
+      String(value).trim() !== ''
+    ) {
       return true;
     }
   }
@@ -2386,6 +2433,25 @@ async function themeBuildInternal(
       const w = `Declaration ${message}. The generated CSS omits it; fix the value in the theme source.`;
       warningMessages.push(w);
       logger.warn(`  ⚠ ${w}`);
+    }
+    const unemittedHeadingTypes = headingTypesWithoutEmittedRule(
+      customHeadingTypes(themeDef),
+      `${component.join('\n')}\n${onMediaCss}`,
+    );
+    if (unemittedHeadingTypes.length > 0) {
+      throw new AstryxError(
+        unemittedHeadingTypes
+          .map(
+            type =>
+              `Custom Heading type "${type}" has no declaration the theme ` +
+              `compiler could emit: every declaration in its standalone ` +
+              `"type:${type}" rule was dropped. Give that rule at least one ` +
+              'valid declaration.',
+          )
+          .join('\n'),
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
     }
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');
