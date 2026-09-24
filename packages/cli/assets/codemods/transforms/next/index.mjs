@@ -7,4 +7,14 @@
  * this file into the resolved version folder.
  */
 
-export default [];
+import migrateThemeCatalogToDescriptors, {
+  meta as migrateThemeCatalogToDescriptorsMeta,
+} from './migrate-theme-catalog-to-descriptors.mjs';
+
+export default [
+  {
+    name: 'migrate-theme-catalog-to-descriptors',
+    transform: migrateThemeCatalogToDescriptors,
+    meta: migrateThemeCatalogToDescriptorsMeta,
+  },
+];

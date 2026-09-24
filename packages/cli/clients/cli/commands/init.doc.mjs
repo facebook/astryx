@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'init',
   displayName: 'astryx init',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Initialize the design system in your project',
   description:
     'Non-interactive project setup (no prompts, so it behaves the same for humans, ' +

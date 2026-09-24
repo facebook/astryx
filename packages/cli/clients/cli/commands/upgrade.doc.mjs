@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'upgrade',
   displayName: 'astryx upgrade',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Migrate versions and update ShadCN-copied compositions',
   description:
     'Migrates project source from a previous Astryx version to the installed one by ' +

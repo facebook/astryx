@@ -62,7 +62,7 @@ export const doc = {
       name: 'extends',
       type: 'string',
       description:
-        'Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.',
+        "Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. The topic keeps the base's title and description. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.",
       example: "'theme'",
     },
     {

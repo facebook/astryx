@@ -17,8 +17,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../fs/paths.mjs';
+import {readDocView} from '../doc-compiler/read.mjs';
 import {
   DOC_OUTPUT_BUDGET_BYTES,
   oversizedDocSections,
@@ -31,6 +31,8 @@ export const AUTHORING_ROOT = path.join(CLI_ROOT, 'authoring');
 export const AUTHORING_SELF_DOCS = [
   'integration/integration.doc.mjs',
   'config/config.doc.mjs',
+  'debug/debug.doc.mjs',
+  'gap-report/gap-report.doc.mjs',
   'codemod/codemod.doc.mjs',
   'identity/identity.doc.mjs',
   'doctypes/base/graph-fields.doc.mjs',
@@ -43,6 +45,7 @@ export const AUTHORING_SELF_DOCS = [
   'doctypes/reference/reference.doc.mjs',
   'doctypes/schema/schema.doc.mjs',
   'doctypes/template/template.doc.mjs',
+  'doctypes/theme/theme.doc.mjs',
 ];
 
 /** Blocks a self-doc note may carry that a topic section can render. */
@@ -59,7 +62,8 @@ export function discoverAuthoringSelfDocSources(root = AUTHORING_ROOT) {
   /** @param {string} dir */
   const walk = dir => {
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-      if (entry.name === 'node_modules' || entry.name.startsWith('__')) continue;
+      if (entry.name === 'node_modules' || entry.name.startsWith('__'))
+        continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.doc.mjs')) {
@@ -86,9 +90,14 @@ export async function loadAuthoringSelfDocs(
   const failed = [];
   for (const source of sources) {
     try {
-      const mod = await import(pathToFileURL(path.join(root, source)).href);
-      const doc = mod.doc ?? mod.docs ?? mod.default;
-      if (typeof doc?.name !== 'string' || typeof doc?.description !== 'string') {
+      const doc = await readDocView(path.join(root, source), {
+        root: 'self-docs',
+        loader: 'native',
+      });
+      if (
+        typeof doc?.name !== 'string' ||
+        typeof doc?.description !== 'string'
+      ) {
         throw new Error('exports no doc with a name and a description');
       }
       loaded.push({source, doc});
@@ -129,7 +138,7 @@ function fieldRows(fields) {
  * @param {any} doc
  * @returns {import('../../authoring/doctypes/reference/type').ReferenceSection}
  */
-function selfDocSection(doc) {
+export function selfDocSection(doc) {
   /** @type {any[]} */
   const content = [{type: 'prose', text: doc.description}];
   if (doc.appliesTo) {
@@ -144,7 +153,8 @@ function selfDocSection(doc) {
     });
   }
   for (const example of doc.examples ?? []) {
-    if (typeof example?.code !== 'string' || example.code.trim() === '') continue;
+    if (typeof example?.code !== 'string' || example.code.trim() === '')
+      continue;
     content.push({
       type: 'code',
       lang: example.lang ?? 'js',

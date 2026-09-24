@@ -6,15 +6,23 @@
  * invariant (the counts must always add up to the number of checks).
  */
 
-import {describe, it, expect, afterEach} from 'vitest';
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
 import {
+  AUTHORING_ROOT,
+  AUTHORING_SELF_DOCS,
+  auditAuthoringSelfDocs,
+} from '../../foundation/discovery/authoring-self-docs.mjs';
+import {docs} from '../docs/docs.mjs';
+import {auditCliSelfDocs} from '../../foundation/discovery/cli-self-docs.mjs';
+import {
   doctor,
   checkAuthoringDocs,
+  checkCliDocs,
   checkDocsProgressiveDisclosure,
   checkImplicitIntegrations,
   checkProviderIdentity,
@@ -443,6 +451,323 @@ describe('checkAuthoringDocs', () => {
     expect(c.message).toContain('astryx docs authoring');
   }, SLOW);
 });
+
+describe('checkCliDocs', () => {
+  const CLI_DOCS_FIX =
+    'Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
+
+  /** A doc tree under the working directory, as the CLI root. */
+  function writeRoot(/** @type {Record<string, any>} */ docsByPath) {
+    const root = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-cli-docs-'));
+    tmpDirs.push(root);
+    for (const [rel, doc] of Object.entries(docsByPath)) {
+      const file = path.join(root, rel);
+      fs.mkdirSync(path.dirname(file), {recursive: true});
+      fs.writeFileSync(file, `export const doc = ${JSON.stringify(doc)};\n`);
+    }
+    return root;
+  }
+
+  it(
+    'passes on this repo, counting where each CLI doc is read',
+    async () => {
+      const audit = await auditCliSelfDocs();
+      expect(await checkCliDocs()).toEqual({
+        id: 'cli-docs',
+        label: 'CLI docs',
+        status: 'pass',
+        message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    'fails on a doc with no namespace and one no topic reads, and names the fix',
+    async () => {
+      const root = writeRoot({
+        'api/alpha/alpha.doc.mjs': {
+          type: 'function',
+          kind: 'api',
+          name: 'alpha',
+          displayName: 'alpha()',
+          summary: 'The alpha function.',
+          params: [],
+          returns: [{type: 'alpha', description: 'The alpha.'}],
+        },
+        'clients/cli/commands/beta.doc.mjs': {
+          type: 'command',
+          name: 'beta',
+          displayName: 'astryx beta',
+          namespace: 'cli',
+          summary: 'Do beta',
+        },
+      });
+      expect(
+        await checkCliDocs(undefined, {root, authoringSources: []}),
+      ).toEqual({
+        id: 'cli-docs',
+        label: 'CLI docs',
+        status: 'fail',
+        message:
+          '2 problems: api/alpha/alpha.doc.mjs has no namespace, so no `astryx docs` topic reads it; clients/cli/commands/beta.doc.mjs has namespace "cli", which no `astryx docs` topic reads',
+        fix: CLI_DOCS_FIX,
+      });
+    },
+    SLOW,
+  );
+});
+
+describe('checkAuthoringDocs against the public authoring surface', () => {
+  const NAMESPACE = 'doctypes/namespace/namespace.doc.mjs';
+  const NAMESPACE_TYPES =
+    'NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in `astryx docs authoring`';
+  const SURFACE_FIX =
+    'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
+
+  /** A copy of this repo's authoring tree, to break one piece of at a time. */
+  function copyAuthoring() {
+    const root = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-doctor-authoring-'),
+    );
+    tmpDirs.push(root);
+    fs.cpSync(AUTHORING_ROOT, root, {
+      recursive: true,
+      filter: src => !src.endsWith('.test.mjs'),
+    });
+    return root;
+  }
+
+  /** @param {string} source */
+  const without = source => AUTHORING_SELF_DOCS.filter(s => s !== source);
+
+  /** @param {string} text */
+  const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  it(
+    'passes on this repo and prints exactly what it printed before',
+    async () => {
+      expect(await checkAuthoringDocs()).toEqual({
+        id: 'authoring-docs',
+        label: 'Authoring docs',
+        status: 'pass',
+        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`astryx docs authoring\`.`,
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    'passes on an unchanged copy of the tree, and writes nothing to it',
+    async () => {
+      const root = copyAuthoring();
+      const before = snapshot(root);
+      expect(await checkAuthoringDocs(undefined, {root})).toMatchObject({
+        status: 'pass',
+      });
+      expect(snapshot(root)).toEqual(before);
+    },
+    SLOW,
+  );
+
+  it(
+    'fails when the NamespaceDoc self-doc is left out of AUTHORING_SELF_DOCS',
+    async () => {
+      const root = copyAuthoring();
+      const c = await checkAuthoringDocs(undefined, {
+        root,
+        sources: without(NAMESPACE),
+      });
+      expect(c.status).toBe('fail');
+      expect(c.message).toBe(
+        `2 problems: ${NAMESPACE} is not in \`astryx docs authoring\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
+      );
+    },
+    SLOW,
+  );
+
+  it(
+    "fails when the topic's index no longer exposes the NamespaceDoc section",
+    async () => {
+      const index = await docs('authoring', undefined, {index: true});
+      const topicKeys = new Set(
+        index.data.sections
+          .map((/** @type {any} */ s) => s.id)
+          .filter((/** @type {string} */ id) => id !== 'namespace-doc'),
+      );
+      const c = await checkAuthoringDocs(undefined, {topicKeys});
+      expect(c).toMatchObject({
+        status: 'fail',
+        message: `${NAMESPACE_TYPES}: ${NAMESPACE} renders section "namespace-doc", which the topic's index does not list`,
+        fix: SURFACE_FIX,
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    'fails when @astryxdesign/cli/authoring stops exporting NamespaceDoc',
+    async () => {
+      const root = copyAuthoring();
+      const index = path.join(root, 'index.d.ts');
+      const before = fs.readFileSync(index, 'utf8');
+      const after = before.replace(
+        /^export type \{NamespaceDoc\} from .*\n/m,
+        '',
+      );
+      expect(after).not.toBe(before);
+      fs.writeFileSync(index, after);
+      expect(await checkAuthoringDocs(undefined, {root})).toMatchObject({
+        status: 'fail',
+        message: `${NAMESPACE} documents NamespaceDoc, which @astryxdesign/cli/authoring does not export`,
+        fix: SURFACE_FIX,
+      });
+    },
+    SLOW,
+  );
+
+  it.each([
+    [
+      'the graph-fields doc',
+      'doctypes/base/graph-fields.doc.mjs',
+      'doctypes/base/type.ts',
+      [
+        'AuthoredDocKind',
+        'DocAudience',
+        'DocPlacement',
+        'AuthoredDocGraphFields',
+      ],
+    ],
+    [
+      'the identity doc',
+      'identity/identity.doc.mjs',
+      'identity/type.ts',
+      [
+        'ProviderId',
+        'ArtifactId',
+        'DocId',
+        'ProviderInstance',
+        'AuthoredDocEntry',
+      ],
+    ],
+    [
+      'the semantic-block doc',
+      'doctypes/reference/reference.doc.mjs',
+      'doctypes/reference/type.ts',
+      [
+        'WorkflowStep',
+        'WorkflowDocBlock',
+        'CollectionDocBlock',
+        'ReferenceDocBlock',
+      ],
+    ],
+  ])(
+    'fails when %s is removed, which the self-doc audit alone passes',
+    async (_what, source, module, names) => {
+      const root = copyAuthoring();
+      fs.rmSync(path.join(root, source));
+      const sources = without(source);
+      expect(await auditAuthoringSelfDocs({root, sources})).toEqual({
+        sections: sources.length,
+        unreachable: [],
+        failed: [],
+        oversized: [],
+      });
+      const c = await checkAuthoringDocs(undefined, {root, sources});
+      expect(c.status).toBe('fail');
+      expect(c.fix).toBe(SURFACE_FIX);
+      expect(c.message).toMatch(
+        new RegExp(
+          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`astryx docs authoring\`: no self-doc sits beside ${escape(module)}$`,
+        ),
+      );
+      for (const name of names) {
+        expect(c.message).toMatch(new RegExp(`(^|, )${name}(,| from)`));
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'keeps the message and fix of a failure only the self-doc audit reports',
+    async () => {
+      const root = copyAuthoring();
+      fs.writeFileSync(
+        path.join(root, 'identity', 'broken.doc.mjs'),
+        'export const doc = {;\n',
+      );
+      const c = await checkAuthoringDocs(undefined, {
+        root,
+        sources: [...AUTHORING_SELF_DOCS, 'identity/broken.doc.mjs'],
+      });
+      expect(c.status).toBe('fail');
+      expect(c.message).toMatch(/^identity\/broken\.doc\.mjs failed to load: /);
+      expect(c.fix).toBe(
+        'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.',
+      );
+    },
+    SLOW,
+  );
+
+  it(
+    'reports a topic it cannot read rather than skipping the comparison',
+    async () => {
+      const spy = vi
+        .spyOn(DocsCatalog, 'fromBuiltins')
+        .mockImplementationOnce(() => {
+          throw new Error('no built-in docs');
+        });
+      try {
+        expect(await checkAuthoringDocs()).toMatchObject({
+          status: 'fail',
+          message:
+            '`astryx docs authoring` could not be read: no built-in docs',
+          fix: SURFACE_FIX,
+        });
+      } finally {
+        spy.mockRestore();
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'fails rather than passes when the surface exports no types at all',
+    async () => {
+      const root = copyAuthoring();
+      fs.writeFileSync(
+        path.join(root, 'index.d.ts'),
+        "export {parseDoc} from './doctypes/parse.mjs';\n",
+      );
+      const c = await checkAuthoringDocs(undefined, {root});
+      expect(c.status).toBe('fail');
+      expect(c.message).toContain(
+        '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+      );
+    },
+    SLOW,
+  );
+});
+
+/**
+ * Every file under `root` with its contents.
+ * @param {string} root
+ * @returns {Record<string, string>}
+ */
+function snapshot(root) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  /** @param {string} dir */
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else out[path.relative(root, full)] = fs.readFileSync(full, 'utf8');
+    }
+  };
+  walk(root);
+  return out;
+}
 
 describe('doctor docs checks', () => {
   it('runs both docs checks and they pass on the repo', async () => {

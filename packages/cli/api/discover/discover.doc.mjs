@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'discover',
+  namespace: 'cli/api',
   displayName: 'discover()',
   summary: 'Browse and search components from configured external packages.',
   description:

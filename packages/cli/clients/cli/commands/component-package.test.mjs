@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {component} from '../../../api/component/component.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
 
 // These tests create a minimal monorepo fixture with:
 // - packages/core (symlinked to real @astryxdesign/core for loadDocs compatibility)
@@ -148,5 +149,21 @@ describe('component() with --package option', () => {
     const blocks = await component('ProfileCard', {cwd: tmpDir, blocks: true});
     expect(blocks.type).toBe('component.detail.blocks');
     expect(blocks.data.showcase?.name).toBe('ProfileCardShowcase');
+  });
+
+  // List and detail report one import for a legacy package component; the
+  // text list projects the JSON value instead of deriving a Core path.
+  it('the names list gives a legacy package component the import its detail reports', async () => {
+    const detail = await component('ProfileCard', {cwd: tmpDir});
+    const list = await component(undefined, {cwd: tmpDir, list: true});
+    const entry = Object.values(list.data.components)
+      .flat()
+      .find(e => e.name === 'ProfileCard' && e.package === '@test/ext');
+    expect(entry?.import).toBe(detail.data.import);
+
+    const text = await runCli(['component', '--list'], tmpDir);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain(`name:   ProfileCard\nimport: ${detail.data.import}  [@test/ext]`);
+    expect(text.stdout).not.toMatch(/^import: +@astryxdesign\/core\S* +\[@test\/ext\]$/m);
   });
 });

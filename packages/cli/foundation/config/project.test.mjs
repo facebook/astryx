@@ -163,7 +163,7 @@ function scaffoldLocalPackage({name = '@acme/local'} = {}) {
 
   fs.mkdirSync(path.join(tmpDir, 'templates'));
   fs.writeFileSync(
-    path.join(tmpDir, 'templates', 'local-page.template.mjs'),
+    path.join(tmpDir, 'templates', 'local-page.doc.mjs'),
     `export default {type: 'page', name: 'Local page', description: 'Local page.'};\n`,
   );
   fs.writeFileSync(
@@ -181,21 +181,8 @@ function scaffoldLocalPackage({name = '@acme/local'} = {}) {
 
   fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
   fs.writeFileSync(
-    path.join(tmpDir, 'themes', 'manifest.json'),
-    JSON.stringify({
-      version: 1,
-      themes: [
-        {
-          slug: 'ocean',
-          displayName: 'Ocean',
-          description: 'Ocean theme.',
-          maintained: true,
-          entry: 'oceanTheme.ts',
-          exportName: 'oceanTheme',
-          files: ['oceanTheme.ts'],
-        },
-      ],
-    }),
+    path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.doc.mjs'),
+    `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};\n`,
   );
   fs.writeFileSync(
     path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),

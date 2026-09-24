@@ -11,7 +11,7 @@ export const doc = {
   type: 'schema',
   name: 'config',
   displayName: 'Astryx Config',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
     'integrations to load, where to route issue links, post-codemod hooks, local ' +

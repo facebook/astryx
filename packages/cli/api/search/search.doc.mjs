@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'search',
+  namespace: 'cli/api',
   displayName: 'search()',
   summary:
     'Unified ranked search across components, hooks, docs, and templates.',

@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx integration add theme` — scaffold one valid source theme into
- * an integration package, update its theme catalog, and declare the root on
- * first use.
+ * @file `astryx integration add theme` — scaffold one strongly typed,
+ * same-stem source/descriptor pair into an integration package and declare the
+ * themes root on first use.
  */
 
 import * as fs from 'node:fs';
@@ -15,16 +15,14 @@ import {
   PathSafetyError,
   sanitizeName,
 } from '../../foundation/fs/path-safety.mjs';
-import {
-  discoverThemeCatalog,
-  THEME_MANIFEST_BASENAME,
-} from '../../foundation/discovery/theme-discovery.mjs';
+import {discoverThemeDirectory} from '../../foundation/discovery/theme-discovery.mjs';
 import {
   findLocalIntegrationManifestOrNull,
   IntegrationRootConflictError,
   patchIntegrationRoot,
 } from '../../foundation/integrations/manifest-writer.mjs';
 import {loadManifestObject} from '../../foundation/integrations/integrations.mjs';
+import {themeDescriptorSource} from '../../foundation/integrations/theme-descriptor.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
   applyWrites,
@@ -70,6 +68,7 @@ function themeIdentity(slug) {
     displayName,
     exportName: `${identifier}Theme`,
     entry: `${identifier}Theme.ts`,
+    descriptor: `${identifier}Theme.doc.mjs`,
   };
 }
 
@@ -78,9 +77,20 @@ function themeSource(identity) {
   return `import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const ${identity.exportName} = defineTheme({\n  name: '${identity.slug}',\n});\n`;
 }
 
+/** @param {{slug: string, displayName: string}} identity */
+function themeDescriptor(identity) {
+  return themeDescriptorSource({
+    type: 'theme',
+    name: identity.slug,
+    displayName: identity.displayName,
+    description: `${identity.displayName} theme.`,
+    maintained: true,
+  });
+}
+
 /**
- * Read the bytes back through the same integration-theme discovery seam Project
- * uses. A write is not successful until the requested slug resolves.
+ * Read bytes back through the same discovery seam Project uses. A write is not
+ * successful until the requested slug resolves.
  * @param {string} packageDir
  * @param {string} manifestFile
  * @param {string} owner
@@ -176,6 +186,9 @@ export async function integrationAddTheme(name, options = {}) {
       dryRun: true,
       createIfMissing: true,
     });
+    if (fs.existsSync(root)) {
+      discoverThemeDirectory(root, owner);
+    }
   } catch (error) {
     if (error instanceof IntegrationRootConflictError) {
       throw new AstryxError(
@@ -197,72 +210,29 @@ export async function integrationAddTheme(name, options = {}) {
   const sourceFile = assertWithin(identity.entry, themeDir, {
     label: 'theme source file',
   });
-  if (fs.existsSync(sourceFile)) {
-    throw new AstryxError(
-      `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, sourceFile))}.`,
-      undefined,
-      ERROR_CODES.ERR_FILE_EXISTS,
-    );
-  }
-
-  const catalogFile = assertWithin(THEME_MANIFEST_BASENAME, root, {
-    label: 'theme catalog manifest',
+  const descriptorFile = assertWithin(identity.descriptor, themeDir, {
+    label: 'theme descriptor file',
   });
-  /** @type {{version: 1, themes: Array<Record<string, unknown>>, [key: string]: unknown}} */
-  let catalog = {version: 1, themes: []};
-  /** @type {Buffer|null} */
-  let catalogOriginal = null;
-  if (fs.existsSync(catalogFile)) {
-    try {
-      catalogOriginal = fs.readFileSync(catalogFile);
-      catalog = JSON.parse(catalogOriginal.toString('utf-8'));
-      // The discovery seam is the schema/source-of-truth validator. The write
-      // plan carries catalogOriginal, so any concurrent change between this read
-      // and publish is refused rather than overwritten with this snapshot.
-      discoverThemeCatalog(root, owner);
-    } catch (error) {
+  // An existing folder is filled; only a file this would write is refused.
+  for (const file of [sourceFile, descriptorFile]) {
+    if (fs.existsSync(file)) {
       throw new AstryxError(
-        error instanceof Error ? error.message : String(error),
+        `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, file))}.`,
         undefined,
-        ERROR_CODES.ERR_THEME_INVALID,
+        ERROR_CODES.ERR_FILE_EXISTS,
       );
     }
   }
-  if (
-    catalog.themes.some(
-      theme =>
-        typeof theme.slug === 'string' &&
-        theme.slug.toLowerCase() === identity.slug.toLowerCase(),
-    )
-  ) {
-    throw new AstryxError(
-      `Theme "${identity.slug}" already exists in ${projectPath(path.relative(packageDir, catalogFile))}.`,
-      undefined,
-      ERROR_CODES.ERR_FILE_EXISTS,
-    );
-  }
-
-  catalog.themes.push({
-    slug: identity.slug,
-    displayName: identity.displayName,
-    description: `${identity.displayName} theme.`,
-    maintained: true,
-    entry: identity.entry,
-    exportName: identity.exportName,
-    files: [identity.entry],
-  });
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
-  const plans = [];
-  plans.push(
+  const plans = [
     {path: sourceFile, contents: themeSource(identity), createOnly: true},
     {
-      path: catalogFile,
-      contents: `${JSON.stringify(catalog, null, 2)}\n`,
-      createOnly: catalogOriginal == null,
-      expectedOriginal: catalogOriginal ?? undefined,
+      path: descriptorFile,
+      contents: themeDescriptor(identity),
+      createOnly: true,
     },
-  );
+  ];
   const packageUpdate = packageJsonUpdate(
     packageFile,
     rootPath,

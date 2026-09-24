@@ -22,6 +22,9 @@ verified_by:
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
+    foundation/discovery/theme-discovery.test.mjs,
+    authoring/doctypes/doctypes-new.test.mjs,
+    scripts/check-cli-theme-bundle.test.mjs,
     clients/cli/commands/integration-authoring.test.mjs,
     clients/cli/commands/integration-real-world.test.mjs,
     api/integration/add-contribution.test.mjs,
@@ -165,13 +168,18 @@ test, applicable text, and consumer-documentation projections.
   and records its issue; a package-scoped theme lookup surfaces that package's
   blocking catalog error instead of misreporting the theme as unknown.
 - **INV19 — Integration themes are packaged editable source.** The manifest's
-  `themes` root contains a versioned catalog. Each entry names its slug, source
-  entry, named runtime export, and complete file list. Discovery parses the entry
-  without executing it, requires every local static import and re-export to name
-  a file in that list, and rejects missing or type-only named exports. Pack
-  verification preserves that identity; `theme list` retains package ownership;
-  `theme add --package` copies every listed file, including nested palette/token
-  modules, before `theme build` compiles the consumer-owned copy.
+  `themes` root contains one directory per slug. Every theme source has a mandatory
+  same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
+  derives the source entry and required named runtime export from the shared stem,
+  parses source without executing it, and rejects escaped local imports and missing
+  or type-only runtime exports. The theme directory is the recursive copy and pack
+  boundary; dot entries and files npm never publishes belong to no theme. A
+  dot-folder, or a folder holding neither a descriptor nor a `<name>Theme`
+  source, is not a theme and is neither read nor packed, and doctor warns about
+  one that looks like a theme; a folder with a theme source and no descriptor
+  fails. `theme list` retains package
+  ownership, and `theme add --package` copies the complete directory before
+  `theme build` compiles the consumer-owned copy.
 - **INV20 — A command's API subject has one layout.** A command's behavior lives
   in `api/<subject>/`. `<subject>.mjs` is the subject's entry, and `api/index.mjs`
   re-exports what it exports. A subject with more than one operation puts each in
@@ -208,6 +216,21 @@ test, applicable text, and consumer-documentation projections.
   no renderer of its own; it maps its data onto records, lists, and sections. A
   block kind is added to the kit, with its tests and its line in the help
   "Output format" list, only as `spec:AST-042` FR3 allows.
+- **INV24 — Every discoverable integration item owns one typed descriptor.** New
+  authoring emits `<source-stem>.doc.mjs`, annotated with its public type from
+  `@astryxdesign/cli/authoring`, beside the source or payload it describes. The
+  descriptor is the sole per-item metadata authority; `astryx.integration.*`
+  locates roots and integration-level capabilities but never catalogs items:
+  there is no catalog file under a root and no per-item map or list in the
+  manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
+  compatibility path, not a second authoring convention.
+- **INV25 — Every CLI doc names the topic that reads it.** Each command, API
+  function, schema, and enum doc the CLI ships declares a `namespace`.
+  `cli/commands` and `cli/api` docs are sections of `astryx docs cli`, keyed
+  `commands-<name>` and `api-<name>`; `authoring` docs are sections of
+  `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
+  CLI doc has no namespace, names one no topic reads, or disagrees with the
+  authoring list, so every doc the CLI ships stays readable from the CLI.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -226,12 +249,14 @@ updated in the same pull request when it moves an invariant:
 - changing the file layout under `clients/cli/commands`;
 - adding an API subject, leaf, adapter, or exported function, or giving an API
   module access to the environment (INV20–INV21);
+- adding a command, API function, schema, or enum doc, or a namespace a CLI
+  doc may declare (INV25);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
 - changing what `integration pack --check` executes, resolves, or proves about
   the tarball;
 - changing local, configured, or autolinked integration precedence;
-- changing the integration theme catalog or consumer copy contract.
+- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -257,8 +282,8 @@ non-interactive guarantee.
   packed contribution identity/file contract.
 - `api/integration` — contribution writers, diagnostics, and packed-artifact
   verification.
-- `foundation/discovery/theme-discovery.mjs` and `api/theme` — integration theme
-  catalog discovery, package-aware selection, source copy, and build.
+- `foundation/discovery/theme-discovery.mjs` and `api/theme` — typed integration
+  theme descriptor discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
   writer used by init and upgrade.
 - `api/index.mjs` — the public programmatic API, `@astryxdesign/cli/api`, which
@@ -297,6 +322,8 @@ non-interactive guarantee.
 | INV21     | Review of imports under `api/**`; no mechanical check yet                                                                                                  | A module other than a subject's adapter reads or writes files, contacts the network, starts a subprocess, loads the project, or runs discovery. |
 | INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
 | INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
+| INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
+| INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 
 ## Open questions
 

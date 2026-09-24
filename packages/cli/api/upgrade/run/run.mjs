@@ -171,6 +171,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     path: path_,
     codemod: options.codemod,
     skipCodemods,
+    root: cwd,
   });
   const coreResult = codemodResult && 'totalFilesChanged' in codemodResult ? codemodResult : null;
 

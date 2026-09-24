@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'upgrade',
+  namespace: 'cli/api',
   displayName: 'upgrade()',
   summary: 'Run version migrations and reconcile copied compositions.',
   description:

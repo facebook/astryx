@@ -15,7 +15,9 @@
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
  *     plus autolink the installed ones no config names, and self-resolve the
- *     package being authored when it carries a manifest. Discovery is LAZY.
+ *     package being authored when it carries a manifest. Provider identity is
+ *     resolved once over all three (see integrations/provider-resolution), and
+ *     the ledger is kept for {@link providerLedgerOf}. Discovery is LAZY.
  *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
@@ -38,10 +40,10 @@ import {parseConfig} from '../../authoring/config/parse.mjs';
 import {
   loadIntegrations,
   loadLocalIntegration,
-  markProviderConflicts,
   resolvePackageDir,
 } from '../integrations/integrations.mjs';
-import {autolinkIntegrations} from '../integrations/autolink.mjs';
+import {loadAutolinkCandidates} from '../integrations/autolink.mjs';
+import {resolveProviders} from '../integrations/provider-resolution.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -298,6 +300,24 @@ export function findConfigPath(startDir = process.cwd()) {
 }
 
 /**
+ * The provider ledger each loaded Project resolved, kept off the class so it
+ * is not part of the Project API.
+ * @type {WeakMap<Project, import('../integrations/provider-resolution.mjs').ProviderLedger>}
+ */
+const PROVIDER_LEDGERS = new WeakMap();
+
+/**
+ * The provider ledger a Project resolved at load: one outcome for every
+ * package directory configured, autolinked, or authored. Internal: upgrade
+ * resolves on top of it, and tests account for every candidate with it.
+ * @param {Project} project
+ * @returns {import('../integrations/provider-resolution.mjs').ProviderLedger}
+ */
+export function providerLedgerOf(project) {
+  return PROVIDER_LEDGERS.get(project) ?? new Map();
+}
+
+/**
  * The single API for reading resolved project configuration. Construct via the
  * async {@link Project.load} factory.
  */
@@ -402,17 +422,14 @@ export class Project {
     // This runs whether or not a config exists, because the projects it reaches
     // are overwhelmingly the ones with no astryx.config at all: a scaffold adds
     // the dependency and writes no config, and the integration then contributes
-    // nothing for want of a line nobody knew to write. Appended AFTER the
+    // nothing for want of a line nobody knew to write. Resolved AFTER the
     // configured ones so an explicit entry keeps its position and its
     // precedence in every discovery order.
-    loadedIntegrations = [
-      ...loadedIntegrations,
-      ...(await autolinkIntegrations({
-        projectDir,
-        loaded: loadedIntegrations,
-        fresh,
-      })),
-    ];
+    const autolinked = await loadAutolinkCandidates({
+      projectDir,
+      loaded: loadedIntegrations,
+      fresh,
+    });
 
     // The package being authored is the one package that cannot install itself.
     // When it carries a manifest, resolve its working bytes directly so every
@@ -420,17 +437,27 @@ export class Project {
     // replaces the same installed package in place, preserving configured
     // precedence while making the source being edited authoritative.
     const localIntegration = await loadLocalIntegrationSafely(projectDir, fresh);
-    if (localIntegration) {
-      const existing = loadedIntegrations.findIndex(
-        integration => integration.name === localIntegration.name,
-      );
-      if (existing === -1) loadedIntegrations.push(localIntegration);
-      else loadedIntegrations[existing] = localIntegration;
-    }
 
     // Autolinked and local packages can claim a provider ID that a configured
     // package already holds, so identity is resolved once over the final set.
-    loadedIntegrations = markProviderConflicts(loadedIntegrations);
+    const resolution = resolveProviders([
+      ...loadedIntegrations.map(integration => ({
+        source: /** @type {const} */ ('configured'),
+        integration,
+        spec: integration.__spec,
+      })),
+      ...autolinked,
+      ...(localIntegration
+        ? [
+            {
+              source: /** @type {const} */ ('local'),
+              integration: localIntegration,
+              spec: localIntegration.__spec,
+            },
+          ]
+        : []),
+    ]);
+    loadedIntegrations = resolution.integrations;
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -461,7 +488,7 @@ export class Project {
       // Never let recording break config loading.
     }
 
-    return new Project({
+    const project = new Project({
       cwd,
       configPath,
       config,
@@ -470,6 +497,8 @@ export class Project {
       cache: resolvedCache,
       hash,
     });
+    PROVIDER_LEDGERS.set(project, resolution.ledger);
+    return project;
   }
 
   /**

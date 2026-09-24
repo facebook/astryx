@@ -24,9 +24,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../fs/module-loader.mjs';
-import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
+import {readDocView} from '../doc-compiler/read.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
@@ -84,31 +82,28 @@ export function pkgOf(t) {
  */
 
 /**
- * Canonical basename suffixes for template-spec files, in precedence order.
- * A template spec is a scaffoldable TEMPLATE (a plain object stamped with a
- * `type` of `'page'` or `'block'`), so `.template.*` is the descriptive family
- * name.
+ * Released compatibility suffixes, in precedence order. Stable 0.6.0
+ * documented `.template.*`, so discovery keeps reading those files while all
+ * new authoring uses `.doc.mjs`.
  */
 const TEMPLATE_SUFFIXES = ['.template.ts', '.template.mjs', '.template.js'];
 
 /**
- * Legacy basename suffixes for template-spec files, in precedence order.
- * `.doc.*` was inherited from the component-doc convention before templates
- * had their own name; it is still accepted during the transition window.
+ * Descriptor suffixes for templates, in precedence order. New authoring always
+ * emits `.doc.mjs`; the TypeScript and JavaScript variants remain readable.
  */
 const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
 
 /**
- * The union of canonical + legacy template-spec suffixes, canonical first so
- * `.template.*` wins over `.doc.*` when both stems exist. All template
- * discovery matches this union so a `Foo.template.ts` file is treated exactly
- * like a legacy `Foo.doc.mjs`.
+ * Every template-spec suffix, in the released precedence a core page directory
+ * uses to pick one file. Integration discovery never picks: every match is a
+ * template, so two specs for one stem list twice and read as ambiguous.
  */
 const ALL_TEMPLATE_SUFFIXES = [...TEMPLATE_SUFFIXES, ...DOC_SUFFIXES];
 
 /**
  * The template-spec suffix present on `file`, or null if none matches.
- * Recognizes both the canonical `.template.*` and legacy `.doc.*` families.
+ * Recognizes both the canonical `.doc.*` and released `.template.*` families.
  * @param {string} file
  * @returns {string | null}
  */
@@ -122,16 +117,6 @@ function matchedTemplateSuffix(file) {
  */
 const TEMPLATE_SUFFIX_RE = /\.(template|doc)\.(ts|mjs|js)$/;
 
-/** @type {ReturnType<typeof createJiti> | undefined} */
-let jitiInstance;
-/** Lazily-created jiti for loading `.ts` template specs (JSX-capable). */
-function getJiti() {
-  if (!jitiInstance) {
-    jitiInstance = createJiti(import.meta.url, {jsx: true});
-  }
-  return jitiInstance;
-}
-
 /**
  * Load an integration template doc module and validate it against the template
  * envelope at the load boundary. Default export only — `.ts` via jiti,
@@ -144,7 +129,13 @@ function getJiti() {
  * @param {string} [label]
  */
 async function loadIntegrationDoc(file, label) {
-  return loadModuleWithParser(file, parseTemplate, {label});
+  return readDocView(file, {
+    root: 'templates',
+    exports: ['default'],
+    label: label ?? file,
+    strict: true,
+    value: 'parsed',
+  });
 }
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'assets', 'templates');
@@ -492,12 +483,11 @@ function unsafeFixtureReference(source, at, reason) {
 /**
  * Load a template-spec module and return its metadata object. Supports both
  * families of suffix:
- *   - Legacy `.doc.*` core/external specs export `export const doc = {...}`.
- *   - Canonical `.template.*` specs export the stamped object (`type: 'page' |
- *     'block'`) as the default export.
- * Prefers the default export, falling back to the named `doc` export, so a
- * `Foo.template.ts` (default export) is read identically to a legacy
- * `Foo.doc.mjs` (`doc` export). `.ts` is loaded via jiti; `.mjs`/`.js` via a
+ *   - Canonical `.doc.*` specs may export the stamped object (`type: 'page' |
+ *     'block'`) as the default export or use the historical named `doc` export.
+ *   - Released `.template.*` compatibility specs use the same object shape.
+ * Prefers the default export, falling back to the named `doc` export. `.ts` is
+ * loaded via jiti; `.mjs`/`.js` via a
  * native dynamic import. Returns null if the file does not exist.
  *
  * @param {string} docPath absolute path to the spec file
@@ -505,10 +495,7 @@ function unsafeFixtureReference(source, at, reason) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
-  const docModule = docPath.endsWith('.ts')
-    ? await getJiti().import(docPath)
-    : await import(`file://${docPath}`);
-  return docModule.default ?? docModule.doc;
+  return readDocView(docPath, {root: 'templates', loader: 'template'});
 }
 
 /**
@@ -553,11 +540,11 @@ function findDocFiles(dir, pattern) {
 
 /**
  * Resolve the template-spec file for a core page directory: the first existing
- * `template.<suffix>` in canonical-then-legacy precedence, or null.
+ * metadata file in {@link ALL_TEMPLATE_SUFFIXES} precedence, or null.
  * @param {string} dirPath
  * @returns {string | null}
  */
-function findPageDocFile(dirPath) {
+export function findPageDocFile(dirPath) {
   for (const suffix of ALL_TEMPLATE_SUFFIXES) {
     const candidate = path.join(dirPath, `template${suffix}`);
     if (fs.existsSync(candidate)) return candidate;
@@ -733,7 +720,7 @@ export async function discoverAllWithErrors(cwd = process.cwd()) {
 /**
  * Recursively collect integration template-spec files under `root`.
  * Returns absolute paths to files ending in one of ALL_TEMPLATE_SUFFIXES
- * (canonical `.template.*` or legacy `.doc.*`).
+ * (canonical `.doc.*` or released `.template.*` compatibility files).
  *
  * @param {string} root
  * @returns {string[]}
@@ -763,7 +750,7 @@ function findIntegrationDocFiles(root) {
  * Discover templates contributed by configured integrations.
  *
  * For each integration with a resolved `templates` root, every
- * `<id>.template.{ts,mjs,js}` (or legacy `<id>.doc.{ts,mjs,js}`) file is a
+ * canonical `<id>.doc.{mjs,ts,js}` (or released `<id>.template.{ts,mjs,js}`) file is a
  * template whose id is its path relative to the templates root with the
  * matched suffix stripped (kebab-case, may be nested). The doc's `type`
  * (page|block) decides scaffolding — there is no `/pages` vs `/blocks`

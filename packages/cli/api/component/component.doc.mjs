@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'component',
+  namespace: 'cli/api',
   displayName: 'component()',
   summary:
     'Resolve a component by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
@@ -109,7 +110,7 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integrations; brief entries; or full ComponentDoc entries.",
+        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
     },
     {
       type: 'component.detail',

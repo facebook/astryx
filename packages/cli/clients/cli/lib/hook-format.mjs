@@ -9,7 +9,10 @@
  * - Brief: signature line with import hint, description, key params
  */
 
-import {discoverHooks, findHookDoc} from '../../../foundation/discovery/hook-discovery.mjs';
+import {
+  discoverHooks,
+  findHookDoc,
+} from '../../../foundation/discovery/hook-discovery.mjs';
 import {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
 import {formatAccessibility, mdCell} from './component-format.mjs';
 
@@ -23,7 +26,9 @@ function buildSignature(docs) {
   const name = docs.name;
 
   // Build params string — only top-level params (skip options.foo nested params)
-  const topParams = (docs.params || []).filter((/** @type {any} */ p) => !p.name.includes('.'));
+  const topParams = (docs.params || []).filter(
+    (/** @type {any} */ p) => !p.name.includes('.'),
+  );
   const paramStr = topParams
     .map((/** @type {any} */ p) => {
       const opt = p.required ? '' : '?';
@@ -150,7 +155,9 @@ export function formatHookCompact(docs, importPath) {
   const imp = importPath || docs.importPath;
   if (imp) {
     sections.push('## Import\n');
-    sections.push(`\`\`\`tsx\nimport { ${docs.name} } from '${imp}';\n\`\`\`\n`);
+    sections.push(
+      `\`\`\`tsx\nimport { ${docs.name} } from '${imp}';\n\`\`\`\n`,
+    );
   }
 
   // Best Practices (matches component compact)
@@ -228,7 +235,9 @@ export function formatHookBrief(docs) {
   // Key params (matches component brief 'prop, prop' line)
   const paramNames = (docs.params || [])
     .filter((/** @type {any} */ p) => !p.name.includes('.'))
-    .map((/** @type {any} */ p) => p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name);
+    .map((/** @type {any} */ p) =>
+      p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name,
+    );
   if (paramNames.length > 0) {
     output.push(`  ${paramNames.join(', ')}`);
   }
@@ -253,7 +262,7 @@ export async function formatHookBriefAll(coreDir) {
       const docPath = findHookDoc(coreDir, hookName);
       if (docPath) {
         try {
-          const docs = await loadDocs(docPath);
+          const docs = await loadDocs(docPath, {root: 'hooks'});
           output.push(formatHookBrief(docs));
         } catch {
           output.push(`${hookName}\n  (no docs)\n`);

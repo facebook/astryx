@@ -15,6 +15,25 @@ npx @astryxdesign/cli template --list
 
 Once it's a project dependency (`npm install -D @astryxdesign/cli`), drop the scope and use the shorter `astryx` — e.g. `npx astryx component Button` or `pnpm exec astryx component Button`. Bare `astryx` resolves to an unrelated npm package until the CLI is installed, so prefer the scoped form above for first-run/one-off use.
 
+## Reading the CLI's own docs
+
+The CLI documents itself, so these commands print what the installed version does:
+
+- `astryx <command> --help`: one command's arguments and options.
+- `astryx manifest --json`: every command, option, and response type, as JSON.
+- `astryx docs cli --index`: one section for each command (`commands-<name>`)
+  and each API function, plus the JSON output envelope, error codes, and
+  response types (`api-<name>`). Read one with `astryx docs cli <key>`, for
+  example `astryx docs cli api-search`.
+- `astryx docs authoring --index`: the authoring reference, with one section for
+  each file an author writes: the `astryx.config.*` file, the
+  `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,
+  `TemplateDoc`, `ThemeDoc`, and the rest). Read one section with
+  `astryx docs authoring <section>`, for example `astryx docs authoring config`.
+- `astryx docs cli-integrations`: the guide to building an integration package.
+- `astryx docs`: every docs topic, including the design-system guides (for
+  example `tokens`, `theme`, and `layout`).
+
 ## Finding things: `astryx search`
 
 When you don't know whether what you need is a component, a hook, a docs topic,
@@ -178,7 +197,7 @@ if (isError(result)) {
 | `ERR_FILE_EXISTS`                 | Refused to overwrite an existing file.                                                                                                                   |
 | `ERR_PATH_TRAVERSAL`              | A path escaped its allowed root, or a name contained traversal markers.                                                                                  |
 | `ERR_WRITE_FAILED`                | Writing output files failed (and was rolled back).                                                                                                       |
-| `ERR_THEME_INVALID`               | A theme definition or contributed theme catalog is invalid.                                                                                              |
+| `ERR_THEME_INVALID`               | A theme definition or contributed theme descriptor is invalid.                                                                                           |
 | `ERR_THEME_LOAD`                  | A theme file could not be loaded / parsed into a defineTheme result.                                                                                     |
 | `ERR_PALETTE_GENERATION`          | A palette generation request or one of its constraints was invalid.                                                                                      |
 | `ERR_VERSION_DETECT`              | The current `@astryxdesign/core` version could not be detected.                                                                                          |

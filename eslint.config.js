@@ -106,6 +106,7 @@ const docCompilerOnly = (allowed = []) =>
         'lowerReferenceTopic',
         'linkReferenceTopic',
         'linkReferenceSection',
+        'lowerDoc',
       ].filter(name => !allowed.includes(name)),
     },
   ]

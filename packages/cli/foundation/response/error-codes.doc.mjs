@@ -12,7 +12,7 @@ export const doc = {
   type: 'enum',
   name: 'error-codes',
   displayName: 'Error Codes',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'Stable, append-only machine-readable error codes on the --json error envelope (envelope.code). Codes never change or get removed; branch on these, not on prose.',
   members: [
@@ -203,7 +203,7 @@ export const doc = {
     {
       value: 'ERR_THEME_INVALID',
       description:
-        'A theme definition or contributed theme catalog is invalid.',
+        'A theme definition or contributed theme descriptor is invalid.',
     },
     {
       value: 'ERR_THEME_LOAD',

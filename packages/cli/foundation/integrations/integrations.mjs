@@ -29,6 +29,7 @@ import {
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
+import {resolveProviders} from './provider-resolution.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
@@ -116,107 +117,20 @@ function providerIdForPackage(name) {
  * issues, Doctor, and the per-command warning name the one set aside instead of
  * dropping it without a word.
  *
+ * The conflict pass of {@link resolveProviders}, for a list that is already
+ * assembled.
+ *
  * @param {LoadedIntegration[]} integrations in precedence order
  * @returns {LoadedIntegration[]}
  */
 export function markProviderConflicts(integrations) {
-  /** @type {Map<string, LoadedIntegration>} */
-  const claims = new Map();
-  for (const integration of integrations) {
-    if (integration?.__local && claimsProvider(integration)) {
-      const providerId = /** @type {string} */ (integration.providerId);
-      if (!claims.has(providerId)) claims.set(providerId, integration);
-    }
-  }
-  /** @type {LoadedIntegration[]} */
-  const resolved = [];
-  for (const integration of integrations) {
-    if (!claimsProvider(integration)) {
-      resolved.push(integration);
-      continue;
-    }
-    const providerId = /** @type {string} */ (integration.providerId);
-    const claimant = claims.get(providerId);
-    if (claimant == null) {
-      claims.set(providerId, integration);
-      resolved.push(integration);
-    } else if (claimant === integration) {
-      resolved.push(integration);
-    } else if (
-      claimant.name !== integration.name ||
-      claimant.version !== integration.version
-    ) {
-      resolved.push(providerConflict(integration, claimant));
-    }
-  }
-  return resolved;
-}
-
-/**
- * Whether an entry contributes under its provider ID: it has one, its manifest
- * loaded, and it has not already been set aside.
- * @param {LoadedIntegration | undefined} integration
- * @returns {boolean}
- */
-function claimsProvider(integration) {
-  return (
-    integration?.providerId != null &&
-    integration.__loadError == null &&
-    integration.__providerConflict == null
-  );
-}
-
-/**
- * @param {LoadedIntegration} integration
- * @returns {string}
- */
-function describeIntegration(integration) {
-  const id = integration.version
-    ? `${integration.name}@${integration.version}`
-    : integration.name;
-  return integration.__spec && integration.__spec !== integration.name
-    ? `${id} (from "${integration.__spec}")`
-    : id;
-}
-
-/**
- * An inert record for a package whose provider ID is already claimed. It keeps
- * the package's identity and location for reporting, and drops every
- * contribution root and handler.
- * @param {LoadedIntegration} integration
- * @param {LoadedIntegration} claimant
- * @returns {LoadedIntegration}
- */
-function providerConflict(integration, claimant) {
-  const providerId =
-    /** @type {import('../../authoring/identity/type').ProviderId} */ (
-      integration.providerId
-    );
-  const winner = describeIntegration(claimant);
-  const setAside = describeIntegration(integration);
-  const reason = claimant.__local
-    ? 'is the package being authored, so it is used'
-    : 'loads first and is used';
-  return {
-    name: integration.name,
-    providerId,
-    version: integration.version,
-    __spec: integration.__spec,
-    __packageDir: integration.__packageDir,
-    __manifestFile: integration.__manifestFile,
-    ...(integration.__local ? {__local: true} : {}),
-    ...(integration.__autolinked
-      ? {__autolinked: true, __dependencyField: integration.__dependencyField}
-      : {}),
-    __providerConflict: {
-      providerId,
-      claimedBy: claimant.name,
-      message:
-        `${setAside} and ${winner} both claim provider ID "${providerId}". ` +
-        `${winner} ${reason}; ${setAside} contributes nothing ` +
-        'until one package changes its providerId.',
-    },
-  };
+  return resolveProviders(
+    integrations.map(integration => ({
+      source: /** @type {const} */ ('configured'),
+      integration,
+      spec: integration?.__spec,
+    })),
+  ).integrations;
 }
 
 /**

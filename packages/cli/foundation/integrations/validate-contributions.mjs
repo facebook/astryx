@@ -25,6 +25,23 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isValidSemver} from '../env/semver.mjs';
 import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
+import {
+  CODEMOD_FILE_RE,
+  CODEMOD_SKIP_DIRS,
+  CODEMOD_TEST_RE,
+  createFixContext,
+  DOC_CANDIDATE_RE,
+  heldRootFix,
+  newComponentDocNote,
+  notACodemodFix,
+  notAComponentFix,
+  readContributionStamp,
+  sharedCodemodsRootFix,
+  stampOf,
+  themeImporting,
+  TEMPLATE_CANDIDATE_RE,
+} from './contribution-fixes.mjs';
+import {MANIFEST_BASENAMES} from './integrations.mjs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
@@ -119,32 +136,82 @@ function checkRoots(resolved, issues) {
  */
 async function checkCodemods(integration, issues) {
   if (!integration.codemods || !fs.existsSync(integration.codemods)) return;
+  const context = integration.__packageDir
+    ? createFixContext(integration.__packageDir, integration)
+    : null;
+  const shared = context && sharedCodemodsRootFix(context);
   for (const entry of fs.readdirSync(integration.codemods, {
     withFileTypes: true,
   })) {
     if (
       entry.isFile() &&
-      /\.(?:ts|mjs|js)$/u.test(entry.name) &&
-      !/\.(?:test|spec|fixture)\.(?:ts|mjs|js)$/u.test(entry.name)
+      CODEMOD_FILE_RE.test(entry.name) &&
+      !CODEMOD_TEST_RE.test(entry.name) &&
+      // The manifest sits beside package.json and is never a codemod.
+      !(
+        integration.codemods === integration.__packageDir &&
+        MANIFEST_BASENAMES.includes(entry.name)
+      )
     ) {
+      const shown = path
+        .relative(
+          integration.__packageDir ?? path.dirname(integration.codemods),
+          path.join(integration.codemods, entry.name),
+        )
+        .split(path.sep)
+        .join('/');
+      const root = path.dirname(shown);
+      const full = path.join(integration.codemods, entry.name);
+      const stamp =
+        context &&
+        (DOC_CANDIDATE_RE.test(entry.name) ||
+          TEMPLATE_CANDIDATE_RE.test(entry.name))
+          ? stampOf(context, full)
+          : null;
+      // A theme's entry module may sit beside its descriptor.
+      const themeDoc = ['.doc.mjs', '.doc.ts', '.doc.js']
+        .map(suffix => full.replace(/\.(?:ts|mjs|js)$/u, suffix))
+        .find(candidate => candidate !== full && fs.existsSync(candidate));
+      const themeStamp =
+        context && !stamp && themeDoc ? stampOf(context, themeDoc) : null;
+      let fix = `Fix: move it into the folder named for the version it migrates to, for example ${root}/1.2.0/${entry.name}.`;
+      if (shared) fix = sharedCodemodsRootFix(context, entry.name) ?? fix;
+      else if (context && stamp) fix = notACodemodFix(context, full, stamp);
+      else if (context && themeDoc && themeStamp?.type === 'theme') {
+        fix = notACodemodFix(context, themeDoc, themeStamp, entry.name);
+      } else if (context) {
+        const owner = themeImporting(context, full);
+        if (owner) {
+          fix = notACodemodFix(
+            context,
+            owner.doc,
+            owner.stamp,
+            owner.source,
+            entry.name,
+          );
+        }
+      }
       issues.push(
         issueWarning(
           'codemod_outside_version',
-          `Codemod file "${path.join(integration.codemods, entry.name)}" is outside a version folder, so upgrade will never load it.`,
+          `Codemod file "${shown}" is outside a version folder, so upgrade will never load it. ${fix}`,
         ),
       );
     }
     if (
       entry.isDirectory() &&
-      !['node_modules', '.git', '__tests__', '__fixtures__'].includes(
-        entry.name,
-      ) &&
+      !CODEMOD_SKIP_DIRS.has(entry.name) &&
       !isValidSemver(entry.name)
     ) {
+      const fix =
+        shared ??
+        (context &&
+          heldRootFix(context, path.join(integration.codemods, entry.name))) ??
+        'Fix: rename it to the exact version its codemods migrate to.';
       issues.push(
         issueError(
           'invalid_codemod_version',
-          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0.`,
+          `Codemod folder "${entry.name}" is not an exact semver version such as 1.2.0. ${fix}`,
         ),
       );
     }
@@ -196,24 +263,51 @@ async function checkComponents(integration, issues) {
   if (typeof discover !== 'function') return; // feature not present yet
   try {
     const records = (await discover(integration)) ?? [];
+    /** @type {import('./contribution-fixes.mjs').FixContext | undefined} */
+    let context;
     for (const record of records) {
       if (record?.sourcePath == null) {
+        const docPath = record?.docPath;
+        let fix = `Fix: add ${record?.name}.tsx beside ${docPath ? path.basename(docPath) : `${record?.name}.doc.mjs`}.`;
+        const stamp = docPath ? readContributionStamp(docPath, false) : null;
+        if (stamp && stamp.type !== 'component' && integration.__packageDir) {
+          context ??= createFixContext(integration.__packageDir, integration);
+          fix = notAComponentFix(context, docPath, stamp);
+        }
         issues.push(
           issueError(
             'invalid_component',
-            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx.`,
+            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx. ${fix}`,
           ),
         );
       }
     }
+    const overlap = integration.__packageDir
+      ? newComponentDocNote(
+          (context ??= createFixContext(integration.__packageDir, integration)),
+        )
+      : '';
     for (const name of findSourceOnlyCandidates(
       integration.components,
       records.map(record => record.name),
     )) {
+      // A hidden doc still pairs with its source; discovery just skips it.
+      if (
+        ['.doc.ts', '.doc.mjs', '.doc.js'].some(suffix =>
+          fs.existsSync(
+            path.join(
+              /** @type {string} */ (integration.components),
+              `${name}${suffix}`,
+            ),
+          ),
+        )
+      ) {
+        continue;
+      }
       issues.push(
         issueWarning(
           'source_without_component_doc',
-          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it.`,
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields.${overlap}`,
         ),
       );
     }
@@ -250,7 +344,7 @@ async function checkDocs(integration, issues) {
 }
 
 /**
- * Validate the integration's source-theme catalog. The same discovery function
+ * Validate the integration's source-theme descriptors. The same discovery function
  * powers Project and theme list/add, so validation cannot accept a shape that
  * consumers later fail to use.
  * @param {LoadedIntegration} integration

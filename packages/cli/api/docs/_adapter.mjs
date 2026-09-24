@@ -10,24 +10,29 @@
  * @output Catalog access, the compiler input for a topic, and the compiled
  *   node for it: lowered (overlaid, extensions merged, keys stamped) or linked
  *   (token references resolved too), memoized per catalog.
- * @position Sits beside docs.mjs (api/docs/). Loads authored files and hands
- *   them to foundation/doc-compiler, so no leaf, doctor check or search loads,
- *   merges, or resolves docs on its own. Discovery itself lives in
+ * @position Sits beside docs.mjs (api/docs/). Hands topics to
+ *   foundation/doc-compiler (which loads their files) and memoizes the nodes
+ *   per catalog, so no leaf, doctor check or search loads, merges, or resolves
+ *   docs on its own. Discovery itself lives in
  *   foundation/discovery/docs-discovery, which the catalog comes from.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {Project} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
 import {
   linkReferenceTopic,
   lowerReferenceTopic,
 } from '../../foundation/doc-compiler/compile.mjs';
+import {
+  deepFreeze,
+  loadTopicInput,
+  OVERLAY_LANGUAGES,
+  overlayLanguages,
+} from '../../foundation/doc-compiler/read.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
-import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+
+export {OVERLAY_LANGUAGES, overlayLanguages};
 
 /**
  * The project's topics: the built-in ones plus whatever the configured
@@ -51,34 +56,6 @@ export async function loadDocsCatalog(cwd = process.cwd()) {
   }
 }
 
-/** The localized overlays a docs read can apply. */
-export const OVERLAY_LANGUAGES = ['zh', 'dense'];
-
-/**
- * Where the `lang` overlay of a doc file lives: `{topic}.doc.{lang}.mjs`.
- * @param {string} docPath
- * @param {string} lang
- * @returns {string}
- */
-function overlayPath(docPath, lang) {
-  return path.join(
-    path.dirname(docPath),
-    `${path.basename(docPath, '.doc.mjs')}.doc.${lang}.mjs`,
-  );
-}
-
-/**
- * The overlay languages a topic ships for its own file or any extension.
- * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
- * @returns {string[]}
- */
-export function overlayLanguages(entry) {
-  const files = [entry.path, ...entry.extensions.map(ext => ext.path)];
-  return OVERLAY_LANGUAGES.filter(lang =>
-    files.some(file => fs.existsSync(overlayPath(file, lang))),
-  );
-}
-
 /**
  * The overlay a read applies: none for the authored language.
  * @param {string | null | undefined} lang
@@ -86,61 +63,6 @@ export function overlayLanguages(entry) {
  */
 function overlayLanguage(lang) {
   return lang && lang !== 'en' ? lang : null;
-}
-
-/**
- * Load one authored file and the overlay for `lang`. A failure is recorded on
- * the result, not thrown, so the compiler reports it in reading order.
- * @param {string} docPath
- * @param {string | null} lang
- * @returns {Promise<import('../../foundation/doc-compiler/compile.mjs').AuthoredFile>}
- */
-async function loadAuthoredFile(docPath, lang) {
-  const file = path.basename(docPath);
-  let doc;
-  try {
-    const mod = await import(pathToFileURL(docPath).href);
-    doc = parseDoc(mod.docs ?? mod.default, file);
-  } catch (error) {
-    return {file, error};
-  }
-  if (!lang) return {file, doc};
-  const translationPath = overlayPath(docPath, lang);
-  if (!fs.existsSync(translationPath)) return {file, doc};
-  try {
-    const translationMod = await import(pathToFileURL(translationPath).href);
-    return {
-      file,
-      doc,
-      overlay: translationMod.docsZh || translationMod.docsDense || null,
-    };
-  } catch (overlayError) {
-    return {file, doc, overlayError};
-  }
-}
-
-/**
- * Everything the compiler needs for one topic, read from disk.
- * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
- * @param {string | null} lang
- * @returns {Promise<import('../../foundation/doc-compiler/compile.mjs').ReferenceTopicInput>}
- */
-async function loadCompilerInput(entry, lang) {
-  const extensions = [];
-  for (const extension of entry.extensions) {
-    extensions.push({
-      ...(await loadAuthoredFile(extension.path, lang)),
-      provider: extension.package,
-    });
-  }
-  return {
-    id: entry.name,
-    provider: entry.package,
-    replaces: entry.replaces ?? null,
-    lang,
-    base: await loadAuthoredFile(entry.path, lang),
-    extensions,
-  };
 }
 
 /** @type {WeakMap<DocsCatalog, Map<string, Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode>>>} */
@@ -166,26 +88,12 @@ export function lowerTopic(catalog, entry, lang = null) {
   const key = `${entry.name.toLowerCase()}\u0000${overlay ?? ''}`;
   let lowered = cache.get(key);
   if (!lowered) {
-    lowered = loadCompilerInput(entry, overlay).then(input =>
+    lowered = loadTopicInput(entry, overlay).then(input =>
       deepFreeze(lowerReferenceTopic(input)),
     );
     cache.set(key, lowered);
   }
   return lowered;
-}
-
-/**
- * Freeze a value and everything in it.
- * @template T
- * @param {T} value
- * @returns {T}
- */
-function deepFreeze(value) {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value)) deepFreeze(child);
-  }
-  return value;
 }
 
 /**
