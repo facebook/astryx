@@ -215,6 +215,18 @@ work, leave the mixed context unchanged and report the smallest remaining
 visual follow-up rather than changing semantics or claiming complete isolation.
 No public opt-out or particular private mechanism is implied.
 
+A context's field types alone do not establish that it is presentation-only.
+[AvatarGroup](../../../packages/core/src/AvatarGroup/AvatarGroupContext.ts)
+stores visual size/shape/overlap values, but its presence also determines
+[Avatar's](../../../packages/core/src/Avatar/Avatar.tsx) tooltip `tabIndex` and
+focusability. Preserve that semantic membership read; only the separate visual
+read may be isolated. [LayoutArea](../../../packages/core/src/Layout/LayoutAreaContext.ts)
+selects semantic DOM elements as well as dividers and spacing. Preserve its
+semantic element selection; project only separable visual ownership. If either
+seam cannot be separated safely, retain its context unchanged and report the
+narrow visual gap. Nulling the context because its fields look visual is not
+an acceptable implementation.
+
 The layer does not clear all React context or overwrite every descendant's
 geometry. A grouped trigger stays visually grouped and an explicit inner visual
 group works normally. Existing semantic group membership remains unchanged.
@@ -264,7 +276,12 @@ targets; the corrected boundary preserves those semantics.
 ButtonGroup's roving-focus boundary already excludes nested groups/popovers;
 Button/InputGroup trailing-edge selectors skip `[popover]`/`template` siblings.
 They protect the **outer trigger's** membership, not descendant controls inside
-the popup. Keep those fixes. Source searches also inspected FormLayout,
+the popup. Keep those pre-existing fixes unchanged. Generic
+[`useListFocus`](../../../packages/core/src/hooks/useListFocus.ts) item filtering
+or event-ownership changes based on a new layer-content marker are outside this
+visual-reset scope and MUST be reverted from the implementation. Keyboard
+ownership, including existing nested-group/popover exclusions, remains unchanged.
+Source searches also inspected FormLayout,
 Table/Stepper, and navigation contexts/markers. Their scoped layout/presentation
 responsibilities fall under FR7, whether or not named in this audit; their
 semantic/data/interaction/accessibility responsibilities must remain unchanged.
@@ -367,7 +384,9 @@ a11y requirements: compare ARIA, labels/descriptions, focus/tab stops, keyboard
 ownership, disabled/read-only and selected/pressed state, callback identities
 and results, dismissal, and DOM/AX semantics with the existing behavior. Keep
 semantic/data/interaction contexts live and unchanged across mixed-context
-projections. Preserve menu radio selection/close, Selector/Typeahead active
+projections. Specifically preserve AvatarGroup's tooltip tab stops, LayoutArea's
+semantic DOM elements, and `useListFocus`'s existing item/event ownership.
+Preserve menu radio selection/close, Selector/Typeahead active
 option/search/selection, and Table filter draft/apply behavior. Do not assert
 that a previously disabled or selected descendant becomes enabled or unselected;
 do not require a new accessibility-tree disabled boundary.
