@@ -18,15 +18,15 @@ import {parseEnum} from './enum/parse.mjs';
 import {parseNamespace} from './namespace/parse.mjs';
 import {parseLegacyDoc} from './legacy.mjs';
 
-/** @typedef {import('./types').ComponentDoc} ComponentDoc */
-/** @typedef {import('./types').HookDoc} HookDoc */
-/** @typedef {import('./types').FunctionDoc} FunctionDoc */
-/** @typedef {import('./types').ReferenceDoc} ReferenceDoc */
-/** @typedef {import('./types').TemplateDoc} TemplateDoc */
-/** @typedef {import('./types').SchemaDoc} SchemaDoc */
-/** @typedef {import('./types').CommandDoc} CommandDoc */
-/** @typedef {import('./types').EnumDoc} EnumDoc */
-/** @typedef {import('./types').NamespaceDoc} NamespaceDoc */
+/** @typedef {import('./types.js').ComponentDoc} ComponentDoc */
+/** @typedef {import('./types.js').HookDoc} HookDoc */
+/** @typedef {import('./types.js').FunctionDoc} FunctionDoc */
+/** @typedef {import('./types.js').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('./types.js').TemplateDoc} TemplateDoc */
+/** @typedef {import('./types.js').SchemaDoc} SchemaDoc */
+/** @typedef {import('./types.js').CommandDoc} CommandDoc */
+/** @typedef {import('./types.js').EnumDoc} EnumDoc */
+/** @typedef {import('./types.js').NamespaceDoc} NamespaceDoc */
 
 /**
  * Validate an unknown loaded doc value into its typed shape, or throw.

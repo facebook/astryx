@@ -9,7 +9,7 @@
 import {GenericDocKindSchema} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('../types.js').ReferenceDoc} ReferenceDoc */
 
 /**
  * Validate an unknown value as a stamped reference/topic doc, or throw.

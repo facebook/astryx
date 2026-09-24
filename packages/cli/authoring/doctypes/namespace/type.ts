@@ -6,8 +6,8 @@
  * or copies child documents.
  */
 
-import type {AuthoredDocGraphFields, AuthoredDocKind} from '../base/type';
-import type {ReferenceContentBlock} from '../reference/type';
+import type {AuthoredDocGraphFields, AuthoredDocKind} from '../base/type.js';
+import type {ReferenceContentBlock} from '../reference/type.js';
 
 /** Which providers may contribute appearances to a namespace slot. */
 export type NamespaceProviderScope = 'same' | 'configured';

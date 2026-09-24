@@ -16,7 +16,7 @@
 import {z} from 'zod';
 import {formatZodError} from '../_shared/errors.mjs';
 
-/** @typedef {import('./type').AstryxIntegration} AstryxIntegration */
+/** @typedef {import('./type.js').AstryxIntegration} AstryxIntegration */
 
 const MAX_AGENT_DOC_LINES = 8;
 const MAX_AGENT_DOC_LINE_CODE_POINTS = 240;
@@ -121,8 +121,8 @@ export function parseAgentDocsField(input, label) {
 /**
  * Compile-time drift-lock: sealed schema must infer exactly {@link AstryxIntegration}.
  *
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').Equal<z.infer<typeof integrationSchema>, AstryxIntegration>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<z.infer<typeof integrationSchema>, AstryxIntegration>
  * >} _IntegrationDriftLock
  */
 

@@ -9,8 +9,8 @@
  * boundary; there is no factory to call.
  */
 
-import type {DebugEventHandler} from '../debug/type';
-import type {GapReportHandler} from '../gap-report/type';
+import type {DebugEventHandler} from '../debug/type.js';
+import type {GapReportHandler} from '../gap-report/type.js';
 
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
@@ -21,7 +21,7 @@ export interface PostCodemodCommand {
   args?: string[];
   options?: {
     cwd?: string;
-    env?: NodeJS.ProcessEnv;
+    env?: Record<string, string | undefined>;
     timeout?: number;
   };
 }

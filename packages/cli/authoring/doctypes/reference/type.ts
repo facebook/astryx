@@ -4,7 +4,7 @@
  * @file Reference/topic doc types.
  */
 
-import type {AuthoredDocGraphFields} from '../base/type';
+import type {AuthoredDocGraphFields} from '../base/type.js';
 
 /** One step in a renderer-neutral workflow. */
 export interface WorkflowStep {

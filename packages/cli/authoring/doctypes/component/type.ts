@@ -19,7 +19,7 @@ import type {
   HookReturnDoc,
   RegistryDocIdentity,
   UsageDoc,
-} from '../base/type';
+} from '../base/type.js';
 
 /**
  * Shared fields between single-component and multi-component docs.

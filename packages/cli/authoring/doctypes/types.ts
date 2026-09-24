@@ -7,13 +7,13 @@
  * behind `@astryxdesign/cli/authoring`.
  */
 
-export type * from './base/type';
-export type * from './component/type';
-export type * from './hook/type';
-export type * from './function/type';
-export type * from './reference/type';
-export type * from './namespace/type';
-export type * from './template/type';
-export type * from './schema/type';
-export type * from './command/type';
-export type * from './enum/type';
+export type * from './base/type.js';
+export type * from './component/type.js';
+export type * from './hook/type.js';
+export type * from './function/type.js';
+export type * from './reference/type.js';
+export type * from './namespace/type.js';
+export type * from './template/type.js';
+export type * from './schema/type.js';
+export type * from './command/type.js';
+export type * from './enum/type.js';

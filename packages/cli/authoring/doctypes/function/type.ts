@@ -14,7 +14,7 @@ import type {
   AuthoredDocGraphFields,
   HookParamDoc,
   UsageDoc,
-} from '../base/type';
+} from '../base/type.js';
 
 /**
  * A documented return. Hooks list named return fields (`name` set); CLI/API

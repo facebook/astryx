@@ -8,16 +8,16 @@
  * artifact ID stays stable across those instances.
  */
 
-import type {AuthoredDocKind} from '../doctypes/base/type';
-import type {CommandDoc} from '../doctypes/command/type';
-import type {ComponentDoc} from '../doctypes/component/type';
-import type {EnumDoc} from '../doctypes/enum/type';
-import type {FunctionDoc} from '../doctypes/function/type';
-import type {HookDoc} from '../doctypes/hook/type';
-import type {NamespaceDoc} from '../doctypes/namespace/type';
-import type {ReferenceDoc} from '../doctypes/reference/type';
-import type {SchemaDoc} from '../doctypes/schema/type';
-import type {TemplateDoc} from '../doctypes/template/type';
+import type {AuthoredDocKind} from '../doctypes/base/type.js';
+import type {CommandDoc} from '../doctypes/command/type.js';
+import type {ComponentDoc} from '../doctypes/component/type.js';
+import type {EnumDoc} from '../doctypes/enum/type.js';
+import type {FunctionDoc} from '../doctypes/function/type.js';
+import type {HookDoc} from '../doctypes/hook/type.js';
+import type {NamespaceDoc} from '../doctypes/namespace/type.js';
+import type {ReferenceDoc} from '../doctypes/reference/type.js';
+import type {SchemaDoc} from '../doctypes/schema/type.js';
+import type {TemplateDoc} from '../doctypes/template/type.js';
 
 declare const providerIdBrand: unique symbol;
 declare const artifactIdBrand: unique symbol;

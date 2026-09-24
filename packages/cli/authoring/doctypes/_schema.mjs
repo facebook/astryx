@@ -11,18 +11,18 @@
 
 import {z} from 'zod';
 
-/** @typedef {import('./base/type').AuthoredDocGraphFields} AuthoredDocGraphFieldsType */
-/** @typedef {import('./base/type').AuthoredDocKind} AuthoredDocKind */
-/** @typedef {import('./namespace/type').NamespaceDoc} NamespaceDoc */
-/** @typedef {import('./reference/type').ReferenceContentBlock} ReferenceContentBlock */
-/** @typedef {import('./reference/type').ReferenceDoc} ReferenceDoc */
-/** @typedef {import('./component/type').SingleComponentDoc} SingleComponentDoc */
-/** @typedef {import('./base/type').ComponentPropDoc} ComponentPropDoc */
-/** @typedef {import('./hook/type').HookDoc} HookDoc */
-/** @typedef {import('./function/type').FunctionDoc} FunctionDoc */
-/** @typedef {import('./schema/type').SchemaDoc} SchemaDoc */
-/** @typedef {import('./command/type').CommandDoc} CommandDoc */
-/** @typedef {import('./enum/type').EnumDoc} EnumDoc */
+/** @typedef {import('./base/type.js').AuthoredDocGraphFields} AuthoredDocGraphFieldsType */
+/** @typedef {import('./base/type.js').AuthoredDocKind} AuthoredDocKind */
+/** @typedef {import('./namespace/type.js').NamespaceDoc} NamespaceDoc */
+/** @typedef {import('./reference/type.js').ReferenceContentBlock} ReferenceContentBlock */
+/** @typedef {import('./reference/type.js').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('./component/type.js').SingleComponentDoc} SingleComponentDoc */
+/** @typedef {import('./base/type.js').ComponentPropDoc} ComponentPropDoc */
+/** @typedef {import('./hook/type.js').HookDoc} HookDoc */
+/** @typedef {import('./function/type.js').FunctionDoc} FunctionDoc */
+/** @typedef {import('./schema/type.js').SchemaDoc} SchemaDoc */
+/** @typedef {import('./command/type.js').CommandDoc} CommandDoc */
+/** @typedef {import('./enum/type.js').EnumDoc} EnumDoc */
 
 const nonEmptyString = z.string().min(1);
 
@@ -40,8 +40,8 @@ export const AuthoredDocKindSchema = z.enum([
 ]);
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').Equal<z.infer<typeof AuthoredDocKindSchema>, AuthoredDocKind>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<z.infer<typeof AuthoredDocKindSchema>, AuthoredDocKind>
  * >} _AuthoredDocKindDriftLock
  */
 
@@ -62,8 +62,8 @@ export const AuthoredDocGraphFields = {
 const _AuthoredDocGraphSchema = z.object(AuthoredDocGraphFields).strict();
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
  *     z.infer<typeof _AuthoredDocGraphSchema>,
  *     AuthoredDocGraphFieldsType
  *   >
@@ -175,8 +175,8 @@ export const ReferenceContentBlockSchema = z.discriminatedUnion('type', [
 ]);
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').Equal<
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
  *     z.infer<typeof ReferenceContentBlockSchema>,
  *     ReferenceContentBlock
  *   >
@@ -293,10 +293,10 @@ export const ComponentDocKindSchema = ComponentBaseSchema.extend({
  *     props?: ComponentPropDoc[], components?: unknown[]}} LoadedComponentDoc
  */
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof ComponentDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<LoadedComponentDoc>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof ComponentDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedComponentDoc>
  *   >
  * >} _ComponentDocDriftLock
  */
@@ -328,10 +328,10 @@ export const FunctionDocKindSchema = z
  *   & {type: 'function', displayName?: string, usage?: unknown}} LoadedFunctionDoc
  */
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof FunctionDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<LoadedFunctionDoc>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof FunctionDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedFunctionDoc>
  *   >
  * >} _FunctionDocDriftLock
  */
@@ -339,7 +339,7 @@ export const FunctionDocKindSchema = z
 /**
  * Every HookDoc is a FunctionDoc, so the one function schema covers both.
  *
- * @typedef {import('../_shared/contract').Expect<[HookDoc] extends [FunctionDoc] ? true : false>} _HookDocIsFunctionDocLock
+ * @typedef {import('../_shared/contract.js').Expect<[HookDoc] extends [FunctionDoc] ? true : false>} _HookDocIsFunctionDocLock
  */
 
 /**
@@ -394,17 +394,17 @@ export const GenericDocKindSchema = z
  *   & Partial<Pick<ReferenceDoc, 'title' | 'description' | 'sections'>>} LoadedReferenceDoc
  */
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof GenericDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<LoadedReferenceDoc>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof GenericDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedReferenceDoc>
  *   >
  * >} _ReferenceDocDriftLock
  */
 
 /** Recursive field descriptor for a SchemaDoc. */
 const SchemaFieldSchema =
-  /** @type {import('zod').ZodType<import('./schema/type').SchemaFieldDoc>} */ (
+  /** @type {import('zod').ZodType<import('./schema/type.js').SchemaFieldDoc>} */ (
     z.lazy(() =>
       z
         .object({
@@ -446,10 +446,10 @@ export const SchemaDocKindSchema = z
   .passthrough();
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof SchemaDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<SchemaDoc & {type: 'schema'}>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof SchemaDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<SchemaDoc & {type: 'schema'}>
  *   >
  * >} _SchemaDocDriftLock
  */
@@ -515,10 +515,10 @@ export const CommandDocKindSchema = z
   .passthrough();
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof CommandDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<CommandDoc & {type: 'command'}>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof CommandDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<CommandDoc & {type: 'command'}>
  *   >
  * >} _CommandDocDriftLock
  */
@@ -545,10 +545,10 @@ export const EnumDocKindSchema = z
   .passthrough();
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<
- *     import('../_shared/contract').NamedFields<z.infer<typeof EnumDocKindSchema>>,
- *     import('../_shared/contract').NamedFields<EnumDoc & {type: 'enum'}>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof EnumDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<EnumDoc & {type: 'enum'}>
  *   >
  * >} _EnumDocDriftLock
  */
@@ -635,8 +635,8 @@ export const NamespaceDocKindSchema = z
   });
 
 /**
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').Equal<
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
  *     z.infer<typeof NamespaceDocKindSchema>,
  *     NamespaceDoc
  *   >

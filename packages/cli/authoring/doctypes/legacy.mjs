@@ -10,9 +10,9 @@
 import {LegacyDocSchema} from './_schema.mjs';
 import {formatZodError} from '../_shared/errors.mjs';
 
-/** @typedef {import('./types').ComponentDoc} ComponentDoc */
-/** @typedef {import('./types').HookDoc} HookDoc */
-/** @typedef {import('./types').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('./types.js').ComponentDoc} ComponentDoc */
+/** @typedef {import('./types.js').HookDoc} HookDoc */
+/** @typedef {import('./types.js').ReferenceDoc} ReferenceDoc */
 
 /**
  * Validate an unknown value as a legacy (unstamped) doc, or throw.

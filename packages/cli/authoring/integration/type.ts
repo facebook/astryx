@@ -66,4 +66,4 @@ export type {
   GapReportCategory,
   GapReportTarget,
   GapReportHandlerReceipt,
-} from '../gap-report/type';
+} from '../gap-report/type.js';

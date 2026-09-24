@@ -9,8 +9,8 @@
  * `--help`. Colocated at `clients/cli/commands/<name>.doc.mjs`.
  */
 
-import type {AuthoredDocGraphFields} from '../base/type';
-import type {ReferenceContentBlock} from '../reference/type';
+import type {AuthoredDocGraphFields} from '../base/type.js';
+import type {ReferenceContentBlock} from '../reference/type.js';
 
 /** A positional argument. `param` links it to a FunctionDoc param for its description. */
 export interface CommandArgDoc {

@@ -6,8 +6,8 @@
  * response envelope). Colocated as a `.doc.mjs` next to the schema it describes.
  */
 
-import type {AuthoredDocGraphFields} from '../base/type';
-import type {ReferenceContentBlock} from '../reference/type';
+import type {AuthoredDocGraphFields} from '../base/type.js';
+import type {ReferenceContentBlock} from '../reference/type.js';
 
 /**
  * One documented field of a schema. Object fields nest via `fields`, so a whole

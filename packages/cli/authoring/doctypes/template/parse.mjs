@@ -12,9 +12,9 @@ import {z} from 'zod';
 import {AuthoredDocGraphFields} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').TemplateDoc} TemplateDoc */
-/** @typedef {import('./type').PageTemplateDoc} PageTemplateDoc */
-/** @typedef {import('./type').BlockTemplateDoc} BlockTemplateDoc */
+/** @typedef {import('../types.js').TemplateDoc} TemplateDoc */
+/** @typedef {import('./type.js').PageTemplateDoc} PageTemplateDoc */
+/** @typedef {import('./type.js').BlockTemplateDoc} BlockTemplateDoc */
 
 const previewSchema = z
   .object({
@@ -82,19 +82,19 @@ const blockTemplateSchema = z
  */
 
 /**
- * @typedef {import('../../_shared/contract').Expect<
- *   import('../../_shared/contract').MutuallyAssignable<
- *     import('../../_shared/contract').NamedFields<z.infer<typeof pageTemplateSchema>>,
- *     import('../../_shared/contract').NamedFields<LoadedPageTemplateDoc>
+ * @typedef {import('../../_shared/contract.js').Expect<
+ *   import('../../_shared/contract.js').MutuallyAssignable<
+ *     import('../../_shared/contract.js').NamedFields<z.infer<typeof pageTemplateSchema>>,
+ *     import('../../_shared/contract.js').NamedFields<LoadedPageTemplateDoc>
  *   >
  * >} _PageTemplateDocDriftLock
  */
 
 /**
- * @typedef {import('../../_shared/contract').Expect<
- *   import('../../_shared/contract').MutuallyAssignable<
- *     import('../../_shared/contract').NamedFields<z.infer<typeof blockTemplateSchema>>,
- *     import('../../_shared/contract').NamedFields<LoadedBlockTemplateDoc>
+ * @typedef {import('../../_shared/contract.js').Expect<
+ *   import('../../_shared/contract.js').MutuallyAssignable<
+ *     import('../../_shared/contract.js').NamedFields<z.infer<typeof blockTemplateSchema>>,
+ *     import('../../_shared/contract.js').NamedFields<LoadedBlockTemplateDoc>
  *   >
  * >} _BlockTemplateDocDriftLock
  */

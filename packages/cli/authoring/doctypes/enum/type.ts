@@ -5,7 +5,7 @@
  * discriminants). Colocated next to the source of truth it documents.
  */
 
-import type {AuthoredDocGraphFields} from '../base/type';
+import type {AuthoredDocGraphFields} from '../base/type.js';
 
 /** One member of an enumerated vocabulary. */
 export interface EnumMemberDoc {

@@ -4,7 +4,10 @@
  * @file Template doc types.
  */
 
-import type {AuthoredDocGraphFields, RegistryDocIdentity} from '../base/type';
+import type {
+  AuthoredDocGraphFields,
+  RegistryDocIdentity,
+} from '../base/type.js';
 
 export interface BaseTemplateDoc extends AuthoredDocGraphFields {
   /** Identifier name for the template. For block templates this matches

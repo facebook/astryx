@@ -12,7 +12,7 @@ import type {
   HookReturnDoc,
   RegistryDocIdentity,
   UsageDoc,
-} from '../base/type';
+} from '../base/type.js';
 
 /**
  * Documentation for a standalone hook's .doc.mjs file.

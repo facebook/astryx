@@ -23,18 +23,18 @@
 // ═══════════════════════════════════════════════════════════════════════
 // AUTHOR THESE — each is the default export of one authored file.
 // ═══════════════════════════════════════════════════════════════════════
-export type {ComponentDoc} from './doctypes/types'; //   Button.doc.{ts,mjs}
-export type {HookDoc} from './doctypes/types'; //         useToast.doc.{ts,mjs}
-export type {FunctionDoc} from './doctypes/types'; //     search.doc.mjs (hook | api)
-export type {ReferenceDoc} from './doctypes/types'; //    theming.doc.{ts,mjs}
-export type {TemplateDoc} from './doctypes/types'; //     Foo.template.{ts,mjs}
-export type {SchemaDoc} from './doctypes/types'; //       config.doc.mjs (object shape)
-export type {CommandDoc} from './doctypes/types'; //      search.doc.mjs (CLI command)
-export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (vocabulary)
-export type {NamespaceDoc} from './doctypes/types'; //    cli.doc.mjs (hierarchy)
-export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
-export type {DebugEvent} from './debug/type'; //          one recorded CLI run
-export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
+export type {ComponentDoc} from './doctypes/types.js'; //   Button.doc.{ts,mjs}
+export type {HookDoc} from './doctypes/types.js'; //         useToast.doc.{ts,mjs}
+export type {FunctionDoc} from './doctypes/types.js'; //     search.doc.mjs (hook | api)
+export type {ReferenceDoc} from './doctypes/types.js'; //    theming.doc.{ts,mjs}
+export type {TemplateDoc} from './doctypes/types.js'; //     Foo.template.{ts,mjs}
+export type {SchemaDoc} from './doctypes/types.js'; //       config.doc.mjs (object shape)
+export type {CommandDoc} from './doctypes/types.js'; //      search.doc.mjs (CLI command)
+export type {EnumDoc} from './doctypes/types.js'; //         error-codes.doc.mjs (vocabulary)
+export type {NamespaceDoc} from './doctypes/types.js'; //    cli.doc.mjs (hierarchy)
+export type {AstryxConfig} from './config/type.js'; //       astryx.config.{ts,mjs}
+export type {DebugEvent} from './debug/type.js'; //          one recorded CLI run
+export type {AstryxIntegration} from './integration/type.js'; // astryx.integration.{ts,mjs}
 export type {
   GapReportHandler,
   GapReportHandlerContext,
@@ -42,8 +42,8 @@ export type {
   GapReportCategory,
   GapReportTarget,
   GapReportHandlerReceipt,
-} from './gap-report/type'; // gap-report handler contract
-export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type'; // codemods/*
+} from './gap-report/type.js'; // gap-report handler contract
+export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type.js'; // codemods/*
 
 // ═══════════════════════════════════════════════════════════════════════
 // PARSERS — the CLI's load boundary (types come from each parser's JSDoc).
@@ -87,7 +87,7 @@ export type {
   AuthoredDocSnapshot,
   AuthoredDocSource,
   AuthoredDocEntry,
-} from './identity/type';
+} from './identity/type.js';
 export type {
   // shared graph
   AuthoredDocKind,
@@ -151,8 +151,8 @@ export type {
   CommandExampleDoc,
   // enum
   EnumMemberDoc,
-} from './doctypes/types';
-export type {PostCodemodHook, DebugConfig} from './config/type';
+} from './doctypes/types.js';
+export type {PostCodemodHook, DebugConfig} from './config/type.js';
 export type {
   // debug
   DebugSchemaVersion,
@@ -165,11 +165,11 @@ export type {
   DebugEventEnv,
   DebugEventProject,
   DebugEventHandler,
-} from './debug/type';
+} from './debug/type.js';
 export type {
   AstryxCodemodDef,
   AstryxConfigCodemodDef,
   AstryxCodemodFile,
   AstryxCodemodApi,
   AstryxCodemodTransform,
-} from './codemod/type';
+} from './codemod/type.js';

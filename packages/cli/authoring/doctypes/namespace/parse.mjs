@@ -8,7 +8,7 @@
 import {NamespaceDocKindSchema} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').NamespaceDoc} NamespaceDoc */
+/** @typedef {import('../types.js').NamespaceDoc} NamespaceDoc */
 
 /**
  * Validate an unknown value as a NamespaceDoc, or throw a readable error.
