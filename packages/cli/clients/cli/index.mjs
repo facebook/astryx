@@ -25,7 +25,8 @@ import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {markReportsResult} from './lib/define-command.mjs';
+import {addExitCodesHelp, markReportsResult} from './lib/define-command.mjs';
+import {doc as manifestDoc} from './commands/manifest.doc.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
 
@@ -615,6 +616,7 @@ export async function createProgram() {
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
     });
+  addExitCodesHelp(manifestCommand, manifestDoc.exitCodes);
   markReportsResult(manifestCommand);
 
   // Hidden command used by package.json postinstall scripts

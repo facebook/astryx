@@ -146,13 +146,7 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
   // Help ends with the documented exit codes. `choices` stay in the option
   // text: Commander `.choices()` would replace the api layer's
   // ERR_INVALID_ARGUMENT validation.
-  if (doc.exitCodes?.length) {
-    const lines = doc.exitCodes.map(({code, when}) => `  ${code}  ${when}`);
-    cmd.addHelpText(
-      'after',
-      `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`,
-    );
-  }
+  addExitCodesHelp(cmd, doc.exitCodes);
 
   if (action) {
     // The recording seam. An action's job ends at "here is what I answered
@@ -169,4 +163,15 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     });
   }
   return cmd;
+}
+
+/**
+ * End `cmd`'s help with a CommandDoc's exit codes.
+ * @param {import('commander').Command} cmd
+ * @param {import('@astryxdesign/cli/authoring').CommandDoc['exitCodes']} exitCodes
+ */
+export function addExitCodesHelp(cmd, exitCodes) {
+  if (!exitCodes?.length) return;
+  const lines = exitCodes.map(({code, when}) => `  ${code}  ${when}`);
+  cmd.addHelpText('after', `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`);
 }

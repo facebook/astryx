@@ -36,7 +36,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown package or component, a malformed doc, or an empty free-text query',
+      when: 'unknown package or component, a malformed doc, or a blank query when packages are discovered',
     },
   ],
   related: ['component', 'search', 'template'],

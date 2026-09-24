@@ -290,13 +290,6 @@ export function registerDoctor(program) {
     fn: doctorFn,
     action: async () => runProjectDoctor(program),
   });
-  doctorCmd.addHelpText(
-    'after',
-    '\nExit code:\n' +
-      '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
-      '  1  one or more checks failed\n',
-  );
-
   /** @type {import('commander').Command} */
   let integrationCmd;
   integrationCmd = defineCommand(doctorCmd, doctorIntegrationGroup, {
