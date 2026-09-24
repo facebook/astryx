@@ -203,27 +203,29 @@ export function findAutolinkCandidates(projectDir, {exclude = []} = {}) {
 }
 
 /**
- * Load every declared dependency that ships an integration manifest and is not
- * already loaded from config.
+ * Load every autolink candidate in isolation, keeping the ones that loaded and
+ * the ones that did not.
  *
- * Each candidate is loaded in isolation. A dependency the project never asked
- * to be an integration must not be able to take down `Project.load` for the
- * whole project, so a manifest that throws on import is dropped here with the
- * rest of that package's contributions — including the load-error marker
- * `loadIntegrations` returns for it. A CONFIGURED integration is the opposite
- * case: the project named it, so its failure is an issue the project owns and
- * can act on. An autolinked one is a dependency's own packaging bug, which the
- * consuming project can neither fix nor silence, and which
- * `astryx doctor integration validate <package>` reports on demand.
+ * A dependency the project never asked to be an integration must not be able to
+ * take down `Project.load` for the whole project, so a manifest that throws on
+ * import is kept OUT of the loaded set with the rest of that package's
+ * contributions — including the load-error marker `loadIntegrations` returns
+ * for it. A CONFIGURED integration is the opposite case: the project named it,
+ * so its failure is an issue the project owns and can act on. An autolinked one
+ * is a dependency's own packaging bug, which the consuming project can neither
+ * fix nor silence.
+ *
+ * It is still a fact about the project, so it is returned rather than
+ * swallowed: `astryx doctor` reports it instead of leaving the package absent
+ * from every surface.
  *
  * @param {object} options
  * @param {string} options.projectDir directory holding the project's package.json
  * @param {import('./integrations.mjs').LoadedIntegration[]} [options.loaded]
- *   integrations already loaded from config; these win
  * @param {boolean} [options.fresh]
- * @returns {Promise<import('./integrations.mjs').LoadedIntegration[]>}
+ * @returns {Promise<{integrations: import('./integrations.mjs').LoadedIntegration[], failures: AutolinkFailure[]}>}
  */
-export async function autolinkIntegrations({
+export async function loadAutolinkCandidates({
   projectDir,
   loaded = [],
   fresh = false,
@@ -239,6 +241,8 @@ export async function autolinkIntegrations({
 
   /** @type {import('./integrations.mjs').LoadedIntegration[]} */
   const autolinked = [];
+  /** @type {AutolinkFailure[]} */
+  const failures = [];
   // One package reached twice (an alias beside the package it aliases, at the
   // same version) loads once. The same name at another version is kept, so the
   // provider-identity pass in Project.load reports it instead of dropping it.
@@ -257,10 +261,24 @@ export async function autolinkIntegrations({
         cwd: candidate.hostDir,
         fresh,
       });
-    } catch {
+    } catch (err) {
+      failures.push({
+        spec: candidate.spec,
+        field: candidate.field,
+        error: err instanceof Error ? err.message : String(err),
+      });
       continue;
     }
-    if (!integration || integration.__loadError) continue;
+    if (!integration || integration.__loadError) {
+      failures.push({
+        spec: candidate.spec,
+        field: candidate.field,
+        error:
+          integration?.__loadError ??
+          `No integration could be loaded from "${candidate.spec}".`,
+      });
+      continue;
+    }
     // Identity is the resolved package's own name and version, so an alias and
     // the package it aliases collapse here even when they are two directories
     // on disk.
@@ -273,5 +291,31 @@ export async function autolinkIntegrations({
     });
   }
 
-  return autolinked;
+  return {integrations: autolinked, failures};
+}
+
+/**
+ * One installed dependency that ships an integration manifest the CLI could not
+ * load. Its contributions are absent everywhere; nothing else is affected.
+ *
+ * @typedef {object} AutolinkFailure
+ * @property {string} spec the dependency name as package.json declares it
+ * @property {string} field the dependency field it was declared in
+ * @property {string} error why the manifest could not be loaded
+ */
+
+/**
+ * Load every declared dependency that ships an integration manifest and is not
+ * already loaded from config. A dependency whose manifest cannot be loaded is
+ * not returned — see {@link loadAutolinkCandidates}, which also reports those.
+ *
+ * @param {object} options
+ * @param {string} options.projectDir directory holding the project's package.json
+ * @param {import('./integrations.mjs').LoadedIntegration[]} [options.loaded]
+ *   integrations already loaded from config; these win
+ * @param {boolean} [options.fresh]
+ * @returns {Promise<import('./integrations.mjs').LoadedIntegration[]>}
+ */
+export async function autolinkIntegrations(options) {
+  return (await loadAutolinkCandidates(options)).integrations;
 }
