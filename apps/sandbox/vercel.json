@@ -1,0 +1,11 @@
+{
+  "framework": null,
+  "installCommand": "cd ../.. && node scripts/clean-workspace-node-modules.mjs && pnpm install --force --frozen-lockfile",
+  "buildCommand": "cd ../.. && node apps/sandbox/scripts/build-vercel.mjs",
+  "outputDirectory": "out",
+  "trailingSlash": true,
+  "rewrites": [
+    {"source": "/sandbox", "destination": "/index.html"},
+    {"source": "/sandbox/:path*", "destination": "/:path*"}
+  ]
+}
