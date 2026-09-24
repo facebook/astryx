@@ -18,7 +18,9 @@
  *   anything but its static imports of other CLI code, the doc reads that skip
  *   this module among them: discovery's catalog fields, each command's
  *   self-docs for its help text, and the build-time README. A new site fails
- *   it. Internal to the CLI: nothing here is public API.
+ *   it. It catches every ordinary way of running code, whatever the local
+ *   names; deliberate obfuscation is out of scope. Internal to the CLI:
+ *   nothing here is public API.
  */
 
 import * as fs from 'node:fs';

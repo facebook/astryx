@@ -6,8 +6,15 @@
  *   string, a thread, or a process) is listed here, site by site, with what it
  *   runs. A doc read that goes around the doc compiler (./read.mjs) is such a
  *   site, so it fails this test until it is listed; so does any other new
- *   site, and a listed one that is gone. The test checks where code runs, not
- *   what a computed site loads: each entry says that.
+ *   site, and a listed one that is gone.
+ *
+ *   What it claims: every ordinary way a module runs code — the shapes code
+ *   review sees, whatever the local names. What it does not claim: that the
+ *   rule cannot be evaded on purpose. Deliberate obfuscation (a method name
+ *   built at run time, a runner stashed behind a computed key or a getter) is
+ *   out of scope; this test records what the CLI does, it does not sandbox it.
+ *   It checks where code runs, not what a computed site loads: each entry
+ *   says that.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -355,6 +362,27 @@ const RUNNER_GLOBALS = new Set([
 ]);
 const GLOBAL_OBJECTS = new Set(['globalThis', 'global', 'self', 'window']);
 
+/** Members of `process` that run code. */
+const PROCESS_RUNNERS = new Set([
+  'binding',
+  'dlopen',
+  'execve',
+  'getBuiltinModule',
+]);
+
+/** Members of `WebAssembly` that run code. */
+const WASM_RUNNERS = new Set([
+  'compile',
+  'compileStreaming',
+  'Instance',
+  'instantiate',
+  'instantiateStreaming',
+  'Module',
+]);
+
+/** URL schemes that carry code rather than name a file in this package. */
+const CODE_URL = /^(?:data|blob|https?):/;
+
 /** Methods that run code whatever they are called on: jiti's, vm's, a realm's. */
 const RUNNER_METHODS = new Set([
   'compileFunction',
@@ -380,11 +408,17 @@ const TYPE_ONLY = new Set([
   'TSTypeParameterInstantiation',
 ]);
 
-/** Nodes whose `.constructor` is Function, or its async or generator kin. */
-const FUNCTION_LITERALS = new Set([
+/** Values whose `.constructor` reaches Function in a step or two. */
+const LITERALS = new Set([
+  'ArrayExpression',
   'ArrowFunctionExpression',
   'ClassExpression',
   'FunctionExpression',
+  'NumericLiteral',
+  'ObjectExpression',
+  'RegExpLiteral',
+  'StringLiteral',
+  'TemplateLiteral',
 ]);
 
 /** A code file Node or jiti can run. */
@@ -494,8 +528,10 @@ const withoutQuery = specifier => specifier.replace(/[?#].*$/, '');
 
 /**
  * @typedef {object} Target
- * @property {'doc' | 'unscanned' | 'loader' | 'builtin' | 'package'} kind
- *   `unscanned`: a file in a part of the package this test does not scan
+ * @property {'doc' | 'url' | 'unscanned' | 'loader' | 'builtin' | 'package'}
+ *   kind — `url`: code carried by the specifier or fetched, not a file in this
+ *   package; `unscanned`: a file in a part of the package this test does not
+ *   scan
  * @property {string} key
  */
 
@@ -506,6 +542,7 @@ const withoutQuery = specifier => specifier.replace(/[?#].*$/, '');
  * @returns {Target | null}
  */
 function targetOf(specifier, rel) {
+  if (CODE_URL.test(specifier)) return {kind: 'url', key: specifier};
   let file = withoutQuery(specifier);
   const local = /^(?:\.|\/|file:)/.test(file);
   if (local) {
@@ -557,6 +594,9 @@ function targetOf(specifier, rel) {
   return RUNNER_PACKAGES.has(pkg) ? {kind: 'package', key: pkg} : null;
 }
 
+/** Targets whose every export is code this test does not read. */
+const UNREAD = new Set(['doc', 'unscanned', 'url']);
+
 /** @param {Target} target @returns {string[]} */
 function inertExports(target) {
   if (target.kind === 'loader') return LOADER_MODULES[target.key];
@@ -565,7 +605,8 @@ function inertExports(target) {
 }
 
 /**
- * Every place `source` runs code outside its static imports, as labels:
+ * Every ordinary place `source` runs code outside its static imports, as
+ * labels (deliberate obfuscation is out of scope, as the file header says):
  *
  * - a static import or re-export of a doc file, or of a file this test does
  *   not scan;
@@ -578,7 +619,7 @@ function inertExports(target) {
  * - an export of jiti, or a code-running export of child_process, cluster,
  *   inspector, module, repl, test, vm, or worker_threads, imported or
  *   fetched with getBuiltinModule;
- * - eval, Function (also as a function's `.constructor`), ShadowRealm, a
+ * - eval, Function (also as any called `.constructor`), ShadowRealm, a
  *   global Worker, `module.require`; a jiti, vm, or realm method on anything;
  * - a doc file resolved as a module.
  *
@@ -598,13 +639,13 @@ function scanModule(source, rel) {
   const bindings = new Map();
   /** Local names holding a require function; CommonJS has `require`. */
   const requires = new Set(['require']);
+  /** Local names holding the global object. */
+  const globals = new Set(GLOBAL_OBJECTS);
 
   walk(program, [], node => {
     if (node.type === 'ImportDeclaration') {
       const target = targetOf(node.source.value, rel);
-      if (!target || target.kind === 'doc' || target.kind === 'unscanned') {
-        return;
-      }
+      if (!target || UNREAD.has(target.kind)) return;
       for (const specifier of node.specifiers) {
         if (specifier.importKind === 'type') continue;
         const imported =
@@ -621,7 +662,7 @@ function scanModule(source, rel) {
       node.moduleReference.type === 'TSExternalModuleReference'
     ) {
       const target = targetOf(node.moduleReference.expression.value, rel);
-      if (target && target.kind !== 'doc' && target.kind !== 'unscanned') {
+      if (target && !UNREAD.has(target.kind)) {
         bindings.set(node.id.name, {target, imported: null});
       }
     }
@@ -638,6 +679,8 @@ function scanModule(source, rel) {
       ? binding.imported === null && memberName(expr) === 'createRequire'
       : binding.imported === 'createRequire';
   };
+  // A name bound to a require function or to the global object stands in for
+  // it, and is bound before it is used.
   walk(program, [], node => {
     const [id, value] =
       node.type === 'VariableDeclarator'
@@ -645,14 +688,33 @@ function scanModule(source, rel) {
         : node.type === 'AssignmentExpression'
           ? [node.left, node.right]
           : [];
-    if (
-      id?.type === 'Identifier' &&
-      isCall(value) &&
-      isCreateRequire(value.callee)
-    ) {
-      requires.add(id.name);
+    if (id?.type !== 'Identifier') return;
+    if (isCall(value) && isCreateRequire(value.callee)) requires.add(id.name);
+    if (value?.type === 'Identifier' && globals.has(value.name)) {
+      globals.add(id.name);
     }
   });
+
+  /**
+   * `const {eval: e} = globalThis`: taking the member is the site, whatever
+   * the local name.
+   * @param {any} pattern
+   * @param {ReadonlySet<string>} runners
+   * @param {string} owner
+   */
+  const destructured = (pattern, runners, owner) => {
+    if (pattern?.type !== 'ObjectPattern') return;
+    for (const property of pattern.properties) {
+      const name =
+        property.type === 'ObjectProperty'
+          ? property.computed
+            ? stringValue(property.key)
+            : nameOf(property.key)
+          : undefined;
+      if (name === undefined) sites.push(`${owner}[<computed>]`);
+      else if (runners.has(name)) sites.push(name);
+    }
+  };
 
   /** @param {any} node */
   const docResolve = node => {
@@ -790,6 +852,20 @@ function scanModule(source, rel) {
 
   walk(program, [], (node, ancestors) => {
     switch (node.type) {
+      case 'VariableDeclarator':
+      case 'AssignmentExpression': {
+        const [id, value] =
+          node.type === 'VariableDeclarator'
+            ? [node.id, node.init]
+            : [node.left, node.right];
+        if (value?.type !== 'Identifier') return;
+        if (globals.has(value.name))
+          destructured(id, RUNNER_GLOBALS, value.name);
+        else if (value.name === 'process') {
+          destructured(id, PROCESS_RUNNERS, 'process');
+        }
+        return;
+      }
       case 'ImportDeclaration':
       case 'ExportAllDeclaration':
       case 'ExportNamedDeclaration': {
@@ -797,7 +873,7 @@ function scanModule(source, rel) {
         const specifier = node.source.value;
         const target = targetOf(specifier, rel);
         if (!target) return;
-        if (target.kind === 'doc' || target.kind === 'unscanned') {
+        if (UNREAD.has(target.kind)) {
           const how =
             node.type === 'ImportDeclaration' ? 'import' : 'export from';
           sites.push(`${how} ${specifier}`);
@@ -819,7 +895,7 @@ function scanModule(source, rel) {
         if (ref.type !== 'TSExternalModuleReference') return;
         const specifier = ref.expression.value;
         const target = targetOf(specifier, rel);
-        if (target?.kind === 'doc' || target?.kind === 'unscanned') {
+        if (target && UNREAD.has(target.kind)) {
           sites.push(`import ${specifier}`);
         } else if (target && node.isExport) {
           sites.push(`export * from ${specifier}`);
@@ -841,7 +917,21 @@ function scanModule(source, rel) {
         if (!isMember(callee)) return;
         const name = memberName(callee);
         const object = callee.object;
+        if (name === 'constructor') sites.push('.constructor()');
         if (name === 'getBuiltinModule') builtinGetter(node);
+        if (
+          name === 'get' &&
+          object.type === 'Identifier' &&
+          object.name === 'Reflect'
+        ) {
+          const key = stringValue(node.arguments[1]);
+          if (
+            key !== undefined &&
+            (RUNNER_GLOBALS.has(key) || PROCESS_RUNNERS.has(key))
+          ) {
+            sites.push(key);
+          }
+        }
         const resolver =
           object.type === 'MetaProperty' ||
           (object.type === 'Identifier' && requires.has(object.name)) ||
@@ -865,15 +955,32 @@ function scanModule(source, rel) {
       case 'OptionalMemberExpression': {
         const object = node.object;
         const name = memberName(node);
-        if (name === 'constructor' && FUNCTION_LITERALS.has(object.type)) {
-          sites.push('Function');
+        const global =
+          (object.type === 'Identifier' && globals.has(object.name)) ||
+          (isMember(object) &&
+            object.object.type === 'Identifier' &&
+            globals.has(object.object.name));
+        if (name === 'constructor' && LITERALS.has(object.type)) {
+          sites.push('.constructor');
+        } else if (
+          WASM_RUNNERS.has(name ?? '') &&
+          ((object.type === 'Identifier' && object.name === 'WebAssembly') ||
+            (isMember(object) && memberName(object) === 'WebAssembly'))
+        ) {
+          sites.push(`WebAssembly.${name}`);
+        } else if (isMember(object)) {
+          return;
         } else if (object.type !== 'Identifier' || bindings.has(object.name)) {
           return;
         } else if (object.name === 'module') {
           if (name === 'require' || name === 'constructor') {
             sites.push(`module.${name}`);
           }
-        } else if (GLOBAL_OBJECTS.has(object.name)) {
+        } else if (object.name === 'process') {
+          if (name !== 'getBuiltinModule' && PROCESS_RUNNERS.has(name ?? '')) {
+            sites.push(`process.${name}`);
+          }
+        } else if (global) {
           if (name === undefined) sites.push(`${object.name}[<computed>]`);
           else if (RUNNER_GLOBALS.has(name)) sites.push(name);
         }
@@ -1207,6 +1314,71 @@ const BYPASSES = [
     "import {runCli} from '../../test-utils/run-cli.mjs';\nrunCli(docPath);",
   ],
   [
+    'a static import of a data: URL',
+    "import one from 'data:text/javascript,export default 1';\nexport {one};",
+  ],
+  [
+    'a dynamic import of a data: URL',
+    "await import('data:text/javascript,export default 1');",
+  ],
+  [
+    'a dynamic import over https',
+    "await import('https://example.test/x.mjs');",
+  ],
+  ['process.dlopen', 'process.dlopen({exports: {}}, file);'],
+  ['process.execve', 'process.execve(file, args);'],
+  [
+    'dlopen destructured off process',
+    'const {dlopen} = process;\ndlopen({exports: {}}, file);',
+  ],
+  ['WebAssembly.instantiate', 'await WebAssembly.instantiate(bytes);'],
+  [
+    'WebAssembly.compile through globalThis',
+    'await globalThis.WebAssembly.compile(bytes);',
+  ],
+  ['new WebAssembly.Module', 'new WebAssembly.Module(bytes);'],
+  ['Object.constructor(source)', 'Object.constructor(source)();'],
+  [
+    "a function literal's constructor, taken and kept",
+    'const F = (() => {}).constructor;\nexport {F};',
+  ],
+  [
+    '[].constructor.constructor(source)',
+    '[].constructor.constructor(source)();',
+  ],
+  [
+    "''.constructor.constructor(source)",
+    "''.constructor.constructor(source)();",
+  ],
+  [
+    "a prototype's constructor",
+    'Object.getPrototypeOf(async function () {}).constructor(source)();',
+  ],
+  [
+    'eval destructured off globalThis',
+    'const {eval: e} = globalThis;\ne(source);',
+  ],
+  [
+    'Function destructured off globalThis',
+    'const {Function: F} = globalThis;\nF(source)();',
+  ],
+  [
+    'eval through an alias of globalThis',
+    'const g = globalThis;\ng.eval(source);',
+  ],
+  [
+    'eval through a chain of aliases',
+    'const g = globalThis;\nconst h = g;\nh.eval(source);',
+  ],
+  [
+    'a computed destructuring off globalThis',
+    "const {['ev' + 'al']: e} = globalThis;\ne(source);",
+  ],
+  [
+    "Reflect.get(globalThis, 'eval')",
+    "Reflect.get(globalThis, 'eval')(source);",
+  ],
+  [
     'a module under the authored templates',
     "import helper from '../../assets/templates/x/helper.mjs';",
   ],
@@ -1346,6 +1518,16 @@ const INNOCENT = [
     'getBuiltinModule of an inert built-in',
     "const fs = process.getBuiltinModule('node:fs');",
   ],
+  ['an inert member of process', 'const dir = process.cwd();'],
+  ['an inert destructuring of process', 'const {env, argv} = process;'],
+  ['an inert member of globalThis', 'globalThis.crypto.randomUUID();'],
+  ['WebAssembly.validate', 'WebAssembly.validate(bytes);'],
+  ['a constructor read and passed on', 'patchPrototype(command.constructor);'],
+  [
+    "a constructor's name",
+    "const kind = proto?.constructor?.name ?? 'non-plain object';",
+  ],
+  ['a property named constructor', 'const o = {constructor: 1};\nread(o);'],
 ].map(([name, code]) => ({name, file: LEAF, code}));
 
 INNOCENT.push(

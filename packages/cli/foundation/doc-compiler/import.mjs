@@ -13,7 +13,8 @@
  *   README script imports them at build time. ./doc-loads.test.mjs lists, site
  *   by site, every use of these importers and every other place the CLI runs
  *   anything but its static imports of other CLI code (a static doc import is
- *   one); a new site fails it.
+ *   one); a new site fails it. It catches every ordinary way of running code,
+ *   whatever the local names; deliberate obfuscation is out of scope.
  */
 
 import {pathToFileURL} from 'node:url';
