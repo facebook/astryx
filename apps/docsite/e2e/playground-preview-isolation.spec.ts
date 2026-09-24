@@ -29,6 +29,7 @@
  *    preview that renders the current code again.
  */
 
+import {writeFile} from 'node:fs/promises';
 import {expect, test, type Frame, type Page} from '@playwright/test';
 
 const PREVIEW_URL_MARK = '/playground/preview#nonce=';
@@ -442,18 +443,32 @@ test.describe('restricted preview capabilities', () => {
     );
     await expectPreviewToRender(page, 'Restricted capabilities');
     const frame = currentPreviewFrame(page);
-    await testInfo.attach('browser-capabilities', {
-      body: JSON.stringify(
-        await frame.evaluate(() => ({
-          secureContext: window.isSecureContext,
-          clipboard: typeof navigator.clipboard,
-          getUserMedia: typeof navigator.mediaDevices?.getUserMedia,
-          speechRecognition:
-            'SpeechRecognition' in window ||
-            'webkitSpeechRecognition' in window,
-        })),
-      ),
-      contentType: 'application/json',
+    const capabilities = await frame.evaluate(() => {
+      const policy = (
+        document as Document & {
+          featurePolicy: {allowsFeature: (feature: string) => boolean};
+        }
+      ).featurePolicy;
+      return {
+        secureContext: window.isSecureContext,
+        clipboard: typeof navigator.clipboard,
+        getUserMedia: typeof navigator.mediaDevices?.getUserMedia,
+        speechRecognition:
+          'SpeechRecognition' in window || 'webkitSpeechRecognition' in window,
+        microphoneAllowed: policy.allowsFeature('microphone'),
+        clipboardWriteAllowed: policy.allowsFeature('clipboard-write'),
+      };
+    });
+    await writeFile(
+      testInfo.outputPath('browser-capabilities.json'),
+      JSON.stringify(capabilities, null, 2),
+    );
+    // CI has no physical microphone, and Chromium can report NotFoundError
+    // before a permission error. Pin the real policy independently so missing
+    // hardware cannot make a relaxed sandbox appear to enforce the boundary.
+    expect(capabilities).toMatchObject({
+      microphoneAllowed: false,
+      clipboardWriteAllowed: false,
     });
     await frame.getByRole('button', {name: 'Try copy', exact: true}).click();
     await expect(
@@ -465,7 +480,7 @@ test.describe('restricted preview capabilities', () => {
       .click();
     await expect(
       frame.getByText(
-        /^Microphone (unavailable|denied: (SecurityError|NotAllowedError))$/,
+        /^Microphone (unavailable|denied: (SecurityError|NotAllowedError|NotFoundError))$/,
       ),
     ).toBeVisible();
     if (
@@ -476,7 +491,9 @@ test.describe('restricted preview capabilities', () => {
       await frame
         .getByRole('button', {name: 'Try dictation', exact: true})
         .click();
-      await expect(frame.getByText('not-allowed', {exact: true})).toBeVisible();
+      await expect(
+        frame.getByText(/^(not-allowed|service-not-allowed|audio-capture)$/),
+      ).toBeVisible();
     } else {
       await expect(
         frame.getByText('Dictation unavailable', {exact: true}),
@@ -489,6 +506,10 @@ test.describe('restricted preview capabilities', () => {
     await expect(
       frame.getByRole('textbox', {name: 'Typed message'}),
     ).toHaveValue('Typing still works');
+    await writeFile(
+      testInfo.outputPath('capability-outcomes.txt'),
+      await frame.locator('body').innerText(),
+    );
     await page.screenshot({
       path: testInfo.outputPath('restricted-capabilities.png'),
     });
