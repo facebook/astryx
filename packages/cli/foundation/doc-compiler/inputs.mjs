@@ -23,6 +23,9 @@ import {
 } from '../discovery/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../discovery/hook-discovery.mjs';
 import {CLI_ROOT, findCoreDir} from '../fs/paths.mjs';
+import {packageSource} from './source.mjs';
+
+export {packageSource};
 
 /** The package that owns the CLI's own self-documentation. */
 const CLI_PACKAGE = '@astryxdesign/cli';
@@ -62,6 +65,8 @@ const NON_DESCRIPTOR_DIRS = new Set([
 /**
  * @typedef {object} DocInputProblem
  * @property {'duplicate_file' | 'duplicate_id'} code
+ * @property {string} provider the package of the input that was not added
+ * @property {string} source `<package>/<path>` of its file
  * @property {string} message
  */
 
@@ -232,6 +237,8 @@ class InputList {
     if (claimed != null) {
       this.problems.push({
         code: 'duplicate_file',
+        provider: owner,
+        source: packageSource(real),
         message: `${packageSource(real)} is read as ${root} "${name}" and as ${claimed.root} "${claimed.name}"; one descriptor must have one reader.`,
       });
       return;
@@ -241,6 +248,8 @@ class InputList {
     if (taken != null) {
       this.problems.push({
         code: 'duplicate_id',
+        provider: owner,
+        source: packageSource(real),
         message: `${packageSource(real)} and ${taken.source} both read as ${root} "${name}" from ${owner}.`,
       });
       return;
@@ -269,45 +278,4 @@ function realPath(file) {
   } catch {
     return path.resolve(file);
   }
-}
-
-/** @type {Map<string, {dir: string, name: string} | null>} */
-const packageRoots = new Map();
-
-/**
- * Where a file ships: its package's name and its path inside that package.
- * @param {string} file absolute path
- * @returns {string}
- */
-export function packageSource(file) {
-  const root = packageRootOf(path.dirname(file));
-  if (root == null) return file.split(path.sep).join('/');
-  const inside = path.relative(root.dir, file).split(path.sep).join('/');
-  return `${root.name}/${inside}`;
-}
-
-/**
- * @param {string} dir
- * @returns {{dir: string, name: string} | null}
- */
-function packageRootOf(dir) {
-  const cached = packageRoots.get(dir);
-  if (cached !== undefined) return cached;
-  /** @type {{dir: string, name: string} | null} */
-  let found = null;
-  const manifest = path.join(dir, 'package.json');
-  if (fs.existsSync(manifest)) {
-    try {
-      const {name} = JSON.parse(fs.readFileSync(manifest, 'utf-8'));
-      if (typeof name === 'string') found = {dir, name};
-    } catch {
-      // An unreadable package.json names no package; keep walking up.
-    }
-  }
-  if (found == null) {
-    const parent = path.dirname(dir);
-    found = parent === dir ? null : packageRootOf(parent);
-  }
-  packageRoots.set(dir, found);
-  return found;
 }

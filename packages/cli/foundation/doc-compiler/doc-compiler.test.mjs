@@ -565,6 +565,7 @@ describe('readers go through the compiler', () => {
       'lowerReferenceTopic',
       'linkReferenceTopic',
       'linkReferenceSection',
+      'lowerDoc',
     ],
   };
   /** The docs adapter and leaves drive the compiler; nothing else does. */

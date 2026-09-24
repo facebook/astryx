@@ -24,9 +24,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../fs/module-loader.mjs';
-import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
+import {importTemplateModule} from '../doc-compiler/import.mjs';
+import {readDocView} from '../doc-compiler/read.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
@@ -115,16 +114,6 @@ function matchedTemplateSuffix(file) {
  */
 const TEMPLATE_SUFFIX_RE = /\.(template|doc)\.(ts|mjs|js)$/;
 
-/** @type {ReturnType<typeof createJiti> | undefined} */
-let jitiInstance;
-/** Lazily-created jiti for loading `.ts` template specs (JSX-capable). */
-function getJiti() {
-  if (!jitiInstance) {
-    jitiInstance = createJiti(import.meta.url, {jsx: true});
-  }
-  return jitiInstance;
-}
-
 /**
  * Load an integration template doc module and validate it against the template
  * envelope at the load boundary. Default export only — `.ts` via jiti,
@@ -137,7 +126,13 @@ function getJiti() {
  * @param {string} [label]
  */
 async function loadIntegrationDoc(file, label) {
-  return loadModuleWithParser(file, parseTemplate, {label});
+  return readDocView(file, {
+    root: 'templates',
+    exports: ['default'],
+    label: label ?? file,
+    strict: true,
+    value: 'parsed',
+  });
 }
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'assets', 'templates');
@@ -497,10 +492,7 @@ function unsafeFixtureReference(source, at, reason) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
-  const docModule = docPath.endsWith('.ts')
-    ? await getJiti().import(docPath)
-    : await import(`file://${docPath}`);
-  return docModule.default ?? docModule.doc;
+  return readDocView(docPath, {root: 'templates', load: importTemplateModule});
 }
 
 /**

@@ -17,7 +17,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import jscodeshift from 'jscodeshift';
-import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
+import {lowerDoc} from '../doc-compiler/compile.mjs';
+import {packageSource} from '../doc-compiler/source.mjs';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 
@@ -463,13 +464,47 @@ function staticThemeValue(node, label) {
 }
 
 /**
- * Read one strongly typed theme descriptor without executing it.
+ * How messages about a theme descriptor name it.
+ * @param {string} docPath
+ * @param {string} owner
+ */
+export function themeDescriptorLabel(docPath, owner) {
+  return `Theme descriptor ${path.basename(docPath)} for ${owner}`;
+}
+
+/**
+ * Read one strongly typed theme descriptor without executing it, and compile
+ * it.
  * @param {string} docPath
  * @param {string} owner
  * @returns {import('../../authoring/doctypes/theme/type').ThemeDoc}
  */
 function readThemeDoc(docPath, owner) {
-  const label = `Theme descriptor ${path.basename(docPath)} for ${owner}`;
+  const label = themeDescriptorLabel(docPath, owner);
+  const value = readThemeDescriptorValue(docPath, label);
+  // Read statically, never executed, then compiled like every other doc.
+  const {node, failure} = lowerDoc({
+    id: `${owner}:themes:${path.basename(docPath)}`,
+    root: 'themes',
+    provider: owner,
+    source: packageSource(docPath),
+    lang: null,
+    file: {file: path.basename(docPath), doc: value},
+    label,
+  });
+  if (!node || failure !== undefined) throw failure;
+  return node.doc;
+}
+
+/**
+ * The static value a theme descriptor default-exports, read from its source
+ * without executing it. Throws when the file is not one static ThemeDoc
+ * object.
+ * @param {string} docPath
+ * @param {string} label
+ * @returns {Record<string, string | boolean>}
+ */
+export function readThemeDescriptorValue(docPath, label) {
   let statements;
   const source = fs.readFileSync(docPath, 'utf-8');
   if (
@@ -538,7 +573,7 @@ function readThemeDoc(docPath, owner) {
     }
     value[key] = staticThemeValue(property.value, label);
   }
-  return parseTheme(value, label);
+  return value;
 }
 
 /**

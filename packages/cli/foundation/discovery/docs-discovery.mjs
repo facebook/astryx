@@ -32,7 +32,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
-import {importUserModule} from '../fs/module-loader.mjs';
+import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 import {
@@ -117,7 +117,7 @@ export function discoverBuiltinTopics() {
  * @returns {Promise<unknown>} the authored doc value
  */
 export async function loadTopicModule(file) {
-  const mod = await importUserModule(file);
+  const mod = await importDocModule(file);
   const doc = mod?.docs ?? mod?.default;
   if (doc == null) {
     throw new Error(

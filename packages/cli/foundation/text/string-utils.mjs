@@ -56,7 +56,7 @@ export function findClosestComponents(name, components, maxDistance = 3) {
  * @returns {Promise<{name: string, score: number, reason: string}[]>}
  */
 export async function searchComponents(needle, coreDir, components) {
-  const {pathToFileURL} = await import('node:url');
+  const {readDocView} = await import('../doc-compiler/read.mjs');
   const fs = await import('node:fs');
   const path = await import('node:path');
 
@@ -100,8 +100,10 @@ export async function searchComponents(needle, coreDir, components) {
     // Levenshtein on name
     const dist = levenshteinDistance(term, compLower);
     if (dist === 1) addMatch(comp, 80, 'similar name (distance ' + dist + ')');
-    else if (dist === 2) addMatch(comp, 40, 'similar name (distance ' + dist + ')');
-    else if (dist === 3) addMatch(comp, 20, 'similar name (distance ' + dist + ')');
+    else if (dist === 2)
+      addMatch(comp, 40, 'similar name (distance ' + dist + ')');
+    else if (dist === 3)
+      addMatch(comp, 20, 'similar name (distance ' + dist + ')');
   }
 
   // --- Pass 2: Keyword + description matching (async, reads doc files) ---
@@ -124,15 +126,21 @@ export async function searchComponents(needle, coreDir, components) {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
         const nested = path.join(srcDir, entry.name, comp, comp + '.doc.mjs');
-        if (fs.existsSync(nested)) { docPath = nested; break; }
+        if (fs.existsSync(nested)) {
+          docPath = nested;
+          break;
+        }
       }
     }
 
     if (!docPath) continue;
 
     try {
-      const mod = await import(pathToFileURL(docPath).href);
-      const docs = mod.docs;
+      // Only the legacy `docs` export has ever been indexed here.
+      const docs = await readDocView(docPath, {
+        root: 'components',
+        exports: ['docs'],
+      });
       if (!docs) continue;
 
       // Keyword matching
@@ -157,8 +165,10 @@ export async function searchComponents(needle, coreDir, components) {
           }
 
           const dist = levenshteinDistance(term, kwLower);
-          if (dist === 1) addMatch(comp, 70, 'keyword "' + kw + '" (distance ' + dist + ')');
-          else if (dist === 2) addMatch(comp, 30, 'keyword "' + kw + '" (distance ' + dist + ')');
+          if (dist === 1)
+            addMatch(comp, 70, 'keyword "' + kw + '" (distance ' + dist + ')');
+          else if (dist === 2)
+            addMatch(comp, 30, 'keyword "' + kw + '" (distance ' + dist + ')');
         }
       }
 
@@ -191,8 +201,9 @@ export async function searchComponents(needle, coreDir, components) {
     }
   }
 
-  const results = Array.from(scored.values())
-    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  const results = Array.from(scored.values()).sort(
+    (a, b) => b.score - a.score || a.name.localeCompare(b.name),
+  );
 
   return results;
 }

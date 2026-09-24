@@ -255,6 +255,8 @@ describe('collectDocInputs problems', () => {
     expect(problems).toEqual([
       {
         code: 'duplicate_file',
+        provider: '@acme/kit',
+        source: expect.stringMatching(/\/Shared\.doc\.mjs$/),
         message: expect.stringContaining(
           'is read as templates "block/shared" and as components "Shared"',
         ),
@@ -280,6 +282,8 @@ describe('collectDocInputs problems', () => {
     expect(problems).toEqual([
       {
         code: 'duplicate_id',
+        provider: '@acme/kit',
+        source: expect.stringMatching(/\/Card\.doc\.mjs$/),
         message: expect.stringContaining('both read as components "Card"'),
       },
     ]);

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Doc compiler — authored reference topics in, compiled nodes out.
+ * @file Doc compiler — authored docs in, compiled nodes out.
  *
  * @input A {@link ReferenceTopicInput}: one topic's own file and the files of
  *   the extensions merged onto it, each already through the authored-doc parser
@@ -16,9 +16,14 @@
  *   JSON form, the one `--json` output has always shown.
  * @position The one step between authored docs and every docs reader. The docs
  *   API, doctor and search read compiled nodes, and ./lenses.mjs turns them into
- *   response shapes. Internal to the CLI: the public way in is `docs()`.
+ *   response shapes. Every other doc kind (components, hooks, templates, themes,
+ *   and the CLI's self-docs) lowers through {@link lowerDoc}, which ./read.mjs
+ *   feeds. Internal to the CLI: the public way in is the docs API.
  */
 
+import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
+import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
 import {mergeTopic, problemsInTopic} from '../discovery/docs-discovery.mjs';
 import {
   sectionKey,
@@ -27,9 +32,37 @@ import {
   withSectionKeys,
   withSourceTitle,
 } from '../discovery/docs-section-key.mjs';
+import {diagnostic} from './diagnostics.mjs';
+import {overlayAuthoredDoc} from './overlays.mjs';
 
 /** Bumped whenever the shape of a compiled node changes. */
 export const COMPILED_DOC_SCHEMA_VERSION = 1;
+
+/** Every kind a compiled node has: one per authored doc kind a root reads. */
+export const COMPILED_DOC_KINDS = /** @type {const} */ ([
+  'component',
+  'function',
+  'reference',
+  'page',
+  'block',
+  'schema',
+  'command',
+  'enum',
+  'theme',
+]);
+
+/**
+ * The roots that read docs, and the kinds each may hold. A doc without a
+ * stamped `type` (the legacy form) takes its root's first kind.
+ * @type {Readonly<Record<string, readonly string[]>>}
+ */
+export const ROOT_KINDS = Object.freeze({
+  components: ['component'],
+  hooks: ['function'],
+  templates: ['page', 'block'],
+  themes: ['theme'],
+  'self-docs': ['command', 'function', 'schema', 'enum'],
+});
 
 /**
  * One authored file, as discovery loaded it.
@@ -259,4 +292,168 @@ function applyOverlay(docs, translation) {
       return withSourceTitle(localized, section.title);
     }),
   };
+}
+
+/**
+ * @typedef {import('./diagnostics.mjs').CompilerDiagnostic} CompilerDiagnostic
+ */
+
+/**
+ * One authored doc of any kind but a reference topic, as its root loaded it.
+ * @typedef {object} DocFileInput
+ * @property {string} id the input's id: provider, root, and name
+ * @property {keyof typeof ROOT_KINDS} root
+ * @property {string} provider the package that contributes it
+ * @property {string} source `<package>/<path>` of the file
+ * @property {string | null} lang the overlay language, or null
+ * @property {AuthoredFile} file `doc` is the authored export, not a parse
+ *   result; `overlay` is the translation the module exports for `lang`
+ * @property {string} [label] how a parse error names the file (default: its
+ *   file name)
+ * @property {boolean} [useParsed] carry the parser's result instead of the
+ *   authored export, for a reader that has always read the checked value
+ */
+
+/**
+ * The parser that checks a root's docs. Templates and themes have their own;
+ * every other root dispatches on the stamped type.
+ * @param {string} root
+ * @returns {(input: unknown, label?: string) => any}
+ */
+export function parserFor(root) {
+  if (root === 'themes') return parseTheme;
+  if (root === 'templates') return parseTemplate;
+  return parseDoc;
+}
+
+/**
+ * A compiled node for any kind but a reference topic.
+ * @typedef {object} CompiledDocNode
+ * @property {number} schemaVersion
+ * @property {Exclude<typeof COMPILED_DOC_KINDS[number], 'reference'>} kind
+ * @property {'lowered'} stage
+ * @property {string} id
+ * @property {string | null} lang
+ * @property {{provider: string, source: string}} provenance
+ * @property {any} doc the authored doc, overlaid for `lang`, as JSON carries
+ *   it: key order kept, `undefined` and functions dropped
+ */
+
+/**
+ * The result of lowering one doc. `failure` is what the first fatal problem
+ * threw, for a reader that has always passed that error on as it was.
+ * @typedef {object} LoweredDoc
+ * @property {CompiledDocNode | null} node null when a problem is fatal
+ * @property {CompilerDiagnostic[]} diagnostics
+ * @property {unknown} [failure]
+ */
+
+/**
+ * Lower one doc of any kind but a reference topic: check it against its kind's
+ * parser, lay its translation over it, and carry it as JSON.
+ *
+ * A doc that fails its kind's parser still lowers, carrying an `invalid_doc`
+ * diagnostic: readers that never checked docs keep reading them exactly as
+ * before, and a reader that checks turns the diagnostic into its error. A doc
+ * that cannot load, exports nothing, or has a type its root does not read
+ * yields no node. A doc stamped with a kind its root does not read keeps its
+ * root's kind and carries a `wrong_kind` diagnostic.
+ *
+ * @param {DocFileInput} input
+ * @returns {LoweredDoc}
+ */
+export function lowerDoc(input) {
+  const {file} = input;
+  const at = {provider: input.provider, source: input.source};
+  /** @type {CompilerDiagnostic[]} */
+  const diagnostics = [];
+  /**
+   * @param {string} code
+   * @param {string} message
+   * @param {unknown} failure
+   * @returns {LoweredDoc}
+   */
+  const fatal = (code, message, failure) => {
+    diagnostics.push(diagnostic(code, {...at, message}));
+    return {node: null, diagnostics, failure};
+  };
+  if ('error' in file) {
+    return fatal(
+      'load_failed',
+      `${file.file} could not be loaded: ${messageOf(file.error)}`,
+      file.error,
+    );
+  }
+  if (file.doc == null) {
+    const missing = new Error(`${file.file} exports no doc.`);
+    return fatal('missing_export', missing.message, missing);
+  }
+  const allowed = ROOT_KINDS[input.root];
+  if (!allowed) throw new Error(`No doc root is named "${input.root}".`);
+  const stamped =
+    typeof file.doc === 'object' && 'type' in file.doc
+      ? file.doc.type
+      : undefined;
+  // A root that finds a doc of another kind still carries it: readers have
+  // always read such a file, and the diagnostic names the mismatch.
+  const kindFits = stamped === undefined || allowed.includes(stamped);
+  if (!kindFits) {
+    diagnostics.push(
+      diagnostic('wrong_kind', {
+        ...at,
+        message: `${file.file} is stamped type ${JSON.stringify(stamped)}, which the ${input.root} root does not read (it reads ${allowed.join(', ')}).`,
+      }),
+    );
+  }
+  /** @type {unknown} */
+  let failure;
+  let doc = file.doc;
+  try {
+    const parsed = parserFor(input.root)(file.doc, input.label ?? file.file);
+    // A theme descriptor is read statically; its parse result is the doc.
+    if (input.useParsed || input.root === 'themes') doc = parsed;
+  } catch (error) {
+    failure = error;
+    diagnostics.push(
+      diagnostic('invalid_doc', {...at, message: messageOf(error)}),
+    );
+  }
+  if ('overlayError' in file) {
+    return fatal(
+      'overlay_failed',
+      `${file.file}'s translation could not be loaded: ${messageOf(file.overlayError)}`,
+      file.overlayError,
+    );
+  }
+  if (file.overlay) doc = overlayAuthoredDoc(doc, file.overlay);
+  let json;
+  try {
+    json = JSON.parse(JSON.stringify(doc));
+  } catch (error) {
+    return fatal(
+      'not_json',
+      `${file.file} cannot be compiled: ${messageOf(error)}`,
+      error,
+    );
+  }
+  return {
+    node: {
+      schemaVersion: COMPILED_DOC_SCHEMA_VERSION,
+      kind: /** @type {CompiledDocNode['kind']} */ (
+        kindFits && stamped !== undefined ? stamped : allowed[0]
+      ),
+      stage: 'lowered',
+      id: input.id,
+      lang: input.lang,
+      provenance: {provider: input.provider, source: input.source},
+      doc: json,
+    },
+    diagnostics,
+    ...(failure === undefined ? {} : {failure}),
+  };
+}
+
+/** @param {unknown} error */
+function messageOf(error) {
+  return error instanceof Error ? error.message : String(error);
 }

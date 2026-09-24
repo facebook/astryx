@@ -50,7 +50,7 @@
  * queries they have nothing to do with.
  */
 
-import {pathToFileURL} from 'node:url';
+import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
@@ -528,16 +528,23 @@ export function scoreCandidate(
 }
 
 /**
- * Load a doc module's `docs`/`doc` export, swallowing errors.
+ * A component or hook doc, compiled, or null when it cannot be read.
  * @param {string} docPath
  * @param {string} [exportName]
+ * @param {'components' | 'hooks'} [root]
  * @returns {Promise<any>}
  */
-async function loadModuleDoc(docPath, exportName = 'docs') {
+async function loadModuleDoc(
+  docPath,
+  exportName = 'docs',
+  root = 'components',
+) {
   try {
-    const mod = await import(pathToFileURL(docPath).href);
     // Support both the stamped default export and the legacy named export.
-    return mod?.default ?? mod[exportName] ?? null;
+    return (
+      (await readDocView(docPath, {root, exports: ['default', exportName]})) ??
+      null
+    );
   } catch {
     return null;
   }
@@ -701,7 +708,7 @@ async function gatherHooks(coreDir) {
     let description = '';
     let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
-      const doc = await loadModuleDoc(docPath);
+      const doc = await loadModuleDoc(docPath, 'docs', 'hooks');
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';

@@ -17,8 +17,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../fs/paths.mjs';
+import {readDocView} from '../doc-compiler/read.mjs';
 import {
   DOC_OUTPUT_BUDGET_BYTES,
   oversizedDocSections,
@@ -88,8 +88,9 @@ export async function loadAuthoringSelfDocs(
   const failed = [];
   for (const source of sources) {
     try {
-      const mod = await import(pathToFileURL(path.join(root, source)).href);
-      const doc = mod.doc ?? mod.docs ?? mod.default;
+      const doc = await readDocView(path.join(root, source), {
+        root: 'self-docs',
+      });
       if (
         typeof doc?.name !== 'string' ||
         typeof doc?.description !== 'string'
