@@ -3,7 +3,7 @@
 /**
  * @file Colocated types for the `component` command — source of truth for the
  * component command's JSON responses. These typedefs describe the `{type, data}`
- * envelopes emitted by `xds --json component` and returned by the `component()`
+ * envelopes emitted by `astryx --json component` and returned by the `component()`
  * API; the `types/component.d.ts` barrel re-exports them for consumers.
  *
  * Detail-level contract for list views (brief < compact < full):

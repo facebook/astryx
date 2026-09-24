@@ -106,7 +106,8 @@
  * @typedef {object} TonalPaletteAnchor
  * @property {'light' | 'dark'} mode Mode containing the anchored stop.
  * @property {number} stop Existing requested stop where the anchor applies.
- * @property {string} color Six-digit sRGB hex the stop is pulled toward.
+ * @property {string} color sRGB hex the stop is pulled toward: three or six
+ * digits, with or without `#`; the generator normalizes it.
  * @property {'exact' | 'bounded' | 'flexible'} policy `exact` preserves the
  * chosen color at that stop; `bounded` permits adjustment within `maxDeltaE`;
  * `flexible` treats the color as guidance and blends toward it.
@@ -119,7 +120,8 @@
  * @typedef {object} TonalPaletteFamilyInput
  * @property {string} id Lower-kebab-case key for the family in the generated
  * palette. `black` and `white` are reserved for the standalone values.
- * @property {string} seed Six-digit sRGB hex the ramp is generated from.
+ * @property {string} seed sRGB hex the ramp is generated from: three or six
+ * digits, with or without `#`; the generator normalizes it.
  * @property {string} [name] Display name for review artifacts; defaults to `id`.
  * @property {'chromatic' | 'neutral'} [kind] `neutral` derives the ramp from
  * `neutralProfile` instead of the seed hue; defaults to `chromatic`.
@@ -168,8 +170,8 @@
  * @property {number[]} gamutMappedStops Stops whose ideal color fell outside
  * sRGB and was mapped back into it.
  * @property {Array<TonalPaletteAnchor & {generatedColor: string, deltaE: number}>} anchors
- * Each anchor with the color generated before correction and the perceptual
- * distance the correction moved.
+ * Each anchor with the color the stop received after its policy was applied
+ * and the perceptual distance that color still has from the requested target.
  */
 
 /**
@@ -205,8 +207,9 @@
  * @property {1} schemaVersion
  * @property {'astryx-oklch-v1'} recipe Recipe that produced the candidate.
  * @property {string} candidateSha256 SHA-256 over the candidate bytes as written.
- * @property {{version: string, sha256: string}} [preview] Present only when a
- * preview was written.
+ * @property {{version: string, sha256: string}} [preview] Present when preview
+ * content was generated for the request, even if no file was written because
+ * the target already exists.
  * @property {TonalPaletteNormalizedRequest} request
  * @property {{families: Record<string, {light?: TonalPaletteRampDiagnostics, dark?: TonalPaletteRampDiagnostics}>, coordination: TonalPaletteCoordinationDiagnostics[]}} diagnostics
  */
