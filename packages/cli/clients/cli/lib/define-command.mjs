@@ -78,6 +78,21 @@ export function markReportsResult(cmd) {
   return cmd;
 }
 
+/** The CommandDoc and wrapped FunctionDoc a command was built from. */
+export const COMMAND_DOCS = Symbol.for('astryx.command.docs');
+
+/**
+ * The docs a command was built from; undefined for a hand-registered command.
+ * @param {import('commander').Command} cmd
+ * @returns {{
+ *   doc: import('@astryxdesign/cli/authoring').CommandDoc,
+ *   fn?: import('@astryxdesign/cli/authoring').FunctionDoc,
+ * } | undefined}
+ */
+export function commandDocsOf(cmd) {
+  return /** @type {any} */ (cmd)?.[COMMAND_DOCS];
+}
+
 /**
  * Build a Commander command from a CommandDoc and attach it to `parent`.
  *
@@ -102,6 +117,7 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     .join(' ');
 
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
+  Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   if (doc.summary) cmd.description(doc.summary);
 
   const paramDesc = (/** @type {string | undefined} */ name) =>
