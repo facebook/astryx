@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Every field `themeBuild()` returns is named in its FunctionDoc.
+ * Every field `themeBuild()` returns is named in its FunctionDoc and in the
+ * response-types doc.
  *
  * The receipt is a stable machine-readable response, so each field needs
  * consumer documentation, not only a typedef. The fields are read off a real
@@ -14,6 +15,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {themeBuild} from './build.mjs';
 import {doc} from '../themeBuild.doc.mjs';
+import {doc as responseTypes} from '../../../foundation/response/response-types.doc.mjs';
 import {ensureCoreBuilt} from '../../../clients/cli/commands/ensure-core-built.mjs';
 
 /** @type {string[]} */
@@ -59,7 +61,7 @@ function undocumented(description, fields) {
   );
 }
 
-describe('themeBuild() FunctionDoc names every receipt field', () => {
+describe('themeBuild() consumer docs name every receipt field', () => {
   it('theme.build', async () => {
     const dir = themeDir();
     const result = await themeBuild('ocean.mjs', {}, {cwd: dir});
@@ -76,6 +78,23 @@ describe('themeBuild() FunctionDoc names every receipt field', () => {
       'variantsDts',
     ];
     expect(undocumented(returnsDescription('theme.build'), fields)).toEqual([]);
+  });
+
+  it('theme.build in the response-types doc', async () => {
+    const dir = themeDir();
+    const result = await themeBuild('ocean.mjs', {}, {cwd: dir});
+    const data = /** @type {Record<string, any>} */ (result?.data);
+    const member = responseTypes.members.find(m => m.value === 'theme.build');
+    expect(member, 'response-types has no theme.build member').toBeDefined();
+
+    const fields = [
+      ...Object.keys(data),
+      ...Object.keys(data.outputs),
+      'variantsDts',
+    ];
+    expect(
+      undocumented(/** @type {{description: string}} */ (member).description, fields),
+    ).toEqual([]);
   });
 
   it('theme.build.check', async () => {

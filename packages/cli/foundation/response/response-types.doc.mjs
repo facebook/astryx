@@ -198,7 +198,7 @@ export const doc = {
     {
       value: 'theme.build',
       description:
-        'A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.',
+        'A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).',
     },
     {
       value: 'theme.build.check',
