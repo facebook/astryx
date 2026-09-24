@@ -24,7 +24,6 @@ import {
   text,
   record,
   records,
-  ARROW,
 } from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -33,46 +32,46 @@ import {doc as buildCommand} from './build.doc.mjs';
 import {doc as buildFn} from '../../../api/build/build.doc.mjs';
 
 /**
- * Emit the build playbook (shown when `build` is run with no query).
- * @param {string} run - The CLI invocation prefix (e.g. `npx astryx`).
+ * Render a playbook command list: each command formatted with the caller's
+ * invocation, purposes aligned into one comment column.
+ * @param {import('../../../api/build/build.type.mjs').BuildPlaybookCommand[]} commands
+ * @returns {string[]}
  */
-function printPlaybook(run) {
+function playbookCommandLines(commands) {
+  const rendered = commands.map(c => formatCliCommand(c.command));
+  const width = Math.max(0, ...rendered.map(r => r.length));
+  return commands.map((c, i) =>
+    c.purpose
+      ? `     ${rendered[i].padEnd(width)}   # ${c.purpose}`
+      : `     ${rendered[i]}`,
+  );
+}
+
+/**
+ * Emit the build playbook (shown when `build` is run with no query) — a
+ * projection of the `build.help` data, so text and JSON carry the same steps.
+ * @param {import('../../../api/build/build.type.mjs').BuildHelpResponse['data']} playbook
+ */
+function printPlaybook(playbook) {
   emit(
-    section('How to build a page with Astryx'),
-    text(
-      [
-        "1. Find a starting point for what you're building:",
-        `     ${run} build "<what you're building>"`,
-        `   ${ARROW} returns the closest [page] template, the [block]s that cover parts,`,
-        '     and the [component]s to fill the gaps, with a "Compose:" suggestion.',
-      ].join('\n'),
+    section(playbook.title),
+    ...playbook.steps.map((step, i) =>
+      text(
+        [
+          `${i + 1}. ${step.title}:`,
+          ...playbookCommandLines(step.commands),
+          ...(step.returns ? [`   returns: ${step.returns}`] : []),
+        ].join('\n'),
+      ),
     ),
     text(
       [
-        `2. If a [page] template matches ${ARROW} scaffold it and adapt:`,
-        `     ${run} template <name> [path]`,
+        `${playbook.steps.length + 1}. Rules (keep it on-system):`,
+        ...playbook.rules.map(rule => `   - ${rule}`),
       ].join('\n'),
     ),
-    text(
-      [
-        `3. If nothing matches exactly ${ARROW} compose:`,
-        `     ${run} template <name> --skeleton   # study a close page's layout`,
-        `     ${run} template <BlockName>         # drop in each block from the kit`,
-        `     ${run} component <Name>             # fill remaining gaps (read props)`,
-      ].join('\n'),
-    ),
-    text(
-      [
-        '4. Rules (keep it on-system):',
-        '   - No <div>/raw HTML for layout — use VStack/HStack/Grid/Stack/Card etc.',
-        `   - No style={{}} — use component props; design tokens via \`${run} docs tokens\`.`,
-        '   - Wrap the app in <Theme theme={...}> and import core reset.css + astryx.css.',
-      ].join('\n'),
-    ),
-    text(
-      `Tip: \`${run} build "<idea>"\` is the fastest way in. For a neutral ` +
-        `lookup of any component/doc/template, use \`${run} search <query>\`.`,
-    ),
+    playbook.related.length > 0 &&
+      text(['Related:', ...playbookCommandLines(playbook.related)].join('\n')),
   );
 }
 
@@ -91,7 +90,10 @@ export function registerBuild(program) {
 
       // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
-        const result = await buildApi(undefined, {cwd: process.cwd()});
+        const result =
+          /** @type {import('../../../api/build/build.type.mjs').BuildHelpResponse} */ (
+            await buildApi(undefined, {cwd: process.cwd()})
+          );
         // The playbook is a document, not a lookup: one doc, always the same
         // one. Counting it as a result keeps "what did this run answer with"
         // true for the no-argument form too.
@@ -100,7 +102,7 @@ export function registerBuild(program) {
           jsonOut(result);
           return playbook;
         }
-        printPlaybook(run);
+        printPlaybook(result.data);
         return playbook;
       }
 

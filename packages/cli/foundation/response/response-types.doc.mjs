@@ -123,7 +123,7 @@ export const doc = {
     {
       value: 'build.help',
       description:
-        'A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.',
+        'The how-to-build-a-page playbook, emitted when no query is given: `playbook: true`, a title, the ordered steps (title, commands, optional returns), the on-system rules, and related lookups. Commands are bare subcommands for the caller to render with its own invocation.',
     },
     {
       value: 'build.kit',
