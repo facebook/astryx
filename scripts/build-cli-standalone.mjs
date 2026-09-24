@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {parseArgs} from 'node:util';
+import zlib from 'node:zlib';
 import {fileURLToPath} from 'node:url';
 
 const REPO_ROOT = path.resolve(
@@ -60,9 +61,9 @@ const sha256File = file =>
   createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
 /**
- * The runtime's own package.json. `bundleDependencies` makes `npm pack` carry
- * the whole node_modules tree, and `private` keeps it off the registry until
- * publishing is wired up on purpose.
+ * The runtime's own package.json. `bundleDependencies` tells npm the whole
+ * node_modules tree ships inside the tarball, and `private` keeps it off the
+ * registry until publishing is wired up on purpose.
  *
  * @param {{version: string, node: string}} opts
  */
@@ -261,6 +262,112 @@ function deploy(name, target, extraArgs) {
   }
 }
 
+/** The fixed timestamp `npm pack` stamps on every entry: 1985-10-26T08:15:00Z. */
+const TAR_MTIME = 499162500;
+
+/**
+ * Pack `root` into an npm-style tarball: every file under `package/`, sorted,
+ * with a fixed timestamp and owner, so the same tree always packs to the same
+ * bytes. Written by hand because `npm pack` died on this ~9,500-file bundled
+ * tree in CI ("Exit handler never called"); plain ustar needs only zlib.
+ *
+ * @param {string} root
+ * @param {string} outFile
+ * @returns {{files: number, size: number, unpackedSize: number, integrity: string}}
+ */
+export function packTree(root, outFile) {
+  /** @type {string[]} */
+  const files = [];
+  /** @param {string} dir */
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile()) files.push(full);
+      else throw new Error(`cannot pack ${full}: not a regular file`);
+    }
+  };
+  walk(root);
+  const names = files.map(file =>
+    ['package', ...path.relative(root, file).split(path.sep)].join('/'),
+  );
+  const order = names
+    .map((_, i) => i)
+    .sort((a, b) => (names[a] < names[b] ? -1 : names[a] > names[b] ? 1 : 0));
+
+  /** @type {Buffer[]} */
+  const chunks = [];
+  let unpackedSize = 0;
+  for (const i of order) {
+    const data = fs.readFileSync(files[i]);
+    const executable = (fs.statSync(files[i]).mode & 0o111) !== 0;
+    chunks.push(
+      tarHeader(names[i], data.length, executable ? 0o755 : 0o644),
+      data,
+    );
+    const pad = (512 - (data.length % 512)) % 512;
+    if (pad > 0) chunks.push(Buffer.alloc(pad));
+    unpackedSize += data.length;
+  }
+  chunks.push(Buffer.alloc(1024));
+  const gz = zlib.gzipSync(Buffer.concat(chunks), {level: 9});
+  fs.writeFileSync(outFile, gz);
+  return {
+    files: files.length,
+    size: gz.length,
+    unpackedSize,
+    integrity: `sha512-${createHash('sha512').update(gz).digest('base64')}`,
+  };
+}
+
+/**
+ * One ustar header block. Names over 100 bytes split at a `/` into the
+ * 155-byte prefix field; anything longer fails loudly rather than truncating.
+ *
+ * @param {string} name
+ * @param {number} size
+ * @param {number} mode
+ */
+function tarHeader(name, size, mode) {
+  let prefix = '';
+  let base = name;
+  if (Buffer.byteLength(name) > 100) {
+    const at = [...name.matchAll(/\//g)]
+      .map(m => m.index ?? 0)
+      .find(
+        i =>
+          Buffer.byteLength(name.slice(0, i)) <= 155 &&
+          Buffer.byteLength(name.slice(i + 1)) <= 100,
+      );
+    if (at === undefined)
+      throw new Error(`path too long for a tar header: ${name}`);
+    prefix = name.slice(0, at);
+    base = name.slice(at + 1);
+  }
+  const header = Buffer.alloc(512);
+  /** @param {string} value @param {number} offset @param {number} length */
+  const put = (value, offset, length) =>
+    header.write(value, offset, length, 'utf8');
+  /** @param {number} value @param {number} offset @param {number} length */
+  const octal = (value, offset, length) =>
+    put(`${value.toString(8).padStart(length - 1, '0')}\0`, offset, length);
+  put(base, 0, 100);
+  octal(mode, 100, 8);
+  octal(0, 108, 8);
+  octal(0, 116, 8);
+  octal(size, 124, 12);
+  octal(TAR_MTIME, 136, 12);
+  put('        ', 148, 8);
+  put('0', 156, 1);
+  put('ustar\0', 257, 6);
+  put('00', 263, 2);
+  put(prefix, 345, 155);
+  let sum = 0;
+  for (const byte of header) sum += byte;
+  put(`${sum.toString(8).padStart(6, '0')}\0 `, 148, 8);
+  return header;
+}
+
 /** @returns {string|null} */
 function sourceCommit() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
@@ -362,25 +469,10 @@ export function buildStandalone({outDir, pnpmArgs = []}) {
   );
 
   const tarballName = `astryxdesign-cli-standalone-${version}.tgz`;
-  fs.rmSync(path.join(outDir, tarballName), {force: true});
-  const pack = spawnSync(
-    'npm',
-    ['pack', root, '--json', '--ignore-scripts', '--pack-destination', outDir],
-    {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-      // The JSON lists every file (~9,500), well past spawnSync's 1 MB default.
-      maxBuffer: 256 * 1024 * 1024,
-      shell: process.platform === 'win32',
-    },
-  );
-  if (pack.status !== 0) {
-    throw new Error(`npm pack failed: ${pack.error?.message ?? pack.stderr}`);
-  }
-  const [packed] = JSON.parse(pack.stdout);
-  const tarball = path.join(outDir, packed.filename);
+  const tarball = path.join(outDir, tarballName);
+  const packed = packTree(root, tarball);
   const sha256 = sha256File(tarball);
-  fs.writeFileSync(`${tarball}.sha256`, `${sha256}  ${packed.filename}\n`);
+  fs.writeFileSync(`${tarball}.sha256`, `${sha256}  ${tarballName}\n`);
 
   return {
     tarball,
@@ -388,7 +480,7 @@ export function buildStandalone({outDir, pnpmArgs = []}) {
     integrity: packed.integrity,
     size: packed.size,
     unpackedSize: packed.unpackedSize,
-    files: packed.entryCount,
+    files: packed.files,
     packages: packages.length,
     cli: version,
     core: version,

@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,6 +11,7 @@ import {
   findSymlinks,
   inventory,
   launcherSource,
+  packTree,
   removeBinDirs,
   runtimePackageJson,
 } from './build-cli-standalone.mjs';
@@ -179,5 +181,88 @@ describe('removeBinDirs + findSymlinks', () => {
     removeBinDirs(tmp);
 
     expect(findSymlinks(tmp)).toEqual([path.join('node_modules', 'alias')]);
+  });
+});
+
+describe('packTree', () => {
+  /** A tree with a nested path well past tar's 100-byte name field. */
+  function fixture() {
+    const root = path.join(tmp, 'root');
+    const deep = path.join(
+      root,
+      'node_modules',
+      '@scope',
+      'a-fairly-long-package-name',
+      'assets',
+      'templates',
+      'blocks',
+    );
+    fs.mkdirSync(deep, {recursive: true});
+    fs.writeFileSync(
+      path.join(deep, 'SomeLongComponentName01ShippedLocale.doc.mjs'),
+      'export default 1;\n',
+    );
+    fs.mkdirSync(path.join(root, 'bin'));
+    fs.writeFileSync(
+      path.join(root, 'bin/astryx.mjs'),
+      '#!/usr/bin/env node\n',
+      {mode: 0o755},
+    );
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      '{"name":"x","version":"1.0.0"}\n',
+    );
+    return root;
+  }
+
+  it('packs every file under package/ and extracts with tar, modes intact', () => {
+    const root = fixture();
+    const out = path.join(tmp, 'x.tgz');
+    const packed = packTree(root, out);
+    expect(packed.files).toBe(3);
+    expect(packed.integrity).toMatch(/^sha512-/);
+
+    const dest = path.join(tmp, 'out');
+    fs.mkdirSync(dest);
+    const tar = spawnSync('tar', ['-xzf', out, '-C', dest], {encoding: 'utf8'});
+    expect(tar.status, tar.stderr).toBe(0);
+    const long =
+      'node_modules/@scope/a-fairly-long-package-name/assets/templates/blocks/SomeLongComponentName01ShippedLocale.doc.mjs';
+    expect(`package/${long}`.length).toBeGreaterThan(100);
+    expect(fs.readFileSync(path.join(dest, 'package', long), 'utf8')).toBe(
+      'export default 1;\n',
+    );
+    expect(
+      fs.statSync(path.join(dest, 'package/bin/astryx.mjs')).mode & 0o777,
+    ).toBe(0o755);
+    expect(
+      fs.statSync(path.join(dest, 'package/package.json')).mode & 0o777,
+    ).toBe(0o644);
+  });
+
+  it('packs the same tree to the same bytes', () => {
+    const root = fixture();
+    packTree(root, path.join(tmp, 'a.tgz'));
+    packTree(root, path.join(tmp, 'b.tgz'));
+    expect(
+      fs
+        .readFileSync(path.join(tmp, 'a.tgz'))
+        .equals(fs.readFileSync(path.join(tmp, 'b.tgz'))),
+    ).toBe(true);
+  });
+
+  it('refuses a name that no ustar header can hold', () => {
+    const root = path.join(tmp, 'root');
+    fs.mkdirSync(root);
+    fs.writeFileSync(path.join(root, `${'x'.repeat(120)}.mjs`), '');
+    expect(() => packTree(root, path.join(tmp, 'x.tgz'))).toThrow(/too long/);
+  });
+
+  it('refuses a symlink rather than packing its target', () => {
+    const root = fixture();
+    fs.symlinkSync('package.json', path.join(root, 'alias.json'));
+    expect(() => packTree(root, path.join(tmp, 'x.tgz'))).toThrow(
+      /not a regular file/,
+    );
   });
 });
