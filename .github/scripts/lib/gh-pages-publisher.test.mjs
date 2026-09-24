@@ -1175,218 +1175,65 @@ describe('gh-pages publisher', () => {
     ).toBe('old storybook');
   });
 
-  it('publishes PR previews without losing reports or visual state', async () => {
+  it('publishes Sandbox only and preserves existing Storybook and visual bytes', async () => {
     const fx = fixture();
-    const storybook = path.join(fx.root, 'preview-storybook');
     const sandbox = path.join(fx.root, 'preview-sandbox');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
     writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
     writeFile(
       path.join(sandbox, 'template-assets', 'ignored.txt'),
-      'shared asset copy',
+      'shared asset',
     );
-
     const result = await queuedPublish(fx, 940, 'pr-preview/123', () =>
       publishPrPreview({
         ...context(fx, 940, 'pr-preview/123'),
         ...previewIdentity(),
-        storybook,
         sandbox,
       }),
     );
-
     const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
     expect(
-      fs.readFileSync(path.join(final, 'pr', '123', 'index.html'), 'utf8'),
-    ).toBe('new preview');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'sandbox', 'index.html'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/sandbox/index.html'), 'utf8'),
     ).toBe('new sandbox');
     expect(
-      fs.existsSync(
-        path.join(final, 'pr', '123', 'sandbox', 'template-assets'),
-      ),
+      fs.existsSync(path.join(final, 'pr/123/sandbox/template-assets')),
     ).toBe(false);
     expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/visual/evidence.json'), 'utf8'),
     ).toBe('same-PR visual evidence');
+    expect(fs.readFileSync(path.join(final, 'pr/124/index.html'), 'utf8')).toBe(
+      'closed preview',
+    );
+    expect(result.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
+    });
     const manifest = JSON.parse(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', '.astryx-preview.json'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/.astryx-preview.json'), 'utf8'),
     );
-    expect(manifest).toMatchObject({
-      repository: REPO,
-      pullRequest: {number: 123, headSha: HEAD},
-      sourceRun: {id: 333, attempt: 1},
-      targets: {
-        storybook: {available: true, path: 'pr/123/'},
-        sandbox: {available: true, path: 'pr/123/sandbox/'},
-      },
+    expect(manifest.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
     });
-    expect(result).toMatchObject({
-      status: 'published',
-      pagesCommit: expect.stringMatching(/^[0-9a-f]{40}$/),
-      targets: {
-        storybook: {available: true},
-        sandbox: {available: true},
-      },
-    });
-    expect(
-      fs.readFileSync(
-        path.join(final, 'reports', 'vibe', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('vibe');
-    expect(
-      fs.existsSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-      ),
-    ).toBe(true);
-    expect(
-      fs.existsSync(
-        path.join(
-          final,
-          'pr',
-          '42',
-          'visual',
-          HEAD,
-          '123',
-          '1',
-          'evidence.json',
-        ),
-      ),
-    ).toBe(true);
   });
 
-  it('rejects Storybook artifacts that collide with trusted visual evidence', async () => {
+  it('rejects attempts to republish Storybook onto Pages', async () => {
     const fx = fixture();
-    const storybook = path.join(fx.root, 'colliding-storybook');
-    const sandbox = path.join(fx.root, 'colliding-sandbox');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
-    writeFile(
-      path.join(storybook, 'visual', 'evidence.json'),
-      'untrusted evidence',
-    );
-    writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
-
-    await expect(
-      queuedPublish(fx, 944, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 944, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          sandbox,
-        }),
-      ),
-    ).rejects.toThrow(/reserved path visual/);
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-        'utf8',
-      ),
-    ).toBe('same-PR visual evidence');
-  });
-
-  it.each([
-    ['no deployment', false, false],
-    ['Storybook only', true, false],
-    ['Sandbox only', false, true],
-    ['both previews', true, true],
-  ])(
-    'publishes independent target state: %s',
-    async (_label, hasStorybook, hasSandbox) => {
-      const fx = fixture();
-      const storybook = hasStorybook
-        ? path.join(fx.root, 'matrix-storybook')
-        : undefined;
-      const sandbox = hasSandbox
-        ? path.join(fx.root, 'matrix-sandbox')
-        : undefined;
-      if (storybook) writeFile(path.join(storybook, 'index.html'), 'storybook');
-      if (sandbox) writeFile(path.join(sandbox, 'index.html'), 'sandbox');
-      const resultFile = path.join(fx.root, 'preview-deployment.json');
-
-      await queuedPublish(fx, 945, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 945, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          sandbox,
-          resultFile,
-        }),
-      );
-
-      const final = cloneRemote(fx.remote, fx.root);
-      expect(fs.existsSync(path.join(final, 'pr', '123', 'index.html'))).toBe(
-        hasStorybook,
-      );
-      expect(
-        fs.existsSync(path.join(final, 'pr', '123', 'sandbox', 'index.html')),
-      ).toBe(hasSandbox);
-      expect(
-        fs.readFileSync(
-          path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-          'utf8',
-        ),
-      ).toBe('same-PR visual evidence');
-      expect(fs.existsSync(path.join(final, 'pr', '124', 'index.html'))).toBe(
-        true,
-      );
-      const result = JSON.parse(fs.readFileSync(resultFile, 'utf8'));
-      expect(result.targets.storybook.available).toBe(hasStorybook);
-      expect(result.targets.sandbox.available).toBe(hasSandbox);
-    },
-  );
-
-  it('refuses to mark a target available without its entry point', async () => {
-    const fx = fixture();
-    const storybook = path.join(fx.root, 'missing-index-storybook');
-    writeFile(path.join(storybook, 'assets', 'bundle.js'), 'bundle');
-
+    const storybook = path.join(fx.root, 'storybook');
+    writeFile(path.join(storybook, 'index.html'), 'untrusted storybook');
     await expect(
       publishPrPreview({
         ...context(fx, 946, 'pr-preview/123'),
         ...previewIdentity(),
         storybook,
       }),
-    ).rejects.toThrow('--storybook must contain index.html');
-  });
-
-  it('does not claim deployment when the gh-pages push fails', async () => {
-    const fx = fixture();
-    const storybook = path.join(fx.root, 'failed-storybook');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
-    const resultFile = path.join(fx.root, 'preview-deployment.json');
-
-    await expect(
-      queuedPublish(fx, 946, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 946, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          resultFile,
-          beforePush: () => {
-            throw new Error('simulated publisher failure');
-          },
-        }),
-      ),
-    ).rejects.toThrow('simulated publisher failure');
-
+    ).rejects.toThrow(/Storybook previews are hosted on Vercel/);
     const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(path.join(final, 'pr', '123', 'index.html'), 'utf8'),
-    ).toBe('preview');
-    expect(fs.existsSync(resultFile)).toBe(false);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
   });
 
   it('cleans stale previews without deleting visual evidence or live previews', async () => {

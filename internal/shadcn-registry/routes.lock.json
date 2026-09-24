@@ -4911,6 +4911,11 @@
       "aliases": []
     },
     {
+      "name": "template-table-tree",
+      "path": "templates/table-tree",
+      "aliases": []
+    },
+    {
       "name": "template-theme-showcase",
       "path": "templates/theme-showcase",
       "aliases": []

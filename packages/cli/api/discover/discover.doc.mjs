@@ -41,7 +41,7 @@ export const doc = {
       name: 'options.components',
       type: 'boolean',
       description:
-        'List components only. A CLI display flag consumed by the renderer; the programmatic response shape is unchanged.',
+        'In the CLI package list, print every component of each package instead of the first 10. A display flag for the CLI renderer; the programmatic response is unchanged.',
     },
     {
       name: 'options.lang',

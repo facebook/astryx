@@ -11,14 +11,14 @@ on:
   pull_request:
     branches: ['main']
   merge_group:
-  # Explicit baseline maintenance shares the PR visual owner. It never runs as
-  # a release gate and never changes the baseline without a reviewed promotion.
+  # Explicit release checks and baseline maintenance share the canonical owners.
+  # Only a reviewed promotion may change the baseline.
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Capture canonical baseline candidates or promote a reviewed capture'
+        description: 'Check exact main for release, capture candidates, or promote a reviewed capture'
         type: choice
-        options: [capture, promote]
+        options: [capture, promote, release-check]
         default: capture
         required: true
       run_id:
@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   maintenance-request:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'release-check'
     runs-on: ubuntu-slim
     steps:
       - name: Require explicit main-branch maintenance
@@ -76,7 +76,7 @@ jobs:
 
   # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -85,8 +85,22 @@ jobs:
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
     steps:
+      - name: Require exact current main for release
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (context.ref !== 'refs/heads/main') {
+              throw new Error('Release checks must be dispatched from main.');
+            }
+            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
+            if (data.object.sha !== context.sha) {
+              throw new Error('Main changed since dispatch; dispatch release-check again.');
+            }
+
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 50
 
       - name: Fetch base branch
@@ -123,9 +137,9 @@ jobs:
             printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
               >> "$GITHUB_OUTPUT"
           fi
-  # Docsite data extraction tests — always runs, fast (~2s)
+  # Required docsite owner: data tests plus the production browser contract.
   docsite-test:
-    needs: [check-scope]
+    needs: [check-scope, docsite-browser]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
@@ -136,6 +150,12 @@ jobs:
         run: |
           echo "Change scope could not be classified; refusing to skip required work."
           exit 1
+
+      - name: Require successful docsite browser contract
+        if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        env:
+          DOCSITE_BROWSER_RESULT: ${{ needs.docsite-browser.result }}
+        run: test "$DOCSITE_BROWSER_RESULT" = 'success'
 
       - name: Skip docsite work for Node tooling
         if: needs.check-scope.outputs.tooling_only == 'true'
@@ -174,6 +194,62 @@ jobs:
         if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
+  # Docsite browser contracts. The playground preview runs user-authored code
+  # in a sandboxed iframe whose only tie to the page is a nonce-attested
+  # MessagePort handshake (apps/docsite/src/app/playground/previewChannel.ts).
+  # jsdom can drive that state machine but cannot prove the integration: that
+  # the frame's real `load` event reaches it, that a replaced document is torn
+  # down and the current code and theme reach its successor, and that a
+  # document previewed code navigated the frame to receives nothing. Only the
+  # production build has the opaque-origin sandbox at all, so this job builds
+  # the docsite and drives `next start` in Chromium. Its outcome feeds the
+  # existing required docsite-test context; it is not another required lane.
+  docsite-browser:
+    needs: [check-scope]
+    if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The production build imports every theme package's built entry and the
+      # canary component packages, on top of core.
+      - name: Build docsite workspace dependencies
+        run: |
+          pnpm -F @astryxdesign/core build
+          pnpm -F @astryxdesign/lab build
+          pnpm -F @astryxdesign/charts build
+          pnpm -F @astryxdesign/richtext build
+          pnpm -F @astryxdesign/vega build
+          pnpm -F @astryxdesign/theme-neutral build
+          pnpm -F @astryxdesign/theme-matcha build
+          pnpm -F @astryxdesign/theme-stone build
+          pnpm -F @astryxdesign/theme-gothic build
+          pnpm -F @astryxdesign/theme-chocolate build
+          pnpm -F @astryxdesign/theme-y2k build
+          pnpm -F @astryxdesign/theme-butter build
+
+      - name: Build the docsite
+        run: pnpm -F @astryxdesign/docsite build
+
+      - name: Run docsite browser contracts
+        run: pnpm test:docsite-browser
+
+      - name: Upload docsite browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: docsite-browser-evidence
+          path: test-results/docsite/
+          if-no-files-found: error
+          retention-days: 7
+
   # Lightweight check — does the PR touch any published components?
   # Gates pr-a11y and pr-rtl to avoid unnecessary work.
   #
@@ -186,7 +262,7 @@ jobs:
   # runner or fan out into visual, accessibility, or RTL work.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true'
+    if: (github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -210,11 +286,16 @@ jobs:
           fetch-depth: 50
 
       - name: Fetch base branch
+        if: github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Check for component changes
         id: check
         run: |
+          if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
+            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\nhas_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ needs.check-scope.outputs.docsite_only }}" = "true" ] \
             || [ "${{ needs.check-scope.outputs.spec_only }}" = "true" ] \
             || [ "${{ needs.check-scope.outputs.tooling_only }}" = "true" ]; then
@@ -476,13 +557,12 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
-      storybook_url: ${{ steps.urls.outputs.storybook_url }}
-      short_hash: ${{ steps.urls.outputs.short_hash }}
+      short_hash: ${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
@@ -500,10 +580,20 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         uses: actions/checkout@v7
         with:
+          # Component evidence artifacts are named for and reviewed at the PR
+          # head, so build their Storybook bytes from that exact tree rather
+          # than GitHub's synthetic merge checkout.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # Depth 50 (same as check-scope) so analyze-pr.js's three-dot diff
           # can find a merge base — depth 1 breaks it ("no merge base") and
           # the analysis silently reported zero changed components.
           fetch-depth: 50
+
+      - name: Verify Storybook source checkout
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Fetch base branch for PR analysis
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
@@ -571,6 +661,10 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
 
+      - name: Stamp Storybook source revision
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: git rev-parse HEAD > apps/storybook/dist/astryx-build-sha.txt
+
       - name: Compute PR preview path
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         id: urls
@@ -583,14 +677,21 @@ jobs:
 
           echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-          echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
+      - name: Identify full release audit scope
+        if: github.event_name == 'workflow_dispatch' && needs.check-scope.outputs.tooling_only != 'true'
+        id: release
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "short_hash=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          printf '{"forceFullComponentAudits":true}\n' > analysis.json
+
       - name: Upload Storybook artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
-          name: storybook-${{ steps.urls.outputs.short_hash }}
+          name: storybook-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
           retention-days: 30
 
@@ -606,10 +707,10 @@ jobs:
       # Two paths, so the artifact is rooted at their common ancestor
       # (packages/) — the download below unpacks it there.
       - name: Upload built themes and core
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
-          name: dists-${{ steps.urls.outputs.short_hash }}
+          name: dists-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: |
             packages/themes/*/dist/
             packages/core/dist/
@@ -626,14 +727,9 @@ jobs:
       - name: Write PR comment metadata
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         run: |
-          # The pr-comment and deploy-preview workflows run on workflow_run
-          # (privileged token), so they can comment on and deploy previews for
-          # fork PRs too. Neither context knows the PR number, preview URLs, or
-          # the artifact hash, so persist them here for the trusted jobs to read.
-          #
-          # Preview URLs are now populated for ALL PRs (fork and same-repo alike)
-          # because deploy-preview.yml deploys every PR's preview from the trusted
-          # context — the old fork/same-repo split (empty URLs on forks) is gone.
+          # PR Comment reads this exact-run analysis. Storybook preview links
+          # come from the exact-head Vercel deployment; the Sandbox artifact
+          # remains on Pages until its separate migration.
           cat > pr-meta.json <<EOF
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
@@ -648,7 +744,7 @@ jobs:
           EOF
 
       - name: Upload analysis artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
@@ -757,13 +853,10 @@ jobs:
             *) exit 1 ;;
           esac
 
-  # NOTE: PR preview deploy has moved to deploy-preview.yml (workflow_run).
-  # It used to live here as a `deploy-preview` job, but a pull_request job on a
-  # fork gets a read-only GITHUB_TOKEN and can't push to gh-pages — so previews
-  # only ever appeared on same-repo PRs. The trusted workflow_run companion runs
-  # in the base-repo context with a write token, downloads the static artifacts
-  # this workflow already uploads (storybook-<hash>, sandbox-<hash>), and deploys
-  # for EVERY PR (fork and same-repo alike) without executing any PR code.
+  # CI keeps Storybook's static artifact for visual, accessibility, and RTL
+  # checks. The Vercel Preview deployment independently hosts human Storybook;
+  # the trusted deploy-preview.yml workflow still publishes only Sandbox to Pages
+  # after CI for fork and same-repository PRs without running PR code.
 
   # Accessibility audit
   # Skipped when no components changed. Depends only on build-storybook, so it
@@ -771,13 +864,21 @@ jobs:
   # for the slower sandbox build.
   pr-a11y:
     needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify evidence checkout
+        if: github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       # Dependencies are installed later, together with the Playwright browser,
       # because the analysis artifact has to be downloaded first.
@@ -805,13 +906,13 @@ jobs:
       # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
-          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
-          ANALYSIS_FORCE_FULL=$(jq -r '.forceFullComponentAudits // false' analysis.json)
           SCOPE_ARGS=()
-          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" != "true" ] && [ "$ANALYSIS_FORCE_FULL" != "true" ] && [ -n "$COMPONENTS" ]; then
+          if [ "${{ github.event_name }}" = 'pull_request' ]; then
+            COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+            # An explicit empty filter means no changed components, never all
+            # stories. Shared-surface full sweeps belong to release-check.
             SCOPE_ARGS=(--components "$COMPONENTS")
-          else
-            echo "Component scope is policy-sensitive or unresolved — running the full accessibility audit."
+            echo "PR accessibility scope: ${COMPONENTS:-no changed components; fast browser guards still run}"
           fi
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
@@ -858,20 +959,45 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
-      # The reusable accessibility spec-test contracts (internal/a11y-spec) and
-      # the component bindings that adopt them. jsdom cannot compute a role or
-      # an accessible name, resolve a real tab sequence, or turn a key press
-      # into an activation, so those expectations are reported `unrun` in the
-      # unit lane and proven here or not at all. Hosted with the sibling
-      # Chromium guards for the same reason they are: pr-a11y is the blocking
-      # job that runs whenever components change.
-      - name: Run accessibility spec-test contracts
+      # ChatMessageBubble is nested under the shared Chat source directory, so
+      # the generic stable-visual owner cannot select its dedicated fixture.
+      # Run the component's bounded evidence matrix only when the PR scope names
+      # it, and upload the receipted frames below.
+      - name: Run ChatMessageBubble audit browser evidence
+        if: github.event_name == 'pull_request'
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/ChatMessageBubble,*)
+              pnpm exec playwright test \
+                packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts \
+                --project chromium
+              ;;
+            *) echo "ChatMessageBubble not in PR scope; skipping audit evidence." ;;
+          esac
+
+      - name: Upload ChatMessageBubble audit evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-message-bubble-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/chat-message-bubble-audit-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Run the exhaustive contract/fixture matrix at release time. PRs retain
+      # scoped axe validation and the fast interaction guards above; they must
+      # not pay for every component's browser bindings on every change.
+      - name: Run accessibility spec-test contracts
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: pnpm test:a11y-contract
 
       - name: Upload pressed-state pixel evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -884,7 +1010,7 @@ jobs:
       # so the frames and their sensor receipts are produced here, bound to the
       # same exact head as every other check in this job.
       - name: Upload component-audit browser evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: component-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -895,6 +1021,7 @@ jobs:
       # Baseline-free target/axis diagnostics are not a visual-regression lane.
       # Keep their existing report-only behavior with the other browser guards.
       - name: Check Probe theme reach
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         continue-on-error: true
         run: |
           node .github/scripts/visual-gate/gate.mjs reach \
@@ -902,7 +1029,7 @@ jobs:
             --out .visual-reach
 
       - name: Upload Probe reach report
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         uses: actions/upload-artifact@v7
         with:
           name: visual-reach
@@ -925,6 +1052,9 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: ./.github/actions/setup
+
+      - name: Verify packed consumer dependency contract
+        run: pnpm vitest run packages/build/src/packed-consumer.test.mjs --project node --maxWorkers=1
 
       - name: Install Playwright
         run: npx playwright install chromium
@@ -977,7 +1107,10 @@ jobs:
         needs.check-components.result == 'success' &&
         needs.check-components.outputs.has_stable_visual == 'true') ||
        (github.event_name == 'workflow_dispatch' &&
-        needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))
+        ((inputs.operation == 'release-check' &&
+          needs.build-storybook.result == 'success' &&
+          needs.check-components.result == 'success') ||
+         (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -997,7 +1130,7 @@ jobs:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
@@ -1005,7 +1138,7 @@ jobs:
 
       # If the optional theme artifact is missing, the gate builds the themes.
       - name: Download built themes and core
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -1017,11 +1150,11 @@ jobs:
 
       # Downloaded theme builds import Core's consumer-facing dist files.
       - name: Build Core dependency for theme inspection
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         run: pnpm -F @astryxdesign/core build
 
       - name: Build canonical maintenance Storybook
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
         run: pnpm build && pnpm -F @astryxdesign/storybook build
 
       - name: Fetch visual baseline from gh-pages
@@ -1113,9 +1246,42 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Run full release visual check
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
+        run: |
+          set -eu
+          set +e
+          node .github/scripts/visual-gate/gate.mjs release \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --summary-output visual-summary.md
+          code=$?
+          set -e
+          case "$code" in 0|2) ;; *) exit "$code" ;; esac
+          STATUS=$(jq -er '.status' .visual-run/verdict.json)
+          case "$STATUS" in
+            pass|changed) ;;
+            *) echo "Visual evidence is incomplete: $STATUS"; exit 1 ;;
+          esac
+          cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release visual verdict and report
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-release-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/manifest.json
+            .visual-run/shots/
+            .visual-run/report/
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Capture canonical visual baseline
         id: maintenance-capture
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
         # A complete browser-refresh capture can be incomparable with the old
         # baseline. The next step requires full capture, not a clean comparison.
         continue-on-error: true
@@ -1129,7 +1295,7 @@ jobs:
       - name: Validate canonical baseline capture
         id: maintenance-validation
         if: >-
-          always() && github.event_name == 'workflow_dispatch' &&
+          always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'capture' &&
           steps.maintenance-capture.outcome != 'skipped'
         env:
           CAPTURE_SHA: ${{ github.sha }}
@@ -1272,8 +1438,8 @@ jobs:
   # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
-  # contextual directional decorations. Curated D2/D3/D4 adds behavior that
-  # needs selectors. The applicability rollup treats unexplained all-N/A as a
+  # contextual directional decorations. Curated D2/D3/D4/D7/D8/D9 add
+  # behavior and geometry that need selectors. The applicability rollup treats unexplained all-N/A as a
   # coverage gap for both new and existing components.
   #
   # Audit findings remain SOFT while the stability window is observed: the audit
@@ -1285,7 +1451,8 @@ jobs:
     name: pr-rtl (${{ matrix.package }})
     needs: [build-storybook, check-components]
     if: >-
-      github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request' ||
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) &&
       (needs.check-components.outputs.has_rtl_components == 'true' ||
        needs.check-components.outputs.has_rtl_harness == 'true' ||
        needs.check-components.outputs.force_full_component_audits == 'true')
@@ -1300,6 +1467,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify RTL checkout
+        if: github.event_name == 'pull_request'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
@@ -1504,7 +1679,7 @@ jobs:
   # Stable required context joining the five package shards above.
   pr-rtl:
     needs: [check-scope, check-components, pr-rtl-shard]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ always() && !cancelled() && ((github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -1527,3 +1702,45 @@ jobs:
             --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
             --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
+
+  # Release-time projection only: the existing owners above do all measurement.
+  # A skipped owner or main drift must never look like passing release evidence.
+  release-check:
+    needs:
+      [
+        check-scope,
+        check-components,
+        build-storybook,
+        pr-visual,
+        pr-a11y,
+        pr-rtl,
+      ]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    steps:
+      - name: Require complete exact-main release checks
+        uses: actions/github-script@v9
+        env:
+          RELEASE_NEEDS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const needs = JSON.parse(process.env.RELEASE_NEEDS);
+            for (const name of ['check-scope', 'check-components', 'build-storybook', 'pr-visual', 'pr-a11y', 'pr-rtl']) {
+              if (needs[name]?.result !== 'success') {
+                throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
+              }
+            }
+            if (context.ref !== 'refs/heads/main') {
+              throw new Error('Release checks must be dispatched from main.');
+            }
+            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
+            if (data.object.sha !== context.sha) {
+              throw new Error('Main changed during checks; dispatch release-check again.');
+            }
+            await core.summary
+              .addHeading('Release checks complete')
+              .addRaw(`Exact main SHA: ${context.sha}\n\n`)
+              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Recheck main before release mutation; this run does not approve or publish a baseline.')
+              .write();

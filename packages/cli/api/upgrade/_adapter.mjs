@@ -105,6 +105,27 @@ export function uniqueFiles(files) {
 }
 
 /**
+ * Run app code with its stdout writes sent to stderr. Stdout carries only the
+ * command's own output, so a hook that prints cannot corrupt `--json`.
+ * @template T
+ * @param {() => T | Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(fn) {
+  const realWrite = process.stdout.write;
+  process.stdout.write = /** @type {any} */ (
+    function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+      return process.stderr.write(chunk, ...rest);
+    }
+  );
+  try {
+    return await fn();
+  } finally {
+    process.stdout.write = realWrite;
+  }
+}
+
+/**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
@@ -123,7 +144,9 @@ export async function runPostCodemodHooks(hooks, context) {
       );
     }
 
-    const cmd = await hook.buildCommand({packageDir, files});
+    const cmd = await withStdoutOnStderr(() =>
+      hook.buildCommand({packageDir, files}),
+    );
     if (!cmd) {
       logger.log(`Post-codemod hook ${label} produced no command; skipping.`);
       continue;
@@ -147,7 +170,7 @@ export async function runPostCodemodHooks(hooks, context) {
         env: {...process.env, ...(cmd.options?.env ?? {})},
       }),
     );
-    logger.log(`✓ Post-codemod hook ${label} completed.`);
+    logger.log(`[ok] Post-codemod hook ${label} completed.`);
   }
 }
 
@@ -186,7 +209,7 @@ export async function prepareAgentDocsRefresh({
   if (initial.status === 'missing') {
     summary.action = 'nudge-init';
     logger.warn(
-      `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
     );
     return {cwd, renderedBlock: null, summary};
   }
@@ -240,7 +263,7 @@ export function applyAgentDocsRefresh(plan) {
     summary.files = written;
     summary.action = summary.refreshed ? 'refreshed' : 'error';
     if (summary.refreshed) {
-      logger.log(`✓ Agent docs refreshed → ${written.join(', ')}`);
+      logger.log(`[ok] Agent docs refreshed -> ${written.join(', ')}`);
     } else {
       logger.warn(
         `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,

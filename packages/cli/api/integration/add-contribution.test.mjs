@@ -731,3 +731,83 @@ describe('public dispatcher', () => {
     ).rejects.toThrow(/component, doc, template, codemod, agent-doc, or theme/);
   });
 });
+
+describe('dry-run receipts match the real write', () => {
+  /** Package states each writer has to plan for. */
+  const STATES = {
+    'no manifest': {pkg: {files: ['dist']}},
+    'an empty manifest': {pkg: {}, manifest: 'export default {};\n'},
+    'declared roots and an exports map': {
+      pkg: {files: ['dist'], exports: {'.': './dist/index.js'}},
+      manifest:
+        "export default {\n  components: './components',\n  docs: './docs',\n  templates: './templates',\n  codemods: './codemods',\n  themes: './themes',\n};\n",
+    },
+  };
+  /** @type {Array<[any, string, Record<string, unknown>]>} */
+  const KINDS = [
+    ['component', 'AcmeWidget', {}],
+    ['doc', 'deploying', {}],
+    ['template', 'account-page', {}],
+    ['template', 'account-card', {templateType: 'block'}],
+    ['codemod', 'rename-widget', {to: '1.2.0'}],
+    ['agent-doc', 'Run acme verify before finishing.', {}],
+    ['theme', 'ocean', {}],
+  ];
+
+  /** Every file under the package, keyed by project path, with its bytes. */
+  function snapshot() {
+    /** @type {Record<string, string>} */
+    const files = {};
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else {
+          files[path.relative(tmpDir, full).split(path.sep).join('/')] =
+            fs.readFileSync(full, 'base64');
+        }
+      }
+    };
+    walk(tmpDir);
+    return files;
+  }
+
+  for (const [stateName, state] of Object.entries(STATES)) {
+    for (const [kind, name, options] of KINDS) {
+      it(`${kind} ${name} in a package with ${stateName}`, async () => {
+        fs.writeFileSync(
+          path.join(tmpDir, 'package.json'),
+          `${JSON.stringify({name: '@acme/integration', version: '1.0.0', ...state.pkg}, null, 2)}\n`,
+        );
+        if (state.manifest != null) {
+          fs.writeFileSync(
+            path.join(tmpDir, 'astryx.integration.mjs'),
+            state.manifest,
+          );
+        }
+        const before = snapshot();
+
+        const plan = await integrationAdd(kind, name, {
+          cwd: tmpDir,
+          dryRun: true,
+          ...options,
+        });
+        expect(snapshot()).toEqual(before);
+
+        const written = await integrationAdd(kind, name, {
+          cwd: tmpDir,
+          ...options,
+        });
+        const after = snapshot();
+        const changed = Object.keys(after)
+          .filter(file => after[file] !== before[file])
+          .sort();
+
+        expect(written.data.root).toEqual(plan.data.root);
+        expect(written.data.files).toEqual(plan.data.files);
+        expect([...written.data.files].sort()).toEqual(changed);
+      });
+    }
+  }
+});

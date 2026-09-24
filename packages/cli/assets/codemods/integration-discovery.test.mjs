@@ -221,3 +221,61 @@ describe('integration codemod discovery', () => {
     ).rejects.toThrow(/across versions/i);
   });
 });
+
+describe('test files beside a codemod', () => {
+  // The incident this closes: every .ts/.mjs/.js under a version folder was
+  // loaded AND VALIDATED as a codemod, so a test file colocated with its
+  // transform failed validation — and because a definition error is a hard
+  // error, it took every codemod in that version with it. `astryx upgrade`
+  // then applied nothing and reported success. Core is immune because its own
+  // codemods are enumerated in a registry rather than discovered by walking a
+  // directory, so its colocated tests are simply never visited. Only
+  // integrations carry the landmine.
+  const TRANSFORM = `
+    export default {
+      type: 'code',
+      title: 'Drop foo',
+      transform: (file) => file.source.replace(/foo/g, 'bar'),
+    };
+  `;
+  // Not a codemod: no default export of the right shape. Loading it throws.
+  const A_TEST = `
+    import {describe, it, expect} from 'vitest';
+    describe('drop-foo', () => {
+      it('drops foo', () => expect(1).toBe(1));
+    });
+  `;
+
+  it.each([
+    ['a .test. sibling', '0.2.0/drop-foo.test.mjs'],
+    ['a .spec. sibling', '0.2.0/drop-foo.spec.mjs'],
+    ['a fixture sibling', '0.2.0/drop-foo.fixture.mjs'],
+    ['a __tests__ directory', '0.2.0/__tests__/drop-foo.mjs'],
+    ['a __fixtures__ directory', '0.2.0/__fixtures__/input.mjs'],
+  ])('ignores %s and still discovers the codemod', async (_label, testPath) => {
+    scaffold({'0.2.0/drop-foo.mjs': TRANSFORM, [testPath]: A_TEST});
+
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    expect([...byVersion.keys()]).toEqual(['0.2.0']);
+    expect(byVersion.get('0.2.0').map(entry => entry.id)).toEqual(['drop-foo']);
+  });
+
+  it('a nested helper directory is still walked', async () => {
+    // Only test and fixture names are skipped. A package that organises its
+    // transforms into subdirectories keeps working.
+    scaffold({'0.2.0/imports/drop-foo.mjs': TRANSFORM});
+
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    expect(byVersion.get('0.2.0').map(entry => entry.id)).toEqual([
+      'imports/drop-foo',
+    ]);
+  });
+});

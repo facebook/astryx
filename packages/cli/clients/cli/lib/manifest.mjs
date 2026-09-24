@@ -35,6 +35,8 @@
  */
 
 import {API_VERSION} from '../../../foundation/response/json.mjs';
+import {commandDocsOf} from './define-command.mjs';
+import {doc as manifestDoc} from '../commands/manifest.doc.mjs';
 
 /**
  * Response `type` discriminators each fully-qualified command can emit in
@@ -238,6 +240,18 @@ function fullName(cmd, root) {
 }
 
 /**
+ * The docs a command was built from. `manifest` is registered by hand in
+ * index.mjs, so its CommandDoc is read here.
+ * @param {import('commander').Command} cmd
+ * @param {string} name
+ */
+function docsOf(cmd, name) {
+  return (
+    commandDocsOf(cmd) ?? (name === 'manifest' ? {doc: manifestDoc} : undefined)
+  );
+}
+
+/**
  * Recursively describe a Commander command and its subcommands.
  *
  * @param {import('commander').Command} cmd
@@ -251,6 +265,8 @@ function describeCommand(cmd, root, jsonSupported) {
   // (e.g. the postinstall shim) — agents never invoke these directly.
   // `_hidden` is a Commander internal not present on its public types.
   if (!name || /** @type {any} */ (cmd)._hidden || name === 'help') return null;
+
+  const docs = docsOf(cmd, name);
 
   const subcommands = /** @type {object[]} */ (
     (cmd.commands || [])
@@ -283,6 +299,12 @@ function describeCommand(cmd, root, jsonSupported) {
   if (RESPONSE_TYPES[name]) entry.responseTypes = [...RESPONSE_TYPES[name]];
 
   if (EXAMPLES[name]) entry.examples = [...EXAMPLES[name]];
+
+  const exitCodes = (docs?.doc.exitCodes ?? []).map(({code, when}) => ({
+    code,
+    when,
+  }));
+  if (exitCodes.length > 0) entry.exitCodes = exitCodes;
 
   // Sort subcommands by name for a stable, agent-facing contract — the same
   // guarantee the top-level command list makes. Otherwise Commander

@@ -74,7 +74,14 @@
  * astryx --json component <name>
  * @typedef {object} ComponentDetailResponse
  * @property {'component.detail'} type
- * @property {import('@astryxdesign/cli/authoring').ComponentDoc & ComponentOwnership} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentDoc & ComponentOwnership & ComponentDetailScope} data
+ */
+
+/**
+ * Present only when the requested name is a sub-component documented inside a
+ * parent's doc (e.g. `HStack` in the `Stack` doc); the payload is scoped to it.
+ * @typedef {object} ComponentDetailScope
+ * @property {string} [parentDoc] - Name of the parent doc the payload was scoped from, e.g. 'Stack'.
  */
 
 /**

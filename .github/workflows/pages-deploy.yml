@@ -35,6 +35,17 @@ concurrency:
 
 jobs:
   source:
+    # PR CI and early Vercel preview comments do not write Pages bytes. Preserve
+    # explicit baseline-maintenance CI dispatches and CI-backed PR Comment runs
+    # (which may publish immutable visual evidence).
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.name == 'CI' &&
+       github.event.workflow_run.event == 'workflow_dispatch') ||
+      (github.event.workflow_run.name == 'PR Comment' &&
+       github.event.workflow_run.event == 'workflow_run') ||
+      (github.event.workflow_run.name != 'CI' &&
+       github.event.workflow_run.name != 'PR Comment')
     runs-on: ubuntu-slim
     permissions:
       pages: read
