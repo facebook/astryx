@@ -224,10 +224,10 @@ function staleBuildOutputs(writes, cwd) {
 /** @param {Array<{dest: string, content: string}>} writes */
 function writeBuildOutputs(writes) {
   if (writes.length === 0) return;
-  fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
   /** @type {Array<{tmp: string, dest: string}>} */
   const staged = [];
   try {
+    fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
     for (const write of writes) {
       const tmp = `${write.dest}.${process.pid}.tmp`;
       fs.writeFileSync(tmp, write.content);
@@ -2439,7 +2439,18 @@ async function themeBuildInternal(
     // Guard: relative paths must not escape cwd via `../`. Absolute paths are
     // trusted (the user explicitly controls where output goes, like gcc -o).
     if (!path.isAbsolute(options.out)) {
-      assertWithin(options.out, cwd, {label: 'output path'});
+      try {
+        assertWithin(options.out, cwd, {label: 'output path'});
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          throw new AstryxError(
+            err.message,
+            undefined,
+            ERROR_CODES.ERR_PATH_TRAVERSAL,
+          );
+        }
+        throw err;
+      }
     }
   } else {
     outPath = path.join(path.dirname(filePath), `${baseName}.css`);
