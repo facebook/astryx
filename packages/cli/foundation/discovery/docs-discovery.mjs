@@ -423,8 +423,9 @@ export async function discoverIntegrationDocs(integration) {
 /**
  * Merge an extension onto a base topic: a section with a stable `id` replaces
  * the base section with the same `id`; legacy sections without IDs fall back to
- * title matching. A section with no match is appended, and title/description
- * are taken from the extension when it states them.
+ * title matching. A section with no match is appended. The title and
+ * description stay the base topic's: an extension adds to a topic, it never
+ * renames it. A topic that `replaces` another is the one that renames.
  *
  * Keyed by section TITLE rather than by position, the way the localization
  * overlays are — position keying grafts an overlay onto whichever section
@@ -451,12 +452,7 @@ export function mergeTopic(base, overlay) {
           : section;
     }
   }
-  return {
-    ...base,
-    title: overlay.title || base.title,
-    description: overlay.description || base.description,
-    sections,
-  };
+  return {...base, sections};
 }
 
 /**

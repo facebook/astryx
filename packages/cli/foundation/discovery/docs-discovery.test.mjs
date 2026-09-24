@@ -505,11 +505,14 @@ describe('mergeTopic', () => {
     ]);
   });
 
-  it('takes the title and description only when the overlay states them', () => {
-    expect(mergeTopic(base, {sections: []}).title).toBe('Theme');
-    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe(
-      'Theming',
-    );
+  it('keeps the base title and description: an extension never renames a topic', () => {
+    const merged = mergeTopic(base, {
+      title: 'Acme theme notes',
+      description: 'Our additions.',
+      sections: [],
+    });
+    expect(merged.title).toBe('Theme');
+    expect(merged.description).toBe('Theming.');
   });
 });
 

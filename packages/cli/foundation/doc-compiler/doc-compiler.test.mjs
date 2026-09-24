@@ -131,6 +131,27 @@ describe('lowerReferenceTopic', () => {
     });
   });
 
+  it('keeps the topic named as it is when extended, and renames it only when replaced', () => {
+    const extended = lowerReferenceTopic(
+      input(file(demo()), [extension('acme', 'Acme start.')]),
+    );
+    expect(extended.doc.title).toBe('demo title');
+    expect(extended.doc.description).toBe('About demo.');
+    const replacement = authored(
+      'acme-demo',
+      [{title: 'Quick Start', content: [prose('Acme start.')]}],
+      {replaces: 'demo'},
+    );
+    const replaced = lowerReferenceTopic({
+      ...input(file(replacement)),
+      id: 'demo',
+      provider: '@acme/replacement',
+      replaces: 'demo',
+    });
+    expect(replaced.doc.title).toBe('acme-demo title');
+    expect(replaced.doc.description).toBe('About acme-demo.');
+  });
+
   it('applies extensions in configuration order, so the last one wins', () => {
     const node = lowerReferenceTopic(
       input(file(demo()), [

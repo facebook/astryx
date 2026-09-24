@@ -212,7 +212,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "`extends: 'x'` merges onto a topic instead of owning it: a section with the same key as one in the base (its `id`, or the key its title derives) or the same title replaces that section, and a section the base does not have is appended. Reach for it to correct or add to a topic you do not want to fork: a fork of someone else's guide stops receiving their fixes the day you write it.",
+          text: "`extends: 'x'` merges onto a topic instead of owning it: a section with the same key as one in the base (its `id`, or the key its title derives) or the same title replaces that section, and a section the base does not have is appended. The topic keeps its own title and description; only `replaces` renames it. Reach for it to correct or add to a topic you do not want to fork: a fork of someone else's guide stops receiving their fixes the day you write it.",
         },
         {
           type: 'list',
