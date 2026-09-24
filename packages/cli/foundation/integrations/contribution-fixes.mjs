@@ -428,16 +428,21 @@ function docStem(file) {
 }
 
 /**
- * The sentence asking for a missing same-stem source, which the doc needs
- * wherever it ends up.
+ * The sentences asking for what the doc needs wherever it ends up: a missing
+ * same-stem source, and for a theme, the descriptor's `.doc.mjs` name.
  * @param {string} file
  * @param {string} type
  * @returns {string} a sentence with a leading space, or ''
  */
 function sourceNote(file, type) {
-  if (type === 'generic' || sourcesBeside(file, type).length > 0) return '';
+  // Theme discovery reads only `.doc.mjs` descriptors.
+  const rename =
+    type === 'theme' && !file.endsWith(THEME_DOC_SUFFIX)
+      ? ` Also rename ${path.basename(file)} to ${docStem(file)}${THEME_DOC_SUFFIX}: a theme descriptor is a ${THEME_DOC_SUFFIX} file.`
+      : '';
+  if (type === 'generic' || sourcesBeside(file, type).length > 0) return rename;
   return type === 'theme'
-    ? ` Also add its same-stem theme source, such as ${docStem(file)}.ts, beside it.`
+    ? `${rename} Also add its same-stem theme source, such as ${docStem(file)}.ts, beside it.`
     : ` Also add ${docStem(file)}.tsx beside it.`;
 }
 

@@ -167,15 +167,15 @@ async function checkCodemods(integration, issues) {
           ? stampOf(context, full)
           : null;
       // A theme's entry module may sit beside its descriptor.
-      const themeDoc = full.replace(/\.(?:ts|mjs|js)$/u, '.doc.mjs');
+      const themeDoc = ['.doc.mjs', '.doc.ts', '.doc.js']
+        .map(suffix => full.replace(/\.(?:ts|mjs|js)$/u, suffix))
+        .find(candidate => candidate !== full && fs.existsSync(candidate));
       const themeStamp =
-        context && !stamp && fs.existsSync(themeDoc)
-          ? stampOf(context, themeDoc)
-          : null;
+        context && !stamp && themeDoc ? stampOf(context, themeDoc) : null;
       let fix = `Fix: move it into the folder named for the version it migrates to, for example ${root}/1.2.0/${entry.name}.`;
       if (shared) fix = sharedCodemodsRootFix(context, entry.name) ?? fix;
       else if (context && stamp) fix = notACodemodFix(context, full, stamp);
-      else if (context && themeStamp?.type === 'theme') {
+      else if (context && themeDoc && themeStamp?.type === 'theme') {
         fix = notACodemodFix(context, themeDoc, themeStamp, entry.name);
       }
       issues.push(

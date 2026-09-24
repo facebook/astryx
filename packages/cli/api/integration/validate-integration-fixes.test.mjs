@@ -463,6 +463,31 @@ describe('unreachable_contribution fixes cover what the move leaves behind', () 
     expect(await issuesOf(fixed)).toEqual([]);
   });
 
+  it('asks to rename a theme descriptor that is not a .doc.mjs file', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      ...good,
+      'sand/sandTheme.doc.ts': themeDoc('sand'),
+      'sand/sandTheme.ts': themeSource('sandTheme'),
+    });
+
+    const message = only(await issuesOf(dir), 'unreachable_contribution');
+    expect(message).toBe(
+      `${unreachable('sand/sandTheme.doc.ts')} Fix: move sand/ to themes/sand/ and set \`themes: './themes'\` in astryx.integration.mjs. Also rename sandTheme.doc.ts to sandTheme.doc.mjs: a theme descriptor is a .doc.mjs file.`,
+    );
+
+    const fixed = follow(dir, {
+      move: [
+        ['sand', 'themes/sand'],
+        ['themes/sand/sandTheme.doc.ts', 'themes/sand/sandTheme.doc.mjs'],
+      ],
+      write: {
+        [MANIFEST]: manifest({components: './components', themes: './themes'}),
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
   it('never declares a folder as a root when another doc in it would lose its source', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({}),
@@ -936,6 +961,36 @@ describe('codemod fixes hold when followed', () => {
     const fixed = follow(dir, {
       move: [['codemods/guide.doc.mjs', 'docs/guide.doc.mjs']],
       write: {[MANIFEST]: manifest({codemods: './codemods', docs: './docs'})},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('names a theme source whose descriptor is a .doc.ts file', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({codemods: './codemods'}),
+      'codemods/1.2.0/rename.mjs': codemod,
+      'codemods/oceanTheme.doc.ts': themeDoc('ocean'),
+      'codemods/oceanTheme.ts': themeSource('oceanTheme'),
+    });
+
+    const issues = (await issuesOf(dir)).filter(
+      issue => issue.code === 'codemod_outside_version',
+    );
+    const move =
+      "move oceanTheme.doc.ts and oceanTheme.ts (with any local files it imports) into themes/ocean/ and set `themes: './themes'` in astryx.integration.mjs. Also rename oceanTheme.doc.ts to oceanTheme.doc.mjs: a theme descriptor is a .doc.mjs file.";
+    expect(issues.map(issue => issue.message)).toEqual([
+      `Codemod file "codemods/oceanTheme.doc.ts" is outside a version folder, so upgrade will never load it. Fix: oceanTheme.doc.ts has type: 'theme', so it is not a codemod; ${move}`,
+      `Codemod file "codemods/oceanTheme.ts" is outside a version folder, so upgrade will never load it. Fix: oceanTheme.ts is the source of oceanTheme.doc.ts, which has type: 'theme', so neither is a codemod; ${move}`,
+    ]);
+
+    const fixed = follow(dir, {
+      move: [
+        ['codemods/oceanTheme.doc.ts', 'themes/ocean/oceanTheme.doc.mjs'],
+        ['codemods/oceanTheme.ts', 'themes/ocean/oceanTheme.ts'],
+      ],
+      write: {
+        [MANIFEST]: manifest({codemods: './codemods', themes: './themes'}),
+      },
     });
     expect(await issuesOf(fixed)).toEqual([]);
   });
