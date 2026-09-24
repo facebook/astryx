@@ -124,8 +124,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
-      required: true,
+        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. Required on a component doc; optional on a sub-component doc (`subComponentOf`), which uses its description instead.',
       fields: [
         {
           name: 'usage.description',

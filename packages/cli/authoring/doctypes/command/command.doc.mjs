@@ -135,8 +135,9 @@ export const doc = {
         },
         {
           name: 'options[].default',
-          type: 'string',
-          description: 'Default value as a string.',
+          type: 'string | boolean | string[]',
+          description:
+            'Default value: a string, a boolean, or a list of strings.',
         },
         {
           name: 'options[].cliOnly',

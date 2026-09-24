@@ -63,11 +63,13 @@ export const doc = {
               name: 'file.path',
               type: 'string',
               description: 'Absolute path to the file being transformed.',
+              required: true,
             },
             {
               name: 'file.source',
               type: 'string',
               description: 'The current source contents of the file.',
+              required: true,
             },
           ],
         },
@@ -81,18 +83,21 @@ export const doc = {
               type: 'unknown',
               description:
                 'A jscodeshift instance configured with a parser for the file.',
+              required: true,
             },
             {
               name: 'api.stats',
               type: '(...args: unknown[]) => void',
               description:
                 'Report a statistic (no-op-friendly; provided for jscodeshift parity).',
+              required: true,
             },
             {
               name: 'api.report',
               type: '(...args: unknown[]) => void',
               description:
                 'Report progress (no-op-friendly; provided for jscodeshift parity).',
+              required: true,
             },
           ],
         },
@@ -100,7 +105,7 @@ export const doc = {
     },
     {
       name: 'type',
-      type: "'code'",
+      type: "'code' | 'config'",
       description:
         "Discriminant for the file-transforming variant. Use 'config' for a " +
         'codemod that rewrites astryx.config.* instead (see notes).',
