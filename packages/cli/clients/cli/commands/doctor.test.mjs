@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {Command} from 'commander';
 
 import {registerDoctor} from './doctor.mjs';
+import {doc as doctorDoc} from './doctor.doc.mjs';
 import {
   runChecks,
   doctor as doctorApi,
@@ -315,6 +316,26 @@ function createProgram() {
   registerDoctor(program);
   return program;
 }
+
+describe('doctor — help', () => {
+  it('lists the exit codes from the CommandDoc, in plain ASCII', () => {
+    const doctorCmd = createProgram().commands.find(cmd => cmd.name() === 'doctor');
+    let help = '';
+    doctorCmd?.configureOutput({writeOut: str => (help += str)});
+    doctorCmd?.outputHelp();
+
+    const nonAscii = [...help].filter(ch => ch.charCodeAt(0) > 127);
+    expect(nonAscii).toEqual([]);
+    const lines = help.split('\n');
+    const at = lines.indexOf('Exit code:');
+    expect(at, 'no exit code section').toBeGreaterThan(-1);
+    const exitCodes = doctorDoc.exitCodes ?? [];
+    expect(exitCodes.length).toBeGreaterThan(0);
+    expect(lines.slice(at + 1, at + 1 + exitCodes.length)).toEqual(
+      exitCodes.map(({code, when}) => `  ${code}  ${when}`),
+    );
+  });
+});
 
 describe('doctor — command', () => {
   it('--json emits a doctor envelope', async () => {
