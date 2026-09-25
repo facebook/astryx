@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-043
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-24
+phase: accepted
 owners: [imdreamrunner]
 affects_architecture: [architecture:public-component-api]
 affects_families: [family:input-fields]
@@ -27,97 +27,108 @@ answers:
   use `presentation` (`'popover' | 'bottom-sheet' | 'adaptive'`).
 - `DateInput`, `DateTimeInput`, and `TimeInput` use `nativePicker`
   (`'touch' | 'always' | 'never'`), which names only the native surface and
-  hides that Astryx-on-desktop and Astryx-on-touch (bottom sheet) are
-  different surfaces: `never` silently means both, selected by pointer.
+  hides that Astryx-on-desktop, Astryx-on-touch (bottom sheet), and — for
+  `TimeInput` — a plain text field with no picker are different surfaces.
 
 This spec gives the three date/time inputs a `presentation` prop whose values
-distinguish all three surfaces, preserves today's default, and deprecates —
-but does not remove — `nativePicker`. No existing record owns this
-cross-component vocabulary (searched: component contracts,
-`architecture:public-component-api`, `family:input-fields`, `nativePicker` /
-`presentation` / `AdaptivePresentation` in code and records).
+distinguish every surface, preserves today's default and deprecated-prop
+behavior exactly, and deprecates — but does not remove — `nativePicker`. No
+existing record owns this cross-component vocabulary (searched: component
+contracts, `architecture:public-component-api`, `family:input-fields`,
+`nativePicker` / `presentation` / `AdaptivePresentation` in code and records).
 
 ## Non-goals
 
-- Any surface's appearance, anatomy, interaction, eligibility, or fallback
-  behavior — unchanged, owned by each component. This spec changes only which
-  prop and values select a surface.
-- Renaming menu/selector `presentation` or their `adaptive` (OQ2).
-- Removing `nativePicker` — that would be breaking under `spec:AST-017` and
-  needs its own record.
-- Migration tooling — the implementing change follows `spec:AST-017` FR8; the
-  mapping it must apply is FR3.
+- Any surface's appearance, anatomy, or interaction — unchanged and owned by
+  each component, except the new surfaces DEC-3 approves. Eligibility/fallback
+  behavior changes only as FR2 states (for `native`).
+- Renaming menu/selector `presentation` or their `adaptive` (OQ1).
+- Removing `nativePicker` — breaking under `spec:AST-017`, needs its own
+  record. Migration tooling follows `spec:AST-017` FR8 using the FR3 mapping.
 
 ## Requirements
 
-- **FR1 — Prop and values.** `DateInput`, `DateTimeInput`, and `TimeInput`
-  MUST accept optional
-  `presentation: 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'`,
-  default `'adaptive-native'`, resolving:
+- **FR1 — Prop, values, and surfaces.** `DateInput`, `DateTimeInput`, and
+  `TimeInput` MUST accept optional `presentation`, default
+  `'adaptive-native'`:
 
   | Value                   | Fine pointer   | Coarse pointer |
   | ----------------------- | -------------- | -------------- |
+  | `text-input`            | Text field     | Text field     |
   | `popover`               | Astryx desktop | Astryx desktop |
   | `bottom-sheet`          | Astryx sheet   | Astryx sheet   |
   | `native`                | Native         | Native         |
   | `adaptive-bottom-sheet` | Astryx desktop | Astryx sheet   |
-  | `adaptive-native`       | Astryx desktop | Native         |
+  | `adaptive-native`       | Astryx desktop | Native (FR2)   |
 
-  (Astryx desktop = the component's fine-pointer surface today; Astryx sheet =
-  its coarse-pointer Astryx surface today; Native = the browser/OS picker.
+  | Surface        | `DateInput`                    | `DateTimeInput`                   | `TimeInput`                                                                       |
+  | -------------- | ------------------------------ | --------------------------------- | --------------------------------------------------------------------------------- |
+  | Text field     | Typed field, no picker         | Typed fields, no picker           | Typed field (today's `never`)                                                     |
+  | Astryx desktop | Typed field + calendar popover | Typed fields + date/time popovers | — (fine resolves via Text field; `popover` is not a distinct `TimeInput` surface) |
+  | Astryx sheet   | BottomSheet calendar           | BottomSheet date/time wheels      | BottomSheet time wheels (DEC-3)                                                   |
+  | Native         | Browser/OS date picker         | Browser/OS date + time pickers    | Browser/OS time picker                                                            |
+
   Coarse uses the inputs' existing pointer test, no width condition. Forced
-  `popover`/`bottom-sheet` on the other pointer, and any sheet for
-  `TimeInput`, are new reach the implementer must render as named — OQ1.)
+  values (`popover` on coarse, `bottom-sheet`/`text-input` where not reached
+  today) MUST render the named surface, never silently substitute another.
 
-- **FR2 — Default unchanged.** Omitting both props MUST behave exactly as
-  today's default `nativePicker="touch"` — i.e. `adaptive-native`.
+- **FR2 — Fallback split for native.** `presentation="native"` MUST always
+  show the native surface, with no eligibility fallbacks — a state the native
+  control cannot express (seconds, non-default step/increment, preset time
+  options, no usable native control) is the caller's explicit choice.
+  `presentation="adaptive-native"` — including the default and
+  `nativePicker="touch"` — MUST keep the released fallbacks: in those same
+  states it falls back to the component's Astryx surface (per-segment for
+  `DateTimeInput`: date may go native while time falls back), exactly as
+  released today.
 
-- **FR3 — `nativePicker` deprecated, keeps working.** `nativePicker` and its
+- **FR3 — Default and `nativePicker` preserved exactly.** Omitting both props
+  MUST behave as today's `nativePicker="touch"`. `nativePicker` and its
   exported types MUST remain, marked `@deprecated`, resolving exactly as
-  released:
+  released for unmigrated and migrated callsites alike:
 
-  | `nativePicker` | As `presentation`       |
-  | -------------- | ----------------------- |
-  | `touch`        | `adaptive-native`       |
-  | `always`       | `native`                |
-  | `never`        | `adaptive-bottom-sheet` |
+  | `nativePicker` | `DateInput` / `DateTimeInput` | `TimeInput`       |
+  | -------------- | ----------------------------- | ----------------- |
+  | `touch`        | `adaptive-native`             | `adaptive-native` |
+  | `always`       | `native`                      | `native`          |
+  | `never`        | `adaptive-bottom-sheet`       | `text-input`      |
 
-  Preserving it with equivalent meaning makes this nonbreaking
-  (`spec:AST-017` FR4). Note the one intentional delta behind `never`:
-  migrated `TimeInput` callsites get a sheet on coarse instead of today's
-  typed field (OQ1); unmigrated callsites are unchanged.
+  (`TimeInput`'s released `never` is the typed field on every pointer; a sheet
+  for `TimeInput` comes only from explicit
+  `presentation="bottom-sheet" | "adaptive-bottom-sheet"`.) Preserving the
+  prop with equivalent meaning is nonbreaking (`spec:AST-017` FR4).
 
 - **FR4 — Precedence.** If both props are set, `presentation` MUST win and
   `nativePicker` MUST be ignored, regardless of order or pointer. A
-  development-only warning SHOULD name the replacement (FR3) whenever
+  development-only warning SHOULD name the FR3 replacement whenever
   `nativePicker` is used, and MUST NOT fire in production.
 
 - **FR5 — Docs and types agree.** Each component's consumer docs (en + zh),
-  exported types, and Storybook controls MUST show FR1 values/default and
-  `nativePicker` only as deprecated with its FR3 replacement.
+  exported types, and Storybook controls MUST show FR1 values/default (six
+  values) and `nativePicker` only as deprecated with its FR3 replacement.
 
 ### Platform support
 
-- Floor and unsupported behavior: unchanged (`spec:AST-013`, each component);
-  no `presentation` value renders no picker.
-- Browser evidence: each FR1 value on fine- and coarse-pointer browsers,
-  because jsdom reports neither pointer type nor native pickers.
+- Floor: unchanged (`spec:AST-013`, each component); no value renders no
+  picker (FR2's `adaptive-native` fallback guarantees an Astryx surface).
+- Browser evidence: each FR1 value on fine/coarse browsers, plus FR2 fallback
+  states, because jsdom reports neither pointer type nor native pickers.
 
 ## Current-state impact
 
 - `packages/core/src/{DateInput,DateTimeInput,TimeInput}`: add `presentation`,
-  deprecate `nativePicker` (FR1–FR4); docs/types (FR5); implementing PR adds
-  the `spec:AST-017` FR8 migration + nonbreaking Changeset.
-- Menu/selector components: unchanged.
+  deprecate `nativePicker` (FR1–FR4); docs/types (FR5); DEC-3 new surfaces;
+  implementing PR adds the `spec:AST-017` FR8 migration + nonbreaking
+  Changeset. Menu/selector components: unchanged.
 
 ## Verification
 
-| Contract | Verification                                 | Representative states                     | Mutation or failure expectation               |
-| -------- | -------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| FR1–FR2  | Unit tests per input                         | 5 values × fine/coarse; omitted props     | Wrong surface or default fails                |
-| FR3–FR4  | Unit tests: deprecated + dual-prop callsites | `touch`/`always`/`never`; both, any order | Mapping drift or `nativePicker` winning fails |
-| FR5      | Doc/type consistency tests                   | All 3 components, en + zh                 | Documented-but-untyped value/default fails    |
-| FR1      | Real-browser check                           | Forced + `TimeInput` sheet states (OQ1)   | Substituting another surface fails            |
+| Contract | Verification                               | Representative states                                                                                 | Mutation or failure expectation                                               |
+| -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| FR1      | Unit tests per input + real-browser check  | 6 values × fine/coarse, incl. forced + `TimeInput` sheet                                              | Wrong/substituted surface fails                                               |
+| FR2      | Unit tests, native requested               | Seconds, step≠default, presets, no usable native: `native` stays native; `adaptive-native` falls back | Any fallback under `native`, or none under `adaptive-native`, fails           |
+| FR3–FR4  | Unit tests: default, deprecated, dual-prop | Omitted; `touch`/`always`/`never` per component; both props, any order                                | Mapping drift (incl. `TimeInput:never→sheet`) or `nativePicker` winning fails |
+| FR5      | Doc/type consistency tests                 | All 3 components, en + zh                                                                             | Documented-but-untyped value/default fails                                    |
 
 ## Decision log
 
@@ -128,24 +139,30 @@ cross-component vocabulary (searched: component contracts,
 
 Builders already meet `presentation` on menus/selectors for this question.
 Rejected: literal rename to `'touch'|'always'|'never'` (hides desktop vs
-sheet), one `astryx` value (same loss), shared `'adaptive'` (hides sheet vs
-native), and two coexisting props with overlapping meaning.
+sheet vs text field), one `astryx` value (same loss), shared `'adaptive'`
+(hides sheet vs native), two coexisting props with overlapping meaning.
 
 ### DEC-2 — Default `adaptive-native`; deprecate, don't remove
 
 **Reference:** `spec:AST-043/DEC-2`
 **Decider:** imdreamrunner, 2026-09-24
 
-`adaptive-native` is today's default renamed, so nothing changes unless a
-builder opts in. `nativePicker` stays working (FR3/FR4) — removal is the
-breaking event, not the rename. Rejected: defaulting to
-`adaptive-bottom-sheet` (changes every coarse consumer), and `nativePicker`
-winning over `presentation` (breaks migrated dual-prop callsites).
+`adaptive-native` is today's default renamed; `nativePicker` stays working
+(FR3/FR4) — removal is the breaking event, not the rename. Rejected:
+defaulting to `adaptive-bottom-sheet`, and `nativePicker` winning over
+`presentation`.
+
+### DEC-3 — Forced surfaces and `TimeInput` sheet approved
+
+**Reference:** `spec:AST-043/DEC-3`
+**Decider:** cixzhang, 2026-09-24
+
+Forced `popover` on coarse, `bottom-sheet` on fine, and a new `TimeInput`
+bottom sheet (the time half of `DateTimeInput`'s sheet) are approved new
+surfaces. This closes the former open question on FR1's forced reach;
+implementation may rely on FR1 as written.
 
 ## Open questions
 
-- **OQ1 — Forced/sheet reach** (`human-design`): confirm Astryx sheet design
-  for `TimeInput` (none today) and forced surfaces on the non-native pointer
-  before implementation; without it FR1's forced values cannot ship.
-- **OQ2 — Menu/selector rename** (`human-api`): later rename their `adaptive`
+- **OQ1 — Menu/selector rename** (`human-api`): later rename their `adaptive`
   to `adaptive-bottom-sheet` under this deprecation pattern? Out of scope.
