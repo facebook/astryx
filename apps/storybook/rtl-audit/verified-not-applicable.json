@@ -266,5 +266,9 @@
       "packages/core/src/Chat/ChatMessageList.tsx": "sha256:9d7dc59f2fa33cc13175f1093b509aea4ff54a76b9ef83d576d55f6c4d0bc541",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }
+  },
+  {
+    "component": "core/ChatMessageMetadata",
+    "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
   }
 ]

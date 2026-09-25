@@ -119,14 +119,21 @@ test.beforeAll(async () => {
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
   );
   const stamp = await fetch(`${server.origin}/astryx-build-sha.txt`);
-  if (!stamp.ok) {throw new Error('Storybook build is missing its source stamp');}
+  if (!stamp.ok) {
+    throw new Error('Storybook build is missing its source stamp');
+  }
   build = (await stamp.text()).trim();
-  if (build !== head)
-    {throw new Error('Storybook bytes differ from the PR head');}
+  if (build !== head) {
+    throw new Error('Storybook bytes differ from the PR head');
+  }
   fs.mkdirSync(OUTPUT, {recursive: true});
 });
 
 test.afterAll(async () => {
+  const previous = fs.existsSync(path.join(OUTPUT, 'manifest.json'))
+    ? (JSON.parse(fs.readFileSync(path.join(OUTPUT, 'manifest.json'), 'utf8'))
+        .frames ?? [])
+    : [];
   if (head && build) {
     fs.writeFileSync(
       path.join(OUTPUT, 'manifest.json'),
@@ -136,7 +143,15 @@ test.afterAll(async () => {
           component: 'core/ChatMessageMetadata',
           headSha: head,
           storybookSha: build,
-          frames,
+          frames: [...previous, ...frames].filter(
+            (frame, index, all) =>
+              all.findIndex(
+                other =>
+                  other.state === frame.state &&
+                  other.mode === frame.mode &&
+                  other.direction === frame.direction,
+              ) === index,
+          ),
         },
         null,
         2,
@@ -154,6 +169,7 @@ async function capture(
 ) {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(String(error)));
+  await page.setViewportSize({width: 1024, height: 768});
   await page.goto(
     `${server.origin}/iframe.html?id=${scenario.storyId}&viewMode=story&globals=colorMode:${mode};astryxTheme:neutral;direction:${direction}`,
   );
@@ -192,9 +208,25 @@ async function capture(
         ? root.getBoundingClientRect().width > 0 &&
           root.getBoundingClientRect().height > 0
         : false,
-      storyError: Boolean(
-        document.querySelector('.sb-errordisplay, [data-testid="story-error"]'),
-      ),
+      storyError: [
+        ...document.querySelectorAll(
+          '.sb-errordisplay, [data-testid="story-error"]',
+        ),
+      ].some(node => {
+        const box = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return (
+          box.width > 0 &&
+          box.height > 0 &&
+          box.bottom > 0 &&
+          box.right > 0 &&
+          box.top < innerHeight &&
+          box.left < innerWidth &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          style.opacity !== '0'
+        );
+      }),
       mode: document.documentElement.getAttribute('data-theme'),
       theme: document
         .querySelector('[data-astryx-theme]')
@@ -225,7 +257,9 @@ async function capture(
   };
   const failures: string[] = [];
   const check = (ok: boolean, detail: string) => {
-    if (!ok) {failures.push(detail);}
+    if (!ok) {
+      failures.push(detail);
+    }
   };
   check(actual.rootCount === expected.rootCount, 'metadata root count');
   check(actual.text === expected.text, 'visible content and separators');
@@ -304,8 +338,9 @@ test('captures light and dark status, composition, empty, and overflow states', 
   const failures: string[] = [];
   await page.emulateMedia({reducedMotion: 'reduce'});
   for (const mode of ['light', 'dark'] as const) {
-    for (const scenario of CASES)
-      {failures.push(...(await capture(page, scenario, mode, 'ltr')));}
+    for (const scenario of CASES) {
+      failures.push(...(await capture(page, scenario, mode, 'ltr')));
+    }
   }
   expect(failures).toEqual([]);
 });
