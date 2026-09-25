@@ -132,7 +132,7 @@ describe('TimeInput nativePicker', () => {
     },
   );
 
-  it('maps deprecated nativePicker="always" to forced native (FR3)', () => {
+  it('deprecated nativePicker="always" keeps released fallbacks (FR2 legacy)', () => {
     stubPointer(false);
     render(
       <TimeInput
@@ -143,7 +143,10 @@ describe('TimeInput nativePicker', () => {
       />,
     );
 
-    expect(getNativeTimeInput()).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', {name: 'Start time'}),
+    ).toBeInTheDocument();
+    expect(document.querySelector('input[type="time"]')).toBeNull();
   });
 
   it('commits native edits and rejects values outside min/max', () => {

@@ -626,19 +626,20 @@ function PointerDateTimeField({
   hasPickers = true,
   ...rest
 }: DateTimeInputProps & {
-  nativeMode?: 'off' | 'adaptive' | 'forced';
+  nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy';
   hasPickers?: boolean;
 }) {
   const t = useTranslator();
   const locale = useLocale();
   const usesNativePicker = nativeMode !== 'off';
   // `forced` (`presentation="native"`, FR2): no Astryx fallback. `adaptive`
-  // (`adaptive-native` on a coarse pointer): iOS's native time picker has no
-  // seconds wheel, treats step as validation rather than picker cadence, and
-  // cannot express our preset-time list, so those keep the Astryx time field.
+  // (`adaptive-native` coarse) and `legacy` (deprecated `always`):
+  // iOS's native time picker has no seconds wheel, treats step as validation
+  // rather than picker cadence, and cannot express our preset-time list, so
+  // those keep the Astryx time field — exactly as released.
   const usesNativeTimePicker =
     nativeMode === 'forced' ||
-    (nativeMode === 'adaptive' &&
+    ((nativeMode === 'adaptive' || nativeMode === 'legacy') &&
       !hasSeconds &&
       timeIncrement === 1 &&
       timeOptionInterval === undefined);
@@ -1977,7 +1978,16 @@ export function DateTimeInput(props: DateTimeInputProps) {
     ...rest
   } = props;
   if (effective === 'native') {
-    return <PointerDateTimeField {...rest} nativeMode="forced" />;
+    return (
+      <PointerDateTimeField
+        {...rest}
+        nativeMode={
+          props.presentation === undefined && props.nativePicker === 'always'
+            ? 'legacy'
+            : 'forced'
+        }
+      />
+    );
   }
   switch (resolveInputPresentation(effective, isTouch)) {
     case 'native':

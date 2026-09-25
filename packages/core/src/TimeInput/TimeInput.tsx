@@ -408,19 +408,22 @@ function TimeField({
   style,
   ref,
   nativeMode = 'off',
-}: TimeInputProps & {nativeMode?: 'off' | 'adaptive' | 'forced'}) {
+}: TimeInputProps & {nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy'}) {
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  // `forced` (`presentation="native"`, FR2): always native, no fallback.
-  // `adaptive` (`adaptive-native` on a coarse pointer): iOS has no seconds
-  // wheel and treats step as validation rather than wheel cadence, so those
-  // explicit Astryx contracts keep the typed field.
+  // `forced` (explicit `presentation="native"`, FR2): always native, no
+  // fallback. `adaptive` (`adaptive-native` coarse) and `legacy` (deprecated
+  // `nativePicker="always"`): iOS has no seconds wheel and treats step as
+  // validation rather than wheel cadence, so those keep the typed field —
+  // `legacy` on every pointer, exactly as released.
   const usesNativeTimePicker =
     nativeMode === 'forced' ||
-    (nativeMode === 'adaptive' && !hasSeconds && increment === 1);
+    ((nativeMode === 'adaptive' || nativeMode === 'legacy') &&
+      !hasSeconds &&
+      increment === 1);
 
   const id = useId();
   const inputLabelID = useId();
@@ -869,7 +872,18 @@ export function TimeInput(props: TimeInputProps) {
     ...rest
   } = props;
   if (effective === 'native') {
-    return <TimeField {...rest} nativeMode="forced" />;
+    // Deprecated `always` keeps released fallbacks (FR2 legacy); only an
+    // explicit `presentation="native"` is forced.
+    return (
+      <TimeField
+        {...rest}
+        nativeMode={
+          props.presentation === undefined && props.nativePicker === 'always'
+            ? 'legacy'
+            : 'forced'
+        }
+      />
+    );
   }
   switch (resolveInputPresentation(effective, isTouch)) {
     case 'native':
