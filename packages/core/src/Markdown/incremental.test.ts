@@ -740,6 +740,37 @@ describe('streaming structural suppression', () => {
       );
     });
 
+    it.each([false, true])(
+      'decodes escaped pipes in code spans during production streaming (sourceRanges=%s)',
+      sourceRanges => {
+        const text =
+          'Intro\n\n| Concept | TypeScript |\n| --- | --- |\n| Null safety | **`T \\| null`** |';
+        const options = {sourceRanges, math: false as const};
+        const full = parseMarkdown(text, options);
+
+        for (const trimsArtifacts of [false, true]) {
+          const state = createIncrementalState();
+          let streamed = parseMarkdownIncremental('', state, options);
+          for (let end = 1; end <= text.length; end++) {
+            const prefix = text.slice(0, end);
+            streamed = parseMarkdownIncremental(
+              trimsArtifacts ? trimStreamingArtifacts(prefix, options) : prefix,
+              state,
+              options,
+            );
+          }
+
+          expect(state.settledText).toBe('Intro');
+          expect(streamed).toEqual(full);
+          expect(streamed).toHaveLength(2);
+          expect(streamed[1].type).toBe('table');
+          expect(visibleText(streamed[1])).toBe(
+            'Concept TypeScript\nNull safety T | null',
+          );
+        }
+      },
+    );
+
     it('still holds back a lone header whose pipes are unescaped', () => {
       const state = createIncrementalState();
 

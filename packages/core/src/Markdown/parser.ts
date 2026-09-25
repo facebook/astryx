@@ -945,6 +945,7 @@ function matchReferenceLink(
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell',
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
@@ -969,7 +970,11 @@ function matchReferenceLink(
           node: {
             type: 'link',
             url: href,
-            children: parseInlineImpl(linkText, protectedInlineOptions(opts)),
+            children: parseInlineImpl(
+              linkText,
+              protectedInlineOptions(opts),
+              context,
+            ),
           },
           end: labelClose + 1,
         };
@@ -990,7 +995,11 @@ function matchReferenceLink(
     node: {
       type: 'link',
       url: href,
-      children: parseInlineImpl(linkText, protectedInlineOptions(opts)),
+      children: parseInlineImpl(
+        linkText,
+        protectedInlineOptions(opts),
+        context,
+      ),
     },
     end: textClose + 1,
   };
@@ -1425,14 +1434,16 @@ function parseInlineAstRuntime(
 function parseInlineEntry(
   text: string,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell' = 'default',
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
-  const nodes = parseInlineImpl(text, opts);
+  const nodes = parseInlineImpl(text, opts, context);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
 
 function parseInlineImpl(
   text: string,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell' = 'default',
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
   const nodes: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
   // Only a plugin that actually contributes INLINE syntax may cost anything
@@ -1461,7 +1472,10 @@ function parseInlineImpl(
       if (closeIndex !== -1) {
         nodes.push({
           type: 'inlineCode',
-          value: text.slice(openIndex, closeIndex),
+          value:
+            context === 'tableCell'
+              ? text.slice(openIndex, closeIndex).replace(/\\\|/g, '|')
+              : text.slice(openIndex, closeIndex),
         });
         i = closeIndex + tickCount;
         continue;
@@ -1551,6 +1565,7 @@ function parseInlineImpl(
               children: parseInlineImpl(
                 text.slice(i + 1, textClose),
                 protectedInlineOptions(opts),
+                context,
               ),
             });
           }
@@ -1562,7 +1577,7 @@ function parseInlineImpl(
 
     // --- Reference link [text][label] / [text][] / [text] ---
     if (opts.linkDefs != null && text[i] === '[') {
-      const ref = matchReferenceLink(text, i, opts.linkDefs, opts);
+      const ref = matchReferenceLink(text, i, opts.linkDefs, opts, context);
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
@@ -1590,7 +1605,11 @@ function parseInlineImpl(
             children: [
               {
                 type: 'emphasis',
-                children: parseInlineImpl(text.slice(i + 3, closeIndex), opts),
+                children: parseInlineImpl(
+                  text.slice(i + 3, closeIndex),
+                  opts,
+                  context,
+                ),
               },
             ],
           });
@@ -1617,7 +1636,11 @@ function parseInlineImpl(
         ) {
           nodes.push({
             type: 'strong',
-            children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
+            children: parseInlineImpl(
+              text.slice(i + 2, closeIndex),
+              opts,
+              context,
+            ),
           });
           i = closeIndex + 2;
           continue;
@@ -1631,7 +1654,11 @@ function parseInlineImpl(
       if (closeIndex !== -1) {
         nodes.push({
           type: 'delete',
-          children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
+          children: parseInlineImpl(
+            text.slice(i + 2, closeIndex),
+            opts,
+            context,
+          ),
         });
         i = closeIndex + 2;
         continue;
@@ -1652,7 +1679,11 @@ function parseInlineImpl(
         ) {
           nodes.push({
             type: 'emphasis',
-            children: parseInlineImpl(text.slice(i + 1, closeIndex), opts),
+            children: parseInlineImpl(
+              text.slice(i + 1, closeIndex),
+              opts,
+              context,
+            ),
           });
           i = closeIndex + 1;
           continue;
@@ -2182,7 +2213,10 @@ function parseTable(
 ): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
   const headers: MarkdownAstTableCell<RuntimeExtensionNode>[] = splitTableRow(
     lines[lineIndex],
-  ).map(cell => ({type: 'tableCell', children: parseInlineEntry(cell, opts)}));
+  ).map(cell => ({
+    type: 'tableCell',
+    children: parseInlineEntry(cell, opts, 'tableCell'),
+  }));
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
       const trimmed = cell.trim();
@@ -2208,7 +2242,7 @@ function parseTable(
       type: 'tableRow',
       children: splitTableRow(lines[rowIndex]).map(cell => ({
         type: 'tableCell',
-        children: parseInlineEntry(cell, opts),
+        children: parseInlineEntry(cell, opts, 'tableCell'),
       })),
     });
     rowIndex++;

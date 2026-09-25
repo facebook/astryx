@@ -297,9 +297,13 @@ describe('Markdown', () => {
     expect(screen.getByText('struck').tagName).toBe('DEL');
   });
 
-  it('renders inline code with Code', () => {
-    render(<Markdown>{'Use `code` here'}</Markdown>);
-    expect(screen.getByText('code').tagName).toBe('CODE');
+  it('renders inline code as delimiter-free <code> content', () => {
+    const {container} = render(<Markdown>{'Use `code` here'}</Markdown>);
+    const code = container.querySelector('code');
+    expect(code).toBeInTheDocument();
+    expect(code).toHaveTextContent('code');
+    expect(code?.textContent).toBe('code');
+    expect(container.textContent).toBe('Use code here');
   });
 
   it('renders code blocks with CodeBlock', () => {
@@ -438,6 +442,23 @@ describe('Markdown', () => {
     expect(document.querySelector('table')).toBeInTheDocument();
     expect(document.querySelectorAll('th')).toHaveLength(2);
     expect(document.querySelectorAll('td')).toHaveLength(2);
+  });
+
+  it('renders escaped table pipes without exposing the escape in code spans', () => {
+    render(
+      <Markdown>
+        {
+          '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |'
+        }
+      </Markdown>,
+    );
+
+    const cells = document.querySelectorAll('tbody td');
+    expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+      'Null safety',
+      'T | null',
+    ]);
+    expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
   });
 
   it('makes the table scroll wrapper keyboard-focusable', () => {
