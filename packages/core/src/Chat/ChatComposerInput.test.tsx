@@ -874,5 +874,50 @@ describe('ChatComposerInput', () => {
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
     });
+
+    describe('allowWhitespace', () => {
+      it('closes on space by default', () => {
+        const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+        setCursorAfterText(textbox, '@john ');
+        fireEvent.input(textbox);
+
+        expect(textbox.getAttribute('aria-expanded')).toBe('false');
+      });
+
+      it('keeps menu open for multi-word query if allowWhitespace is true', () => {
+        const {textbox} = setupTriggerInput([
+          createMentionTrigger({allowWhitespace: true}),
+        ]);
+
+        setCursorAfterText(textbox, '@john smith ');
+        fireEvent.input(textbox);
+
+        expect(textbox.getAttribute('aria-expanded')).toBe('true');
+      });
+
+      it('stops at the nearest trigger that does not allow whitespace in mixed config', () => {
+        const {textbox} = setupTriggerInput([
+          createMentionTrigger({allowWhitespace: true}),
+          createCommandTrigger({allowWhitespace: false}),
+        ]);
+
+        setCursorAfterText(textbox, '@john /foo bar');
+        fireEvent.input(textbox);
+
+        expect(textbox.getAttribute('aria-expanded')).toBe('false');
+      });
+
+      it('trigger followed by space stays closed if not opted in', () => {
+        const {textbox} = setupTriggerInput([
+          createCommandTrigger({allowWhitespace: false}),
+        ]);
+
+        setCursorAfterText(textbox, '/ ');
+        fireEvent.input(textbox);
+
+        expect(textbox.getAttribute('aria-expanded')).toBe('false');
+      });
+    });
   });
 });

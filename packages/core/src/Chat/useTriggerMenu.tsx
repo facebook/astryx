@@ -215,7 +215,7 @@ function findActiveTrigger(
           const query = textBeforeCursor.slice(i + 1);
 
           if (query.includes(' ') && !trigger.allowWhitespace) {
-            continue;
+            return null;
           }
 
           return {trigger, query, triggerStart: i};

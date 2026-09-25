@@ -39,7 +39,7 @@ export const docs = {
     {
       name: 'triggers',
       type: 'ChatComposerTrigger[]',
-      description: 'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert.',
+      description: 'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert. Set `allowWhitespace: true` on a trigger to keep its menu open for multi-word queries; otherwise it closes at the first space.',
     },
     {
       name: 'debounceMs',
