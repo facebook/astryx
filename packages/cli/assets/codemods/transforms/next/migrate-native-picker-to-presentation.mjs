@@ -46,11 +46,12 @@ function mapValue(component, value) {
 }
 
 /**
+ * Collect the string-literal leaves of a value expression without mutating
+ * anything. Returns false for any dynamic or non-string node.
  * @param {any} node
- * @param {string} component
- * @returns {boolean} whether every static branch was mapped
+ * @param {any[]} leaves
  */
-function mapStaticValue(node, component) {
+function collectStaticLeaves(node, leaves) {
   if (!node) return false;
   if (
     node.type === 'TSAsExpression' ||
@@ -58,12 +59,13 @@ function mapStaticValue(node, component) {
     node.type === 'TypeCastExpression' ||
     node.type === 'ParenthesizedExpression'
   ) {
-    return mapStaticValue(node.expression, component);
+    return collectStaticLeaves(node.expression, leaves);
   }
   if (node.type === 'ConditionalExpression') {
-    const consequent = mapStaticValue(node.consequent, component);
-    const alternate = mapStaticValue(node.alternate, component);
-    return consequent && alternate;
+    return (
+      collectStaticLeaves(node.consequent, leaves) &&
+      collectStaticLeaves(node.alternate, leaves)
+    );
   }
   if (
     (node.type !== 'StringLiteral' && node.type !== 'Literal') ||
@@ -71,10 +73,27 @@ function mapStaticValue(node, component) {
   ) {
     return false;
   }
-  const replacement = mapValue(component, node.value);
-  if (replacement === undefined) return false;
-  node.value = replacement;
-  if (node.raw) node.raw = undefined;
+  leaves.push(node);
+  return true;
+}
+
+/**
+ * Map every leaf, or none of them: a mixed static/dynamic conditional must
+ * stay byte-identical, never half-migrated.
+ * @param {any} node
+ * @param {string} component
+ */
+function mapStaticValue(node, component) {
+  /** @type {any[]} */
+  const leaves = [];
+  if (!collectStaticLeaves(node, leaves)) return false;
+  if (leaves.some(leaf => mapValue(component, leaf.value) === undefined)) {
+    return false;
+  }
+  for (const leaf of leaves) {
+    leaf.value = mapValue(component, leaf.value);
+    if (leaf.raw) leaf.raw = undefined;
+  }
   return true;
 }
 

@@ -49,4 +49,15 @@ const a = <DateInput label="d" nativePicker={mode} />;
 const b = <Selector nativePicker="never" />;`;
     expect(await applyTransform(source)).toBe(source);
   });
+
+  it('leaves a mixed static/dynamic conditional byte-identical when a sibling migrates', async () => {
+    const output =
+      await applyTransform(`import {TimeInput} from '@astryxdesign/core';
+const a = <TimeInput label="t" nativePicker="touch" />;
+const b = <TimeInput label="t" nativePicker={flag ? 'always' : mode} />;`);
+
+    expect(output).toContain("presentation='adaptive-native'");
+    expect(output).toContain("nativePicker={flag ? 'always' : mode}");
+    expect(output).not.toContain("'native'");
+  });
 });
