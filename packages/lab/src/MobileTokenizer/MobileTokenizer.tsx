@@ -180,7 +180,9 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-2'],
     marginTop: 'auto',
   },
-  filterInput: {flexGrow: 1, flexShrink: 1, minWidth: 0},
+  // TextInput renders Field (block, shrink-to-fit); xstyle lands on that
+  // root, so it must flex — the filter takes all row space minus Done+gap.
+  filterInput: {flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0},
   empty: {paddingBlock: spacingVars['--spacing-4']},
 });
 
@@ -447,6 +449,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                   isLabelHidden
                   placeholder="Search..."
                   value={query}
+                  width="100%"
                   hasClear
                   onChange={next => {
                     setQuery(next);
