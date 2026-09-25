@@ -535,6 +535,65 @@ describe('ChatComposerInput', () => {
       const {container} = render(<ChatComposerInput triggers={[trigger]} />);
       expect(container).toBeTruthy();
     });
+
+    it('handles allowWhitespace correctly for mixed triggers', () => {
+      const slash = createCommandTrigger({ allowWhitespace: false });
+      const mention = createMentionTrigger({ allowWhitespace: true });
+      render(<ChatComposerInput triggers={[slash, mention]} />);
+      const textbox = screen.getByRole('textbox');
+      
+      // Simulate "@john /foo bar "
+      textbox.textContent = '@john /foo bar ';
+      textbox.focus();
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textbox.firstChild!, 15);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      
+      fireEvent.input(textbox);
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+
+    it('closes menu if default trigger hits space', () => {
+      const slash = createCommandTrigger({ allowWhitespace: false });
+      render(<ChatComposerInput triggers={[slash]} />);
+      const textbox = screen.getByRole('textbox');
+      
+      // Simulate "/foo "
+      textbox.textContent = '/foo ';
+      textbox.focus();
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textbox.firstChild!, 5);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      
+      fireEvent.input(textbox);
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('keeps menu open if opted-in trigger has space', () => {
+      const mention = createMentionTrigger({ allowWhitespace: true });
+      render(<ChatComposerInput triggers={[mention]} />);
+      const textbox = screen.getByRole('textbox');
+      
+      // Simulate "@john doe"
+      textbox.textContent = '@john doe';
+      textbox.focus();
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textbox.firstChild!, 9);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      
+      fireEvent.input(textbox);
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true');
+    });
   });
 
   describe('accessibility', () => {
