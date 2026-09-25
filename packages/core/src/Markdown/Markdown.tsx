@@ -1544,11 +1544,41 @@ function renderBlock(
                   </>
                 );
 
+                const getInlineText = (
+                  nodes: {
+                    type: string;
+                    content?: string;
+                    children?: unknown[];
+                  }[],
+                ): string =>
+                  nodes
+                    .map(n => {
+                      if (n.type === 'text' || n.type === 'code')
+                        {return (n as {content: string}).content ?? '';}
+                      const ch = (n as {children?: unknown[]}).children;
+                      return ch ? getInlineText(ch as never) : '';
+                    })
+                    .join('');
+                const ariaLabel = (() => {
+                  const first = item.children[0] as
+                    {type?: string; children?: unknown[]} | undefined;
+                  if (
+                    first &&
+                    (first.type === 'paragraph' || first.type === 'heading') &&
+                    Array.isArray(first.children)
+                  ) {
+                    const t2 = getInlineText(first.children as never).trim();
+                    return t2 || undefined;
+                  }
+                  return undefined;
+                })();
+
                 return (
                   <CheckboxListItem
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown task items are rendered from positional AST nodes
                     key={i}
                     value={`task-${i}`}
+                    aria-label={ariaLabel}
                     label={label}
                   />
                 );
