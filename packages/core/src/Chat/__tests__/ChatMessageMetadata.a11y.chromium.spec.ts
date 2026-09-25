@@ -166,10 +166,18 @@ async function capture(
   scenario: Case,
   mode: 'light' | 'dark',
   direction: 'ltr' | 'rtl',
+  options: {
+    viewport?: {width: number; height: number};
+    coarsePointer?: boolean;
+    state?: string;
+  } = {},
 ) {
+  const viewport = options.viewport ?? {width: 1024, height: 768};
+  const state = options.state ?? scenario.name;
   const errors: string[] = [];
-  page.on('pageerror', error => errors.push(String(error)));
-  await page.setViewportSize({width: 1024, height: 768});
+  const onError = (error: Error) => errors.push(String(error));
+  page.on('pageerror', onError);
+  await page.setViewportSize(viewport);
   await page.goto(
     `${server.origin}/iframe.html?id=${scenario.storyId}&viewMode=story&globals=colorMode:${mode};astryxTheme:neutral;direction:${direction}`,
   );
@@ -203,6 +211,9 @@ async function capture(
         element.querySelector('article')?.getAttribute('data-sender') ?? null,
       overflowFree: element.scrollWidth <= element.clientWidth + 1,
       rootWidth: root?.getBoundingClientRect().width ?? null,
+      childX: root
+        ? [...root.children].map(child => child.getBoundingClientRect().x)
+        : [],
       geometry: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
       rootVisible: root
         ? root.getBoundingClientRect().width > 0 &&
@@ -247,7 +258,8 @@ async function capture(
     theme: 'neutral',
     mode,
     direction,
-    viewport: {width: 1024, height: 768},
+    viewport,
+    coarsePointer: options.coarsePointer ?? false,
     reducedMotion: true,
     rootCount: scenario.rootCount,
     text: scenario.text,
@@ -264,6 +276,18 @@ async function capture(
   check(actual.rootCount === expected.rootCount, 'metadata root count');
   check(actual.text === expected.text, 'visible content and separators');
   check(actual.direction === direction, 'computed direction');
+  if (scenario.name === 'status-read' || scenario.name === 'assistant-footer') {
+    const first = actual.childX[0];
+    const last = actual.childX[actual.childX.length - 1];
+    const goesRight =
+      scenario.sender === 'user' ? direction === 'rtl' : direction === 'ltr';
+    check(
+      first != null &&
+        last != null &&
+        (goesRight ? first < last : first > last),
+      'sender-relative visual order',
+    );
+  }
   check(actual.statusTitle === expected.statusTitle, 'translated status title');
   check(actual.buttonCount === expected.buttonCount, 'footer button');
   check(actual.sender === expected.sender, 'message sender');
@@ -278,8 +302,10 @@ async function capture(
     'settled fonts and reduced motion',
   );
   check(
-    actual.viewport.width === 1024 && actual.viewport.height === 768,
-    'viewport',
+    actual.viewport.width === viewport.width &&
+      actual.viewport.height === viewport.height &&
+      actual.coarsePointer === expected.coarsePointer,
+    'viewport and pointer',
   );
   check(
     actual.geometry.width > 0 &&
@@ -296,7 +322,7 @@ async function capture(
     'no horizontal overflow',
   );
   check(errors.length === 0, 'no page errors');
-  const file = `ChatMessageMetadata__${scenario.name}__neutral-${mode}__${direction}.png`;
+  const file = `ChatMessageMetadata__${state}__neutral-${mode}__${direction}.png`;
   const png = await panel.screenshot({animations: 'disabled'});
   const image = {
     file,
@@ -318,7 +344,7 @@ async function capture(
     `${JSON.stringify(receipt, null, 2)}\n`,
   );
   frames.push({
-    state: scenario.name,
+    state,
     mode,
     direction,
     receipt: `${file}.sensors.json`,
@@ -327,9 +353,8 @@ async function capture(
     failures,
   });
   expect(await roots.count()).toBe(actual.rootCount);
-  return failures.map(
-    detail => `${scenario.name}/${mode}/${direction}: ${detail}`,
-  );
+  page.off('pageerror', onError);
+  return failures.map(detail => `${state}/${mode}/${direction}: ${detail}`);
 }
 
 test('captures light and dark status, composition, empty, and overflow states', async ({
@@ -356,4 +381,33 @@ test('captures sender ordering in RTL', async ({page}) => {
     }
   }
   expect(failures).toEqual([]);
+});
+
+test('captures narrow touch reflow in both modes', async ({browser}) => {
+  const viewport = {width: 320, height: 640};
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: 'reduce',
+  });
+  try {
+    const page = await context.newPage();
+    const scenario = CASES.find(item => item.name === 'narrow-overflow');
+    if (!scenario) {throw new Error('Narrow metadata fixture is missing');}
+    const failures: string[] = [];
+    for (const mode of ['light', 'dark'] as const) {
+      failures.push(
+        ...(await capture(page, scenario, mode, 'ltr', {
+          viewport,
+          coarsePointer: true,
+          state: 'narrow-touch',
+        })),
+      );
+    }
+    expect(failures).toEqual([]);
+  } finally {
+    await context.close();
+  }
 });
