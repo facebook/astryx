@@ -23,6 +23,7 @@ const OUTPUT = path.resolve('test-results/chat-message-list-audit-evidence');
 const CONVERSATION = 'core-chatmessagelist--conversation';
 const EMPTY = 'core-chatmessagelist--empty';
 const DENSITIES = 'core-chatmessagelist--density-and-alignment';
+const OVERFLOW = 'core-chatmessagelist--overflow';
 const VIEWPORT = {width: 1024, height: 768};
 
 interface Case {
@@ -39,6 +40,7 @@ interface Case {
   viewport?: {width: number; height: number};
   direction?: 'ltr' | 'rtl';
   coarsePointer?: boolean;
+  requiresOverflow?: boolean;
 }
 
 // Expectations are authored from the public fixture and component source, not
@@ -115,6 +117,17 @@ const CASES: Case[] = [
     busy: true,
     text: 'The issue is resolved.',
     args: 'isStreaming:true',
+  },
+  {
+    state: 'overflow',
+    storyId: OVERFLOW,
+    index: 0,
+    targetCount: 1,
+    articleCount: 8,
+    density: 'balanced',
+    busy: false,
+    text: 'Conversation item 1.',
+    requiresOverflow: true,
   },
 ];
 
@@ -198,20 +211,29 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     );
     const subject = logs.nth(scenario.index);
     const box = await subject.boundingBox();
-    const observed = await subject.evaluate(node => ({
-      role: node.getAttribute('role'),
-      name: node.getAttribute('aria-label'),
-      live: node.getAttribute('aria-live'),
-      busy: node.getAttribute('aria-busy'),
-      density: node.getAttribute('data-density'),
-      direction: getComputedStyle(node).direction,
-      text: (node as HTMLElement).innerText,
-      articleCount: node.querySelectorAll('article').length,
-      width: node.getBoundingClientRect().width,
-      height: node.getBoundingClientRect().height,
-      scrollWidth: node.scrollWidth,
-      clientWidth: node.clientWidth,
-    }));
+    const observed = await subject.evaluate(
+      (node, measureOverflow) => ({
+        role: node.getAttribute('role'),
+        name: node.getAttribute('aria-label'),
+        live: node.getAttribute('aria-live'),
+        busy: node.getAttribute('aria-busy'),
+        density: node.getAttribute('data-density'),
+        direction: getComputedStyle(node).direction,
+        text: (node as HTMLElement).innerText,
+        articleCount: node.querySelectorAll('article').length,
+        width: node.getBoundingClientRect().width,
+        height: node.getBoundingClientRect().height,
+        scrollWidth: node.scrollWidth,
+        clientWidth: node.clientWidth,
+        ...(measureOverflow
+          ? {
+              parentScrollHeight: node.parentElement?.scrollHeight ?? 0,
+              parentClientHeight: node.parentElement?.clientHeight ?? 0,
+            }
+          : {}),
+      }),
+      Boolean(scenario.requiresOverflow),
+    );
     const environment = await page.evaluate(() => ({
       theme: document
         .querySelector('[data-astryx-theme]')
@@ -256,10 +278,19 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     expect(observed.density).toBe(scenario.density);
     expect(observed.direction).toBe(direction);
     expect(observed.articleCount).toBe(scenario.articleCount);
-    if (scenario.name != null) {expect(observed.name).toBe(scenario.name);}
-    if (scenario.text != null) {expect(observed.text).toContain(scenario.text);}
+    if (scenario.name != null) {
+      expect(observed.name).toBe(scenario.name);
+    }
+    if (scenario.text != null) {
+      expect(observed.text).toContain(scenario.text);
+    }
     expect(observed.width).toBeGreaterThan(0);
     expect(observed.height).toBeGreaterThan(0);
+    if (scenario.requiresOverflow) {
+      expect(observed.parentScrollHeight ?? 0).toBeGreaterThan(
+        (observed.parentClientHeight ?? 0) + 1,
+      );
+    }
     expect(environment.theme).toBe('neutral');
     expect(environment.mode).toBe(mode);
     expect(environment.colorScheme).toBe(mode);
@@ -295,6 +326,7 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
         name: scenario.name,
         text: scenario.text,
         coarsePointer: scenario.coarsePointer ?? false,
+        ...(scenario.requiresOverflow ? {requiresOverflow: true} : {}),
       },
       observed: {
         build: storybookSha,

@@ -260,9 +260,9 @@
   },
   {
     "component": "core/ChatMessageList",
-    "reason": "ChatMessageList owns a vertical flex transcript, symmetric logical padding and gap, a block-axis top loading sentinel, and a block-axis spacer. It has no directional glyph, inline-side placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Message sender alignment and content belong to its child components; the list only supplies density context. All three independently owned stories returned N-A for icon, positional, and contextual-decoration dimensions in Chromium.",
+    "reason": "ChatMessageList owns a vertical flex transcript, symmetric logical padding and gap, a block-axis top loading sentinel, and a block-axis spacer. It has no directional glyph, inline-side placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Message sender alignment and content belong to its child components; the list only supplies density context. All four independently owned stories returned N-A for icon, positional, and contextual-decoration dimensions in Chromium.",
     "evidence": {
-      "apps/storybook/stories/ChatMessageList.stories.tsx": "sha256:d7ca4008c740cf4dbfcfb19cc0c024860c83fa5ab23ee09f0188671183672349",
+      "apps/storybook/stories/ChatMessageList.stories.tsx": "sha256:19c6652ec7736e019415591fe88bc3edd3cddd8c4281f62adde7c588d13a9307",
       "packages/core/src/Chat/ChatMessageList.tsx": "sha256:36f511ea564578cd320b625ecbb7b853a670b2f0d5a0fa9e03fac9ed840073e9",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }

@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ChatMessageList.test.tsx
+ * @input React Testing Library, Vitest, and the public ChatMessageList surface
+ * @output Observable log, empty-state, alignment, and async-loading regressions
+ * @position Colocated component behavior tests
+ */
+
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatMessageList} from './ChatMessageList';
@@ -53,6 +60,11 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     expect(screen.getByText('No messages yet')).toBeTruthy();
+  });
+
+  it('renders an accepted numeric empty state', () => {
+    render(<ChatMessageList emptyState={0}>{[]}</ChatMessageList>);
+    expect(screen.getByRole('log')).toHaveTextContent('0');
   });
 
   it('applies density class', () => {

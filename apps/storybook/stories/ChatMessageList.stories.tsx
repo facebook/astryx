@@ -3,7 +3,7 @@
 /**
  * @file ChatMessageList.stories.tsx
  * @input ChatMessageList and the existing Chat message primitives
- * @output Reusable transcript, empty, and density/alignment browser fixtures
+ * @output Reusable transcript, empty, density/alignment, and overflow browser fixtures
  * @position Component-owned Storybook evidence for ChatMessageList
  */
 
@@ -101,6 +101,25 @@ export const DensityAndAlignment: Story = {
           </ChatMessageList>
         </div>
       ))}
+    </div>
+  ),
+};
+
+export const Overflow: Story = {
+  render: () => (
+    <div style={{height: 220, overflowY: 'auto'}}>
+      <ChatMessageList align="top">
+        {Array.from({length: 8}, (_, index) => (
+          <ChatMessage
+            key={index}
+            sender={index % 2 === 0 ? 'user' : 'assistant'}>
+            <ChatMessageBubble>
+              Conversation item {index + 1}. This message wraps on narrower
+              screens while the surrounding transcript remains scrollable.
+            </ChatMessageBubble>
+          </ChatMessage>
+        ))}
+      </ChatMessageList>
     </div>
   ),
 };
