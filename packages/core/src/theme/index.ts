@@ -20,6 +20,7 @@ export {MediaTheme} from './MediaTheme';
 export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
+  COMPONENT_ICON_SLOTS_VERSION,
   generateThemeCSS,
   generateOnMediaCSS,
   generateAdaptationCSS,

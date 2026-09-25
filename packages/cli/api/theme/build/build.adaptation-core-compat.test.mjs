@@ -35,7 +35,11 @@ import * as path from 'node:path';
 
 vi.mock('@astryxdesign/core/theme', async importActual => {
   const actual = /** @type {Record<string, any>} */ (await importActual());
-  const {generateAdaptationCSS: _dropped, ...withoutAdaptations} = actual;
+  const {
+    generateAdaptationCSS: _dropped,
+    COMPONENT_ICON_SLOTS_VERSION: _componentIconsVersion,
+    ...withoutAdaptations
+  } = actual;
 
   /** Model the published old core: it resolves ordinary theme values but drops
    * every adaptation field and retained generative-axis metadata. */

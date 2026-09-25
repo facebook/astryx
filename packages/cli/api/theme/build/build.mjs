@@ -111,14 +111,7 @@ try {
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
-  if (typeof _defineTheme === 'function') {
-    const probe = _defineTheme({
-      name: '__astryx_component_icons_capability__',
-      componentIcons: {'file-input-upload': null},
-    });
-    _supportsComponentIcons =
-      probe?.componentIcons?.['file-input-upload'] === null;
-  }
+  _supportsComponentIcons = coreTheme.COMPONENT_ICON_SLOTS_VERSION === 1;
   try {
     _coreRootModule = await import('@astryxdesign/core');
   } catch {

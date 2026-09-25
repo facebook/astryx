@@ -114,7 +114,7 @@ export function buildDefineThemeExample(theming: ThemingDoc): string {
       lines.push(`  },`);
     }
 
-    lines.push('}');
+    lines.push(theming.iconSlots?.length ? '},' : '}');
   }
 
   if (theming.iconSlots?.length) {

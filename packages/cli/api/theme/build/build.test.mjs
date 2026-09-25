@@ -22,6 +22,7 @@ import * as os from 'node:os';
 import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
+  getRegisteredThemes,
 } from '@astryxdesign/core/theme';
 import {
   themeBuild,
@@ -56,6 +57,12 @@ afterEach(() => {
 });
 
 describe('themeBuild() — receipt', () => {
+  it('does not register a synthetic theme while detecting Core capabilities', () => {
+    expect(getRegisteredThemes().has('__astryx_component_icons_capability__')).toBe(
+      false,
+    );
+  });
+
   it('compiles a minimal theme and returns a theme.build receipt with files on disk', async () => {
     const themeFile = path.join(tmpDir, 'apitheme.mjs');
     fs.writeFileSync(

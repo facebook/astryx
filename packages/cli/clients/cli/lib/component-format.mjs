@@ -208,6 +208,7 @@ function formatTargetsTable(docs, themeData) {
   return lines.join('\n');
 }
 
+/** @param {any} docs - Component documentation. */
 function formatIconSlotsTable(docs) {
   if (!docs.theming?.iconSlots?.length) return '';
 

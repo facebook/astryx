@@ -129,6 +129,22 @@ describe('theming helpers — buildDefineThemeExample', () => {
     expect(example).not.toContain('components: {');
   });
 
+  it('emits a parseable combined target and component-icon example', () => {
+    const example = buildDefineThemeExample({
+      targets: [{className: 'astryx-file-input'}],
+      iconSlots: [
+        {
+          slot: 'file-input-upload',
+          default: 'arrowUp',
+          description: 'Upload affordance.',
+        },
+      ],
+    });
+
+    expect(example).toContain('},\n\ncomponentIcons: {');
+    expect(() => new Function(`return ({${example}});`)).not.toThrow();
+  });
+
   it('returns empty string with no targets or icon slots', () => {
     expect(buildDefineThemeExample({targets: []})).toBe('');
   });
@@ -229,7 +245,11 @@ describe('theming section — canary gating', () => {
     expect(source).toMatch(/theming API is experimental/i);
   });
 
-  it('wraps both theming tables in a Card, like sibling doc tables', () => {
+  it('renders copyable examples independently of target availability', () => {
+    expect(source).toMatch(/\{example && \(\s*<CodeExampleBlock/);
+  });
+
+  it('wraps all theming tables in a Card, like sibling doc tables', () => {
     // The desktop <Table> and mobile hand-rolled layout for each of the three
     // tables (targets + icon slots + CSS vars) render inside a <Card>.
     const cardOpenTags = source.match(/<Card[\s>]/g) ?? [];

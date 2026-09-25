@@ -411,14 +411,6 @@ export function Theming({theming, props}: ThemingProps) {
             <Text type="code">base</Text> for all instances.
           </Text>
           <TargetsTable targets={theming.targets} props={props} />
-          {example && (
-            <CodeExampleBlock
-              code={example}
-              language="ts"
-              width="100%"
-              hasCopyButton
-            />
-          )}
         </VStack>
       )}
 
@@ -436,6 +428,15 @@ export function Theming({theming, props}: ThemingProps) {
           </Text>
           <IconSlotsTable slots={iconSlots} />
         </VStack>
+      )}
+
+      {example && (
+        <CodeExampleBlock
+          code={example}
+          language="ts"
+          width="100%"
+          hasCopyButton
+        />
       )}
 
       {hasVars && (

@@ -92,6 +92,9 @@ import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
 import {resolveLocalTokenContract} from './localTokens';
 
+/** Theme-data capability marker consumed by independently versioned tooling. */
+export const COMPONENT_ICON_SLOTS_VERSION = 1 as const;
+
 // =============================================================================
 // Types
 // =============================================================================
