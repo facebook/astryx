@@ -11,10 +11,11 @@
 
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, render, renderHook, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Outline} from './Outline';
 import {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
+import {useOutlineFromMarkdown} from './useOutlineFromMarkdown';
 import {useOutlineFromDOM} from './useOutlineFromDOM';
 import type {OutlineItem} from './types';
 
@@ -52,6 +53,37 @@ describe('parseOutlineFromMarkdown', () => {
       {id: 'usage-1', label: 'Usage', level: 2},
       {id: 'usage-2', label: 'Usage', level: 2},
     ]);
+  });
+  it('recomputes when parser-affecting options change', () => {
+    const initialProps: {
+      sourceIds: ReadonlySet<string> | undefined;
+      math: boolean;
+    } = {sourceIds: undefined, math: false};
+    const {result, rerender} = renderHook(
+      ({
+        sourceIds,
+        math,
+      }: {
+        sourceIds: ReadonlySet<string> | undefined;
+        math: boolean;
+      }) => useOutlineFromMarkdown('# Before [cite] $x$', {sourceIds, math}),
+      {initialProps},
+    );
+
+    expect(result.current[0]).toMatchObject({
+      id: 'before-cite-x',
+      label: 'Before [cite] $x$',
+    });
+    rerender({sourceIds: new Set(['cite']), math: false});
+    expect(result.current[0]).toMatchObject({
+      id: 'before-x',
+      label: 'Before  $x$',
+    });
+    rerender({sourceIds: new Set(['cite']), math: true});
+    expect(result.current[0]).toMatchObject({
+      id: 'before-x',
+      label: 'Before  x',
+    });
   });
 });
 
