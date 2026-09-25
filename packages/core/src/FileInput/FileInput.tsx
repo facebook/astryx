@@ -717,7 +717,7 @@ export function FileInput({
     return (
       <>
         <Icon
-          icon="arrowUp"
+          icon="upload"
           size="md"
           color="secondary"
           {...themeProps('file-input-icon', {mode})}
@@ -743,7 +743,7 @@ export function FileInput({
     return (
       <>
         <Icon
-          icon="arrowUp"
+          icon="upload"
           size="sm"
           color="secondary"
           {...themeProps('file-input-icon', {mode})}
