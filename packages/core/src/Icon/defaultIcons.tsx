@@ -205,13 +205,6 @@ export const defaultIcons: IconRegistry &
     </svg>
   ),
 
-  /** ⇧ — upload into a tray */
-  upload: (
-    <svg {...svgProps}>
-      <path d="M12 16V4m0 0L7 9m5-5l5 5M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4" />
-    </svg>
-  ),
-
   /** ↑ — arrow up (sort ascending) */
   arrowUp: (
     <svg {...svgProps}>

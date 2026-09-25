@@ -14,12 +14,16 @@ import {ChatSendButton} from './ChatSendButton';
 import {ChatComposer} from './ChatComposer';
 import {Button} from '../Button';
 import {registerIcons, resetIcons} from '../Icon';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import {resetThemes} from '../theme/themeRegistry';
 import {TestIcon} from '../__tests__/TestIcon';
 import {declaredValue} from '../__tests__/stylexDeclarations';
 
 describe('ChatSendButton', () => {
   afterEach(() => {
     resetIcons();
+    resetThemes();
   });
 
   describe('send state', () => {
@@ -99,17 +103,48 @@ describe('ChatSendButton', () => {
       expect(screen.getByTestId('registry-arrow-up')).toBeInTheDocument();
     });
 
-    it('renders an explicit sendIcon instead of the registry icon', () => {
-      registerIcons({
-        arrowUp: (
-          <svg data-testid="registry-arrow-up">
-            <path d="M0 0" />
-          </svg>
-        ),
+    it('uses the chat-send-button-send theme mapping', () => {
+      const theme = defineTheme({
+        name: 'chat-send-button-mapped',
+        icons: {success: <TestIcon data-testid="mapped-send" />},
+        componentIcons: {'chat-send-button-send': 'success'},
       });
-      render(<ChatSendButton sendIcon={<TestIcon data-testid="my-send" />} />);
+      render(
+        <Theme theme={theme}>
+          <ChatSendButton />
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('mapped-send')).toBeInTheDocument();
+    });
+
+    it('suppresses the send icon when its theme slot is null', () => {
+      const theme = defineTheme({
+        name: 'chat-send-button-null',
+        componentIcons: {'chat-send-button-send': null},
+      });
+      const {container} = render(
+        <Theme theme={theme}>
+          <ChatSendButton />
+        </Theme>,
+      );
+
+      expect(container.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders an explicit sendIcon instead of the mapped theme icon', () => {
+      const theme = defineTheme({
+        name: 'chat-send-button-explicit',
+        icons: {success: <TestIcon data-testid="mapped-send" />},
+        componentIcons: {'chat-send-button-send': 'success'},
+      });
+      render(
+        <Theme theme={theme}>
+          <ChatSendButton sendIcon={<TestIcon data-testid="my-send" />} />
+        </Theme>,
+      );
       expect(screen.getByTestId('my-send')).toBeInTheDocument();
-      expect(screen.queryByTestId('registry-arrow-up')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('mapped-send')).not.toBeInTheDocument();
     });
   });
 

@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Capture a theme's authored adaptation input as the theme file loads.
+ * @file Capture authored compatibility-sensitive theme input as a theme file loads.
  *
  * `astryx theme build` resolves a theme by calling the INSTALLED core's
- * `defineTheme()`. A core that predates ordered adaptations builds its result
- * field by field and drops `adaptations` on the way in, so by the time the
+ * `defineTheme()`. A core that predates ordered adaptations or component icon
+ * slots builds its result field by field and drops those inputs on the way in, so by the time the
  * build holds a theme object, the author's rules are gone without a trace —
  * and building anyway would emit CSS with every adaptation rule silently
  * missing.
@@ -17,7 +17,7 @@
  * the theme file a `@astryxdesign/core/theme` whose `defineTheme` is the
  * installed one wrapped in a recorder. Every call — in the theme file, in a
  * relative base, in an installed package, at any depth — hands us the raw
- * input before the old resolver can erase it. The JS engine does the
+ * input before an old resolver can erase it. The JS engine does the
  * evaluating; we only observe.
  *
  * ## Lineage, not a pile of calls
@@ -38,8 +38,9 @@
  * reaches any output path. It cannot leak into a generated file regardless:
  * `JSON.stringify`, `Object.keys` and `Object.entries` all ignore symbol keys.
  *
- * Used only when the installed core cannot compile adaptations. A core that
- * can reports them on the resolved theme itself, which needs none of this.
+ * Used whenever the installed core lacks any compatibility-sensitive theme
+ * capability that could be erased during normalization. A current core that
+ * exposes all such fields needs none of this for standalone builds.
  *
  * ## Reach, and its one edge
  *

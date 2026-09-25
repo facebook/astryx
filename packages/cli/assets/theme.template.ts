@@ -90,8 +90,8 @@ export const myTheme = defineTheme({
 
   /**
    * Start from another theme instead of the defaults. Tokens are copied then
-   * overridden, `components` deep-merge, `icons` shallow-merge — but the scale
-   * configs below REPLACE the base's rather than merging, because they are
+   * overridden, `components` deep-merge, and `icons`, `componentIcons`, and
+   * `indicators` shallow-merge — but the scale configs below REPLACE the base's rather than merging, because they are
    * inputs to a generator, not values.
    *
    * Reference: `astryx theme list` (themes you can install and extend).
@@ -287,6 +287,13 @@ export const myTheme = defineTheme({
     // The same mechanism adds custom Text types: <Text type="hero" />.
     text: {'type:hero': {fontSize: 'var(--font-size-4xl)', lineHeight: '1.05'}},
   },
+
+  /**
+   * Remap component-owned icon roles without changing a shared icon everywhere.
+   * Use `astryx component <Name>` to see the slots that component exposes.
+   * Omit a slot to keep its fallback; use `null` to hide the optional artwork.
+   */
+  // componentIcons: {'file-input-upload': 'arrowUp'},
 
   // ───────────────────────────────────────────────────────────────────────
   // Everything below takes React values, so it needs a .tsx file or an

@@ -2,7 +2,7 @@
 
 /**
  * @file themingHelpers.ts
- * @input A component's `theming` doc (targets, vars, derived) and its props.
+ * @input A component's `theming` doc (targets, iconSlots, vars, derived) and its props.
  * @output Pure helpers that shape theming data for the component-detail
  *   Theming section — deriving `defineTheme` config keys, reflected data
  *   attributes, prop-value lists, the copyable config example, and the set of
@@ -80,40 +80,55 @@ export function canonicalTargets(theming: ThemingDoc): ThemingTarget[] {
 }
 
 /**
- * Build the `defineTheme` `components` example, showing the root target's
- * `base` + a representative prop/state key, plus one sub-element target if the
- * component exposes more than one. Mirrors the CLI's generated snippet.
+ * Build a copyable `defineTheme` excerpt for the component's target and icon
+ * slot surfaces. Each block is optional, so a slot-only component still gets a
+ * useful example.
  */
 export function buildDefineThemeExample(theming: ThemingDoc): string {
   const targets = canonicalTargets(theming);
-  if (!targets.length) {
-    return '';
-  }
+  const lines: string[] = [];
 
-  const lines: string[] = ['components: {'];
+  if (targets.length) {
+    lines.push('components: {');
 
-  const root = targets[0];
-  lines.push(`  '${configKey(root)}': {`);
-  lines.push(`    base: { /* CSS properties */ },`);
-  if (root.visualProps?.length) {
-    lines.push(`    '${root.visualProps[0]}:value': { /* prop-specific */ },`);
-  }
-  if (root.states?.length) {
-    lines.push(`    '${root.states[0]}': { /* state-specific */ },`);
-  }
-  lines.push(`  },`);
-
-  if (targets.length > 1) {
-    const sub = targets[1];
-    lines.push(`  '${configKey(sub)}': {`);
+    const root = targets[0];
+    lines.push(`  '${configKey(root)}': {`);
     lines.push(`    base: { /* CSS properties */ },`);
-    if (sub.states?.length) {
-      lines.push(`    '${sub.states[0]}': { /* state-specific */ },`);
+    if (root.visualProps?.length) {
+      lines.push(
+        `    '${root.visualProps[0]}:value': { /* prop-specific */ },`,
+      );
+    }
+    if (root.states?.length) {
+      lines.push(`    '${root.states[0]}': { /* state-specific */ },`);
     }
     lines.push(`  },`);
+
+    if (targets.length > 1) {
+      const sub = targets[1];
+      lines.push(`  '${configKey(sub)}': {`);
+      lines.push(`    base: { /* CSS properties */ },`);
+      if (sub.states?.length) {
+        lines.push(`    '${sub.states[0]}': { /* state-specific */ },`);
+      }
+      lines.push(`  },`);
+    }
+
+    lines.push('}');
   }
 
-  lines.push('}');
+  if (theming.iconSlots?.length) {
+    if (lines.length) {
+      lines.push('');
+    }
+    lines.push('componentIcons: {');
+    for (const icon of theming.iconSlots) {
+      const fallback = icon.default == null ? 'null' : `'${icon.default}'`;
+      lines.push(`  '${icon.slot}': ${fallback},`);
+    }
+    lines.push('}');
+  }
+
   return lines.join('\n');
 }
 
@@ -124,7 +139,7 @@ export function publicVars(theming: ThemingDoc): ComponentVar[] {
 
 /**
  * Whether a component has any themeable surface worth documenting — at least
- * one theme target or one publicly-settable CSS variable. Mirrors the render
+ * one theme target, component icon slot, or publicly-settable CSS variable. Mirrors the render
  * gate in Theming.tsx so the "Theming" tab is only shown when the panel would
  * have content.
  */
@@ -132,5 +147,9 @@ export function hasThemingContent(theming: ThemingDoc | null): boolean {
   if (!theming) {
     return false;
   }
-  return theming.targets.length > 0 || publicVars(theming).length > 0;
+  return (
+    theming.targets.length > 0 ||
+    (theming.iconSlots?.length ?? 0) > 0 ||
+    publicVars(theming).length > 0
+  );
 }

@@ -105,6 +105,7 @@ export type {
   ComponentPropDoc,
   ComponentExampleDoc,
   ComponentAnatomyElement,
+  ComponentIconSlotDoc,
   ComponentAccessibilityRequirement,
   ComponentAccessibilityThemeStatus,
   ComponentAccessibilityThemeApplicability,

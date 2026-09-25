@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Component doc formatting — render ComponentDoc objects to text
+ * @file Component doc formatting — render ComponentDoc objects, including
+ * theming targets and component icon slots, to text
  */
 
 import {discoverComponents, findComponentReadme, resolveImportPath} from '../../../foundation/discovery/component-discovery.mjs';
@@ -207,6 +208,22 @@ function formatTargetsTable(docs, themeData) {
   return lines.join('\n');
 }
 
+function formatIconSlotsTable(docs) {
+  if (!docs.theming?.iconSlots?.length) return '';
+
+  const lines = [
+    '| Slot | Default icon | Description |',
+    '|------|--------------|-------------|',
+  ];
+  for (const icon of docs.theming.iconSlots) {
+    const fallback = icon.default ?? 'none';
+    lines.push(
+      `| \`${mdCell(icon.slot)}\` | \`${mdCell(fallback)}\` | ${mdCell(icon.description)} |`,
+    );
+  }
+  return lines.join('\n');
+}
+
 /**
  * Format full component docs (default mode, replaces cleanReadme).
  *
@@ -332,6 +349,11 @@ export function formatFull(docs, options = {}) {
       }
     }
 
+    if (docs.theming.iconSlots?.length) {
+      sections.push('**Component icon slots** — map these component-owned roles with `defineTheme({componentIcons})`; omit a slot to keep its default or map it to `null` to suppress it.\n');
+      sections.push(formatIconSlotsTable(docs) + '\n');
+    }
+
     // Legacy componentKey (for backward compatibility)
     if (docs.theming.componentKey) {
       sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
@@ -443,6 +465,12 @@ export function formatCompact(docs, componentName, importHint) {
       if (ex.label) sections.push(`### ${ex.label}\n`);
       sections.push('```tsx\n' + ex.code + '\n```\n');
     }
+  }
+
+  // Component icon slots
+  if (docs.theming?.iconSlots?.length) {
+    sections.push('## Component Icon Slots\n');
+    sections.push(formatIconSlotsTable(docs) + '\n');
   }
 
   // Derived theming properties (compact includes these for theme consumers)
@@ -572,6 +600,17 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
       .map((/** @type {any} */ d) => d.expand === 'container' ? `${d.property} -> container tokens` : `${d.property} -> ${(d.vars || []).join(', ')}`)
       .join('; ');
     output.push(`  Derived: ${derivedNames}`);
+  }
+
+  // Component icon slots
+  if (docs.theming?.iconSlots?.length) {
+    const iconSlots = docs.theming.iconSlots
+      .map(
+        (/** @type {any} */ icon) =>
+          `${icon.slot}->${icon.default ?? 'none'}`,
+      )
+      .join(', ');
+    output.push(`  Icon slots: ${iconSlots}`);
   }
 
 // Theme targets (component class, preferred data attrs, props, states) with theme variant merging

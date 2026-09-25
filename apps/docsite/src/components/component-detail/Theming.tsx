@@ -4,11 +4,11 @@
 
 /**
  * @file Theming.tsx
- * @input A component's `theming` doc (targets, vars, derived) + its props.
+ * @input A component's `theming` doc (targets, iconSlots, vars, derived) + its props.
  * @output Renders the component detail page's "Theming" tab: a table of
  *   theme targets shown as the keys they take in a `defineTheme` `components`
- *   config, a copyable `defineTheme` example, and a table of themeable CSS
- *   variables.
+ *   config, a component icon-slot table, a copyable `defineTheme` example, and
+ *   a table of themeable CSS variables.
  * @position Component detail "Theming" tab body. Mirrors the Overview tab's
  *   layout — a bare VStack of display-3 sections, no wrapping Section.
  *
@@ -30,6 +30,7 @@ import type {
   PropDoc,
   ThemingDoc,
   ThemingTarget,
+  ComponentIconSlotDoc,
   ComponentVar,
 } from '../../generated/componentRegistry';
 import {
@@ -196,6 +197,86 @@ function TargetsTable({targets, props}: TargetsTableProps) {
   );
 }
 
+interface IconSlotsTableProps {
+  slots: ComponentIconSlotDoc[];
+}
+
+function IconSlotsTable({slots}: IconSlotsTableProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  if (isMobile) {
+    return (
+      <Card>
+        <VStack gap={0}>
+          {slots.map(slot => (
+            <Fragment key={slot.slot}>
+              <Divider />
+              <VStack gap={1} style={{paddingBlock: 8}}>
+                <Text type="code" weight="bold">
+                  {slot.slot}
+                </Text>
+                <Text type="code" color="secondary">
+                  Default: {slot.default ?? 'None'}
+                </Text>
+                <MarkdownText type="body" color="secondary">
+                  {slot.description}
+                </MarkdownText>
+              </VStack>
+            </Fragment>
+          ))}
+        </VStack>
+      </Card>
+    );
+  }
+
+  const data = slots.map(slot => ({
+    slot: slot.slot as unknown,
+    fallback: (slot.default ?? 'None') as unknown,
+    description: slot.description as unknown,
+  })) as Record<string, unknown>[];
+
+  return (
+    <Card>
+      <Table
+        data={data}
+        columns={[
+          {
+            key: 'slot',
+            header: 'Slot',
+            width: pixel(260),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
+                {item.slot as string}
+              </Text>
+            ),
+          },
+          {
+            key: 'fallback',
+            header: 'Default icon',
+            width: pixel(160),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text type="code" color="secondary">
+                {item.fallback as string}
+              </Text>
+            ),
+          },
+          {
+            key: 'description',
+            header: 'Description',
+            renderCell: (item: Record<string, unknown>) => (
+              <MarkdownText type="body">
+                {item.description as string}
+              </MarkdownText>
+            ),
+          },
+        ]}
+        density="spacious"
+        dividers="rows"
+      />
+    </Card>
+  );
+}
+
 interface CssVarsTableProps {
   vars: ComponentVar[];
 }
@@ -291,14 +372,16 @@ export function Theming({theming, props}: ThemingProps) {
   }
 
   const hasTargets = theming.targets.length > 0;
+  const iconSlots = theming.iconSlots ?? [];
+  const hasIconSlots = iconSlots.length > 0;
   const vars = publicVars(theming);
   const hasVars = vars.length > 0;
 
-  if (!hasTargets && !hasVars) {
+  if (!hasTargets && !hasIconSlots && !hasVars) {
     return null;
   }
 
-  const example = hasTargets ? buildDefineThemeExample(theming) : '';
+  const example = buildDefineThemeExample(theming);
 
   return (
     <VStack gap={8}>
@@ -311,8 +394,8 @@ export function Theming({theming, props}: ThemingProps) {
         />
         <Text type="large" weight="normal">
           Restyle this component with a <Text type="code">defineTheme</Text>{' '}
-          config. Target the component through the keys below, or override the
-          CSS variables it exposes.
+          config. Target the component through the keys below, map its icon
+          slots, or override the CSS variables it exposes.
         </Text>
       </VStack>
 
@@ -336,6 +419,22 @@ export function Theming({theming, props}: ThemingProps) {
               hasCopyButton
             />
           )}
+        </VStack>
+      )}
+
+      {hasIconSlots && (
+        <VStack gap={4}>
+          <Heading level={2} type="display-3">
+            Component icon slots
+          </Heading>
+          <Text color="secondary">
+            Map component-owned roles through{' '}
+            <Text type="code">defineTheme</Text>{' '}
+            <Text type="code">componentIcons</Text>. Omitted slots keep the
+            default icon; a <Text type="code">null</Text> mapping hides optional
+            artwork without changing the component's accessible meaning.
+          </Text>
+          <IconSlotsTable slots={iconSlots} />
         </VStack>
       )}
 

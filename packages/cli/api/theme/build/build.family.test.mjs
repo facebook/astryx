@@ -52,7 +52,7 @@ import {icons} from './base-icons.mjs';
 import {indicators} from './base-indicators.mjs';
 await Promise.resolve();
 export const oceanTheme=defineTheme({
- name:'ocean',icons,indicators,
+ name:'ocean',icons,indicators,componentIcons:{'file-input-upload':'arrowUp','chat-send-button-send':'arrowUp'},
  tokens:{'--color-accent':'rgb(0 119 182)','--color-background-body':'rgb(240 248 255)'},
  localTokens:{'--tide':'8px','--wash':'linear-gradient(\\nred,\\nblue\\n)','--commented':'red /* ) */','--payload':'[one; two]'},
  components:{button:{base:{borderRadius:'6px',backgroundImage:'url(/icons/*/mark.svg)',':hover':{backgroundColor:'rgb(220 40 40)'}},'variant:a{b':{color:'rgb(1 2 3)'}},card:{base:{padding:'8px 16px'}},text:{'type:body':{letterSpacing:'0.01em'}}},
@@ -71,7 +71,7 @@ import {oceanTheme} from '../ocean-barrel.mjs';
 import {icons as brandIcons} from './child-icons.mjs';
 import {indicators as brandIndicators} from './child-indicators.mjs';
 export const resolvedOceanCalmTheme=defineTheme({
- name:'ocean-calm',extends:oceanTheme,icons:brandIcons,indicators:brandIndicators,
+ name:'ocean-calm',extends:oceanTheme,icons:brandIcons,indicators:brandIndicators,componentIcons:{'file-input-upload':null},
  tokens:{'--color-accent':['rgb(0 150 170)','rgb(0 170 190)']},
  localTokens:{'--tide':'10px','--wash':'linear-gradient(\\nred,\\ngreen\\n)','--payload':'[one; three]'},
  components:{button:{base:{backgroundColor:'rgb(220 250 250)',borderColor:'rgb(0 0 0)',minHeight:'28px'},'variant:lagoon':{backgroundColor:'rgb(0 90 110)'}},card:{base:{padding:'24px'}}},
@@ -178,6 +178,20 @@ describe('themeBuildFamily()', () => {
     expect(imported.oceanCalmTheme.indicators.check).toBe('child-check');
     expect(imported.oceanCalmTheme.indicators.radio).toBe('base-radio');
     expect(imported.oceanCalmDeepTheme.indicators.radio).toBe('base-radio');
+    expect(imported.oceanTheme.componentIcons).toEqual({
+      'file-input-upload': 'arrowUp',
+      'chat-send-button-send': 'arrowUp',
+    });
+    expect(imported.oceanCalmTheme.componentIcons).toEqual({
+      'file-input-upload': null,
+      'chat-send-button-send': 'arrowUp',
+    });
+    expect(imported.oceanCalmDeepTheme.componentIcons).toEqual(
+      imported.oceanCalmTheme.componentIcons,
+    );
+    expect(imported.oceanMidnightTheme.componentIcons).toEqual(
+      imported.oceanTheme.componentIcons,
+    );
     expect(imported.oceanCalmDeepTheme.name).toBe('ocean-calm-deep');
     expect(Object.hasOwn(imported.oceanCalmTheme, '__extends')).toBe(false);
     fs.writeFileSync(

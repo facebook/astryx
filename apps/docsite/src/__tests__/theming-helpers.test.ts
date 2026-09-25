@@ -112,7 +112,24 @@ describe('theming helpers — buildDefineThemeExample', () => {
     expect(example).toContain("'progress-bar-fill'");
   });
 
-  it('returns empty string with no targets', () => {
+  it('emits component icon mappings for slot-only components', () => {
+    const example = buildDefineThemeExample({
+      targets: [],
+      iconSlots: [
+        {
+          slot: 'chat-send-button-send',
+          default: 'arrowUp',
+          description: 'Send state glyph.',
+        },
+      ],
+    });
+
+    expect(example).toContain('componentIcons: {');
+    expect(example).toContain("'chat-send-button-send': 'arrowUp'");
+    expect(example).not.toContain('components: {');
+  });
+
+  it('returns empty string with no targets or icon slots', () => {
     expect(buildDefineThemeExample({targets: []})).toBe('');
   });
 });
@@ -170,6 +187,21 @@ describe('theming helpers — hasThemingContent', () => {
     );
   });
 
+  it('is true when the component exposes an icon slot', () => {
+    expect(
+      hasThemingContent({
+        targets: [],
+        iconSlots: [
+          {
+            slot: 'file-input-upload',
+            default: 'arrowUp',
+            description: 'Upload affordance.',
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
+
   it('is true when the component exposes a public CSS variable', () => {
     expect(
       hasThemingContent({
@@ -198,12 +230,10 @@ describe('theming section — canary gating', () => {
   });
 
   it('wraps both theming tables in a Card, like sibling doc tables', () => {
-    // Both the desktop <Table> and the mobile hand-rolled layout for each of
-    // the two tables (targets + CSS vars) render inside a <Card>. Four Card
-    // open tags total; a bare <Table> outside a Card would regress the
-    // consistency this test guards.
+    // The desktop <Table> and mobile hand-rolled layout for each of the three
+    // tables (targets + icon slots + CSS vars) render inside a <Card>.
     const cardOpenTags = source.match(/<Card[\s>]/g) ?? [];
-    expect(cardOpenTags.length).toBe(4);
+    expect(cardOpenTags.length).toBe(6);
     expect(source).not.toMatch(/\)\s*;\s*}\s*\n\s*return \(\s*<Table/);
   });
 });

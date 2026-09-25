@@ -60,6 +60,18 @@ export interface RegistryDocIdentity {
 }
 
 /**
+ * Owner-declared metadata for a component-specific icon role.
+ *
+ * The `slot` is a stable public key in `ComponentIconSlotMap`. `default`
+ * names the shared icon used when a theme omits the mapping.
+ */
+export interface ComponentIconSlotDoc {
+  slot: string;
+  default: string | null;
+  description: string;
+}
+
+/**
  * Documents one element in a component's anatomy breakdown.
  * Anatomy describes the visual/structural parts that make up a component
  * (e.g. a Button has: left icon, label, end content, container).

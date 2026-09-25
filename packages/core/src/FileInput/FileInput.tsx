@@ -4,7 +4,8 @@
 
 /**
  * @file FileInput.tsx
- * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
+ * @input Uses React, useId, Field, theme-aware component icon resolution,
+ *   Spinner, VisuallyHidden
  * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
@@ -42,7 +43,8 @@ import {
   type InputStatus,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon} from '../Icon';
+import {Icon, getComponentIconName} from '../Icon';
+import {useThemeName} from '../theme/useTheme';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -454,6 +456,12 @@ export function FileInput({
   ...rest
 }: FileInputProps) {
   const t = useTranslator();
+  const themeName = useThemeName();
+  const uploadIcon = getComponentIconName(
+    'file-input-upload',
+    'arrowUp',
+    themeName,
+  );
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -716,12 +724,14 @@ export function FileInput({
     }
     return (
       <>
-        <Icon
-          icon="upload"
-          size="md"
-          color="secondary"
-          {...themeProps('file-input-icon', {mode})}
-        />
+        {uploadIcon != null && (
+          <Icon
+            icon={uploadIcon}
+            size="md"
+            color="secondary"
+            {...themeProps('file-input-icon', {mode})}
+          />
+        )}
         <span {...stylex.props(styles.placeholderText)}>
           {isDragOver ? t('@astryx.fileInput.dropHint') : displayPlaceholder}
         </span>
@@ -742,12 +752,14 @@ export function FileInput({
     }
     return (
       <>
-        <Icon
-          icon="upload"
-          size="sm"
-          color="secondary"
-          {...themeProps('file-input-icon', {mode})}
-        />
+        {uploadIcon != null && (
+          <Icon
+            icon={uploadIcon}
+            size="sm"
+            color="secondary"
+            {...themeProps('file-input-icon', {mode})}
+          />
+        )}
         <span
           {...stylex.props(
             hasFiles ? styles.fileNameText : styles.placeholderText,

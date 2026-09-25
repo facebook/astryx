@@ -1058,6 +1058,12 @@ export interface ThemingTarget {
   deprecatedFor?: string;
 }
 
+export interface ComponentIconSlotDoc {
+  slot: string;
+  default: string | null;
+  description: string;
+}
+
 export interface ComponentVar {
   name: string;
   description: string;
@@ -1078,6 +1084,7 @@ export interface DerivedVar {
 export interface ThemingDoc {
   container?: boolean;
   targets: ThemingTarget[];
+  iconSlots?: ComponentIconSlotDoc[];
   vars?: ComponentVar[];
   derived?: DerivedVar[];
 }
