@@ -203,28 +203,16 @@ if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
 **${extLink('View Sandbox for this PR', sandboxUrl)}**
-_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
 
-// Storybook readiness follows Vercel; Sandbox still follows the source CI's
-// trusted Pages publisher. Report their missing states independently.
+// Both previews share the exact-head Vercel deployment, never a Pages, canary,
+// production, or earlier-head fallback.
 let previewAvailabilitySection = '';
 if (previewState) {
-  const missing = [];
-  if (!storybookUrl)
-    missing.push('Storybook is not ready on the exact-head Vercel preview.');
-  if (!sandboxUrl) {
-    missing.push(
-      sourceConclusion === 'success'
-        ? 'Sandbox was not published for this CI run.'
-        : `Sandbox is unavailable because CI concluded ${sourceConclusion || 'without a result'}.`,
-    );
-  }
-  if (missing.length > 0) {
-    previewAvailabilitySection = `> **Preview availability:** ${missing.join(' ')}\n\n`;
-  }
+  if (!storybookUrl || !sandboxUrl)
+    previewAvailabilitySection = `> **Preview availability:** Storybook and Sandbox are not both ready on the exact-head Vercel preview.${sourceConclusion && sourceConclusion !== 'success' ? ` CI concluded ${sourceConclusion}.` : ''}\n\n`;
 }
 
 // Build footer with links

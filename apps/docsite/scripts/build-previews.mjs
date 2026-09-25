@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Build and stage Storybook in the existing Vercel docsite preview.
- * @input VERCEL_ENV and the Storybook static build.
- * @output apps/docsite/public/storybook only in preview/canary deployments.
+ * @file Build and stage Storybook and Vite Sandbox in the existing Vercel docsite preview.
+ * @input VERCEL_ENV, Storybook static build, and Sandbox Vite static build.
+ * @output apps/docsite/public/{storybook,sandbox} only in preview/canary deployments.
  * @position Build-time staging before the docsite Next.js build; CI retains its own visual artifact.
  */
 
@@ -39,19 +39,27 @@ function indexPath(directory) {
   return path.join(directory, 'index.html');
 }
 
-export function buildStorybookPreview(deploymentEnv, root, run = execFileSync) {
-  const destination = path.join(root, 'apps/docsite/public/storybook');
-  if (deploymentEnv !== 'preview') {
-    // Release docs must never package an earlier cached preview.
-    fs.rmSync(destination, {recursive: true, force: true});
-    return;
+export function stageSandbox(source, destination) {
+  for (const relative of ['index.html', '404.html', '404/index.html']) {
+    const file = path.join(source, relative);
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      throw new Error(`Sandbox build has no ${relative}: ${file}`);
+    }
   }
+  // The Vite export already uses /sandbox/ for JS, CSS, template assets and
+  // fullscreen embeds. Copy the physical tree unchanged: missing paths must
+  // stay missing rather than falling through to an SPA shell.
+  fs.rmSync(destination, {recursive: true, force: true});
+  fs.cpSync(source, destination, {recursive: true});
+}
 
+function runPreviewBuild(run, root, name, args, env = process.env) {
   try {
-    const output = run('pnpm', ['-F', '@astryxdesign/storybook', 'build'], {
+    const output = run('pnpm', args, {
       cwd: root,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
+      env,
     });
     if (output) process.stdout.write(output);
   } catch (error) {
@@ -60,11 +68,43 @@ export function buildStorybookPreview(deploymentEnv, root, run = execFileSync) {
       .join('\n')
       .slice(-12000);
     throw new Error(
-      `Storybook preview build failed:\n${detail || error.message}`,
-      {cause: error},
+      `${name} preview build failed:\n${detail || error.message}`,
+      {
+        cause: error,
+      },
     );
   }
-  stageStorybook(path.join(root, 'apps/storybook/dist'), destination);
+}
+
+export function buildPreviews(deploymentEnv, root, run = execFileSync) {
+  const publicDir = path.join(root, 'apps/docsite/public');
+  const storybookDestination = path.join(publicDir, 'storybook');
+  const sandboxDestination = path.join(publicDir, 'sandbox');
+  if (deploymentEnv !== 'preview') {
+    // Release docs must never package an earlier cached preview.
+    fs.rmSync(storybookDestination, {recursive: true, force: true});
+    fs.rmSync(sandboxDestination, {recursive: true, force: true});
+    return;
+  }
+
+  // Remove cached previews before either build: a failed build must not leave
+  // an older static tree that the subsequent Next build could accidentally ship.
+  fs.rmSync(storybookDestination, {recursive: true, force: true});
+  fs.rmSync(sandboxDestination, {recursive: true, force: true});
+  runPreviewBuild(run, root, 'Storybook', [
+    '-F',
+    '@astryxdesign/storybook',
+    'build',
+  ]);
+  runPreviewBuild(
+    run,
+    root,
+    'Sandbox',
+    ['-F', '@astryxdesign/sandbox', 'build'],
+    {...process.env, SANDBOX_BASE_PATH: '/sandbox'},
+  );
+  stageStorybook(path.join(root, 'apps/storybook/dist'), storybookDestination);
+  stageSandbox(path.join(root, 'apps/sandbox/out'), sandboxDestination);
 }
 
 if (
@@ -75,5 +115,5 @@ if (
     path.dirname(fileURLToPath(import.meta.url)),
     '../../..',
   );
-  buildStorybookPreview(process.env.VERCEL_ENV, root);
+  buildPreviews(process.env.VERCEL_ENV, root);
 }

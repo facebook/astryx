@@ -38,12 +38,68 @@ export function previewOrigin(deployment, status, headSha) {
   }
 }
 
+export async function probeVercelPreview(origin, fetchRoute = fetch) {
+  // Check both static apps and a real Sandbox deep link before publishing any
+  // PR link. A redirect (including an auth/login redirect) or Next's 404 page
+  // cannot count as ready. The origin has already passed previewOrigin().
+  const routes = [
+    '/storybook/',
+    '/storybook/iframe.html',
+    '/sandbox/',
+    '/sandbox/pages/component-scores/',
+  ];
+  try {
+    const responses = await Promise.all(
+      routes.map(route =>
+        fetchRoute(`${origin}${route}`, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(12000),
+        }),
+      ),
+    );
+    return responses.every(
+      response =>
+        response.status === 200 &&
+        response.headers.get('content-type')?.includes('text/html'),
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function waitForPreviewRoutes(
+  origin,
+  {
+    probe = probeVercelPreview,
+    waitMs = 90_000,
+    pollMs = 5_000,
+    now = Date.now,
+    sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  } = {},
+) {
+  // Vercel can report deployment success shortly before every static route
+  // reaches the edge. Retry within this bounded window instead of dropping the
+  // one deployment_status event on a transient 404.
+  const deadline = now() + waitMs;
+  while (true) {
+    try {
+      if (await probe(origin)) return true;
+    } catch {
+      // A failed network probe is not evidence of a ready preview.
+    }
+    if (now() >= deadline) return false;
+    await sleep(Math.min(pollMs, deadline - now()));
+  }
+}
+
 export async function resolveVercelDeploymentEvent({
   github,
   owner,
   repo,
   deployment,
   status,
+  probePreview = probeVercelPreview,
+  probeWaitMs = 90_000,
 }) {
   const origin = previewOrigin(deployment, status, deployment?.sha);
   if (!origin) return null;
@@ -73,7 +129,36 @@ export async function resolveVercelDeploymentEvent({
     headSha: deployment.sha,
     waitMs: 0,
   });
-  if (currentOrigin !== origin) return null;
+  if (
+    currentOrigin !== origin ||
+    !(await waitForPreviewRoutes(origin, {
+      probe: probePreview,
+      waitMs: probeWaitMs,
+    }))
+  )
+    return null;
+  const {data: current} = await github.rest.pulls.get({
+    owner,
+    repo,
+    pull_number: prNumber,
+  });
+  if (
+    current.state !== 'open' ||
+    current.draft ||
+    current.head?.sha !== deployment.sha
+  )
+    return null;
+  // A newer deployment for this *same head* may have started while we waited
+  // for edge routes. Never promote an older successful origin over it.
+  const latestOrigin = await resolveVercelPreview({
+    github,
+    owner,
+    repo,
+    prNumber,
+    headSha: deployment.sha,
+    waitMs: 0,
+  });
+  if (latestOrigin !== origin) return null;
   return {prNumber, headSha: deployment.sha, origin};
 }
 

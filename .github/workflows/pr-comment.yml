@@ -10,9 +10,9 @@
 # drift between a fork path and a same-repo path.
 #
 # Safety: resolves scope and PR identity from the GitHub API. Privileged jobs
-# check out only trusted default-branch code. The Storybook URL is resolved
-# from GitHub's exact-head Vercel deployment, while Sandbox Pages proof comes
-# from the validated source CI artifact. PR artifacts remain static data.
+# check out only trusted default-branch code. Both preview URLs are resolved
+# from one exact-head Vercel deployment after route probes; the Pages result
+# remains a separate source-CI artifact, never a preview-link fallback.
 
 name: PR Comment
 
@@ -298,8 +298,8 @@ jobs:
     concurrency:
       group: pr-report-${{ needs.resolve.outputs.pr_number }}
       cancel-in-progress: false
-    # Sandbox Pages publication settles before CI evidence reconciliation;
-    # Storybook links come from the exact-head Vercel deployment independently.
+    # Pages publication may continue independently, but only the exact-head
+    # Vercel deployment can supply either Storybook or Sandbox PR links.
     if: >-
       always() &&
       github.event.action == 'completed' &&
