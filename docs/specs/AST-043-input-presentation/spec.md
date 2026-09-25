@@ -63,14 +63,21 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
 
   | Surface        | `DateInput`                    | `DateTimeInput`                   | `TimeInput`                                                                       |
   | -------------- | ------------------------------ | --------------------------------- | --------------------------------------------------------------------------------- |
-  | Text field     | Typed field, no picker         | Typed fields, no picker           | Typed field (today's `never`)                                                     |
+  | Text field     | — (not accepted)               | — (not accepted)                  | Typed field (today's `never`)                                                     |
   | Astryx desktop | Typed field + calendar popover | Typed fields + date/time popovers | — (fine resolves via Text field; `popover` is not a distinct `TimeInput` surface) |
   | Astryx sheet   | BottomSheet calendar           | BottomSheet date/time wheels      | BottomSheet time wheels (DEC-3)                                                   |
   | Native         | Browser/OS date picker         | Browser/OS date + time pickers    | Browser/OS time picker                                                            |
 
+  `text-input` is `TimeInput`-only — it exists solely for its released `never` (FR3); a picker-less date field has no released need and would silently drop the calendar affordance: `DateInput` and `DateTimeInput`
+  MUST NOT accept it — their exported `presentation` types exclude it, so it
+  is a compile-time error, with no runtime surface defined for it. Their five
+  values are `popover | bottom-sheet | native | adaptive-bottom-sheet |
+adaptive-native`; only `TimeInput` accepts all six.
+
   Coarse uses the inputs' existing pointer test, no width condition. Forced
-  values (`popover` on coarse, `bottom-sheet`/`text-input` where not reached
-  today) MUST render the named surface, never silently substitute another.
+  values (`popover` on coarse, `bottom-sheet` where not reached today, and
+  `text-input` on `TimeInput`) MUST render the named surface, never silently
+  substitute another.
 
 - **FR2 — Fallback split for native.** Explicit `presentation="native"` MUST
   always show the native surface, with no eligibility fallbacks — a state the
@@ -114,7 +121,8 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
 
 - **FR5 — Docs and types agree.** Each component's consumer docs (en + zh),
   exported types, and Storybook controls MUST show FR1 values/default (six
-  values) and `nativePicker` only as deprecated with its FR3 replacement.
+  values on `TimeInput`, five on `DateInput`/`DateTimeInput`) and
+  `nativePicker` only as deprecated with its FR3 replacement.
 
 ### Platform support
 
@@ -134,7 +142,7 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
 
 | Contract | Verification                               | Representative states                                                                                                                 | Mutation or failure expectation                                                       |
 | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| FR1      | Unit tests per input + real-browser check  | 6 values × fine/coarse, incl. forced + `TimeInput` sheet                                                                              | Wrong/substituted surface fails                                                       |
+| FR1      | Unit tests per input + real-browser check  | Per-component values × fine/coarse, incl. forced + `TimeInput` sheet; `text-input` type-rejected outside `TimeInput`                  | Wrong/substituted surface fails                                                       |
 | FR2      | Unit tests, native requested               | Seconds, step≠default, presets, no usable native: explicit `native` stays native; `adaptive-native` and deprecated `always` fall back | Any fallback under explicit `native`, or none under `adaptive-native`/`always`, fails |
 | FR3–FR4  | Unit tests: default, deprecated, dual-prop | Omitted; `touch`/`always`/`never` per component; both props, any order                                                                | Mapping drift (incl. `TimeInput:never→sheet`) or `nativePicker` winning fails         |
 | FR5      | Doc/type consistency tests                 | All 3 components, en + zh                                                                                                             | Documented-but-untyped value/default fails                                            |
