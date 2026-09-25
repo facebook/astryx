@@ -32,9 +32,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
-import {importUserModule} from '../fs/module-loader.mjs';
+import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
-import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+import {parseReadableDoc} from '../doc-compiler/parse-readable.mjs';
 import {
   sectionKey,
   sectionKeyProblems,
@@ -117,7 +117,7 @@ export function discoverBuiltinTopics() {
  * @returns {Promise<unknown>} the authored doc value
  */
 export async function loadTopicModule(file) {
-  const mod = await importUserModule(file);
+  const mod = await importDocModule(file);
   const doc = mod?.docs ?? mod?.default;
   if (doc == null) {
     throw new Error(
@@ -363,7 +363,7 @@ export async function discoverIntegrationDocs(integration) {
   for (const file of files) {
     let doc;
     try {
-      doc = parseDoc(await loadTopicModule(file), path.basename(file));
+      doc = parseReadableDoc(await loadTopicModule(file), path.basename(file));
     } catch (err) {
       errors.push(
         new Error(
@@ -423,8 +423,9 @@ export async function discoverIntegrationDocs(integration) {
 /**
  * Merge an extension onto a base topic: a section with a stable `id` replaces
  * the base section with the same `id`; legacy sections without IDs fall back to
- * title matching. A section with no match is appended, and title/description
- * are taken from the extension when it states them.
+ * title matching. A section with no match is appended. The title and
+ * description stay the base topic's: an extension adds to a topic, it never
+ * renames it. A topic that `replaces` another is the one that renames.
  *
  * Keyed by section TITLE rather than by position, the way the localization
  * overlays are — position keying grafts an overlay onto whichever section
@@ -451,12 +452,7 @@ export function mergeTopic(base, overlay) {
           : section;
     }
   }
-  return {
-    ...base,
-    title: overlay.title || base.title,
-    description: overlay.description || base.description,
-    sections,
-  };
+  return {...base, sections};
 }
 
 /**

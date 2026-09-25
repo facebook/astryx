@@ -163,6 +163,21 @@ describe('integration codemod discovery', () => {
     ).rejects.toThrow(/is invalid/i);
   });
 
+  it('names a broken codemod by its path inside the package', async () => {
+    scaffold({
+      '1.1.0/no-default.mjs': `export const nope = 1;\n`,
+    });
+    const project = await Project.load(tmpDir);
+    const failure = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    ).then(
+      () => null,
+      error => error,
+    );
+    expect(failure?.message).toContain('(codemods/1.1.0/no-default.mjs)');
+    expect(failure?.message).not.toContain(tmpDir);
+  });
+
   it('fails discovery when default export is not a codemod envelope', async () => {
     scaffold({
       '0.2.0/bad.mjs': `export default { title: 'x', transform: () => null };\n`,

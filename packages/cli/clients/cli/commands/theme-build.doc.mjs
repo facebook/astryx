@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme build',
   displayName: 'astryx theme build',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Compile standalone themes or one keyed theme family',
   description:
     'Compiles defineTheme() sources through the same theme pipeline into scoped CSS, ' +
@@ -28,34 +28,35 @@ export const doc = {
     {
       flag: '--family',
       description:
-        'Build the selected extension family into one keyed CSS, JS, and declaration set',
+        'Build the selected extension family into one keyed CSS, JS, and declaration set. Requires --family-key; refused with --out or --watch (ERR_THEME_INVALID)',
     },
     {
       flag: '--family-key <key>',
       description:
-        'Lower-kebab filename stem required with --family; must differ from every member name',
+        'Lower-kebab filename stem required with --family and refused without it; must differ from every member name (ERR_THEME_INVALID)',
     },
     {
       flag: '-o, --out <path>',
       param: 'options.out',
-      description: 'Output CSS file path (single theme only)',
+      description:
+        'Output CSS file path; the .js and .d.ts are written beside it (default: <theme name>.css next to the source). A relative path must stay inside the working directory. Single theme only: refused with more than one file or with --family (ERR_THEME_INVALID)',
     },
     {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
       description:
-        'Override the icon-registry import in the generated JS module (for example, ./icons.mjs)',
+        "Override the icon-registry import in the generated JS module, for example ./icons.mjs (default: the specifier in the theme source's own import). With --family it applies to every member's icon import",
     },
     {
       flag: '-w, --watch',
       description:
-        'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
+        'Rebuild automatically when a theme file changes (Ctrl-C to stop). Refused with --check, --family, or --json (ERR_THEME_INVALID)',
     },
     {
       flag: '-c, --check',
       param: 'options.check',
       description:
-        'Verify the committed outputs match the source without writing; exit non-zero if stale',
+        'Verify the committed outputs match the source without writing; exit non-zero if stale. Composes with --family and several files; refused with --watch (ERR_THEME_INVALID)',
     },
   ],
   examples: [

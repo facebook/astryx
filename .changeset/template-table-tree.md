@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Add the Tree Table page template
+[feat] Add the Tree Table page template (#6195)
 
 A hierarchical table where every parent row is derived from its children,
 shown as a code repository: folders roll up the newest commit beneath them,

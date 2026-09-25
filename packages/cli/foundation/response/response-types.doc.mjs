@@ -13,7 +13,7 @@ export const doc = {
   type: 'enum',
   name: 'response-types',
   displayName: 'Response Types',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.',
   members: [
@@ -36,7 +36,7 @@ export const doc = {
     {
       value: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, and whether source is available).",
+        "One component's authored ComponentDoc plus ownership fields (package, the owner; import, the specifier; sourceAvailable, whether source exists) and parentDoc (present when the component is documented inside another component's doc, naming that doc).",
     },
     {
       value: 'component.detail.props',
@@ -71,7 +71,7 @@ export const doc = {
     {
       value: 'docs.index',
       description:
-        "One topic's section index (--index): each section's key, title, and one-line summary.",
+        "One topic's section index (--index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary).",
     },
     {
       value: 'docs.detail.section',
@@ -116,19 +116,19 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit` (domain, name, score, reason, description, follow-up command, and import path where relevant).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, score, reason, description, command}, plus import (components, hooks), title (docs), or displayName and kind (templates).',
     },
 
     // build
     {
       value: 'build.help',
       description:
-        'A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.',
+        'The how-to-build-a-page playbook, emitted when no query is given: `playbook: true`, a title, the ordered steps (title, commands, optional returns), the on-system rules, and related lookups. Commands are bare subcommands for the caller to render with its own invocation.',
     },
     {
       value: 'build.kit',
       description:
-        'The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields (matchCount is the total matched, never a cap read back), the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
+        'The composition kit: echoed query, hasResults, matchCount (total matched, never a cap), directMatch, pages (closest templates), blocks (drop-in patterns) and domain (idea components/hooks) as SearchResultEntry[], frame and foundation name arrays, and hint {reason, commands} when thin.',
     },
 
     // swizzle
@@ -151,7 +151,7 @@ export const doc = {
     {
       value: 'gap-report.file',
       description:
-        'An aggregate receipt with overall status, the selected package and issues URL, ordered per-handler deliveries, and filedCount/routedOnlyCount totals.',
+        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals.',
     },
 
     // template
@@ -198,7 +198,7 @@ export const doc = {
     {
       value: 'theme.build',
       description:
-        'A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.',
+        'A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).',
     },
     {
       value: 'theme.build.check',
@@ -228,7 +228,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
     },
     {
       value: 'theme.palette.generate',
@@ -257,7 +257,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.',
+        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
     // doctor
@@ -276,7 +276,7 @@ export const doc = {
     {
       value: 'integration.pack-check',
       description:
-        'The packed-package check: package identity, tarball facts, local and packed contribution inventories, and issues.',
+        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message}].',
     },
     {
       value: 'integration.validate',

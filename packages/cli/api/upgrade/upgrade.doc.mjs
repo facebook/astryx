@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'upgrade',
+  namespace: 'cli/api',
   displayName: 'upgrade()',
   summary: 'Run version migrations and reconcile copied compositions.',
   description:
@@ -80,7 +81,8 @@ export const doc = {
     {
       name: 'options.installDeps',
       type: 'boolean',
-      description: 'Auto-install jscodeshift without prompting.',
+      description:
+        'Install jscodeshift when it is missing; otherwise a missing jscodeshift throws ERR_DEP_MISSING.',
     },
     {
       name: 'options.registry',

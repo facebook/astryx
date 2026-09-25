@@ -20,6 +20,7 @@ import {
   createMarkdownPlugin,
   createMarkdownTextTransform,
   isMarkdownExtensionNode,
+  markdownSoftBreaksPlugin,
 } from './plugins';
 import type {
   MarkdownExtensionNode,
@@ -202,6 +203,9 @@ describe('Markdown public parser types', () => {
     expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
     expectTypeOf(visitMarkdownNodes).toBeFunction();
     expectTypeOf(createMarkdownTextTransform).toBeFunction();
+    expectTypeOf(markdownSoftBreaksPlugin).toEqualTypeOf<
+      MarkdownPluginEntry<never>
+    >();
     expectTypeOf(isMarkdownExtensionNode).toBeFunction();
 
     function compileOnlyPluginGuards() {

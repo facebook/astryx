@@ -77,6 +77,7 @@ describe('integrationAdd component', () => {
       path.join(tmpDir, 'components/MyWidget.doc.mjs'),
       'utf-8',
     );
+    expect(doc).toContain("@astryxdesign/cli/authoring').ComponentDoc");
     expect(doc).toContain("type: 'component'");
     expect(doc).toContain("name: 'MyWidget'");
     expect(doc).toContain('props: []');
@@ -304,6 +305,7 @@ describe('integrationAdd doc', () => {
       path.join(tmpDir, 'docs/my-guide.doc.mjs'),
       'utf-8',
     );
+    expect(doc).toContain("@astryxdesign/cli/authoring').ReferenceDoc");
     expect(doc).toContain("type: 'generic'");
     expect(doc).toContain("name: 'my-guide'");
 
@@ -390,13 +392,14 @@ describe('integrationAdd template', () => {
     expect(result.data.kind).toBe('template');
     expect(result.data.name).toBe('my-widget');
     expect(result.data.root).toEqual({path: './templates', created: true});
-    expect(result.data.files).toContain('templates/my-widget.template.mjs');
+    expect(result.data.files).toContain('templates/my-widget.doc.mjs');
     expect(result.data.files).toContain('templates/my-widget.tsx');
 
     const spec = fs.readFileSync(
-      path.join(tmpDir, 'templates/my-widget.template.mjs'),
+      path.join(tmpDir, 'templates/my-widget.doc.mjs'),
       'utf-8',
     );
+    expect(spec).toContain("@astryxdesign/cli/authoring').TemplateDoc");
     expect(spec).toContain("type: 'page'");
     expect(spec).toContain("name: 'my-widget'");
 
@@ -432,10 +435,11 @@ describe('integrationAdd template', () => {
       templateType: 'block',
     });
     const spec = fs.readFileSync(
-      path.join(tmpDir, 'templates/my-card.template.mjs'),
+      path.join(tmpDir, 'templates/my-card.doc.mjs'),
       'utf-8',
     );
     expect(spec).toContain("type: 'block'");
+    expect(spec).toContain('aspectRatio: 1');
   });
 
   it('rejects an invalid template type', async () => {
@@ -676,6 +680,35 @@ describe('custom root preservation', () => {
   });
 });
 
+describe('typed descriptor conformance', () => {
+  it('emits a strongly typed .doc.mjs for every canonical item writer', async () => {
+    setup();
+    await integrationAdd('component', 'MyWidget', {cwd: tmpDir});
+    await integrationAdd('doc', 'my-guide', {cwd: tmpDir});
+    await integrationAdd('template', 'my-page', {cwd: tmpDir});
+    await integrationAdd('theme', 'ocean', {cwd: tmpDir});
+
+    // Codemod and agent-doc keep their released formats for compatibility;
+    // no new kind may copy those exceptions.
+    for (const [relativePath, type] of [
+      ['components/MyWidget.doc.mjs', 'ComponentDoc'],
+      ['docs/my-guide.doc.mjs', 'ReferenceDoc'],
+      ['templates/my-page.doc.mjs', 'TemplateDoc'],
+      ['themes/ocean/oceanTheme.doc.mjs', 'ThemeDoc'],
+    ]) {
+      const source = fs.readFileSync(path.join(tmpDir, relativePath), 'utf-8');
+      expect(source).toContain(`@astryxdesign/cli/authoring').${type}`);
+      expect(source).toContain('export default {');
+    }
+    expect(
+      fs.existsSync(path.join(tmpDir, 'templates/my-page.template.mjs')),
+    ).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'themes/manifest.json'))).toBe(
+      false,
+    );
+  });
+});
+
 describe('public per-kind APIs', () => {
   it('exposes narrow functions for every non-theme contribution kind', async () => {
     setup();
@@ -711,6 +744,7 @@ describe('public dispatcher', () => {
     const result = await integrationAdd('theme', 'ocean', {cwd: tmpDir});
     expect(result.data).toMatchObject({kind: 'theme', name: 'ocean'});
     expect(result.data.files).toContain('themes/ocean/oceanTheme.ts');
+    expect(result.data.files).toContain('themes/ocean/oceanTheme.doc.mjs');
   });
 
   it('refuses a kind-specific option on the wrong kind', async () => {

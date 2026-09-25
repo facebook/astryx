@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-19
+approved_at: 2026-09-22
 owners: [cixzhang]
 review_triggers: [api, theming]
 verified_by:
@@ -18,11 +18,12 @@ verified_by:
     packages/core/src/Markdown/parser.test.ts,
     packages/core/src/Markdown/incremental.test.ts,
     packages/core/src/Markdown/remark.test.tsx,
+    packages/core/src/Markdown/plugins/softBreaks.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark]
+modules: [module:Markdown/remark, module:Markdown/softBreaks]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:

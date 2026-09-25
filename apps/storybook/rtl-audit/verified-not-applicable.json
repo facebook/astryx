@@ -257,5 +257,18 @@
       "packages/core/src/Chat/ChatLayoutScrollButton.tsx": "sha256:cb604bf1b1df34dee472865372eb0bec876e6cb733029e3b10f6da97dd33fb2c",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }
+  },
+  {
+    "component": "core/ChatMessageList",
+    "reason": "ChatMessageList owns a vertical flex transcript, symmetric logical padding and gap, a block-axis top loading sentinel, and a block-axis spacer. It has no directional glyph, inline-side placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Message sender alignment and content belong to its child components; the list only supplies density context. The five independently owned fixtures exercise list states without adding an inline-axis signal for the RTL detectors.",
+    "evidence": {
+      "apps/storybook/stories/ChatMessageList.stories.tsx": "sha256:a5c49da2307d820da0720c00d4780f22d4039579d649905b2b1039a8f2e12d35",
+      "packages/core/src/Chat/ChatMessageList.tsx": "sha256:9d7dc59f2fa33cc13175f1093b509aea4ff54a76b9ef83d576d55f6c4d0bc541",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatMessageMetadata",
+    "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
   }
 ]

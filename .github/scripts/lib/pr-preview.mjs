@@ -6,7 +6,11 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 
-import {resolveVercelPreview} from './vercel-preview.mjs';
+import {
+  probeVercelPreview,
+  resolveVercelPreview,
+  waitForPreviewRoutes,
+} from './vercel-preview.mjs';
 
 export const PR_ANALYSIS_MARKER = '<!-- astryx-pr-analysis -->';
 export const PREVIEW_RESULT_VERSION = 1;
@@ -441,17 +445,13 @@ function previewState(storybook, sandbox) {
   return 'none';
 }
 
-function pagesURL(identity, targetPath) {
-  const [owner, repo] = identity.baseRepository.split('/');
-  return `https://${owner}.github.io/${repo}/${targetPath}`;
-}
-
+// Both preview links come from one verified exact-head Vercel deployment.
+// Pages publication may continue independently, but is never a PR link.
 function safeCurrentBody({
   identity,
   runUrl,
   message: overrideMessage,
   previewOrigin,
-  sandboxPath,
 }) {
   const conclusion = identity.sourceConclusion;
   const message =
@@ -459,12 +459,12 @@ function safeCurrentBody({
     (conclusion === 'success'
       ? 'The current CI run completed, but its trusted analysis is unavailable.'
       : `The current CI run concluded ${conclusion || 'without a result'}. Current analysis is unavailable.`);
-  const links = [
-    previewOrigin &&
-      `[View Storybook for this PR](${previewOrigin}/storybook/)`,
-    sandboxPath &&
-      `[View Sandbox for this PR](${pagesURL(identity, sandboxPath)})`,
-  ].filter(Boolean);
+  const links = previewOrigin
+    ? [
+        `[View Storybook for this PR](${previewOrigin}/storybook/)`,
+        `[View Sandbox for this PR](${previewOrigin}/sandbox/)`,
+      ]
+    : [];
   const previewMessage = links.length
     ? `\n\n${links.join(' · ')}`
     : '\n\nThe exact-head preview is not available yet.';
@@ -524,6 +524,8 @@ export async function reconcilePrComment({
   createIfMissing = true,
   fallbackMessage,
   lookupPreview = resolveVercelPreview,
+  probePreview = probeVercelPreview,
+  probeWaitMs = 90_000,
   generator = GENERATOR,
   execute = execFileSync,
 }) {
@@ -541,7 +543,7 @@ export async function reconcilePrComment({
     identity,
     core,
   });
-  const previewOrigin =
+  const candidateOrigin =
     createIfMissing && !identity.draft
       ? await lookupPreview({
           github,
@@ -551,15 +553,29 @@ export async function reconcilePrComment({
           headSha: identity.headSha,
         })
       : null;
-  const deployment = trustedDeployment({
-    deploymentResultPath,
-    identity,
-    core,
-  });
+  const routesReady =
+    candidateOrigin &&
+    (await waitForPreviewRoutes(candidateOrigin, {
+      probe: probePreview,
+      waitMs: probeWaitMs,
+    }));
+  const previewOrigin =
+    routesReady &&
+    (await lookupPreview({
+      github,
+      owner,
+      repo,
+      prNumber: identity.prNumber,
+      headSha: identity.headSha,
+      waitMs: 0,
+    })) === candidateOrigin
+      ? candidateOrigin
+      : null;
+  // Continue checking the trusted Pages result for stale evidence, but never
+  // use Pages as a preview-link fallback.
+  trustedDeployment({deploymentResultPath, identity, core});
   const storybook = previewOrigin !== null;
-  const sandbox =
-    !identity.draft && deployment?.targets.sandbox.available === true;
-  const sandboxPath = sandbox ? deployment.targets.sandbox.path : null;
+  const sandbox = storybook;
   const comments = await allComments(github, owner, repo, identity.prNumber);
   const botComments = comments.filter(comment => comment.user?.type === 'Bot');
   const botComment =
@@ -603,7 +619,7 @@ export async function reconcilePrComment({
           ]
         : []),
       ...(storybook ? ['--storybook-url', `${previewOrigin}/storybook/`] : []),
-      ...(sandbox ? ['--sandbox-url', pagesURL(identity, sandboxPath)] : []),
+      ...(sandbox ? ['--sandbox-url', `${previewOrigin}/sandbox/`] : []),
       '--preview-state',
       previewState(storybook, sandbox),
       '--source-conclusion',
@@ -625,7 +641,6 @@ export async function reconcilePrComment({
         runUrl,
         message: fallbackMessage,
         previewOrigin,
-        sandboxPath,
       });
     }
   } else {
@@ -634,7 +649,6 @@ export async function reconcilePrComment({
       runUrl,
       message: fallbackMessage,
       previewOrigin,
-      sandboxPath,
     });
   }
 
@@ -646,6 +660,20 @@ export async function reconcilePrComment({
     repo,
     expected: expectedIdentity,
   });
+  if (
+    previewOrigin &&
+    (await lookupPreview({
+      github,
+      owner,
+      repo,
+      prNumber: identity.prNumber,
+      headSha: identity.headSha,
+      waitMs: 0,
+    })) !== previewOrigin
+  ) {
+    core.info('A newer exact-head deployment superseded this preview.');
+    return {action: 'none', body: null, identity};
+  }
   if (botComment) {
     await github.rest.issues.updateComment({
       owner,
@@ -675,6 +703,8 @@ export async function reconcileEarlyPreviewComment({
   headSha,
   origin,
   lookupPreview = resolveVercelPreview,
+  probePreview = probeVercelPreview,
+  probeWaitMs = 90_000,
 }) {
   const currentOrigin = await lookupPreview({
     github,
@@ -684,7 +714,14 @@ export async function reconcileEarlyPreviewComment({
     headSha,
     waitMs: 0,
   });
-  if (currentOrigin !== origin) return {action: 'none'};
+  if (
+    currentOrigin !== origin ||
+    !(await waitForPreviewRoutes(origin, {
+      probe: probePreview,
+      waitMs: probeWaitMs,
+    }))
+  )
+    return {action: 'none'};
 
   const comments = await allComments(github, owner, repo, prNumber);
   const existing = comments.find(
@@ -692,11 +729,15 @@ export async function reconcileEarlyPreviewComment({
       comment.user?.type === 'Bot' &&
       comment.body?.includes(PR_ANALYSIS_MARKER),
   );
-  const links = `[View Storybook for this PR](${origin}/storybook/)`;
+  const links = `[View Storybook for this PR](${origin}/storybook/) · [View Sandbox for this PR](${origin}/sandbox/)`;
   const marker = headMarker(headSha);
-  let body = `## PR Analysis Report\n${PR_ANALYSIS_MARKER}\n${marker}\n\n> **Storybook ready:** Built with this PR's docsite. Sandbox and CI evidence will be added when available.\n\n${links}\n`;
+  const legacySandboxURL = `https://${owner}.github.io/${repo}/pr/${prNumber}/sandbox/`;
+  let body = `## PR Analysis Report\n${PR_ANALYSIS_MARKER}\n${marker}\n\n> **Previews ready:** Storybook and Sandbox were built with this PR's docsite. CI evidence will be added when available.\n\n${links}\n`;
   if (existing?.body.includes(marker)) {
-    if (existing.body.includes(`${origin}/storybook/`)) {
+    if (
+      existing.body.includes(`${origin}/storybook/`) &&
+      existing.body.includes(`${origin}/sandbox/`)
+    ) {
       return {action: 'unchanged'};
     }
     const oldOrigins = new Set(
@@ -708,18 +749,31 @@ export async function reconcileEarlyPreviewComment({
       oldOrigins.size === 1 &&
       existing.body.includes('View Storybook for this PR')
     ) {
-      // A same-head Vercel redeploy changes only the deployment origin. Keep
-      // the already-enriched CI, a11y, and canonical visual evidence intact.
-      body = existing.body.replaceAll([...oldOrigins][0], origin);
+      // Same-head redeploy: preserve existing CI/a11y/visual content and
+      // change only the exact-head preview URLs.
+      body = existing.body
+        .replaceAll([...oldOrigins][0], origin)
+        .replaceAll(legacySandboxURL, `${origin}/sandbox/`);
+      if (!body.includes(`${origin}/sandbox/`)) {
+        body = body.replace(
+          marker,
+          `${marker}\n\n[View Sandbox for this PR](${origin}/sandbox/)`,
+        );
+      }
     } else if (!existing.body.includes('View Storybook for this PR')) {
-      // CI may finish before Vercel. Add the now-ready links without discarding
-      // current-head analysis or immutable visual evidence from that report.
+      // CI may finish before Vercel; add links to the current-head report.
       body = existing.body
         .replace(/^> \*\*Preview availability:\*\*[^\n]*\n\n/m, '')
         .replace('The exact-head preview is not available yet.', '')
         .replace(marker, `${marker}\n\n${links}`);
     }
   }
+
+  // Replace an older same-head Pages Sandbox URL without dropping CI, a11y,
+  // or immutable visual evidence in the surrounding report.
+  body = body
+    .replaceAll(legacySandboxURL, `${origin}/sandbox/`)
+    .replace(/^> \*\*Preview availability:\*\*[^\n]*\n\n/m, '');
 
   const {data: current} = await github.rest.pulls.get({
     owner,
@@ -730,6 +784,18 @@ export async function reconcileEarlyPreviewComment({
     current.state !== 'open' ||
     current.draft ||
     current.head?.sha !== headSha
+  ) {
+    return {action: 'none'};
+  }
+  if (
+    (await lookupPreview({
+      github,
+      owner,
+      repo,
+      prNumber,
+      headSha,
+      waitMs: 0,
+    })) !== origin
   ) {
     return {action: 'none'};
   }

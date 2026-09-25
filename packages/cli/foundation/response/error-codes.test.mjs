@@ -15,6 +15,9 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {ERROR_CODES, isErrorCode, allErrorCodes} from './error-codes.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
@@ -165,6 +168,24 @@ describe('error codes: end-to-end JSON envelopes', () => {
       expect(isErrorCode(env.code)).toBe(true);
     });
   }
+
+  it('a filesystem failure carries a registered code, never the Node errno', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-errno-'));
+    try {
+      // A file where the target directory should be: mkdir fails with ENOTDIR.
+      fs.writeFileSync(path.join(dir, 'blocker'), 'x');
+      const {status, stdout} = await runCli(
+        ['template', 'dashboard', 'blocker/out', '--json'],
+        {cwd: dir},
+      );
+      expect(status).toBe(1);
+      const env = envelope(stdout);
+      expect(env.error).toMatch(/ENOTDIR/);
+      expect(isErrorCode(env.code)).toBe(true);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
 
   it('every error envelope carries a code (even unmatched paths fall back to ERR_UNKNOWN)', async () => {
     const {stdout} = await runCli(['component', 'Bogus', '--json']);

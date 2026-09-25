@@ -224,10 +224,10 @@ function staleBuildOutputs(writes, cwd) {
 /** @param {Array<{dest: string, content: string}>} writes */
 function writeBuildOutputs(writes) {
   if (writes.length === 0) return;
-  fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
   /** @type {Array<{tmp: string, dest: string}>} */
   const staged = [];
   try {
+    fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
     for (const write of writes) {
       const tmp = `${write.dest}.${process.pid}.tmp`;
       fs.writeFileSync(tmp, write.content);
@@ -1871,7 +1871,7 @@ function validatePrivateVars(themeDef) {
           if (prop.startsWith('--_')) {
             errors.push(
               `Component "${component}" (${[key, ...path].join(' ')}) sets private var "${prop}". ` +
-                `Private vars (--_*) are internal — use standard CSS properties ` +
+                `Private vars (--_*) are internal; use standard CSS properties ` +
                 `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
             );
           }
@@ -1931,20 +1931,7 @@ function getThemeComponentLayers(themeDef) {
  */
 function validateCustomHeadingTypes(themeDef) {
   const layers = getThemeComponentLayers(themeDef);
-  const customTypes = new Set();
-  for (const {components} of layers) {
-    const headingRules = components.heading;
-    if (!headingRules || typeof headingRules !== 'object') continue;
-
-    for (const key of Object.keys(headingRules)) {
-      for (const pair of key.split('+')) {
-        const colon = pair.indexOf(':');
-        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
-        const value = pair.slice(colon + 1);
-        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
-      }
-    }
-  }
+  const customTypes = customHeadingTypes(themeDef);
 
   const errors = [];
   for (const type of customTypes) {
@@ -1972,9 +1959,64 @@ function validateCustomHeadingTypes(themeDef) {
 }
 
 /**
+ * Custom Heading type names declared on the root or media-surface component
+ * maps: the names the generated `HeadingTypeMap` augmentation enrolls.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {Set<string>}
+ */
+function customHeadingTypes(themeDef) {
+  /** @type {Set<string>} */
+  const customTypes = new Set();
+  for (const {components} of getThemeComponentLayers(themeDef)) {
+    const headingRules = components.heading;
+    if (!headingRules || typeof headingRules !== 'object') continue;
+
+    for (const key of Object.keys(headingRules)) {
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+        const value = pair.slice(colon + 1);
+        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+      }
+    }
+  }
+  return customTypes;
+}
+
+/**
+ * Custom Heading types with no standalone rule in the generated CSS. A type
+ * whose every declaration the compiler dropped still passes the source check,
+ * and its augmentation would then name a type that has no styles.
+ *
+ * @param {Set<string>} types
+ * @param {string} css - Generated root component and media-surface rules.
+ * @returns {string[]}
+ */
+function headingTypesWithoutEmittedRule(types, css) {
+  /** @type {string[]} */
+  const missing = [];
+  for (const type of types) {
+    const selector = `.astryx-heading[data-type="${type}"]`;
+    let emitted = false;
+    for (
+      let at = css.indexOf(selector);
+      at !== -1 && !emitted;
+      at = css.indexOf(selector, at + 1)
+    ) {
+      // A following attribute is a combined selector, not the standalone rule.
+      emitted = css[at + selector.length] !== '[';
+    }
+    if (!emitted) missing.push(type);
+  }
+  return missing;
+}
+
+/**
  * Return true when a style object contains a declaration that the theme
- * generator can emit. Empty pseudo blocks do not count: they produce no CSS
- * and would leave the generated type augmentation without a usable rule.
+ * generator can emit. Empty pseudo blocks and blank values do not count: they
+ * produce no usable CSS and would leave the generated type augmentation
+ * without a usable rule.
  *
  * @param {unknown} styles
  * @returns {boolean}
@@ -1988,7 +2030,12 @@ function hasUsableStyleDeclaration(styles) {
       if (hasUsableStyleDeclaration(value)) return true;
       continue;
     }
-    if (value !== undefined && value !== null && typeof value !== 'object') {
+    if (
+      value !== undefined &&
+      value !== null &&
+      typeof value !== 'object' &&
+      String(value).trim() !== ''
+    ) {
       return true;
     }
   }
@@ -2163,14 +2210,14 @@ async function themeBuildInternal(
   const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
-    logger.warn(`  ⚠ ${w}`);
+    logger.warn(`  [warn] ${w}`);
   }
 
   // Validate no private vars are set directly
   const privateVarErrors = validatePrivateVars(themeDef);
   for (const e of privateVarErrors) {
     warningMessages.push(e);
-    logger.error(`  ✗ ${e}`);
+    logger.error(`  [error] ${e}`);
   }
   if (privateVarErrors.length > 0) {
     logger.error(
@@ -2196,7 +2243,7 @@ async function themeBuildInternal(
   // capability exports are checked against what the theme actually asks for.
   if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
-      'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
+      'Could not load @astryxdesign/core/theme: `astryx theme build` requires a ' +
         'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
         'runtime <Theme>. Build @astryxdesign/core first (e.g. `pnpm -F @astryxdesign/core ' +
         'build`)' +
@@ -2385,10 +2432,29 @@ async function themeBuildInternal(
     for (const message of droppedDeclarations) {
       const w = `Declaration ${message}. The generated CSS omits it; fix the value in the theme source.`;
       warningMessages.push(w);
-      logger.warn(`  ⚠ ${w}`);
+      logger.warn(`  [warn] ${w}`);
+    }
+    const unemittedHeadingTypes = headingTypesWithoutEmittedRule(
+      customHeadingTypes(themeDef),
+      `${component.join('\n')}\n${onMediaCss}`,
+    );
+    if (unemittedHeadingTypes.length > 0) {
+      throw new AstryxError(
+        unemittedHeadingTypes
+          .map(
+            type =>
+              `Custom Heading type "${type}" has no declaration the theme ` +
+              `compiler could emit: every declaration in its standalone ` +
+              `"type:${type}" rule was dropped. Give that rule at least one ` +
+              'valid declaration.',
+          )
+          .join('\n'),
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
     }
     if (cssParts.length === 0) {
-      logger.log('No overrides found — nothing to build.');
+      logger.log('No overrides found; nothing to build.');
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
@@ -2439,7 +2505,18 @@ async function themeBuildInternal(
     // Guard: relative paths must not escape cwd via `../`. Absolute paths are
     // trusted (the user explicitly controls where output goes, like gcc -o).
     if (!path.isAbsolute(options.out)) {
-      assertWithin(options.out, cwd, {label: 'output path'});
+      try {
+        assertWithin(options.out, cwd, {label: 'output path'});
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          throw new AstryxError(
+            err.message,
+            undefined,
+            ERROR_CODES.ERR_PATH_TRAVERSAL,
+          );
+        }
+        throw err;
+      }
     }
   } else {
     outPath = path.join(path.dirname(filePath), `${baseName}.css`);
@@ -2548,10 +2625,10 @@ async function themeBuildInternal(
     const stale = staleBuildOutputs(writes, cwd);
     const upToDate = stale.length === 0;
     if (upToDate) {
-      logger.log(`\n✓ Theme outputs are up to date with ${sourceRelative}.`);
+      logger.log(`\n[ok] Theme outputs are up to date with ${sourceRelative}.`);
     } else {
       logger.error(
-        `\n✗ ${stale.length} theme output(s) are out of date with ${sourceRelative}:`,
+        `\n[fail] ${stale.length} theme output(s) are out of date with ${sourceRelative}:`,
       );
       for (const s of stale) {
         logger.error(
@@ -2573,17 +2650,17 @@ async function themeBuildInternal(
 
   writeBuildOutputs(writes);
 
-  logger.log(`\n✓ ${path.relative(cwd, outPath)}`);
+  logger.log(`\n[ok] ${path.relative(cwd, outPath)}`);
   logger.log(
     `  ${tokenCount} token overrides, ${componentCount} component overrides`,
   );
   logger.log(`  ${size} KB`);
-  logger.log(`✓ ${path.relative(cwd, jsPath)}`);
-  logger.log(`✓ ${path.relative(cwd, dtsPath)}`);
+  logger.log(`[ok] ${path.relative(cwd, jsPath)}`);
+  logger.log(`[ok] ${path.relative(cwd, dtsPath)}`);
   if (variantDtsPath && variantDecl) {
     const augCount = (variantDecl.match(/': true;/g) || []).length;
     logger.log(
-      `✓ ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
+      `[ok] ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
     );
   }
 
@@ -2593,7 +2670,7 @@ async function themeBuildInternal(
   const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
   const exportName = `${toIdentifier(baseName)}Theme`;
   logger.log(`
-Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
+Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
   import { ${exportName} } from '${jsImport}';
   import '${cssImport}';
@@ -2625,7 +2702,7 @@ Or with a <link> tag:
   // Adaptation rules are resolved theme writes in their own right, so a family
   // named only inside one needs the same notice as one named at the root.
   for (const family of unloadedFonts) {
-    const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
+    const msg = `Font "${family}" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);
     logger.log(`  note: ${msg}`);
   }
@@ -2919,11 +2996,11 @@ export async function themeBuildFamily(
     const upToDate = stale.length === 0;
     if (upToDate) {
       logger.log(
-        `\n✓ Theme family outputs are up to date with ${sourceRelative}.`,
+        `\n[ok] Theme family outputs are up to date with ${sourceRelative}.`,
       );
     } else {
       logger.error(
-        `\n✗ ${stale.length} theme family output(s) are out of date:`,
+        `\n[fail] ${stale.length} theme family output(s) are out of date:`,
       );
       for (const entry of stale) {
         logger.error(
@@ -2943,7 +3020,7 @@ export async function themeBuildFamily(
     };
   }
   writeBuildOutputs(writes);
-  for (const output of Object.values(outputs)) logger.log(`✓ ${output}`);
+  for (const output of Object.values(outputs)) logger.log(`[ok] ${output}`);
   const themeBindings = members.map(member => bindings.get(member.theme.name));
   const relOutDir = path.relative(cwd, outDir) || '.';
   const jsImport = importSpecifier(relOutDir, baseName);
@@ -2961,7 +3038,7 @@ Or load the same stylesheet natively:
   ];
   const notices = unloadedFonts.map(
     family =>
-      `Font "${family}" is named by this theme family but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`,
+      `Font "${family}" is named by this theme family but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`,
   );
   for (const notice of notices) logger.log(`  note: ${notice}`);
   return {

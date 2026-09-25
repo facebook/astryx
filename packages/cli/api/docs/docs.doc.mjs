@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'docs',
+  namespace: 'cli/api',
   displayName: 'docs()',
   summary:
     'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',

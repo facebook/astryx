@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'theme palette generate',
   displayName: 'astryx theme palette generate',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Generate an OKLCH palette candidate for human review',
   description:
     'Reads an explicit JSON request and runs the versioned astryx-oklch-v1 recipe. ' +
@@ -21,8 +21,8 @@ export const doc = {
     'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit. ' +
     'When used in a theme integration, keep the palette request under the theme slug, ' +
     'write the candidate and receipt under that same slug, import the candidate from the theme source, ' +
-    "and list all three paths in the theme catalog entry's `files` array " +
-    'so `astryx theme add` copies them into the consumer project.',
+    'and keep all three inside the theme directory: `astryx theme add` copies that whole ' +
+    'directory into the consumer project, so nothing else has to list them.',
   fn: 'themePaletteGenerate',
   args: [{name: 'config', param: 'configPath', required: true}],
   options: [

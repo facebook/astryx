@@ -106,7 +106,7 @@ function collectCodemodFiles(versionDir) {
 /**
  * Discover file-based codemods contributed by configured integrations.
  *
- * @param {Array<{name?: string, codemods?: string, __spec?: string}>} loadedIntegrations
+ * @param {Array<{name?: string, codemods?: string, __spec?: string, __packageDir?: string}>} loadedIntegrations
  * @returns {Promise<Map<string, Array<{id: string, type: 'code'|'config', codemod: object, package: string}>>>}
  *   Map keyed by version string; each value is the list of discovered codemods
  *   for that version (across all integrations).
@@ -145,7 +145,13 @@ export async function discoverIntegrationCodemods(loadedIntegrations = []) {
       const seenInVersion = new Set();
 
       for (const {id, file} of files) {
-        const label = `Integration "${pkgLabel}" codemod ${version}/${id} (${file})`;
+        const shown = integration.__packageDir
+          ? path
+              .relative(integration.__packageDir, file)
+              .split(path.sep)
+              .join('/')
+          : file;
+        const label = `Integration "${pkgLabel}" codemod ${version}/${id} (${shown})`;
 
         if (seenInVersion.has(id)) {
           throw new Error(

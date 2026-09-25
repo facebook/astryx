@@ -32,7 +32,7 @@ export interface EnumDoc extends AuthoredDocGraphFields {
   displayName: string;
   /** One-line summary shown in listings. */
   description: string;
-  /** Docs namespace path. Defaults to 'cli' when applied by the docs index. */
+  /** The `astryx docs` topic that reads this doc. The CLI's enums use 'cli/api' (the section `api-<name>` of the `cli` topic). Every enum doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads. */
   namespace?: string;
   /** Alternate slugs that also resolve to this doc. */
   aliases?: string[];

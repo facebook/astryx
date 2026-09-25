@@ -34,8 +34,8 @@ import {
   docsIndexBytes,
   oversizedDocSections,
 } from '../../foundation/discovery/docs-output-budget.mjs';
-import {compileTopic, overlayLanguages} from '../docs/_adapter.mjs';
-import {detailView} from '../../foundation/doc-compiler/lenses.mjs';
+import {compileTopic, lowerTopic, overlayLanguages} from '../docs/_adapter.mjs';
+import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
@@ -721,38 +721,144 @@ function joinProblems(problems) {
     : `${problems.length} problems: ${problems.join('; ')}`;
 }
 
+/** How the self-doc audit's problems are fixed. */
+const AUTHORING_DOCS_FIX =
+  'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.';
+
+/** How the public-surface audit's problems are fixed. */
+const AUTHORING_SURFACE_FIX =
+  'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
+
+/** Types one problem names before it counts the rest. */
+const NAMED_TYPES = 40;
+
+/**
+ * @param {string[]} names
+ * @returns {string}
+ */
+function nameTypes(names) {
+  return names.length <= NAMED_TYPES
+    ? names.join(', ')
+    : `${names.slice(0, NAMED_TYPES).join(', ')} and ${names.length - NAMED_TYPES} more`;
+}
+
+/**
+ * The section keys `astryx docs authoring --index` lists, read the way that
+ * command reads them.
+ * @returns {Promise<{keys: Set<string>} | {keys: null, error: string}>}
+ */
+async function authoringTopicKeys() {
+  try {
+    const catalog = DocsCatalog.fromBuiltins();
+    const entry = catalog.resolve('authoring');
+    if (!entry) return {keys: null, error: 'it is not a built-in topic'};
+    const index = indexView(await lowerTopic(catalog, entry));
+    return {keys: new Set(index.sections.map(section => section.id))};
+  } catch (err) {
+    return {
+      keys: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/**
+ * @param {Awaited<ReturnType<typeof import('../../foundation/discovery/authoring-surface.mjs').auditAuthoringSurface>>} surface
+ * @returns {string[]}
+ */
+function surfaceProblems(surface) {
+  /** @type {string[]} */
+  const problems = [];
+  if (surface.types === 0 && surface.untraced.length === 0) {
+    problems.push(
+      '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+    );
+  }
+  for (const {module, names, reason, source, key} of surface.unreadable) {
+    const why =
+      reason === 'no-self-doc'
+        ? `no self-doc sits beside ${module}`
+        : reason === 'unregistered'
+          ? `${source} is not listed in AUTHORING_SELF_DOCS`
+          : reason === 'failed'
+            ? `${source} does not load`
+            : `${source} renders section "${key}", which the topic's index does not list`;
+    problems.push(
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`astryx docs authoring\`: ${why}`,
+    );
+  }
+  for (const {name, reason} of surface.untraced) {
+    problems.push(
+      `${name} cannot be traced to the module that declares it: ${reason}`,
+    );
+  }
+  for (const {source, subject} of surface.unmatched) {
+    problems.push(
+      subject
+        ? `${source} documents ${subject}, which @astryxdesign/cli/authoring does not export`
+        : `${source} documents no type @astryxdesign/cli/authoring exports`,
+    );
+  }
+  return problems;
+}
+
 /**
  * Every authoring self-doc is reachable from `astryx docs authoring`, loads,
- * and fits in one read. The audit is imported here, inside the try, so a
- * malformed self-doc is reported rather than taking Doctor down.
+ * and fits in one read, and every type `@astryxdesign/cli/authoring` exports
+ * has its doc there: the self-doc beside the module that declares it. The
+ * audits are imported here, inside the try, so a malformed self-doc is
+ * reported rather than taking Doctor down.
  * @param {DoctorContext} [_ctx]
+ * @param {{root?: string, sources?: string[], topicKeys?: Set<string> | null}} [options]
+ *   Another authoring tree, list, or topic index to audit (for tests).
  * @returns {Promise<DoctorCheck>}
  */
-export async function checkAuthoringDocs(_ctx) {
+export async function checkAuthoringDocs(_ctx, options = {}) {
   const id = 'authoring-docs';
   const label = 'Authoring docs';
   try {
-    const {auditAuthoringSelfDocs} = await import(
-      '../../foundation/discovery/authoring-self-docs.mjs'
-    );
-    const audit = await auditAuthoringSelfDocs();
+    const {auditAuthoringSelfDocs} =
+      await import('../../foundation/discovery/authoring-self-docs.mjs');
+    const {auditAuthoringSurface} =
+      await import('../../foundation/discovery/authoring-surface.mjs');
+    const {root, sources} = options;
+    const audit = await auditAuthoringSelfDocs({root, sources});
     const problems = [
       ...audit.unreachable.map(
         source => `${source} is not in \`astryx docs authoring\``,
       ),
-      ...audit.failed.map(({source, error}) => `${source} failed to load: ${error}`),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
       ...audit.oversized.map(
         ({key, bytes}) =>
           `authoring section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
       ),
     ];
-    if (problems.length > 0) {
+    const topic =
+      options.topicKeys === undefined
+        ? await authoringTopicKeys()
+        : {keys: options.topicKeys};
+    const surface = [
+      ...('error' in topic
+        ? [`\`astryx docs authoring\` could not be read: ${topic.error}`]
+        : []),
+      ...surfaceProblems(
+        await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
+      ),
+    ];
+    if (problems.length + surface.length > 0) {
       return {
         id,
         label,
         status: 'fail',
-        message: joinProblems(problems),
-        fix: 'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.',
+        message: joinProblems([...problems, ...surface]),
+        fix: [
+          problems.length > 0 ? AUTHORING_DOCS_FIX : null,
+          surface.length > 0 ? AUTHORING_SURFACE_FIX : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
       };
     }
     return {
@@ -767,6 +873,71 @@ export async function checkAuthoringDocs(_ctx) {
       label,
       status: 'fail',
       message: `The authoring docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/** How the CLI-docs audit's problems are fixed. */
+const CLI_DOCS_FIX =
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
+
+/**
+ * Every command, API function, schema, and enum doc the CLI ships declares a
+ * namespace, and the topic that namespace names reads it: `astryx docs cli`
+ * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
+ *   test seams: the CLI root, the docs to audit, and the authoring topic's list
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkCliDocs(_ctx, options = {}) {
+  const id = 'cli-docs';
+  const label = 'CLI docs';
+  try {
+    const {auditCliSelfDocs} =
+      await import('../../foundation/discovery/cli-self-docs.mjs');
+    const audit = await auditCliSelfDocs(options);
+    const problems = [
+      ...audit.missing.map(
+        source =>
+          `${source} has no namespace, so no \`astryx docs\` topic reads it`,
+      ),
+      ...audit.unknown.map(
+        ({source, namespace}) =>
+          `${source} has namespace "${namespace}", which no \`astryx docs\` topic reads`,
+      ),
+      ...audit.misfiled.map(({message}) => message),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
+      ...audit.keyProblems.map(problem => `\`astryx docs cli\`: ${problem}`),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `cli section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: CLI_DOCS_FIX,
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The CLI docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
       fix: 'Reinstall @astryxdesign/cli.',
     };
   }
@@ -929,6 +1100,7 @@ export async function runChecks(options = {}) {
     }
   }
   checks.push(await checkAuthoringDocs(ctx));
+  checks.push(await checkCliDocs(ctx));
   checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};

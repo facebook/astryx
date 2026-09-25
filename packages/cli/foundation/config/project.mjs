@@ -15,7 +15,9 @@
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
  *     plus autolink the installed ones no config names, and self-resolve the
- *     package being authored when it carries a manifest. Discovery is LAZY.
+ *     package being authored when it carries a manifest. Provider identity is
+ *     resolved once over all three (see integrations/provider-resolution), and
+ *     the ledger is kept for {@link providerLedgerOf}. Discovery is LAZY.
  *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
@@ -38,9 +40,10 @@ import {parseConfig} from '../../authoring/config/parse.mjs';
 import {
   loadIntegrations,
   loadLocalIntegration,
-  markProviderConflicts,
+  resolvePackageDir,
 } from '../integrations/integrations.mjs';
-import {autolinkIntegrations} from '../integrations/autolink.mjs';
+import {loadAutolinkCandidates} from '../integrations/autolink.mjs';
+import {resolveProviders} from '../integrations/provider-resolution.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -96,6 +99,118 @@ function errorMessage(err) {
 }
 
 /**
+ * Load the configured integrations one at a time, so a package that cannot
+ * load at all (not installed, no manifest, more than one manifest, not a bare
+ * name) becomes that entry's load-error marker instead of failing the project.
+ * @param {string[]} specs
+ * @param {{cwd: string, fresh: boolean}} options
+ * @returns {Promise<import('../integrations/integrations.mjs').LoadedIntegration[]>}
+ */
+async function loadConfiguredIntegrations(specs, {cwd, fresh}) {
+  /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
+  const loaded = [];
+  const seen = new Set();
+  for (const spec of specs) {
+    if (!spec || seen.has(spec)) continue;
+    seen.add(spec);
+    try {
+      loaded.push(
+        ...(await loadIntegrations([spec], {
+          cwd,
+          fresh,
+          resolveProviders: false,
+        })),
+      );
+    } catch (err) {
+      /** @type {string|undefined} */
+      let packageDir;
+      try {
+        packageDir = resolvePackageDir(spec, cwd);
+      } catch {
+        // Not a bare package name: there is no install location to record.
+      }
+      const pkg = packageDir ? readPackageJson(packageDir) : null;
+      loaded.push(
+        loadErrorMarker({
+          name: packageName(pkg) ?? spec,
+          version: pkg?.version,
+          spec,
+          packageDir,
+          err,
+        }),
+      );
+    }
+  }
+  return loaded;
+}
+
+/**
+ * Resolve the package being authored. Every failure, including an unreadable
+ * package.json or more than one manifest, becomes its load-error marker.
+ * @param {string} projectDir
+ * @param {boolean} fresh
+ * @returns {Promise<import('../integrations/integrations.mjs').LoadedIntegration|null>}
+ */
+async function loadLocalIntegrationSafely(projectDir, fresh) {
+  try {
+    return await loadLocalIntegration(projectDir, {fresh});
+  } catch (err) {
+    const pkg = readPackageJson(projectDir);
+    const name = packageName(pkg) ?? '(local integration)';
+    return {
+      ...loadErrorMarker({
+        name,
+        version: pkg?.version,
+        spec: name,
+        packageDir: projectDir,
+        err,
+      }),
+      __local: true,
+    };
+  }
+}
+
+/**
+ * An inert entry for an integration that could not be loaded. It contributes
+ * nothing; Project reports its `__loadError` as the package's issue.
+ * @param {{name: string, version?: unknown, spec: string, packageDir?: string, err: unknown}} input
+ * @returns {import('../integrations/integrations.mjs').LoadedIntegration}
+ */
+function loadErrorMarker({name, version, spec, packageDir, err}) {
+  return /** @type {import('../integrations/integrations.mjs').LoadedIntegration} */ ({
+    name,
+    ...(typeof version === 'string' ? {version} : {}),
+    __spec: spec,
+    ...(packageDir ? {__packageDir: packageDir} : {}),
+    __loadError: errorMessage(err),
+  });
+}
+
+/**
+ * @param {Record<string, unknown>|null} pkg
+ * @returns {string|undefined}
+ */
+function packageName(pkg) {
+  const name = pkg?.name;
+  return typeof name === 'string' && name.length > 0 ? name : undefined;
+}
+
+/**
+ * @param {string} dir
+ * @returns {Record<string, unknown>|null}
+ */
+function readPackageJson(dir) {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
+    );
+    return pkg && typeof pkg === 'object' ? pkg : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * An integration issue tagged with the owner package. The base
  * {@link import('../integrations/issue').AstryxIntegrationIssue} fields plus the
  * `package` that produced it, which Project tracks for routing/dedup.
@@ -147,13 +262,15 @@ function findPackageRoot(startDir) {
  *
  * This governs INHERITED handlers only. A project's own `debug` always runs.
  *
- * @param {string|null} configPath
+ * Read from the project root whether or not an astryx.config exists: an
+ * autolinked integration contributes a handler with no config at all.
+ *
+ * @param {string} projectDir directory holding the project's package.json
  * @returns {boolean}
  */
-function inheritsIntegrationDebug(configPath) {
-  if (!configPath) return true;
+function inheritsIntegrationDebug(projectDir) {
   try {
-    const pkgPath = path.join(path.dirname(configPath), 'package.json');
+    const pkgPath = path.join(projectDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     return pkg?.astryx?.inheritDebug !== false;
   } catch {
@@ -180,6 +297,24 @@ export function findConfigPath(startDir = process.cwd()) {
     );
   }
   return present.length === 1 ? present[0] : null;
+}
+
+/**
+ * The provider ledger each loaded Project resolved, kept off the class so it
+ * is not part of the Project API.
+ * @type {WeakMap<Project, import('../integrations/provider-resolution.mjs').ProviderLedger>}
+ */
+const PROVIDER_LEDGERS = new WeakMap();
+
+/**
+ * The provider ledger a Project resolved at load: one outcome for every
+ * package directory configured, autolinked, or authored. Internal: upgrade
+ * resolves on top of it, and tests account for every candidate with it.
+ * @param {Project} project
+ * @returns {import('../integrations/provider-resolution.mjs').ProviderLedger}
+ */
+export function providerLedgerOf(project) {
+  return PROVIDER_LEDGERS.get(project) ?? new Map();
 }
 
 /**
@@ -276,11 +411,10 @@ export class Project {
         fresh,
       });
       integrations = config.integrations ?? [];
-      loadedIntegrations = await loadIntegrations(integrations, {
+      // Provider identity is resolved once, below, over the final set.
+      loadedIntegrations = await loadConfiguredIntegrations(integrations, {
         cwd: projectDir,
         fresh,
-        // Provider identity is resolved once, below, over the final set.
-        resolveProviders: false,
       });
     }
 
@@ -288,35 +422,42 @@ export class Project {
     // This runs whether or not a config exists, because the projects it reaches
     // are overwhelmingly the ones with no astryx.config at all: a scaffold adds
     // the dependency and writes no config, and the integration then contributes
-    // nothing for want of a line nobody knew to write. Appended AFTER the
+    // nothing for want of a line nobody knew to write. Resolved AFTER the
     // configured ones so an explicit entry keeps its position and its
     // precedence in every discovery order.
-    loadedIntegrations = [
-      ...loadedIntegrations,
-      ...(await autolinkIntegrations({
-        projectDir,
-        loaded: loadedIntegrations,
-        fresh,
-      })),
-    ];
+    const autolinked = await loadAutolinkCandidates({
+      projectDir,
+      loaded: loadedIntegrations,
+      fresh,
+    });
 
     // The package being authored is the one package that cannot install itself.
     // When it carries a manifest, resolve its working bytes directly so every
     // existing consumer command doubles as the author's preview. A local copy
     // replaces the same installed package in place, preserving configured
     // precedence while making the source being edited authoritative.
-    const localIntegration = await loadLocalIntegration(projectDir, {fresh});
-    if (localIntegration) {
-      const existing = loadedIntegrations.findIndex(
-        integration => integration.name === localIntegration.name,
-      );
-      if (existing === -1) loadedIntegrations.push(localIntegration);
-      else loadedIntegrations[existing] = localIntegration;
-    }
+    const localIntegration = await loadLocalIntegrationSafely(projectDir, fresh);
 
     // Autolinked and local packages can claim a provider ID that a configured
     // package already holds, so identity is resolved once over the final set.
-    loadedIntegrations = markProviderConflicts(loadedIntegrations);
+    const resolution = resolveProviders([
+      ...loadedIntegrations.map(integration => ({
+        source: /** @type {const} */ ('configured'),
+        integration,
+        spec: integration.__spec,
+      })),
+      ...autolinked,
+      ...(localIntegration
+        ? [
+            {
+              source: /** @type {const} */ ('local'),
+              integration: localIntegration,
+              spec: localIntegration.__spec,
+            },
+          ]
+        : []),
+    ]);
+    loadedIntegrations = resolution.integrations;
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -335,7 +476,7 @@ export class Project {
       // because Project.load can run more than once in a process and appending
       // would deliver twice.
       setDebugIntegrationEventHandlers(
-        inheritsIntegrationDebug(configPath)
+        inheritsIntegrationDebug(projectDir)
           ? loadedIntegrations.map(integration => integration.__debug)
           : [],
       );
@@ -347,7 +488,7 @@ export class Project {
       // Never let recording break config loading.
     }
 
-    return new Project({
+    const project = new Project({
       cwd,
       configPath,
       config,
@@ -356,6 +497,8 @@ export class Project {
       cache: resolvedCache,
       hash,
     });
+    PROVIDER_LEDGERS.set(project, resolution.ledger);
+    return project;
   }
 
   /**

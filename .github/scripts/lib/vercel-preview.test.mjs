@@ -4,8 +4,10 @@ import {describe, expect, it, vi} from 'vitest';
 
 import {
   previewOrigin,
+  probeVercelPreview,
   resolveVercelDeploymentEvent,
   resolveVercelPreview,
+  waitForPreviewRoutes,
 } from './vercel-preview.mjs';
 
 const SHA = 'a'.repeat(40);
@@ -68,6 +70,119 @@ function resolve(github, options = {}) {
 }
 
 describe('exact-head Vercel preview', () => {
+  it('probes both static apps, iframe and a Sandbox deep link; rejects redirects and 404s', async () => {
+    const paths = [];
+    const fetchRoute = vi.fn(async (url, options) => {
+      paths.push(new URL(url).pathname);
+      expect(options.redirect).toBe('manual');
+      return {
+        status: 200,
+        headers: new Headers({'content-type': 'text/html; charset=utf-8'}),
+      };
+    });
+    expect(await probeVercelPreview(ORIGIN, fetchRoute)).toBe(true);
+    expect(paths).toEqual([
+      '/storybook/',
+      '/storybook/iframe.html',
+      '/sandbox/',
+      '/sandbox/pages/component-scores/',
+    ]);
+    fetchRoute.mockImplementationOnce(async () => ({
+      status: 308,
+      headers: new Headers(),
+    }));
+    expect(await probeVercelPreview(ORIGIN, fetchRoute)).toBe(false);
+    fetchRoute.mockImplementationOnce(async () => {
+      throw new Error('network unavailable');
+    });
+    expect(await probeVercelPreview(ORIGIN, fetchRoute)).toBe(false);
+  });
+
+  it('retries transient route failures within a bounded window', async () => {
+    let time = 0;
+    const probe = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const sleep = vi.fn(async ms => {
+      time += ms;
+    });
+    expect(
+      await waitForPreviewRoutes(ORIGIN, {
+        probe,
+        waitMs: 20,
+        pollMs: 5,
+        now: () => time,
+        sleep,
+      }),
+    ).toBe(true);
+    expect(probe).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledTimes(2);
+    expect(
+      await waitForPreviewRoutes(ORIGIN, {
+        probe: async () => false,
+        waitMs: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it('refuses a successful status if either static tree is not actually ready', async () => {
+    const github = fixture();
+    const deployment = {
+      id: 7,
+      sha: SHA,
+      environment: 'Preview',
+      creator: {login: 'vercel[bot]'},
+    };
+    const status = {state: 'success', environment_url: ORIGIN};
+    expect(
+      await resolveVercelDeploymentEvent({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        deployment,
+        status,
+        probePreview: async () => false,
+        probeWaitMs: 0,
+      }),
+    ).toBeNull();
+  });
+
+  it('refuses an old origin if a newer same-head deployment begins during route probes', async () => {
+    const github = fixture();
+    const deployment = {
+      id: 7,
+      sha: SHA,
+      environment: 'Preview',
+      creator: {login: 'vercel[bot]'},
+    };
+    const newer = {...deployment, id: 8};
+    github.rest.repos.listDeploymentStatuses.mockImplementation(
+      async ({deployment_id}) => ({
+        data:
+          deployment_id === 8
+            ? [{state: 'pending', environment_url: ORIGIN}]
+            : [{state: 'success', environment_url: ORIGIN}],
+      }),
+    );
+    expect(
+      await resolveVercelDeploymentEvent({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        deployment,
+        status: {state: 'success', environment_url: ORIGIN},
+        probePreview: async () => {
+          github.rest.repos.listDeployments.mockResolvedValue({
+            data: [newer, deployment],
+          });
+          return true;
+        },
+      }),
+    ).toBeNull();
+  });
+
   it('only accepts a successful Vercel Preview deployment for the exact SHA', () => {
     const deployment = {
       sha: SHA,
@@ -219,6 +334,7 @@ describe('exact-head Vercel preview', () => {
           repo: 'astryx',
           deployment,
           status,
+          probePreview: async () => true,
         }),
       ).toEqual({prNumber: 123, headSha: SHA, origin: ORIGIN});
       expect(github.paginate).toHaveBeenCalledWith(github.rest.pulls.list, {
@@ -274,6 +390,7 @@ describe('exact-head Vercel preview', () => {
           repo: 'astryx',
           deployment,
           status,
+          probePreview: async () => true,
         }),
       ).toBeNull();
     }

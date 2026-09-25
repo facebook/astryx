@@ -20,8 +20,8 @@
  *   1. Create the page under the appropriate route group
  *   2. Add an entry to the appropriate category below
  *
- * Note: hrefs use trailing slashes because the sandbox is a static export
- * with `trailingSlash: true` in next.config.mjs.
+ * Note: hrefs use trailing slashes because the Vite build writes a physical
+ * index.html for each route; static hosts redirect /route to /route/.
  */
 
 import {templates as autoDiscoveredTemplates} from '../generated/templateRegistry';

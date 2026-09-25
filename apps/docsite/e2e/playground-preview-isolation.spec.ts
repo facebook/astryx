@@ -198,12 +198,19 @@ test.describe('playground preview isolation', () => {
       setTimeout(() => location.reload(), 0);
     });
 
-    // The playground notices the second load, tears the frame down and mounts
-    // a fresh one under a new nonce …
+    // The detached-frame gap must not count as recovery: `null !== old URL`
+    // was true before a replacement iframe had even been attached. Wait for a
+    // live frame with a new trusted nonce, then for its current content below.
     await expect
-      .poll(() => previewFrame(page)?.url() ?? null, POLL)
-      .not.toBe(replacedUrl);
-    expect(currentPreviewFrame(page).url()).toContain(PREVIEW_URL_MARK);
+      .poll(() => {
+        const nextUrl = previewFrame(page)?.url();
+        return Boolean(
+          nextUrl &&
+          nextUrl !== replacedUrl &&
+          nextUrl.includes(PREVIEW_URL_MARK),
+        );
+      }, POLL)
+      .toBe(true);
 
     // … and the new document renders the current code with the active theme
     // and mode, with no edit needed to wake it up.

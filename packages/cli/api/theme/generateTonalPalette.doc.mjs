@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'generateTonalPalette',
+  namespace: 'cli/api',
   displayName: 'generateTonalPalette()',
   summary: 'Generate candidate tonal palette data without filesystem effects.',
   description:

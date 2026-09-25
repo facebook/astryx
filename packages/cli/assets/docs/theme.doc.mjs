@@ -152,7 +152,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'The copy is editable project source, not a reference back into node_modules. Every file named by the theme catalog comes with it, including nested token or palette modules. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+          text: 'The copy is editable project source, not a reference back into node_modules. The complete theme directory comes with it, including its typed `.doc.mjs`, nested token and palette modules, and receipts. A second add refuses to overwrite those files unless you pass `--overwrite`.',
         },
       ],
     },

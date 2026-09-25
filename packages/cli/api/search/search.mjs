@@ -50,7 +50,7 @@
  * queries they have nothing to do with.
  */
 
-import {pathToFileURL} from 'node:url';
+import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
@@ -528,16 +528,26 @@ export function scoreCandidate(
 }
 
 /**
- * Load a doc module's `docs`/`doc` export, swallowing errors.
+ * A component or hook doc, compiled, or null when it cannot be read.
  * @param {string} docPath
  * @param {string} [exportName]
+ * @param {'components' | 'hooks'} [root]
  * @returns {Promise<any>}
  */
-async function loadModuleDoc(docPath, exportName = 'docs') {
+async function loadModuleDoc(
+  docPath,
+  exportName = 'docs',
+  root = 'components',
+) {
   try {
-    const mod = await import(pathToFileURL(docPath).href);
     // Support both the stamped default export and the legacy named export.
-    return mod?.default ?? mod[exportName] ?? null;
+    return (
+      (await readDocView(docPath, {
+        root,
+        loader: 'native',
+        exports: ['default', exportName],
+      })) ?? null
+    );
   } catch {
     return null;
   }
@@ -701,7 +711,7 @@ async function gatherHooks(coreDir) {
     let description = '';
     let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
-      const doc = await loadModuleDoc(docPath);
+      const doc = await loadModuleDoc(docPath, 'docs', 'hooks');
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';
@@ -884,7 +894,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} [options.cwd]
  * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
- * @returns {Promise<{type: 'search', data: {query: string, matchCount: number, results: Array<object>}}>}
+ * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
 export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
@@ -921,7 +931,11 @@ export async function search(query, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package');
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
 
   // Gather candidates from each requested domain in parallel.
@@ -971,7 +985,10 @@ export async function search(query, options = {}) {
     data: {
       query: String(query).trim(),
       matchCount: scored.length,
-      results: limited,
+      // toResult gives every domain its command and domain fields.
+      results: /** @type {import('./search.type.mjs').SearchResultEntry[]} */ (
+        limited
+      ),
     },
   };
 }

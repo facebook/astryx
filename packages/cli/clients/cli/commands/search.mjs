@@ -16,7 +16,7 @@
  *   astryx search button                 Ranked results across all domains
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
- *   astryx search button --verbose       Verbose (include import / reason)
+ *   astryx search button --verbose       Also print score / reason
  *   astryx search button --json          Typed JSON envelope
  */
 
@@ -54,11 +54,10 @@ export function registerSearch(program) {
         // Never let the nudge break the command.
       }
 
-      // Parse --limit to a number; the API validates it (positive integer) and
-      // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
-      // pre-rejecting with a generic code here.
-      const limit =
-        options.limit != null ? Number.parseInt(options.limit, 10) : 20;
+      // Number(), not parseInt(): parseInt truncates `1.5` and `5abc` into
+      // integers the API would reject. The API validates the value, so the
+      // flag and `search({limit})` accept and refuse the same inputs.
+      const limit = options.limit != null ? Number(options.limit) : 20;
 
       /** @type {import('../../../api/search/search.type.mjs').SearchResponse} */
       let result;
@@ -117,14 +116,25 @@ export function registerSearch(program) {
         ? [
             'name',
             'domain',
+            'title',
             'displayName',
+            'kind',
             'score',
             'reason',
             'import',
             'description',
             'command',
           ]
-        : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
+        : [
+            'name',
+            'domain',
+            'title',
+            'displayName',
+            'kind',
+            'import',
+            'description',
+            'command',
+          ];
 
       // The heading mirrors the JSON: `matchCount` is what matched, and the
       // records below are the slice `--limit` allowed. Saying only "(20)" when
