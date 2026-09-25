@@ -212,9 +212,25 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
       coarsePointer: matchMedia('(pointer: coarse)').matches,
       forcedColors: matchMedia('(forced-colors: active)').matches,
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
-      storyError: Boolean(
-        document.querySelector('.sb-errordisplay, [data-testid="story-error"]'),
-      ),
+      storyError: [
+        ...document.querySelectorAll(
+          '.sb-errordisplay, [data-testid="story-error"]',
+        ),
+      ].some(element => {
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return (
+          box.width > 0 &&
+          box.height > 0 &&
+          box.bottom > 0 &&
+          box.right > 0 &&
+          box.top < innerHeight &&
+          box.left < innerWidth &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          style.opacity !== '0'
+        );
+      }),
     }));
 
     // All assertions precede the screenshot, so a failed sensor cannot mint evidence.
