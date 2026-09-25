@@ -34,7 +34,6 @@ import {BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Field} from '@astryxdesign/core/Field';
-import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Text} from '@astryxdesign/core/Text';
@@ -119,11 +118,12 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
-  headingRow: {
+  // Sketch has no visible sheet headings — manage is rows + a top-end
+  // close affordance only. The sheet's accessible name still comes from
+  // BottomSheet's `label`, not a rendered heading.
+  closeRow: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacingVars['--spacing-2'],
+    justifyContent: 'flex-end',
     marginBlockEnd: spacingVars['--spacing-2'],
   },
   list: {
@@ -335,8 +335,7 @@ export function MobileTokenizer<T extends SearchableItem>({
           onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
           <BottomSheet sheetId="manage" label={label} height="hug">
             <div {...stylex.props(styles.sheetBody)}>
-              <div {...stylex.props(styles.headingRow)}>
-                <Heading level={3}>{label}</Heading>
+              <div {...stylex.props(styles.closeRow)}>
                 <IconButton
                   label="Close"
                   icon={<Icon icon="close" />}
@@ -389,12 +388,6 @@ export function MobileTokenizer<T extends SearchableItem>({
 
           <BottomSheet sheetId="add" label="Add item" height="tall">
             <div {...stylex.props(styles.sheetBody)}>
-              <div {...stylex.props(styles.headingRow)}>
-                <Heading level={3}>Add item</Heading>
-                <Text type="supporting" color="secondary">
-                  {value.length > 0 ? `${value.length} selected` : null}
-                </Text>
-              </div>
               <div
                 {...stylex.props(styles.list)}
                 role="listbox"
