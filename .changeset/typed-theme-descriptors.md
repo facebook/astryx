@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Integration themes use typed same-stem descriptors, not a central catalog.
+[breaking] Integration themes use typed same-stem descriptors, not a central catalog. (#6498)
 
 A themes root no longer holds `manifest.json`, the theme catalog that `astryx integration add theme` wrote in 0.6 (stable since 0.6.3). Each theme carries a strongly typed `<name>Theme.doc.mjs` beside its source instead, and a themes root that still holds the catalog is refused. To migrate an integration package, run `astryx upgrade --from 0.6.3 --path . --apply` in it: a codemod writes each theme's descriptor from its catalog entry and removes the catalog. Until a package is migrated, apps that install it get none of its themes or doc topics.
 

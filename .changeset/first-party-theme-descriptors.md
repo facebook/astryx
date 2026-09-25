@@ -8,6 +8,6 @@
 '@astryxdesign/theme-y2k': patch
 ---
 
-[feat] Ship a typed `ThemeDoc` descriptor beside each first-party theme source.
+[feat] Ship a typed `ThemeDoc` descriptor beside each first-party theme source. (#6498)
 
 @josephfarina
