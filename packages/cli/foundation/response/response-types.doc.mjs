@@ -78,6 +78,11 @@ export const doc = {
       description:
         'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined.',
     },
+    {
+      value: 'docs.node',
+      description:
+        "One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down) or a typed doc's content.",
+    },
 
     // blog (read from the published RSS feed)
     {

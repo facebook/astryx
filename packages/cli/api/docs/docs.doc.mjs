@@ -24,10 +24,14 @@ export const doc = {
     'inlined in every read. The topic set is the CLI\'s own docs plus the ' +
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
+    'A route opens a node of the docs tree instead: a namespace such as ' +
+    "`cli/api` returns its children one level down, a typed doc such as " +
+    "`cli/api/functions/search` returns its content, and a guide the tree " +
+    'places (`cli/integrations`) returns its ReferenceDoc like any topic. ' +
     'Overlay options select localized or dense variants.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse>',
+    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse>',
   keywords: [
     'docs',
     'documentation',
@@ -43,7 +47,7 @@ export const doc = {
       name: 'topic',
       type: 'string',
       description:
-        "Doc topic to load (e.g. 'principles'). Omit to list all topics.",
+        "Doc topic to load (e.g. 'principles'), or a docs-tree route (e.g. 'cli/api/functions/search'). Omit to list all topics.",
     },
     {
       name: 'section',
@@ -83,7 +87,7 @@ export const doc = {
     {
       type: 'docs.list',
       description:
-        'All available reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.',
+        "Every reference-doc topic in read order, then every top-level docs-tree namespace (kind: 'namespace'), as DocsListEntry[] ({topic, description, package, replaces?, kind?}).",
     },
     {
       type: 'docs.detail',
@@ -100,15 +104,20 @@ export const doc = {
       description:
         'One ReferenceSection of the topic, found by key or title, with token-ref blocks inlined.',
     },
+    {
+      type: 'docs.node',
+      description:
+        "A namespace or typed doc in the docs tree, read by its route: {id, route, kind, package, title, summary, breadcrumb, slots, content}. A namespace lists each slot's children one level down; a typed doc carries its content.",
+    },
   ],
   throws: [
     {
       code: 'ERR_UNKNOWN_TOPIC',
-      when: 'the topic is not a string or matches no known doc topic',
+      when: 'the topic is not a string, or matches no topic and no docs-tree route',
     },
     {
       code: 'ERR_UNKNOWN_SECTION',
-      when: 'a section is requested but is empty, matches no section, or matches more than one',
+      when: 'a section is requested but is empty, matches no section, matches more than one, or is asked of a docs-tree namespace or typed doc, which have no sections',
     },
   ],
   examples: [
@@ -118,6 +127,8 @@ export const doc = {
       label: "A topic's sections",
       code: "await docs('principles', undefined, {index: true});",
     },
+    {label: 'A docs-tree namespace', code: "await docs('cli/api');"},
+    {label: 'One API function', code: "await docs('cli/api/functions/search');"},
     {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
   ],
   command: 'docs',

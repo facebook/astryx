@@ -25,7 +25,10 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
-import {template as queryTemplates} from '@astryxdesign/cli/api';
+import {
+  docs as readDocs,
+  template as queryTemplates,
+} from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {
@@ -1674,6 +1677,41 @@ export const templateMetadataCount = ${templateMetadata.length};
 
 // ── 5. Docs Registry ──────────────────────────────────────────────────
 
+/**
+ * Every guide in the CLI's docs tree, read through the CLI's public docs API:
+ * walk down from each top-level namespace and read each guide by its route.
+ * @returns {Promise<Array<{topic: string, title: string, description: string, category: string | null, sections: unknown[]}>>}
+ */
+async function docsTreeGuides() {
+  const guides = [];
+  const list = await readDocs();
+  const pending = list.data
+    .filter(entry => entry.kind === 'namespace')
+    .map(entry => entry.topic);
+  while (pending.length > 0) {
+    const route = pending.shift();
+    const read = await readDocs(route);
+    if (read.type !== 'docs.node') continue;
+    for (const slot of read.data.slots) {
+      for (const child of slot.children) {
+        if (child.kind === 'namespace') {
+          pending.push(child.route);
+        } else if (child.kind === 'generic') {
+          const doc = (await readDocs(child.route)).data;
+          guides.push({
+            topic: child.route.replaceAll('/', '-'),
+            title: doc.title || child.title,
+            description: doc.description || '',
+            category: doc.category || null,
+            sections: doc.sections || [],
+          });
+        }
+      }
+    }
+  }
+  return guides;
+}
+
 async function generateDocsRegistry() {
   console.log('Generating docs registry...');
 
@@ -1698,10 +1736,6 @@ async function generateDocsRegistry() {
     if (DOCSITE_TARGET !== 'canary' && topic === 'shadcn-compatibility') {
       continue;
     }
-    // /docs/cli is the @astryxdesign/cli package page. The CLI reference topic
-    // (`astryx docs cli`) joins the site when its namespace page takes that
-    // URL; packages/cli/test/doc-routes.test.mjs records the same skip.
-    if (topic === 'cli') continue;
     const docPath = path.join(DOCS_DIR, file);
 
     let title = '';
@@ -1726,6 +1760,14 @@ async function generateDocsRegistry() {
       category: category || null,
       sections,
     });
+  }
+
+  // Guides the CLI's docs tree places (spec:AST-044) are not topic files: the
+  // CLI reads them only by route. Until the site renders the tree itself, each
+  // keeps a flat page whose slug is its route with "/" as "-", so
+  // `cli/integrations` stays at /docs/cli-integrations.
+  for (const guide of await docsTreeGuides()) {
+    docTopics.push(guide);
   }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));

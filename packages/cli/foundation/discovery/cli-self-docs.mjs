@@ -1,17 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The CLI's own docs, read by their `namespace`: every command, API
- * function, schema, and enum doc the CLI ships says which `astryx docs` topic
- * reads it, and the `cli` topic is built from the ones that name it.
+ * @file The CLI's own typed docs, read by their `namespace`: every command,
+ * API function, schema, and enum doc the CLI ships names the group that reads
+ * it. The docs tree adopts `cli/commands` and `cli/api` (spec:AST-044); the
+ * authoring topic reads `authoring` from its own list.
  *
  * @input The command, function, schema, and enum docs under
  *   clients/cli/commands, api, authoring, and foundation.
- * @output {@link buildCliTopic} for `astryx docs cli`, and
+ * @output {@link loadCliSelfDocs} for the docs tree, {@link cliDocSection} for
+ *   what `astryx docs <route>` prints for one of them, and
  *   {@link auditCliSelfDocs}, which `astryx doctor` runs.
- * @position foundation/discovery — the reader for docs whose namespace starts
- *   with `cli/`. The authoring topic reads the `authoring` namespace from its
- *   own list (authoring-self-docs.mjs).
+ * @position foundation/discovery. The tree (doc-compiler/tree.mjs) gives each
+ *   doc its route; this module only loads the docs and renders one.
  */
 
 import * as fs from 'node:fs';
@@ -23,7 +24,7 @@ import {
   DOC_OUTPUT_BUDGET_BYTES,
   oversizedDocSections,
 } from './docs-output-budget.mjs';
-import {sectionKeyProblems} from './docs-section-key.mjs';
+import {routeSegment} from './docs-section-key.mjs';
 
 /** The directories, relative to the CLI root, that hold the CLI's own docs. */
 export const CLI_SELF_DOC_DIRS = [
@@ -37,22 +38,19 @@ export const CLI_SELF_DOC_DIRS = [
 const NAMESPACED_KINDS = new Set(['command', 'function', 'schema', 'enum']);
 
 /**
- * Every namespace a CLI doc may declare, and the topic that reads it. A doc in
- * a `cli/` namespace is the section `<key prefix>-<name>` of `astryx docs cli`;
- * a doc in `authoring` is a section of `astryx docs authoring`.
- * @type {Record<string, {topic: string, keyPrefix?: string}>}
+ * Every namespace a CLI doc may declare, and what reads it. The docs tree
+ * adopts `cli/commands` (under `cli/commands`) and `cli/api` (under
+ * `cli/api/<kind>s`); `astryx docs authoring` reads `authoring` from its list.
+ * @type {Record<string, {reader: 'tree' | 'authoring'}>}
  */
 export const CLI_DOC_NAMESPACES = {
-  'cli/commands': {topic: 'cli', keyPrefix: 'commands'},
-  'cli/api': {topic: 'cli', keyPrefix: 'api'},
-  authoring: {topic: 'authoring'},
+  'cli/commands': {reader: 'tree'},
+  'cli/api': {reader: 'tree'},
+  authoring: {reader: 'authoring'},
 };
 
 /** Blocks a doc's notes may carry that a topic section can render. */
 const TOPIC_BLOCKS = new Set(['prose', 'list', 'code', 'heading', 'table']);
-
-/** Section order within the `cli` topic: commands, then the API by kind. */
-const KIND_ORDER = ['command', 'function', 'schema', 'enum'];
 
 /**
  * Every `*.doc.mjs` under the CLI's doc directories, relative to `root` and
@@ -121,29 +119,27 @@ export async function loadCliSelfDocs(
 }
 
 /**
- * A name as a section-key segment: lowercase words joined by hyphens.
- * `integrationPackCheck` and `integration pack` both read naturally.
- * @param {string} name
- * @returns {string}
+ * What cross-links need: the loaded function docs by name, the command names,
+ * and the route the docs tree gave a doc, if it gave one.
+ * @typedef {object} CliDocIndex
+ * @property {Map<string, any>} functions
+ * @property {Set<string>} commands
+ * @property {(kind: string, name: string) => string | null} route
  */
-export function keySegment(name) {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 /**
- * The section key a doc is read by in `astryx docs cli`, or null when its
- * namespace is not one of the topic's.
- * @param {any} doc
- * @returns {string | null}
+ * @param {any[]} docs every loaded CLI typed doc
+ * @param {(kind: string, name: string) => string | null} [route]
+ * @returns {CliDocIndex}
  */
-export function cliSectionKey(doc) {
-  const prefix = CLI_DOC_NAMESPACES[doc?.namespace]?.keyPrefix;
-  if (prefix == null) return null;
-  return `${prefix}-${keySegment(String(doc.name))}`;
+export function cliDocIndex(docs, route = () => null) {
+  return {
+    functions: new Map(
+      docs.filter(d => d.type === 'function').map(d => [d.name, d]),
+    ),
+    commands: new Set(docs.filter(d => d.type === 'command').map(d => d.name)),
+    route,
+  };
 }
 
 /** @param {unknown} value */
@@ -197,9 +193,9 @@ function noteBlocks(notes) {
 }
 
 /**
- * One command doc as a section of `astryx docs cli`.
+ * What `astryx docs <route>` prints for one command doc.
  * @param {any} cmd
- * @param {{functions: Map<string, any>, commands: Set<string>}} index
+ * @param {CliDocIndex} index
  */
 function commandSection(cmd, index) {
   const fn = cmd.fn == null ? undefined : index.functions.get(cmd.fn);
@@ -255,37 +251,44 @@ function commandSection(cmd, index) {
       rows: exitCodes.map((/** @type {any} */ e) => [String(e.code), e.when]),
     });
   }
-  const subcommands = (cmd.subcommands ?? []).filter(
-    (/** @type {string} */ sub) => index.commands.has(`${cmd.name} ${sub}`),
+  /** @type {Array<{sub: string, route: string}>} */
+  const subcommands = (cmd.subcommands ?? []).flatMap(
+    (/** @type {string} */ sub) => {
+      const route = index.route('command', `${cmd.name} ${sub}`);
+      return route == null ? [] : [{sub, route}];
+    },
   );
   if (subcommands.length > 0) {
     content.push({
       type: 'list',
       style: 'unordered',
       items: subcommands.map(
-        (/** @type {string} */ sub) =>
-          `\`astryx ${cmd.name} ${sub}\`: \`astryx docs cli commands-${keySegment(`${cmd.name} ${sub}`)}\``,
+        ({sub, route}) =>
+          `\`astryx ${cmd.name} ${sub}\`: \`astryx docs ${route}\``,
       ),
     });
   }
+  const fnRoute = fn == null ? null : index.route('function', fn.name);
   if (fn != null) {
     content.push({
       type: 'prose',
-      text: `It runs \`${fn.name}()\` from \`${fn.importPath}\`. Read it with \`astryx docs cli ${cliSectionKey(fn)}\`.`,
+      text: fnRoute
+        ? `It runs \`${fn.name}()\` from \`${fn.importPath}\`. Read it with \`astryx docs ${fnRoute}\`.`
+        : `It runs \`${fn.name}()\` from \`${fn.importPath}\`.`,
     });
   }
   content.push(...noteBlocks(cmd.notes));
   return {
-    id: cliSectionKey(cmd),
+    id: routeSegment(cmd.name),
     title: cmd.displayName ?? `astryx ${cmd.name}`,
     content,
   };
 }
 
 /**
- * One API function doc as a section of `astryx docs cli`.
+ * What `astryx docs <route>` prints for one API function doc.
  * @param {any} fn
- * @param {{functions: Map<string, any>, commands: Set<string>}} index
+ * @param {CliDocIndex} index
  */
 function functionSection(fn, index) {
   /** @type {any[]} */
@@ -341,26 +344,30 @@ function functionSection(fn, index) {
       code: example.code,
     });
   }
-  if (fn.command != null && index.commands.has(fn.command)) {
+  const commandRoute =
+    fn.command != null && index.commands.has(fn.command)
+      ? index.route('command', fn.command)
+      : null;
+  if (commandRoute != null) {
     content.push({
       type: 'prose',
-      text: `\`astryx ${fn.command}\` runs it. Read it with \`astryx docs cli commands-${keySegment(fn.command)}\`.`,
+      text: `\`astryx ${fn.command}\` runs it. Read it with \`astryx docs ${commandRoute}\`.`,
     });
   }
   return {
-    id: cliSectionKey(fn),
+    id: routeSegment(fn.name),
     title: fn.displayName ?? `${fn.name}()`,
     content,
   };
 }
 
 /**
- * One enum doc as a section of `astryx docs cli`.
+ * What `astryx docs <route>` prints for one enum doc.
  * @param {any} doc
  */
 function enumSection(doc) {
   return {
-    id: cliSectionKey(doc),
+    id: routeSegment(doc.name),
     title: doc.displayName ?? doc.name,
     content: [
       {type: 'prose', text: doc.description},
@@ -379,79 +386,33 @@ function enumSection(doc) {
 }
 
 /**
- * The docs a `cli/` namespace names, in reading order: commands by name (a
- * group before its subcommands), then API functions, schemas, and enums.
- * @param {any[]} docs
- * @returns {any[]}
+ * What `astryx docs <route>` prints for one CLI typed doc: its title and the
+ * blocks of its content, with cross-links to the routes the tree gave.
+ * @param {any} doc
+ * @param {CliDocIndex} index
+ * @returns {{id: string, title: string, content: any[]}}
  */
-function cliDocsInOrder(docs) {
-  return docs
-    .filter(doc => CLI_DOC_NAMESPACES[doc.namespace]?.topic === 'cli')
-    .sort(
-      (a, b) =>
-        KIND_ORDER.indexOf(a.type) - KIND_ORDER.indexOf(b.type) ||
-        (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
-    );
+export function cliDocSection(doc, index) {
+  if (doc.type === 'command') return commandSection(doc, index);
+  if (doc.type === 'function') return functionSection(doc, index);
+  if (doc.type === 'enum') return enumSection(doc);
+  return {...selfDocSection(doc), id: routeSegment(doc.name)};
 }
 
 /**
- * The `cli` topic: one section per doc whose namespace is `cli/…`.
- * @param {any[]} docs every loaded CLI doc; the ones in other namespaces are
- *   left out
- * @returns {import('../../authoring/doctypes/reference/type').ReferenceDoc}
- */
-export function buildCliReferenceDoc(docs) {
-  const ordered = cliDocsInOrder(docs);
-  const index = {
-    functions: new Map(
-      ordered.filter(d => d.type === 'function').map(d => [d.name, d]),
-    ),
-    commands: new Set(
-      ordered.filter(d => d.type === 'command').map(d => d.name),
-    ),
-  };
-  return /** @type {any} */ ({
-    name: 'cli',
-    title: 'CLI Reference',
-    category: 'guide',
-    description:
-      'Every command and API function of the CLI, with the JSON output envelope, error codes, and response types, read from the docs the CLI ships.',
-    sections: ordered.map(doc =>
-      doc.type === 'command'
-        ? commandSection(doc, index)
-        : doc.type === 'function'
-          ? functionSection(doc, index)
-          : doc.type === 'enum'
-            ? enumSection(doc)
-            : {...selfDocSection(doc), id: cliSectionKey(doc)},
-    ),
-  });
-}
-
-/**
- * The `cli` topic from every CLI doc that loads. One that fails is left out
- * here and reported by {@link auditCliSelfDocs}.
- * @returns {Promise<import('../../authoring/doctypes/reference/type').ReferenceDoc>}
- */
-export async function buildCliTopic() {
-  const {loaded} = await loadCliSelfDocs();
-  return buildCliReferenceDoc(loaded.map(entry => entry.doc));
-}
-
-/**
- * What stands between a CLI doc and a reader: a missing namespace, one no
- * topic reads, one that disagrees with the authoring topic's list, a doc that
- * fails to load, and a `cli` section that clashes or is too large.
+ * What stands between a CLI doc and a reader: a missing namespace, one nothing
+ * reads, one that disagrees with the authoring topic's list, a doc that fails
+ * to load, and a tree leaf too large for one read. Whether the tree gives
+ * every `cli/...` doc a route is the docs-tree check's job.
  * @param {{root?: string, sources?: string[], budget?: number, authoringSources?: string[]}} [options]
  * @returns {Promise<{
  *   docs: number,
- *   sections: number,
+ *   tree: number,
  *   authoring: number,
  *   missing: string[],
  *   unknown: {source: string, namespace: string}[],
  *   misfiled: {source: string, message: string}[],
  *   failed: {source: string, error: string}[],
- *   keyProblems: string[],
  *   oversized: {key: string, title: string, bytes: number}[],
  * }>}
  */
@@ -472,6 +433,8 @@ export async function auditCliSelfDocs({
   const unknown = [];
   /** @type {{source: string, message: string}[]} */
   const misfiled = [];
+  /** @type {any[]} */
+  const treeDocs = [];
   let authoring = 0;
   for (const {source, doc} of loaded) {
     const namespace = doc.namespace;
@@ -484,7 +447,7 @@ export async function auditCliSelfDocs({
       continue;
     }
     const inAuthoring = listed.has(source);
-    if (namespace === 'authoring') {
+    if (CLI_DOC_NAMESPACES[namespace].reader === 'authoring') {
       if (inAuthoring) authoring++;
       else {
         misfiled.push({
@@ -497,18 +460,22 @@ export async function auditCliSelfDocs({
         source,
         message: `${source} is read in \`astryx docs authoring\`, but its namespace is "${namespace}"`,
       });
+    } else {
+      treeDocs.push(doc);
     }
   }
-  const topic = buildCliReferenceDoc(loaded.map(entry => entry.doc));
+  const index = cliDocIndex(loaded.map(entry => entry.doc));
   return {
     docs: loaded.length,
-    sections: topic.sections.length,
+    tree: treeDocs.length,
     authoring,
     missing,
     unknown,
     misfiled,
     failed,
-    keyProblems: sectionKeyProblems(topic.sections),
-    oversized: oversizedDocSections(topic.sections, budget),
+    oversized: oversizedDocSections(
+      treeDocs.map(doc => cliDocSection(doc, index)),
+      budget,
+    ),
   };
 }

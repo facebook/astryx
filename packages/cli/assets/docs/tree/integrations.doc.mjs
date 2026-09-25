@@ -1,9 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
+/**
+ * @file `astryx docs cli/integrations`: the guide to building an integration
+ * package. It lives in the docs tree under the `cli` namespace (spec:AST-044),
+ * so its only route is `cli/integrations`.
+ */
 
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
-  name: 'cli-integrations',
+  type: 'generic',
+  name: 'integrations',
+  placement: {parent: 'namespace:cli', slot: 'guides', order: 10},
   title: 'CLI Integrations',
   category: 'guide',
   description:

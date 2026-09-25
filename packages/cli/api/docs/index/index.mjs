@@ -27,6 +27,9 @@ import {resolveTopicDocs} from '../_adapter.mjs';
  * @returns {Promise<import('../docs.type.mjs').DocsIndexResponse>}
  */
 export async function index(topic, options = {}) {
-  const {node} = await resolveTopicDocs(topic, options);
-  return {type: 'docs.index', data: indexView(node)};
+  const {node, entry} = await resolveTopicDocs(topic, options);
+  const data = indexView(node);
+  // A guide the docs tree places is read by its route, not its doc name.
+  if (entry.tree) data.name = entry.name;
+  return {type: 'docs.index', data};
 }

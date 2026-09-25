@@ -28,6 +28,7 @@ import {program} from '../clients/cli/index.mjs';
 import {Project} from '../foundation/config/project.mjs';
 import {loadDocs} from '../foundation/discovery/component-loader.mjs';
 import {collectDocInputs} from '../foundation/doc-compiler/inputs.mjs';
+import {loadDocsTree} from '../foundation/doc-compiler/tree.mjs';
 import {CLI_ROOT} from '../foundation/fs/paths.mjs';
 
 const REPO_ROOT = path.resolve(CLI_ROOT, '..', '..');
@@ -75,10 +76,11 @@ const PLACEMENT = new RegExp(
  */
 
 /**
- * A topic or section route as the CLI and the docsite answer it today.
+ * A topic, section, or docs-tree namespace route as the CLI and the docsite
+ * answer it today.
  * @typedef {object} Route
- * @property {'topic' | 'section'} kind
- * @property {string} id `topic` or `topic#key`
+ * @property {'topic' | 'section' | 'namespace'} kind
+ * @property {string} id `topic`, `topic#key`, or a namespace's route
  * @property {string} oldCliRoute
  * @property {string | null} oldDocsiteUrl
  */
@@ -129,13 +131,6 @@ afterAll(() => {
 });
 
 /**
- * Topics the docsite does not publish: /docs/cli is the @astryxdesign/cli
- * package page, so apps/docsite/scripts/generate-data.mjs skips the cli topic
- * until the namespace page takes that URL.
- */
-const DOCSITE_SKIPPED_TOPICS = new Set(['cli']);
-
-/**
  * Every built-in topic and section key, with the docsite URL for each.
  * @param {string} cwd
  * @returns {Promise<Map<string, Route>>}
@@ -144,14 +139,54 @@ async function currentTopicRoutes(cwd) {
   /** @type {Map<string, Route>} */
   const found = new Map();
   const list = /** @type {any} */ (await docs(undefined, undefined, {cwd}));
-  for (const {topic} of list.data) {
-    // The docsite builds one page per topic file the CLI ships, except the
-    // topics apps/docsite/scripts/generate-data.mjs skips.
+  /** @type {Array<{topic: string, file: string, page: string | null}>} */
+  const topics = [];
+  /** @type {string[]} */
+  const namespaces = [];
+  for (const {topic, kind} of list.data) {
+    if (kind === 'namespace') {
+      namespaces.push(topic);
+      continue;
+    }
+    // The docsite builds one page per topic file the CLI ships.
     const file = path.join(CLI_ROOT, 'assets', 'docs', `${topic}.doc.mjs`);
-    const page =
-      fs.existsSync(file) && !DOCSITE_SKIPPED_TOPICS.has(topic)
-        ? `/docs/${topic}`
-        : null;
+    topics.push({
+      topic,
+      file,
+      page: fs.existsSync(file) ? `/docs/${topic}` : null,
+    });
+  }
+  // Down the docs tree, one level at a time. A namespace is a route; a guide
+  // is a topic read by its route, published on the docsite at its route with
+  // "/" as "-"; a typed doc is its descriptor group's row.
+  while (namespaces.length > 0) {
+    const route = /** @type {string} */ (namespaces.shift());
+    found.set(route, {
+      kind: 'namespace',
+      id: route,
+      oldCliRoute: `astryx docs ${route}`,
+      oldDocsiteUrl: null,
+    });
+    const node = /** @type {any} */ (await docs(route, undefined, {cwd}));
+    for (const slot of node.data.slots) {
+      for (const child of slot.children) {
+        if (child.kind === 'namespace') namespaces.push(child.route);
+        if (child.kind !== 'generic') continue;
+        topics.push({
+          topic: child.route,
+          file: path.join(
+            CLI_ROOT,
+            'assets',
+            'docs',
+            'tree',
+            `${child.name}.doc.mjs`,
+          ),
+          page: `/docs/${child.route.replaceAll('/', '-')}`,
+        });
+      }
+    }
+  }
+  for (const {topic, file, page} of topics) {
     found.set(topic, {
       kind: 'topic',
       id: topic,
@@ -265,8 +300,10 @@ async function currentDescriptorGroups(cwd) {
   /** @type {Map<string, Group>} */
   const found = new Map();
   for (const input of inputs) {
-    // A topic's own file is a topic route; everything else is a descriptor.
+    // A topic's own file is a topic route, and a docs-tree file is a
+    // namespace or guide route; everything else is a descriptor.
     if (input.root === 'docs' && input.role === 'base') continue;
+    if (input.root === 'tree') continue;
     const doc = await authoredDoc(input.file);
     let kind = input.root.replace(/s$/u, '');
     let id = input.name;
@@ -372,7 +409,8 @@ function commandPaths() {
 }
 
 /** @param {RouteRow} row @returns {boolean} */
-const isDescriptorRow = row => row.kind !== 'topic' && row.kind !== 'section';
+const isDescriptorRow = row =>
+  row.kind !== 'topic' && row.kind !== 'section' && row.kind !== 'namespace';
 
 /**
  * A row to paste and complete: the rationale and placement stay empty, so
@@ -576,4 +614,36 @@ describe('doc route inventory', () => {
     }
     expect(bad).toEqual([]);
   });
+
+  it(
+    '(d) puts every descriptor a namespace row names where the tree does',
+    async () => {
+      const tree = await loadDocsTree();
+      /** @type {Map<string, string>} */
+      const routeOf = new Map(
+        [...tree.nodes.values()].map(node => [node.id, node.route]),
+      );
+      /** @type {string[]} */
+      const bad = [];
+      for (const row of table.rows) {
+        if (!isDescriptorRow(row) || !row.placement.startsWith('namespace:')) {
+          continue;
+        }
+        const under = row.placement.slice('namespace:'.length);
+        for (const id of idsFile[row.id] ?? []) {
+          const route = routeOf.get(`${row.provider}/${row.kind}/${id}`);
+          if (
+            route == null ||
+            route.slice(0, route.lastIndexOf('/')) !== under
+          ) {
+            bad.push(
+              `${row.id} "${id}": the tree puts it at ${route ?? 'no route'}, not under ${under}`,
+            );
+          }
+        }
+      }
+      expect(bad).toEqual([]);
+    },
+    SLOW,
+  );
 });

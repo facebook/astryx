@@ -12,25 +12,27 @@ export const doc = {
   displayName: 'Authored doc graph fields',
   namespace: 'authoring',
   description:
-    'Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs graph. The docs graph is not built yet, so nothing reads them: a reference topic that sets one fails to load, and other doc kinds accept them and ignore them.',
+    "Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs tree. In this release the docs tree reads `placement` for the CLI's own namespaces and guides only; aliases and audience are not built yet. A reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
   appliesTo: 'Every supported .doc.mjs object',
   fields: [
     {
       name: 'placement',
       type: 'DocPlacement',
       description:
-        'Requests one canonical parent in the docs graph. Not read yet: a topic that sets it fails to load.',
+        "Names the doc's one parent in the docs tree: a namespace of the same package, one of its slots, and an order. Read for the CLI's own namespaces and guides; a topic from an integration that sets it fails to load.",
       fields: [
         {
           name: 'placement.parent',
           type: 'string',
-          description: 'Stable reference to the requested parent namespace.',
+          description:
+            'The parent namespace: `namespace:<name>` in the same package.',
           required: true,
         },
         {
           name: 'placement.slot',
           type: 'string',
-          description: 'Named slot owned by the parent namespace.',
+          description:
+            "A slot the parent namespace declares; it must accept this doc's kind. Optional when the parent has one slot.",
         },
         {
           name: 'placement.order',
@@ -43,7 +45,7 @@ export const doc = {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes the docs graph will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
+        'Prior names or routes the docs tree will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
     },
     {
       name: 'audience',

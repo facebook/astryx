@@ -35,9 +35,10 @@ const KNOWN_TOPICS = new Set(docTopics.map(d => d.topic));
  * topics return null so a renamed doc degrades to plain code, not a 404.
  */
 const docTopic: CodeLinkifier = code => {
-  const match = /^(?:npx )?astryx docs(?:\s+([a-z][\w-]*))?(?:\s.*)?$/.exec(
-    code,
-  );
+  const match =
+    /^(?:npx )?astryx docs(?:\s+([a-z][\w-]*(?:\/[a-z][\w-]*)*))?(?:\s.*)?$/.exec(
+      code,
+    );
   if (!match) {
     return null;
   }
@@ -45,7 +46,10 @@ const docTopic: CodeLinkifier = code => {
   if (topic == null) {
     return '/docs';
   }
-  return KNOWN_TOPICS.has(topic) ? `/docs/${topic}` : null;
+  // A docs-tree guide (`cli/integrations`) has a flat page named after its
+  // route, with "/" as "-", until the site renders the tree itself.
+  const slug = topic.replaceAll('/', '-');
+  return KNOWN_TOPICS.has(slug) ? `/docs/${slug}` : null;
 };
 
 /** Every documented component and hook name; each has a /components page. */

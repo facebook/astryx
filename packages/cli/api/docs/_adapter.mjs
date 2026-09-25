@@ -29,6 +29,7 @@ import {
   OVERLAY_LANGUAGES,
   overlayLanguages,
 } from '../../foundation/doc-compiler/read.mjs';
+import {loadDocsTree} from '../../foundation/doc-compiler/tree.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
@@ -125,40 +126,115 @@ export async function compileTopic(catalog, entry, lang = null) {
 }
 
 /**
- * Resolve `topic` against the project's catalog (throwing `ERR_UNKNOWN_TOPIC`
- * when unmatched) and lower it with any --dense/--zh overlay and any
- * integration extension applied. Shared by the leaves so topic normalization
- * and unknown-topic handling live in exactly one place.
- *
- * @param {string} topic
- * @param {object} [options]
- * @param {string} [options.lang]
- * @param {boolean} [options.zh]
- * @param {boolean} [options.dense]
- * @param {string} [options.cwd]
- * @returns {Promise<{
- *   catalog: DocsCatalog,
- *   node: import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode,
- *   lang: string | null,
- * }>}
+ * A guide the docs tree places, as a topic entry the topic readers open by its
+ * route. It is never a flat topic: `astryx docs <route>` is its only name.
+ * @param {import('../../foundation/doc-compiler/tree.mjs').TreeNode} node
+ * @returns {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry}
+ */
+export function guideEntry(node) {
+  return {
+    name: node.route,
+    package: node.provider,
+    path: node.ref.topicFile,
+    extensions: [],
+    tree: true,
+  };
+}
+
+/**
+ * What a docs argument names: a topic (a flat one, or a guide the docs tree
+ * places), a namespace or typed doc in the tree, or nothing. The flat catalog
+ * answers first, so a topic read never builds the tree.
+ * @param {unknown} topic
+ * @param {{cwd?: string}} [options]
+ * @returns {Promise<
+ *   | {kind: 'topic', catalog: DocsCatalog, entry: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry}
+ *   | {kind: 'node', catalog: DocsCatalog, tree: import('../../foundation/doc-compiler/tree.mjs').DocsTree, node: import('../../foundation/doc-compiler/tree.mjs').TreeNode}
+ *   | {kind: 'unknown', catalog: DocsCatalog}
+ * >}
+ */
+export async function resolveDocsArgument(topic, {cwd} = {}) {
+  const catalog = await loadDocsCatalog(cwd);
+  const entry = catalog.resolve(topic);
+  if (entry) return {kind: 'topic', catalog, entry};
+  if (typeof topic !== 'string' || topic === '')
+    return {kind: 'unknown', catalog};
+  const tree = await loadDocsTree();
+  const node = tree.get(topic);
+  if (!node) return {kind: 'unknown', catalog};
+  if (node.kind === 'generic') {
+    return {kind: 'topic', catalog, entry: guideEntry(node)};
+  }
+  return {kind: 'node', catalog, tree, node};
+}
+
+/**
+ * The error for a docs argument that names nothing. For a route, it suggests
+ * the children of the deepest namespace the route reaches; otherwise, every
+ * topic and every top-level namespace.
+ * @param {unknown} topic
+ * @param {DocsCatalog} catalog
+ * @returns {Promise<AstryxError>}
+ */
+export async function unknownTopicError(topic, catalog) {
+  const tree = await loadDocsTree();
+  /** @type {Array<{name: string, reason: string}>} */
+  let suggestions = [];
+  if (typeof topic === 'string' && topic.includes('/')) {
+    const parts = topic.split('/');
+    for (
+      let depth = parts.length - 1;
+      depth > 0 && suggestions.length === 0;
+      depth--
+    ) {
+      const near = tree.get(parts.slice(0, depth).join('/'));
+      if (near) {
+        suggestions = near.slots.flatMap(slot =>
+          slot.children.map(route => ({
+            name: route,
+            reason: tree.get(route)?.summary ?? '',
+          })),
+        );
+      }
+    }
+  }
+  if (suggestions.length === 0) {
+    suggestions = [
+      ...tree
+        .roots()
+        .map(root => ({name: root.route, reason: 'docs namespace'})),
+      ...catalog.names().map(name => ({name, reason: 'available topic'})),
+    ];
+  }
+  return new AstryxError(
+    `Unknown topic "${String(topic)}"`,
+    suggestions,
+    ERROR_CODES.ERR_UNKNOWN_TOPIC,
+  );
+}
+
+/**
+ * Resolve a topic (a flat one, or a guide the docs tree places by its route)
+ * and lower it for the topic readers.
+ * @param {unknown} topic
+ * @param {{lang?: string | null, zh?: boolean, dense?: boolean, cwd?: string}} [options]
  */
 export async function resolveTopicDocs(topic, options = {}) {
   const {lang = null, zh = false, dense = false, cwd} = options;
   const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
-  const catalog = await loadDocsCatalog(cwd);
-
-  // A public API caller could pass a non-string topic; `resolve` answers
-  // undefined for one, which lands on the same stable code as an unknown name
-  // rather than a raw TypeError (which downgrades to ERR_UNKNOWN).
-  const entry = catalog.resolve(topic);
-  if (!entry) {
-    throw new AstryxError(
-      `Unknown topic "${String(topic)}"`,
-      catalog.names().map(t => ({name: t, reason: 'available topic'})),
-      ERROR_CODES.ERR_UNKNOWN_TOPIC,
-    );
+  // A public API caller could pass a non-string topic; it lands on the same
+  // stable code as an unknown name rather than a raw TypeError.
+  const found = await resolveDocsArgument(topic, {cwd});
+  if (found.kind !== 'topic') {
+    throw found.kind === 'node'
+      ? new AstryxError(
+          `"${found.node.route}" is a ${found.node.kind === 'namespace' ? 'namespace' : `${found.node.kind} doc`} in the docs tree, not a topic. Read it with \`astryx docs ${found.node.route}\`.`,
+          undefined,
+          ERROR_CODES.ERR_UNKNOWN_TOPIC,
+        )
+      : await unknownTopicError(topic, found.catalog);
   }
-
+  const {catalog, entry} = found;
   const node = await lowerTopic(catalog, entry, effectiveLang);
-  return {catalog, node, lang: effectiveLang};
+  return {catalog, node, lang: effectiveLang, entry};
 }

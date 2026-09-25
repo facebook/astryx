@@ -18,7 +18,9 @@ export const doc = {
     'Reads the reference docs: with no topic it lists every topic; a topic prints that ' +
     'full doc; `--index` lists its sections instead, each with the key to read it by; a ' +
     'topic plus a section prints that section (by key, exact title, or a unique part of ' +
-    'a title).',
+    'a title). A route opens a node of the docs tree, one level at a time: `cli` lists ' +
+    'its guides and reference, `cli/api/functions` lists every API function, and ' +
+    '`cli/api/functions/search` prints one.',
   fn: 'docs',
   args: [
     {name: 'topic', param: 'topic', required: false},
@@ -36,12 +38,14 @@ export const doc = {
     {label: 'One topic as JSON', cli: 'astryx docs spacing --json'},
     {label: "A topic's sections", cli: 'astryx docs theme --index'},
     {label: 'One section', cli: 'astryx docs theme quick-start'},
+    {label: 'The CLI docs tree', cli: 'astryx docs cli'},
+    {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown topic, or a section that matches no section or more than one',
+      when: 'unknown topic or route, or a section that matches no section or more than one',
     },
   ],
   related: ['search', 'component', 'hook', 'template'],

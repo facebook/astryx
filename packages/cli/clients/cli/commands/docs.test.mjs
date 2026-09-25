@@ -156,6 +156,70 @@ describe('progressive reads', () => {
   }, SLOW);
 });
 
+describe('the docs tree, one level at a time', () => {
+  const SLOW = 60_000;
+  /** @param {string} out */
+  const widest = out => Math.max(...out.split('\n').map(line => line.length));
+
+  it('lists the cli namespace after the topics', async () => {
+    const {status, stdout} = await runCli(['docs']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^cli +Commands, programmatic APIs/m);
+    expect(stdout.indexOf('\ncli ')).toBeGreaterThan(stdout.indexOf('\nprinciples '));
+    expect(stdout).not.toMatch(/^cli-integrations /m);
+  }, SLOW);
+
+  it('prints a namespace: each slot, its children, and how to go down and up', async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/api']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^API$/m);
+    expect(stdout).toMatch(/^Reference$/m);
+    expect(stdout).toMatch(/^functions +Every function/m);
+    expect(stdout).toMatch(/^schemas +/m);
+    expect(stdout).toMatch(/^enums +/m);
+    // One level only: no function is listed on the api page.
+    expect(stdout).not.toMatch(/^search +/m);
+    expect(stdout).toMatch(/Open one: .*docs cli\/api\/<name>$/m);
+    expect(stdout).toMatch(/Up: .*docs cli$/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it('prints a typed doc and the way back up', async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/api/functions/search']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^## search\(\)/m);
+    expect(stdout).toContain('Read it with `astryx docs cli/commands/search`.');
+    expect(stdout).toMatch(/Up: .*docs cli\/api\/functions$/m);
+  }, SLOW);
+
+  it('reads the integration guide by its route, and not by its old name', async () => {
+    const guide = await runCli(['docs', 'cli/integrations', '--index']);
+    expect(guide.status).toBe(0);
+    expect(guide.stdout).toMatch(/Read one section: .*docs cli\/integrations <section>/);
+    const old = await runCli(['docs', 'cli-integrations']);
+    expect(old.status).toBe(1);
+    expect(old.stderr).toContain('Unknown topic "cli-integrations"');
+  }, SLOW);
+
+  it('returns docs.node as JSON, and fails a section of a namespace', async () => {
+    const node = JSON.parse((await runCli(['docs', 'cli', '--json'])).stdout);
+    expect(node).toMatchObject({
+      type: 'docs.node',
+      data: {route: 'cli', kind: 'namespace', breadcrumb: []},
+    });
+    expect(node.data.slots.map(slot => slot.name)).toEqual(['guides', 'reference']);
+    const section = await runCli(['docs', 'cli', 'commands', '--json']);
+    expect(section.status).toBe(1);
+    const error = JSON.parse(section.stdout);
+    expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
+    expect(error.suggestions.map(s => s.name)).toEqual([
+      'cli/integrations',
+      'cli/commands',
+      'cli/api',
+    ]);
+  }, SLOW);
+});
+
 describe('text width in every language', () => {
   const SLOW = 60_000;
   /** Widest line outside code blocks, in terminal columns. */

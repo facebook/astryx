@@ -12,6 +12,8 @@
  *   astryx docs <topic>                  Print the whole topic
  *   astryx docs <topic> --index          List the topic's sections
  *   astryx docs <topic> <section>        Print one section
+ *   astryx docs <route>                  Open a node of the docs tree, such as
+ *                                        cli, cli/api, or cli/api/functions/search
  */
 
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
@@ -212,6 +214,42 @@ function emitIndex(index, run) {
 }
 
 /**
+ * One node of the docs tree. A namespace lists each slot's children, one level
+ * down, with the command to open one; a typed doc prints its content. Both end
+ * with the way back up.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNode} node
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {string} run
+ */
+function emitNode(node, detail, run) {
+  const parent = node.breadcrumb.at(-1);
+  const up = parent ? `Up: ${run} docs ${parent.route}` : null;
+  if (node.kind === 'namespace') {
+    emit(
+      section(node.title, wrapText(node.summary)),
+      ...node.slots.flatMap(slot => [
+        section(slot.title),
+        records(slot.children, {
+          fields: ['name', 'summary'],
+          layout: 'inline',
+          overflow: 'truncate',
+        }),
+      ]),
+      text(
+        [`Open one: ${run} docs ${node.route}/<name>`, up]
+          .filter(Boolean)
+          .join('\n'),
+      ),
+    );
+    return;
+  }
+  emit(
+    code(formatSection({title: node.title, content: node.content}, detail)),
+    ...(up ? [text(up)] : []),
+  );
+}
+
+/**
  * What the run answered with. A named topic (or one of its sections) resolves
  * or throws, so it is always a direct match of one doc; the bare form lists
  * every topic there is.
@@ -219,7 +257,8 @@ function emitIndex(index, run) {
  * @param {import('../../../api/docs/docs.type.mjs').DocsListResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsIndexResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsDetailResponse
- *   | import('../../../api/docs/docs.type.mjs').DocsDetailSectionResponse} result
+ *   | import('../../../api/docs/docs.type.mjs').DocsDetailSectionResponse
+ *   | import('../../../api/docs/docs.type.mjs').DocsNodeResponse} result
  * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
  */
 function summarize(result) {
@@ -288,6 +327,7 @@ export function registerDocs(program) {
                 `Usage: ${run} docs <topic>                  read the whole topic`,
                 `       ${run} docs <topic> --index          list its sections`,
                 `       ${run} docs <topic> <section>        read one section`,
+                `       ${run} docs cli/api                  go down the docs tree one level at a time`,
               ].join('\n'),
             ),
           );
@@ -306,6 +346,11 @@ export function registerDocs(program) {
 
         case 'docs.detail.section': {
           emit(code(formatSection(result.data, detail)));
+          break;
+        }
+
+        case 'docs.node': {
+          emitNode(result.data, detail, run);
           break;
         }
       }

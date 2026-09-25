@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'NamespaceDoc',
   namespace: 'authoring',
   description:
-    "Declares named navigation slots and renderer-neutral layout blocks for already-discovered docs. It never scans folders or copies child documents. Not loaded yet: only the docs graph reads namespace docs, and it is not built, so keep them out of an integration's docs directory for now.",
+    "Declares one level of the docs tree: named slots, and adoption rules for already-discovered docs. It never scans folders, lists its children, or copies child documents: a child names its parent with `placement`, or a namespace adopts a discovery group. `astryx docs <route>` lists each slot's children one level down. In this release the docs tree reads only the CLI's own namespace docs, so keep them out of an integration's docs directory for now.",
   appliesTo: '<namespace>.doc.mjs',
   fields: [
     {

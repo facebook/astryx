@@ -57,7 +57,13 @@ export const RESPONSE_TYPES = {
     'component.detail.showcase',
     'component.detail.blocks',
   ],
-  docs: ['docs.list', 'docs.index', 'docs.detail', 'docs.detail.section'],
+  docs: [
+    'docs.list',
+    'docs.index',
+    'docs.detail',
+    'docs.detail.section',
+    'docs.node',
+  ],
   blog: ['blog.list', 'blog.detail'],
   discover: [
     'discover.list',

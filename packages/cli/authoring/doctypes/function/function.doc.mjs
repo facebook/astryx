@@ -57,7 +57,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "The `astryx docs` topic that reads this doc. The CLI's API functions use 'cli/api' (the section `api-<name>` of the `cli` topic). Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads.",
+        "The group that reads this doc. The CLI's API functions use 'cli/api', which the docs tree adopts by kind: each is the leaf `cli/api/functions/<name>`. Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',

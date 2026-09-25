@@ -10,6 +10,8 @@
  *   astryx --json docs <topic>           -> docs.detail
  *   astryx --json docs <topic> --index   -> docs.index
  *   astryx --json docs <topic> <section> -> docs.detail.section
+ *   astryx --json docs <route>           -> docs.node (a namespace or a
+ *                                           typed doc in the docs tree)
  *   (unknown topic/section)              -> CLIError
  */
 
@@ -28,6 +30,8 @@
  *   '@astryxdesign/cli' for a built-in one, else the contributing integration
  * @property {string} [replaces] the topic this one took the place of, when it
  *   was contributed as a replacement
+ * @property {'namespace'} [kind] set on a top-level docs-tree namespace, such as
+ *   `cli`; `astryx docs <topic>` then lists its children. Absent on a topic.
  */
 
 /**
@@ -67,6 +71,53 @@
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
  * @property {import('@astryxdesign/cli/authoring').ReferenceSection} data
+ */
+
+/**
+ * astryx --json docs <route>, for a namespace or a typed doc in the docs tree
+ * @typedef {object} DocsNodeResponse
+ * @property {'docs.node'} type
+ * @property {DocsNode} data
+ */
+
+/**
+ * One node of the docs tree.
+ * @typedef {object} DocsNode
+ * @property {string} id stable identity, `<package>/<kind>/<name>`; unchanged
+ *   when the node moves
+ * @property {string} route pass it to `astryx docs`
+ * @property {string} kind `namespace`, or the typed doc's kind: `command`,
+ *   `function`, `schema`, or `enum`
+ * @property {string} package the package that owns the node
+ * @property {string} title
+ * @property {string} summary
+ * @property {DocsNodeLink[]} breadcrumb the namespaces above it, top first
+ * @property {DocsNodeSlot[]} slots a namespace's slots that hold children, in
+ *   order; empty for a typed doc
+ * @property {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} content
+ *   a typed doc's content; empty for a namespace
+ */
+
+/**
+ * @typedef {object} DocsNodeLink
+ * @property {string} route
+ * @property {string} title
+ */
+
+/**
+ * @typedef {object} DocsNodeSlot
+ * @property {string} name the slot's key in its namespace
+ * @property {string} title
+ * @property {DocsNodeChild[]} children in reading order
+ */
+
+/**
+ * @typedef {object} DocsNodeChild
+ * @property {string} route pass it to `astryx docs` to go one level down
+ * @property {string} name the last segment of its route
+ * @property {string} kind
+ * @property {string} title
+ * @property {string} summary
  */
 
 /**

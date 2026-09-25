@@ -62,7 +62,7 @@ export interface FunctionDoc extends AuthoredDocGraphFields {
   summary?: string;
   /** Longer description. */
   description?: string;
-  /** The `astryx docs` topic that reads this doc. The CLI's API functions use 'cli/api' (the section `api-<name>` of the `cli` topic). Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads. */
+  /** The group that reads this doc. The CLI's API functions use 'cli/api', which the docs tree adopts by kind: each is the leaf `cli/api/functions/<name>`. Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads. */
   namespace?: string;
   /** Alternate slugs that also resolve to this doc. */
   aliases?: string[];

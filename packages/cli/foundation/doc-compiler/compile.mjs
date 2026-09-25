@@ -63,6 +63,7 @@ export const COMPILED_DOC_KINDS = /** @type {const} */ ([
   'command',
   'enum',
   'theme',
+  'namespace',
 ]);
 
 /**
@@ -76,6 +77,7 @@ export const ROOT_KINDS = Object.freeze({
   templates: ['page', 'block'],
   themes: ['theme'],
   'self-docs': ['command', 'function', 'schema', 'enum'],
+  tree: ['namespace', 'generic'],
 });
 
 /**
@@ -96,6 +98,8 @@ export const ROOT_KINDS = Object.freeze({
  * @property {string | null} lang the overlay language, or null for authored text
  * @property {AuthoredFile} base
  * @property {Array<AuthoredFile & {provider: string}>} extensions in merge order
+ * @property {boolean} [tree] a guide the docs tree places: its `placement` is
+ *   read by the tree, so the topic reader accepts it
  */
 
 /**
@@ -127,7 +131,7 @@ export const ROOT_KINDS = Object.freeze({
  * @returns {CompiledReferenceNode}
  */
 export function lowerReferenceTopic(input) {
-  let doc = readAuthoredFile(input.base);
+  let doc = readAuthoredFile(input.base, {placement: input.tree === true});
   for (const extension of input.extensions) {
     doc = mergeTopic(doc, readAuthoredFile(extension));
     // Merging matches on keys, so this holds unless merge itself regresses.
@@ -254,13 +258,13 @@ function asJson(value, topic) {
  * @param {AuthoredFile} file
  * @returns {any}
  */
-function readAuthoredFile(file) {
+function readAuthoredFile(file, {placement = false} = {}) {
   if ('error' in file) throw file.error;
   const parsed = file.doc;
   if (!('sections' in parsed)) {
     throw new Error(`${file.file} is not a reference document.`);
   }
-  const problems = problemsInTopic(parsed);
+  const problems = problemsInTopic(parsed, {placement});
   if (problems.length > 0) {
     throw new Error(`${file.file} is invalid: ${problems.join('; ')}`);
   }

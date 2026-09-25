@@ -198,7 +198,7 @@ describe('discoverIntegrationDocs', () => {
     expect(records).toEqual([]);
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toContain(
-      '"guides" is a namespace doc. Only the docs graph reads namespace docs',
+      '"guides" is a namespace doc. Only the docs tree reads namespace docs',
     );
     expect(errors[0].message).not.toContain('sections:');
   });
