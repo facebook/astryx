@@ -60,7 +60,7 @@ export const States: Story = {
           <ChatMessageMetadata timestamp={false} footer="Model info" />
         </ChatMessage>
       </section>
-      <section data-metadata-case="empty-row">
+      <section data-metadata-case="empty-row" style={{minHeight: 24}}>
         <ChatMessage sender="assistant">
           <ChatMessageMetadata timestamp="" footer={false} />
         </ChatMessage>

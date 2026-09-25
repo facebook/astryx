@@ -8,8 +8,8 @@
  * @output Exports ChatMessageMetadata component
  * @position Shared metadata row used by composing inside ChatMessage
  *
- * Renders only visible timestamp, footer, and status content with separators
- * between present slots. Direction reverses for user sender.
+ * Renders timestamp, footer, and status values with separators determined by
+ * scalar presence. Direction reverses for user sender.
  */
 
 import React, {type ReactNode} from 'react';
@@ -97,7 +97,8 @@ export interface ChatMessageMetadataProps extends BaseProps<HTMLDivElement> {
  * Composable metadata row for chat messages.
  *
  * Renders: timestamp · footer · status
- * Renders nothing when no slot produces content and no status is set.
+ * Renders nothing when neither slot passes the scalar-presence check and no
+ * status is set. Composite React nodes remain caller-owned.
  *
  * @example
  * ```

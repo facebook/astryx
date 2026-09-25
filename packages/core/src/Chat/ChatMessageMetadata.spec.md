@@ -114,14 +114,14 @@ than this record.
 The following candidate invariants name their evidence. They are observations
 for review, not current product policy created by this draft.
 
-| ID  | Candidate invariant                                                                                                                                                         | Basis                                                                                               | Draft review state |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
-| FR1 | The root appears only when at least one scalar slot produces content or `status` is present.                                                                                | Public ReactNode seam, shared `isRenderable` scalar utility, focused red/green and browser evidence | Verify correction  |
-| FR2 | Visible items render in timestamp, footer, status order with one dot only between adjacent present items; numeric `0` is visible in either slot.                            | Shipped ordering, shared scalar utility, focused tests, light/dark browser cases                    | Verify correction  |
-| FR3 | A `user` message reverses row direction; `assistant`, `system`, and absent context use the forward path.                                                                    | Source, Chat context, sender and RTL browser fixtures                                               | Verify observation |
-| FR4 | Status selects one of five registry icons and localized labels; failure uses the error text token, and sending has a CSS pulse suppressed under reduced motion.             | Source, locale catalog, owned browser status matrix                                                 | Verify observation |
-| FR5 | The root merges the target, default StyleX output, and consumer `xstyle`, `className`, and `style`; accepted neutral DOM/ARIA inputs and `ref` reach that root.             | Source, public API authority, existing passthrough test                                             | Verify observation |
-| FR6 | A status item has a translated title and author-supplied `aria-label`, an icon and visible localized text. The row declares no live-region role or imperative announcement. | Source, DOM tests and axe fixtures; no real-AT timing claim                                         | Verify observation |
+| ID  | Candidate invariant                                                                                                                                                                          | Basis                                                                                               | Draft review state |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
+| FR1 | The root appears when at least one slot passes the shared scalar-presence predicate or `status` is present. Non-scalar values are treated as present without inspecting their inner content. | Public ReactNode seam, shared `isRenderable` scalar utility, focused red/green and browser evidence | Verify correction  |
+| FR2 | Accepted slot values render in timestamp, footer, status order with dots between values considered present; numeric `0` is visible in either slot, and non-scalar nodes remain opaque.       | Shipped ordering, shared scalar utility, focused tests, light/dark browser cases                    | Verify correction  |
+| FR3 | A `user` message reverses row direction; `assistant`, `system`, and absent context use the forward path.                                                                                     | Source, Chat context, sender and RTL browser fixtures                                               | Verify observation |
+| FR4 | Status selects one of five registry icons and localized labels; failure uses the error text token, and sending has a CSS pulse suppressed under reduced motion.                              | Source, locale catalog, owned browser status matrix                                                 | Verify observation |
+| FR5 | The root merges the target, default StyleX output, and consumer `xstyle`, `className`, and `style`; accepted neutral DOM/ARIA inputs and `ref` reach that root.                              | Source, public API authority, existing passthrough test                                             | Verify observation |
+| FR6 | A status item has a translated title and author-supplied `aria-label`, an icon and visible localized text. The row declares no live-region role or imperative announcement.                  | Source, DOM tests and axe fixtures; no real-AT timing claim                                         | Verify observation |
 
 ### Allowed variation
 
@@ -133,21 +133,22 @@ for review, not current product policy created by this draft.
 
 ### Representative states
 
-| State                       | Observed result                                  | Allowed variation                      |
-| --------------------------- | ------------------------------------------------ | -------------------------------------- |
-| Standalone timestamp        | One root and one visible item                    | Caller content                         |
-| User or assistant message   | Sender-relative row order                        | Text direction inherited from the page |
-| Timestamp + footer + status | Items separated only where content renders       | Caller footer content                  |
-| Each delivery status        | Distinct localized caption and mapped icon       | Active translation and theme tokens    |
-| Non-rendering scalar slots  | No stranded dot; no row when all items are empty | Composite nodes remain opaque          |
-| Numeric `0`                 | Visible content, not an empty marker             | Either slot                            |
-| Long footer at narrow width | Content reflows within its container             | Caller text may wrap                   |
+| State                       | Observed result                                                             | Allowed variation                      |
+| --------------------------- | --------------------------------------------------------------------------- | -------------------------------------- |
+| Standalone timestamp        | One root and one visible item                                               | Caller content                         |
+| User or assistant message   | Sender-relative row order                                                   | Text direction inherited from the page |
+| Timestamp + footer + status | Items separated according to scalar presence; composite nodes remain opaque | Caller footer content                  |
+| Each delivery status        | Distinct localized caption and mapped icon                                  | Active translation and theme tokens    |
+| Non-rendering scalar slots  | No stranded dot; no row when all items are empty                            | Composite nodes remain opaque          |
+| Numeric `0`                 | Visible content, not an empty marker                                        | Either slot                            |
+| Long footer at narrow width | Content reflows within its container                                        | Caller text may wrap                   |
 
 ### Transformation and precedence order
 
-- **ORD1 - Presence before separators.** Determine which scalar slots will
-  render, then place punctuation between present items only. The status check
-  remains independent of the slot checks.
+- **ORD1 - Presence before separators.** Decide scalar presence with the shared
+  predicate while treating non-scalar caller nodes as opaque, then place
+  punctuation between values considered present. The status check remains
+  independent of the slot checks.
 - **ORD2 - Composition.** Resolve sender context, select flex order, and compose
   component StyleX and theme target with consumer styling inputs on one root.
 

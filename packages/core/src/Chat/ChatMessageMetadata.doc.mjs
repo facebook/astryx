@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Message Metadata',
   description:
-    'Composable metadata row for chat messages. Renders timestamp, footer content, and delivery status in a single row. Direction reverses for user sender. Renders nothing if all props are empty.',
+    'Composable metadata row for chat messages. Renders timestamp, footer content, and delivery status in a single row. Direction reverses for user sender. Omits the row when both slots are omitted or non-rendering scalars and status is omitted.',
   props: [
     {
       name: 'timestamp',
@@ -45,7 +45,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Place ChatMessageMetadata below a message or in the last ChatMessageBubble metadata slot to show a timestamp, footer content, and optional delivery status. It omits separators for slots that render nothing; numeric zero remains visible.',
+      'Place ChatMessageMetadata below a message or in the last ChatMessageBubble metadata slot to show a timestamp, footer content, and optional delivery status. Non-rendering scalar slots (booleans and empty strings) create no separator; numeric zero remains visible. Composite React content remains caller-owned.',
     bestPractices: [
       {
         guidance: true,
@@ -55,7 +55,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Pass timestamp and footer content independently; a separator appears only between visible items.',
+          'Pass timestamp and footer content independently; separators are omitted for non-rendering scalar slots. Composite React nodes are used as supplied.',
       },
       {
         guidance: false,
