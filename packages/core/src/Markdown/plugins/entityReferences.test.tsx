@@ -2,14 +2,14 @@
 
 /**
  * @file entityReferences.test.tsx
- * @input Configured and unknown `@{id}` references across Markdown contexts
- * @output Transform, rendering, accessibility, SSR, and streaming evidence
+ * @input Ordered entity matchers across multiple source grammars and Markdown contexts
+ * @output Ordering, transform, rendering, validation, SSR, and streaming evidence
  * @position Acceptance tests for configurable first-party entity references
  */
 
 import {render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
-import {describe, expect, expectTypeOf, it} from 'vitest';
+import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {Markdown} from '../Markdown';
 import {
   createIncrementalState,
@@ -18,12 +18,33 @@ import {
   parseMarkdownIncremental,
 } from '../parser';
 import type {MarkdownPluginEntry} from './protocol';
-import {createMarkdownEntityReferencesPlugin} from './entityReferences';
+import {
+  markdownEntityReferencesPlugin,
+  type MarkdownEntityReference,
+  type MarkdownEntityReferenceMatcher,
+} from './entityReferences';
 
-const plugin = createMarkdownEntityReferencesPlugin({
-  references: [
-    {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'},
-    {id: 'compiler', label: 'Compiler'},
+const catalog = new Map<string, MarkdownEntityReference>([
+  ['ada', {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'}],
+  ['compiler', {id: 'compiler', label: 'Compiler'}],
+]);
+
+const plugin = markdownEntityReferencesPlugin({
+  matchers: [
+    {
+      pattern: /@\{([^{}\r\n]+)\}/g,
+      requiredSubstrings: ['@{'],
+      resolve: match => catalog.get(match[1]) ?? null,
+    },
+    {
+      pattern: /\bD(\d+)\b/g,
+      requiredSubstrings: ['D'],
+      resolve: match => ({
+        id: `D${match[1]}`,
+        label: `Diff D${match[1]}`,
+        href: `/diff/${match[1]}`,
+      }),
+    },
   ],
   render: reference =>
     reference.href == null ? (
@@ -37,9 +58,9 @@ const plugin = createMarkdownEntityReferencesPlugin({
     ),
 });
 
-describe('createMarkdownEntityReferencesPlugin', () => {
-  it('replaces configured references and leaves unknown ones literal', () => {
-    const root = parseMarkdownAst('Ask @{ada} about @{unknown}.', {
+describe('markdownEntityReferencesPlugin', () => {
+  it('resolves multiple source grammars and leaves declined matches literal', () => {
+    const root = parseMarkdownAst('Ask @{ada} about @{unknown} and D123.', {
       plugins: [plugin],
     });
 
@@ -53,19 +74,66 @@ describe('createMarkdownEntityReferencesPlugin', () => {
           name: 'entity-reference',
           data: {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'},
         },
-        {type: 'text', value: ' about @{unknown}.'},
+        {type: 'text', value: ' about @{unknown} and '},
+        {
+          type: 'extension',
+          plugin: 'entity-references',
+          name: 'entity-reference',
+          data: {id: 'D123', label: 'Diff D123', href: '/diff/123'},
+        },
+        {type: 'text', value: '.'},
       ],
     });
   });
 
-  it('renders linked and unlinked entities with their configured names', () => {
+  it('runs matchers in order and hides claimed spans from later matchers', () => {
+    const calls: string[] = [];
+    const ordered = markdownEntityReferencesPlugin({
+      matchers: [
+        {
+          pattern: /\bD(\d+)\b/g,
+          resolve: match => {
+            calls.push(`first:${match[0]}`);
+            return match[1] === '2'
+              ? null
+              : {id: match[0], label: `First ${match[0]}`};
+          },
+        },
+        {
+          pattern: /\bD(\d+)\b/g,
+          resolve: match => {
+            calls.push(`second:${match[0]}`);
+            return {id: match[0], label: `Second ${match[0]}`};
+          },
+        },
+      ],
+    });
+
+    const root = parseMarkdownAst('D1 and D2', {plugins: [ordered]});
+    expect(root.children[0]).toMatchObject({
+      children: [
+        {type: 'extension', data: {id: 'D1', label: 'First D1'}},
+        {type: 'text', value: ' and '},
+        {type: 'extension', data: {id: 'D2', label: 'Second D2'}},
+      ],
+    });
+    expect(calls).toEqual(['first:D1', 'first:D2', 'second:D2']);
+  });
+
+  it('renders linked and unlinked entities with their resolved names', () => {
     render(
-      <Markdown plugins={[plugin]}>{'Meet @{ada} and @{compiler}.'}</Markdown>,
+      <Markdown plugins={[plugin]}>
+        {'Meet @{ada}, @{compiler}, and D123.'}
+      </Markdown>,
     );
 
     expect(screen.getByRole('link', {name: 'Ada Lovelace'})).toHaveAttribute(
       'href',
       '/people/ada',
+    );
+    expect(screen.getByRole('link', {name: 'Diff D123'})).toHaveAttribute(
+      'href',
+      '/diff/123',
     );
     expect(screen.getByText('Compiler')).toHaveAttribute(
       'data-markdown-entity-reference',
@@ -75,14 +143,23 @@ describe('createMarkdownEntityReferencesPlugin', () => {
       renderToString(<Markdown plugins={[plugin]}>{'@{ada}'}</Markdown>),
     ).toContain('Ada Lovelace');
     expectTypeOf(plugin).toMatchTypeOf<MarkdownPluginEntry>();
+    expectTypeOf<MarkdownEntityReferenceMatcher>().toMatchTypeOf<{
+      pattern: RegExp;
+      resolve: (match: RegExpExecArray) => MarkdownEntityReference | null;
+    }>();
   });
 
-  it('uses the label only when no renderer is supplied', () => {
-    const defaultPlugin = createMarkdownEntityReferencesPlugin({
-      references: [{id: 'compiler', label: 'Compiler'}],
+  it('uses the label only when no renderer is supplied and honors null', () => {
+    const matcher: MarkdownEntityReferenceMatcher = {
+      pattern: /@\{([^{}\r\n]+)\}/g,
+      resolve: match =>
+        match[1] === 'compiler' ? {id: 'compiler', label: 'Compiler'} : null,
+    };
+    const defaultPlugin = markdownEntityReferencesPlugin({
+      matchers: [matcher],
     });
-    const hiddenPlugin = createMarkdownEntityReferencesPlugin({
-      references: [{id: 'compiler', label: 'Compiler'}],
+    const hiddenPlugin = markdownEntityReferencesPlugin({
+      matchers: [matcher],
       render: () => null,
     });
 
@@ -98,8 +175,8 @@ describe('createMarkdownEntityReferencesPlugin', () => {
     ).not.toContain('Compiler');
   });
 
-  it('preserves code, links, and unconfigured text', () => {
-    const source = '`@{ada}` [@{ada}](/docs) @{missing}';
+  it('preserves protected contexts and text declined by every matcher', () => {
+    const source = '`@{ada} D123` [@{ada} D123](/docs) @{missing}';
     expect(parseMarkdownAst(source, {plugins: [plugin]})).toEqual(
       parseMarkdownAst(source),
     );
@@ -128,24 +205,72 @@ describe('createMarkdownEntityReferencesPlugin', () => {
     ).toEqual(parseMarkdown(source, {plugins: [plugin]}));
   });
 
-  it('rejects invalid and duplicate configuration', () => {
+  it('clones patterns and rejects invalid matcher configuration or results', async () => {
+    const original = /@\{([^{}\r\n]+)\}/g;
+    original.lastIndex = 7;
+    const cloned = markdownEntityReferencesPlugin({
+      matchers: [
+        {
+          pattern: original,
+          resolve: match => ({id: match[1], label: match[1]}),
+        },
+      ],
+    });
+    parseMarkdownAst('@{ada}', {plugins: [cloned]});
+    expect(original.lastIndex).toBe(7);
+
+    expect(() => markdownEntityReferencesPlugin({matchers: []})).toThrow(
+      /at least one matcher/,
+    );
     expect(() =>
-      createMarkdownEntityReferencesPlugin({
-        references: [{id: '', label: 'Empty'}],
+      markdownEntityReferencesPlugin({
+        matchers: [{pattern: /D(\d+)/, resolve: () => null}],
       }),
-    ).toThrow(/non-empty single-line id and label/);
-    expect(() =>
-      createMarkdownEntityReferencesPlugin({
-        references: [{id: 'unsafe', label: 'Unsafe', href: 'javascript:bad()'}],
-      }),
-    ).toThrow(/non-empty single-line id and label/);
-    expect(() =>
-      createMarkdownEntityReferencesPlugin({
-        references: [
-          {id: 'same', label: 'One'},
-          {id: 'same', label: 'Two'},
+    ).toThrow(/global flag/);
+
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const baseline = parseMarkdownAst('D1');
+    const invalidPlugins = [
+      markdownEntityReferencesPlugin({
+        matchers: [
+          {pattern: /(?=D)/g, resolve: () => ({id: 'D', label: 'Diff'})},
         ],
       }),
-    ).toThrow(/Duplicate Markdown entity reference/);
+      markdownEntityReferencesPlugin({
+        matchers: [{pattern: /D1/g, resolve: () => ({id: '', label: 'Diff'})}],
+      }),
+      markdownEntityReferencesPlugin({
+        matchers: [
+          {
+            pattern: /D1/g,
+            resolve: () => ({
+              id: 'D1',
+              label: 'Diff',
+              href: 'javascript:bad()',
+            }),
+          },
+        ],
+      }),
+      markdownEntityReferencesPlugin({
+        matchers: [
+          {
+            pattern: /D1/g,
+            resolve: (async () => {
+              throw new Error('async resolution must be consumed');
+            }) as unknown as MarkdownEntityReferenceMatcher['resolve'],
+          },
+        ],
+      }),
+    ];
+
+    for (const invalidPlugin of invalidPlugins) {
+      expect(parseMarkdownAst('D1', {plugins: [invalidPlugin]})).toEqual(
+        baseline,
+      );
+    }
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(warning).toHaveBeenCalled();
+    expect(String(warning.mock.calls[0]?.[1])).toMatch(/must consume source/);
+    warning.mockRestore();
   });
 });

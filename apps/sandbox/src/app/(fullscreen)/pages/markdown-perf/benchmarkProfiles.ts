@@ -8,7 +8,7 @@
  */
 
 import {
-  createMarkdownEntityReferencesPlugin,
+  markdownEntityReferencesPlugin,
   markdownCalloutsPlugin,
   markdownSoftBreaksPlugin,
 } from '@astryxdesign/core/Markdown/plugins';
@@ -73,12 +73,18 @@ function addCalloutClaims(
   );
 }
 
-const entityReferencesPlugin = createMarkdownEntityReferencesPlugin({
-  references: Array.from({length: 500}, (_, index) => ({
-    id: `section-${index + 1}`,
-    label: `Section ${index + 1}`,
-    href: `/docs/sections/${index + 1}`,
-  })),
+const entityReferencesPlugin = markdownEntityReferencesPlugin({
+  matchers: [
+    {
+      pattern: /@\{section-(\d+)\}/g,
+      requiredSubstrings: ['@{section-'],
+      resolve: match => ({
+        id: `section-${match[1]}`,
+        label: `Section ${match[1]}`,
+        href: `/docs/sections/${match[1]}`,
+      }),
+    },
+  ],
 });
 
 function addEntityReferenceClaims(

@@ -265,12 +265,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
+          'Use markdownEntityReferencesPlugin with ordered global matchers to recognize product-owned reference grammars in eligible prose. Each synchronous resolver returns a label and optional safe destination or null; earlier claimed spans are opaque to later matchers, while declined and protected text remains literal.',
       },
       {
         guidance: true,
         description:
-          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+          'Use createMarkdownTextTransform for one prose matcher and composeMarkdownTransforms for an ordered pipeline; both preserve code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
         guidance: true,
@@ -372,13 +372,19 @@ import {markdownCalloutsPlugin} from '@astryxdesign/core/Markdown/plugins';
       label: 'Entity references',
       code: `
 import {Markdown} from '@astryxdesign/core/Markdown';
-import {createMarkdownEntityReferencesPlugin} from '@astryxdesign/core/Markdown/plugins';
+import {markdownEntityReferencesPlugin} from '@astryxdesign/core/Markdown/plugins';
 
-const entities = createMarkdownEntityReferencesPlugin({
-  references: [{id: 'guide', label: 'the guide'}],
+const entityReferencesPlugin = markdownEntityReferencesPlugin({
+  matchers: [{
+    pattern: /@\\{([^{}\\r\\n]+)\\}/g,
+    requiredSubstrings: ['@{'],
+    resolve: match => match[1] === 'guide'
+      ? {id: 'guide', label: 'the guide'}
+      : null,
+  }],
 });
 
-<Markdown plugins={[entities]}>{'Read @{guide}.'}</Markdown>;
+<Markdown plugins={[entityReferencesPlugin]}>{'Read @{guide}.'}</Markdown>;
 `,
     },
     {
@@ -775,12 +781,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
+          'Use markdownEntityReferencesPlugin with ordered global matchers to recognize product-owned reference grammars in eligible prose. Each synchronous resolver returns a label and optional safe destination or null; earlier claimed spans are opaque to later matchers, while declined and protected text remains literal.',
       },
       {
         guidance: true,
         description:
-          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+          'Use createMarkdownTextTransform for one prose matcher and composeMarkdownTransforms for an ordered pipeline; both preserve code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
         guidance: true,
@@ -872,12 +878,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use createMarkdownEntityReferencesPlugin with a finite caller-owned catalog to resolve known @{id} prose to accessible labels. An optional pure renderer may use the configured data for links or product presentation; unknown and protected references remain literal.',
+          'Use markdownEntityReferencesPlugin with ordered global matchers to recognize product-owned reference grammars in eligible prose. Each synchronous resolver returns a label and optional safe destination or null; earlier claimed spans are opaque to later matchers, while declined and protected text remains literal.',
       },
       {
         guidance: true,
         description:
-          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+          'Use createMarkdownTextTransform for one prose matcher and composeMarkdownTransforms for an ordered pipeline; both preserve code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
         guidance: true,

@@ -5,7 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {
-  createMarkdownEntityReferencesPlugin,
+  markdownEntityReferencesPlugin,
   markdownCalloutsPlugin,
   markdownSoftBreaksPlugin,
 } from '@astryxdesign/core/Markdown/plugins';
@@ -625,10 +625,27 @@ export const Callouts: Story = {
   },
 };
 
-const entityReferencesPlugin = createMarkdownEntityReferencesPlugin({
-  references: [
-    {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'},
-    {id: 'design-system', label: 'the design system'},
+const storyEntities = new Map([
+  ['ada', {id: 'ada', label: 'Ada Lovelace', href: '/people/ada'}],
+  ['design-system', {id: 'design-system', label: 'the design system'}],
+]);
+
+const entityReferencesPlugin = markdownEntityReferencesPlugin({
+  matchers: [
+    {
+      pattern: /@\{([^{}\r\n]+)\}/g,
+      requiredSubstrings: ['@{'],
+      resolve: match => storyEntities.get(match[1]) ?? null,
+    },
+    {
+      pattern: /\bD(\d+)\b/g,
+      requiredSubstrings: ['D'],
+      resolve: match => ({
+        id: `D${match[1]}`,
+        label: `Diff D${match[1]}`,
+        href: `/diff/${match[1]}`,
+      }),
+    },
   ],
   render: reference =>
     reference.href == null ? (
@@ -655,7 +672,7 @@ export const EntityReferences: Story = {
     docs: {
       description: {
         story:
-          'A caller-owned catalog turns known @{id} references into accessible links or emphasized labels. Unknown references and protected Markdown stay literal.',
+          'Ordered caller-owned matchers recognize both @{id} and D-number references, then resolve them to accessible links or emphasized labels. Declined matches and protected Markdown stay literal.',
       },
     },
   },
@@ -663,7 +680,7 @@ export const EntityReferences: Story = {
     <div style={{maxWidth: 680}}>
       <Markdown plugins={[entityReferencesPlugin]}>
         {
-          '# Owner: @{ada}\n\nAsk @{ada} about @{design-system}. Unknown @{person} stays literal, as do `@{ada}` and [@{ada}](/docs).'
+          '# Owner: @{ada}\n\nAsk @{ada} about @{design-system} and D123. Unknown @{person} stays literal, as do `@{ada} D456` and [@{ada} D789](/docs).'
         }
       </Markdown>
     </div>
@@ -677,9 +694,12 @@ export const EntityReferences: Story = {
     await expect(
       within(canvasElement).getByText('the design system'),
     ).toHaveAttribute('data-markdown-entity-reference', 'design-system');
+    await expect(
+      within(canvasElement).getByRole('link', {name: 'Diff D123'}),
+    ).toHaveAttribute('href', '/diff/123');
     await expect(canvasElement.textContent).toContain('@{person}');
     await expect(canvasElement.querySelector('code')?.textContent).toBe(
-      '@{ada}',
+      '@{ada} D456',
     );
   },
 };

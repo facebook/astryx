@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-22
+approved_at: 2026-09-24
 owners: [cixzhang]
 review_triggers: [public-api, behavior, accessibility, navigation]
 verified_by:
@@ -23,21 +23,21 @@ references: [spec:AST-036/DEC-1, spec:AST-036/DEC-11]
 
 ## Contract at a glance
 
-| Area            | Contract                                                                                                                                      |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract | `createMarkdownEntityReferencesPlugin({references, render?})` creates one typed plugin for a caller-owned entity catalog.                     |
-| Behavior        | Eligible `@{id}` prose becomes the configured label and optional caller-rendered destination; unknown ids remain literal.                     |
-| End-user impact | Readers get meaningful entity names and, when configured by the application, destinations without losing unresolved source text.              |
-| Builder impact  | Builders provide unique ids, non-empty labels, optional data, and an optional pure renderer; no custom parser or AST transform is required.   |
-| Compatibility   | Additive and opt-in; omitted and empty plugin lists preserve released output.                                                                 |
-| Review checks   | Reject matching in code, links, images, citations, math, or extension nodes; unsafe mutation; duplicate/invalid ids; or hidden fallback text. |
-| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR24, FR36, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md).     |
+| Area            | Contract                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract | `markdownEntityReferencesPlugin({matchers, render?})` creates one typed plugin from an ordered, non-empty matcher list.                                            |
+| Behavior        | Each global regex recognizes eligible prose; its synchronous resolver returns a validated reference or `null`. Earlier claimed spans are opaque to later matchers. |
+| End-user impact | Readers get meaningful entity names and optional caller-rendered destinations without losing declined or protected source text.                                    |
+| Builder impact  | Builders own source grammar and semantic resolution while Core owns traversal, ordering, validation, rendering fallback, and protected contexts.                   |
+| Compatibility   | Additive and opt-in; omitted and empty plugin lists preserve released output.                                                                                      |
+| Review checks   | Reject non-global or empty-match patterns, matching in protected contexts, unsafe resolved data, reordering, asynchronous resolution, or hidden fallback text.     |
+| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR24, FR36, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md).                          |
 
 ## Intent
 
-Builders should be able to resolve stable entity identifiers to readable labels
-and optional destinations without preprocessing source or defining a custom AST
-transform and renderer for each product.
+Builders should be able to recognize several product-owned entity grammars and
+resolve each match to readable data without preprocessing source or defining a
+custom AST transform and renderer for every product.
 
 ## Compatibility and migration
 
@@ -49,44 +49,52 @@ transform and renderer for each product.
 
 **Owns**
 
-- The `@{id}` reference grammar, catalog validation, typed node, visible label, optional renderer data, and deterministic text projection.
+- Ordered matcher execution, regex and result validation, the typed entity node,
+  visible label, optional renderer data, and deterministic text projection.
 - Complete, streaming, SSR, Storybook, and paired performance evidence.
 
 **Does not own / non-goals**
 
-- Fetching, asynchronous resolution, hover cards, avatars, product-specific actions, or arbitrary syntax.
+- Any permanent entity source grammar, finite entity catalog, fetching,
+  asynchronous resolution, hover cards, avatars, or product-specific actions.
 - Matching inside links, code, images, citations, math, or extension nodes.
 
 ## Public API and concepts
 
-| Concept                                | Closed values or states        | Meaning                                                                | Default | Owner                              | Stability |
-| -------------------------------------- | ------------------------------ | ---------------------------------------------------------------------- | ------- | ---------------------------------- | --------- |
-| `MarkdownEntityReference`              | `id`, `label`, optional `href` | One caller-owned entity mapping.                                       | none    | `module:Markdown/entityReferences` | stable    |
-| `createMarkdownEntityReferencesPlugin` | `{references, render?}`        | Creates an immutable text-transform plugin with a label-only fallback. | none    | `module:Markdown/entityReferences` | stable    |
-| Unknown id                             | literal `@{id}`                | Preserves unresolved authored text.                                    | literal | `module:Markdown/entityReferences` | stable    |
+| Concept                          | Closed values or states                     | Meaning                                                                         | Default | Owner                              | Stability |
+| -------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------- | ------- | ---------------------------------- | --------- |
+| `MarkdownEntityReference`        | `id`, `label`, optional `href`              | Validated immutable data attached to one claimed source span.                   | none    | `module:Markdown/entityReferences` | stable    |
+| `MarkdownEntityReferenceMatcher` | `pattern`, optional hints, `resolve(match)` | Recognizes one grammar and synchronously resolves or declines each regex match. | none    | `module:Markdown/entityReferences` | stable    |
+| `markdownEntityReferencesPlugin` | `{matchers, render?}`                       | Creates one immutable ordered text-transform plugin.                            | none    | `module:Markdown/entityReferences` | stable    |
+| `composeMarkdownTransforms`      | ordered transform array                     | Preserves transform order, validation trust, and source-claim fast paths.       | none    | `spec:AST-036`                     | stable    |
+| Declined match                   | `resolve(match) === null`                   | Remains eligible for later matchers, then literal if none claim it.             | literal | `module:Markdown/entityReferences` | stable    |
 
 ## Behavioral contract
 
-| ID  | Invariant                                                                                                                                    | Basis                     |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| FR1 | Only exact configured `@{id}` references in eligible prose become entity nodes.                                                              | `spec:AST-036` FR1, FR11  |
-| FR2 | Unknown, malformed, or protected-context references remain literal.                                                                          | `spec:AST-036` FR7, FR12  |
-| FR3 | The default renderer emits the configured label; an optional pure renderer may use the entity data to create a link or product presentation. | `spec:AST-036` FR14–FR15  |
-| FR4 | Labels provide the visible, accessible, and text-projection value.                                                                           | `spec:AST-036` FR14, FR16 |
-| FR5 | Matching is synchronous, deterministic, and converges across streaming prefixes.                                                             | `spec:AST-036` FR36       |
-| FR6 | The factory composes only public `createMarkdownPlugin` and `createMarkdownTextTransform` APIs.                                              | `spec:AST-036` FR40       |
+| ID  | Invariant                                                                                                                                          | Basis                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| FR1 | Configuration contains at least one matcher; every matcher pattern is global and cloned before use.                                                | `spec:AST-036` FR11       |
+| FR2 | Matchers run in declaration order. A resolved span becomes an extension node and is opaque to later matchers; a `null` result remains eligible.    | `spec:AST-036` FR9, FR11  |
+| FR3 | A matcher must consume source text. Optional `requiredSubstrings` are conservative skip hints and never change intended grammar.                   | `spec:AST-036` FR11       |
+| FR4 | Resolution is synchronous. Every result has a non-empty id and label plus an optional safe href, and is copied and frozen before entering the AST. | `spec:AST-036` FR15, FR17 |
+| FR5 | Code, links, images, citations, math, and extension nodes remain opaque; text declined by every matcher remains literal.                           | `spec:AST-036` FR7, FR12  |
+| FR6 | The default renderer emits the resolved label; an optional pure renderer may use the validated entity data for product presentation.               | `spec:AST-036` FR14–FR16  |
+| FR7 | Matching is deterministic and converges across streaming prefixes.                                                                                 | `spec:AST-036` FR36       |
+| FR8 | The factory composes only public `createMarkdownPlugin`, `createMarkdownTextTransform`, and `composeMarkdownTransforms` APIs.                      | `spec:AST-036` FR40       |
 
 ## Accessibility contract
 
-- Linked references are ordinary links with the configured label as their accessible name.
-- Unlinked references remain text and add no focus target.
-- Unknown references remain visible rather than disappearing.
+- Linked references are ordinary links with the resolved label as their accessible name.
+- Unlinked references remain text and add no focus target by default.
+- Declined references remain visible rather than disappearing.
+- Applications that render interactive presentations own their accessible names,
+  focus behavior, and activation semantics; the label remains the text fallback.
 
 ## Design relationships
 
 Entity references inherit surrounding Markdown typography by default. Applications
-that provide a renderer own its presentation and navigation while the configured
-label remains the deterministic text projection.
+own their grammars, resolution data, presentation, and navigation; Core owns safe
+ordered recognition and the deterministic label projection.
 
 ## Parent and system relationships
 
@@ -96,29 +104,60 @@ label remains the deterministic text projection.
 
 ## Content boundary
 
-The factory copies a finite caller-provided catalog. Matching is limited to one
-line between `@{` and `}` and performs no I/O or asynchronous lookup.
+Matchers are caller-owned global JavaScript regular expressions and must avoid
+pathological backtracking. Resolution performs no I/O and returns complete entity
+data synchronously. Core clones patterns and each accepted result before use.
+Rejected promise-like results are observed before the plugin falls back, so an
+invalid async resolver cannot create an unhandled rejection during SSR.
 
 ## Verification map
 
-| Contract    | Verification                                           | Representative states                             | Failure expectation                                                       |
-| ----------- | ------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------- |
-| FR1–FR4     | `entityReferences.test.tsx` AST, DOM, and SSR fixtures | linked, unlinked, unknown, code, link             | Wrong claim, missing label, unsafe destination, or hidden fallback fails. |
-| FR5         | prefix-by-prefix parser fixture                        | opening marker, partial id, closing brace, suffix | Oscillation or final mismatch fails.                                      |
-| Performance | paired entity-reference Markdown Performance profile   | none, sparse, dense; complete and streaming       | Different paired source or missing baseline delta fails.                  |
+| Contract    | Verification                                            | Representative states                                             | Failure expectation                                                       |
+| ----------- | ------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| FR1–FR4     | `entityReferences.test.tsx` AST and validation fixtures | multiple grammars, ordering, decline, cloning, invalid/async data | Wrong precedence, reused regex state, empty claims, or unsafe data fails. |
+| FR5–FR6     | DOM and SSR fixtures                                    | links, labels, null renderer, code, authored links                | Protected claims, missing labels, or changed null semantics fail.         |
+| FR7         | prefix-by-prefix parser fixture                         | opening marker, partial id, closing delimiter, suffix             | Oscillation or final mismatch fails.                                      |
+| Performance | paired entity-reference Markdown Performance profile    | none, sparse, dense; complete and streaming                       | Different paired source or missing baseline delta fails.                  |
 
 ## Decision log
 
-### DEC-1 — Configure a finite catalog, not a runtime resolver
+### DEC-1 — Keep resolution synchronous and application-owned
 
 **Reference:** `module:Markdown/entityReferences/DEC-1`
 **Decider:** `cixzhang`, `2026-09-22`
 
-A finite catalog keeps parsing synchronous, deterministic, serializable, and
-easy to benchmark. Products that need asynchronous lookup can build the catalog
-before rendering.
+Synchronous resolution keeps parsing deterministic, server-safe, and easy to
+benchmark. Applications may close over a finite catalog or derive data directly
+from regex captures; asynchronous lookup happens outside Markdown rendering.
 
-Rejected: asynchronous resolution, network access, and global entity registries.
+Rejected: asynchronous resolution, network access, and a global entity registry.
+
+### DEC-2 — Configure ordered matchers instead of one permanent grammar
+
+**Reference:** `module:Markdown/entityReferences/DEC-2`
+**Decider:** `cixzhang`, `2026-09-24`
+
+Products recognize several entity families with different source grammars. The
+plugin therefore accepts ordered regex matchers: earlier successful matches win,
+while `null` permits later matchers to try the same text. `@{id}` is an example,
+not syntax owned by Astryx.
+
+Rejected: permanently owning `@{id}`; requiring one finite catalog; separate
+first-party plugins for each entity family.
+
+### DEC-3 — Preserve helper guarantees when composing matchers
+
+**Reference:** `module:Markdown/entityReferences/DEC-3`
+**Decider:** `cixzhang`, `2026-09-24`
+
+The public `composeMarkdownTransforms` helper retains source-claim skips and
+validated-output trust only when every input transform carries those guarantees.
+It also marks source as changed between transforms so later hints cannot skip text
+introduced by an earlier transform. The entity factory uses this public helper;
+first-party plugins receive no composition privilege unavailable to builders.
+
+Rejected: a private first-party trust marker; a plain wrapper that revalidates the
+whole tree and loses no-match fast paths.
 
 ## Open questions
 

@@ -6,7 +6,11 @@
  * @position Subpath entry point: `@astryxdesign/core/Markdown/plugins`
  */
 
-export {createMarkdownPlugin, isMarkdownExtensionNode} from './protocol';
+export {
+  composeMarkdownTransforms,
+  createMarkdownPlugin,
+  isMarkdownExtensionNode,
+} from './protocol';
 export {createMarkdownTextTransform} from './textTransform';
 export type {
   MarkdownTextTransformContext,
@@ -31,9 +35,10 @@ export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
 export {markdownCalloutsPlugin} from './callouts';
 export type {MarkdownCalloutNode, MarkdownCalloutStatus} from './callouts';
-export {createMarkdownEntityReferencesPlugin} from './entityReferences';
+export {markdownEntityReferencesPlugin} from './entityReferences';
 export type {
   MarkdownEntityReference,
+  MarkdownEntityReferenceMatcher,
   MarkdownEntityReferenceNode,
   MarkdownEntityReferencesOptions,
 } from './entityReferences';

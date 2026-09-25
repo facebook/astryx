@@ -2,17 +2,19 @@
 
 /**
  * @file entityReferences.tsx
- * @input A finite entity catalog and `@{id}` references in eligible prose
+ * @input Ordered regex matchers that synchronously resolve eligible prose spans
  * @output A configurable first-party transform plugin with typed inline rendering
- * @position Optional Markdown entity-link behavior built only on the public plugin protocol
+ * @position Optional Markdown entity-reference behavior built only on the public plugin protocol
  */
 
 import type React from 'react';
 import {isSafeMarkdownParserUrl} from '../url';
 import {
+  composeMarkdownTransforms,
   createMarkdownPlugin,
   type MarkdownExtensionNode,
   type MarkdownPluginEntry,
+  type MarkdownTransform,
 } from './protocol';
 import {createMarkdownTextTransform} from './textTransform';
 
@@ -22,8 +24,21 @@ export interface MarkdownEntityReference {
   readonly href?: string;
 }
 
+export interface MarkdownEntityReferenceMatcher {
+  /** A global expression matched against eligible built-in prose only. */
+  readonly pattern: RegExp;
+  /**
+   * Conservative literal hints used to skip this matcher when none are present.
+   * Omit when no safe literal exists.
+   */
+  readonly requiredSubstrings?: readonly [string, ...string[]];
+  /** Returns a reference for this match, or null to leave it for later matchers. */
+  readonly resolve: (match: RegExpExecArray) => MarkdownEntityReference | null;
+}
+
 export interface MarkdownEntityReferencesOptions {
-  readonly references: ReadonlyArray<MarkdownEntityReference>;
+  /** Ordered matchers; an earlier claimed span is opaque to later matchers. */
+  readonly matchers: ReadonlyArray<MarkdownEntityReferenceMatcher>;
   /** Optional application rendering; omitted references render their label. */
   readonly render?: (reference: MarkdownEntityReference) => React.ReactNode;
 }
@@ -39,65 +54,106 @@ export type MarkdownEntityReferenceNode = MarkdownExtensionNode<
   'inline'
 >;
 
-const REFERENCE_PATTERN = /@\{([^{}\r\n]+)\}/g;
+function normalizeReference(
+  reference: MarkdownEntityReference,
+): Readonly<MarkdownEntityReference> {
+  if (
+    reference == null ||
+    typeof reference.id !== 'string' ||
+    typeof reference.label !== 'string' ||
+    reference.id.trim() === '' ||
+    reference.label.trim() === '' ||
+    reference.id !== reference.id.trim() ||
+    (reference.href != null &&
+      (typeof reference.href !== 'string' ||
+        reference.href === '' ||
+        !isSafeMarkdownParserUrl(reference.href)))
+  ) {
+    throw new TypeError(
+      'Markdown entity references require a non-empty id and label plus an optional safe href',
+    );
+  }
+  return Object.freeze({
+    id: reference.id,
+    label: reference.label,
+    ...(reference.href == null ? null : {href: reference.href}),
+  });
+}
 
-/** Creates an `@{id}` reference plugin backed by a caller-owned entity catalog. */
-export function createMarkdownEntityReferencesPlugin({
-  references,
+function createMatcherTransform(
+  matcher: MarkdownEntityReferenceMatcher,
+): MarkdownTransform<MarkdownEntityReferenceNode> {
+  const resolvedMatches = new WeakMap<
+    RegExpExecArray,
+    Readonly<MarkdownEntityReference>
+  >();
+  return createMarkdownTextTransform<MarkdownEntityReferenceNode>({
+    pattern: matcher.pattern,
+    requiredSubstrings: matcher.requiredSubstrings,
+    getEndIndex: (_text, match) => {
+      if (match[0].length === 0) {
+        throw new TypeError(
+          'Markdown entity reference matchers must consume source text',
+        );
+      }
+      const resolved = matcher.resolve(match) as unknown;
+      if (
+        resolved != null &&
+        typeof resolved === 'object' &&
+        typeof (resolved as {then?: unknown}).then === 'function'
+      ) {
+        void Promise.resolve(resolved).catch(() => {});
+        throw new TypeError(
+          'Async Markdown entity reference resolution is not supported',
+        );
+      }
+      if (resolved == null) {
+        return false;
+      }
+      resolvedMatches.set(
+        match,
+        normalizeReference(resolved as MarkdownEntityReference),
+      );
+      return match.index + match[0].length;
+    },
+    replace: match => {
+      const reference = resolvedMatches.get(match);
+      if (reference == null) {
+        throw new TypeError('Markdown entity reference resolution changed');
+      }
+      resolvedMatches.delete(match);
+      return {
+        type: 'extension',
+        plugin: 'entity-references',
+        name: 'entity-reference',
+        display: 'inline',
+        data: {
+          id: reference.id,
+          label: reference.label,
+          ...(reference.href == null ? null : {href: reference.href}),
+        },
+      };
+    },
+  });
+}
+
+/** Creates an entity-reference plugin from ordered synchronous matchers. */
+export function markdownEntityReferencesPlugin({
+  matchers,
   render,
 }: MarkdownEntityReferencesOptions): MarkdownPluginEntry<MarkdownEntityReferenceNode> {
-  const entities = new Map<string, MarkdownEntityReference>();
-  for (const reference of references) {
-    if (
-      reference.id.trim() === '' ||
-      reference.label.trim() === '' ||
-      reference.id !== reference.id.trim() ||
-      reference.id.includes('{') ||
-      reference.id.includes('}') ||
-      reference.id.includes('\n') ||
-      reference.id.includes('\r') ||
-      (reference.href != null &&
-        (reference.href === '' || !isSafeMarkdownParserUrl(reference.href)))
-    ) {
-      throw new TypeError(
-        'Markdown entity references require a non-empty single-line id and label',
-      );
-    }
-    if (entities.has(reference.id)) {
-      throw new TypeError(
-        `Duplicate Markdown entity reference: ${reference.id}`,
-      );
-    }
-    entities.set(reference.id, Object.freeze({...reference}));
+  if (!Array.isArray(matchers) || matchers.length === 0) {
+    throw new TypeError(
+      'Markdown entity references require at least one matcher',
+    );
   }
+  const transforms = matchers.map(createMatcherTransform);
 
   return createMarkdownPlugin<'entity-references', MarkdownEntityReferenceNode>(
     {
       name: 'entity-references',
       apiVersion: 1,
-      transform: createMarkdownTextTransform<MarkdownEntityReferenceNode>({
-        pattern: REFERENCE_PATTERN,
-        requiredSubstrings: ['@{'],
-        getEndIndex: (_text, match) =>
-          entities.has(match[1]) ? match.index + match[0].length : false,
-        replace: match => {
-          const reference = entities.get(match[1]);
-          if (reference == null) {
-            throw new TypeError('Markdown entity reference resolution changed');
-          }
-          return {
-            type: 'extension',
-            plugin: 'entity-references',
-            name: 'entity-reference',
-            display: 'inline',
-            data: {
-              id: reference.id,
-              label: reference.label,
-              ...(reference.href == null ? null : {href: reference.href}),
-            },
-          };
-        },
-      }),
+      transform: composeMarkdownTransforms(transforms),
       renderers: {
         'entity-reference': {
           render: ({node}): React.ReactNode =>
