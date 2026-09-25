@@ -72,29 +72,38 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
   values (`popover` on coarse, `bottom-sheet`/`text-input` where not reached
   today) MUST render the named surface, never silently substitute another.
 
-- **FR2 — Fallback split for native.** `presentation="native"` MUST always
-  show the native surface, with no eligibility fallbacks — a state the native
-  control cannot express (seconds, non-default step/increment, preset time
-  options, no usable native control) is the caller's explicit choice.
+- **FR2 — Fallback split for native.** Explicit `presentation="native"` MUST
+  always show the native surface, with no eligibility fallbacks — a state the
+  native control cannot express (seconds, non-default step/increment, preset
+  time options, no usable native control) is the caller's explicit choice.
   `presentation="adaptive-native"` — including the default and
   `nativePicker="touch"` — MUST keep the released fallbacks: in those same
   states it falls back to the component's Astryx surface (per-segment for
   `DateTimeInput`: date may go native while time falls back), exactly as
-  released today.
+  released today. Deprecated `nativePicker="always"` without an explicit
+  `presentation` is the third case (FR3): it MUST keep its own released
+  fallbacks, so its behavior does not change — only an explicit
+  `presentation="native"` opts into no-fallback.
 
 - **FR3 — Default and `nativePicker` preserved exactly.** Omitting both props
   MUST behave as today's `nativePicker="touch"`. `nativePicker` and its
   exported types MUST remain, marked `@deprecated`, resolving exactly as
   released for unmigrated and migrated callsites alike:
 
-  | `nativePicker` | `DateInput` / `DateTimeInput` | `TimeInput`       |
-  | -------------- | ----------------------------- | ----------------- |
-  | `touch`        | `adaptive-native`             | `adaptive-native` |
-  | `always`       | `native`                      | `native`          |
-  | `never`        | `adaptive-bottom-sheet`       | `text-input`      |
+  | `nativePicker` | `DateInput` / `DateTimeInput` | `TimeInput`            |
+  | -------------- | ----------------------------- | ---------------------- |
+  | `touch`        | `adaptive-native`             | `adaptive-native`      |
+  | `always`       | `native` (legacy, FR2)        | `native` (legacy, FR2) |
+  | `never`        | `adaptive-bottom-sheet`       | `text-input`           |
 
-  (`TimeInput`'s released `never` is the typed field on every pointer; a sheet
-  for `TimeInput` comes only from explicit
+  `always` maps to the `native` surface on every pointer but retains the
+  released eligibility fallbacks (FR2): `hasSeconds`, non-default
+  step/increment, preset time options, or no usable native control keep the
+  Astryx surface, exactly as released. It is therefore not identical to
+  explicit `presentation="native"`, which never falls back; migration
+  (codemod or by hand) to `presentation="native"` is what changes those
+  states, deliberately. (`TimeInput`'s released `never` is the typed field on
+  every pointer; a sheet for `TimeInput` comes only from explicit
   `presentation="bottom-sheet" | "adaptive-bottom-sheet"`.) Preserving the
   prop with equivalent meaning is nonbreaking (`spec:AST-017` FR4).
 
@@ -123,12 +132,12 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
 
 ## Verification
 
-| Contract | Verification                               | Representative states                                                                                 | Mutation or failure expectation                                               |
-| -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| FR1      | Unit tests per input + real-browser check  | 6 values × fine/coarse, incl. forced + `TimeInput` sheet                                              | Wrong/substituted surface fails                                               |
-| FR2      | Unit tests, native requested               | Seconds, step≠default, presets, no usable native: `native` stays native; `adaptive-native` falls back | Any fallback under `native`, or none under `adaptive-native`, fails           |
-| FR3–FR4  | Unit tests: default, deprecated, dual-prop | Omitted; `touch`/`always`/`never` per component; both props, any order                                | Mapping drift (incl. `TimeInput:never→sheet`) or `nativePicker` winning fails |
-| FR5      | Doc/type consistency tests                 | All 3 components, en + zh                                                                             | Documented-but-untyped value/default fails                                    |
+| Contract | Verification                               | Representative states                                                                                                                 | Mutation or failure expectation                                                       |
+| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| FR1      | Unit tests per input + real-browser check  | 6 values × fine/coarse, incl. forced + `TimeInput` sheet                                                                              | Wrong/substituted surface fails                                                       |
+| FR2      | Unit tests, native requested               | Seconds, step≠default, presets, no usable native: explicit `native` stays native; `adaptive-native` and deprecated `always` fall back | Any fallback under explicit `native`, or none under `adaptive-native`/`always`, fails |
+| FR3–FR4  | Unit tests: default, deprecated, dual-prop | Omitted; `touch`/`always`/`never` per component; both props, any order                                                                | Mapping drift (incl. `TimeInput:never→sheet`) or `nativePicker` winning fails         |
+| FR5      | Doc/type consistency tests                 | All 3 components, en + zh                                                                                                             | Documented-but-untyped value/default fails                                            |
 
 ## Decision log
 
