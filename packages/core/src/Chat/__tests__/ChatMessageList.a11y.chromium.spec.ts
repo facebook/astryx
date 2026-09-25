@@ -33,7 +33,8 @@ interface Case {
   articleCount: number;
   density: 'compact' | 'balanced' | 'spacious';
   busy: boolean;
-  text: string;
+  text?: string;
+  name?: string;
   args?: string;
   viewport?: {width: number; height: number};
   direction?: 'ltr' | 'rtl';
@@ -57,11 +58,22 @@ const CASES: Case[] = [
     state: 'empty',
     storyId: EMPTY,
     index: 0,
-    targetCount: 1,
+    targetCount: 2,
     articleCount: 0,
     density: 'balanced',
     busy: false,
+    name: 'Text empty state',
     text: 'No messages yet',
+  },
+  {
+    state: 'numeric-empty',
+    storyId: EMPTY,
+    index: 1,
+    targetCount: 2,
+    articleCount: 0,
+    density: 'balanced',
+    busy: false,
+    name: 'Numeric empty state',
   },
   {
     state: 'compact-top',
@@ -188,6 +200,7 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     const box = await subject.boundingBox();
     const observed = await subject.evaluate(node => ({
       role: node.getAttribute('role'),
+      name: node.getAttribute('aria-label'),
       live: node.getAttribute('aria-live'),
       busy: node.getAttribute('aria-busy'),
       density: node.getAttribute('data-density'),
@@ -243,7 +256,8 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     expect(observed.density).toBe(scenario.density);
     expect(observed.direction).toBe(direction);
     expect(observed.articleCount).toBe(scenario.articleCount);
-    expect(observed.text).toContain(scenario.text);
+    if (scenario.name != null) {expect(observed.name).toBe(scenario.name);}
+    if (scenario.text != null) {expect(observed.text).toContain(scenario.text);}
     expect(observed.width).toBeGreaterThan(0);
     expect(observed.height).toBeGreaterThan(0);
     expect(environment.theme).toBe('neutral');
@@ -278,6 +292,7 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
         articleCount: scenario.articleCount,
         density: scenario.density,
         busy: scenario.busy,
+        name: scenario.name,
         text: scenario.text,
         coarsePointer: scenario.coarsePointer ?? false,
       },

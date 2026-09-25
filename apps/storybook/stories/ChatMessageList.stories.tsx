@@ -48,10 +48,31 @@ export const Conversation: Story = {
 
 export const Empty: Story = {
   render: () => (
-    <div style={{height: 320, display: 'flex', flexDirection: 'column'}}>
-      <ChatMessageList emptyState={<Text>No messages yet</Text>}>
-        {[]}
-      </ChatMessageList>
+    <div style={{display: 'flex', flexWrap: 'wrap', gap: 16}}>
+      <div
+        style={{
+          width: 280,
+          height: 320,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+        <ChatMessageList
+          aria-label="Text empty state"
+          emptyState={<Text>No messages yet</Text>}>
+          {[]}
+        </ChatMessageList>
+      </div>
+      <div
+        style={{
+          width: 280,
+          height: 320,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+        <ChatMessageList aria-label="Numeric empty state" emptyState={0}>
+          {[]}
+        </ChatMessageList>
+      </div>
     </div>
   ),
 };

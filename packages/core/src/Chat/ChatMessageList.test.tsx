@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import {act, render, screen} from '@testing-library/react';
 import {ChatMessageList} from './ChatMessageList';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageBubble} from './ChatMessageBubble';
@@ -128,5 +128,55 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     expect(screen.getByText('Hello')).toBeTruthy();
+  });
+
+  it('loads older messages through the top sentinel and exposes pending status', async () => {
+    let notify!: IntersectionObserverCallback;
+    let complete!: () => void;
+    const observeSentinel = vi.fn();
+    const disconnect = vi.fn();
+    const action = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          complete = resolve;
+        }),
+    );
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe = observeSentinel;
+      disconnect = disconnect;
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    try {
+      const {unmount} = render(
+        <ChatMessageList scrollToTopAction={action}>
+          <div>Earlier message</div>
+        </ChatMessageList>,
+      );
+      expect(observeSentinel).toHaveBeenCalledTimes(1);
+      act(() => {
+        notify(
+          [{isIntersecting: false} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(action).not.toHaveBeenCalled();
+      act(() => {
+        notify(
+          [{isIntersecting: true} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeTruthy();
+      await act(async () => complete());
+      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+      unmount();
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
