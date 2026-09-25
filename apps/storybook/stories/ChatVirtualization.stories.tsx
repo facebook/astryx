@@ -52,7 +52,7 @@ import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import * as stylex from '@stylexjs/stylex';
 
 const meta: Meta = {
-  title: 'Lab/ChatVirtualization',
+  title: 'Lab/ChatVirtualizer',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

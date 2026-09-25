@@ -5,6 +5,8 @@
 export const docs = {
   name: 'ChatVirtualizer',
   subComponentOf: 'Chat',
+  group: 'Chat',
+  category: 'Chat',
   displayName: 'Chat Virtualizer',
   description: 'Windowed message list for long transcripts: only the rows near the viewport are rendered, and the rest is represented by two spacer elements, so a thread of thousands of messages costs a viewport of DOM. Rows stay in normal document flow and every position correction is written as spacer height rather than a scrollTop jump, so nothing moves under an active touch gesture — corrections are absorbed while the finger is down and settle at release. Follows the newest message by default, re-engaging that follow when a user scroll lands within endThreshold of the bottom. Renders its own scroll container, or nests inside one the caller already owns (see scrollElement).',
   props: [
