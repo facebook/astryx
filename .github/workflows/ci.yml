@@ -987,6 +987,35 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # A component audit needs evidence for each state it scores. The generic
+      # visual manifest does not include semantic-state or geometry sensors, so
+      # this existing Chromium owner captures bounded, fail-closed receipts.
+      - name: Run ChatMessageList audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatMessageList:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output chat-message-list-a11y-report.json \
+            --components ChatMessageList \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Chat/__tests__/ChatMessageList.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ChatMessageList audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatMessageList:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-message-list-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            chat-message-list-a11y-report.json
+            test-results/chat-message-list-audit-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.
