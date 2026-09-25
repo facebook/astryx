@@ -34,6 +34,7 @@ import type {
   BlockNodeWithMath,
   InlineNode,
   InlineNodeWithMath,
+  MarkdownAstImage,
   ParseOptions,
 } from './index';
 
@@ -119,6 +120,9 @@ describe('Markdown public parser types', () => {
     ).toEqualTypeOf<BlockNode[]>();
     expectTypeOf(createIncrementalState().settledBlocks).toEqualTypeOf<
       BlockNode[]
+    >();
+    expectTypeOf<MarkdownAstImage['title']>().toEqualTypeOf<
+      string | null | undefined
     >();
     expectTypeOf(legacyInlineText).returns.toBeString();
     expectTypeOf(legacyBlockText).returns.toBeString();

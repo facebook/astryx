@@ -163,7 +163,7 @@ export const docs = {
       name: 'components',
       type: 'MarkdownComponents',
       description:
-        'Custom React component overrides for rendered Markdown elements (code, inlineCode, math, link, heading, paragraph, image, blockquote, hr, citation). Providing math enables `$…$` inline and `$$…$$` display parsing and receives `{value, display}`; omit it when dollar text should stay literal.',
+        'Custom React component overrides for rendered Markdown elements (code, inlineCode, math, link, heading, paragraph, image, blockquote, hr, citation). Image renderers receive `{src, alt, title?}` with authored titles preserved. Providing math enables `$…$` inline and `$$…$$` display parsing and receives `{value, display}`; omit it when dollar text should stay literal.',
     },
     {
       name: 'xstyle',
@@ -629,7 +629,7 @@ export const docsZh = {
       name: 'components',
       type: 'MarkdownComponents',
       description:
-        '用于覆盖 Markdown 渲染元素的自定义 React 组件（code、inlineCode、math、link、heading、paragraph、image、blockquote、hr、citation）。提供 math 会启用 `$…$` 行内数学和 `$$…$$` 块级数学解析，并接收 `{value, display}`；不提供时美元符号保持原样。',
+        '用于覆盖 Markdown 渲染元素的自定义 React 组件（code、inlineCode、math、link、heading、paragraph、image、blockquote、hr、citation）。image 渲染器接收保留原始标题的 `{src, alt, title?}`。提供 math 会启用 `$…$` 行内数学和 `$$…$$` 块级数学解析，并接收 `{value, display}`；不提供时美元符号保持原样。',
     },
     {
       name: 'xstyle',
@@ -901,7 +901,7 @@ export const docsDense = {
     autolink:
       "'gfm'. Opt-in GFM autolinking: bare URLs (https?://, www.), <scheme:url>, <email>, user@host. Skips code, code blocks, existing links. Default: off.",
     components:
-      'MarkdownComponents. Custom renderers; math({value, display}) opts into $…$/$$…$$ parsing. Renderer owns output and accessibility.',
+      'MarkdownComponents. Custom renderers; image({src, alt, title?}) preserves authored titles; math({value, display}) opts into $…$/$$…$$ parsing. Renderers own output and accessibility.',
     xstyle: 'stylex.create() for layout (margins, sizing).',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',
