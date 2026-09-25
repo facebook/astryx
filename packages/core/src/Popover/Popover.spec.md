@@ -48,31 +48,21 @@ This contract records the behavior present after
 direction settled by Cindy Zhang on 2026-08-31, and the focus/opening correction
 approved by Cindy Zhang on 2026-09-07. Public API signatures and release status
 remain unchanged. Consumer syntax and complete signatures remain owned by
-`Popover.doc.mjs` and `usePopover.doc.mjs`. The canonical `popover` target and
-the deprecated `popover-surface` compatibility alias remain supported together.
+`Popover.doc.mjs` and `usePopover.doc.mjs`. The canonical `popover` target is the
+only broad Popover surface target.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: the canonical and deprecated targets are emitted together;
-  runtime behavior, DOM shape, styling, and public API otherwise remain unchanged
 - Canonical target: `popover` owns the broad painted-surface contract for
-  `<Popover>` and public `usePopover` compositions and is preferred in new themes
-- Deprecated alias: `popover-surface` remains emitted, documented as deprecated,
-  and discoverable with `popover` as its exact replacement so existing themes keep
-  working; it is not a second anatomy part or equal durable owner
+  `<Popover>` and public `usePopover` compositions
+- Removed alias: 0.7.0 removes `popover-surface`; themes and CSS selectors migrate
+  it to `popover` with `astryx upgrade --from 0.6.3 --apply --path .`
 - Composed components: component-specific surface targets such as
-  `selector-popup` and `multi-selector-popup` remain authoritative refinements;
-  the broad canonical and compatibility targets remain underneath
+  `selector-popup` and `multi-selector-popup` remain authoritative refinements
+  beside the broad canonical target
 - New hook consumers: a direct `usePopover` composition that needs its own theme
-  reachability provides and documents an owned `surfaceTarget`; it does not create
-  a new dependency on `popover-surface`
-- Migration decision: maintained themes and copyable new examples use `popover`;
-  compatibility discovery and runtime support for `popover-surface` continue
-
-Deprecation does not implement or require alias removal. CLI and theme-build
-surfaces label `popover-surface` as deprecated and warn with the exact `popover`
-replacement when it is authored, while existing themes continue to work.
+  reachability provides and documents an owned `surfaceTarget`
 
 ## Ownership boundary
 
@@ -114,16 +104,16 @@ surface, not the Layer entry point. There is no installable
 
 ## Public concepts
 
-| Concept                  | Closed values or states                                      | Meaning                                                                                                               | Availability              | Default                                                                      | Owner                                                                               | Stability                      | Invalid or unsupported behavior                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trigger composition      | Wrapped trigger, render-prop trigger, or referenced anchor   | Supplies the anchor and the control that opens or closes the standard component                                       | Popover                   | Wrapped trigger when children are supplied                                   | `component:Popover`                                                                 | Current public behavior        | A referenced or wrapped anchor without a button or button role warns in development and receives no trigger handler; it does not throw.                    |
-| Visibility ownership     | Uncontrolled or externally controlled                        | Chooses whether Popover stores visibility or synchronizes to caller state                                             | Popover                   | Uncontrolled                                                                 | `component:Popover`                                                                 | Current public behavior        | Controlled changes are synchronized through show/hide; dismissal requests are reported to the caller rather than redefining the external source of truth.  |
-| Popup semantics          | Dialog or neutral wrapper                                    | Exposes dialog semantics or lets child menu/listbox semantics own the popup                                           | Popover and hook          | Dialog                                                                       | `component:Popover`                                                                 | Current public behavior        | A dialog without a label warns in development. Neutral mode omits dialog role and modal semantics.                                                         |
-| Focus entry              | Automatic or caller-preserved                                | Focuses genuine caller content, falls back to the labeled dialog surface when none exists, or preserves current focus | Popover and hook          | Automatic                                                                    | `component:Popover`                                                                 | Current public behavior        | The injected fallback close control is excluded from initial-focus candidates and reveals only when reached sequentially.                                  |
-| Dismissal                | Outside/Escape enabled or disabled within native constraints | Controls light dismiss and explicit Escape participation                                                              | Popover and hook          | Both enabled                                                                 | `component:Popover`; `family:overlay-dismissal` owns Escape/platform-close ordering | Current public behavior        | Disabling Escape alone cannot override the native Escape behavior of an auto popover; explicit-dismiss behavior requires light dismiss to be disabled too. |
-| Surface treatment        | Default surface or caller-owned treatment                    | Applies the shared painted surface and optional consumer styling                                                      | Popover and hook          | Default surface                                                              | `component:Popover`                                                                 | Current public behavior        | Custom styling does not change lifecycle, focus, or dismissal semantics.                                                                                   |
-| Surface target ownership | Shared baseline or component-specific refinement             | Assigns `popover` as the broad surface owner and lets a composed component add its own target on that same element    | Popover and hook          | `popover` baseline; no component-specific refinement                         | `component:Popover`; the composed component owns its refinement target              | Current compatibility contract | `popover-surface` is compatibility output, not a new target for consumers or a second anatomy owner.                                                       |
-| Placement and fit        | Logical placement/alignment plus preferred width             | Positions the anchor surface and constrains it to available space                                                     | Popover and hook renderer | Below/start; Popover matches trigger minimum width when no width is supplied | `component:Popover` above `architecture:layer-runtime`                              | Current public behavior        | Preferred width and trigger matching remain capped by viewport and safe-area availability.                                                                 |
+| Concept                  | Closed values or states                                      | Meaning                                                                                                               | Availability              | Default                                                                      | Owner                                                                               | Stability               | Invalid or unsupported behavior                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trigger composition      | Wrapped trigger, render-prop trigger, or referenced anchor   | Supplies the anchor and the control that opens or closes the standard component                                       | Popover                   | Wrapped trigger when children are supplied                                   | `component:Popover`                                                                 | Current public behavior | A referenced or wrapped anchor without a button or button role warns in development and receives no trigger handler; it does not throw.                    |
+| Visibility ownership     | Uncontrolled or externally controlled                        | Chooses whether Popover stores visibility or synchronizes to caller state                                             | Popover                   | Uncontrolled                                                                 | `component:Popover`                                                                 | Current public behavior | Controlled changes are synchronized through show/hide; dismissal requests are reported to the caller rather than redefining the external source of truth.  |
+| Popup semantics          | Dialog or neutral wrapper                                    | Exposes dialog semantics or lets child menu/listbox semantics own the popup                                           | Popover and hook          | Dialog                                                                       | `component:Popover`                                                                 | Current public behavior | A dialog without a label warns in development. Neutral mode omits dialog role and modal semantics.                                                         |
+| Focus entry              | Automatic or caller-preserved                                | Focuses genuine caller content, falls back to the labeled dialog surface when none exists, or preserves current focus | Popover and hook          | Automatic                                                                    | `component:Popover`                                                                 | Current public behavior | The injected fallback close control is excluded from initial-focus candidates and reveals only when reached sequentially.                                  |
+| Dismissal                | Outside/Escape enabled or disabled within native constraints | Controls light dismiss and explicit Escape participation                                                              | Popover and hook          | Both enabled                                                                 | `component:Popover`; `family:overlay-dismissal` owns Escape/platform-close ordering | Current public behavior | Disabling Escape alone cannot override the native Escape behavior of an auto popover; explicit-dismiss behavior requires light dismiss to be disabled too. |
+| Surface treatment        | Default surface or caller-owned treatment                    | Applies the shared painted surface and optional consumer styling                                                      | Popover and hook          | Default surface                                                              | `component:Popover`                                                                 | Current public behavior | Custom styling does not change lifecycle, focus, or dismissal semantics.                                                                                   |
+| Surface target ownership | Shared baseline or component-specific refinement             | Assigns `popover` as the broad surface owner and lets a composed component add its own target on that same element    | Popover and hook          | `popover` baseline; no component-specific refinement                         | `component:Popover`; the composed component owns its refinement target              | Current public contract | Removed aliases do not create another surface or anatomy owner.                                                                                            |
+| Placement and fit        | Logical placement/alignment plus preferred width             | Positions the anchor surface and constrains it to available space                                                     | Popover and hook renderer | Below/start; Popover matches trigger minimum width when no width is supplied | `component:Popover` above `architecture:layer-runtime`                              | Current public behavior | Preferred width and trigger matching remain capped by viewport and safe-area availability.                                                                 |
 
 ### Public `usePopover` semantic inputs
 
@@ -139,7 +129,7 @@ table owns their semantic effect.
 | Fallback close control and label  | Included; “Close popover”        | Appends an end-of-trap close control for each rendered surface.                                                                                                                                                  | When omitted, the hook does not synthesize another close affordance.                                                     |
 | Popup role, label, and modality   | Dialog, modal, no implicit label | Stamps semantics on the painted surface for its rendered lifetime.                                                                                                                                               | Neutral role suppresses dialog and modal semantics. Missing dialog label warns in development rather than throwing.      |
 | Default surface                   | Enabled                          | Applies the shared background, radius, and elevation treatment while rendered.                                                                                                                                   | Turning it off delegates painting to caller content but does not turn `usePopover` into a different lifecycle primitive. |
-| Optional component surface target | No component-specific refinement | Adds a component-owned refinement target beside the canonical `popover` target on the same rendered surface. New direct hook consumers provide and document one only when they need distinct theme reachability. | `surfaceTarget` does not create another surface or owner. Do not pass or depend on deprecated `popover-surface`.         |
+| Optional component surface target | No component-specific refinement | Adds a component-owned refinement target beside the canonical `popover` target on the same rendered surface. New direct hook consumers provide and document one only when they need distinct theme reachability. | `surfaceTarget` does not create another surface or owner.                                                                |
 
 ### Public `usePopover` semantic outputs
 
@@ -170,15 +160,15 @@ table owns their semantic effect.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                          | Basis                                                                                               | Acceptance and implementation state                                                               |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR1 | Popover and public `usePopover` expose one visibility lifecycle with canonical show, hide, and toggle operations. Every opening path inherits same-gesture reopen protection without changing public signatures.                                                   | Current public package surface, `architecture:layer-runtime/INV7`, and owner approval on 2026-09-07 | Accepted; implemented and covered by focused Popover-family tests                                 |
-| FR2 | Popover derives semantic focus entry identically across activation modalities: first genuine caller content, then labeled dialog-surface fallback. The injected close control is excluded. Shared interaction modality controls focus indication, not destination. | PR #5373, `architecture:interaction-modality`, and owner approval on 2026-09-07                     | Accepted; implemented and covered by Popover focus tests                                          |
-| FR3 | The preferred surface size is capped to logical viewport and safe-area availability before overflow is enabled.                                                                                                                                                    | PR #5373, current source, tests, and Storybook fixtures                                             | Verified in unit/style evidence; real rendered viewport evidence remains a gap                    |
-| FR4 | Popover enables internal scrolling only after measured overflow exceeds the current tolerance. Fitting content does not become a scroll container.                                                                                                                 | PR #5373 and current tests                                                                          | Verified current behavior                                                                         |
-| FR5 | Overflow signals while open coalesce into at most one measurement per animation frame, and Popover owns no measurement observers while closed.                                                                                                                     | PR #5373 and current tests                                                                          | Verified current resource behavior                                                                |
-| FR6 | Component anatomy contains the caller trigger and content, one painted Popover surface, and the optional fallback close control. Popover owns no Header, Body, or separate shared-hook surface part.                                                               | Current source, docs target inventory, and tests                                                    | Accepted anatomy; stale consumer anatomy corrected by this contract                               |
-| FR7 | The painted surface has one broad canonical target, `popover`. `popover-surface` remains a deprecated compatibility alias on that same part; composed components may add one authoritative component-specific refinement target.                                   | Owner direction on 2026-08-31 plus current target inventory                                         | Accepted compatibility contract; both canonical and deprecated paths remain supported and covered |
+| ID  | Invariant                                                                                                                                                                                                                                                          | Basis                                                                                               | Acceptance and implementation state                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| FR1 | Popover and public `usePopover` expose one visibility lifecycle with canonical show, hide, and toggle operations. Every opening path inherits same-gesture reopen protection without changing public signatures.                                                   | Current public package surface, `architecture:layer-runtime/INV7`, and owner approval on 2026-09-07 | Accepted; implemented and covered by focused Popover-family tests              |
+| FR2 | Popover derives semantic focus entry identically across activation modalities: first genuine caller content, then labeled dialog-surface fallback. The injected close control is excluded. Shared interaction modality controls focus indication, not destination. | PR #5373, `architecture:interaction-modality`, and owner approval on 2026-09-07                     | Accepted; implemented and covered by Popover focus tests                       |
+| FR3 | The preferred surface size is capped to logical viewport and safe-area availability before overflow is enabled.                                                                                                                                                    | PR #5373, current source, tests, and Storybook fixtures                                             | Verified in unit/style evidence; real rendered viewport evidence remains a gap |
+| FR4 | Popover enables internal scrolling only after measured overflow exceeds the current tolerance. Fitting content does not become a scroll container.                                                                                                                 | PR #5373 and current tests                                                                          | Verified current behavior                                                      |
+| FR5 | Overflow signals while open coalesce into at most one measurement per animation frame, and Popover owns no measurement observers while closed.                                                                                                                     | PR #5373 and current tests                                                                          | Verified current resource behavior                                             |
+| FR6 | Component anatomy contains the caller trigger and content, one painted Popover surface, and the optional fallback close control. Popover owns no Header, Body, or separate shared-hook surface part.                                                               | Current source, docs target inventory, and tests                                                    | Accepted anatomy; stale consumer anatomy corrected by this contract            |
+| FR7 | The painted surface has one broad canonical target, `popover`; composed components may add one authoritative component-specific refinement target.                                                                                                                 | Owner direction on 2026-08-31 plus current target inventory                                         | Accepted canonical contract; covered by focused target tests                   |
 
 ### Allowed variation
 
@@ -290,24 +280,11 @@ table owns their semantic effect.
 }
 ```
 
-### Deprecated compatibility target
-
-`popover-surface` is a deprecated alias for `popover` on the same painted
-surface. It is not anatomy and has no independent conceptual ownership. The
-component doc keeps `deprecatedFor: 'popover'`, discovery labels the alias with
-that exact replacement, and runtime keeps emitting both names for existing
-themes.
-
-Every public `usePopover` painted surface belongs to the broad `popover` target
-and retains the `popover-surface` compatibility alias. A composed component may
-add its own authoritative refinement target, such as `selector-popup` or
-`multi-selector-popup`, on that same element. New direct hook consumers that
-need distinct theme reachability provide and document an owned `surfaceTarget`;
-they use `popover` in new theme source rather than authoring the deprecated key.
-
-Maintained themes, templates, and copyable new examples use `popover`. Existing
-`popover-surface` themes remain supported; deprecation does not imply or require
-removal.
+Every public `usePopover` painted surface belongs to the broad `popover` target.
+A composed component may add its own authoritative refinement target, such as
+`selector-popup` or `multi-selector-popup`, on that same element. New direct hook
+consumers that need distinct theme reachability provide and document an owned
+`surfaceTarget`.
 
 ## Family and system relationships
 
@@ -321,24 +298,23 @@ removal.
   focus-indicator visibility. Popover owns semantic focus entry and fallback;
   pointer input does not select a different destination merely to hide an outline.
 - `architecture:component-theming-surface` owns anatomy qualification and target
-  placement. `popover` is the one broad target on the painted surface;
-  `popover-surface` is only its deprecated compatibility alias. Caller content
-  adds no target, the fallback close control delegates to Button's target, and
-  composed components own any additional surface refinement target.
+  placement. `popover` is the one broad target on the painted surface. Caller
+  content adds no target, the fallback close control delegates to Button's target,
+  and composed components own any additional surface refinement target.
 - `family:overlay-dismissal` owns topmost Escape and platform-close ordering.
   Popover participates through the shared layer owner while retaining its local
   focus, outside-dismiss, and open-state behavior.
 
 ## Verification map
 
-| Contract                     | Verification                                                                                                                          | Representative states                                                                                              | Mutation or failure expectation                                                                                                                       | Audit section                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Public boundary, FR1         | `Popover.test.tsx` compile-time public-surface assertions plus package/barrel inspection                                              | Unchanged public signatures and same-gesture rejection across Popover-family openings                              | A public type changes or a same-gesture request reaches visibility state.                                                                             | `audit:Popover/api`           |
-| FR2, AR2–AR4                 | `Popover.test.tsx` focus/role suites and `useFocusTrap.test.tsx` container-entry suites                                               | Pointer, keyboard/AT-style, read-only, neutral role, no autofocus, controlled, Tab/Shift+Tab, Escape, focus return | Changing semantic destination by modality, selecting fallback close initially, losing shared indication, or allowing focus escape fails assertions.   | `audit:Popover/accessibility` |
-| FR3, FR4                     | `Popover.test.tsx` sizing/overflow suites; `Popover.stories.tsx` real-viewport scenarios for manual/browser evidence                  | Explicit width, trigger matching, all alignments, fitting and overflowing content                                  | Removing a cap, reversing width precedence, or always enabling scroll fails emitted-style or overflow assertions.                                     | `audit:Popover/layout`        |
-| FR5                          | `Popover.test.tsx` scheduling and observer-lifecycle suites                                                                           | Closed, opened, repeated signals, cleanup                                                                          | Constructing observers while closed or measuring more than once per pending frame fails lifecycle assertions.                                         | `audit:Popover/resources`     |
-| FR6, FR7 and theming anatomy | `Popover.test.tsx`, `Popover.doc.mjs`, `usePopover.doc.mjs`, `astryx theme targets Popover --json`, and `scripts/check-knowledge.mjs` | One real surface with canonical `popover`; deprecated alias on that element; composed-component refinements        | A fake anatomy part, loss of compatibility output, missing deprecation metadata, or an active target without a real owner fails review or validation. | `audit:Popover/theming`       |
-| AR5                          | `Popover.stories.tsx` manual-AT fixture and PR #5373 test record                                                                      | Read-only dialog manual-AT fixture; no recorded NVDA/VoiceOver announcement result                                 | A fixture without recorded AT/browser observations cannot be cited as announcement proof.                                                             | `audit:Popover/at-evidence`   |
+| Contract                     | Verification                                                                                                                          | Representative states                                                                                              | Mutation or failure expectation                                                                                                                     | Audit section                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Public boundary, FR1         | `Popover.test.tsx` compile-time public-surface assertions plus package/barrel inspection                                              | Unchanged public signatures and same-gesture rejection across Popover-family openings                              | A public type changes or a same-gesture request reaches visibility state.                                                                           | `audit:Popover/api`           |
+| FR2, AR2–AR4                 | `Popover.test.tsx` focus/role suites and `useFocusTrap.test.tsx` container-entry suites                                               | Pointer, keyboard/AT-style, read-only, neutral role, no autofocus, controlled, Tab/Shift+Tab, Escape, focus return | Changing semantic destination by modality, selecting fallback close initially, losing shared indication, or allowing focus escape fails assertions. | `audit:Popover/accessibility` |
+| FR3, FR4                     | `Popover.test.tsx` sizing/overflow suites; `Popover.stories.tsx` real-viewport scenarios for manual/browser evidence                  | Explicit width, trigger matching, all alignments, fitting and overflowing content                                  | Removing a cap, reversing width precedence, or always enabling scroll fails emitted-style or overflow assertions.                                   | `audit:Popover/layout`        |
+| FR5                          | `Popover.test.tsx` scheduling and observer-lifecycle suites                                                                           | Closed, opened, repeated signals, cleanup                                                                          | Constructing observers while closed or measuring more than once per pending frame fails lifecycle assertions.                                       | `audit:Popover/resources`     |
+| FR6, FR7 and theming anatomy | `Popover.test.tsx`, `Popover.doc.mjs`, `usePopover.doc.mjs`, `astryx theme targets Popover --json`, and `scripts/check-knowledge.mjs` | One real surface with canonical `popover` plus composed-component refinements                                      | A fake anatomy part, missing canonical output, or an active target without a real owner fails review or validation.                                 | `audit:Popover/theming`       |
+| AR5                          | `Popover.stories.tsx` manual-AT fixture and PR #5373 test record                                                                      | Read-only dialog manual-AT fixture; no recorded NVDA/VoiceOver announcement result                                 | A fixture without recorded AT/browser observations cannot be cited as announcement proof.                                                           | `audit:Popover/at-evidence`   |
 
 ## Decision log
 
@@ -363,16 +339,16 @@ focus indication, while Popover owns semantic focus placement.
 **Decider:** Cindy Zhang, 2026-08-31
 
 `popover` is the broad canonical theming baseline automatically owned by every
-painted surface created by `<Popover>` or public `usePopover`.
-`popover-surface` remains deprecated compatibility output on that same element,
-not a second anatomy part or equal owner. Existing themes using it remain
-supported, while maintained and newly authored themes use `popover`.
+painted surface created by `<Popover>` or public `usePopover`. The temporary
+`popover-surface` compatibility name is removed in 0.7.0 under
+`architecture:component-theming-surface`; existing themes migrate that key and
+selector to `popover`.
 
 Composed components keep authoritative refinement targets such as
 `selector-popup` and `multi-selector-popup`. Optional `surfaceTarget` adds that
 owned refinement on the same surface; it does not replace the broad `popover`
 baseline. New direct hook consumers that need distinct reachability provide and
-document an owned target rather than depending on `popover-surface`.
+document an owned target.
 
 Rejected: treating `popover` and `popover-surface` as two durable sibling targets,
 or inventing a “Shared hook surface” anatomy part to satisfy inventory coverage.

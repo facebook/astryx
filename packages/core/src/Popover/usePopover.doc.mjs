@@ -97,7 +97,7 @@ export const docs = {
       name: 'surfaceTarget',
       type: 'string',
       description:
-        'Optional component-owned refinement target on the painted surface, without the astryx- prefix. Use and document one when a direct hook composition needs distinct theme reachability. Do not use popover-surface; it is a deprecated compatibility alias of the canonical popover target.',
+        'Optional component-owned refinement target on the painted surface, without the astryx- prefix. Use and document one when a direct hook composition needs distinct theme reachability.',
     },
   ],
   returns: [
@@ -159,7 +159,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Every painted surface emits the canonical popover target and deprecated popover-surface compatibility alias. A custom composition needing a distinct stable seam should pass and document its own surfaceTarget.',
+      'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Every painted surface emits the canonical popover target. A custom composition needing a distinct stable seam should pass and document its own surfaceTarget.',
     bestPractices: [
       {
         guidance: true,
@@ -173,8 +173,7 @@ export const docs = {
       },
       {
         guidance: true,
-        description:
-          'Use popover as the broad surface target. Popover-surface remains supported compatibility output, but new theme source uses the canonical key.',
+        description: 'Use popover as the broad canonical surface target.',
       },
       {
         guidance: true,
@@ -197,7 +196,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits canonical popover plus deprecated popover-surface compatibility output. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
+    'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits the canonical popover target. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
   paramDescriptions: {
     onShow: 'fires when popover becomes visible.',
     onHide: 'fires when popover hides; use to return focus when needed.',
@@ -214,7 +213,7 @@ export const docsDense = {
     isModal: 'whether a dialog-role popover is modal (aria-modal).',
     hasSurface: 'apply default surface background/radius/shadow.',
     surfaceTarget:
-      'optional owned refinement target; document it and do not use deprecated popover-surface.',
+      'optional owned refinement target; document it when distinct reachability is needed.',
   },
   returnDescriptions: {
     triggerRef: 'trigger ref for CSS anchor positioning.',
@@ -230,7 +229,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits canonical popover plus deprecated popover-surface compatibility output. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
+      'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits the canonical popover target. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
     bestPractices: [
       {
         guidance: true,
@@ -245,7 +244,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use canonical popover for broad surface theming; deprecated popover-surface is compatibility output only.',
+          'Use the canonical popover target for broad surface theming.',
       },
       {
         guidance: true,

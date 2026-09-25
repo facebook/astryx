@@ -17,9 +17,8 @@ export const doc = {
   summary: 'List every component theming target a theme can override.',
   description:
     'Enumerates the whole themeable surface: each `defineTheme` components key, the stable ' +
-    'class it paints, the component that declares it, the props and states that are legal ' +
-    'override keys under it, and the canonical replacement when a listed target is deprecated. ' +
-    'Same source as the Theming table `astryx component <Name>` prints ' +
+    'class it paints, the component that declares it, and the props and states that are legal ' +
+    'override keys under it. Same source as the Theming table `astryx component <Name>` prints ' +
     '(the component docs), so the list cannot drift from the components, and `theme build` ' +
     'validates overrides against this exact set. A filter naming a component gives that ' +
     "component's set; anything else is a substring search over the keys.",
@@ -54,7 +53,7 @@ export const doc = {
     {
       type: 'theme.targets',
       description:
-        'The echoed filter, how many components are represented, and the targets: each {key, className, component, props, states, deprecatedFor?}.',
+        'The echoed filter, how many components are represented, and the targets: each {key, className, component, props, states}.',
     },
   ],
   throws: [

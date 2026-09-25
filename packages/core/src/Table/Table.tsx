@@ -195,8 +195,8 @@ function buildTableStylePlugin<
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
       // The `astryx-table` class itself comes from BaseTable, which renders
-      // the <table> element and now names it `table` (with `base-table` as its
-      // legacy name). Adding it here too would put the token on twice.
+      // the <table> element and names it with the canonical `table` target.
+      // Adding it here too would put the token on twice.
       return {
         ...props,
         xstyle: [...props.xstyle, tableStyles.base],

@@ -143,25 +143,6 @@ export const docs = {
         states: ['checked', 'disabled'],
       },
       {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-checkbox',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-        deprecatedFor: 'checkbox-indicator',
-      },
-      {
-        className: 'astryx-radio',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-        deprecatedFor: 'radio-indicator',
-      },
-      {
-        className: 'astryx-radio-dot',
-        visualProps: ['size'],
-        deprecatedFor: 'radio-indicator-dot',
-      },
     ],
   },
   examples: [
@@ -241,7 +222,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Reach for component overrides first (components: {checkbox}). Replacing the component is the heavier path, for when the shape itself is wrong.',
+          "Reach for component overrides first (components: {'checkbox-indicator': {base: {color: 'red'}}}). Replacing the component is the heavier path, for when the shape itself is wrong.",
       },
       {
         guidance: true,
@@ -279,7 +260,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
         name: 'Chrome',
         required: true,
         description:
-          'The persistent box or circle, present in every state. Carries the astryx-checkbox-indicator / astryx-radio-indicator theme target (the pre-indicator astryx-checkbox / astryx-radio names are still emitted on the same element).',
+          'The persistent box or circle, present in every state. Carries the astryx-checkbox-indicator or astryx-radio-indicator theme target.',
       },
       {
         name: 'State mark',
@@ -299,7 +280,7 @@ export const docsDense = {
     description:
       'Componentized selection visuals shared by CheckboxInput, RadioList, and menu rows. Decorative: the owner keeps input/role/name/focus/keyboard; the indicator turns state into a picture. That split makes them themeable: restyle via class targets or replace the component.',
     bestPractices: [
-      { guidance: true, description: 'Prefer component overrides first (components: {checkbox}). Replacing the component is the heavier path, for when the shape itself is wrong.' },
+      { guidance: true, description: "Prefer component overrides first (components: {'checkbox-indicator': {base: {color: 'red'}}}). Replacing the component is the heavier path, for when the shape itself is wrong." },
       { guidance: true, description: 'A replacement must render `children` when they will draw something: use `isRenderable(children)`, not `children != null` or `children ?? mark`. The owner passes a loading Spinner as `children={isBusy && <Spinner/>}`, so it is `false` when idle; a nullish check then renders nothing and deletes the mark on every chosen row (#4893).' },
       { guidance: true, description: 'A replacement must set aria-hidden. The owner supplies role and accessible name; a visible indicator would be announced twice.' },
       { guidance: true, description: 'Use theme tokens for every color, radius, and border width in a replacement. Run `npx astryx docs tokens` for the set.' },

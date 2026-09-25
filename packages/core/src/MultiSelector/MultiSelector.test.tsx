@@ -2386,7 +2386,7 @@ describe('MultiSelector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <MultiSelector
         label="Fruit"
@@ -2399,11 +2399,10 @@ describe('MultiSelector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-multi-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -2424,13 +2423,12 @@ describe('MultiSelector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-multi-selector-clear-icon`. Aside from those target
-    // classes it matches the shared button's own `close`/`sm`/`secondary`
-    // glyph exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <MultiSelector
         label="Fruit"
@@ -2442,7 +2440,7 @@ describe('MultiSelector clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-multi-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -2452,26 +2450,22 @@ describe('MultiSelector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-multi-selector-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes multi-selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'multi-selector-clear-icon-test',
+      name: 'multi-selector-shared-clear-icon-test',
       components: {
-        'multi-selector-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -2483,10 +2477,10 @@ describe('MultiSelector clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-multi-selector-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3097,7 +3091,7 @@ describe('MultiSelector popup theme target', () => {
       '.astryx-multi-selector-popup',
     ) as HTMLElement;
     expect(popup).not.toBeNull();
-    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup).toHaveClass('astryx-popover');
     // The scrolling list is a descendant, not the target itself.
     expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
     expect(popup.getAttribute('role')).toBeNull();

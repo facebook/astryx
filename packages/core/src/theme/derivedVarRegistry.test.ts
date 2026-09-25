@@ -454,38 +454,29 @@ describe('getDerivedVars', () => {
     expect(getDerivedVars('unknown', 'borderRadius')).toEqual([]);
   });
 
-  it('resolves a deprecated key to the entries of the key that replaced it', () => {
-    // A theme written against the old spelling still selects the element (the
-    // component emits both classes), so its derived vars must still expand —
-    // otherwise the rule lands and the var half of it silently does nothing.
-    expect(getDerivedVars('hovercard', 'borderRadius')).toEqual(
-      getDerivedVars('hover-card', 'borderRadius'),
-    );
-    expect(getDerivedVars('textarea', 'paddingInline')).toEqual(
-      getDerivedVars('text-area', 'paddingInline'),
-    );
-    expect(getDerivedVars('progressbar-mark', 'width')).toEqual(
-      getDerivedVars('progress-bar-mark', 'width'),
-    );
+  it('does not resolve removed target aliases', () => {
+    expect(getDerivedVars('hovercard', 'borderRadius')).toEqual([]);
+    expect(getDerivedVars('textarea', 'paddingInline')).toEqual([]);
+    expect(getDerivedVars('progressbar-mark', 'width')).toEqual([]);
   });
 
   it('returns empty for unregistered property', () => {
     expect(getDerivedVars('card', 'color')).toEqual([]);
   });
 
-  it('marks textarea paddingInline as replacing the source property', () => {
-    const result = getDerivedVars('textarea', 'paddingInline');
+  it('marks text-area paddingInline as replacing the source property', () => {
+    const result = getDerivedVars('text-area', 'paddingInline');
     expect(result).toHaveLength(1);
     expect(result[0].vars).toEqual(['--_textarea-inline-padding']);
     expect(result[0].replaces).toBe(true);
   });
 
-  it('marks progressbar-mark width and height as replacing the source property', () => {
+  it('marks progress-bar-mark width and height as replacing the source property', () => {
     for (const [property, varName] of [
       ['width', '--_progressbar-mark-width'],
       ['height', '--_progressbar-mark-height'],
     ]) {
-      const result = getDerivedVars('progressbar-mark', property);
+      const result = getDerivedVars('progress-bar-mark', property);
       expect(result).toHaveLength(1);
       expect(result[0].vars).toEqual([varName]);
       expect(result[0].replaces).toBe(true);

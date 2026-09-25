@@ -89,11 +89,9 @@ describe('response-types EnumDoc names every field', () => {
     expectNamed('build.kit', fields);
   });
 
-  it('theme.targets, including deprecatedFor', async () => {
+  it('theme.targets', async () => {
     const res = await data(['theme', 'targets']);
-    const fields = fieldsOf(res.data);
-    expect(fields).toContain('deprecatedFor');
-    expectNamed('theme.targets', fields);
+    expectNamed('theme.targets', fieldsOf(res.data));
   });
 
   it('gap-report.file, including each delivery', async () => {

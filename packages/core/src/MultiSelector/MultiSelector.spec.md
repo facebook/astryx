@@ -51,10 +51,13 @@ behavior.
 - `isReadOnly` is additive and defaults to `false`. It preserves selected values,
   focus, and form participation while removing selection-surface and editing
   affordances. `isDisabled` takes precedence when both are set.
-- Existing DOM, styling, targets, and public API remain unchanged when the prop is
-  omitted.
+- Behavior and public props remain unchanged when `isReadOnly` is omitted.
+- 0.7.0 removes the `multi-selector-clear-icon` alias; the shared clear glyph
+  remains available through `input-clear-icon`.
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -98,15 +101,15 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                           | Basis                           | Draft review state                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current standalone presentation contains a Field and painted Trigger; the supported InputGroup path renders the same Trigger without a Field. Optional start content, clear action, status icon, or Indicator icon follows supplied props and state.                      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The shared panel content contains the optional Search row, zero or more Option rows, optional public Option dividers and Section headings, and an Empty state when the applicable result set is empty and the value is not loading.                                           | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR3 | Trigger, Indicator icon, Search row, Option row, Section heading, Empty state, and Pointer popup carry the seven current non-deprecated MultiSelector targets documented in `MultiSelector.doc.mjs`.                                                                          | Current source, docs, and tests | Verified current behavior; no target change        |
-| FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                    | Current composition and owners  | Verified current behavior; no target change        |
-| FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model. | Current source and tests        | Verified current behavior; no normalization        |
-| FR6 | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                           | Current public target metadata  | Verified current compatibility state               |
-| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-011`, docs, and tests | Accepted read-only behavior                        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                           | Basis                              | Draft review state                                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------- |
+| FR1 | The current standalone presentation contains a Field and painted Trigger; the supported InputGroup path renders the same Trigger without a Field. Optional start content, clear action, status icon, or Indicator icon follows supplied props and state.                      | Current source, docs, and tests    | Verified current behavior; no new behavior decided |
+| FR2 | The shared panel content contains the optional Search row, zero or more Option rows, optional public Option dividers and Section headings, and an Empty state when the applicable result set is empty and the value is not loading.                                           | Current source, docs, and tests    | Verified current behavior; no new behavior decided |
+| FR3 | Trigger, Indicator icon, Search row, Option row, Section heading, Empty state, and Pointer popup carry the seven current non-deprecated MultiSelector targets documented in `MultiSelector.doc.mjs`.                                                                          | Current source, docs, and tests    | Verified current behavior; no target change        |
+| FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                    | Current composition and owners     | Verified current behavior; no target change        |
+| FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model. | Current source and tests           | Verified current behavior; no normalization        |
+| FR6 | Clear glyphs delegate exclusively to the shared `input-clear-icon` target; removed per-component aliases do not claim anatomy.                                                                                                                                                | Current source and target metadata | Verified canonical ownership                       |
+| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-011`, docs, and tests    | Accepted read-only behavior                        |
 
 ### Allowed variation
 
@@ -250,7 +253,7 @@ empty-state content remains one shared tree.
 - `architecture:public-component-api` and `spec:AST-011/DEC-1` own the additive
   read-only API and its cross-input meaning.
 - `architecture:component-theming-surface` owns anatomy qualification, local
-  target mapping, delegation, and exclusion of deprecated aliases.
+  target mapping, delegation, and exclusion of removed aliases.
 - `architecture:layer-runtime` owns the current Popover host and the distinction
   between browser popover and native-dialog sheet presentation.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering. The
@@ -264,7 +267,7 @@ empty-state content remains one shared tree.
 | Contract            | Verification                                                                                                                             | Representative states                                                            | Mutation or failure expectation                                                                                             | Audit section                       |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | FR1, FR2            | `MultiSelector.test.tsx` render, search, divider, grouping, status, select-all, and empty-state suites plus InputGroup source inspection | Standalone/InputGroup, search, divided, selected, empty, status                  | Removing a documented part or misreporting Field presence conflicts with existing structure, content assertions, or source. | `audit:MultiSelector/anatomy`       |
-| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven current targets and deprecated alias                                   | A current target is missed, invented, moved, or confused with the deprecated clear-icon alias.                              | `audit:MultiSelector/theming`       |
+| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven canonical local targets and shared clear-icon delegation               | A current target is missed, invented, moved, or the clear glyph stops delegating to `input-clear-icon`.                     | `audit:MultiSelector/theming`       |
 | FR4                 | Composed owner source/tests for Field, CheckboxInput, Divider, Icon, Text, and BottomSheet                                               | Field omission/presence, clear actions, checkbox, divider, icons, heading, sheet | A shared part gains the wrong local owner or its documented owner no longer renders it.                                     | `audit:MultiSelector/theming`       |
 | FR5                 | `MultiSelector.test.tsx` presentation suites and `panelContent` source inspection                                                        | Explicit popover, explicit sheet, adaptive touch                                 | A presentation stops using its owner or receives a divergent panel-content implementation.                                  | `audit:MultiSelector/overlay`       |
 | FR7                 | read-only interaction, form, ARIA, and theme-state tests                                                                                 | search/non-search, clearable, open→read-only, disabled precedence                | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent.                | `audit:MultiSelector/accessibility` |

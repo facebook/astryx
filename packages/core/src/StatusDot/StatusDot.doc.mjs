@@ -63,9 +63,6 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-status-dot', visualProps: ['variant']},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {
@@ -124,9 +121,6 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-status-dot', visualProps: ['variant']},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {

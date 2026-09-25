@@ -223,7 +223,8 @@ export function RadioListItem({
   const hasDescription = isRenderable(description);
   const size = context.size;
   // The radio visual is an indicator: a theme can restyle it through the
-  // `radio` / `radio-dot` targets or replace the component outright.
+  // `radio-indicator` / `radio-indicator-dot` targets or replace the component
+  // outright.
   const RadioControl = useIndicator('radio');
   // See CheckboxInput: the ring goes on the indicator's own element, because
   // the native input is visually hidden and only the indicator knows its shape.

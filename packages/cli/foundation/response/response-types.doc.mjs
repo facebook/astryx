@@ -228,7 +228,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
     {
       value: 'theme.palette.generate',

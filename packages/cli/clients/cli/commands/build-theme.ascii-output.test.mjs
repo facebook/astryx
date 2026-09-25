@@ -76,7 +76,7 @@ describe('theme command human output is plain ASCII', () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('[ok] ocean.css');
-    expect(result.stderr).toContain('[warn] Deprecated component target');
+    expect(result.stderr).toContain('[warn] Unknown component "progressbar"');
     expect(result.stderr).toContain('[error] Component "button"');
     expect(result.stdout).toContain('note: Font "Inter"');
     expect(result.stdout).toContain('[note] Theme "ocean" names fonts');
