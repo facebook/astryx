@@ -102,11 +102,21 @@ import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {NativeDateSegment} from './NativeDateSegment';
 import {NativeTimeSegment} from './NativeTimeSegment';
 import {TouchDateTimeField} from './TouchDateTimeField';
+import {
+  effectiveInputPresentation,
+  resolveInputPresentation,
+  type InputPresentation,
+} from '../utils/inputPresentation';
+import {useDevWarning} from '../hooks/useDevWarning';
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
 
+/** @deprecated Use {@link DateTimeInputPresentation} via the `presentation` prop. */
 export type DateTimeInputNativePicker = 'touch' | 'always' | 'never';
+
+/** Which surfaces collect the date and time (`spec:AST-043` FR1). */
+export type DateTimeInputPresentation = InputPresentation;
 
 export type DateTimeInputHourFormat = '12h' | '24h';
 
@@ -501,17 +511,31 @@ export interface DateTimeInputProps extends Omit<
    * user's locale.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * <DateTimeInput
-   *   label="Event time"
-   *   value={dateTime}
-   *   onChange={setDateTime}
-   *   nativePicker="never"
-   * />
-   * ```
+   * @deprecated Use `presentation` (`spec:AST-043` FR3):
+   * `'touch'` → `'adaptive-native'`, `'always'` → `'native'`,
+   * `'never'` → `'adaptive-bottom-sheet'`. Still works exactly as released;
+   * `presentation` wins when both are set.
    */
   nativePicker?: DateTimeInputNativePicker;
+
+  /**
+   * Which surfaces collect the date and time (`spec:AST-043` FR1).
+   *
+   * - `'text-input'`: typed fields only, no picker opens
+   * - `'popover'`: Astryx's typed fields + popovers on every pointer
+   * - `'bottom-sheet'`: Astryx's bottom-sheet date/time wheels on every pointer
+   * - `'native'`: browser/OS date and time pickers on every pointer, with no
+   *   Astryx fallback (FR2)
+   * - `'adaptive-bottom-sheet'`: popovers on a fine pointer, bottom sheet on
+   *   a coarse pointer
+   * - `'adaptive-native'` (default): popovers on a fine pointer, browser/OS
+   *   pickers on a coarse pointer, keeping the released per-segment Astryx
+   *   fallbacks (seconds, non-default `timeIncrement`, `timeOptionInterval`)
+   *   where a native control cannot express the value (FR2)
+   *
+   * @default 'adaptive-native'
+   */
+  presentation?: DateTimeInputPresentation;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -593,27 +617,31 @@ function PointerDateTimeField({
   labelTooltip,
   numberOfMonths = 1,
   weekStartsOn,
-  nativePicker = 'touch',
   width,
   xstyle,
   className,
   style,
   ref,
+  nativeMode = 'off',
+  hasPickers = true,
   ...rest
-}: DateTimeInputProps) {
+}: DateTimeInputProps & {
+  nativeMode?: 'off' | 'adaptive' | 'forced';
+  hasPickers?: boolean;
+}) {
   const t = useTranslator();
   const locale = useLocale();
-  const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
-  const usesNativePicker =
-    nativePicker === 'always' || (nativePicker === 'touch' && isTouch);
-  // iOS's native time picker has no seconds wheel, treats step as validation
-  // rather than picker cadence, and cannot express our preset-time list. Keep
-  // the Astryx time field for those explicit contracts instead of losing them.
+  const usesNativePicker = nativeMode !== 'off';
+  // `forced` (`presentation="native"`, FR2): no Astryx fallback. `adaptive`
+  // (`adaptive-native` on a coarse pointer): iOS's native time picker has no
+  // seconds wheel, treats step as validation rather than picker cadence, and
+  // cannot express our preset-time list, so those keep the Astryx time field.
   const usesNativeTimePicker =
-    usesNativePicker &&
-    !hasSeconds &&
-    timeIncrement === 1 &&
-    timeOptionInterval === undefined;
+    nativeMode === 'forced' ||
+    (nativeMode === 'adaptive' &&
+      !hasSeconds &&
+      timeIncrement === 1 &&
+      timeOptionInterval === undefined);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   // Speaks arrow-key stepping results through the persistent live regions:
   // stepping programmatically rewrites a plain textbox's value, which screen
@@ -804,7 +832,7 @@ function PointerDateTimeField({
   // semantics it shipped with — a plain text input, no combobox role, no
   // second listbox in the accessibility tree.
   const hasTimeOptions =
-    !usesNativeTimePicker && timeOptionInterval !== undefined;
+    hasPickers && !usesNativeTimePicker && timeOptionInterval !== undefined;
 
   const timeOptions = useMemo(() => {
     if (!hasTimeOptions || timeOptionInterval === undefined) {
@@ -883,20 +911,20 @@ function PointerDateTimeField({
   });
 
   const handleCalendarToggle = useCallback(() => {
-    if (!isEffectivelyDisabled) {
+    if (hasPickers && !isEffectivelyDisabled) {
       if (popover.isOpen) {
         popover.hide();
       } else {
         popover.show();
       }
     }
-  }, [isEffectivelyDisabled, popover]);
+  }, [hasPickers, isEffectivelyDisabled, popover]);
 
   const handleDateInputClick = useCallback(() => {
-    if (!isEffectivelyDisabled && !popover.isOpen) {
+    if (hasPickers && !isEffectivelyDisabled && !popover.isOpen) {
       popover.show({skipAutoFocus: true});
     }
-  }, [isEffectivelyDisabled, popover]);
+  }, [hasPickers, isEffectivelyDisabled, popover]);
 
   // --- Date handlers ---
   const handleDateChange = useCallback(
@@ -1050,6 +1078,7 @@ function PointerDateTimeField({
         e.preventDefault();
         popover.hide();
       } else if (
+        hasPickers &&
         (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
         !popover.isOpen
       ) {
@@ -1064,7 +1093,7 @@ function PointerDateTimeField({
         commitDatePendingInput();
       }
     },
-    [popover, commitDatePendingInput, isEffectivelyDisabled],
+    [hasPickers, popover, commitDatePendingInput, isEffectivelyDisabled],
   );
 
   // --- Time-option popover (#2727) ---
@@ -1630,40 +1659,42 @@ function PointerDateTimeField({
             />
           ) : (
             <>
-              <button
-                type="button"
-                onClick={handleCalendarToggle}
-                disabled={isEffectivelyDisabled}
-                aria-label={
-                  popover.isOpen
-                    ? t('@astryx.dateInput.toggleCalendarClose')
-                    : t('@astryx.dateInput.openCalendar')
-                }
-                {...stylex.props(
-                  focusOutlineStyles.focusVisible,
-                  styles.iconButton,
-                  isEffectivelyDisabled && styles.iconButtonDisabled,
-                )}>
-                <Icon
-                  icon="calendar"
-                  size="sm"
-                  color="secondary"
-                  // Stable theme target on the calendar toggle glyph, so a theme
-                  // can restyle just this icon (color, size, hover) — and each
-                  // open/closed state — via `defineTheme`, mirroring
-                  // `date-input-toggle-icon`. Same-element rules in
-                  // @layer astryx-theme win over the icon's own base color/size,
-                  // which a segment-level target could not reach.
-                  {...themeProps('date-time-input-toggle-icon', {
-                    state: popover.isOpen ? 'expanded' : 'collapsed',
-                  })}
-                />
-              </button>
+              {hasPickers && (
+                <button
+                  type="button"
+                  onClick={handleCalendarToggle}
+                  disabled={isEffectivelyDisabled}
+                  aria-label={
+                    popover.isOpen
+                      ? t('@astryx.dateInput.toggleCalendarClose')
+                      : t('@astryx.dateInput.openCalendar')
+                  }
+                  {...stylex.props(
+                    focusOutlineStyles.focusVisible,
+                    styles.iconButton,
+                    isEffectivelyDisabled && styles.iconButtonDisabled,
+                  )}>
+                  <Icon
+                    icon="calendar"
+                    size="sm"
+                    color="secondary"
+                    // Stable theme target on the calendar toggle glyph, so a theme
+                    // can restyle just this icon (color, size, hover) — and each
+                    // open/closed state — via `defineTheme`, mirroring
+                    // `date-input-toggle-icon`. Same-element rules in
+                    // @layer astryx-theme win over the icon's own base color/size,
+                    // which a segment-level target could not reach.
+                    {...themeProps('date-time-input-toggle-icon', {
+                      state: popover.isOpen ? 'expanded' : 'collapsed',
+                    })}
+                  />
+                </button>
+              )}
               <input
                 ref={mergedDateInputRef}
                 id={dateInputId}
                 type="text"
-                role="combobox"
+                role={hasPickers ? 'combobox' : undefined}
                 value={dateDisplayValue}
                 onChange={handleDateInputChange}
                 onBlur={handleDateBlur}
@@ -1685,9 +1716,11 @@ function PointerDateTimeField({
                     : undefined
                 }
                 aria-busy={isBusy || undefined}
-                aria-expanded={popover.isOpen}
-                aria-haspopup="dialog"
-                aria-controls={popover.isOpen ? popover.id : undefined}
+                aria-expanded={hasPickers ? popover.isOpen : undefined}
+                aria-haspopup={hasPickers ? 'dialog' : undefined}
+                aria-controls={
+                  hasPickers && popover.isOpen ? popover.id : undefined
+                }
                 aria-autocomplete="none"
                 autoComplete="off"
                 {...stylex.props(
@@ -1846,7 +1879,8 @@ function PointerDateTimeField({
         </div>
       </div>
 
-      {!usesNativePicker &&
+      {hasPickers &&
+        !usesNativePicker &&
         popover.render(
           <Calendar
             handleRef={calendarRef}
@@ -1920,25 +1954,42 @@ function PointerDateTimeField({
 PointerDateTimeField.displayName = 'PointerDateTimeField';
 
 /**
- * A combined date and time picker whose `nativePicker` prop chooses both
- * surfaces. Native modes use OS-owned date and time controls in Astryx field
- * chrome. With `nativePicker="never"`, fine pointers keep the typed fields and
- * popovers while coarse pointers get Astryx's coordinated Date/Time bottom
- * sheet.
+ * A combined date and time picker whose `presentation` prop chooses both
+ * surfaces (`spec:AST-043`). Native modes use OS-owned date and time controls
+ * in Astryx field chrome; the deprecated `nativePicker` maps to the same
+ * surfaces (FR3).
  */
-export function DateTimeInput({
-  nativePicker = 'touch',
-  ...props
-}: DateTimeInputProps) {
+export function DateTimeInput(props: DateTimeInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
-  const usesNativePicker =
-    nativePicker === 'always' || (nativePicker === 'touch' && isTouch);
-
-  return usesNativePicker || !isTouch ? (
-    <PointerDateTimeField {...props} nativePicker={nativePicker} />
-  ) : (
-    <TouchDateTimeField {...props} />
+  useDevWarning(
+    'DateTimeInput',
+    '`nativePicker` is deprecated; use `presentation` instead (`touch` → `adaptive-native`, `always` → `native`, `never` → `adaptive-bottom-sheet`). `presentation` wins when both are set.',
+    props.nativePicker !== undefined,
   );
+  const effective = effectiveInputPresentation(
+    props.presentation,
+    props.nativePicker,
+    'date',
+  );
+  const {
+    presentation: _presentation,
+    nativePicker: _nativePicker,
+    ...rest
+  } = props;
+  if (effective === 'native') {
+    return <PointerDateTimeField {...rest} nativeMode="forced" />;
+  }
+  switch (resolveInputPresentation(effective, isTouch)) {
+    case 'native':
+      // Only `adaptive-native` on a coarse pointer resolves here (FR2).
+      return <PointerDateTimeField {...rest} nativeMode="adaptive" />;
+    case 'sheet':
+      return <TouchDateTimeField {...rest} />;
+    case 'text-input':
+      return <PointerDateTimeField {...rest} hasPickers={false} />;
+    case 'desktop':
+      return <PointerDateTimeField {...rest} />;
+  }
 }
 
 DateTimeInput.displayName = 'DateTimeInput';

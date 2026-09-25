@@ -64,6 +64,19 @@ const meta: Meta<typeof TimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    presentation: {
+      control: 'select',
+      options: [
+        'text-input',
+        'popover',
+        'bottom-sheet',
+        'native',
+        'adaptive-bottom-sheet',
+        'adaptive-native',
+      ],
+      description:
+        'Which surface selects the time (spec:AST-043); nativePicker is deprecated',
+    },
     nativePicker: {
       control: 'radio',
       options: ['touch', 'always', 'never'],
@@ -111,25 +124,25 @@ export const NativePickerModes: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <TimeInput
-          label="nativePicker='touch' (default)"
+          label="presentation='adaptive-native' (default)"
           description="Native picker on a coarse primary pointer; Astryx typed field on a fine pointer"
           value={value}
           onChange={setValue}
-          nativePicker="touch"
+          presentation="adaptive-native"
         />
         <TimeInput
-          label="nativePicker='always'"
+          label="presentation='native'"
           description="Native picker wherever input type=time is compatible"
           value={value}
           onChange={setValue}
-          nativePicker="always"
+          presentation="native"
         />
         <TimeInput
-          label="nativePicker='never'"
+          label="presentation='text-input'"
           description="Astryx typed field on every pointer type"
           value={value}
           onChange={setValue}
-          nativePicker="never"
+          presentation="text-input"
         />
       </div>
     );

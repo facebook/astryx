@@ -107,6 +107,19 @@ const meta: Meta<typeof DateInput> = {
       description:
         "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
     },
+    presentation: {
+      control: 'select',
+      options: [
+        'text-input',
+        'popover',
+        'bottom-sheet',
+        'native',
+        'adaptive-bottom-sheet',
+        'adaptive-native',
+      ],
+      description:
+        'Which surface draws the picker (spec:AST-043); nativePicker is deprecated',
+    },
     nativePicker: {
       control: 'radio',
       options: ['touch', 'always', 'never'],
@@ -216,25 +229,25 @@ export const NativePickerModes: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <DateInput
-          label="nativePicker='touch' (default)"
+          label="presentation='adaptive-native' (default)"
           description="Native picker on a coarse pointer; Astryx picker otherwise"
           value={value}
           onChange={setValue}
-          nativePicker="touch"
+          presentation="adaptive-native"
         />
         <DateInput
-          label="nativePicker='always'"
+          label="presentation='native'"
           description="Native picker wherever the browser supports it"
           value={value}
           onChange={setValue}
-          nativePicker="always"
+          presentation="native"
         />
         <DateInput
-          label="nativePicker='never'"
+          label="presentation='adaptive-bottom-sheet'"
           description="Astryx picker on every pointer type"
           value={value}
           onChange={setValue}
-          nativePicker="never"
+          presentation="adaptive-bottom-sheet"
         />
       </div>
     );

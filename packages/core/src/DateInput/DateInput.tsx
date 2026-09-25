@@ -71,6 +71,12 @@ import {
   formatSharedDate,
 } from '../utils/plainDate';
 import type {TimestampFormat} from '../Timestamp';
+import {
+  effectiveInputPresentation,
+  resolveInputPresentation,
+  type InputPresentation,
+} from '../utils/inputPresentation';
+import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
   iconButton: {
@@ -164,7 +170,11 @@ export type DateInputSize = keyof typeof sizeStyles;
  * - `'always'`: native wherever the browser supports `<input type="date">`
  * - `'never'`: Astryx's own pickers everywhere
  */
+/** @deprecated Use {@link DateInputPresentation} via the `presentation` prop. */
 export type DateInputNativePicker = 'touch' | 'always' | 'never';
+
+/** Which surface collects the date (`spec:AST-043` FR1). */
+export type DateInputPresentation = InputPresentation;
 
 export type DateInputFormat = Extract<
   TimestampFormat,
@@ -404,13 +414,30 @@ export interface DateInputProps extends Omit<
    * reason enough to prefer `'never'` on a field that uses it.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * // Astryx's own touch picker instead of the platform's
-   * <DateInput label="Event date" value={date} onChange={setDate} nativePicker="never" />
-   * ```
+   * @deprecated Use `presentation` (`spec:AST-043` FR3):
+   * `'touch'` → `'adaptive-native'`, `'always'` → `'native'`,
+   * `'never'` → `'adaptive-bottom-sheet'`. Still works exactly as released;
+   * `presentation` wins when both are set.
    */
   nativePicker?: DateInputNativePicker;
+
+  /**
+   * Which surface collects the date (`spec:AST-043` FR1).
+   *
+   * - `'text-input'`: typed field only, no picker opens
+   * - `'popover'`: Astryx's typed field + calendar popover on every pointer
+   * - `'bottom-sheet'`: Astryx's bottom-sheet calendar on every pointer
+   * - `'native'`: the browser/OS picker on every pointer, with no Astryx
+   *   fallback (FR2)
+   * - `'adaptive-bottom-sheet'`: popover on a fine pointer, bottom sheet on
+   *   a coarse pointer
+   * - `'adaptive-native'` (default): popover on a fine pointer, browser/OS
+   *   picker on a coarse pointer, keeping the released Astryx fallbacks
+   *   where a native control cannot express the value (FR2)
+   *
+   * @default 'adaptive-native'
+   */
+  presentation?: DateInputPresentation;
 }
 
 /**
@@ -466,8 +493,9 @@ function PointerDateField({
   className,
   style,
   ref,
+  hasPicker = true,
   ...rest
-}: DateInputProps) {
+}: DateInputProps & {hasPicker?: boolean}) {
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -601,10 +629,10 @@ function PointerDateField({
 
   // Handle opening the popover from input click (keep focus in input)
   const handleInputClick = useCallback(() => {
-    if (!isEffectivelyDisabled && !popover.isOpen) {
+    if (hasPicker && !isEffectivelyDisabled && !popover.isOpen) {
       popover.show({skipAutoFocus: true});
     }
-  }, [isEffectivelyDisabled, popover]);
+  }, [hasPicker, isEffectivelyDisabled, popover]);
 
   // Unified change handler that fires both onChange and changeAction
   const fireChange = useCallback(
@@ -722,6 +750,7 @@ function PointerDateField({
         e.preventDefault();
         popover.hide();
       } else if (
+        hasPicker &&
         (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
         !popover.isOpen
       ) {
@@ -736,7 +765,7 @@ function PointerDateField({
         commitPendingInput();
       }
     },
-    [popover, commitPendingInput, isEffectivelyDisabled],
+    [hasPicker, popover, commitPendingInput, isEffectivelyDisabled],
   );
 
   const inputWrapper = (
@@ -771,40 +800,42 @@ function PointerDateField({
         style,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
-      <button
-        type="button"
-        onClick={handleToggle}
-        disabled={isEffectivelyDisabled}
-        aria-label={
-          popover.isOpen
-            ? t('@astryx.dateInput.toggleCalendarClose')
-            : t('@astryx.dateInput.openCalendar')
-        }
-        {...stylex.props(
-          focusOutlineStyles.focusVisible,
-          styles.iconButton,
-          isEffectivelyDisabled && styles.iconButtonDisabled,
-        )}>
-        <Icon
-          icon="calendar"
-          size="sm"
-          color="secondary"
-          // Stable theme target on the toggle glyph itself, so a theme can
-          // restyle just this icon (color, size, hover) — and each open/closed
-          // state — via `defineTheme`. Same-element rules in @layer astryx-theme
-          // win over the icon's own base color/size, which a button-level target
-          // could not reach. Reflects the popover's open/closed state as a
-          // `data-state` attribute.
-          {...themeProps('date-input-toggle-icon', {
-            state: popover.isOpen ? 'expanded' : 'collapsed',
-          })}
-        />
-      </button>
+      {hasPicker && (
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={isEffectivelyDisabled}
+          aria-label={
+            popover.isOpen
+              ? t('@astryx.dateInput.toggleCalendarClose')
+              : t('@astryx.dateInput.openCalendar')
+          }
+          {...stylex.props(
+            focusOutlineStyles.focusVisible,
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          )}>
+          <Icon
+            icon="calendar"
+            size="sm"
+            color="secondary"
+            // Stable theme target on the toggle glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and each open/closed
+            // state — via `defineTheme`. Same-element rules in @layer astryx-theme
+            // win over the icon's own base color/size, which a button-level target
+            // could not reach. Reflects the popover's open/closed state as a
+            // `data-state` attribute.
+            {...themeProps('date-input-toggle-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
+        </button>
+      )}
       <input
         ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
-        role="combobox"
+        role={hasPicker ? 'combobox' : undefined}
         value={displayValue}
         onChange={handleInputChange}
         onBlur={handleBlur}
@@ -825,9 +856,9 @@ function PointerDateField({
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
         aria-busy={isBusy || undefined}
-        aria-expanded={popover.isOpen}
-        aria-haspopup="dialog"
-        aria-controls={popover.isOpen ? popover.id : undefined}
+        aria-expanded={hasPicker ? popover.isOpen : undefined}
+        aria-haspopup={hasPicker ? 'dialog' : undefined}
+        aria-controls={hasPicker && popover.isOpen ? popover.id : undefined}
         aria-autocomplete="none"
         autoComplete="off"
         {...stylex.props(
@@ -853,20 +884,21 @@ function PointerDateField({
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}
-      {popover.render(
-        <Calendar
-          handleRef={calendarRef}
-          mode="single"
-          value={optimisticValue}
-          onChange={handleDateSelect}
-          min={min}
-          max={max}
-          dateConstraints={dateConstraints}
-          numberOfMonths={numberOfMonths}
-          weekStartsOn={weekStartsOn}
-        />,
-        {placement: 'below', alignment: 'start'},
-      )}
+      {hasPicker &&
+        popover.render(
+          <Calendar
+            handleRef={calendarRef}
+            mode="single"
+            value={optimisticValue}
+            onChange={handleDateSelect}
+            min={min}
+            max={max}
+            dateConstraints={dateConstraints}
+            numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
+          />,
+          {placement: 'below', alignment: 'start'},
+        )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </div>
@@ -948,18 +980,30 @@ PointerDateField.displayName = 'PointerDateField';
  */
 export function DateInput(props: DateInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
-  const nativePicker = props.nativePicker ?? 'touch';
-
-  // The platform's picker, where the consumer asked for it — see the
-  // `nativePicker` prop for what that trades away.
-  if (nativePicker === 'always' || (nativePicker === 'touch' && isTouch)) {
-    return <NativeDateField {...props} />;
-  }
-  return isTouch ? (
-    <TouchDateField {...props} />
-  ) : (
-    <PointerDateField {...props} />
+  useDevWarning(
+    'DateInput',
+    '`nativePicker` is deprecated; use `presentation` instead (`touch` → `adaptive-native`, `always` → `native`, `never` → `adaptive-bottom-sheet`). `presentation` wins when both are set.',
+    props.nativePicker !== undefined,
   );
+  const surface = resolveInputPresentation(
+    effectiveInputPresentation(props.presentation, props.nativePicker, 'date'),
+    isTouch,
+  );
+  const {
+    presentation: _presentation,
+    nativePicker: _nativePicker,
+    ...rest
+  } = props;
+  switch (surface) {
+    case 'native':
+      return <NativeDateField {...rest} />;
+    case 'sheet':
+      return <TouchDateField {...rest} />;
+    case 'text-input':
+      return <PointerDateField {...rest} hasPicker={false} />;
+    case 'desktop':
+      return <PointerDateField {...rest} />;
+  }
 }
 
 DateInput.displayName = 'DateInput';

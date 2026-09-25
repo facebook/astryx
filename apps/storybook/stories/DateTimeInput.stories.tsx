@@ -74,6 +74,19 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    presentation: {
+      control: 'select',
+      options: [
+        'text-input',
+        'popover',
+        'bottom-sheet',
+        'native',
+        'adaptive-bottom-sheet',
+        'adaptive-native',
+      ],
+      description:
+        'Which surfaces draw the pickers (spec:AST-043); nativePicker is deprecated',
+    },
     nativePicker: {
       control: 'radio',
       options: ['touch', 'always', 'never'],
@@ -146,25 +159,25 @@ export const NativePickerModes: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <DateTimeInput
-          label="nativePicker='touch' (default)"
+          label="presentation='adaptive-native' (default)"
           description="Native date and compatible time controls on a coarse primary pointer"
           value={value}
           onChange={setValue}
-          nativePicker="touch"
+          presentation="adaptive-native"
         />
         <DateTimeInput
-          label="nativePicker='always'"
+          label="presentation='native'"
           description="Native date and compatible time controls on every pointer type"
           value={value}
           onChange={setValue}
-          nativePicker="always"
+          presentation="native"
         />
         <DateTimeInput
-          label="nativePicker='never'"
+          label="presentation='adaptive-bottom-sheet'"
           description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
           value={value}
           onChange={setValue}
-          nativePicker="never"
+          presentation="adaptive-bottom-sheet"
         />
       </div>
     );
@@ -405,7 +418,7 @@ export const TwoMonthCalendar: Story = {
   args: {
     label: 'Travel departure',
     numberOfMonths: 2,
-    nativePicker: 'never',
+    presentation: 'adaptive-bottom-sheet',
   },
 };
 
