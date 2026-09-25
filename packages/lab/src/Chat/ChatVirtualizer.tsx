@@ -14,8 +14,9 @@
  *
  * The combination under evaluation:
  *   1. aggregate top/bottom spacers — rendered rows stay in normal document
- *      flow between two placeholder divs (O(1) placeholder nodes, the
- *      occupancy scheme production chat transcripts ship);
+ *      flow between two placeholder divs (O(1) placeholder nodes; the two
+ *      largest production chat transcripts keep rows in flow too), inside
+ *      one content block whose min-height floors the scroll extent;
  *   2. bottom-distance bookkeeping as the default reference frame — the
  *      desired position is stored as "px from the bottom edge", so
  *      above-viewport estimate→measured swaps and pinned tail growth are
@@ -48,11 +49,27 @@ const GLOBAL_BUCKET = '\u0000global';
 // the bucket's own data and the inherited baseline carry equal weight.
 const PRIOR_SAMPLES = 5;
 
-// flexShrink: 0 — inside a column-flex scroller the spacers are flex items
-// and would otherwise be compressed to fit (default shrink 1), silently
-// corrupting the whole geometry. Heights stay imperative; React only
-// manages this one property, so its style diffing never touches height.
-const spacerStyle: React.CSSProperties = {flexShrink: 0};
+// The block that holds the spacers and the windowed rows, in both modes.
+// Its `min-height` is the scroll extent's FLOOR and is written imperatively
+// (writeSpacers), never through this object, so React's style diffing
+// cannot touch it. React applies a parent's own style only after every
+// child mutation of the commit, and this component writes the floor only in
+// its own layout effect — after its children's — so from the first row
+// removal until the pass re-derives the geometry, the floor is the previous
+// extent. The extent then cannot collapse under a forced layout in that
+// window (a row's layout cleanup, a ref callback, a child's layout effect),
+// and the browser has nothing to clamp scrollTop against.
+//
+// flow-root keeps row margins inside the block, as the own scroller did
+// before this block existed. flexShrink: 0 / alignSelf: stretch — in a
+// column-flex host (ChatLayout's scroller in attach mode) the block is a
+// flex item and would otherwise be compressed to fit (default shrink 1),
+// silently corrupting the whole geometry.
+const contentStyle: React.CSSProperties = {
+  display: 'flow-root',
+  flexShrink: 0,
+  alignSelf: 'stretch',
+};
 // Momentum ("fling") outlives touchend and emits no further touch events, so
 // the end of a gesture is detected as scroll silence, not as an event. Also
 // the retry interval while the gesture is still settling.
@@ -150,8 +167,8 @@ export interface ChatVirtualizerProps<T> {
   /**
    * ATTACH MODE. By default the list renders its own scroll container. Pass
    * the caller's scroll element instead (ChatLayout's, via
-   * useChatLayoutContext().scrollContainerRef) and it renders a bare
-   * fragment — spacers + windowed rows — into the container the caller
+   * useChatLayoutContext().scrollContainerRef) and it renders one content
+   * block — spacers + windowed rows — into the container the caller
    * already owns: the layout component keeps the scroller, the virtualizer
    * is one participant in it. Pass the ELEMENT, not a ref: a parent's ref
    * attaches after its children's layout effects, so a ref would still read
@@ -243,6 +260,7 @@ export function ChatVirtualizer<T>(
     scrollElementRef.current !== undefined
       ? scrollElementRef.current
       : ownScrollerRef.current;
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
   const spacerTopRef = React.useRef<HTMLDivElement | null>(null);
   const spacerBottomRef = React.useRef<HTMLDivElement | null>(null);
   const rowEls = React.useRef(new Map<string, HTMLDivElement>());
@@ -511,11 +529,9 @@ export function ChatVirtualizer<T>(
   };
 
   // Size both spacers so the mounted window occupies its true place in the
-  // scroll range, under whatever geometry is current.
-  // `floor` mode only ever GROWS a spacer (used pre-mutation, where the new
-  // window's rows are not in the DOM yet: shrinking the bottom spacer there
-  // would make the transient shorter — the clamp window all over again).
-  const writeSpacers = (w: Win, floor = false): void => {
+  // scroll range, under whatever geometry is current, and move the content
+  // block's floor (contentStyle) to the extent that geometry describes.
+  const writeSpacers = (w: Win): void => {
     const g = geo.current;
     const empty = w.end < w.start || g.offsets.length === 0;
     // gestureAdj shifts the whole window block without touching scrollTop
@@ -531,18 +547,23 @@ export function ChatVirtualizer<T>(
         : g.total;
     const write = (
       ref: React.RefObject<HTMLDivElement | null>,
+      prop: 'height' | 'minHeight',
       px: number,
     ): void => {
-      if (!ref.current) {
-        return;
+      if (ref.current) {
+        ref.current.style[prop] = `${px}px`;
       }
-      if (floor && px <= (parseFloat(ref.current.style.height) || 0)) {
-        return;
-      }
-      ref.current.style.height = `${px}px`;
     };
-    write(spacerTopRef, top);
-    write(spacerBottomRef, Math.max(0, g.total - belowEnd));
+    write(spacerTopRef, 'height', top);
+    write(spacerBottomRef, 'height', Math.max(0, g.total - belowEnd));
+    // The extent these spacers describe: the model total, plus whatever the
+    // top spacer carries beyond its model offset (the gesture adjustment,
+    // after the clamp at the very top).
+    write(
+      contentRef,
+      'minHeight',
+      empty ? g.total : g.total + top - g.offsets[w.start],
+    );
   };
 
   // Where a row identity + viewport offset puts scrollTop under the current
@@ -590,13 +611,19 @@ export function ChatVirtualizer<T>(
   // sticky region above us, and every offset in `geo` is relative to our first
   // spacer rather than to the scroll box.
   const originRef = React.useRef(0);
-  // Content the caller renders BELOW our fragment (in ChatLayout, the dock
+  // Content the caller renders BELOW our block (in ChatLayout, the dock
   // overflow: the scroller deliberately overflows by the composer height so
   // the tail can scroll clear of it). End mode must scroll past it, or the
   // last message parks underneath the overlay (measured: constant 174px).
   const belowRef = React.useRef(0);
   const measureOrigin = (el: HTMLElement): number => {
     if (scrollElementRef.current == null) {
+      // Own container: the content starts at the scroll box and nothing
+      // follows it. Stated rather than skipped — a list switched back from
+      // attach mode would otherwise keep the host's header and dock offsets
+      // and aim every target past the end of its own scroller.
+      originRef.current = 0;
+      belowRef.current = 0;
       return 0;
     }
     const top = spacerTopRef.current;
@@ -652,12 +679,12 @@ export function ChatVirtualizer<T>(
     }
     const entryScrollTop = el.scrollTop;
     // Phase 0 — spacers FIRST, from the pre-measure geometry: a window-shift
-    // commit swaps rows before the layout effect runs, so without this the
-    // first forced layout below sees new rows + stale spacers, the content
-    // height transiently collapses, and the browser clamps scrollTop (which
-    // then reads as a user scroll). Style writes don't force layout, so
-    // making the spacers consistent BEFORE the first offsetHeight read
-    // removes the collapse window entirely.
+    // commit swaps rows before the layout effect runs, so the first forced
+    // layout below would otherwise place the new rows against stale spacers
+    // — every origin and anchor read off it wrong by the swapped rows'
+    // height. (The extent itself cannot collapse meanwhile: the content
+    // block's floor holds it, see contentStyle.) Style writes don't force
+    // layout, so the spacers are consistent BEFORE the first read.
     writeSpacers(winRef.current);
     measureOrigin(el);
     // Refresh the anchor from the LIVE scrollTop against the pre-measure
@@ -858,19 +885,6 @@ export function ChatVirtualizer<T>(
       priceFreeze.current = true;
     }
   }
-
-  // Runs BEFORE this commit's DOM mutations (the useInsertionEffect
-  // contract): floor-size the spacers for the NEW window while the OLD rows
-  // are still in the DOM, so the transient is strictly TALLER and can never
-  // clamp scrollTop. Without it, a consumer row's own layout effect (they
-  // run before ours) forcing layout between React's row removal and our
-  // spacer write sees the collapsed height, the browser clamps on the spot,
-  // and the live-anchor refresh adopts the clamp as the user's position
-  // (measured: 314-426px yank-backs with astryx message rows — plain divs
-  // have no such effects and never reproduced it).
-  React.useInsertionEffect(() => {
-    writeSpacers(winRef.current, true);
-  });
 
   // Runs after EVERY commit — this is the pre-paint correction slot. (No
   // separate initial-landing effect: this pass computes the window from the
@@ -1229,7 +1243,7 @@ export function ChatVirtualizer<T>(
   };
 
   const children: React.ReactNode[] = [
-    <div key="__top" ref={spacerTopRef} style={spacerStyle} aria-hidden />,
+    <div key="__top" ref={spacerTopRef} aria-hidden />,
   ];
   if (win.end >= win.start) {
     for (let i = win.start; i <= Math.min(win.end, data.length - 1); i++) {
@@ -1244,17 +1258,16 @@ export function ChatVirtualizer<T>(
       );
     }
   }
-  children.push(
-    <div
-      key="__bottom"
-      ref={spacerBottomRef}
-      style={spacerStyle}
-      aria-hidden
-    />,
+  children.push(<div key="__bottom" ref={spacerBottomRef} aria-hidden />);
+
+  const content = (
+    <div ref={contentRef} style={contentStyle}>
+      {children}
+    </div>
   );
 
   if (attachMode) {
-    return <>{children}</>;
+    return content;
   }
 
   return (
@@ -1266,7 +1279,7 @@ export function ChatVirtualizer<T>(
         position: 'relative',
         ...style,
       }}>
-      {children}
+      {content}
     </div>
   );
 }

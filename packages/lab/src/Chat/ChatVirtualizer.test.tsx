@@ -2,7 +2,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, act} from '@testing-library/react';
-import {createRef} from 'react';
+import {createRef, useLayoutEffect} from 'react';
 import {ChatVirtualizer, type ChatVirtualizerHandle} from './ChatVirtualizer';
 
 // jsdom has no real layout (offsetHeight is 0, ResizeObserver never fires),
@@ -64,14 +64,55 @@ describe('ChatVirtualizer', () => {
     expect(container.querySelectorAll('[aria-hidden="true"]').length).toBe(2);
   });
 
-  it('renders a bare fragment in attach mode (no own scroll container)', () => {
+  it('renders one content block in attach mode (no own scroll container)', () => {
     const host = document.createElement('div');
     const {container} = renderList(rows(3), {scrollElement: host});
-    // Own-container mode wraps everything in one scroller div; attach mode
-    // must not add a wrapper — the spacers are direct children.
-    expect(
-      (container.firstElementChild as HTMLElement).getAttribute('aria-hidden'),
-    ).toBe('true');
+    // Own-container mode nests the same block inside its scroller div;
+    // attach mode renders the block alone, spacers first and last.
+    const block = container.firstElementChild as HTMLElement;
+    expect(block.style.overflowY).toBe('');
+    expect(block.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
+    expect(block.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  // ---- The extent floor ----------------------------------------------------
+  // A commit removes rows before anything resizes the spacers, so a layout
+  // forced inside it (a row's layout cleanup, a ref callback) would see the
+  // extent without them, and the browser would clamp scrollTop for good. The
+  // content block's min-height is the floor: written by the pass only, so
+  // through the whole commit it is still the extent the last pass described.
+
+  it('keeps the previous extent as the floor while the commit removes rows', () => {
+    const seen: string[] = [];
+    let block: HTMLElement | null = null;
+    function Probe({item}: {item: Row}) {
+      useLayoutEffect(
+        () => () => {
+          seen.push(block?.style.minHeight ?? '');
+        },
+        [],
+      );
+      return <span>{item.text}</span>;
+    }
+    const list = (data: Row[]) => (
+      <ChatVirtualizer<Row>
+        data={data}
+        keyExtractor={m => String(m.id)}
+        renderItem={({item}) => <Probe item={item} />}
+        estimatedItemSize={100}
+      />
+    );
+    const {container, rerender} = render(list(rows(5)));
+    block = container.querySelector<HTMLElement>(
+      '[aria-hidden="true"]',
+    )!.parentElement;
+    // jsdom lays nothing out, so every row keeps its estimate: 5 x 100.
+    expect(block?.style.minHeight).toBe('500px');
+    act(() => {
+      rerender(list(rows(2)));
+    });
+    expect(seen).toEqual(['500px', '500px', '500px']);
+    expect(block?.style.minHeight).toBe('200px');
   });
 
   it('renders nothing but spacers while the attach element is pending (null)', () => {
@@ -375,6 +416,37 @@ describe('ChatVirtualizer', () => {
     // across the intermediate render may legitimately unmount and remount a
     // row, and pinning that would be testing React's reconciliation, not this
     // component's contract.
+  });
+
+  it('drops the host geometry when it returns to its own scroller', () => {
+    // In attach mode the list measures where its block starts inside the
+    // host (headers, padding) and what the host renders below it (the dock).
+    // Neither exists in its own scroller: kept, they aimed the follow target
+    // past the end of the list.
+    const host = tallScroller();
+    host.scrollTop = 2000;
+    const ref = createRef<ChatVirtualizerHandle>();
+    const list = (scrollElement?: HTMLElement) => (
+      <ChatVirtualizer<Row>
+        data={rows(50)}
+        keyExtractor={m => String(m.id)}
+        renderItem={({item}) => <span>{item.text}</span>}
+        estimatedItemSize={100}
+        scrollElement={scrollElement}
+        apiRef={ref}
+      />
+    );
+    const {container, rerender} = render(list(host));
+    act(() => {
+      rerender(list(undefined));
+    });
+    act(() => {
+      ref.current?.scrollToDistanceFromBottomPx(0);
+    });
+    // jsdom reports clientHeight 0 for the own scroller, so its bottom is
+    // the modelled total: 50 x 100.
+    expect((container.firstElementChild as HTMLElement).scrollTop).toBe(5000);
+    host.remove();
   });
 
   it('survives a gesture that ends with nothing rendered', () => {

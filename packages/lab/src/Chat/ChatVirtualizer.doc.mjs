@@ -51,7 +51,7 @@ export const docs = {
     {
       name: 'scrollElement',
       type: 'HTMLElement | null',
-      description: 'Attach mode: the scroll container the caller already owns, into which spacers and rows render as a bare fragment instead of the list creating its own scroller. Pass the ELEMENT, not a ref: a parent\'s ref attaches after its children\'s layout effects, so a ref still reads null on the commit that first needs the scroller, and a ref mutation is invisible to React — nothing re-renders and no effect re-runs when it lands, while an element in state makes its arrival a render and a real dependency (scroll listeners, observation, and the gesture state machine are rebuilt when the container changes). Read it in a passive effect and hold it in state. Pass null (not undefined) while it is still pending: undefined means own-container mode, and one commit of that inside an unbounded parent mounts every row.',
+      description: 'Attach mode: the scroll container the caller already owns, into which spacers and rows render as one content block instead of the list creating its own scroller. Pass the ELEMENT, not a ref: a parent\'s ref attaches after its children\'s layout effects, so a ref still reads null on the commit that first needs the scroller, and a ref mutation is invisible to React — nothing re-renders and no effect re-runs when it lands, while an element in state makes its arrival a render and a real dependency (scroll listeners, observation, and the gesture state machine are rebuilt when the container changes). Read it in a passive effect and hold it in state. Pass null (not undefined) while it is still pending: undefined means own-container mode, and one commit of that inside an unbounded parent mounts every row.',
     },
     {
       name: 'endThreshold',
@@ -96,7 +96,7 @@ export const docsZh = {
     measureMode: "尺寸来源。'ro' 取自观察到的 border box 加挂载时一次同步读取，稳态提交不触发布局；'sync' 在每次提交的 layout effect 里重测整个窗口，用每次提交一次强制布局换取零窗口修正。",
     apiRef: '暴露 scrollToDistanceFromBottomPx 与 anchorToKey 的命令式句柄。两者都是“声明参考系”而非执行一次滚动：行陆续测量进来时列表会持续恢复所声明的位置。',
     getItemType: '为行分类，使测量结果按类型累积均值。工具调用短行与长 markdown 混排的会话因此能收敛出各自诚实的价格，而非一个混合数字。',
-    scrollElement: '接管模式：调用方已有的滚动容器，占位与行以裸片段渲染进去，列表不再自建滚动容器。传元素本身而非 ref：父的 ref 在子的 layout effect 之后才装配，所以最先需要滚动容器的那次提交里 ref 仍读到 null；而且 ref 赋值对 React 不可见，落地时既不重渲染也不重跑 effect，元素存进 state 才让“到达”成为一次渲染和真正的依赖（换容器时滚动监听、观察和手势状态机都要重建）。请在 passive effect 里读出并存进 state。尚未就绪时传 null 而不是 undefined：undefined 表示自建容器模式，在不限高的父容器里哪怕只有一次提交也会挂载全部行。',
+    scrollElement: '接管模式：调用方已有的滚动容器，占位与行包在一个内容块里渲染进去，列表不再自建滚动容器。传元素本身而非 ref：父的 ref 在子的 layout effect 之后才装配，所以最先需要滚动容器的那次提交里 ref 仍读到 null；而且 ref 赋值对 React 不可见，落地时既不重渲染也不重跑 effect，元素存进 state 才让“到达”成为一次渲染和真正的依赖（换容器时滚动监听、观察和手势状态机都要重建）。请在 passive effect 里读出并存进 state。尚未就绪时传 null 而不是 undefined：undefined 表示自建容器模式，在不限高的父容器里哪怕只有一次提交也会挂载全部行。',
     endThreshold: '用户滚动落点距底部多少 px 才重新接管跟随；脱离则是任何越过该范围的向上移动。设得太紧，视觉上停在底部的用户（触控板惯性、小数行高、页面缩放）会在内容持续产出时悄悄停止跟随。',
     overscanTop: '视口上方额外保持挂载的行数（按 px），用于在需要重算窗口前吸收向上滚动。',
     overscanBottom: '视口下方额外保持挂载的行数（按 px）。',
@@ -117,7 +117,7 @@ export const docsDense = {
     measureMode: "'ro' = observed border box + one mount read, no layout in steady state; 'sync' = remeasure window every commit",
     apiRef: 'scrollToDistanceFromBottomPx + anchorToKey; both DECLARE a frame, restored as rows measure in',
     getItemType: 'per-type running averages; keeps tool stubs from blending with long markdown',
-    scrollElement: "attach mode: caller's scroller, rows render as a fragment; pass the ELEMENT not a ref (parent ref attaches after child layout effects + ref writes are invisible to React) — read it in a passive effect, hold it in state; null (not undefined) while pending, else one commit mounts every row",
+    scrollElement: "attach mode: caller's scroller, rows render in one content block; pass the ELEMENT not a ref (parent ref attaches after child layout effects + ref writes are invisible to React) — read it in a passive effect, hold it in state; null (not undefined) while pending, else one commit mounts every row",
     endThreshold: 'px from bottom for a user scroll to re-engage follow; too tight = silent unfollow',
     overscanTop: 'px of rows mounted above the viewport',
     overscanBottom: 'px of rows mounted below the viewport',
