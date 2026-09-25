@@ -1,0 +1,13 @@
+{
+  "apiVersion": 1,
+  "type": "theme.list",
+  "data": [
+    {
+      "slug": "ocean",
+      "displayName": "Ocean",
+      "description": "A zorblax blue.",
+      "maintained": true,
+      "package": "@acme/kit"
+    }
+  ]
+}

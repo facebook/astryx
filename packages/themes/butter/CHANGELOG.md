@@ -1,5 +1,53 @@
 # @xds/theme-butter
 
+# 0.6.3
+
+---
+
+# 0.6.2
+
+---
+
+# 0.6.1
+
+#### Fixes
+
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration. (#6126)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.2
 
 ---

@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Programmatic API for `astryx validate-integration`.
+ * @file Integration structure validation for
+ * `astryx doctor integration validate`.
  *
  * Validates exactly ONE integration package at a time and reports findings
  * using the AstryxIntegrationIssue model
@@ -15,7 +16,7 @@
  *
  * Both return a { found, name, version, manifestFile, issues } result. `found`
  * is false only for the no-manifest local case, which is guidance (not an
- * error) so `validate-integration` can stay exit-0 in a non-integration dir.
+ * error) so the Doctor check stays exit-0 in a non-integration dir.
  *
  * The on-disk contribution validators themselves (roots + codemods/templates/
  * components/docs, behind `validateLoadedIntegration`) live in
@@ -34,6 +35,18 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
+  THEME_SLUG_RE,
+  unreadThemeFolders,
+} from '../../foundation/discovery/theme-discovery.mjs';
+import {
+  createFixContext,
+  DOC_CANDIDATE_RE,
+  pathIsInside,
+  stampOf,
+  TEMPLATE_CANDIDATE_RE,
+  unreachableFix,
+} from '../../foundation/integrations/contribution-fixes.mjs';
+import {
   findManifestPaths,
   loadManifest,
   resolvePackageDir,
@@ -43,6 +56,7 @@ import {
 import {
   validateLoadedIntegration,
   issueError as error,
+  issueWarning as warning,
 } from '../../foundation/integrations/validate-contributions.mjs';
 
 export {validateLoadedIntegration};
@@ -58,6 +72,7 @@ export {validateLoadedIntegration};
  * @property {string} [version] Integration package version.
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
  * @property {Issue[]} issues
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
 /**
@@ -76,15 +91,135 @@ function findNearestPackageJson(cwd) {
   }
 }
 
+const UNREACHABLE_SCAN_LIMIT = 5_000;
+const UNREACHABLE_SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'coverage',
+  '.next',
+  'out',
+]);
+/**
+ * A warning for each folder under the themes root that holds modules but is
+ * not read as a theme. Either branch of its fix leaves nothing to warn about:
+ * the folder becomes a theme, or a dot-folder discovery skips.
+ * @param {string} packageDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {Issue[]}
+ */
+function unreadThemeFolderIssues(packageDir, loaded) {
+  const themes = /** @type {string} */ (loaded.themes);
+  return unreadThemeFolders(themes, {
+    packageDir,
+    packageName: loaded.name,
+  }).map(folder => {
+    const name = path.basename(folder);
+    const shown = `${path.relative(packageDir, folder).split(path.sep).join('/')}/`;
+    const hide = `rename it to .${name} so Astryx skips it`;
+    let fix;
+    if (THEME_SLUG_RE.test(name)) {
+      const stem = `${name.replace(/-([a-z0-9])/gu, (_, character) => character.toUpperCase())}Theme`;
+      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`astryx integration add theme ${name}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
+    } else {
+      fix = `${hide}; a theme folder needs a lower-kebab name.`;
+    }
+    return warning(
+      'unread_theme_folder',
+      `Folder "${shown}" holds modules but no <name>Theme source or .doc.mjs descriptor, so Astryx does not read it as a theme. Fix: ${fix}`,
+    );
+  });
+}
+
+/**
+ * Find real contribution metadata that sits outside every declared root. The
+ * scan is local-authoring-only, skips dependency/build output, never follows
+ * symlinks, and parses candidates before reporting them so ordinary JS files do
+ * not become noise.
+ *
+ * @param {string} packageDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {Promise<Issue[]>}
+ */
+async function findUnreachableContributionIssues(packageDir, loaded) {
+  const roots = /** @type {string[]} */ (
+    [
+      loaded.components,
+      loaded.templates,
+      loaded.codemods,
+      loaded.docs,
+      loaded.themes,
+    ].filter(Boolean)
+  );
+  /** @type {Issue[]} */
+  const issues = [];
+  const context = createFixContext(packageDir, loaded);
+  let scanned = 0;
+  let truncated = false;
+
+  /** @param {string} dir */
+  async function walk(dir) {
+    if (roots.some(root => pathIsInside(dir, root))) return;
+    const entries = fs
+      .readdirSync(dir, {withFileTypes: true})
+      .sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      if (truncated) return;
+      if (UNREACHABLE_SKIP_DIRS.has(entry.name)) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      scanned += 1;
+      if (scanned > UNREACHABLE_SCAN_LIMIT) {
+        truncated = true;
+        return;
+      }
+      if (
+        !TEMPLATE_CANDIDATE_RE.test(entry.name) &&
+        !DOC_CANDIDATE_RE.test(entry.name)
+      ) {
+        continue;
+      }
+      const stamp = stampOf(context, full);
+      if (stamp == null) continue;
+      issues.push(
+        warning(
+          'unreachable_contribution',
+          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. ${unreachableFix(context, full, stamp)}`,
+        ),
+      );
+    }
+  }
+
+  await walk(packageDir);
+  if (truncated) {
+    issues.push(
+      warning(
+        'unreachable_scan_truncated',
+        `Stopped unreachable-contribution scanning after ${UNREACHABLE_SCAN_LIMIT} files. Narrow the package or move generated output under dist/build.`,
+      ),
+    );
+  }
+  return issues;
+}
 
 /**
  * Validate a single integration given its package directory and identity.
  * Shared core for the local and installed entry points.
  * @param {string} packageDir
  * @param {{name: string, version?: string}} identity
+ * @param {{scanUnreachable?: boolean}} [options]
  * @returns {Promise<ValidateResult>}
  */
-async function validateAtPackageDir(packageDir, identity) {
+async function validateAtPackageDir(
+  packageDir,
+  identity,
+  {scanUnreachable = false} = {},
+) {
   /** @type {Issue[]} */
   const issues = [];
   /** @type {ValidateResult} */
@@ -121,15 +256,17 @@ async function validateAtPackageDir(packageDir, identity) {
   const manifestFile = manifests[0];
   result.manifestFile = manifestFile;
 
-  // loadManifest loads the default export and validates it against the
-  // integration schema (the shared load boundary). A missing default export or
-  // a schema failure throws; we convert either into a single invalid_manifest
-  // error issue so validate-integration stays exit-1-but-not-crash.
+  // loadManifest validates the base manifest and isolates optional agent-doc
+  // validation. A missing default export or invalid base field throws and
+  // becomes invalid_manifest; invalid agentDocs is carried to the shared
+  // contribution validator so other valid roots remain available.
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string | undefined} */
+  let agentDocsError;
   try {
-    ({manifest, unknownKeys} = await loadManifest(
+    ({manifest, unknownKeys, agentDocsError} = await loadManifest(
       manifestFile,
       `Integration manifest (${path.basename(manifestFile)})`,
     ));
@@ -161,16 +298,27 @@ async function validateAtPackageDir(packageDir, identity) {
     templates: resolveRoot(manifest.templates),
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
+    themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
+    agentDocs: manifest.agentDocs,
+    __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __spec: identity.name,
     __packageDir: packageDir,
     __manifestFile: manifestFile,
   };
+  result.integration = loaded;
 
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
+  if (loaded.themes)
+    issues.push(...unreadThemeFolderIssues(packageDir, loaded));
+  if (scanUnreachable) {
+    issues.push(
+      ...(await findUnreachableContributionIssues(packageDir, loaded)),
+    );
+  }
 
   return result;
 }
@@ -196,17 +344,32 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   }
 
   /** @type {{name?: string, version?: string}} */
-  let pkg = {};
+  let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  } catch {
-    // Identity falls back to undefined; the manifest checks still run.
+  } catch (err) {
+    // A null name means "no manifest here"; this package has one.
+    return {
+      found: true,
+      name: '(local package)',
+      manifestFile: manifests[0],
+      issues: [
+        error(
+          'invalid_package_json',
+          `Could not parse ${pkgJsonPath}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      ],
+    };
   }
 
-  return validateAtPackageDir(packageDir, {
-    name: pkg.name ?? '(local package)',
-    version: pkg.version,
-  });
+  return validateAtPackageDir(
+    packageDir,
+    {
+      name: pkg.name ?? '(local package)',
+      version: pkg.version,
+    },
+    {scanUnreachable: true},
+  );
 }
 
 /**
@@ -238,15 +401,18 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-  } catch {
+  } catch (err) {
+    const exists = fs.existsSync(pkgJsonPath);
     return {
       found: true,
       name: spec,
       version: undefined,
       issues: [
         error(
-          'package_not_found',
-          `Could not find installed integration package "${spec}" at ${pkgJsonPath}. Install it first.`,
+          exists ? 'invalid_package_json' : 'package_not_found',
+          exists
+            ? `Could not parse ${pkgJsonPath}: ${err instanceof Error ? err.message : String(err)}`
+            : `Could not find installed integration package "${spec}" at ${pkgJsonPath}. Install it first.`,
         ),
       ],
     };
@@ -279,8 +445,8 @@ export async function validateIntegration(pkg, options = {}) {
   return {
     type: 'integration.validate',
     data: {
-      name: result.found ? result.name ?? null : null,
-      version: result.found ? result.version ?? null : null,
+      name: result.found ? (result.name ?? null) : null,
+      version: result.found ? (result.version ?? null) : null,
       issues: result.issues,
     },
   };

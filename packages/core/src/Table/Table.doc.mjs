@@ -12,7 +12,7 @@ const anatomy = [
     name: 'Scroll region',
     required: true,
     description:
-      'Keyboard-focusable outer region that scrolls horizontally when the columns overflow.',
+      'Outer region that scrolls horizontally, enters the keyboard order, and contains overscroll only while the columns overflow.',
   },
   {
     name: 'Header section',
@@ -131,8 +131,8 @@ export const docs = {
       {className: 'astryx-table-row'},
       {className: 'astryx-table-cell', visualProps: ['density']},
       {className: 'astryx-table-header-cell', visualProps: ['density']},
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {className: 'astryx-base-table', deprecatedFor: 'table'},
     ],
   },

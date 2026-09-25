@@ -93,12 +93,18 @@ export default defineConfig({
     //              transform, and the jest-dom setup; inherit all of that from
     //              the root config via `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
-    //              utils) — no DOM, no StyleX/babel transform, no jest-dom
+    //              utils, and app-level suites that need no DOM) — no DOM, no
+    //              StyleX/babel transform, no jest-dom
     //              matchers. Deliberately does NOT extend the root config so it
     //              runs in a plain node environment and skips the per-file jsdom
     //              instantiation that dominated these files' runtime. A new
     //              package lands in `node` by default; if its tests need the DOM
     //              they fail loudly there — move it into the `ui` include list.
+    //
+    // An app or package that carries its OWN vitest config is invisible to both
+    // projects, so its tests belong to no CI job: `pnpm test` runs this file and
+    // nothing else. Add the suite to an include list here instead of giving it a
+    // second config to be run by.
     projects: [
       {
         extends: true,
@@ -123,6 +129,24 @@ export default defineConfig({
       {
         // forks pool (vitest default) is required here: several CLI tests call
         // process.chdir(), which worker threads do not support.
+        // This project does NOT extend the root config, so it carries its own
+        // `resolve` — the root's aliases do not reach it.
+        resolve: {
+          alias: [
+            // Theme packages resolve to `dist/`, which no test run builds. The
+            // sandbox palette suite reads their palettes as a reference corpus,
+            // so point the BARE specifier at the authored source. Subpath
+            // imports (`/built`, `/theme.css`) are untouched and still need a
+            // real build.
+            {
+              find: /^@astryxdesign\/theme-([a-z0-9-]+)$/,
+              replacement: path.join(
+                rootDir,
+                'packages/themes/$1/src/source.ts',
+              ),
+            },
+          ],
+        },
         test: {
           name: 'node',
           globals: true,
@@ -153,6 +177,9 @@ export default defineConfig({
             // Storybook config invariants (no DOM needed) — e.g. the
             // workspace source-alias guard in .storybook/main.test.ts.
             'apps/storybook/.storybook/**/*.test.{ts,tsx,mjs}',
+            // Sandbox page logic (palette generation, colour maths) — pure
+            // modules with no DOM, so they run here rather than in `ui`.
+            'apps/sandbox/src/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,

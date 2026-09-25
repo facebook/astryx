@@ -603,8 +603,8 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['multi-selector-clear-icon'].base` scopes overrides to the
- *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ * - `components['input-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-input-clear-icon` target), so a
  *   theme can recolor it, morph its color on hover, and resize it — without a
  *   fragile descendant selector or raw CSS.
  * - `components['multi-selector-indicator-icon']` scopes overrides to the
@@ -617,7 +617,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'multi-selector-icon-demo',
   components: {
-    'multi-selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

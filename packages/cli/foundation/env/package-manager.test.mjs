@@ -125,8 +125,6 @@ describe('detectPackageManager', () => {
   });
 
   it('lets the packageManager field break a multi-lockfile tie', () => {
-    // A single lockfile still outranks the field (asserted above). This is only
-    // about the case where the filesystem is self-contradictory.
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
     fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
@@ -135,6 +133,24 @@ describe('detectPackageManager', () => {
       JSON.stringify({packageManager: 'pnpm@11.10.0'}),
     );
     expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
+  it('follows the declared packageManager even when no lockfile matches it', () => {
+    // The declaration is the project speaking. Two lockfiles that disagree
+    // with it are two traces that are both wrong, not a tie to resolve.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      ambiguous: false,
+      declared: 'pnpm',
+      source: 'declared',
+    });
   });
 
   it('ignores a runner that has no lockfile in the directory', () => {
@@ -171,14 +187,87 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(dir)).toBe('npx');
   });
 
-  it('lockfile takes priority over packageManager field', () => {
+  it('declared packageManager outranks a single stray lockfile', () => {
+    // The regression: one `yarn install` inside a pnpm project leaves a
+    // yarn.lock forever, and a single lockfile used to outrank the field. The
+    // CLI then printed `yarn astryx` for a pnpm project — and wrote that line
+    // into the agent docs, where agents copy it.
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
     fs.writeFileSync(
       path.join(dir, 'package.json'),
       JSON.stringify({packageManager: 'pnpm@8.0.0'}),
     );
+    expect(detectPackageManager(dir)).toBe('pnpm');
+    expect(getCliInvocation(dir)).toBe('pnpm exec astryx');
+  });
+
+  it('reports the stray lockfile it ignored, so doctor can name it', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      declared: 'pnpm',
+      source: 'declared',
+      strayLockfiles: [{pm: 'yarn', file: 'yarn.lock'}],
+    });
+  });
+
+  it('reports no stray when the lockfile agrees with the declaration', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      declared: 'pnpm',
+      strayLockfiles: [],
+    });
+  });
+
+  it('keeps the lockfile fallback when nothing is declared', () => {
+    // The documented fallback: with no declaration, one lockfile still decides.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({}));
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'yarn',
+      declared: null,
+      source: 'lockfile',
+    });
+  });
+
+  it('ignores an unknown packageManager value and falls back to the lockfile', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'unknown@1.0.0'}),
+    );
     expect(detectPackageManager(dir)).toBe('yarn');
+  });
+
+  it('lets a nearer directory answer before an outer declaration', () => {
+    // Unchanged walk-up behaviour: the first directory that answers wins, so a
+    // workspace root's declaration does not reach past a package that has its
+    // own lockfile.
+    const dir = makeTmpDir();
+    const inner = path.join(dir, 'packages', 'app');
+    fs.mkdirSync(inner, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    fs.writeFileSync(path.join(inner, 'package-lock.json'), '{}');
+    expect(detectPackageManager(inner)).toBe('npm');
+    expect(detectPackageManager(dir)).toBe('pnpm');
   });
 
   it('detects from npm_config_user_agent env var', () => {

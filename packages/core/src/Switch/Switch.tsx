@@ -122,6 +122,15 @@ const thumbOnSizeStyles = stylex.create({
   },
 });
 
+// The pressed overlay, painted as a gradient layer OVER the track's and
+// thumb's own fills so it composes with the on/off colors and the hover tint
+// instead of replacing them. Same token Button's overlay paints with. The
+// switch is a two-part control whose focusable input sits beside the track,
+// so the press is read off the shared scope marker (the row), the way the
+// hover tint already is: pressing the input, the track or the label all
+// activate the row.
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
 const labelWrapperSizeStyles = stylex.create({
   sm: {
     minHeight: 20,
@@ -207,6 +216,15 @@ const styles = stylex.create({
       default: null,
       '@media (forced-colors: active)': 'CanvasText',
     },
+    // Pressed: the overlay rides on top of the on/off fill. Gated like the
+    // hover tint so forced colors keeps its system-color track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
+    },
   },
   // The one ring in the system not drawn by focusOutlineStyles. The focusable
   // input is a sibling of the track, so the condition has to reach the shared
@@ -278,6 +296,16 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // Pressed: the same overlay as the track, so the whole control darkens
+    // under the finger rather than the thumb standing out against a darker
+    // track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
+    },
   },
   // The thumb fill lives on the on/off styles (not the shared thumb style)
   // because forced colors needs a per-state system color: CanvasText on the
@@ -298,7 +326,6 @@ const styles = stylex.create({
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
     justifyContent: 'center',
   },
   description: {

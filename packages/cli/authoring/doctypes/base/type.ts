@@ -4,6 +4,61 @@
  * @file Shared leaf primitives used across the doc types.
  */
 
+/** Every authored documentation kind accepted by `parseDoc`. */
+export type AuthoredDocKind =
+  | 'component'
+  | 'function'
+  | 'generic'
+  | 'page'
+  | 'block'
+  | 'schema'
+  | 'command'
+  | 'enum'
+  | 'namespace';
+
+/** Visibility of an authored doc in a compiled audience-specific bundle. */
+export type DocAudience = 'public' | 'internal';
+
+/**
+ * Optional canonical placement request. The compiler resolves `parent` as a
+ * stable doc reference. `slot` selects one parent-owned slot, and `order`
+ * provides deterministic sibling ordering inside that slot.
+ */
+export interface DocPlacement {
+  parent: string;
+  slot?: string;
+  order?: number;
+}
+
+/**
+ * Graph metadata shared by every authored doc kind. Reserved for the docs
+ * graph, which is not built yet: nothing reads these fields, and a reference
+ * topic that sets one fails to load.
+ */
+export interface AuthoredDocGraphFields {
+  /** Requested canonical parent in the docs graph. Not read yet. */
+  placement?: DocPlacement;
+  /** Prior routes or names the docs graph will keep resolving. Not read yet. */
+  aliases?: string[];
+  /** Docs bundle audience; omit for public docs. Not read yet. */
+  audience?: DocAudience;
+}
+
+/**
+ * Stable public identity for generated registry resources.
+ *
+ * The converter derives a slug from the doc's stable `name` by default. Set
+ * `slug` only when the public URL must differ from that derived value. When a
+ * published slug changes, keep prior relative paths in `aliases` so existing
+ * install commands continue to work.
+ */
+export interface RegistryDocIdentity {
+  /** Lowercase kebab-case leaf slug override. */
+  slug?: string;
+  /** Prior paths within the item's kind root, without `.json`. */
+  aliases?: string[];
+}
+
 /**
  * Documents one element in a component's anatomy breakdown.
  * Anatomy describes the visual/structural parts that make up a component
@@ -256,8 +311,10 @@ export interface ComponentPlaygroundConfig {
   wrapper?: {
     /** Parent component name as exported from `@astryxdesign/core`, e.g. `'TabList'`. */
     component: string;
-    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    /** Props for the wrapper. The previewed sub-component becomes its `children` unless slotProp is set. */
     props?: Record<string, unknown>;
+    /** Wrapper prop that receives the previewed sub-component instead of `children`. */
+    slotProp?: string;
   };
 }
 
@@ -429,26 +486,25 @@ export interface ComponentThemingTarget {
   className: string;
   /** Visual prop names reflected on this element.
    *  These are the props passed to `themeProps()` as the second argument.
-   *  Use these names to derive preferred data selectors: `variant` →
-   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Legacy bare
-   *  classes are still emitted for compatibility but should not be the primary
-   *  documentation surface. Omit if the component has no visual props (class
-   *  name only). */
+   *  Use these names to derive selectors: `variant` →
+   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Values are
+   *  reflected only as data attributes; the stable target class identifies the
+   *  component or part. Omit if the component has no visual props. */
   visualProps?: string[];
-  /** State names that appear on this element based on component state.
+  /** State names reflected on this element based on component state.
    *  Unlike visualProps (driven by props), these reflect runtime state
-   *  (checked, selected, today, on, expanded, etc.). Use these names to derive preferred data selectors such as
-   *  `[data-checked="checked"]`. Legacy state classes are still emitted for
-   *  compatibility. Omit if the element has no state-driven selectors. */
+   *  (checked, selected, today, on, expanded, etc.). Use these names to derive
+   *  selectors such as `[data-checked="checked"]`. Omit if the element has no
+   *  state-driven selectors. */
   states?: string[];
-  /** Set when this target has been RENAMED and this entry is the old name.
-   *  The component still emits the class (via `themeProps`'s `legacyNames`),
-   *  so existing themes keep working, but the docsite should steer readers to
-   *  the replacement. The value is the class name that supersedes this one,
+  /** Set when this target has been renamed and this entry is the old name.
+   *  The component continues emitting the class through `themeProps`'s
+   *  `legacyNames`, so existing themes keep working while discovery and build
+   *  guidance prefer the replacement. The value is the canonical target key
    *  without the `astryx-` prefix — e.g. `"checkbox-indicator"`.
    *
-   *  A theme target is public API; renaming one without this is a silent
-   *  break for every theme styling it. */
+   *  A theme target is public API; deprecation alone does not authorize
+   *  removing either this metadata or runtime support. */
   deprecatedFor?: string;
 }
 

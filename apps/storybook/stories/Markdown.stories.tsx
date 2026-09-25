@@ -1,11 +1,26 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState, useEffect, useCallback} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
+import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
+import {expect, userEvent, within} from 'storybook/test';
+import {
+  createDelayedMarkdownDemoPlugin,
+  createSourceDecorationDemo,
+  markdownDemoPlugins,
+  markdownFrontmatterDemo,
+  markdownSemanticFenceDemoPlugin,
+} from './Markdown.demoPlugins';
+import {
+  remarkRawHtmlPlugin,
+  remarkSpecLinkPlugin,
+  remarkUnsafeLinkPlugin,
+  specBadgePlugin,
+} from './Markdown.remarkPlugins';
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown',
@@ -443,5 +458,356 @@ export const InlinePlugins: Story = {
         </Markdown>
       </div>
     );
+  },
+};
+
+const StoryMath: NonNullable<MarkdownComponents['math']> = ({
+  value,
+  display,
+}) => {
+  const Tag = display === 'block' ? 'div' : 'span';
+  return (
+    <Tag
+      role="math"
+      aria-label={`Formula: ${value}`}
+      style={{
+        display: display === 'block' ? 'block' : 'inline',
+        padding: display === 'block' ? '12px 16px' : '1px 4px',
+        marginBlock: display === 'block' ? 12 : undefined,
+        border: '1px solid var(--color-border)',
+        borderRadius: 6,
+        fontFamily: 'serif',
+        fontStyle: 'italic',
+        textAlign: display === 'block' ? 'center' : undefined,
+      }}>
+      {value}
+    </Tag>
+  );
+};
+
+export const CustomMath: Story = {
+  name: 'Custom Math Renderer',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown components={{math: StoryMath}}>
+        {
+          'A renderer can typeset inline math such as $E = mc^2$ without preprocessing the source.\n\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n\nCode remains opaque: `$not_math$`.'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
+export const SyntaxPlugins: Story = {
+  name: 'Syntax Plugins',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={markdownDemoPlugins}>
+        {
+          '# Plugin composition\n\nHello @{Ada}. Ordinary **Markdown** keeps its behavior, while TODO becomes a transform-owned node.\n\n:::note\nThis callout and mention are typed extension nodes.\n:::\n\nProtected contexts stay literal: `TODO @{Linus}` and [TODO @{Grace}](/people).'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
+export const SuspenseRenderer: Story = {
+  name: 'Plugin renderer with Suspense',
+  render: () => {
+    const [run, setRun] = useState(0);
+    const delayedPlugin = useMemo(
+      () => createDelayedMarkdownDemoPlugin(),
+      [run],
+    );
+
+    return (
+      <div style={{maxWidth: 680}}>
+        <div style={{marginBlockEnd: 12}}>
+          <Button
+            label="Replay delayed renderer"
+            variant="secondary"
+            size="sm"
+            onClick={() => setRun(value => value + 1)}
+          />
+        </div>
+        <Markdown key={run} plugins={[delayedPlugin]}>
+          {
+            'Before the async node.\n\nHello @{Ada}. This sibling Markdown renders immediately.\n\nAfter the async node.'
+          }
+        </Markdown>
+      </div>
+    );
+  },
+};
+
+export const SemanticFence: Story = {
+  name: 'Semantic Fence',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={[markdownSemanticFenceDemoPlugin]}>
+        {
+          '# Build flow\n\n```diagram Checkout to deploy\nCheckout --> Test --> Deploy\n```\n\nThe plugin renderer presents typed data only for declared languages. Other fences keep the ordinary copyable code fallback:\n\n```text\npnpm test\n```'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
+const decorationSource =
+  '# Release notes\n\nThe parser now streams incrementally.\n\nEverything else is unchanged.';
+
+export const SourceDecoration: Story = {
+  name: 'Source Decoration Metadata',
+  render: () => {
+    const {plugins, readout} = createSourceDecorationDemo(
+      decorationSource,
+      'The parser now streams incrementally.',
+    );
+    return (
+      <div style={{maxWidth: 680}}>
+        <Markdown plugins={plugins}>{decorationSource}</Markdown>
+        <Text>
+          Decorations recorded while rendering: {readout.join(', ') || 'none'}.
+          The document above is identical with and without them because the
+          helper records metadata rather than visual presentation.
+        </Text>
+      </div>
+    );
+  },
+};
+
+const nativeAndRemarkSource = [
+  '# Plugin composition',
+  '',
+  'Hello @{Ada}. TODO becomes a transform-owned node, and SPEC-4821 is claimed',
+  'by whichever plugin runs first, next to an [Authored link](/people).',
+  '',
+  ':::note',
+  'Native syntax and an adapted Remark transform share one ordered list.',
+  ':::',
+  '',
+  'Protected contexts stay literal: `TODO @{Linus} SPEC-9999`.',
+  '',
+  '```txt',
+  'SPEC-9999 stays copyable',
+  '```',
+].join('\n');
+
+/**
+ * Both plugins claim `SPEC-4821`, so whichever runs first consumes it and the
+ * second sees output it must leave alone: a badge is an owned extension node,
+ * and link children are a protected context.
+ */
+const nativeFirst = [
+  ...markdownDemoPlugins,
+  specBadgePlugin,
+  remarkSpecLinkPlugin,
+];
+const remarkFirst = [
+  ...markdownDemoPlugins,
+  remarkSpecLinkPlugin,
+  specBadgePlugin,
+];
+
+export const NativeAndRemarkPlugins: Story = {
+  name: 'Native and Remark plugins',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Native syntax plugins and one adapted synchronous Remark transform run in the same ordered list, and the order decides the outcome. Both claim SPEC-4821: running the native badge first leaves the Remark transform nothing to link, and running the Remark transform first puts the text inside a link, which the native helper treats as a protected context. Astryx keeps ownership of the transformed destination, and code stays copyable either way.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{display: 'grid', gap: 24, maxWidth: 680}}>
+      <section data-order="native-first">
+        <Text>Native badge plugin first</Text>
+        <Markdown plugins={nativeFirst}>{nativeAndRemarkSource}</Markdown>
+      </section>
+      <section data-order="remark-first">
+        <Text>Adapted Remark plugin first</Text>
+        <Markdown plugins={remarkFirst}>{nativeAndRemarkSource}</Markdown>
+      </section>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    const pane = (order: string): HTMLElement => {
+      const element = canvasElement.querySelector<HTMLElement>(
+        `[data-order="${order}"]`,
+      );
+      if (element == null) {
+        throw new Error(`missing pane: ${order}`);
+      }
+      return element;
+    };
+    const nativeFirstPane = within(pane('native-first'));
+    const remarkFirstPane = within(pane('remark-first'));
+
+    // Native syntax and transform plugins still own their own nodes.
+    await expect(nativeFirstPane.getByText('@Ada')).toBeInTheDocument();
+    await expect(nativeFirstPane.getByLabelText('Note')).toBeInTheDocument();
+    await expect(nativeFirstPane.getByText('TODO')).toBeInTheDocument();
+
+    // Native first: the badge consumed the prose, so no link was produced.
+    const badge = nativeFirstPane.getByText('SPEC-4821');
+    await expect(badge).toHaveAttribute('data-spec-badge');
+    await expect(
+      nativeFirstPane.queryByRole('link', {name: 'SPEC-4821'}),
+    ).not.toBeInTheDocument();
+
+    // Reversed: the Remark transform consumed it, and the native helper left
+    // the link's children alone — so the same source renders differently.
+    const specLink = remarkFirstPane.getByRole('link', {name: 'SPEC-4821'});
+    await expect(specLink).toHaveAttribute('href', '/specs/4821');
+    await expect(remarkFirstPane.getByText('SPEC-4821')).not.toHaveAttribute(
+      'data-spec-badge',
+    );
+
+    // Protected contexts and copyable code are untouched in both orders.
+    await expect(canvas.getAllByText('TODO @{Linus} SPEC-9999')).toHaveLength(
+      2,
+    );
+    await expect(canvas.getAllByText('SPEC-9999 stays copyable')).toHaveLength(
+      2,
+    );
+
+    // Keyboard order follows document order: the transformed link is an
+    // ordinary tab stop that hands focus on to the authored link.
+    await expect(
+      remarkFirstPane.getAllByRole('link').map(link => link.textContent),
+    ).toEqual(['SPEC-4821', 'Authored link']);
+    specLink.focus();
+    await expect(specLink).toHaveFocus();
+    await userEvent.tab();
+    await expect(
+      remarkFirstPane.getByRole('link', {name: 'Authored link'}),
+    ).toHaveFocus();
+  },
+};
+
+const fullStackFrontmatterSource = [
+  '---',
+  'title: Plugin rollout',
+  'status: ready',
+  '---',
+  '# Plugin rollout',
+  '',
+  'Hello @{Ada}. TODO tracks SPEC-4821.',
+  '',
+  '```diagram Release path',
+  'Author --> Review --> Publish',
+  '```',
+].join('\n');
+
+export const NativeFrontmatterWithFullStack: Story = {
+  name: 'Native frontmatter with full plugin stack',
+  render: () => {
+    const metadata = markdownFrontmatterDemo.parse(fullStackFrontmatterSource);
+    const {plugins: decorationPlugins} = createSourceDecorationDemo(
+      fullStackFrontmatterSource,
+      'Plugin rollout',
+    );
+    const plugins = [
+      markdownFrontmatterDemo.plugin,
+      ...markdownDemoPlugins,
+      markdownSemanticFenceDemoPlugin,
+      remarkSpecLinkPlugin,
+      ...decorationPlugins,
+    ];
+    const label =
+      metadata.status === 'match'
+        ? `${metadata.metadata.title} — ${metadata.metadata.status}`
+        : 'No document metadata';
+
+    return (
+      <div style={{maxWidth: 680}}>
+        <Text>Document metadata: {label}</Text>
+        <Markdown plugins={plugins}>{fullStackFrontmatterSource}</Markdown>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText('Document metadata: Plugin rollout — ready'),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('heading', {name: 'Plugin rollout'}),
+    ).toBeInTheDocument();
+    await expect(canvas.getByText('@Ada')).toBeInTheDocument();
+    await expect(canvas.getByText('TODO')).toBeInTheDocument();
+    await expect(canvas.getByRole('link', {name: 'SPEC-4821'})).toHaveAttribute(
+      'href',
+      '/specs/4821',
+    );
+    await expect(
+      canvas.getByRole('figure', {name: 'Release path'}),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText('title: Plugin rollout'),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const RemarkOutsideTheProfile: Story = {
+  name: 'Remark outside the profile',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A plugin that emits raw HTML or a rejected destination falls closed: the last valid document stays readable, no markup is injected, and the authored destination survives.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={[remarkRawHtmlPlugin, remarkUnsafeLinkPlugin]}>
+        {
+          '# Still readable\n\nProse survives with its [authored link](/people).'
+        }
+      </Markdown>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      canvas.getByRole('heading', {name: 'Still readable'}),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('link', {name: 'authored link'}),
+    ).toHaveAttribute('href', '/people');
+    await expect(canvas.queryByText('Injected')).not.toBeInTheDocument();
+  },
+};
+
+export const PluginsOmittedBaseline: Story = {
+  name: 'Plugins omitted baseline',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The same source without plugins. Extension syntax stays literal, no badge or transformed link exists, so opting in is the only thing that changes behavior.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown>{nativeAndRemarkSource}</Markdown>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      canvas.queryByRole('link', {name: 'SPEC-4821'}),
+    ).not.toBeInTheDocument();
+    await expect(canvas.queryByLabelText('Note')).not.toBeInTheDocument();
+    await expect(canvas.getByText(/Hello @\{Ada\}/)).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('link', {name: 'Authored link'}),
+    ).toBeInTheDocument();
   },
 };

@@ -2,6 +2,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 
 describe('ChatLayoutScrollButton', () => {
@@ -51,5 +52,35 @@ describe('ChatLayoutScrollButton', () => {
     const root = screen.getByTestId('scroll');
     expect(root).toHaveAttribute('data-custom', 'x');
     expect(root).toHaveAttribute('id', 'scroll-1');
+  });
+
+  // The hidden state paints nothing, so focus landing on it would have no
+  // visible indicator (WCAG 2.2 SC 2.4.7). `opacity: 0` and
+  // `pointer-events: none` suppress paint and the pointer but leave the button
+  // in sequential focus navigation, so the hidden state must also stop being
+  // focusable — without costing the visible state its keyboard access.
+  it('is keyboard reachable while visible', async () => {
+    const user = userEvent.setup();
+    render(<ChatLayoutScrollButton isVisible onClick={() => {}} />);
+
+    await user.tab();
+
+    expect(
+      screen.getByRole('button', {name: 'Scroll to bottom'}),
+    ).toHaveFocus();
+  });
+
+  it('is not keyboard reachable while hidden', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <ChatLayoutScrollButton isVisible={false} onClick={() => {}} />
+        <button type="button">After</button>
+      </>,
+    );
+
+    await user.tab();
+
+    expect(screen.getByRole('button', {name: 'After'})).toHaveFocus();
   });
 });

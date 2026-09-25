@@ -4,7 +4,7 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, StyleX, SVG rendering
+ * @input Uses React, i18n (useTranslator), StyleX, SVG rendering
  * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
@@ -22,6 +22,7 @@ import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -29,20 +30,17 @@ import {themeProps} from '../utils/themeProps';
 // =============================================================================
 
 /**
- * Fraction of the ring the moving arc covers. The canvas ring this replaces
- * swept 135deg, not the 270deg its constant's comment claimed.
+ * Default fraction of the ring the moving arc covers. The canvas ring this
+ * replaces swept 135deg, not the 270deg its constant's comment claimed.
+ *
+ * Themeable via `--spinner-arc-fraction`, declared alongside the other public
+ * vars in `sizeStyles` below. Only the inline `strokeDasharray` attribute
+ * (the pre-stylesheet render — see its own comment) still reads this
+ * constant directly; the CSS side composes the dash from the live var.
  */
 const ARC_FRACTION = 0.375;
 
-/**
- * The dash pattern, per unit of diameter: one arc, then the gap that closes
- * the circle. The circumference is `pi x diameter`, so multiplying the
- * resolved diameter by these two constants gives exactly the lengths the
- * default render has always used, and scales them with a themed diameter.
- */
 const PI = 3.141592653589793;
-const ARC_DASH = PI * ARC_FRACTION;
-const ARC_GAP = PI * (1 - ARC_FRACTION);
 
 const SIZES = {
   sm: {diameter: 10, border: 2},
@@ -149,13 +147,14 @@ function registerSpinnerVars(): void {
 registerSpinnerVars();
 
 /**
- * Pin every ring's rotation to the document timeline's origin instead of its
- * own start time, so spinners mounted seconds apart turn in phase.
+ * Pin every ring's dash motion to the document timeline's origin instead of
+ * its own start time, so spinners mounted seconds apart stay in phase.
  *
  * Setting `startTime` is exact where arithmetic on a clock read is not: a
  * negative `animation-delay` computed at mount is only as good as the gap
  * between reading the clock and the frame the animation starts in, which at
- * 10x CPU throttling measured 116deg of drift.
+ * 10x CPU throttling measured 116deg of drift (from when this animated a
+ * literal rotation; the same drift risk applies to the dash offset now).
  *
  * Rings are collected and pinned in one frame because `getAnimations()`
  * resolves style and `startTime` dirties it again, so pinning them one at a
@@ -169,7 +168,9 @@ function pinRingsToTimelineOrigin(): void {
   flushScheduled = false;
   const animations: Animation[] = [];
   for (const svg of pendingRings) {
-    animations.push(...svg.getAnimations());
+    // The animation now runs on the arc <circle>, a descendant of the ring
+    // this ref sits on (#6253), so it needs subtree:true to be found here.
+    animations.push(...svg.getAnimations({subtree: true}));
   }
   pendingRings.clear();
   for (const animation of animations) {
@@ -207,9 +208,20 @@ function syncRotationPhase(
 // Animation
 // =============================================================================
 
-const rotation = stylex.keyframes({
-  '0%': {transform: 'rotate(0deg)'},
-  '100%': {transform: 'rotate(360deg)'},
+/**
+ * Moves the dash around a stationary circle instead of rotating the whole
+ * ring. WebKit re-antialiases a rotating stroked shape's rounded cap
+ * (`strokeLinecap: 'round'`, below) slightly differently at each intermediate
+ * angle, which reads as a visible wobble on iOS Safari independent of
+ * compositing (#6253) — confirmed by a real-device test against this exact
+ * fix, since `willChange`/layer promotion alone (the earlier fix for #3617)
+ * only smooths the rotation's motion, not the per-frame stroke rasterization.
+ * A static circle with an animated `stroke-dashoffset` never rotates, so
+ * WebKit never re-rasterizes the cap at an intermediate angle at all.
+ */
+const dashMotion = stylex.keyframes({
+  '0%': {strokeDashoffset: '0px'},
+  '100%': {strokeDashoffset: `calc(var(${RESOLVED_DIAMETER}) * -${PI})`},
 });
 
 // =============================================================================
@@ -273,7 +285,6 @@ const styles = stylex.create({
     // One expression, one source of truth, resolves in any layout.
     width: `var(${BOX_SIZE})`,
     height: `var(${BOX_SIZE})`,
-    willChange: 'transform',
     // The svg is sized in CSS (100% of the span) rather than from the size
     // constant, so one user unit is one CSS pixel AND the frame follows a
     // themed diameter: the span's box is `diameter + 2 x stroke`, both public
@@ -282,16 +293,6 @@ const styles = stylex.create({
     // diameter — an overflowing grid item aligns to start rather than centre,
     // which put the ring 1.5-3.3px off across the four sizes.
     overflow: 'visible',
-    // Slow the rotation dramatically under reduced-motion rather than freezing
-    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The role="status" + "Loading" label still convey busy state (obs-6).
-    animationDuration: {
-      default: durationVars['--duration-slow-min'],
-      '@media (prefers-reduced-motion: reduce)': '3s',
-    },
-    animationIterationCount: 'infinite',
-    animationName: rotation,
-    animationTimingFunction: 'linear',
   },
   circle: {
     fill: 'none',
@@ -322,10 +323,26 @@ const styles = stylex.create({
   // of the circle — 87.398 against the 87.965 of pi x 28 — which shortens the
   // default arc by 0.64% and moves the cap by half a pixel. Composing the
   // lengths keeps the default byte-identical to what it drew before.
+  //
+  // The fraction itself also rides a public var (`--spinner-arc-fraction`),
+  // unregistered like the other three color/geometry public vars — it is
+  // read as a bare `<number>` multiplier here, never summed with a unitless
+  // `0` the way the registered length pair guards against, so it needs no
+  // registration.
   arc: {
+    // Slow the motion dramatically under reduced-motion rather than freezing
+    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
+    // The role="status" + "Loading" label still convey busy state (obs-6).
+    animationDuration: {
+      default: durationVars['--duration-slow-min'],
+      '@media (prefers-reduced-motion: reduce)': '3s',
+    },
+    animationIterationCount: 'infinite',
+    animationName: dashMotion,
+    animationTimingFunction: 'linear',
     stroke: 'var(--spinner-color)',
     transform: 'rotate(-90deg)',
-    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
+    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${PI} * var(--spinner-arc-fraction)) calc(var(${RESOLVED_DIAMETER}) * ${PI} * (1 - var(--spinner-arc-fraction)))`,
   },
   track: {stroke: 'var(--spinner-track-color)'},
 });
@@ -333,7 +350,7 @@ const styles = stylex.create({
 // What each named `size` and `shade` resolve to. Both groups DECLARE the four
 // public vars, on the element that carries the `spinner` theme target, and
 // everything downstream reads them — so a theme's `@layer astryx-theme` rule
-// against `.astryx-spinner.xl` overrides the default the same way it does for
+// against `.astryx-spinner[data-size="xl"]` overrides the default the same way it does for
 // `--tree-list-indent` or `--button-focus-offset`, e.g.
 // spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
 //
@@ -348,22 +365,30 @@ const styles = stylex.create({
 // cost of its own — with nothing declaring the var,
 // `theme-var-reachability.js` cannot find an element to check, so a documented
 // var reads as unreachable.
+// Arc fraction is not itself size-dependent, but it declares alongside the
+// two vars that are, on the same per-size condition (`!hasLabel` gate at the
+// call site) — it needs a home on whichever element carries the theme
+// target, and this is the object already wired to be there.
 const sizeStyles = stylex.create({
   sm: {
     '--spinner-diameter': `${SIZES.sm.diameter}px`,
     '--spinner-stroke-width': `${SIZES.sm.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   md: {
     '--spinner-diameter': `${SIZES.md.diameter}px`,
     '--spinner-stroke-width': `${SIZES.md.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   lg: {
     '--spinner-diameter': `${SIZES.lg.diameter}px`,
     '--spinner-stroke-width': `${SIZES.lg.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
   xl: {
     '--spinner-diameter': `${SIZES.xl.diameter}px`,
     '--spinner-stroke-width': `${SIZES.xl.border}px`,
+    '--spinner-arc-fraction': `${ARC_FRACTION}`,
   },
 });
 
@@ -484,6 +509,7 @@ export function Spinner({
   const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
   const labelId = useId();
+  const t = useTranslator();
 
   // When a visible string label renders (and no explicit aria-label is set),
   // name the status element from the visible Text via aria-labelledby instead
@@ -492,9 +518,13 @@ export function Spinner({
   const namedByVisibleLabel =
     hasLabel && typeof label === 'string' && ariaLabel == null;
 
-  // Resolve accessible name: explicit aria-label > string label > "Loading"
+  // Resolve accessible name: explicit aria-label > string label > the
+  // localized default. The fallback is AT-facing text, so it goes through the
+  // translation runtime like visible text does.
   const resolvedAriaLabel =
-    ariaLabel ?? (typeof label === 'string' ? label : undefined) ?? 'Loading';
+    ariaLabel ??
+    (typeof label === 'string' ? label : undefined) ??
+    t('@astryx.spinner.loading');
 
   const spinner = (
     <span

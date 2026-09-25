@@ -244,3 +244,30 @@ export const DisabledWithMessage: Story = {
     );
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold an unselected item to see the system's `--color-overlay-pressed` layer. The selected item keeps its raised surface, and the disabled item remains visually unchanged and cannot be selected.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('grid');
+    return (
+      <SegmentedControl value={value} onChange={setValue} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid — selected" />
+        <SegmentedControlItem value="list" label="List — press and hold" />
+        <SegmentedControlItem value="board" label="Board" />
+        <SegmentedControlItem
+          value="unavailable"
+          label="Unavailable — no pressed state"
+          isDisabled
+        />
+      </SegmentedControl>
+    );
+  },
+};

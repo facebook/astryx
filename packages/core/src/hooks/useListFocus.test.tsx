@@ -109,7 +109,7 @@ describe('useListFocus disabled-item skipping', () => {
 
 // ---------------------------------------------------------------------------
 // Roving-tabindex mode + composite navigation behaviors.
-// These exercise the opt-in `hasRovingTabIndex`, `isRtl`, `orientation: 'both'`,
+// These exercise the opt-in `hasRovingTabIndex`, `orientation: 'both'`,
 // `hasCaretGuard`, and shortcut-passthrough behaviors.
 // ---------------------------------------------------------------------------
 
@@ -204,15 +204,6 @@ describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
     expect(screen.getByTestId('C')).toHaveFocus();
     fireEvent.keyDown(toolbar, {key: 'Home'});
     expect(screen.getByTestId('A')).toHaveFocus();
-  });
-
-  it('flips ArrowLeft/ArrowRight under RTL', () => {
-    render(<RovingToolbar isRtl />);
-    const toolbar = screen.getByRole('toolbar');
-    screen.getByTestId('A').focus();
-    // In RTL, ArrowLeft is "forward".
-    fireEvent.keyDown(toolbar, {key: 'ArrowLeft'});
-    expect(screen.getByTestId('B')).toHaveFocus();
   });
 
   it('orientation "both" navigates with all four arrows', () => {
@@ -382,10 +373,9 @@ describe('useListFocus shortcut passthrough', () => {
  * `dir` is set on the list container itself — the element the hook reads via
  * listRef.
  */
-function HorizontalMenu({dir, isRtl}: {dir?: 'ltr' | 'rtl'; isRtl?: boolean}) {
+function HorizontalMenu({dir}: {dir?: 'ltr' | 'rtl'}) {
   const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     orientation: 'horizontal',
-    isRtl,
   });
   const items = ['One', 'Two', 'Three'];
   return (
@@ -421,22 +411,6 @@ describe('useListFocus RTL auto-detection (WCAG 1.3.2)', () => {
     const menu = screen.getByRole('menu');
     screen.getByTestId('One').focus();
     fireEvent.keyDown(menu, {key: 'ArrowRight'});
-    expect(screen.getByTestId('Two')).toHaveFocus();
-  });
-
-  it('explicit isRtl={false} overrides a dir="rtl" container', () => {
-    render(<HorizontalMenu dir="rtl" isRtl={false} />);
-    const menu = screen.getByRole('menu');
-    screen.getByTestId('One').focus();
-    fireEvent.keyDown(menu, {key: 'ArrowRight'});
-    expect(screen.getByTestId('Two')).toHaveFocus();
-  });
-
-  it('explicit isRtl={true} flips arrows without a dir attribute', () => {
-    render(<HorizontalMenu isRtl />);
-    const menu = screen.getByRole('menu');
-    screen.getByTestId('One').focus();
-    fireEvent.keyDown(menu, {key: 'ArrowLeft'});
     expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });

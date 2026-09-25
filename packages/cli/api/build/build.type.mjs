@@ -2,21 +2,42 @@
 
 /**
  * @file Colocated types for the `build` command — source of truth for the
- * `build.help` (playbook signal) and `build.kit` (composition kit) JSON
- * responses. Re-exported by types/build.d.ts.
+ * `build.help` (playbook) and `build.kit` (composition kit) JSON responses.
+ * Re-exported by types/build.d.ts.
  */
 
 /**
- * xds --json build (no query) — the "how to build a page" playbook signal.
+ * A command the playbook tells the caller to run.
+ *
+ * @typedef {object} BuildPlaybookCommand
+ * @property {string} command Bare subcommand with `<placeholder>` arguments (e.g. `template <name> --skeleton`) and no package-manager prefix — render it with your own CLI invocation.
+ * @property {string} [purpose] What running it is for.
+ */
+
+/**
+ * One step of the page-building workflow.
+ *
+ * @typedef {object} BuildPlaybookStep
+ * @property {string} title What to do.
+ * @property {BuildPlaybookCommand[]} commands The commands for this step, in the order to run them.
+ * @property {string} [returns] What the step's command gives back, when that decides the next step.
+ */
+
+/**
+ * astryx --json build (no query) — the "how to build a page" playbook.
  *
  * @typedef {object} BuildHelpResponse
  * @property {'build.help'} type
  * @property {object} data
  * @property {true} data.playbook Always true; marks this envelope as the playbook rather than a result set.
+ * @property {string} data.title The playbook's heading.
+ * @property {BuildPlaybookStep[]} data.steps The workflow, in order.
+ * @property {string[]} data.rules The rules that keep a page on-system.
+ * @property {BuildPlaybookCommand[]} data.related Lookups to reach for alongside the workflow.
  */
 
 /**
- * xds --json build "<idea>" — the composition kit for what you're building.
+ * astryx --json build "<idea>" — the composition kit for what you're building.
  *
  * Entries are raw `SearchResultEntry` objects (no package-manager-prefixed
  * command strings — the CLI adds those); `frame`/`foundation` are static
@@ -27,9 +48,9 @@
  * @property {object} data
  * @property {string} data.query
  * @property {boolean} data.hasResults False when search returned nothing (renderer shows "No matches").
- * @property {number} data.matchCount Number of ranked search matches before kit score floors and caps.
+ * @property {number} data.matchCount Total ranked search matches for the query — counted before the search `limit`, the kit's score floors, and its per-group caps, so it is never a cap read back.
  * @property {boolean} data.directMatch True when the top page template is a confident direct match.
- * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3).
+ * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3). Each entry's `command` carries `--skeleton` when `directMatch` is false, so it recommends reading the layout rather than scaffolding it.
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.blocks Drop-in block patterns covering parts of the idea (≤5).
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
  * @property {string[]} data.frame Always-on page-shell component names.

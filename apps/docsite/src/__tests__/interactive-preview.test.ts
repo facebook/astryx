@@ -4,8 +4,10 @@
 
 /**
  * @file InteractivePreview tests.
- * @input InteractivePreviewStage and a radio-item playground preview
- * @output Regression coverage for wrapper-owned selection state.
+ * @input InteractivePreviewStage with radio-item, radio-group and Tokenizer
+ *   playground previews
+ * @output Regression coverage for wrapper-owned selection and open state and
+ *   for the controlled-value change bridge.
  */
 
 import {
@@ -20,6 +22,7 @@ import '@testing-library/jest-dom/vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {InteractivePreviewStage} from '../components/component-detail/InteractivePreview';
+import {pickPrimaryProps} from '../components/component-detail/interactiveState';
 
 vi.mock('@stylexjs/stylex', () => ({
   create: (styles: unknown) => styles,
@@ -43,18 +46,34 @@ function MockButton({label, onClick}: {label: string; onClick?: () => void}) {
   return createElement('button', {onClick}, label);
 }
 
+const MenuContext = createContext<{close: () => void}>({close: () => {}});
+
+// Controlled like the real menu: renders its children only while open and
+// reports every open/close through `onOpenChange`.
 function MockDropdownMenu({
   button,
+  isMenuOpen = false,
+  onOpenChange,
   children,
 }: {
   button: {label: string};
+  isMenuOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
   children?: ReactNode;
 }) {
   return createElement(
-    'div',
-    null,
-    createElement('button', null, button.label),
-    children,
+    MenuContext.Provider,
+    {value: {close: () => onOpenChange?.(false)}},
+    createElement(
+      'div',
+      null,
+      createElement(
+        'button',
+        {onClick: () => onOpenChange?.(!isMenuOpen)},
+        button.label,
+      ),
+      isMenuOpen ? children : null,
+    ),
   );
 }
 
@@ -63,6 +82,7 @@ const RadioContext = createContext<{
   onChange: (value: string) => void;
 }>({onChange: () => {}});
 
+// Selecting closes the enclosing menu, as `hasCloseOnSelect` does by default.
 function MockRadioGroup({
   value,
   onChange,
@@ -74,9 +94,18 @@ function MockRadioGroup({
   label: string;
   children?: ReactNode;
 }) {
+  const menu = useContext(MenuContext);
   return createElement(
     RadioContext.Provider,
-    {value: {value, onChange}},
+    {
+      value: {
+        value,
+        onChange: (next: string) => {
+          onChange(next);
+          menu.close();
+        },
+      },
+    },
     createElement('div', {'aria-label': label, role: 'group'}, children),
   );
 }
@@ -94,6 +123,41 @@ function MockRadioItem({value, label}: {value: string; label: string}) {
   );
 }
 
+type TokenItem = {id: string; label: string};
+
+function MockTokenizer({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: TokenItem[];
+  onChange: (items: TokenItem[], change: unknown) => void;
+}) {
+  return createElement(
+    'div',
+    {'aria-label': label, role: 'group'},
+    value.map(item =>
+      createElement(
+        'span',
+        {key: item.id},
+        createElement('span', null, item.label),
+        createElement(
+          'button',
+          {
+            onClick: () =>
+              onChange(
+                value.filter(entry => entry.id !== item.id),
+                {item, type: 'remove'},
+              ),
+          },
+          `Remove ${item.label}`,
+        ),
+      ),
+    ),
+  );
+}
+
 vi.mock('@astryxdesign/core', () => ({
   Button: MockButton,
   Card: Box,
@@ -102,6 +166,7 @@ vi.mock('@astryxdesign/core', () => ({
   DropdownMenuRadioGroup: MockRadioGroup,
   DropdownMenuRadioItem: MockRadioItem,
   Text: Box,
+  Tokenizer: MockTokenizer,
   VStack: Box,
 }));
 
@@ -144,5 +209,104 @@ describe('InteractivePreviewStage', () => {
 
     await user.click(item);
     expect(item).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('shows the radio choices on first load and keeps the menu interactive (#5888)', async () => {
+    const user = userEvent.setup();
+    const knobs = pickPrimaryProps('DropdownMenuRadioGroup', [
+      {name: 'value', type: 'string | undefined', description: ''},
+      {name: 'onChange', type: '(value: string) => void', description: ''},
+      {name: 'label', type: 'string', description: ''},
+    ]);
+
+    function PreviewHarness() {
+      const [value, setValue] = useState('newest');
+      return createElement(InteractivePreviewStage, {
+        name: 'DropdownMenuRadioGroup',
+        state: {
+          value,
+          label: 'Sort by',
+          children: [
+            {
+              __element: 'DropdownMenuRadioItem',
+              props: {value: 'newest', label: 'Newest'},
+            },
+            {
+              __element: 'DropdownMenuRadioItem',
+              props: {value: 'oldest', label: 'Oldest'},
+            },
+          ],
+        },
+        knobs,
+        playground: {
+          wrapper: {
+            component: 'DropdownMenu',
+            props: {button: {label: 'Sort'}, isMenuOpen: true},
+          },
+        },
+        onPropChange: (_propName: string, nextValue: unknown) =>
+          setValue(nextValue as string),
+      });
+    }
+
+    render(createElement(PreviewHarness));
+
+    // Both choices are visible without opening the menu first.
+    expect(screen.getByRole('menuitemradio', {name: 'Newest'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    const oldest = screen.getByRole('menuitemradio', {name: 'Oldest'});
+    expect(oldest).toHaveAttribute('aria-checked', 'false');
+
+    // Selecting commits the value and closes the menu through the wrapper's
+    // bridged `onOpenChange`; the trigger reopens it on the new selection.
+    await user.click(oldest);
+    expect(
+      screen.queryByRole('menuitemradio', {name: 'Oldest'}),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Sort'}));
+    expect(screen.getByRole('menuitemradio', {name: 'Oldest'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('drops a removed Tokenizer token from the rendered preview (#5981)', async () => {
+    const user = userEvent.setup();
+    const knobs = pickPrimaryProps('Tokenizer', [
+      {name: 'label', type: 'string', description: '', required: true},
+      {name: 'value', type: 'T[]', description: '', required: true},
+      {
+        name: 'onChange',
+        type: '(items: T[], change: TokenizerChange<T>) => void',
+        description: '',
+        required: true,
+      },
+    ]);
+
+    function PreviewHarness() {
+      const [value, setValue] = useState<TokenItem[]>([
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ]);
+      return createElement(InteractivePreviewStage, {
+        name: 'Tokenizer',
+        state: {label: 'Tags', value},
+        knobs,
+        onPropChange: (_propName: string, nextValue: unknown) =>
+          setValue(nextValue as TokenItem[]),
+      });
+    }
+
+    render(createElement(PreviewHarness));
+    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.getByText('Engineering')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Remove Design'}));
+
+    expect(screen.queryByText('Design')).not.toBeInTheDocument();
+    expect(screen.getByText('Engineering')).toBeInTheDocument();
   });
 });

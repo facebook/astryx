@@ -2101,7 +2101,7 @@ export default function SupportInboxTemplate() {
 
   const pane = useResizable({
     defaultSize: '58%',
-    minSizePx: PANE_MIN_WIDTH,
+    minSize: PANE_MIN_WIDTH,
     // Everything the surface has, less the list's floor — so the ceiling
     // tracks the screen and the list keeps its whole range on any of them,
     // stacked rows included.
@@ -2113,7 +2113,7 @@ export default function SupportInboxTemplate() {
     // largest pane that still fits. The layout that is actually right down
     // there is the single-surface one, which `isPaneFullWidth` takes over
     // before this is on screen.
-    maxSizePx: isMeasured
+    maxSize: isMeasured
       ? Math.max(PANE_MIN_WIDTH, surfaceWidth - LIST_MIN_WIDTH)
       : undefined,
     onSizeChange: onPaneSizeChange,

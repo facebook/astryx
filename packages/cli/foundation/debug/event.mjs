@@ -23,9 +23,23 @@ import {isCliOneOff, detectPackageManager} from '../env/package-manager.mjs';
 /**
  * Version of the recorded event shape. Bump on any breaking field change,
  * widening {@link DebugSchemaVersion} in the published type at the same time.
+ *
+ * v2 retired the raw `env.agentSessionId`: it is always null now, and
+ * `agentSessionIdHash` is the join key. A consumer that grouped runs by the
+ * raw value would otherwise have started grouping every run under `null`
+ * without a single compile error, which is exactly what the version exists to
+ * prevent.
+ *
+ * v3 made every command report its result, which changed what an ABSENT one
+ * means: `output.resultKind` is null only when the run never reached an
+ * answer, and a command with no result set now says `none`. The values did not
+ * move, but the null did — a consumer counting nulls as "commands with nothing
+ * to report" would silently start counting failures instead, and no widened
+ * union catches a branch on null.
+ *
  * @type {import('../../authoring/debug/type').DebugSchemaVersion}
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
 
 /**
  * The recorded shape is PUBLISHED — a project sets `debug` in `astryx.config`
@@ -230,8 +244,10 @@ function detectInvocationSource({agentIdentity, agentSessionId, ci}) {
 
 /**
  * Snapshot the machine, runtime, and invocation attribution. There is no
- * hostname, username, or network identity. Agent session values come only from
- * explicit environment signals supplied by the invoking tool.
+ * hostname, username, or network identity, and no raw agent session id — the
+ * privacy contract is on `DebugEventEnv` in `authoring/debug/type.ts`. Agent
+ * session values come only from explicit environment signals supplied by the
+ * invoking tool.
  *
  * @param {{cliVersion?: string}} [options]
  * @returns {import('../../authoring/debug/type').DebugEventEnv}
@@ -252,7 +268,13 @@ export function captureEnv({cliVersion} = {}) {
     ciName,
     agent: detectAgent(agentIdentity),
     agentIdentity,
-    agentSessionId: agentSession.id,
+    // Never the raw value. A session id is a stable identifier that follows a
+    // person across every run they make, and nothing here needs it: the hash
+    // joins those runs just as well, and a handler that forwards the record
+    // somewhere less private cannot un-forward an identifier we handed it.
+    // Kept as an always-null field rather than dropped, so a consumer reading
+    // schema-v1 records alongside these sees one stable shape.
+    agentSessionId: null,
     agentSessionIdHash: hashAgentSessionId(agentSession.id),
     agentSessionIdSource: agentSession.source,
     invocationSource: detectInvocationSource({
@@ -336,7 +358,10 @@ export function createEvent({command = '', argv = []} = {}) {
     },
     env: null,
     project: captureProject(),
-    redacted: true,
+    // FALSE, and true only on the sealed copy `finish()` delivers. Nothing has
+    // been through the scrubbing pass yet, and a record that claims otherwise
+    // while still holding verbatim values is worse than one that admits it.
+    redacted: false,
   };
 }
 

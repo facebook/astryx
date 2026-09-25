@@ -22,12 +22,14 @@ export const docs = {
       {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
     anatomy: [
+      {name: 'Banner frame', required: true, description: 'Outer frame that groups the status surface and optional content surface. It carries whole-banner elevation and, for elevated card banners, the radius that shapes that silhouette.'},
+      {name: 'Status surface', required: true, description: 'The primary painted surface. It communicates status and contains the icon, title, description, actions, and controls.'},
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
       {name: 'Title', required: true, description: 'The main message. Always required.'},
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
-      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
+      {name: 'Content surface', required: false, description: 'Secondary surface for extra detail below the status surface, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
     ],
   },
 
@@ -127,6 +129,7 @@ export const docs = {
   },
   theming: {
     targets: [
+      {className: 'astryx-banner-frame', visualProps: ['container', 'elevation']},
       {className: 'astryx-banner', visualProps: ['container', 'status']},
       {className: 'astryx-banner-icon', visualProps: ['status']},
       {className: 'astryx-banner-description'},
@@ -157,12 +160,14 @@ export const docsZh = {
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
     ],
     anatomy: [
+      {name: 'Banner frame', required: true, description: 'Outer frame that groups the status surface and optional content surface. It carries whole-banner elevation and, for elevated card banners, the radius that shapes that silhouette.'},
+      {name: 'Status surface', required: true, description: 'The primary painted surface. It communicates status and contains the icon, title, description, actions, and controls.'},
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
       {name: 'Title', required: true, description: 'The main message. Always required.'},
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
-      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
+      {name: 'Content surface', required: false, description: 'Secondary surface for extra detail below the status surface, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
     ],
   },
   props: [
@@ -187,6 +192,13 @@ export const docsZh = {
   ],
   theming: {
     targets: [
+      {
+        className: 'astryx-banner-frame',
+        visualProps: [
+          'container',
+          'elevation',
+        ],
+      },
       {
         className: 'astryx-banner',
         visualProps: [
@@ -237,12 +249,14 @@ export const docsDense = {
       {guidance: false, description: 'Rely on status color or icon alone; state the status in the title text, since the icon is decorative to a screen reader.'},
     ],
     anatomy: [
+      {name: 'Banner frame', required: true, description: 'Outer frame grouping the status and optional content surfaces; owns whole-banner elevation and its elevated-card silhouette.'},
+      {name: 'Status surface', required: true, description: 'Primary painted surface communicating status and containing the message and controls.'},
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
       {name: 'Title', required: true, description: 'Main message text.'},
       {name: 'Description', required: false, description: 'Detail below title.'},
       {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
       {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},
-      {name: 'Content', required: false, description: 'Detail area; behind a toggle unless collapsible={false}.'},
+      {name: 'Content surface', required: false, description: 'Secondary detail surface; behind a toggle unless collapsible={false}.'},
     ],
   },
   propDescriptions: {

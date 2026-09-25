@@ -3,15 +3,23 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
   composeKnowledgeSchemas,
+  collectGlobalReviewMatches,
   discoverKnowledgeRecords,
+  extractKnowledgeClaims,
   parseAnatomyThemingBlock,
+  parseDesignDecisionsBlock,
   parseKnowledgeDocument,
+  parseReviewApplicabilityBlock,
+  routeGlobalReviewBaselinesAtRevision,
   validateAnatomyThemingMap,
+  validateDesignDecisionsBlock,
   validateDelegations,
   validateKnowledgeRoot,
+  validateReviewApplicability,
   validateSchemaEvolution,
 } from './check-knowledge.mjs';
 
@@ -28,7 +36,7 @@ function fixtureRoot() {
     path.join(root, 'docs/templates/knowledge'),
     {recursive: true},
   );
-  for (const version of ['v1.json', 'v2.json', 'v3.json']) {
+  for (const version of ['v1.json', 'v2.json', 'v3.json', 'v4.json']) {
     fs.copyFileSync(
       path.join(repoRoot, `docs/schemas/knowledge/${version}`),
       path.join(root, `docs/schemas/knowledge/${version}`),
@@ -41,6 +49,9 @@ function fixtureRoot() {
     'docs/themes',
     'packages/core/src',
     'packages/lab/src',
+    'packages/charts/src',
+    'packages/richtext/src',
+    'packages/vega/src',
   ]) {
     fs.mkdirSync(path.join(root, relative), {recursive: true});
   }
@@ -196,7 +207,7 @@ function themeRecord(overrides = {}) {
 
 function systemSpecRecord(overrides = {}) {
   const values = {
-    schema_version: '1',
+    schema_version: '4',
     template_version: '1',
     kind: 'system-spec',
     id: 'spec:AST-900',
@@ -287,9 +298,307 @@ function writeButtonDoc(directory) {
   return content;
 }
 
+function reviewApplicabilityBlock(triggers, scope = 'global') {
+  return `<!-- review-applicability:v1 -->\n\`\`\`json\n${JSON.stringify(
+    {scope, triggers},
+    null,
+    2,
+  )}\n\`\`\``;
+}
+
+function withReviewApplicability(record, triggers, scope = 'global') {
+  const lines = record.split('\n');
+  const titleIndex = lines.findIndex(line => line.startsWith('# '));
+  lines.splice(
+    titleIndex + 1,
+    0,
+    '',
+    reviewApplicabilityBlock(triggers, scope),
+  );
+  return lines.join('\n');
+}
+
+function withSystemClaims(record) {
+  return record.replace(
+    '## Requirements\n\nBody.',
+    '## Requirements\n\n- **FR1 — Public API stays stable.** Callers keep the same contract.\n\n- **FR2 — Evidence stays scoped.** Tests prove only this claim.',
+  );
+}
+
+function commitFixture(root, message) {
+  execFileSync('git', ['init', '-q'], {cwd: root});
+  execFileSync('git', ['config', 'user.name', 'Fixture'], {cwd: root});
+  execFileSync('git', ['config', 'user.email', 'fixture@example.com'], {
+    cwd: root,
+  });
+  execFileSync('git', ['add', '.'], {cwd: root});
+  execFileSync('git', ['commit', '-q', '-m', message], {cwd: root});
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+}
+
 afterEach(() => {
   for (const root of roots.splice(0))
     fs.rmSync(root, {recursive: true, force: true});
+});
+
+describe('global review applicability', () => {
+  const currentRecord = withSystemClaims(systemSpecRecord());
+
+  it('parses explicit trigger-to-claim routing', () => {
+    const record = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+      testing: ['FR2'],
+    });
+    const parsed = parseReviewApplicabilityBlock(record);
+    expect(parsed.problems).toEqual([]);
+    expect(parsed.config).toEqual({
+      scope: 'global',
+      triggers: {'public-api': ['FR1'], testing: ['FR2']},
+    });
+    expect(extractKnowledgeClaims(record)).toEqual(
+      new Map([
+        ['FR1', 'Public API stays stable.'],
+        ['FR2', 'Evidence stays scoped.'],
+      ]),
+    );
+    expect(validateReviewApplicability(parsed.config, record)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'global routing without claims',
+      {scope: 'global', triggers: {'public-api': []}},
+      /non-empty claim list/,
+    ],
+    [
+      'a stale claim reference',
+      {scope: 'global', triggers: {'public-api': ['FR99']}},
+      /references missing claim "FR99"/,
+    ],
+    [
+      'a duplicate trigger and claim pair',
+      {scope: 'global', triggers: {'public-api': ['FR1', 'FR1']}},
+      /repeats claim "FR1"/,
+    ],
+    [
+      'a malformed trigger',
+      {scope: 'global', triggers: {'Public API': ['FR1']}},
+      /must use lower-kebab-case/,
+    ],
+    [
+      'an unsupported trigger',
+      {scope: 'global', triggers: {'unknown-area': ['FR1']}},
+      /is not a supported semantic trigger/,
+    ],
+    [
+      'an unsupported scope',
+      {scope: 'component', triggers: {'public-api': ['FR1']}},
+      /scope must be "global"/,
+    ],
+  ])('rejects %s', (_name, config, expected) => {
+    expect(
+      validateReviewApplicability(config, currentRecord).join('\n'),
+    ).toMatch(expected);
+  });
+
+  it('rejects duplicate JSON object keys before parsing can overwrite them', () => {
+    const record = currentRecord.replace(
+      '# Fixture system spec',
+      '# Fixture system spec\n\n<!-- review-applicability:v1 -->\n```json\n{"scope":"global","triggers":{"public-api":["FR1"],"public-api":["FR2"]}}\n```',
+    );
+    expect(parseReviewApplicabilityBlock(record).problems.join('\n')).toMatch(
+      /repeats JSON field "public-api"/,
+    );
+  });
+
+  it('keeps the canonical claim title when a verification table repeats its id', () => {
+    const record = `${currentRecord}\n| Contract | Verification |\n| --- | --- |\n| FR1 | A test file, not the claim. |\n`;
+    expect(extractKnowledgeClaims(record).get('FR1')).toBe(
+      'Public API stays stable.',
+    );
+  });
+
+  it('does not treat a verification-table reference as a claim definition', () => {
+    const record = withReviewApplicability(
+      `${currentRecord.replace(
+        '- **FR1 — Public API stays stable.** Callers keep the same contract.\n\n',
+        '',
+      )}\n| Contract | Verification |\n| --- | --- |\n| FR1 | A test file, not the claim. |\n`,
+      {'public-api': ['FR1']},
+    );
+    const parsed = parseReviewApplicabilityBlock(record);
+    expect(
+      validateReviewApplicability(parsed.config, record).join('\n'),
+    ).toMatch(/references missing claim "FR1"/);
+  });
+
+  it('keeps legacy records with no applicability block valid', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', currentRecord);
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('fails knowledge validation for malformed global routing', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(
+      root,
+      'AST-900',
+      withReviewApplicability(currentRecord, {'public-api': ['FR99']}),
+    );
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /references missing claim "FR99"/,
+    );
+  });
+
+  it('routes only matching claims from current records', () => {
+    const record = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+      testing: ['FR2'],
+    });
+    const matches = collectGlobalReviewMatches(
+      [{path: 'docs/specs/AST-900/spec.md', content: record}],
+      ['public-api'],
+      'a'.repeat(40),
+    );
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      recordId: 'spec:AST-900',
+      path: 'docs/specs/AST-900/spec.md',
+      trigger: 'public-api',
+      claimId: 'FR1',
+      claim: 'Public API stays stable.',
+      authorityCommit: 'a'.repeat(40),
+    });
+    expect(matches[0].matchReason).toContain('public-api');
+    expect(matches[0].matchReason).toContain('spec:AST-900/FR1');
+    expect(matches[0].recordDigest).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('omits nonmatching and draft records', () => {
+    const current = withReviewApplicability(currentRecord, {
+      'public-api': ['FR1'],
+    });
+    const draft = withReviewApplicability(
+      currentRecord.replace('authority: current', 'authority: draft'),
+      {testing: ['FR2']},
+    );
+    expect(
+      collectGlobalReviewMatches(
+        [
+          {path: 'docs/specs/AST-900/spec.md', content: current},
+          {path: 'docs/specs/AST-901/spec.md', content: draft},
+        ],
+        ['testing'],
+        'b'.repeat(40),
+      ),
+    ).toEqual([]);
+  });
+
+  it('pins routing to the reviewed head base and rejects self-authorization', () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', currentRecord);
+    const baseWithoutRouting = commitFixture(
+      root,
+      'base without global routing',
+    );
+    execFileSync(
+      'git',
+      ['update-ref', 'refs/remotes/origin/main', baseWithoutRouting],
+      {cwd: root},
+    );
+
+    fs.writeFileSync(
+      path.join(root, 'docs/specs/AST-900/spec.md'),
+      withReviewApplicability(currentRecord, {'public-api': ['FR1']}),
+    );
+    execFileSync('git', ['add', '.'], {cwd: root});
+    execFileSync('git', ['commit', '-q', '-m', 'head adds global routing'], {
+      cwd: root,
+    });
+    const proposedHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+
+    expect(
+      routeGlobalReviewBaselinesAtRevision(
+        root,
+        baseWithoutRouting,
+        proposedHead,
+        ['public-api'],
+      ),
+    ).toEqual([]);
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, proposedHead, [
+        'public-api',
+      ]),
+    ).toThrow(/review head must differ/);
+
+    execFileSync(
+      'git',
+      ['update-ref', 'refs/remotes/origin/main', proposedHead],
+      {
+        cwd: root,
+      },
+    );
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, proposedHead, [
+        'public-api',
+      ]),
+    ).toThrow(/review head must differ/);
+
+    fs.writeFileSync(path.join(root, 'README.md'), '# Reviewed change\n');
+    execFileSync('git', ['add', '.'], {cwd: root});
+    execFileSync('git', ['commit', '-q', '-m', 'later review head'], {
+      cwd: root,
+    });
+    const laterHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+    expect(
+      routeGlobalReviewBaselinesAtRevision(root, proposedHead, laterHead, [
+        'public-api',
+      ]),
+    ).toHaveLength(1);
+    expect(() =>
+      routeGlobalReviewBaselinesAtRevision(
+        root,
+        baseWithoutRouting,
+        laterHead,
+        ['public-api'],
+      ),
+    ).toThrow(/origin\/main merge base/);
+  });
+
+  it('sorts multiple matches deterministically', () => {
+    const first = withReviewApplicability(
+      withSystemClaims(systemSpecRecord({id: 'spec:AST-902'})),
+      {testing: ['FR2'], 'public-api': ['FR1']},
+    );
+    const second = withReviewApplicability(
+      withSystemClaims(systemSpecRecord({id: 'spec:AST-901'})),
+      {'public-api': ['FR1']},
+    );
+    const matches = collectGlobalReviewMatches(
+      [
+        {path: 'docs/specs/AST-902/spec.md', content: first},
+        {path: 'docs/specs/AST-901/spec.md', content: second},
+      ],
+      ['testing', 'public-api'],
+      'c'.repeat(40),
+    );
+    expect(
+      matches.map(row => `${row.recordId}:${row.trigger}:${row.claimId}`),
+    ).toEqual([
+      'spec:AST-901:public-api:FR1',
+      'spec:AST-902:public-api:FR1',
+      'spec:AST-902:testing:FR2',
+    ]);
+  });
 });
 
 describe('schema evolution', () => {
@@ -354,6 +663,74 @@ describe('schema evolution', () => {
         new Map([['docs/schemas/knowledge/v1.json', 'changed']]),
       ).join('\n'),
     ).toMatch(/immutable.*append-only/s);
+  });
+});
+
+describe('component-local design decisions', () => {
+  const row =
+    '| DD1 | Keep the label visually quiet. | Preserve primary-action emphasis. | Default label | Theme token substitutions may preserve contrast. |';
+  const block = `${[
+    '### Design decisions',
+    '',
+    '<!-- design-decisions:v1 -->',
+    '',
+    '| ID | Decision | Intent or reason | Applies to | Allowed variation |',
+    '| --- | --- | --- | --- | --- |',
+    row,
+  ].join('\n')}\n`;
+
+  it('parses a valid optional table under Design relationships', () => {
+    const parsed = parseDesignDecisionsBlock(
+      `## Design relationships\n\nBody.\n\n${block}\n### Theming anatomy\n`,
+    );
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].id).toBe('DD1');
+    expect(validateDesignDecisionsBlock(parsed)).toEqual([]);
+  });
+
+  it('keeps absence valid and permits header-only template guidance', () => {
+    expect(
+      validateDesignDecisionsBlock(
+        parseDesignDecisionsBlock('## Design relationships\n\nBody.\n'),
+      ),
+    ).toEqual([]);
+    const headerOnly = parseDesignDecisionsBlock(
+      `## Design relationships\n\n${block.replace(`\n${row}`, '')}`,
+    );
+    expect(
+      validateDesignDecisionsBlock(headerOnly, {allowHeaderOnly: true}),
+    ).toEqual([]);
+  });
+
+  it('keeps the optional header-only table in component and module templates', () => {
+    for (const template of ['component-spec.md', 'module-spec.md']) {
+      const parsed = parseDesignDecisionsBlock(
+        fs.readFileSync(
+          path.join(repoRoot, 'docs/templates/knowledge', template),
+          'utf8',
+        ),
+        template,
+      );
+      expect(parsed.present, template).toBe(true);
+      expect(parsed.rows, template).toEqual([]);
+      expect(
+        validateDesignDecisionsBlock(parsed, {allowHeaderOnly: true}),
+        template,
+      ).toEqual([]);
+    }
+  });
+
+  it('rejects malformed, empty, and duplicate authored rows', () => {
+    const malformed = block
+      .replace('Intent or reason', 'Rationale')
+      .replace(row, `${row}\n${row.replace('DD1', 'bad')}`);
+    const parsed = parseDesignDecisionsBlock(
+      `## Design relationships\n\n${malformed}`,
+      'Button.spec.md',
+    );
+    expect(validateDesignDecisionsBlock(parsed).join('\n')).toMatch(
+      /columns must be exactly.*must match DD1/s,
+    );
   });
 });
 
@@ -763,6 +1140,97 @@ describe('knowledge validation', () => {
     expect(await validateKnowledgeRoot(fixtureRoot())).toEqual([]);
   });
 
+  it('uses the reader-first projection only in architecture, component, and module templates', () => {
+    const readerFirstTemplates = new Map([
+      [
+        'architecture.md',
+        [
+          'Governing contract',
+          'System behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+      [
+        'component-spec.md',
+        [
+          'Public contract',
+          'Behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+      [
+        'module-spec.md',
+        [
+          'Public contract',
+          'Behavior',
+          'End-user impact',
+          'Builder impact',
+          'Compatibility/readiness',
+          'Review checks',
+          'Governing rules',
+        ],
+      ],
+    ]);
+
+    for (const [fileName, projectionRows] of readerFirstTemplates) {
+      const content = fs.readFileSync(
+        path.join(repoRoot, 'docs/templates/knowledge', fileName),
+        'utf8',
+      );
+      expect(parseKnowledgeDocument(content).sections[0]).toBe(
+        'Contract at a glance',
+      );
+      for (const row of projectionRows) {
+        expect(
+          content
+            .split('\n')
+            .some(line => line.trimStart().startsWith(`| ${row} `)),
+        ).toBe(true);
+      }
+      expect(content).toContain(
+        'This table is a review projection; the body below is authoritative.',
+      );
+    }
+
+    for (const fileName of [
+      'design-spec.md',
+      'family-contract.md',
+      'implementation-plan.md',
+      'system-spec.md',
+      'theme-spec.md',
+    ]) {
+      const content = fs.readFileSync(
+        path.join(repoRoot, 'docs/templates/knowledge', fileName),
+        'utf8',
+      );
+      expect(parseKnowledgeDocument(content).sections).not.toContain(
+        'Contract at a glance',
+      );
+    }
+  });
+
+  it('accepts an optional reader-first projection in an older record', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Button.spec.md'),
+      componentRecord().replace(
+        '## Intent',
+        '## Contract at a glance\n\nProjection.\n\n## Intent',
+      ),
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
   it('rejects a structural template change without a schema update', async () => {
     const root = fixtureRoot();
     const template = path.join(
@@ -771,7 +1239,7 @@ describe('knowledge validation', () => {
     );
     fs.appendFileSync(template, '\n## Undeclared section\n');
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template section order must exactly match the schema/,
+      /template section order must exactly match the schema plus its allowed editorial sections/,
     );
   });
 
@@ -792,6 +1260,108 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(path.join(directory, 'Button.spec.md'), componentRecord());
     expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('accepts a draft component record in a flat component package', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/vega/src');
+    fs.writeFileSync(
+      path.join(directory, 'index.ts'),
+      "export {VegaChart} from './VegaChart';\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'VegaChart.tsx'),
+      'export function VegaChart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(directory, 'VegaChart.spec.md'),
+      componentRecord({id: 'component:VegaChart'}),
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a flat-package spec with no matching public component', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/charts/src');
+    fs.writeFileSync(
+      path.join(directory, 'index.ts'),
+      "export {Chart} from './Chart';\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Chart.tsx'),
+      'export function Chart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Ghost.spec.md'),
+      componentRecord({id: 'component:Ghost'}),
+    );
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /must match a public named export and TSX module/,
+    );
+  });
+
+  it('accepts a flat-package module beneath its declared parent component', async () => {
+    const root = fixtureRoot();
+    const source = path.join(root, 'packages/charts/src');
+    const modulePath = path.join(source, 'Chart/plugins/useChartThing.spec.md');
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(source, 'index.ts'),
+      "export {Chart} from './Chart';\n",
+    );
+    fs.writeFileSync(
+      path.join(source, 'Chart.tsx'),
+      'export function Chart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(source, 'Chart.spec.md'),
+      componentRecord({
+        id: 'component:Chart',
+        modules: '[module:Chart/useChartThing]',
+      }),
+    );
+    fs.writeFileSync(
+      modulePath,
+      moduleRecord({
+        id: 'module:Chart/useChartThing',
+        parent_component: 'component:Chart',
+      }),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a flat-package module beneath a different path root', async () => {
+    const root = fixtureRoot();
+    const source = path.join(root, 'packages/charts/src');
+    const modulePath = path.join(source, 'Ghost/plugins/useChartThing.spec.md');
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(source, 'index.ts'),
+      "export {Chart} from './Chart';\n",
+    );
+    fs.writeFileSync(
+      path.join(source, 'Chart.tsx'),
+      'export function Chart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(source, 'Chart.spec.md'),
+      componentRecord({
+        id: 'component:Chart',
+        modules: '[module:Chart/useChartThing]',
+      }),
+    );
+    fs.writeFileSync(
+      modulePath,
+      moduleRecord({
+        id: 'module:Chart/useChartThing',
+        parent_component: 'component:Chart',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /flat-package module module:Chart\/useChartThing must live under packages\/charts\/src\/Chart\//,
+    );
   });
 
   it('accepts a flat public member record backed by the root consumer doc', async () => {
@@ -1485,10 +2055,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '5'}),
+      componentRecord({template_version: '7'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 5 is newer than 4/,
+      /template_version 7 is newer than 6/,
     );
   });
 

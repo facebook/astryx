@@ -42,6 +42,73 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'code', content: 'const x'}]);
   });
 
+  it('leaves math delimiters as literal text by default', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.')).toEqual([
+      {type: 'text', content: 'Euler: $e^{i * pi} + 1 = 0$.'},
+    ]);
+  });
+
+  it('parses inline math before Markdown formatting when explicitly enabled', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.', {math: true})).toEqual([
+      {type: 'text', content: 'Euler: '},
+      {type: 'math', value: 'e^{i * pi} + 1 = 0'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('preserves escaped delimiters inside math and leaves escaped openers literal', () => {
+    expect(
+      parseInline('Price: \\$5; formula: $x \\$ y$.', {math: true}),
+    ).toEqual([
+      {type: 'text', content: 'Price: '},
+      {type: 'text', content: '$5; formula: '},
+      {type: 'math', value: 'x \\$ y'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('leaves an unmatched inline math delimiter literal', () => {
+    expect(parseInline('The value is $x + 1.', {math: true})).toEqual([
+      {type: 'text', content: 'The value is $x + 1.'},
+    ]);
+  });
+
+  it('does not mistake paired currency amounts for inline math', () => {
+    expect(
+      parseInline('Tickets cost $20 and $30 today.', {math: true}),
+    ).toEqual([{type: 'text', content: 'Tickets cost $20 and $30 today.'}]);
+    expect(parseInline('$x$5 and $y$', {math: true})).toEqual([
+      {type: 'text', content: '$x$5 and '},
+      {type: 'math', value: 'y'},
+    ]);
+  });
+
+  it('allows an inline expression to begin with a number', () => {
+    expect(parseInline('Result: $2 + 2$.', {math: true})).toEqual([
+      {type: 'text', content: 'Result: '},
+      {type: 'math', value: '2 + 2'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('does not treat non-block double-dollar runs as inline math', () => {
+    expect(parseInline('Keep $$x + y$$ literal.', {math: true})).toEqual([
+      {type: 'text', content: 'Keep $$x + y$$ literal.'},
+    ]);
+  });
+
+  it('keeps code and link destinations opaque while parsing math in link labels', () => {
+    expect(parseInline('`$code$` [$label$](/price/$5)', {math: true})).toEqual([
+      {type: 'code', content: '$code$'},
+      {type: 'text', content: ' '},
+      {
+        type: 'link',
+        href: '/price/$5',
+        children: [{type: 'math', value: 'label'}],
+      },
+    ]);
+  });
+
   it('parses links', () => {
     const result = parseInline('[click](https://example.com)');
     expect(result[0].type).toBe('link');
@@ -95,6 +162,26 @@ describe('parseInline', () => {
     expect(result[0].type).toBe('link');
     if (result[0].type === 'link') {
       expect(result[0].href).toBe('https://example.com');
+    }
+  });
+
+  it('decides link destinations with the shared navigation rule', () => {
+    const destinations: [string, boolean][] = [
+      ['https://example.com', true],
+      ['/page', true],
+      ['#section', true],
+      ['mailto:a@example.com', true],
+      ['tel:+1234567890', true],
+      ['custom:document', true],
+      ['data:image/png;base64,iVBORw0KGgo=', true],
+      ['javascript:alert(1)', false],
+      ['vbscript:MsgBox(1)', false],
+      ['data:text/html,<b>x</b>', false],
+      ['java\u0000script:alert(1)', false],
+    ];
+    for (const [destination, accepted] of destinations) {
+      const [node] = parseInline(`[t](${destination})`);
+      expect(node.type === 'link').toBe(accepted);
     }
   });
 
@@ -268,6 +355,61 @@ describe('parseMarkdown', () => {
     if (result[0].type === 'codeblock') {
       expect(result[0].language).toBe('python');
     }
+  });
+
+  it('parses display math only when explicitly enabled', () => {
+    const source = '$$\n\\int_0^1 x^2 \\, dx\n$$';
+    expect(parseMarkdown(source)).not.toContainEqual({
+      type: 'math',
+      value: '\\int_0^1 x^2 \\, dx',
+    });
+    expect(parseMarkdown(source, {math: true})).toEqual([
+      {type: 'math', value: '\\int_0^1 x^2 \\, dx'},
+    ]);
+  });
+
+  it('parses a same-line display math block', () => {
+    expect(parseMarkdown('$$E = mc^2$$', {math: true})).toEqual([
+      {type: 'math', value: 'E = mc^2'},
+    ]);
+  });
+
+  it('keeps empty display delimiters literal', () => {
+    const source = '$$\n$$';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves unmatched display math delimiters literal', () => {
+    const source = '$$\nx + y';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves escaped display delimiters literal', () => {
+    const blocks = parseMarkdown('\\$\\$\nx + y\n\\$\\$', {math: true});
+    expect(blocks.some(block => block.type === 'math')).toBe(false);
+  });
+
+  it('reports a display-math source range including its delimiters', () => {
+    const source = 'Before.\n\n$$\nx + y\n$$\n\nAfter.';
+    const blocks = parseMarkdown(source, {math: true, sourceRanges: true});
+    expect(blocks[1]?.range).toEqual({start: 9, end: 20});
+    expect(source.slice(blocks[1].range?.start, blocks[1].range?.end)).toBe(
+      '$$\nx + y\n$$',
+    );
+  });
+
+  it('keeps fenced code opaque when math parsing is enabled', () => {
+    expect(parseMarkdown('```tex\n$x$\n$$y$$\n```', {math: true})).toEqual([
+      {type: 'codeblock', language: 'tex', content: '$x$\n$$y$$'},
+    ]);
+  });
+
+  it('does not collect link definitions from display math', () => {
+    const blocks = parseMarkdown('$$\n[x]: /not-a-link\n$$\n\n[x]', {
+      math: true,
+    });
+    expect(blocks[0]).toEqual({type: 'math', value: '[x]: /not-a-link'});
+    expect(JSON.stringify(blocks[1])).not.toContain('"type":"link"');
   });
 
   it('parses blockquotes', () => {

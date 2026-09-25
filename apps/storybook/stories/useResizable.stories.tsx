@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -11,6 +11,7 @@ import {
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import {percent, pixel} from '@astryxdesign/core/Resizable/utils';
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {observeResize} from '@astryxdesign/core/utils';
 
 const s = stylex.create({
   shell: {
@@ -51,6 +52,8 @@ function StructuredPercentProbe({
   width: number;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isContentScrollable, setIsContentScrollable] = useState(false);
   const isDefault = kind.startsWith('default');
   const isMinimum = kind === 'minimum';
   const storageKey = `storybook-structured-percent-${kind}`;
@@ -74,6 +77,26 @@ function StructuredPercentProbe({
     : isMinimum
       ? `minSize: percent(40, {min: pixel(333)})`
       : `maxSize: percent(10, {max: pixel(400)})`;
+  const measureContentOverflow = useCallback(() => {
+    const content = contentRef.current;
+    if (content == null) {
+      return;
+    }
+    const overflowY = getComputedStyle(content).overflowY;
+    const isScrollable =
+      ['auto', 'scroll', 'overlay'].includes(overflowY) &&
+      content.scrollHeight > content.clientHeight + 1;
+    setIsContentScrollable(current =>
+      current === isScrollable ? current : isScrollable,
+    );
+  }, []);
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (content == null) {
+      return;
+    }
+    return observeResize(content, measureContentOverflow);
+  }, [measureContentOverflow]);
 
   return (
     <div
@@ -107,6 +130,7 @@ function StructuredPercentProbe({
               <LayoutPanel
                 width={region.size}
                 hasDivider={false}
+                isScrollable={false}
                 data-testid={`structured-percent-${kind}-panel`}>
                 {Math.round(region.size)}px
               </LayoutPanel>
@@ -119,7 +143,16 @@ function StructuredPercentProbe({
             </>
           }
           content={
-            <LayoutContent>
+            <LayoutContent
+              ref={contentRef}
+              data-testid={`structured-percent-${kind}-content`}
+              role={isContentScrollable ? 'region' : undefined}
+              label={
+                isContentScrollable
+                  ? `Structured percent ${kind.replaceAll('-', ' ')} details`
+                  : undefined
+              }
+              tabIndex={isContentScrollable ? 0 : -1}>
               {isDefault
                 ? 'Later basis changes do not rescale this selected pixel size.'
                 : 'The percentage bound follows later basis changes.'}
@@ -200,8 +233,8 @@ export const Horizontal: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 100,
-      maxSizePx: 500,
+      minSize: 100,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -231,8 +264,8 @@ export const Vertical: Story = {
   render: () => {
     const top = useResizable({
       defaultSize: 150,
-      minSizePx: 60,
-      maxSizePx: 250,
+      minSize: 60,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (
@@ -263,13 +296,13 @@ export const ThreePanel: Story = {
   render: () => {
     const left = useResizable({
       defaultSize: 180,
-      minSizePx: 120,
-      maxSizePx: 300,
+      minSize: 120,
+      maxSize: 300,
     });
     const right = useResizable({
       defaultSize: 220,
-      minSizePx: 150,
-      maxSizePx: 400,
+      minSize: 150,
+      maxSize: 400,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -312,13 +345,13 @@ export const Nested: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 120,
-      maxSizePx: 350,
+      minSize: 120,
+      maxSize: 350,
     });
     const editor = useResizable({
       defaultSize: 200,
-      minSizePx: 80,
-      maxSizePx: 250,
+      minSize: 80,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (
@@ -383,8 +416,8 @@ export const AlwaysVisible: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 100,
-      maxSizePx: 500,
+      minSize: 100,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -414,13 +447,13 @@ export const MixedContainers: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 120,
-      maxSizePx: 350,
+      minSize: 120,
+      maxSize: 350,
     });
     const editor = useResizable({
       defaultSize: 200,
-      minSizePx: 80,
-      maxSizePx: 250,
+      minSize: 80,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (

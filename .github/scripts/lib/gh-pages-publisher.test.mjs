@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Local-Git contracts for Pages publishers and queue lifetimes.
+ * @input Shared/legacy queue fixtures and controlled wait/publication failures.
+ * @output Evidence of owned cleanup, preserved foreign state, and atomic holders.
+ * @position Regression coverage for the shared gh-pages publication helper.
+ */
+
 import {execFileSync, spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
@@ -7,20 +14,18 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {PNG} from 'pngjs';
 
 import {
   cleanupPreviews,
   compactGhPages,
   enqueuePublication,
-  publishAcceptedVisualBaseline,
   publishImmutablePath,
+  publishManualVisualBaseline,
   publishPrPreview,
-  publishReleaseGateReport,
   publishVibeReport,
   publishVibeScreenshots,
-  publishVisualAcceptanceRecord,
   publishStableSite,
   releasePublication,
   waitForPublicationTurn,
@@ -36,7 +41,6 @@ const LEGACY_LOCK = fileURLToPath(
 const HEAD = 'a'.repeat(40);
 const TESTED = 'b'.repeat(40);
 const BASE = 'd'.repeat(40);
-const MERGE = 'c'.repeat(40);
 const KEY = 'core-button--default__neutral-light';
 
 const SHARED_HOLDER = path.join(
@@ -435,7 +439,300 @@ async function withoutGitIdentity(callback) {
   }
 }
 
+function expectPublicationReleased(fx, runId, name) {
+  const checkout = cloneRemote(fx.remote, fx.root, name);
+  for (const holder of [SHARED_HOLDER, LEGACY_HOLDER]) {
+    const ticket = path.join(path.dirname(holder), `${runId}.json`);
+    expect(fs.existsSync(path.join(checkout, ticket)), ticket).toBe(false);
+    expect(holderAt(checkout, 'HEAD', holder)?.runId).not.toBe(runId);
+  }
+  expectNoPartialHolderState(checkout, runId);
+  return checkout;
+}
+
+describe('publication turn lifetime', () => {
+  it('cleans up after run lookup failure and permits another scope in the same run', async () => {
+    const fx = fixture();
+    const older = context(fx, 899, 'whole-tree');
+    const turn = context(fx, 900, 'pr-visual/evidence');
+    const publish = vi.fn();
+    await withFixturePath(fx, async () => {
+      await enqueuePublication(older);
+      await waitForPublicationTurn(older);
+      writeFile(
+        path.join(fx.bin, 'gh'),
+        '#!/bin/sh\nprintf "injected run lookup failure\\n" >&2\nexit 1\n',
+      );
+      await expect(withPublicationTurn({...turn, publish})).rejects.toThrow(
+        /cannot resolve queued run 899: injected run lookup failure/,
+      );
+      expect(publish).not.toHaveBeenCalled();
+      const failed = expectPublicationReleased(fx, 900, 'after-wait-error');
+      expect(holderAt(failed, 'HEAD', SHARED_HOLDER)).toMatchObject({
+        runId: 899,
+        scope: 'whole-tree',
+      });
+      expect(holderAt(failed, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+        runId: 899,
+      });
+
+      await releasePublication(older);
+      const source = path.join(fx.root, 'next-scope');
+      writeFile(path.join(source, 'index.html'), 'next publication');
+      await expect(
+        withPublicationTurn({
+          ...turn,
+          scope: 'pr-preview/42',
+          publish: () =>
+            publishImmutablePath({
+              ...turn,
+              source,
+              destination: 'pr/42/next-publication',
+            }),
+        }),
+      ).resolves.toMatchObject({published: true});
+    });
+    const final = expectPublicationReleased(fx, 900, 'after-next-scope');
+    expect(
+      fs.readFileSync(
+        path.join(final, 'pr/42/next-publication/index.html'),
+        'utf8',
+      ),
+    ).toBe('next publication');
+    expectNoPartialHolderState(final, 899);
+  });
+
+  it.each(['shared', 'legacy'])(
+    'cleans up a timed-out turn without removing a live %s holder',
+    async queue => {
+      const fx = fixture();
+      if (queue === 'shared') {
+        writeSharedHolder(fx.remote, fx.root, 899, 'whole-tree');
+      } else {
+        writeLegacyHolder(fx.remote, fx.root, 899, {withTicket: true});
+      }
+      writeFile(
+        path.join(fx.bin, 'gh'),
+        '#!/bin/sh\nprintf \'{"status":"in_progress"}\\n\'\n',
+      );
+      const before = cloneRemote(fx.remote, fx.root, 'before-timeout');
+      const holder = queue === 'shared' ? SHARED_HOLDER : LEGACY_HOLDER;
+      const queuePath = path.dirname(holder);
+      const queueTree = git(before, 'rev-parse', `HEAD:${queuePath}`);
+      const publish = vi.fn();
+      await withFixturePath(fx, () =>
+        expect(
+          withPublicationTurn({
+            ...context(fx, 900, 'pr-visual/evidence'),
+            timeoutMs: 0,
+            publish,
+          }),
+        ).rejects.toThrow(/timed out behind gh-pages publication run 899/),
+      );
+      expect(publish).not.toHaveBeenCalled();
+      const final = expectPublicationReleased(fx, 900, 'after-timeout');
+      expect(git(final, 'rev-parse', `HEAD:${queuePath}`)).toBe(queueTree);
+    },
+  );
+
+  it('cleans up an interrupted claim without exposing either partial holder', async () => {
+    const fx = fixture();
+    const error = new Error('injected claim failure');
+    const publish = vi.fn();
+    const beforeClaimPush = vi.fn(({checkout}) => {
+      // Both holders are staged, but the failed claim must publish neither.
+      expect(holderAt(checkout, 'HEAD', SHARED_HOLDER)).toMatchObject({
+        runId: 900,
+      });
+      expect(holderAt(checkout, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+        runId: 900,
+      });
+      throw error;
+    });
+    await withFixturePath(fx, () =>
+      expect(
+        withPublicationTurn({
+          ...context(fx, 900, 'pr-visual/evidence'),
+          beforeClaimPush,
+          publish,
+        }),
+      ).rejects.toBe(error),
+    );
+    expect(beforeClaimPush).toHaveBeenCalledOnce();
+    expect(publish).not.toHaveBeenCalled();
+    expectPublicationReleased(fx, 900, 'after-claim-error');
+  });
+
+  it.each(['throw', 'reject'])(
+    'releases an acquired turn after publish %s',
+    async failure => {
+      const fx = fixture();
+      const error = new Error('injected publish failure');
+      await expect(
+        queuedPublish(fx, 900, 'pr-visual/evidence', () => {
+          const acquired = cloneRemote(fx.remote, fx.root, 'acquired');
+          expect(holderAt(acquired, 'HEAD', SHARED_HOLDER)).toMatchObject({
+            runId: 900,
+            scope: 'pr-visual/evidence',
+          });
+          expect(holderAt(acquired, 'HEAD', LEGACY_HOLDER)).toMatchObject({
+            runId: 900,
+          });
+          if (failure === 'reject') return Promise.reject(error);
+          throw error;
+        }),
+      ).rejects.toBe(error);
+      expectPublicationReleased(fx, 900, 'after-publish-error');
+    },
+  );
+
+  it.each([false, true])(
+    'preserves another scope when enqueue refuses (already held: %s)',
+    async held => {
+      const fx = fixture();
+      const existing = context(fx, 900, 'pr-preview/42');
+      const publish = vi.fn();
+      await withFixturePath(fx, async () => {
+        await enqueuePublication(existing);
+        if (held) await waitForPublicationTurn(existing);
+        const before = git(
+          fx.root,
+          '--git-dir',
+          fx.remote,
+          'rev-parse',
+          'gh-pages',
+        );
+        await expect(
+          withPublicationTurn({
+            ...context(fx, 900, 'pr-visual/evidence'),
+            publish,
+          }),
+        ).rejects.toThrow(/existing queue ticket has invalid identity/);
+        expect(
+          git(fx.root, '--git-dir', fx.remote, 'rev-parse', 'gh-pages'),
+        ).toBe(before);
+      });
+      expect(publish).not.toHaveBeenCalled();
+    },
+  );
+
+  it('releases successful sequential scopes in the same run without a partial dual holder', async () => {
+    const fx = fixture();
+    const scopes = ['pr-visual/evidence', 'pr-preview/42'];
+    for (const [index, scope] of scopes.entries()) {
+      const source = path.join(fx.root, `source-${index}`);
+      writeFile(path.join(source, 'index.html'), scope);
+      await expect(
+        queuedPublish(fx, 900, scope, () =>
+          publishImmutablePath({
+            ...context(fx, 900, scope),
+            source,
+            destination: `pr/42/lifetime-${index}`,
+          }),
+        ),
+      ).resolves.toMatchObject({published: true});
+      const final = expectPublicationReleased(
+        fx,
+        900,
+        `after-success-${index}`,
+      );
+      for (const [publishedIndex, publishedScope] of scopes
+        .slice(0, index + 1)
+        .entries()) {
+        expect(
+          fs.readFileSync(
+            path.join(final, `pr/42/lifetime-${publishedIndex}/index.html`),
+            'utf8',
+          ),
+        ).toBe(publishedScope);
+      }
+    }
+  });
+});
+
 describe('gh-pages publisher', () => {
+  it.each(['browser-only', 'capture-failure', 'missing-verdict'])(
+    'validates %s before manual baseline publication',
+    async scenario => {
+      const fx = fixture();
+      const capture = path.join(fx.root, 'capture');
+      const after = png(0, 0, 255);
+      writeFile(path.join(capture, 'shots', `${KEY}.png`), after);
+      writeJSON(path.join(capture, 'manifest.json'), {
+        platform: 'linux-arm64',
+        browser: 'chromium-141.0',
+        viewport: {width: 1280, height: 900},
+        shots: {[KEY]: {...SHOT, sha256: digest(after)}},
+      });
+      if (scenario !== 'missing-verdict') {
+        const failures = [
+          {
+            key: 'baseline',
+            error:
+              'baseline was captured with chromium-140.0, this run with chromium-141.0 — refresh the baseline (gate.mjs accept --keys all --reason "browser bump").',
+          },
+        ];
+        if (scenario === 'capture-failure')
+          failures.push({key: KEY, error: 'timeout'});
+        writeJSON(path.join(capture, 'verdict.json'), {
+          status: 'failed',
+          counts: {total: 1, failed: failures.length},
+          failures,
+          removed: [],
+        });
+      }
+      const before = git(
+        fx.root,
+        '--git-dir',
+        fx.remote,
+        'rev-parse',
+        'gh-pages:visual-gate/baseline',
+      );
+      const publish = () =>
+        queuedPublish(fx, 850, 'visual-gate/baseline', () =>
+          publishManualVisualBaseline({
+            ...context(fx, 850, 'visual-gate/baseline'),
+            capture,
+            keys: 'all',
+            reason: 'browser bump',
+            actor: 'maintainer',
+            prune: true,
+          }),
+        );
+      if (scenario === 'browser-only') {
+        await expect(publish()).resolves.toMatchObject({published: true});
+        const final = cloneRemote(fx.remote, fx.root);
+        expect(
+          fs.readFileSync(
+            path.join(final, 'visual-gate/baseline/shots', `${KEY}.png`),
+          ),
+        ).toEqual(after);
+        const manifest = JSON.parse(
+          fs.readFileSync(
+            path.join(final, 'visual-gate/baseline/manifest.json'),
+            'utf8',
+          ),
+        );
+        expect(manifest.browser).toBe('chromium-141.0');
+        expect(manifest.decisions.at(-1)).toMatchObject({
+          promoted: [KEY],
+          reason: 'browser bump',
+        });
+      } else {
+        await expect(publish()).rejects.toThrow(/Refusing to promote/);
+        expect(
+          git(
+            fx.root,
+            '--git-dir',
+            fx.remote,
+            'rev-parse',
+            'gh-pages:visual-gate/baseline',
+          ),
+        ).toBe(before);
+      }
+    },
+  );
+
   it('queues whole-tree and scoped writers without Actions pending-run cancellation', async () => {
     const fx = fixture();
     const wholeTree = context(fx, 800, 'whole-tree');
@@ -526,122 +823,6 @@ describe('gh-pages publisher', () => {
       ),
     ).toContain('whole-tree');
     expect(git(final, 'rev-list', '--count', 'HEAD')).toBe('1');
-  });
-
-  it('publishes release-gate reports without touching the stable site or baseline', async () => {
-    const fx = fixture();
-    const report = path.join(fx.root, 'report');
-    writeFile(path.join(report, 'index.html'), 'new report');
-    writeFile(
-      path.join(report, 'release-gate.json'),
-      '{"visual":{"status":"passed"}}\n',
-    );
-
-    await publishReleaseGateReport({
-      ...context(fx, 901, 'visual-gate/reports'),
-      source: report,
-      runId: 901,
-    });
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', '901', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('new report');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', 'latest', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('new report');
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-          'utf8',
-        ),
-      ).version,
-    ).toBe(1);
-    expect(
-      fs.readFileSync(path.join(final, 'storybook', 'old.html'), 'utf8'),
-    ).toBe('old storybook');
-  });
-
-  it('retries from the source checkout after deleting the rejected gh-pages checkout', async () => {
-    const fx = fixture();
-    const report = path.join(fx.root, 'report');
-    writeFile(path.join(report, 'index.html'), 'retry report');
-    let raced = false;
-
-    await publishReleaseGateReport({
-      ...context(fx, 902, 'visual-gate/reports'),
-      source: report,
-      runId: 902,
-      beforePush: async ({attempt}) => {
-        if (attempt !== 1 || raced) return;
-        raced = true;
-        const writer = cloneRemote(fx.remote, fx.root, 'race-writer');
-        git(writer, 'config', 'user.name', 'Test');
-        git(writer, 'config', 'user.email', 'test@example.com');
-        writeFile(path.join(writer, 'visual-gate', 'race.txt'), 'race');
-        git(writer, 'add', '.');
-        git(writer, 'commit', '-qm', 'race');
-        git(writer, 'push', '-q', 'origin', 'gh-pages');
-      },
-    });
-
-    expect(raced).toBe(true);
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(path.join(final, 'visual-gate', 'race.txt'), 'utf8'),
-    ).toBe('race');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', '902', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('retry report');
-  });
-
-  it('prunes only old release-gate run directories', async () => {
-    const fx = fixture();
-    const seed = cloneRemote(fx.remote, fx.root, 'seed-more-runs');
-    git(seed, 'config', 'user.name', 'Test');
-    git(seed, 'config', 'user.email', 'test@example.com');
-    for (let runId = 100; runId <= 125; runId += 1) {
-      writeFile(
-        path.join(seed, 'visual-gate', String(runId), 'index.html'),
-        String(runId),
-      );
-    }
-    writeFile(
-      path.join(seed, '.astryx-gh-pages', 'publication-queue', '700.json'),
-      '{"version":1,"repository":"facebook/astryx","runId":700,"scope":"whole-tree"}\n',
-    );
-    git(seed, 'add', '.');
-    git(seed, 'commit', '-qm', 'seed runs');
-    git(seed, 'push', '-q', 'origin', 'gh-pages');
-    const report = path.join(fx.root, 'report-prune');
-    writeFile(path.join(report, 'index.html'), 'new');
-
-    await publishReleaseGateReport({
-      ...context(fx, 126, 'visual-gate/reports'),
-      source: report,
-      runId: 126,
-    });
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(fs.existsSync(path.join(final, 'visual-gate', '100'))).toBe(false);
-    expect(fs.existsSync(path.join(final, 'visual-gate', '107'))).toBe(true);
-    expect(fs.existsSync(path.join(final, 'visual-gate', 'baseline'))).toBe(
-      true,
-    );
-    expect(fs.existsSync(path.join(final, 'visual-gate', 'latest'))).toBe(true);
-    expect(
-      fs.existsSync(path.join(final, '.astryx-gh-pages', 'publication-queue')),
-    ).toBe(true);
   });
 
   it('does not claim either holder while waiting for an older legacy baseline ticket', async () => {
@@ -948,78 +1129,9 @@ describe('gh-pages publisher', () => {
     ).rejects.toThrow(/immutable destination already exists/);
   });
 
-  it('archives acceptance records through the shared queue', async () => {
+  it('publishes reviewed baseline bytes only while holding the shared turn', async () => {
     const fx = fixture();
-    await queuedPublish(fx, 920, 'visual-gate/acceptances', () =>
-      publishVisualAcceptanceRecord({
-        ...context(fx, 920, 'visual-gate/acceptances'),
-        pr: 42,
-        head: HEAD,
-        acceptedRunId: 123,
-        acceptedRunAttempt: 1,
-        approver: 'maintainer',
-        approverId: 99,
-        permission: 'maintain',
-        effectivePermission: 'maintain',
-        roleName: '',
-        commentId: 1234,
-        reason: 'The new radius matches the approved component design.',
-      }),
-    );
-
-    const final = cloneRemote(fx.remote, fx.root);
-    const acceptance = JSON.parse(
-      fs.readFileSync(
-        path.join(
-          final,
-          'visual-gate',
-          'acceptances',
-          '42',
-          HEAD,
-          '123',
-          '1',
-          'acceptance.json',
-        ),
-        'utf8',
-      ),
-    );
-    expect(acceptance.keys.map(entry => entry.key)).toEqual([KEY]);
-    expect(
-      fs.existsSync(
-        path.join(
-          final,
-          'visual-gate',
-          'acceptances',
-          '42',
-          HEAD,
-          '123',
-          '1',
-          'after',
-          `${KEY}.png`,
-        ),
-      ),
-    ).toBe(true);
-  });
-
-  it('promotes accepted baseline pixels only while holding the shared turn', async () => {
-    const fx = fixture();
-    await queuedPublish(fx, 930, 'visual-gate/acceptances', () =>
-      publishVisualAcceptanceRecord({
-        ...context(fx, 930, 'visual-gate/acceptances'),
-        pr: 42,
-        head: HEAD,
-        acceptedRunId: 123,
-        acceptedRunAttempt: 1,
-        approver: 'maintainer',
-        approverId: 99,
-        permission: 'maintain',
-        effectivePermission: 'maintain',
-        roleName: '',
-        commentId: 1234,
-        reason: 'The new radius matches the approved component design.',
-      }),
-    );
-    const capture = path.join(fx.root, 'merged-capture');
+    const capture = path.join(fx.root, 'canonical-capture');
     const after = png(0, 0, 255);
     writeFile(path.join(capture, 'shots', `${KEY}.png`), after);
     writeJSON(path.join(capture, 'manifest.json'), {
@@ -1027,257 +1139,101 @@ describe('gh-pages publisher', () => {
       platform: 'linux-arm64',
       browser: 'chromium-140.0',
       viewport: {width: 1280, height: 900},
-      context: {sha: MERGE},
+      context: {sha: TESTED},
       shots: {
         [KEY]: {...SHOT, key: KEY, sha256: digest(after), width: 2, height: 2},
       },
     });
-    const turn = context(fx, 931, 'visual-gate/baseline');
-    const previousPath = process.env.PATH;
-    process.env.PATH = `${fx.bin}:${previousPath}`;
-    try {
-      await enqueuePublication(turn);
-      await waitForPublicationTurn(turn);
-      await publishAcceptedVisualBaseline({
-        ...turn,
-        pr: 42,
-        head: HEAD,
-        mergeSha: MERGE,
-        expectedRecordRel: '123/1/acceptance.json',
-        capture,
-      });
-      await releasePublication(turn);
-    } finally {
-      process.env.PATH = previousPath;
-    }
-
+    writeJSON(path.join(capture, 'verdict.json'), {status: 'changed'});
+    const options = {
+      ...context(fx, 931, 'visual-gate/baseline'),
+      capture,
+      keys: KEY,
+      reason: 'The reviewed frame matches the intended component rendering.',
+      actor: 'maintainer',
+    };
+    await expect(publishManualVisualBaseline(options)).rejects.toThrow();
+    await queuedPublish(fx, 931, 'visual-gate/baseline', () =>
+      publishManualVisualBaseline(options),
+    );
     const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'visual-gate/baseline/shots', `${KEY}.png`),
+      ),
+    ).toEqual(after);
     const manifest = JSON.parse(
       fs.readFileSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+        path.join(final, 'visual-gate/baseline/manifest.json'),
         'utf8',
       ),
     );
     expect(manifest.shots[KEY].sha256).toBe(digest(after));
-    expect(manifest.decisions.at(-1)).toMatchObject({
-      pr: 42,
-      headSha: HEAD,
-      mergeSha: MERGE,
-    });
+    expect(manifest.decisions.at(-1).reason).toBe(options.reason);
+    expect(
+      fs.readFileSync(path.join(final, 'storybook/old.html'), 'utf8'),
+    ).toBe('old storybook');
   });
 
-  it('publishes PR previews without losing reports or visual state', async () => {
+  it('publishes Sandbox only and preserves existing Storybook and visual bytes', async () => {
     const fx = fixture();
-    const storybook = path.join(fx.root, 'preview-storybook');
     const sandbox = path.join(fx.root, 'preview-sandbox');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
     writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
     writeFile(
       path.join(sandbox, 'template-assets', 'ignored.txt'),
-      'shared asset copy',
+      'shared asset',
     );
-
     const result = await queuedPublish(fx, 940, 'pr-preview/123', () =>
       publishPrPreview({
         ...context(fx, 940, 'pr-preview/123'),
         ...previewIdentity(),
-        storybook,
         sandbox,
       }),
     );
-
     const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
     expect(
-      fs.readFileSync(path.join(final, 'pr', '123', 'index.html'), 'utf8'),
-    ).toBe('new preview');
-    expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'sandbox', 'index.html'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/sandbox/index.html'), 'utf8'),
     ).toBe('new sandbox');
     expect(
-      fs.existsSync(
-        path.join(final, 'pr', '123', 'sandbox', 'template-assets'),
-      ),
+      fs.existsSync(path.join(final, 'pr/123/sandbox/template-assets')),
     ).toBe(false);
     expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/visual/evidence.json'), 'utf8'),
     ).toBe('same-PR visual evidence');
+    expect(fs.readFileSync(path.join(final, 'pr/124/index.html'), 'utf8')).toBe(
+      'closed preview',
+    );
+    expect(result.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
+    });
     const manifest = JSON.parse(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', '.astryx-preview.json'),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(final, 'pr/123/.astryx-preview.json'), 'utf8'),
     );
-    expect(manifest).toMatchObject({
-      repository: REPO,
-      pullRequest: {number: 123, headSha: HEAD},
-      sourceRun: {id: 333, attempt: 1},
-      targets: {
-        storybook: {available: true, path: 'pr/123/'},
-        sandbox: {available: true, path: 'pr/123/sandbox/'},
-      },
+    expect(manifest.targets).toMatchObject({
+      storybook: {available: false},
+      sandbox: {available: true},
     });
-    expect(result).toMatchObject({
-      status: 'published',
-      pagesCommit: expect.stringMatching(/^[0-9a-f]{40}$/),
-      targets: {
-        storybook: {available: true},
-        sandbox: {available: true},
-      },
-    });
-    expect(
-      fs.readFileSync(
-        path.join(final, 'reports', 'vibe', 'index.html'),
-        'utf8',
-      ),
-    ).toBe('vibe');
-    expect(
-      fs.existsSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-      ),
-    ).toBe(true);
-    expect(
-      fs.existsSync(
-        path.join(
-          final,
-          'pr',
-          '42',
-          'visual',
-          HEAD,
-          '123',
-          '1',
-          'evidence.json',
-        ),
-      ),
-    ).toBe(true);
   });
 
-  it('rejects Storybook artifacts that collide with trusted visual evidence', async () => {
+  it('rejects attempts to republish Storybook onto Pages', async () => {
     const fx = fixture();
-    const storybook = path.join(fx.root, 'colliding-storybook');
-    const sandbox = path.join(fx.root, 'colliding-sandbox');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
-    writeFile(
-      path.join(storybook, 'visual', 'evidence.json'),
-      'untrusted evidence',
-    );
-    writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
-
-    await expect(
-      queuedPublish(fx, 944, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 944, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          sandbox,
-        }),
-      ),
-    ).rejects.toThrow(/reserved path visual/);
-
-    const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(
-        path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-        'utf8',
-      ),
-    ).toBe('same-PR visual evidence');
-  });
-
-  it.each([
-    ['no deployment', false, false],
-    ['Storybook only', true, false],
-    ['Sandbox only', false, true],
-    ['both previews', true, true],
-  ])(
-    'publishes independent target state: %s',
-    async (_label, hasStorybook, hasSandbox) => {
-      const fx = fixture();
-      const storybook = hasStorybook
-        ? path.join(fx.root, 'matrix-storybook')
-        : undefined;
-      const sandbox = hasSandbox
-        ? path.join(fx.root, 'matrix-sandbox')
-        : undefined;
-      if (storybook) writeFile(path.join(storybook, 'index.html'), 'storybook');
-      if (sandbox) writeFile(path.join(sandbox, 'index.html'), 'sandbox');
-      const resultFile = path.join(fx.root, 'preview-deployment.json');
-
-      await queuedPublish(fx, 945, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 945, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          sandbox,
-          resultFile,
-        }),
-      );
-
-      const final = cloneRemote(fx.remote, fx.root);
-      expect(fs.existsSync(path.join(final, 'pr', '123', 'index.html'))).toBe(
-        hasStorybook,
-      );
-      expect(
-        fs.existsSync(path.join(final, 'pr', '123', 'sandbox', 'index.html')),
-      ).toBe(hasSandbox);
-      expect(
-        fs.readFileSync(
-          path.join(final, 'pr', '123', 'visual', 'evidence.json'),
-          'utf8',
-        ),
-      ).toBe('same-PR visual evidence');
-      expect(fs.existsSync(path.join(final, 'pr', '124', 'index.html'))).toBe(
-        true,
-      );
-      const result = JSON.parse(fs.readFileSync(resultFile, 'utf8'));
-      expect(result.targets.storybook.available).toBe(hasStorybook);
-      expect(result.targets.sandbox.available).toBe(hasSandbox);
-    },
-  );
-
-  it('refuses to mark a target available without its entry point', async () => {
-    const fx = fixture();
-    const storybook = path.join(fx.root, 'missing-index-storybook');
-    writeFile(path.join(storybook, 'assets', 'bundle.js'), 'bundle');
-
+    const storybook = path.join(fx.root, 'storybook');
+    writeFile(path.join(storybook, 'index.html'), 'untrusted storybook');
     await expect(
       publishPrPreview({
         ...context(fx, 946, 'pr-preview/123'),
         ...previewIdentity(),
         storybook,
       }),
-    ).rejects.toThrow('--storybook must contain index.html');
-  });
-
-  it('does not claim deployment when the gh-pages push fails', async () => {
-    const fx = fixture();
-    const storybook = path.join(fx.root, 'failed-storybook');
-    writeFile(path.join(storybook, 'index.html'), 'new preview');
-    const resultFile = path.join(fx.root, 'preview-deployment.json');
-
-    await expect(
-      queuedPublish(fx, 946, 'pr-preview/123', () =>
-        publishPrPreview({
-          ...context(fx, 946, 'pr-preview/123'),
-          ...previewIdentity(),
-          storybook,
-          resultFile,
-          beforePush: () => {
-            throw new Error('simulated publisher failure');
-          },
-        }),
-      ),
-    ).rejects.toThrow('simulated publisher failure');
-
+    ).rejects.toThrow(/Storybook previews are hosted on Vercel/);
     const final = cloneRemote(fx.remote, fx.root);
-    expect(
-      fs.readFileSync(path.join(final, 'pr', '123', 'index.html'), 'utf8'),
-    ).toBe('preview');
-    expect(fs.existsSync(resultFile)).toBe(false);
+    expect(fs.readFileSync(path.join(final, 'pr/123/index.html'), 'utf8')).toBe(
+      'preview',
+    );
   });
 
   it('cleans stale previews without deleting visual evidence or live previews', async () => {

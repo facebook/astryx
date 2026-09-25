@@ -29,6 +29,9 @@
  *   4. Routing unknown-subcommand attempts through the same error
  *      envelope path (so `astryx bogus-cmd --json` gets exit 1 + envelope
  *      instead of exit 0 + help envelope).
+ *   5. Emitting an error envelope, not the help envelope, when Commander
+ *      shows help because the invocation failed (`help <unknown>`, or a
+ *      command group with no subcommand), which exits 1.
  *
  * Non-JSON behavior is preserved exactly: every code path that printed
  * to stderr before still prints to stderr. Commander writes its
@@ -115,6 +118,35 @@ export function buildHelpEnvelope(cmd) {
       subcommands,
     },
   };
+}
+
+/**
+ * The error envelope for help Commander shows because the invocation failed
+ * (it then exits 1): `help <name>` for an unknown name on the root, or a
+ * command group run without a subcommand.
+ *
+ * @param {import('commander').Command} cmd the command whose help was shown
+ * @returns {ReturnType<typeof toErrorEnvelope>}
+ */
+export function buildHelpErrorEnvelope(cmd) {
+  const available = cmd.commands
+    .filter(s => !(/** @type {any} */ (s))._hidden && s.name() !== 'help')
+    .map(s => s.name());
+  if (!cmd.parent) {
+    // Commander dispatches `help <name>` with ['help', <name>, ...] in args.
+    const requested = cmd.args[1];
+    return toErrorEnvelope(
+      requested ? `unknown command '${requested}'` : 'unknown command',
+      available.map(name => ({name, reason: 'available command'})),
+      ERROR_CODES.ERR_UNKNOWN_COMMAND,
+    );
+  }
+  const group = fullNameOf(cmd);
+  return toErrorEnvelope(
+    `'${group}' needs a subcommand`,
+    available.map(name => ({name: `${group} ${name}`, reason: 'available subcommand'})),
+    ERROR_CODES.ERR_MISSING_ARGUMENT,
+  );
 }
 
 /**
@@ -310,7 +342,9 @@ function patchOutputHelp(cmd) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
-        const env = buildHelpEnvelope(cmd);
+        const env = contextOptions?.error
+          ? buildHelpErrorEnvelope(cmd)
+          : buildHelpEnvelope(cmd);
         process.stdout.write(`${JSON.stringify(env, null, 2)}\n`);
       }
       return;
@@ -334,7 +368,9 @@ function patchPrototype(CommandCtor) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
-        const env = buildHelpEnvelope(this);
+        const env = contextOptions?.error
+          ? buildHelpErrorEnvelope(this)
+          : buildHelpEnvelope(this);
         process.stdout.write(`${JSON.stringify(env, null, 2)}\n`);
       }
       return;

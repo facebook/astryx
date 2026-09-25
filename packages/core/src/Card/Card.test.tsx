@@ -117,7 +117,7 @@ describe('Card', () => {
       const root = container.firstElementChild!;
       expect(root).toHaveAttribute('data-variant', 'brand');
       expect(root.className).toContain('astryx-card');
-      expect(root.className).toContain('brand');
+      expect(root).toHaveAttribute('data-variant', 'brand');
     });
 
     it('falls through to base styles instead of another variant', () => {

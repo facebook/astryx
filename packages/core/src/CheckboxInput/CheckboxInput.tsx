@@ -70,6 +70,22 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
+  // The owner paints this layer over the resolved indicator, so a theme
+  // replacement cannot accidentally drop the component's pressed contract.
+  indicatorPressOverlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-inner'],
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: 'transparent',
+        [stylex.when.ancestor(':active', indicatorScope)]:
+          colorVars['--color-overlay-pressed'],
+      },
+    },
+  },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   // `display: contents` adds no box of its own — the indicator keeps whatever
   // layout relationship it already had with the wrapper.
@@ -100,7 +116,6 @@ const styles = stylex.create({
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -288,6 +303,7 @@ export function CheckboxInput({
   className,
   style,
   ref,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxInputProps) {
   const id = useId();
@@ -354,7 +370,13 @@ export function CheckboxInput({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` (CheckboxListItem points the control
+  // at its visible row description) comes first, then the input's own ids —
+  // the explicit attribute below would otherwise replace it via `...rest`.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -393,7 +415,11 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
         )}>
         <div
-          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...stylex.props(
+            styles.checkboxWrapper,
+            wrapperSizeStyles[size],
+            !isDisabled && styles.indicatorPressOverlay,
+          )}
           {...focusProps}>
           <input
             {...rest}

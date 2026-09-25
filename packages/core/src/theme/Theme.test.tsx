@@ -55,6 +55,38 @@ describe('Theme', () => {
     expect(getByText('hello')).toBeTruthy();
   });
 
+  it('mounts the remaining CSS when one authored declaration is dropped', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const theme = defineTheme({
+        name: 'declaration-boundary',
+        tokens: {'--color-accent': 'red; } body { color: red'},
+        components: {button: {base: {borderRadius: '4px'}}},
+      });
+      render(
+        <Theme theme={theme}>
+          <span>child</span>
+        </Theme>,
+      );
+      const css = Array.from(document.querySelectorAll('style'))
+        .map(tag => tag.textContent ?? '')
+        .join('\n');
+      expect(css).not.toContain('body { color: red');
+      expect(css).toContain('border-radius: 4px;');
+      expect(css).toContain(':where(p)');
+      expect(
+        warn.mock.calls.filter(([message]) =>
+          String(message).startsWith('[astryx theme] dropped'),
+        ),
+      ).toHaveLength(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('dropped "--color-accent" in tokens'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('sets data-astryx-theme on wrapper div', () => {
     const {container} = render(
       <Theme theme={testTheme}>

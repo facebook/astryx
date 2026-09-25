@@ -14,7 +14,12 @@
  * its type and rough length so aggregate queries ("how many people pass
  * --out?") still work on scrubbed data. It replaces content, not structure.
  *
- * @input  arbitrary argv/option/error values
+ * The environment snapshot goes through {@link redactEnv} rather than the
+ * generic pass, because it is the one part of a record that mixes values this
+ * CLI derives (which must survive verbatim to be worth recording) with free
+ * text the invoking environment supplied (which must not).
+ *
+ * @input  arbitrary argv/option/error values, and the environment snapshot
  * @output the same shape with sensitive content replaced by stable markers
  * @position packages/cli/foundation/debug — scrubbing
  */
@@ -391,6 +396,72 @@ export function createRedactor({
   };
 
   return (value, key) => redact(value, key, 0);
+}
+
+/**
+ * Which fields of the environment snapshot are recorded VERBATIM.
+ *
+ * Every one of these is DERIVED: this CLI produces it from a fixed vocabulary
+ * (`process.platform`, the CI provider table, an Intl lookup, a SHA-256 of a
+ * value we never keep), so none of them can carry something a person typed,
+ * and their exact values are the whole reason the snapshot is useful.
+ *
+ * Everything else in `env` is free text handed to us by the invoking
+ * environment — an agent name from `ASTRYX_AGENT_ID`, `AGENT`, or
+ * `ASTRYX_AGENT_METADATA` — so it goes through the same content rules as argv.
+ * The list is a positive allowlist rather than a denylist of risky fields: a
+ * field added to the snapshot later is scrubbed until someone decides
+ * otherwise, which is the safe direction to be wrong in.
+ *
+ * `agentSessionIdHash` earns its place twice over. It is a hash, so it cannot
+ * leak what it was made from — and it is the only key that joins the runs of
+ * one session, which is exactly why the raw identifier is not recorded at all.
+ *
+ * Exported so a test can assert the classification still covers the whole
+ * snapshot: a field added later without a decision fails that test rather than
+ * quietly inheriting one behaviour or the other.
+ */
+export const VERBATIM_ENV_FIELDS = new Set([
+  'agentSessionIdHash',
+  'agentSessionIdSource',
+  'arch',
+  'ci',
+  'ciName',
+  'cliVersion',
+  'invocationSource',
+  'locale',
+  'nodeVersion',
+  'oneOff',
+  'packageManager',
+  'platform',
+  'timezone',
+  'tty',
+]);
+
+/**
+ * Apply the content rules to the environment snapshot.
+ *
+ * Deliberately NOT `redact(value, key)`: key-based redaction would match the
+ * word "session" in three of these names and blank the hash, destroying the
+ * join key the published contract promises. The classification above decides
+ * instead, and only the CONTENT rules run on what it does not exempt.
+ *
+ * @template T
+ * @param {T} env
+ * @param {Redactor} redact
+ * @returns {T}
+ */
+export function redactEnv(env, redact) {
+  if (!env || typeof env !== 'object') return env;
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  for (const [key, value] of Object.entries(env)) {
+    out[key] =
+      typeof value === 'string' && !VERBATIM_ENV_FIELDS.has(key)
+        ? redact(value)
+        : value;
+  }
+  return /** @type {T} */ (/** @type {unknown} */ (out));
 }
 
 /** @returns {string} */

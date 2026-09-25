@@ -554,16 +554,16 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear glyph precisely via `defineTheme`.
  *
- * `components['date-input-clear-icon'].base` scopes overrides to the clear
- * icon itself (via the `astryx-date-input-clear-icon` target), so a theme can
+ * `components['input-clear-icon'].base` scopes overrides to the clear
+ * icon itself (via the `astryx-input-clear-icon` target), so a theme can
  * recolor it, morph its color on hover, and resize it — without a fragile
  * descendant selector or raw CSS. Same-element rules in `@layer astryx-theme`
  * win over the icon's own base color/size.
  */
 const clearIconTheme = defineTheme({
-  name: 'date-input-clear-icon-demo',
+  name: 'input-clear-icon-demo',
   components: {
-    'date-input-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',
