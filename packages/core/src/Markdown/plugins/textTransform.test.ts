@@ -9,7 +9,7 @@
 
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {parseInline, parseMarkdown, parseMarkdownAst} from '../parser';
-import {createMarkdownPlugin} from './protocol';
+import {composeMarkdownTransforms, createMarkdownPlugin} from './protocol';
 import type {MarkdownExtensionNode} from './protocol';
 import {createMarkdownTextTransform} from './textTransform';
 import type {MarkdownTextTransformContext} from './textTransform';
@@ -436,6 +436,30 @@ describe('createMarkdownTextTransform', () => {
         ],
       }),
     );
+  });
+
+  it('composes transforms in order without stale source-claim skips', () => {
+    const plugin = createMarkdownPlugin({
+      name: 'text-pipeline',
+      apiVersion: 1,
+      transform: composeMarkdownTransforms([
+        createMarkdownTextTransform({
+          pattern: /FIRST/g,
+          requiredSubstrings: ['FIRST'],
+          replace: () => ({type: 'text', value: 'SECOND'}),
+        }),
+        createMarkdownTextTransform({
+          pattern: /SECOND/g,
+          requiredSubstrings: ['SECOND'],
+          replace: () => ({type: 'text', value: 'THIRD'}),
+        }),
+      ]),
+    });
+
+    expect(parseInline('FIRST', {plugins: [plugin]})).toEqual([
+      {type: 'text', content: 'THIRD'},
+    ]);
+    expect(() => composeMarkdownTransforms([])).toThrow(/requires a transform/);
   });
 
   it('still rejects an unrepresentable node without freezing the batch', () => {

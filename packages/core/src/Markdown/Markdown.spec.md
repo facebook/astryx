@@ -20,12 +20,18 @@ verified_by:
     packages/core/src/Markdown/remark.test.tsx,
     packages/core/src/Markdown/plugins/softBreaks.test.tsx,
     packages/core/src/Markdown/plugins/callouts.test.tsx,
+    packages/core/src/Markdown/plugins/entityReferences.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
 modules:
-  [module:Markdown/remark, module:Markdown/softBreaks, module:Markdown/callouts]
+  [
+    module:Markdown/remark,
+    module:Markdown/softBreaks,
+    module:Markdown/callouts,
+    module:Markdown/entityReferences,
+  ]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:

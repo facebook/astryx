@@ -283,6 +283,74 @@ export function markMarkdownTransformClaim<
   return transform;
 }
 
+/**
+ * Composes transforms in declaration order while preserving Core's validation
+ * and source-claim fast paths when every input transform carries them.
+ */
+export function composeMarkdownTransforms<
+  Node extends MarkdownAnyExtensionNode = never,
+>(transforms: ReadonlyArray<MarkdownTransform<Node>>): MarkdownTransform<Node> {
+  if (!Array.isArray(transforms) || transforms.length === 0) {
+    throw new TypeError('Markdown transform composition requires a transform');
+  }
+  const ordered = Object.freeze([...transforms]);
+  if (ordered.some(transform => typeof transform !== 'function')) {
+    throw new TypeError('Markdown transforms must be functions');
+  }
+
+  const composed: MarkdownTransform<Node> = (document, context) => {
+    let transformed = document;
+    const internalContext =
+      context as Partial<InternalMarkdownTransformContext>;
+    let sourceUnchanged =
+      internalContext[markdownTransformSourceUnchanged] ?? false;
+    const changedContext = {
+      ...context,
+      [markdownTransformPluginName]:
+        internalContext[markdownTransformPluginName],
+      [markdownTransformHasRenderer]:
+        internalContext[markdownTransformHasRenderer],
+      [markdownTransformSourceUnchanged]: false,
+    };
+    for (const transform of ordered) {
+      const transformContext = sourceUnchanged ? context : changedContext;
+      const next = transform(transformed, transformContext) as unknown;
+      if (
+        next != null &&
+        typeof next === 'object' &&
+        typeof (next as {then?: unknown}).then === 'function'
+      ) {
+        void Promise.resolve(next).catch(() => {});
+        throw new TypeError('Async Markdown transforms are not supported');
+      }
+      if (next !== transformed) {
+        sourceUnchanged = false;
+      }
+      transformed = next as MarkdownAstRoot<MarkdownAnyExtensionNode>;
+    }
+    return transformed;
+  };
+
+  const trusted = ordered.every(
+    transform =>
+      (transform as TrustAwareMarkdownTransform)[markdownTransformTrusted] ===
+      true,
+  )
+    ? (markMarkdownTransformTrusted(
+        composed as MarkdownTransform<never>,
+      ) as MarkdownTransform<Node>)
+    : composed;
+  const claims = ordered.map(
+    transform =>
+      (transform as ClaimAwareMarkdownTransform<Node>)[markdownTransformClaim],
+  );
+  return claims.every(claim => claim != null)
+    ? markMarkdownTransformClaim(trusted, source =>
+        claims.some(claim => claim?.(source) === true),
+      )
+    : trusted;
+}
+
 type MarkdownExtensionNameForDisplay<
   Node extends MarkdownAnyExtensionNode,
   Display extends 'inline' | 'block',
