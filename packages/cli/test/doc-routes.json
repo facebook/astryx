@@ -421,50 +421,6 @@
     },
     {
       "kind": "section",
-      "id": "cli#commands-layout",
-      "oldCliRoute": "astryx docs cli commands-layout",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/commands.",
-      "rationale": "The command doc `layout` (command row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#commands-layout-check",
-      "oldCliRoute": "astryx docs cli commands-layout-check",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/commands.",
-      "rationale": "The command doc `layout check` (command row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#commands-layout-expand",
-      "oldCliRoute": "astryx docs cli commands-layout-expand",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/commands.",
-      "rationale": "The command doc `layout expand` (command row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#commands-layout-grammar",
-      "oldCliRoute": "astryx docs cli commands-layout-grammar",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/commands.",
-      "rationale": "The command doc `layout grammar` (command row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
       "id": "cli#commands-manifest",
       "oldCliRoute": "astryx docs cli commands-manifest",
       "oldDocsiteUrl": null,
@@ -857,39 +813,6 @@
       "aliasNeeded": false,
       "evidence": "Its doc declares namespace cli/api.",
       "rationale": "The API function doc `isError` (function row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#api-layout-check",
-      "oldCliRoute": "astryx docs cli api-layout-check",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/api.",
-      "rationale": "The API function doc `layoutCheck` (function row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#api-layout-expand",
-      "oldCliRoute": "astryx docs cli api-layout-expand",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/api.",
-      "rationale": "The API function doc `layoutExpand` (function row), read as one section of the cli namespace page.",
-      "status": "proposed"
-    },
-    {
-      "kind": "section",
-      "id": "cli#api-layout-grammar",
-      "oldCliRoute": "astryx docs cli api-layout-grammar",
-      "oldDocsiteUrl": null,
-      "placement": "namespace:cli",
-      "aliasNeeded": false,
-      "evidence": "Its doc declares namespace cli/api.",
-      "rationale": "The API function doc `layoutGrammar` (function row), read as one section of the cli namespace page.",
       "status": "proposed"
     },
     {
@@ -3055,7 +2978,7 @@
       "kind": "command",
       "id": "@astryxdesign/cli/command",
       "provider": "@astryxdesign/cli",
-      "count": 34,
+      "count": 30,
       "oldCliRoute": "astryx <id> --help",
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/cli/command",
@@ -3068,7 +2991,7 @@
       "kind": "function",
       "id": "@astryxdesign/cli/function",
       "provider": "@astryxdesign/cli",
-      "count": 41,
+      "count": 38,
       "oldCliRoute": null,
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/cli/function",

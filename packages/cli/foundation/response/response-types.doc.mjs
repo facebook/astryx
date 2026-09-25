@@ -298,22 +298,5 @@ export const doc = {
       description:
         'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
     },
-
-    // layout (XLE/XLO)
-    {
-      value: 'layout.expand',
-      description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).',
-    },
-    {
-      value: 'layout.check',
-      description:
-        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).',
-    },
-    {
-      value: 'layout.grammar',
-      description:
-        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.",
-    },
   ],
 };

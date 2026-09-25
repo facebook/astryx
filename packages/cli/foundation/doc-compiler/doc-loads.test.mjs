@@ -191,18 +191,6 @@ const RUNNERS = {
       'import ./integration.doc.mjs',
     ],
   },
-  'clients/cli/commands/layout.mjs': {
-    runs: SELF_DOCS,
-    sites: [
-      'import ../../../api/layout/layoutCheck.doc.mjs',
-      'import ../../../api/layout/layoutExpand.doc.mjs',
-      'import ../../../api/layout/layoutGrammar.doc.mjs',
-      'import ./layout-check.doc.mjs',
-      'import ./layout-expand.doc.mjs',
-      'import ./layout-grammar.doc.mjs',
-      'import ./layout.doc.mjs',
-    ],
-  },
   'clients/cli/commands/search.mjs': {
     runs: SELF_DOCS,
     sites: [

@@ -43,7 +43,6 @@ export {gapReport} from './gap-report/gap-report.mjs';
 export {upgrade} from './upgrade/upgrade.mjs';
 export {init} from './init/init.mjs';
 export {doctor} from './doctor/doctor.mjs';
-export {layoutExpand, layoutCheck, layoutGrammar} from './layout/layout.mjs';
 export {
   integrationAdd,
   integrationAddAgentDoc,
@@ -90,7 +89,6 @@ export * from './gap-report/gap-report.type.mjs';
 export * from './upgrade/upgrade.type.mjs';
 export * from './init/init.type.mjs';
 export * from './doctor/doctor.type.mjs';
-export * from './layout/layout.type.mjs';
 export * from './integration/integration-authoring.type.mjs';
 export * from './integration/pack-check.type.mjs';
 export * from './integration/validate-integration.type.mjs';

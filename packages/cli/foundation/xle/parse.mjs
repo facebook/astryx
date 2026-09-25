@@ -302,7 +302,7 @@ function parseAttrToken(token, line) {
  * Guard against unbounded recursion in the compact parser. A layout tree this
  * deep is never hand-authored; without the cap the recursive descent blows the
  * JS call stack and surfaces a raw RangeError (→ ERR_UNKNOWN, no line/col)
- * instead of a located ERR_LAYOUT_PARSE. The counter is module-level so it
+ * instead of a located parse error. The counter is module-level so it
  * spans group / attribute sub-streams; each parse entry point resets it.
  */
 const MAX_COMPACT_DEPTH = 512;

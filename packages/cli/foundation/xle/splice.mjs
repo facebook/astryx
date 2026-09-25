@@ -18,7 +18,7 @@
  *
  * @input  block TSX source (splice) or a name+importPath (import)
  * @output prepareSpliceModule / parseImportStatements + import-merge helpers
- * @position lib/xle — used by expand.mjs; sources gathered in api/layout.mjs
+ * @position lib/xle — used by expand.mjs; sources gathered by the caller
  */
 
 const IMPORT_RE =
