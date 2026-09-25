@@ -153,6 +153,66 @@ function exampleRendering(text: string) {
 }
 
 test.describe('playground preview isolation', () => {
+  test('reports a compiler bootstrap failure instead of building forever', async ({
+    page,
+  }) => {
+    await page.route('**/vendor/typescript.js', route => route.abort());
+
+    await page.goto('/playground');
+
+    await expect(page.getByText('Build error', {exact: true})).toBeVisible();
+    await expect(page.getByText('Building…', {exact: true})).not.toBeVisible();
+
+    // An edit updates the pending code but preserves the actionable error. It
+    // must not re-enter Building without restarting the failed document.
+    await setEditorCode(page, exampleRendering('Pending retry'));
+    await page.waitForTimeout(600);
+    await expect(page.getByText('Build error', {exact: true})).toBeVisible();
+    await expect(page.getByText('Building…', {exact: true})).not.toBeVisible();
+  });
+
+  test('allows an attested preview time to load its compiler', async ({
+    page,
+  }) => {
+    let releaseCompiler!: () => void;
+    let markCompilerRequested!: () => void;
+    const compilerRequested = new Promise<void>(resolve => {
+      markCompilerRequested = resolve;
+    });
+    const compilerGate = new Promise<void>(resolve => {
+      releaseCompiler = resolve;
+    });
+    await page.route('**/vendor/typescript.js', async route => {
+      markCompilerRequested();
+      await compilerGate;
+      await route.continue();
+    });
+
+    await page.goto('/playground', {waitUntil: 'domcontentloaded'});
+    await compilerRequested;
+    await page.waitForTimeout(12_000);
+    await expect(
+      page.getByText('Build error', {exact: true}),
+    ).not.toBeVisible();
+
+    releaseCompiler();
+    await expectPreviewToRender(page, 'Welcome');
+  });
+
+  test('times out a preview document that never starts', async ({page}) => {
+    await page.route(
+      /\/_next\/static\/chunks\/app\/playground\/preview\/page-[^/]+\.js/,
+      route => route.abort(),
+    );
+
+    await page.goto('/playground');
+
+    await expect(page.getByText('Build error', {exact: true})).toBeVisible({
+      timeout: 40_000,
+    });
+    await expect(page.getByText('Building…', {exact: true})).not.toBeVisible();
+  });
+
   test('recovers from a reloaded preview document with the current code, theme and mode', async ({
     page,
   }) => {

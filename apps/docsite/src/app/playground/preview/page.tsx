@@ -3,7 +3,8 @@
 /**
  * @file page.tsx
  * @input Attested preview channel, editor code, and active theme
- * @output Isolated live preview with native navigation in production
+ * @output Isolated live preview with native navigation in production, or a
+ *   compile error sent to the playground when the compiler bootstrap fails
  * @position Playground runner; platform restrictions never grant parent privileges.
  */
 
@@ -117,6 +118,7 @@ export default function PreviewPage() {
   const [customTheme, setCustomTheme] = useState<DefinedTheme | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [tsReady, setTsReady] = useState(false);
+  const [compilerError, setCompilerError] = useState<string | null>(null);
   // Whether this document's own `load` event has fired (or the wait for it
   // ran out); readiness is announced only after it.
   const [documentLoaded, setDocumentLoaded] = useState(false);
@@ -137,14 +139,19 @@ export default function PreviewPage() {
   useEffect(() => {
     const script = document.createElement('script');
     script.src = '/vendor/typescript.js';
+    const fail = () => setCompilerError('TypeScript compiler failed to load');
     script.onload = () => {
       const w = window as unknown as {ts?: typeof TS};
       if (w.ts) {
         setTypeScript(w.ts);
         setTsReady(true);
+      } else {
+        fail();
       }
     };
+    script.onerror = fail;
     document.head.appendChild(script);
+    return () => script.remove();
   }, []);
 
   const theme = customTheme ?? themeByValue[themeName] ?? FALLBACK_THEME;
@@ -278,7 +285,20 @@ export default function PreviewPage() {
   }, [tsReady, documentLoaded]);
 
   useEffect(() => {
-    if (!tsReady || !documentLoaded || port == null) {
+    if (
+      !documentLoaded ||
+      port == null ||
+      (!tsReady && compilerError == null)
+    ) {
+      return;
+    }
+
+    if (compilerError != null) {
+      postToParent({
+        type: 'preview-error',
+        error: compilerError,
+        phase: 'compile',
+      });
       return;
     }
 
@@ -327,6 +347,7 @@ export default function PreviewPage() {
     };
   }, [
     tsReady,
+    compilerError,
     documentLoaded,
     port,
     postToParent,

@@ -4,7 +4,8 @@
  * @file PlaygroundClient.tsx
  * @input URL hash or template query, user edits, and knob edits
  * @output Full-page two-panel playground (editor + live preview), with a
- *   production-only notice explaining the ephemeral preview's restrictions
+ *   production-only notice explaining the ephemeral preview's restrictions and
+ *   a retryable terminal error when the isolated preview cannot start
  * @position app/playground — the interactive Astryx code playground.
  *
  * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
@@ -168,6 +169,12 @@ type LeftView = 'code' | 'theme';
 type MobileTopTab = 'preview' | 'code' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+// A preview that never boots cannot report its own failure. End the indefinite
+// "Building…" state and let Rebuild mount a fresh isolated document. Once the
+// document attests, restart the deadline for the self-hosted compiler's 9 MB
+// download.
+const PREVIEW_DOCUMENT_STARTUP_TIMEOUT_MS = 30_000;
+const PREVIEW_COMPILER_STARTUP_TIMEOUT_MS = 30_000;
 
 const BUILD_STATUS_META: Record<
   Exclude<BuildStatus, 'idle'>,
@@ -321,6 +328,10 @@ export function PlaygroundClient() {
 
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
+  const previewStartupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const restartPreviewRef = useRef<() => void>(() => {});
   // The preview frame generation: a fresh iframe element (key) navigated to
   // the preview URL with a fresh nonce (src). Issued on the client only, and
   // re-issued whenever the attested preview document is replaced — see
@@ -449,6 +460,10 @@ export function PlaygroundClient() {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'preview-ready') {
         readyRef.current = true;
+        if (previewStartupTimerRef.current != null) {
+          clearTimeout(previewStartupTimerRef.current);
+          previewStartupTimerRef.current = null;
+        }
         setPreviewReady(true);
         if (pendingRef.current != null) {
           postCode(pendingRef.current);
@@ -490,33 +505,52 @@ export function PlaygroundClient() {
   // The window listener goes up BEFORE the frame is issued so the hello cannot
   // arrive unheard.
   useEffect(() => {
+    const clearStartupTimer = () => {
+      if (previewStartupTimerRef.current != null) {
+        clearTimeout(previewStartupTimerRef.current);
+        previewStartupTimerRef.current = null;
+      }
+    };
+    const armStartupTimer = (timeout: number) => {
+      clearStartupTimer();
+      previewStartupTimerRef.current = setTimeout(() => {
+        if (!readyRef.current) {
+          setBuildStatus('error');
+        }
+      }, timeout);
+    };
     const issueFrame = () => {
       frameGenerationRef.current += 1;
       setFrame({
         key: frameGenerationRef.current,
         src: previewSrc(connector.issue()),
       });
+      armStartupTimer(PREVIEW_DOCUMENT_STARTUP_TIMEOUT_MS);
     };
     const connector = createPreviewConnector({
       onMessage: e => portHandlerRef.current?.(e),
+      onAttested: () => armStartupTimer(PREVIEW_COMPILER_STARTUP_TIMEOUT_MS),
       // The attested preview document is gone (previewed code navigated or
       // reloaded its frame). Its port and nonce are already discarded; start
       // a new generation and queue the current code so the fresh document
       // picks up exactly where the old one was — the preview-ready handler
       // flushes it and the theme effect re-sends on the previewReady flip.
-      onReplaced: () => {
-        readyRef.current = false;
-        setPreviewReady(false);
-        pendingRef.current = codeRef.current;
-        issueFrame();
-      },
+      onReplaced: () => restartPreviewRef.current(),
     });
+    restartPreviewRef.current = () => {
+      readyRef.current = false;
+      setPreviewReady(false);
+      pendingRef.current = codeRef.current;
+      issueFrame();
+    };
     connectorRef.current = connector;
     const onWindowMessage = (e: MessageEvent) =>
       connector.handleWindowMessage(e);
     window.addEventListener('message', onWindowMessage);
     issueFrame();
     return () => {
+      clearStartupTimer();
+      restartPreviewRef.current = () => {};
       window.removeEventListener('message', onWindowMessage);
       connector.stop();
       connectorRef.current = null;
@@ -546,7 +580,9 @@ export function PlaygroundClient() {
     }
     debounceRef.current = setTimeout(() => {
       if (code) {
-        setBuildStatus('building');
+        setBuildStatus(status =>
+          status === 'error' && !readyRef.current ? status : 'building',
+        );
       }
       if (!readyRef.current) {
         pendingRef.current = code;
@@ -622,6 +658,7 @@ export function PlaygroundClient() {
       postCode(code);
     } else {
       pendingRef.current = code;
+      restartPreviewRef.current();
     }
   }, [postCode, code]);
 
