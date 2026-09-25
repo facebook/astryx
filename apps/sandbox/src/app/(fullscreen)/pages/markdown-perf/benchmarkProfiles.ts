@@ -65,7 +65,7 @@ function addCalloutClaims(
     (line, sectionText: string, body: string) => {
       const section = Number(sectionText);
       return density === 'dense' || section % 10 === 1
-        ? `:::note Performance note ${section}\n${body}\n:::`
+        ? `:::info Performance note ${section}\n${body}\n:::`
         : line;
     },
   );

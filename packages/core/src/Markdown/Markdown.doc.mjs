@@ -260,7 +260,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Add markdownCalloutsPlugin for static :::note, :::tip, :::warning, and :::danger blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
       },
       {
         guidance: true,
@@ -752,7 +752,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Add markdownCalloutsPlugin for static :::note, :::tip, :::warning, and :::danger blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
       },
       {
         guidance: true,
@@ -844,7 +844,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Add markdownCalloutsPlugin for static :::note, :::tip, :::warning, and :::danger blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
       },
       {
         guidance: true,

@@ -34,10 +34,10 @@ describe('Markdown performance profiles', () => {
   it('provides deterministic sparse and dense callout fixtures', () => {
     expect(callouts.prepareSource(source, 'none')).toBe(source);
     expect(
-      callouts.prepareSource(source, 'sparse').match(/:::note Performance/g),
+      callouts.prepareSource(source, 'sparse').match(/:::info Performance/g),
     ).toHaveLength(2);
     expect(
-      callouts.prepareSource(source, 'dense').match(/:::note Performance/g),
+      callouts.prepareSource(source, 'dense').match(/:::info Performance/g),
     ).toHaveLength(20);
     expect(getMarkdownBenchmarkPlugins(callouts, 'baseline')).toHaveLength(0);
     expect(getMarkdownBenchmarkPlugins(callouts, 'plugin')).toBe(

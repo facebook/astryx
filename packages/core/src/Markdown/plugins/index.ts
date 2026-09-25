@@ -30,7 +30,7 @@ export type {
 export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
 export {markdownCalloutsPlugin} from './callouts';
-export type {MarkdownCalloutNode, MarkdownCalloutVariant} from './callouts';
+export type {MarkdownCalloutNode, MarkdownCalloutStatus} from './callouts';
 export type {
   MarkdownFrontmatter,
   MarkdownFrontmatterOptions,

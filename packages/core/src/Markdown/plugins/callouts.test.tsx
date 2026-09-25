@@ -29,19 +29,19 @@ const RICH_SOURCE = [
   '- Second item',
   '',
   '```text',
-  ':::danger stays code',
+  ':::error stays code',
   ':::',
   '```',
   ':::',
 ].join('\n');
 
 describe('markdownCalloutsPlugin', () => {
-  it('parses every variant, default titles, custom titles, and CRLF', () => {
+  it('parses every status, default titles, custom titles, and CRLF', () => {
     const source = [
-      ':::note\r\nNote body\r\n:::',
-      ':::tip Custom tip\r\nTip body\r\n:::',
+      ':::info\r\nInfo body\r\n:::',
+      ':::success Custom success\r\nSuccess body\r\n:::',
       ':::warning\r\nWarning body\r\n:::',
-      ':::danger Stop now\r\nDanger body\r\n:::',
+      ':::error Stop now\r\nError body\r\n:::',
     ].join('\r\n\r\n');
     const root = parseMarkdownAst(source, {plugins: [markdownCalloutsPlugin]});
 
@@ -53,24 +53,24 @@ describe('markdownCalloutsPlugin', () => {
       'extension',
     ]);
     expect(root.children).toMatchObject([
-      {data: {variant: 'note', title: 'Note'}},
-      {data: {variant: 'tip', title: 'Custom tip'}},
-      {data: {variant: 'warning', title: 'Warning'}},
-      {data: {variant: 'danger', title: 'Stop now'}},
+      {data: {status: 'info', title: 'Info'}},
+      {data: {status: 'success', title: 'Custom success'}},
+      {data: {status: 'warning', title: 'Warning'}},
+      {data: {status: 'error', title: 'Stop now'}},
     ]);
   });
 
   it('parses rich children, nested callouts, and ignores fence-looking code', () => {
     const source = [
-      ':::note Outer',
+      ':::info Outer',
       'Before.',
       '',
-      ':::tip Inner',
+      ':::success Inner',
       '**Nested** content.',
       ':::',
       '',
       '```text',
-      ':::danger not a callout',
+      ':::error not a callout',
       ':::',
       '```',
       ':::',
@@ -83,13 +83,13 @@ describe('markdownCalloutsPlugin', () => {
     expect(root.children).toHaveLength(1);
     expect(root.children[0]).toMatchObject({
       type: 'extension',
-      data: {variant: 'note', title: 'Outer'},
+      data: {status: 'info', title: 'Outer'},
       position: {start: {offset: 0}, end: {offset: source.length}},
       children: [
         {type: 'paragraph'},
         {
           type: 'extension',
-          data: {variant: 'tip', title: 'Inner'},
+          data: {status: 'success', title: 'Inner'},
           children: [
             {
               type: 'paragraph',
@@ -103,14 +103,14 @@ describe('markdownCalloutsPlugin', () => {
             },
           ],
         },
-        {type: 'code', value: ':::danger not a callout\n:::'},
+        {type: 'code', value: ':::error not a callout\n:::'},
       ],
     });
   });
 
   it('uses the same trailing-text fence closer rule as Core', () => {
     const source = [
-      ':::note',
+      ':::info',
       '```text',
       'code',
       '``` trailing text',
@@ -133,7 +133,7 @@ describe('markdownCalloutsPlugin', () => {
   });
 
   it('does not treat indented fence-looking lines as Core fences', () => {
-    const source = [':::note', '  ```text', ':::'].join('\n');
+    const source = [':::info', '  ```text', ':::'].join('\n');
 
     expect(
       parseMarkdownAst(source, {plugins: [markdownCalloutsPlugin]}).children[0],
@@ -145,7 +145,7 @@ describe('markdownCalloutsPlugin', () => {
 
   it('keeps link definitions local to the callout and preserves child ranges', () => {
     const source = [
-      ':::note',
+      ':::info',
       'Intro.',
       '',
       '[local]: /inside',
@@ -194,7 +194,7 @@ describe('markdownCalloutsPlugin', () => {
     );
     expect(callout.querySelectorAll('li')).toHaveLength(2);
     expect(callout.querySelector('code')).toHaveTextContent(
-      ':::danger stays code:::',
+      ':::error stays code:::',
     );
     expect(callout).not.toHaveAttribute('role', 'alert');
     expect(callout).not.toHaveAttribute('role', 'status');
@@ -208,7 +208,7 @@ describe('markdownCalloutsPlugin', () => {
   });
 
   it('keeps incomplete final source literal and converges when streaming closes', () => {
-    const source = [':::note Streamed', 'Body', ':::'].join('\n');
+    const source = [':::info Streamed', 'Body', ':::'].join('\n');
     const incomplete = parseMarkdownAst(source.slice(0, -3), {
       plugins: [markdownCalloutsPlugin],
     });
@@ -239,7 +239,7 @@ describe('markdownCalloutsPlugin', () => {
 
   it('keeps an open multi-paragraph callout in the incremental tail', () => {
     const partial = [
-      ':::note Streamed',
+      ':::info Streamed',
       'First paragraph.',
       '',
       'Second paragraph.',
@@ -260,7 +260,7 @@ describe('markdownCalloutsPlugin', () => {
   });
 
   it('keeps streamed callout definitions out of the document-global cache', () => {
-    const partial = [':::note', '[local]: /inside'].join('\n');
+    const partial = [':::info', '[local]: /inside'].join('\n');
     const complete = [
       partial,
       'Use [local].',
@@ -284,7 +284,7 @@ describe('markdownCalloutsPlugin', () => {
   });
 
   it('rejects a later plugin that rewrites callout children', () => {
-    const source = [':::note', 'Keep this.', ':::'].join('\n');
+    const source = [':::info', 'Keep this.', ':::'].join('\n');
     const baseline = parseMarkdownAst(source, {
       plugins: [markdownCalloutsPlugin],
     });
@@ -310,25 +310,25 @@ describe('markdownCalloutsPlugin', () => {
     warning.mockRestore();
   });
 
-  it('does not claim invalid variants or callout-looking text inside built-ins', () => {
+  it('does not claim invalid statuses or callout-looking text inside built-ins', () => {
     const source = [
       ':::custom',
       'Body',
       ':::',
       '',
-      '> :::note quote',
+      '> :::info quote',
       '> Body',
       '> :::',
       '',
-      '\t:::note tab-indented',
+      '\t:::info tab-indented',
       'Body',
       ':::',
       '',
-      '\u00a0:::note non-space-whitespace',
+      '\u00a0:::info non-space-whitespace',
       'Body',
       ':::',
       '',
-      '    :::note indented code',
+      '    :::info indented code',
     ].join('\n');
 
     expect(

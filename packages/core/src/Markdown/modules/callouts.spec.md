@@ -24,21 +24,21 @@ references: [spec:AST-036/DEC-5, spec:AST-036/DEC-11]
 
 ## Contract at a glance
 
-| Area            | Contract                                                                                                                                                            |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract | `markdownCalloutsPlugin`, `MarkdownCalloutNode`, and `MarkdownCalloutVariant` are exported from `@astryxdesign/core/Markdown/plugins`.                              |
-| Behavior        | Complete-line `:::note`, `:::tip`, `:::warning`, and `:::danger` fences create flow containers with an optional plain-text title and Core-parsed Markdown children. |
-| End-user impact | Readers get visually distinct, readable supplementary content without static documents announcing it as a live alert.                                               |
-| Builder impact  | Builders add one fixed plugin; authored source owns the variant and optional title.                                                                                 |
-| Compatibility   | Additive and opt-in; omitted and empty plugin lists preserve released parsing, DOM, accessibility, and streaming behavior.                                          |
-| Review checks   | Reject raw child parsing by the plugin, unbounded or partial-line claims, live-region semantics, lost child fallback, or special first-party protocol privileges.   |
-| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR25, FR36, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md).                           |
+| Area            | Contract                                                                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract | `markdownCalloutsPlugin`, `MarkdownCalloutNode`, and `MarkdownCalloutStatus` are exported from `@astryxdesign/core/Markdown/plugins`.                                  |
+| Behavior        | Complete-line `:::info`, `:::success`, `:::warning`, and `:::error` fences create flow containers with an optional plain-text title and Core-parsed Markdown children. |
+| End-user impact | Readers get visually distinct, readable supplementary content without static documents announcing it as a live alert.                                                  |
+| Builder impact  | Builders add one fixed plugin; authored source owns the status and optional title.                                                                                     |
+| Compatibility   | Additive and opt-in; omitted and empty plugin lists preserve released parsing, DOM, accessibility, and streaming behavior.                                             |
+| Review checks   | Reject raw child parsing by the plugin, unbounded or partial-line claims, live-region semantics, lost child fallback, or special first-party protocol privileges.      |
+| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR25, FR36, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md).                              |
 
 ## Intent
 
-Builders need a stable way to place rich Markdown inside notes, tips, warnings,
-and danger callouts without preprocessing source or weakening Markdown's parser,
-rendering, and accessibility guarantees.
+Builders need a stable way to place rich Markdown inside informational, success,
+warning, and error callouts without preprocessing source or weakening Markdown's
+parser, rendering, and accessibility guarantees.
 
 ## Compatibility and migration
 
@@ -50,21 +50,21 @@ rendering, and accessibility guarantees.
 
 **Owns**
 
-- The four callout variants, optional title grammar, static presentation, and text projection.
+- The four callout statuses, optional title grammar, static presentation, and text projection.
 - Complete, streaming, SSR, Storybook, and paired performance evidence.
 
 **Does not own / non-goals**
 
-- Live alerts, dismissible notifications, arbitrary variants, Markdown in titles, or product-specific actions.
+- Live alerts, dismissible notifications, arbitrary statuses, Markdown in titles, or product-specific actions.
 - Parsing child nodes inside plugin code; Core exclusively parses and validates the declared source range.
 
 ## Public API and concepts
 
-| Concept                  | Closed values or states               | Meaning                                                   | Default             | Owner                      | Stability |
-| ------------------------ | ------------------------------------- | --------------------------------------------------------- | ------------------- | -------------------------- | --------- |
-| `markdownCalloutsPlugin` | one fixed plugin value                | Enables callout block syntax and rendering.               | absent              | `module:Markdown/callouts` | stable    |
-| `MarkdownCalloutVariant` | `note`, `tip`, `warning`, `danger`    | Selects the semantic label and themed static treatment.   | none                | `module:Markdown/callouts` | stable    |
-| Title                    | optional plain text after the variant | Names the visible callout and its complementary landmark. | capitalized variant | `module:Markdown/callouts` | stable    |
+| Concept                  | Closed values or states               | Meaning                                                   | Default            | Owner                      | Stability |
+| ------------------------ | ------------------------------------- | --------------------------------------------------------- | ------------------ | -------------------------- | --------- |
+| `markdownCalloutsPlugin` | one fixed plugin value                | Enables callout block syntax and rendering.               | absent             | `module:Markdown/callouts` | stable    |
+| `MarkdownCalloutStatus`  | `info`, `success`, `warning`, `error` | Selects the semantic label and themed static treatment.   | none               | `module:Markdown/callouts` | stable    |
+| Title                    | optional plain text after the status  | Names the visible callout and its complementary landmark. | capitalized status | `module:Markdown/callouts` | stable    |
 
 ## Behavioral contract
 
@@ -81,13 +81,15 @@ rendering, and accessibility guarantees.
 
 - The visible title names an `aside`; source order and nested Markdown semantics remain intact.
 - Static callouts never add `alert`, `status`, or `aria-live` behavior.
-- Variant is communicated by title text, not color alone.
+- Status is communicated by title text, not color alone.
 
 ## Design relationships
 
-Callouts use Markdown spacing and Astryx theme tokens. Their static document
-semantics are intentionally distinct from Banner's event-driven live-region
-behavior.
+Callouts reuse Banner's canonical `info | success | warning | error` vocabulary,
+muted semantic header colors, card content surface, and container radius. They do
+not import or render Banner: Markdown callouts are static server-safe document
+content, while Banner owns optional actions, dismissal, collapse, and caller-
+selected announcement semantics.
 
 ## Parent and system relationships
 
@@ -105,7 +107,7 @@ Markdown configuration.
 
 | Contract      | Verification                                        | Representative states                                                  | Failure expectation                                            |
 | ------------- | --------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------- |
-| FR1–FR3       | `callouts.test.tsx` and protocol container fixtures | all variants, custom/default titles, CRLF, nesting, lists, links, code | Invalid boundaries, wrong children, or code-fence claims fail. |
+| FR1–FR3       | `callouts.test.tsx` and protocol container fixtures | all statuses, custom/default titles, CRLF, nesting, lists, links, code | Invalid boundaries, wrong children, or code-fence claims fail. |
 | FR4–FR5       | streaming and renderer-fallback fixtures            | every prefix, unclosed final, failed renderer                          | Oscillation, swallowed source, or lost children fails.         |
 | Accessibility | DOM and SSR assertions plus Storybook               | warning content, link, list, static render                             | Live-region roles or inaccessible title fails.                 |
 | Performance   | paired callout profile in Markdown Performance      | none, sparse, dense; complete and streaming                            | Different paired source or missing baseline delta fails.       |
@@ -123,6 +125,20 @@ Markdown.
 
 Rejected: Banner composition with live-region behavior; arbitrary renderer
 configuration; raw child parsing in the plugin; Markdown titles.
+
+### DEC-2 — Reuse canonical status semantics without Banner coupling
+
+**Reference:** `module:Markdown/callouts/DEC-2`
+**Decider:** `cixzhang`, `2026-09-24`
+
+Callouts use Astryx's canonical `info | success | warning | error` status
+vocabulary and the corresponding muted semantic surfaces. The renderer borrows
+Banner's visual semantics but remains a static, server-safe `aside`; it does not
+import Banner or inherit Banner's client state, actions, or announcement choices.
+
+Rejected: the ecosystem-shaped `note | tip | warning | danger` public union;
+rendering the client Banner component directly; adding live-region roles from
+status.
 
 ## Open questions
 

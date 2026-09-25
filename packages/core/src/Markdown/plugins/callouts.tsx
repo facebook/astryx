@@ -9,7 +9,12 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../../Text/Text';
-import {colorVars, radiusVars, spacingVars} from '../../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '../../theme/tokens.stylex';
 import {
   createMarkdownPlugin,
   type MarkdownBlockContainerExtensionNode,
@@ -18,25 +23,25 @@ import {
   type MarkdownTokenizeResult,
 } from './protocol';
 
-export type MarkdownCalloutVariant = 'note' | 'tip' | 'warning' | 'danger';
+export type MarkdownCalloutStatus = 'info' | 'success' | 'warning' | 'error';
 
 export type MarkdownCalloutNode = MarkdownBlockContainerExtensionNode<
   'callouts',
   'callout',
-  {readonly variant: MarkdownCalloutVariant; readonly title: string}
+  {readonly status: MarkdownCalloutStatus; readonly title: string}
 >;
 
-const DEFAULT_TITLES: Readonly<Record<MarkdownCalloutVariant, string>> = {
-  note: 'Note',
-  tip: 'Tip',
+const DEFAULT_TITLES: Readonly<Record<MarkdownCalloutStatus, string>> = {
+  info: 'Info',
+  success: 'Success',
   warning: 'Warning',
-  danger: 'Danger',
+  error: 'Error',
 };
 
 const OPENING_LINE =
-  /^:::(note|tip|warning|danger)(?:[ \t]+([^\r\n]+?))?[ \t]*(?:\r\n|\n|\r)$/;
+  /^:::(info|success|warning|error)(?:[ \t]+([^\r\n]+?))?[ \t]*(?:\r\n|\n|\r)$/;
 const NESTED_OPENING_LINE =
-  /^ {0,3}:::(?:note|tip|warning|danger)(?:[ \t]+[^\r\n]+)?[ \t]*$/;
+  /^ {0,3}:::(?:info|success|warning|error)(?:[ \t]+[^\r\n]+)?[ \t]*$/;
 const CLOSING_LINE = /^ {0,3}:::[ \t]*$/;
 const FENCE_LINE = /^(`{3,}|~{3,})(.*)$/;
 const MAX_CALLOUT_SPAN = 100_000;
@@ -92,8 +97,8 @@ function tokenizeCallout({
   if (openingMatch == null) {
     return {status: 'no-match'};
   }
-  const variant = openingMatch[1] as MarkdownCalloutVariant;
-  const title = openingMatch[2]?.trim() || DEFAULT_TITLES[variant];
+  const status = openingMatch[1] as MarkdownCalloutStatus;
+  const title = openingMatch[2]?.trim() || DEFAULT_TITLES[status];
   let depth = 1;
   let cursor = opening.end;
   let fence: {readonly marker: '`' | '~'; readonly length: number} | null =
@@ -128,7 +133,7 @@ function tokenizeCallout({
             plugin: 'callouts',
             name: 'callout',
             display: 'block',
-            data: {variant, title},
+            data: {status, title},
           },
           children: {start: opening.end, end: line.start},
         };
@@ -148,32 +153,42 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-4'],
-    borderInlineStartStyle: 'solid',
-    borderInlineStartWidth: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-element'],
     color: colorVars['--color-text-primary'],
   },
-  note: {
-    backgroundColor: colorVars['--color-accent-muted'],
-    borderInlineStartColor: colorVars['--color-accent'],
+  header: {
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
   },
-  tip: {
+  info: {
+    backgroundColor: colorVars['--color-accent-muted'],
+  },
+  success: {
     backgroundColor: colorVars['--color-success-muted'],
-    borderInlineStartColor: colorVars['--color-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning-muted'],
-    borderInlineStartColor: colorVars['--color-warning'],
   },
-  danger: {
+  error: {
     backgroundColor: colorVars['--color-error-muted'],
-    borderInlineStartColor: colorVars['--color-error'],
   },
   content: {
     minWidth: 0,
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
+    backgroundColor: colorVars['--color-background-card'],
+    borderInlineStartWidth: borderVars['--border-width'],
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderBlockEndWidth: borderVars['--border-width'],
+    borderInlineStartStyle: 'solid',
+    borderInlineEndStyle: 'solid',
+    borderBlockEndStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-border'],
+    borderInlineEndColor: colorVars['--color-border'],
+    borderBlockEndColor: colorVars['--color-border'],
+    borderEndStartRadius: radiusVars['--radius-container'],
+    borderEndEndRadius: radiusVars['--radius-container'],
   },
 });
 
@@ -184,7 +199,7 @@ const definition = {
   syntax: {
     block: [
       {
-        startsWith: [':::note', ':::tip', ':::warning', ':::danger'],
+        startsWith: [':::info', ':::success', ':::warning', ':::error'],
         maxSpan: MAX_CALLOUT_SPAN,
         tokenize: tokenizeCallout,
       },
@@ -194,34 +209,36 @@ const definition = {
     callout: {
       content: 'flow',
       render: ({node, children}) => {
-        const variantLabel = DEFAULT_TITLES[node.data.variant];
+        const statusLabel = DEFAULT_TITLES[node.data.status];
         const accessibleTitle =
-          node.data.title === variantLabel
-            ? variantLabel
-            : `${variantLabel}: ${node.data.title}`;
+          node.data.title === statusLabel
+            ? statusLabel
+            : `${statusLabel}: ${node.data.title}`;
         return (
           <aside
             aria-label={accessibleTitle}
-            data-markdown-callout={node.data.variant}
-            {...stylex.props(styles.root, styles[node.data.variant])}>
-            <Text as="div" type="label" weight="semibold">
-              {accessibleTitle}
-            </Text>
+            data-markdown-callout={node.data.status}
+            {...stylex.props(styles.root)}>
+            <div {...stylex.props(styles.header, styles[node.data.status])}>
+              <Text as="div" type="label" weight="semibold">
+                {accessibleTitle}
+              </Text>
+            </div>
             <div {...stylex.props(styles.content)}>{children}</div>
           </aside>
         );
       },
       toText: (node, childrenText) => {
-        const variantLabel = DEFAULT_TITLES[node.data.variant];
+        const statusLabel = DEFAULT_TITLES[node.data.status];
         const title =
-          node.data.title === variantLabel
-            ? variantLabel
-            : `${variantLabel}: ${node.data.title}`;
+          node.data.title === statusLabel
+            ? statusLabel
+            : `${statusLabel}: ${node.data.title}`;
         return `${title}\n\n${childrenText}`;
       },
     },
   },
 } satisfies MarkdownSyntaxPluginDefinition<'callouts', MarkdownCalloutNode>;
 
-/** Parses `:::variant` blocks with rich Markdown children as static callouts. */
+/** Parses `:::status` blocks with rich Markdown children as static callouts. */
 export const markdownCalloutsPlugin = createMarkdownPlugin(definition);

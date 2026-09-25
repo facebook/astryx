@@ -574,23 +574,23 @@ export const SoftBreaks: Story = {
 };
 
 const calloutsSource = [
-  ':::note Read this',
+  ':::info Read this',
   'Callouts keep **rich Markdown**, [safe links](/docs), and lists.',
   '',
   '- First item',
   '- Second item',
   ':::',
   '',
-  ':::tip',
-  'Use an optional title after the variant.',
+  ':::success',
+  'Use an optional title after the status.',
   ':::',
   '',
   ':::warning Check before continuing',
   'Warnings are static document content, not live alerts.',
   ':::',
   '',
-  ':::danger',
-  'Danger content stays readable and theme-aware.',
+  ':::error',
+  'Error content stays readable and theme-aware.',
   ':::',
 ].join('\n');
 
@@ -600,7 +600,7 @@ export const Callouts: Story = {
     docs: {
       description: {
         story:
-          'The first-party plugin parses note, tip, warning, and danger containers with optional titles and real Markdown children. Static authored content does not create alert or status live regions.',
+          'The first-party plugin parses info, success, warning, and error containers with optional titles and real Markdown children. Static authored content does not create alert or status live regions.',
       },
     },
   },
@@ -614,9 +614,9 @@ export const Callouts: Story = {
     await expect(callouts).toHaveLength(4);
     await expect(
       within(canvasElement).getByRole('complementary', {
-        name: 'Note: Read this',
+        name: 'Info: Read this',
       }),
-    ).toHaveAttribute('data-markdown-callout', 'note');
+    ).toHaveAttribute('data-markdown-callout', 'info');
     await expect(within(canvasElement).getAllByRole('listitem')).toHaveLength(
       2,
     );
