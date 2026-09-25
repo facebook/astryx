@@ -1016,6 +1016,34 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # Component-owned metadata fixtures retain exact-head browser receipts on
+      # audit PRs, including failed pre-fix cases for before/after comparison.
+      - name: Run ChatMessageMetadata audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatMessageMetadata:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output chat-message-metadata-a11y-report.json \
+            --components ChatMessageMetadata \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Chat/__tests__/ChatMessageMetadata.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ChatMessageMetadata audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatMessageMetadata:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-message-metadata-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            chat-message-metadata-a11y-report.json
+            test-results/chat-message-metadata-audit-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.
