@@ -67,6 +67,12 @@ describe('Sandbox static export contract', () => {
     expect(routes.length).toBe(oracle.routes.length - 1);
   });
 
+  it('keeps the component audit deep link as a physical HTML document', () => {
+    expect(exportedHtmlPath('/pages/component-scores/')).toBe(
+      'pages/component-scores/index.html',
+    );
+  });
+
   it('preserves nested, fullscreen, raw, category, and audit layouts', () => {
     expect(routes.find(item => item.route === '/')).toMatchObject({
       group: 'sandbox',
