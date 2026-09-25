@@ -2261,6 +2261,55 @@ function parseTable(
   };
 }
 
+type ListMarkerMatch = Readonly<{
+  ordered: boolean;
+  indent: number;
+  contentIndent: number;
+  content: string;
+  delimiter?: '.' | ')';
+  number?: number;
+}>;
+
+function matchListMarker(line: string): ListMarkerMatch | null {
+  const ordered = line.match(/^( {0,9})(\d+)([.)]) ([\s\S]*)$/);
+  if (ordered != null) {
+    return {
+      ordered: true,
+      indent: ordered[1].length,
+      contentIndent:
+        ordered[1].length + ordered[2].length + ordered[3].length + 1,
+      content: ordered[4],
+      delimiter: ordered[3] as '.' | ')',
+      number: Number.parseInt(ordered[2], 10),
+    };
+  }
+
+  const unordered = line.match(/^( {0,9})[-*+] ([\s\S]*)$/);
+  if (unordered != null) {
+    return {
+      ordered: false,
+      indent: unordered[1].length,
+      contentIndent: unordered[1].length + 2,
+      content: unordered[2],
+    };
+  }
+
+  return null;
+}
+
+function isCompatibleListMarker(
+  marker: ListMarkerMatch,
+  ordered: boolean,
+  indent: number,
+  delimiter: '.' | ')',
+): boolean {
+  return (
+    marker.ordered === ordered &&
+    marker.indent === indent &&
+    (!ordered || marker.delimiter === delimiter)
+  );
+}
+
 function parseList(
   lines: string[],
   startIndex: number,
@@ -2268,56 +2317,100 @@ function parseList(
   opts: ResolvedOptions,
 ): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
   const items: MarkdownAstListItem<RuntimeExtensionNode>[] = [];
-  const baseIndent = getIndent(lines[startIndex]);
+  const firstMarker = matchListMarker(lines[startIndex]);
+  const baseIndent = firstMarker?.indent ?? getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
   // (CommonMark 5.2). Capture which one this list starts with so its items
   // must all share it — a change of delimiter starts a new list.
-  const orderedStart = ordered
-    ? lines[startIndex].match(/^ *(\d+)([.)]) /)
-    : null;
-  const delim = orderedStart ? orderedStart[2] : '.';
-  const escDelim = `\\${delim}`;
-  const itemPattern = ordered
-    ? new RegExp(`^ {${baseIndent}}\\d+${escDelim} `)
-    : new RegExp(`^ {${baseIndent}}[-*+] `);
-
-  const start = orderedStart ? parseInt(orderedStart[1], 10) : undefined;
+  const delimiter = firstMarker?.delimiter ?? '.';
+  const start = ordered ? firstMarker?.number : undefined;
 
   let loose = false;
   let index = startIndex;
-  while (index < lines.length && itemPattern.test(lines[index])) {
-    const content = ordered
-      ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
-      : lines[index].replace(/^ *[-*+] /, '');
+  while (index < lines.length) {
+    const marker = matchListMarker(lines[index]);
+    if (
+      marker == null ||
+      !isCompatibleListMarker(marker, ordered, baseIndent, delimiter)
+    ) {
+      break;
+    }
 
-    const taskMatch = content.match(/^\[([ xX])\] (.*)/);
+    const taskMatch = marker.content.match(/^\[([ xX])\] (.*)/);
     let checked: boolean | undefined;
     let itemText: string;
     if (taskMatch) {
       checked = taskMatch[1].toLowerCase() === 'x';
       itemText = taskMatch[2];
     } else {
-      itemText = content;
+      itemText = marker.content;
     }
 
     index++;
 
-    // Collect sub-content (nested items or continuation lines)
+    // Collect nested blocks and continuation lines owned by this item. A blank
+    // line remains inside the item when the following nonblank line reaches the
+    // marker's effective content indent. Blank lines inside an open fence are
+    // content even when the stream has not produced a following line yet.
     const subLines: string[] = [];
-    while (
-      index < lines.length &&
-      lines[index].trim() !== '' &&
-      getIndent(lines[index]) > baseIndent
-    ) {
-      subLines.push(lines[index]);
+    let openFence = itemText.match(/^(`{3,}|~{3,})/)?.[1] ?? null;
+    while (index < lines.length) {
+      const line = lines[index];
+      if (line.trim() === '') {
+        if (openFence != null) {
+          subLines.push(line);
+          index++;
+          continue;
+        }
+
+        let lookahead = index;
+        while (lookahead < lines.length && lines[lookahead].trim() === '') {
+          lookahead++;
+        }
+        if (
+          lookahead < lines.length &&
+          getIndent(lines[lookahead]) >= marker.contentIndent
+        ) {
+          loose = true;
+          subLines.push(...lines.slice(index, lookahead));
+          index = lookahead;
+          continue;
+        }
+        break;
+      }
+
+      if (getIndent(line) < marker.contentIndent) {
+        break;
+      }
+
+      const contentLine = line.slice(marker.contentIndent);
+      const fenceMatch = contentLine.match(/^(`{3,}|~{3,})/);
+      if (openFence != null) {
+        if (
+          fenceMatch != null &&
+          fenceMatch[1].startsWith(openFence[0]) &&
+          fenceMatch[1].length >= openFence.length
+        ) {
+          openFence = null;
+        }
+      } else if (fenceMatch != null) {
+        openFence = fenceMatch[1];
+      }
+      subLines.push(line);
       index++;
     }
 
     if (subLines.length > 0) {
-      const minSubIndent = Math.min(
-        ...subLines.map(subLine => getIndent(subLine)),
+      const nonBlankIndents = subLines
+        .filter(subLine => subLine.trim() !== '')
+        .map(subLine => getIndent(subLine));
+      const minSubIndent =
+        nonBlankIndents.length > 0
+          ? Math.min(...nonBlankIndents)
+          : marker.contentIndent;
+      const deindented = subLines.map(subLine =>
+        subLine.trim() === '' ? '' : subLine.slice(minSubIndent),
       );
-      const deindented = subLines.map(subLine => subLine.slice(minSubIndent));
       itemText += '\n' + deindented.join('\n');
     }
 
@@ -2334,10 +2427,12 @@ function parseList(
     while (lookahead < lines.length && lines[lookahead].trim() === '') {
       lookahead++;
     }
+    const nextMarker =
+      lookahead < lines.length ? matchListMarker(lines[lookahead]) : null;
     if (
       lookahead > index &&
-      lookahead < lines.length &&
-      itemPattern.test(lines[lookahead])
+      nextMarker != null &&
+      isCompatibleListMarker(nextMarker, ordered, baseIndent, delimiter)
     ) {
       loose = true;
       index = lookahead;
@@ -2347,7 +2442,7 @@ function parseList(
     type: 'list',
     ordered,
     start,
-    delimiter: ordered ? (delim as '.' | ')') : undefined,
+    delimiter: ordered ? delimiter : undefined,
     spread: loose || undefined,
     children: items,
   };
@@ -2953,26 +3048,53 @@ function findSettledBoundary(
 } {
   let inFence = false;
   let fenceMarker = '';
+  let fenceContainerIndent = 0;
   let mathContainer: DisplayMathContainer | null = null;
   let suppressMathUntilBoundary = false;
   let lastBoundary = -1;
   let boundaryBeforeFence = -1;
   let boundaryBeforeMath = -1;
+  let listContext:
+    | {
+        ordered: boolean;
+        indent: number;
+        contentIndent: number;
+        delimiter: '.' | ')';
+        boundaryBefore: number;
+        sawBlank: boolean;
+      }
+    | undefined;
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
 
     if (inFence) {
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+      // A fence nested in a list stops owning content when the source leaves
+      // that list item's content indent. Reprocess that line as ordinary input;
+      // the recursive list parser will treat the unmatched opener literally.
       if (
-        fenceMatch &&
-        fenceMatch[1].startsWith(fenceMarker[0]) &&
-        fenceMatch[1].length >= fenceMarker.length
+        fenceContainerIndent > 0 &&
+        line.trim() !== '' &&
+        getIndent(line) < fenceContainerIndent
       ) {
         inFence = false;
         fenceMarker = '';
+        fenceContainerIndent = 0;
+      } else {
+        const fenceLine =
+          fenceContainerIndent === 0 ? line : line.slice(fenceContainerIndent);
+        const fenceMatch = fenceLine.match(/^(`{3,}|~{3,})/);
+        if (
+          fenceMatch != null &&
+          fenceMatch[1].startsWith(fenceMarker[0]) &&
+          fenceMatch[1].length >= fenceMarker.length
+        ) {
+          inFence = false;
+          fenceMarker = '';
+          fenceContainerIndent = 0;
+        }
+        continue;
       }
-      continue;
     }
 
     if (mathContainer != null) {
@@ -2991,6 +3113,53 @@ function findSettledBoundary(
       suppressMathUntilBoundary = true;
     }
 
+    if (line.trim() === '') {
+      suppressMathUntilBoundary = false;
+      if (listContext != null) {
+        // A following indented block or same-style marker can still extend this
+        // list, so keep its last blank line in the mutable suffix.
+        listContext.sawBlank = true;
+      } else if (lineIndex > 0 && lineIndex < lines.length - 1) {
+        lastBoundary = lineIndex;
+      }
+      continue;
+    }
+
+    const marker = isHorizontalRule(line) ? null : matchListMarker(line);
+    if (listContext != null) {
+      const sameListMarker =
+        marker != null &&
+        isCompatibleListMarker(
+          marker,
+          listContext.ordered,
+          listContext.indent,
+          listContext.delimiter,
+        );
+      const isContinuation = getIndent(line) >= listContext.contentIndent;
+      if (sameListMarker) {
+        listContext.contentIndent = marker.contentIndent;
+        listContext.sawBlank = false;
+      } else if (isContinuation) {
+        listContext.sawBlank = false;
+      } else {
+        if (listContext.sawBlank) {
+          lastBoundary = lineIndex - 1;
+        }
+        listContext = undefined;
+      }
+    }
+
+    if (listContext == null && marker != null) {
+      listContext = {
+        ordered: marker.ordered,
+        indent: marker.indent,
+        contentIndent: marker.contentIndent,
+        delimiter: marker.delimiter ?? '.',
+        boundaryBefore: lastBoundary,
+        sawBlank: false,
+      };
+    }
+
     // A complete same-line `$$…$$` expression never changes boundary state.
     // A standalone marker may belong to the top level, a blockquote, or one
     // list item; remember that container so its continuation marker closes the
@@ -2999,24 +3168,37 @@ function findSettledBoundary(
       const container = displayMathContainer(line);
       if (container != null) {
         mathContainer = container;
-        boundaryBeforeMath = lastBoundary;
+        boundaryBeforeMath = listContext?.boundaryBefore ?? lastBoundary;
         continue;
       }
     }
 
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      inFence = true;
-      fenceMarker = fenceMatch[1];
-      boundaryBeforeFence = lastBoundary;
-      continue;
+    let fenceLine = line;
+    let candidateFenceIndent = 0;
+    if (listContext != null) {
+      const sameListMarker =
+        marker != null &&
+        isCompatibleListMarker(
+          marker,
+          listContext.ordered,
+          listContext.indent,
+          listContext.delimiter,
+        );
+      if (sameListMarker) {
+        fenceLine = marker.content;
+        candidateFenceIndent = marker.contentIndent;
+      } else if (getIndent(line) >= listContext.contentIndent) {
+        fenceLine = line.slice(listContext.contentIndent);
+        candidateFenceIndent = listContext.contentIndent;
+      }
     }
 
-    if (line.trim() === '') {
-      suppressMathUntilBoundary = false;
-      if (lineIndex > 0 && lineIndex < lines.length - 1) {
-        lastBoundary = lineIndex;
-      }
+    const fenceMatch = fenceLine.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch != null) {
+      inFence = true;
+      fenceMarker = fenceMatch[1];
+      fenceContainerIndent = candidateFenceIndent;
+      boundaryBeforeFence = listContext?.boundaryBefore ?? lastBoundary;
     }
   }
 
@@ -3025,7 +3207,9 @@ function findSettledBoundary(
       ? boundaryBeforeFence
       : mathContainer != null
         ? boundaryBeforeMath
-        : lastBoundary,
+        : listContext != null
+          ? listContext.boundaryBefore
+          : lastBoundary,
     openFence: inFence,
     openMath: mathContainer != null,
   };

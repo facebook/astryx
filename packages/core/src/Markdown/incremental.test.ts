@@ -69,6 +69,35 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it.each([false, true])(
+    'keeps a loose nested fence attached at every stream split (sourceRanges=%s)',
+    sourceRanges => {
+      const text =
+        '- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;\n  ```\n- next';
+      const options = {sourceRanges};
+      const full = parseMarkdown(text, options);
+      const state = createIncrementalState();
+      let streamed = parseMarkdownIncremental('', state, options);
+
+      for (let end = 1; end <= text.length; end++) {
+        streamed = parseMarkdownIncremental(text.slice(0, end), state, options);
+      }
+
+      expect(streamed).toEqual(full);
+    },
+  );
+
+  it('does not settle inside a list-owned open fence', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental(
+      'Intro\n\n- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;',
+      state,
+    );
+
+    expect(state.settledText).toBe('Intro');
+    expect(state.settledBlocks).toEqual(parseMarkdown('Intro'));
+  });
+
   it('does not merge ordered lists with different delimiters across chunks', () => {
     // A change of delimiter (. -> )) starts a new list (CommonMark 5.2), so
     // the streamed result must match the full parse and stay two lists.

@@ -423,6 +423,22 @@ describe('Markdown', () => {
     expect(ols[0].querySelectorAll('li')).toHaveLength(3);
   });
 
+  it('renders a blank-separated fenced block inside its list item', () => {
+    render(
+      <Markdown>
+        {
+          '- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;\n  ```\n- next'
+        }
+      </Markdown>,
+    );
+
+    const listItems = document.querySelectorAll('li');
+    const codeBlock = document.querySelector('pre');
+    expect(listItems).toHaveLength(2);
+    expect(codeBlock).toBeInTheDocument();
+    expect(codeBlock!.closest('li')).toBe(listItems[0]);
+  });
+
   it('forwards a non-default start onto the <ol> element', () => {
     render(<Markdown>{'5. five\n6. six\n7. seven'}</Markdown>);
     const ol = document.querySelector('ol')!;

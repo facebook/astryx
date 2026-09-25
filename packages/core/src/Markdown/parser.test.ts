@@ -542,6 +542,73 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('keeps a blank-separated fenced block inside its unordered list item', () => {
+    const result = parseMarkdown(
+      '- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;\n  ```\n- next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].loose).toBe(true);
+      expect(result[0].items).toHaveLength(2);
+      expect(result[0].items[0].children.map(block => block.type)).toEqual([
+        'paragraph',
+        'codeblock',
+      ]);
+      expect(result[0].items[0].children[1]).toMatchObject({
+        type: 'codeblock',
+        language: 'ts',
+        content: 'const first = 1;\n\nconst second = 2;',
+      });
+    }
+  });
+
+  it('uses the ordered marker width when owning a loose fenced block', () => {
+    const result = parseMarkdown(
+      '10. item\n\n    ~~~sql\n    select 1;\n    ~~~\n11. next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({type: 'list', ordered: true, start: 10});
+    if (result[0].type === 'list') {
+      expect(result[0].items).toHaveLength(2);
+      expect(result[0].items[0].children[1]).toMatchObject({
+        type: 'codeblock',
+        language: 'sql',
+        content: 'select 1;',
+      });
+    }
+  });
+
+  it('keeps a CRLF fenced block inside its loose list item', () => {
+    const result = parseMarkdown(
+      '- item\r\n\r\n  ```ts\r\n  const value = 1;\r\n  ```\r\n- next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].items).toHaveLength(2);
+      expect(
+        result[0].items[0].children.some(block => block.type === 'codeblock'),
+      ).toBe(true);
+    }
+  });
+
+  it('does not capture a loose block below the ordered marker content indent', () => {
+    const result = parseMarkdown(
+      '10. item\n\n   ```ts\n   const value = 1;\n   ```',
+    );
+
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(
+        result[0].items[0].children.some(block => block.type === 'codeblock'),
+      ).toBe(false);
+    }
+  });
+
   it('does not join lists of different styles across a blank line', () => {
     // Bulleted then numbered — these are two distinct lists.
     const result = parseMarkdown('- a\n\n1. b');
