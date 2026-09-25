@@ -50,6 +50,7 @@ function mapValue(component, value) {
  * anything. Returns false for any dynamic or non-string node.
  * @param {any} node
  * @param {any[]} leaves
+ * @returns {boolean}
  */
 function collectStaticLeaves(node, leaves) {
   if (!node) return false;
