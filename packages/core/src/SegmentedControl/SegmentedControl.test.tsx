@@ -168,6 +168,36 @@ describe('SegmentedControl', () => {
     expect(screen.queryByText('Grid view')).not.toBeInTheDocument();
   });
 
+  it('keeps hug layout content-sized inside a stretching flex parent', () => {
+    render(
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>
+      </div>,
+    );
+
+    expect(getComputedStyle(screen.getByRole('radiogroup')).width).toBe(
+      'fit-content',
+    );
+  });
+
+  it('fill layout overrides the intrinsic control width', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        layout="fill">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    expect(getComputedStyle(screen.getByRole('radiogroup')).width).toBe('100%');
+  });
+
   it('fill items can shrink and truncate long labels', () => {
     render(
       <SegmentedControl
