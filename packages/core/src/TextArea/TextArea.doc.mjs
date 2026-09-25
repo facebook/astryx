@@ -277,14 +277,6 @@ export const docs = {
       },
       {className: 'astryx-text-area-control'},
       {className: 'astryx-text-area-counter'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-textarea',
-        visualProps: ['size', 'status'],
-        states: ['disabled', 'readonly'],
-        deprecatedFor: 'text-area',
-      },
     ],
     vars: [
       {
@@ -533,14 +525,6 @@ export const docsZh = {
       },
       {className: 'astryx-text-area-control'},
       {className: 'astryx-text-area-counter'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-textarea',
-        visualProps: ['size', 'status'],
-        states: ['disabled', 'readonly'],
-        deprecatedFor: 'text-area',
-      },
     ],
     vars: [
       {

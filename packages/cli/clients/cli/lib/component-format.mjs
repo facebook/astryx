@@ -26,15 +26,6 @@ function targetKey(target) {
   return target.className.replace(/^astryx-/, '');
 }
 
-/**
- * Keep deprecated targets visible in reference tables while excluding them from
- * snippets readers copy into newly authored themes.
- * @param {import('@astryxdesign/cli/authoring').ComponentThemingTarget[]} targets
- */
-function canonicalTargets(targets) {
-  return targets.filter(target => target.deprecatedFor == null);
-}
-
 /** @param {string} name @returns {string} */
 function dataAttrForName(name) {
   return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
@@ -196,9 +187,7 @@ function formatTargetsTable(docs, themeData) {
     const dataAttrsStr =
       dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '-';
 
-    const className = target.deprecatedFor
-      ? `\`${target.className}\` _(deprecated; use \`${target.deprecatedFor}\`)_`
-      : `\`${target.className}\``;
+    const className = `\`${target.className}\``;
     lines.push(
       `| ${className} | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
     );
@@ -300,7 +289,7 @@ export function formatFull(docs, options = {}) {
       }
 
       // Generate defineTheme example with canonical component selectors only.
-      const exampleTargets = canonicalTargets(docs.theming.targets);
+      const exampleTargets = docs.theming.targets;
       if (exampleTargets.length > 0) {
         const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
         const rootTarget = exampleTargets[0];
@@ -356,7 +345,7 @@ export function formatFull(docs, options = {}) {
 
       // Show derived property examples — the recommended way to theme
       if (docs.theming?.derived?.length) {
-        const canonical = canonicalTargets(docs.theming.targets || []);
+        const canonical = docs.theming.targets || [];
         const varsKey = canonical.length ? targetKey(canonical[0]) : docs.theming.componentKey || '';
         const derivedExamples = docs.theming.derived
           .filter((/** @type {any} */ d) => d.vars?.length)
@@ -579,7 +568,6 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map((/** @type {any} */ t) => {
       const parts = [t.className];
-      if (t.deprecatedFor) parts.push(`deprecated->${t.deprecatedFor}`);
       const dataAttrs = getTargetDataAttributes(t);
       if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);

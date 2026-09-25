@@ -34,11 +34,14 @@ presets beside that calendar.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive theme targets plus corrected preset constraint
-  enforcement; default appearance, DOM semantics, and public props remain unchanged
+- Released default preserved: `yes`; canonical DateRangeInput behavior is unchanged
+- 0.7.0 removes the `date-range-input-clear-icon` alias; the shared clear glyph
+  remains available through `input-clear-icon`
+- The preset constraint correction remains unchanged
 - Controlled/uncontrolled behavior: unchanged; DateRangeInput remains controlled
-- Migration decision: none
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -158,9 +161,6 @@ No new performance or resource constraint is introduced.
   }
 }
 ```
-
-The deprecated `date-range-input-clear-icon` alias remains compatibility metadata;
-the shared `input-clear-icon` target owns the current glyph contract.
 
 ## Family and system relationships
 

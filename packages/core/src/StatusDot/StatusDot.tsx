@@ -200,13 +200,7 @@ export function StatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        themeProps(
-          'status-dot',
-          {variant},
-          // `statusdot` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['statusdot']},
-        ),
+        themeProps('status-dot', {variant}),
         stylex.props(
           styles.base,
           variants[variant],

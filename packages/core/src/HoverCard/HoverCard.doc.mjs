@@ -17,9 +17,6 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-hover-card'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
@@ -148,9 +145,6 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-hover-card'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},

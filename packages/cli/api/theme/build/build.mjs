@@ -72,7 +72,7 @@ import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
   collectThemingTargets,
-  targetValidationRegistry,
+  targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {
   collectUnloadedFonts,
@@ -752,10 +752,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
- * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
- * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
- * are the source of truth for the target token → owning component relationship.
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`). Component docs are
+ * the source of truth for the target token → owning component relationship.
  *
  * @param {string} componentName
  * @returns {Promise<Array<{moduleName: string, interfacePrefix: string}>>}
@@ -832,8 +830,7 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for the deprecated unhyphenated tokens such as
-      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name (for example, ProgressBar for progress-bar-fill).
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {
@@ -1991,30 +1988,25 @@ export declare const ${iconInfo.exportName}: IconRegistry;
 
 /**
  * Load known theme target keys from core component docs: the visual props AND
- * runtime states each target reflects, plus canonical replacements for
- * deprecated target keys. Deprecated targets remain accepted for compatibility,
- * but every use receives actionable build guidance. Returns null when docs are
- * unavailable so validation skips warnings rather than guessing from a second
- * registry.
+ * runtime states each target reflects. Returns null when docs are unavailable so
+ * validation skips warnings rather than guessing from a second registry.
  *
- * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
 async function loadKnownComponents() {
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  const registry = targetValidationRegistry(
-    await collectThemingTargets(coreSrc),
-  );
-  return Object.keys(registry.propsByKey).length > 0 ? registry : null;
+  const propsByKey = targetsByKey(await collectThemingTargets(coreSrc));
+  return Object.keys(propsByKey).length > 0 ? {propsByKey} : null;
 }
 
-/** @type {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null | undefined} */
+/** @type {{propsByKey: Record<string, string[]>} | null | undefined} */
 let knownComponentsCache;
 
 /**
- * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
 async function getKnownComponents() {
   if (knownComponentsCache === undefined) {
@@ -2027,7 +2019,7 @@ async function getKnownComponents() {
  * Validate component overrides against one discovered target registry.
  *
  * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
- * @param {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>}} knownComponents
+ * @param {{propsByKey: Record<string, string[]>}} knownComponents
  * @returns {string[]}
  */
 export function validateComponentOverridesAgainstRegistry(
@@ -2053,9 +2045,8 @@ export function validateComponentOverridesAgainstRegistry(
     }
   }
 
-  for (const {name: layerName, components} of layers) {
+  for (const {components} of layers) {
     for (const [component, rules] of Object.entries(components)) {
-      const location = layerName === 'base' ? '' : ` in ${layerName}`;
       if (!(component in knownComponents.propsByKey)) {
         const similar = Object.keys(knownComponents.propsByKey)
           .filter(k => {
@@ -2079,13 +2070,6 @@ export function validateComponentOverridesAgainstRegistry(
           similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
         warnings.push(`Unknown component "${component}".${hint}`);
         continue;
-      }
-
-      const replacement = knownComponents.deprecatedByKey[component];
-      if (replacement != null) {
-        warnings.push(
-          `Deprecated component target "${component}"${location}. Use "${replacement}" instead.`,
-        );
       }
 
       const knownProps = knownComponents.propsByKey[component];
@@ -2114,7 +2098,7 @@ export function validateComponentOverridesAgainstRegistry(
 
 /**
  * Validate component overrides in a theme definition.
- * Warns on unknown component names, deprecated targets, and unknown prop names.
+ * Warns on unknown component and prop names.
  *
  * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
  * @returns {Promise<string[]>}

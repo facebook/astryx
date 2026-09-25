@@ -132,27 +132,6 @@ export const docs = {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
       },
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-progressbar',
-        visualProps: ['variant'],
-        deprecatedFor: 'progress-bar',
-      },
-      {
-        className: 'astryx-progressbar-fill',
-        visualProps: ['variant'],
-        deprecatedFor: 'progress-bar-fill',
-      },
-      {
-        className: 'astryx-progressbar-track',
-        deprecatedFor: 'progress-bar-track',
-      },
-      {
-        className: 'astryx-progressbar-mark',
-        visualProps: ['variant', 'placement'],
-        deprecatedFor: 'progress-bar-mark',
-      },
     ],
     vars: [
       {
@@ -296,27 +275,6 @@ export const docsZh = {
       {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
-      },
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-progressbar',
-        visualProps: ['variant'],
-        deprecatedFor: 'progress-bar',
-      },
-      {
-        className: 'astryx-progressbar-fill',
-        visualProps: ['variant'],
-        deprecatedFor: 'progress-bar-fill',
-      },
-      {
-        className: 'astryx-progressbar-track',
-        deprecatedFor: 'progress-bar-track',
-      },
-      {
-        className: 'astryx-progressbar-mark',
-        visualProps: ['variant', 'placement'],
-        deprecatedFor: 'progress-bar-mark',
       },
     ],
     vars: [

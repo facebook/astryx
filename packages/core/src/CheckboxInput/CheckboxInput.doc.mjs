@@ -133,7 +133,6 @@ export const docs = {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
       {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
       {className: 'astryx-checkbox-label'},
     ],
   },
@@ -221,7 +220,6 @@ export const docsZh = {
         ],
       },
       {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
       {className: 'astryx-checkbox-label'},
     ],
   },

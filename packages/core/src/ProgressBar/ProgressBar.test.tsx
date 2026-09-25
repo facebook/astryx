@@ -266,7 +266,7 @@ describe('ProgressBar', () => {
 
   // Target marks
   describe('target marks', () => {
-    const MARK = '.astryx-progressbar-mark';
+    const MARK = '.astryx-progress-bar-mark';
 
     // The StyleX atomic classes on an element, without the stable astryx-*
     // theme classes and the bare variant/placement tokens — so a comparison
@@ -668,7 +668,7 @@ describe('ProgressBar', () => {
       const progressbar = screen.getByRole('progressbar');
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
-      expect(fill.classList.contains('astryx-progressbar-mark')).toBe(false);
+      expect(fill.classList.contains('astryx-progress-bar-mark')).toBe(false);
       const mark = container.querySelector<HTMLElement>(MARK)!;
       expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
@@ -757,7 +757,7 @@ describe('ProgressBar', () => {
     it('sizes the mark through the derived vars, so a theme override cannot lose the cascade', () => {
       // width/height are declared as `var(--_progressbar-mark-*)` and nothing
       // else declares those vars, so the value a theme sets on the
-      // `progressbar-mark` target lands even in a consumer whose StyleX is
+      // `progress-bar-mark` target lands even in a consumer whose StyleX is
       // unlayered and would otherwise outrank `@layer astryx-theme`.
       const {container} = render(
         <ProgressBar
@@ -794,9 +794,9 @@ describe('ProgressBar', () => {
       );
     });
 
-    it('renders the mark on the stable progressbar-mark target, centered for symmetric overhang', () => {
+    it('renders the mark on the stable progress-bar-mark target, centered for symmetric overhang', () => {
       // The mark's width/height/color are directly overridable via the
-      // `progressbar-mark` theme target. It is centered
+      // `progress-bar-mark` theme target. It is centered
       // on the track (translate -50%,-50%) so a themed taller tick overhangs the
       // bar symmetrically above and below without being clipped.
       const {container} = render(
@@ -807,7 +807,7 @@ describe('ProgressBar', () => {
         />,
       );
       const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(mark.className).toContain('astryx-progressbar-mark');
+      expect(mark.className).toContain('astryx-progress-bar-mark');
       let css = '';
       for (const sheet of Array.from(document.styleSheets)) {
         try {
@@ -829,7 +829,7 @@ describe('ProgressBar', () => {
 });
 
 describe('ProgressBar theme target names', () => {
-  it('renders the deprecated classes beside the current ones', () => {
+  it('renders only the canonical target classes', () => {
     const {container} = render(
       <ProgressBar
         value={50}
@@ -838,16 +838,20 @@ describe('ProgressBar theme target names', () => {
       />,
     );
     expect(container.querySelector('.astryx-progress-bar')).toHaveClass(
-      'astryx-progressbar',
+      'astryx-progress-bar',
     );
     expect(container.querySelector('.astryx-progress-bar-track')).toHaveClass(
-      'astryx-progressbar-track',
+      'astryx-progress-bar-track',
     );
     expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
-      'astryx-progressbar-fill',
+      'astryx-progress-bar-fill',
     );
     expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
-      'astryx-progressbar-mark',
+      'astryx-progress-bar-mark',
     );
+    expect(container.querySelector('.astryx-progressbar')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-track')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-fill')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-mark')).toBeNull();
   });
 });

@@ -143,25 +143,6 @@ export const docs = {
         states: ['checked', 'disabled'],
       },
       {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-checkbox',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-        deprecatedFor: 'checkbox-indicator',
-      },
-      {
-        className: 'astryx-radio',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-        deprecatedFor: 'radio-indicator',
-      },
-      {
-        className: 'astryx-radio-dot',
-        visualProps: ['size'],
-        deprecatedFor: 'radio-indicator-dot',
-      },
     ],
   },
   examples: [
