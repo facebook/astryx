@@ -3,7 +3,7 @@
 /**
  * @file ChatMessageList.stories.tsx
  * @input ChatMessageList and the existing Chat message primitives
- * @output Reusable transcript, empty, density/alignment, and overflow browser fixtures
+ * @output Reusable transcript, empty, density/alignment, overflow, and loading fixtures
  * @position Component-owned Storybook evidence for ChatMessageList
  */
 
@@ -25,6 +25,11 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const pendingOlderMessages = () =>
+  new Promise<void>(() => {
+    // Hold the documented pending state for repeatable browser evidence.
+  });
 
 export const Conversation: Story = {
   args: {density: 'balanced', align: 'bottom', isStreaming: false},
@@ -119,6 +124,20 @@ export const Overflow: Story = {
             </ChatMessageBubble>
           </ChatMessage>
         ))}
+      </ChatMessageList>
+    </div>
+  ),
+};
+
+export const LoadingOlder: Story = {
+  render: () => (
+    <div style={{height: 320, display: 'flex', flexDirection: 'column'}}>
+      <ChatMessageList align="top" scrollToTopAction={pendingOlderMessages}>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble>
+            Earlier message remains readable while older messages load.
+          </ChatMessageBubble>
+        </ChatMessage>
       </ChatMessageList>
     </div>
   ),

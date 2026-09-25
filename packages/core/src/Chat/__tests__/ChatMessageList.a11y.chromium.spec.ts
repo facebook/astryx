@@ -24,6 +24,7 @@ const CONVERSATION = 'core-chatmessagelist--conversation';
 const EMPTY = 'core-chatmessagelist--empty';
 const DENSITIES = 'core-chatmessagelist--density-and-alignment';
 const OVERFLOW = 'core-chatmessagelist--overflow';
+const LOADING = 'core-chatmessagelist--loading-older';
 const VIEWPORT = {width: 1024, height: 768};
 
 interface Case {
@@ -41,6 +42,7 @@ interface Case {
   direction?: 'ltr' | 'rtl';
   coarsePointer?: boolean;
   requiresOverflow?: boolean;
+  statusName?: string;
 }
 
 // Expectations are authored from the public fixture and component source, not
@@ -67,6 +69,8 @@ const CASES: Case[] = [
     name: 'Text empty state',
     text: 'No messages yet',
   },
+  // This input-state receipt is identical on the broken and corrected builds.
+  // The separate visible-output case below must reject the old blank result.
   {
     state: 'numeric-empty',
     storyId: EMPTY,
@@ -76,6 +80,17 @@ const CASES: Case[] = [
     density: 'balanced',
     busy: false,
     name: 'Numeric empty state',
+  },
+  {
+    state: 'numeric-empty-visible',
+    storyId: EMPTY,
+    index: 1,
+    targetCount: 2,
+    articleCount: 0,
+    density: 'balanced',
+    busy: false,
+    name: 'Numeric empty state',
+    text: '0',
   },
   {
     state: 'compact-top',
@@ -128,6 +143,17 @@ const CASES: Case[] = [
     busy: false,
     text: 'Conversation item 1.',
     requiresOverflow: true,
+  },
+  {
+    state: 'loading-older',
+    storyId: LOADING,
+    index: 0,
+    targetCount: 1,
+    articleCount: 1,
+    density: 'balanced',
+    busy: false,
+    text: 'Earlier message remains readable',
+    statusName: 'Loading',
   },
 ];
 
@@ -202,6 +228,9 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     );
     const logs = page.getByRole('log');
     await logs.first().waitFor();
+    if (scenario.statusName) {
+      await page.getByRole('status', {name: scenario.statusName}).waitFor();
+    }
     await holdMotionStill(page);
     await page.evaluate(async () => document.fonts.ready);
     await page.waitForFunction(
@@ -212,7 +241,7 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     const subject = logs.nth(scenario.index);
     const box = await subject.boundingBox();
     const observed = await subject.evaluate(
-      (node, measureOverflow) => ({
+      (node, measures) => ({
         role: node.getAttribute('role'),
         name: node.getAttribute('aria-label'),
         live: node.getAttribute('aria-live'),
@@ -225,14 +254,24 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
         height: node.getBoundingClientRect().height,
         scrollWidth: node.scrollWidth,
         clientWidth: node.clientWidth,
-        ...(measureOverflow
+        ...(measures.overflow
           ? {
               parentScrollHeight: node.parentElement?.scrollHeight ?? 0,
               parentClientHeight: node.parentElement?.clientHeight ?? 0,
             }
           : {}),
+        ...(measures.status
+          ? {
+              statusName: node
+                .querySelector('[role="status"]')
+                ?.getAttribute('aria-label'),
+            }
+          : {}),
       }),
-      Boolean(scenario.requiresOverflow),
+      {
+        overflow: Boolean(scenario.requiresOverflow),
+        status: Boolean(scenario.statusName),
+      },
     );
     const environment = await page.evaluate(() => ({
       theme: document
@@ -284,6 +323,9 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     if (scenario.text != null) {
       expect(observed.text).toContain(scenario.text);
     }
+    if (scenario.statusName != null) {
+      expect(observed.statusName).toBe(scenario.statusName);
+    }
     expect(observed.width).toBeGreaterThan(0);
     expect(observed.height).toBeGreaterThan(0);
     if (scenario.requiresOverflow) {
@@ -309,7 +351,9 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
     expect(errors).toEqual([]);
 
     const file = `ChatMessageList__${scenario.state}__neutral-${mode}__${direction}.png`;
-    const png = await subject.screenshot({animations: 'disabled'});
+    const png = await (
+      scenario.requiresOverflow ? subject.locator('xpath=..') : subject
+    ).screenshot({animations: 'disabled'});
     expect(png.length).toBeGreaterThan(100);
     const receipt = {
       expected: {
@@ -327,6 +371,7 @@ async function capture(page: Page, scenario: Case, mode: 'light' | 'dark') {
         text: scenario.text,
         coarsePointer: scenario.coarsePointer ?? false,
         ...(scenario.requiresOverflow ? {requiresOverflow: true} : {}),
+        ...(scenario.statusName ? {statusName: scenario.statusName} : {}),
       },
       observed: {
         build: storybookSha,
