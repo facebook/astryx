@@ -5,7 +5,7 @@
 /**
  * @file ChatVirtualizer.tsx
  * @input Uses React only (no DOM libraries); attaches to a caller-owned
- *   scroll container (ChatLayout) or renders its own
+ *   scroll container that runs no follow of its own, or renders its own
  * @output Exports ChatVirtualizer component, ChatVirtualizerProps and
  *   ChatVirtualizerHandle
  * @position Experimental windowing participant for ChatMessageList children:
@@ -62,7 +62,7 @@ const PRIOR_SAMPLES = 5;
 //
 // flow-root keeps row margins inside the block, as the own scroller did
 // before this block existed. flexShrink: 0 / alignSelf: stretch — in a
-// column-flex host (ChatLayout's scroller in attach mode) the block is a
+// column-flex host scroller (attach mode) the block is a
 // flex item and would otherwise be compressed to fit (default shrink 1),
 // silently corrupting the whole geometry.
 const contentStyle: React.CSSProperties = {
@@ -166,14 +166,19 @@ export interface ChatVirtualizerProps<T> {
   getItemType?: (item: T, index: number) => string;
   /**
    * ATTACH MODE. By default the list renders its own scroll container. Pass
-   * the caller's scroll element instead (ChatLayout's, via
-   * useChatLayoutContext().scrollContainerRef) and it renders one content
-   * block — spacers + windowed rows — into the container the caller
+   * the caller's scroll element instead — a scroller that runs no follow of
+   * its own, such as a page shell's content area — and it renders one
+   * content block (spacers + windowed rows) into the container the caller
    * already owns: the layout component keeps the scroller, the virtualizer
-   * is one participant in it. Pass the ELEMENT, not a ref: a parent's ref
-   * attaches after its children's layout effects, so a ref would still read
-   * null on the commit that matters, while state holding the element
-   * re-renders with it available. Pass null (not undefined) while the
+   * is one participant in it. Not ChatLayout's: ChatLayout runs its own
+   * follow on that element with no way to turn it off, so attaching there
+   * puts two writers on one position. It cannot host attach mode until it
+   * exposes a seam to disable that follow.
+   *
+   * Pass the ELEMENT, not a ref: a parent's ref attaches after its
+   * children's layout effects, so a ref would still read null on the commit
+   * that matters, while state holding the element re-renders with it
+   * available. Pass null (not undefined) while the
    * element is pending: absent = own-container mode, null = attach mode
    * waiting — falling back to the own container for even one commit mounts
    * EVERY row (unbounded clientHeight) and tears it back down (measured:
@@ -611,10 +616,11 @@ export function ChatVirtualizer<T>(
   // sticky region above us, and every offset in `geo` is relative to our first
   // spacer rather than to the scroll box.
   const originRef = React.useRef(0);
-  // Content the caller renders BELOW our block (in ChatLayout, the dock
-  // overflow: the scroller deliberately overflows by the composer height so
-  // the tail can scroll clear of it). End mode must scroll past it, or the
-  // last message parks underneath the overlay (measured: constant 174px).
+  // Content the caller renders BELOW our block (a docked composer's
+  // overflow, say: a scroller that deliberately overflows by the composer
+  // height so the tail can scroll clear of it). End mode must scroll past
+  // it, or the last message parks underneath the overlay (measured:
+  // constant 174px).
   const belowRef = React.useRef(0);
   const measureOrigin = (el: HTMLElement): number => {
     if (scrollElementRef.current == null) {
