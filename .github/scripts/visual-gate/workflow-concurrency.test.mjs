@@ -1,5 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Guard PR reporting, preview staging, and remaining Pages writers.
+ * @input Workflow definitions plus the docsite builder and PR reconciler.
+ * @output Node tests that keep exact-head Vercel links and visual evidence
+ *   separate from the remaining Pages publisher until its migration is proven.
+ * @position Repository workflow contract tests.
+ */
+
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -147,7 +155,7 @@ describe('PR report and deployment workflow contracts', () => {
     );
   });
 
-  it('hosts only Storybook on Vercel and preserves Sandbox Pages publication', () => {
+  it('stages both static apps on Vercel while retaining separate Pages publication', () => {
     const config = JSON.parse(
       fs.readFileSync(path.join(ROOT, 'apps/docsite/vercel.json'), 'utf8'),
     );
@@ -162,8 +170,18 @@ describe('PR report and deployment workflow contracts', () => {
       'utf8',
     );
     expect(builder).toContain("deploymentEnv !== 'preview'");
-    expect(builder).toContain('buildStorybookPreview(deploymentEnv, root');
-    expect(builder).not.toContain("'@astryxdesign/sandbox'");
+    expect(builder).toContain('buildPreviews(deploymentEnv, root');
+    expect(builder).toContain("'@astryxdesign/storybook'");
+    expect(builder).toContain("'@astryxdesign/sandbox'");
+    expect(builder).toContain("SANDBOX_BASE_PATH: '/sandbox'");
+    expect(builder).toContain('fs.rmSync(storybookDestination');
+    expect(builder).toContain('fs.rmSync(sandboxDestination');
+    const routing = fs.readFileSync(
+      path.join(ROOT, 'apps/docsite/next.config.mjs'),
+      'utf8',
+    );
+    expect(routing).toContain("source: '/sandbox/:path+'");
+    expect(routing).toContain("destination: '/sandbox/:path+/index.html'");
     const comment = workflow('pr-comment.yml');
     expect(comment).toContain('uses: ./.github/workflows/deploy-preview.yml');
     expect(comment).toContain('preview-deployment-');
@@ -190,7 +208,8 @@ describe('PR report and deployment workflow contracts', () => {
     );
     expect(reconciler).toContain('resolveVercelPreview');
     expect(reconciler).toContain('`${previewOrigin}/storybook/`');
-    expect(reconciler).toContain('pagesURL(identity, sandboxPath)');
+    expect(reconciler).toContain('`${previewOrigin}/sandbox/`');
+    expect(reconciler).not.toContain('pagesURL(identity, sandboxPath)');
   });
 
   it('defers full-tree cleanup and retains required visual evidence and stable-site writers', () => {
