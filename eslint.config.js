@@ -729,6 +729,69 @@ export default defineConfig(
       ],
     },
   },
+  // ── INV23 + FR3: text-layout bans in command handlers ───────────────
+  // Handlers must use the formatter kit (section, text, list, record,
+  // records, code) rather than string padding or manual layout.
+  // Extends the Commander-registration ban to the same file scope.
+  {
+    files: ['packages/cli/clients/cli/commands/**/*.mjs'],
+    ignores: ['**/*.test.mjs', '**/*.doc.mjs'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+          message:
+            'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='padEnd']",
+          message:
+            'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padEnd() (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='padStart']",
+          message:
+            'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padStart() (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='repeat']",
+          message:
+            'Use the formatter kit — section(), text(), code() — not .repeat() for layout (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector: "NewExpression[callee.name='Block']",
+          message:
+            'Use the formatter kit constructors — section(), text(), list(), record(), records(), code() — not new Block() (INV23, FR3). See architecture:cli-surface.',
+        },
+      ],
+    },
+  },
+  // Known gaps recorded in AST-042; remove an entry when the file is
+  // fixed; do not add entries. check-cli-structure.mjs enforces the
+  // exact-entry allowlist so a new text-layout violation in these files
+  // still fails there.
+  {
+    files: [
+      'packages/cli/clients/cli/commands/build-theme.mjs',
+      'packages/cli/clients/cli/commands/docs.mjs',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+          message:
+            'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
+        },
+      ],
+    },
+  },
   // CLI tests — relax author-ergonomics rules (test files emit freely and may
   // keep intentionally-unused fixtures). Must come after the CLI block above.
   {
