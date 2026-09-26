@@ -4,7 +4,7 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock and CodeBlockProps with source-faithful rendered text
+ * @output Exports CodeBlock and CodeBlockProps with source-faithful text and optional styled tokenizer spans
  * @position Core implementation; read-only syntax-highlighted code display
  */
 
@@ -463,10 +463,7 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
    * @default 'card'
    */
   container?: 'card' | 'section';
-  tokenizer?: (
-    code: string,
-    language: string,
-  ) => {type: string; start: number; end: number}[];
+  tokenizer?: (code: string, language: string) => SyntaxToken[];
   highlightMode?: 'auto' | 'ranges' | 'spans';
   /**
    * Per-instance syntax theme override. Shorthand for wrapping this block in
@@ -595,7 +592,8 @@ function buildSpanLine(
     parts.push(
       <span
         key={`${token.start}-${token.type}`}
-        className={`astryx-token-${token.type} xds-token-${token.type}`}>
+        className={`astryx-token-${token.type} xds-token-${token.type}`}
+        style={token.style}>
         {lineText.slice(token.start, end)}
       </span>,
     );
@@ -788,11 +786,6 @@ export function CodeBlock({
     announce: t('@astryx.codeBlock.copied'),
   });
 
-  const useSpans =
-    highlightMode === 'spans' ||
-    (highlightMode === 'auto' && !hasHighlightAPI()) ||
-    (highlightMode === 'auto' && isSafari());
-
   const hasTrailingLineBreak = code.endsWith('\n');
   const lines = useMemo(() => {
     const l = code.split('\n');
@@ -803,6 +796,15 @@ export function CodeBlock({
   }, [code]);
 
   const tokenLines = useTokenLines(code, language, customTokenizer);
+  const hasStyledTokens = useMemo(
+    () => tokenLines.some(line => line.some(token => token.style != null)),
+    [tokenLines],
+  );
+  const useSpans =
+    hasStyledTokens ||
+    highlightMode === 'spans' ||
+    (highlightMode === 'auto' && !hasHighlightAPI()) ||
+    (highlightMode === 'auto' && isSafari());
 
   const highlightSet = useMemo(
     () => (highlightLines ? new Set(highlightLines) : null),
