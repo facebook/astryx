@@ -279,6 +279,16 @@ describe('accessibility runtime fold-in', () => {
         rule,
       ).toContain(rule);
       expect(accessibility.score, rule).toBe(100);
+
+      // Evidence for the other covered rules says nothing about this one
+      const otherRulesAxe: AxeResultForPrompt = {
+        ...cleanAxe,
+        passedRules: fixtures.map(f => f.axeRule).filter(id => id !== axeRule),
+      };
+      expect(
+        evaluate(code, 'html', {axeResult: otherRulesAxe}).accessibility.score,
+        rule,
+      ).toBeLessThan(100);
     }
   });
 
@@ -315,6 +325,21 @@ describe('accessibility runtime fold-in', () => {
     expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
     expect(accessibility.score).toBe(92);
     expect(accessibility.metrics?.runtime).toBe(true);
+  });
+
+  it('keeps the static penalty when axe evaluated only other covered rules', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      passedRules: ['label', 'button-name', 'heading-order'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(92);
   });
 
   it('waives the static penalty when axe passed the matching rule', () => {
