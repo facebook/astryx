@@ -38,6 +38,7 @@ import type {
   MarkdownAstImage,
   MarkdownDocumentProps,
   MarkdownProps,
+  MarkdownVariant,
   ParseOptions,
   PreparedMarkdownDocument,
   PreparedMarkdownOutlineItem,
@@ -136,7 +137,10 @@ describe('Markdown public parser types', () => {
   it('keeps source and prepared document props mutually exclusive', () => {
     const document = prepareMarkdownDocument('# Prepared');
     const sourceProps: MarkdownProps = {children: '# Source'};
-    const documentProps: MarkdownDocumentProps = {document};
+    const documentProps: MarkdownDocumentProps = {
+      document,
+      variant: 'document',
+    };
 
     function compileOnlyDocumentGuards() {
       // @ts-expect-error source props cannot also carry a prepared document
@@ -150,6 +154,10 @@ describe('Markdown public parser types', () => {
     }
 
     expectTypeOf(sourceProps.children).toBeString();
+    expectTypeOf<
+      NonNullable<MarkdownProps['variant']>
+    >().toEqualTypeOf<MarkdownVariant>();
+    expectTypeOf<MarkdownVariant>().toEqualTypeOf<'default' | 'document'>();
     expectTypeOf(documentProps.document.source).toBeString();
     expectTypeOf(compileOnlyDocumentGuards).toBeFunction();
   });

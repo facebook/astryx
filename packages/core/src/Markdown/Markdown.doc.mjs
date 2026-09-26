@@ -95,6 +95,13 @@ export const docs = {
       default: "'block'",
     },
     {
+      name: 'variant',
+      type: "'default' | 'document'",
+      description:
+        "Presentation only. 'document' uses reading-focused 16px/1.7 body typography, centers the default 680px prose measure, adds 64px heading scroll clearance, and uses grid table dividers. It does not enable autolinks or other syntax and is valid only with block display.",
+      default: "'default'",
+    },
+    {
       name: 'density',
       type: "\'default\' | \'compact\'",
       description: 'Controls spacing between block-level elements.',
@@ -144,8 +151,8 @@ export const docs = {
       name: 'contentAlign',
       type: "'start' | 'center'",
       description:
-        'Alignment of prose content within the container when contentWidth is narrower than the available space.',
-      default: "'start'",
+        "Alignment of prose content within the container when contentWidth is narrower than the available space. Defaults to 'center' for variant='document' and 'start' otherwise; an explicit value wins.",
+      default: "'start' ('center' for variant='document')",
     },
     {
       name: 'plugins',
@@ -203,7 +210,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density', 'variant']},
       {
         className: 'astryx-markdown-heading',
         visualProps: ['density', 'level'],
@@ -247,6 +254,11 @@ export const docs = {
         guidance: true,
         description:
           'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="document" for long-form reading surfaces; keep autolink and other syntax options explicit, and override contentWidth or contentAlign when the host needs different geometry.',
       },
       {
         guidance: true,
@@ -326,6 +338,14 @@ export const docs = {
     ],
   },
   examples: [
+    {
+      label: 'Document presentation',
+      code: `
+<Markdown variant="document">
+  {'# Guide\\n\\nLong-form prose uses a centered reading measure.\\n\\n| Option | Meaning |\\n| --- | --- |\\n| A | Grid-divided table |'}
+</Markdown>;
+`,
+    },
     {
       label: 'Inline display',
       code: `
@@ -574,6 +594,13 @@ export const docsZh = {
       default: "'block'",
     },
     {
+      name: 'variant',
+      type: "'default' | 'document'",
+      description:
+        "仅控制呈现。'document' 使用适合阅读的 16px/1.7 正文字体、居中的默认 680px 正文宽度、64px 标题滚动间距和网格表格分隔线；不会启用自动链接或其他语法，且仅支持 block 显示。",
+      default: "'default'",
+    },
+    {
       name: 'density',
       type: "'default' | 'compact'",
       description: '控制块级元素之间的间距。',
@@ -621,8 +648,8 @@ export const docsZh = {
       name: 'contentAlign',
       type: "'start' | 'center'",
       description:
-        '当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。',
-      default: "'start'",
+        "当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。variant='document' 时默认为 'center'，其他情况下默认为 'start'；显式值优先。",
+      default: "'start'（variant='document' 时为 'center'）",
     },
     {
       name: 'plugins',
@@ -674,7 +701,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density', 'variant']},
       {
         className: 'astryx-markdown-heading',
         visualProps: ['density', 'level'],
@@ -734,6 +761,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="document" for long-form reading surfaces; keep autolink and other syntax options explicit, and override contentWidth or contentAlign when the host needs different geometry.',
       },
       {
         guidance: true,
@@ -830,6 +862,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use variant="document" for long-form reading surfaces; keep autolink and other syntax options explicit, and override contentWidth or contentAlign when the host needs different geometry.',
+      },
+      {
+        guidance: true,
+        description:
           'Use contentWidth to keep prose at a readable line length in wide layouts.',
       },
       {
@@ -908,6 +945,8 @@ export const docsDense = {
     children: 'markdown string',
     document:
       'PreparedMarkdownDocument from the server-safe Markdown/document subpath. Reuses one block parse/transform/heading projection; replaces children; not for inline or streaming rendering.',
+    variant:
+      "'default'|'document'. Presentation-only document mode uses 16px/1.7 body text, centered 680px prose, 64px heading scroll clearance, and grid table dividers. Block display only; syntax options remain explicit.",
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart:
       'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
@@ -922,7 +961,7 @@ export const docsDense = {
     contentWidth:
       'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign:
-      "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+      "'start'|'center'. Prose alignment when contentWidth < container. Default: 'center' in document variant, otherwise 'start'; explicit value wins.",
     plugins:
       'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Narrow observed extensions with isMarkdownExtensionNode(); renderer callbacks are pure. Default: omitted or empty.',
     inlinePlugins:
