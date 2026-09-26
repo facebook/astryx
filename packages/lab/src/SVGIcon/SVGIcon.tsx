@@ -32,11 +32,7 @@ import {themeProps} from '@astryxdesign/core/utils';
 // =============================================================================
 
 export type SVGIconVariation =
-  | 'linear'
-  | 'bold'
-  | 'twotone'
-  | 'bulk'
-  | 'broken';
+  'linear' | 'bold' | 'twotone' | 'bulk' | 'broken';
 export type SVGIconSize = 'xsm' | 'sm' | 'md' | 'lg';
 export type SVGIconColor =
   | 'primary'
@@ -359,11 +355,23 @@ export function SVGIcon({
     ...(strokeWidth != null ? strokeWidthOverride : undefined),
   };
 
+  // Decorative by default, meaningful when named — mirroring core Icon's
+  // `label` logic. When the consumer passes an accessible name
+  // (aria-label / aria-labelledby), expose the svg as role="img" instead of
+  // hiding it: an aria-hidden element is removed from the accessibility
+  // tree, so its accessible name would be ignored. Spread BEFORE {...props}
+  // so an explicit aria-hidden/role from the consumer always wins.
+  const hasAccessibleName =
+    props['aria-label'] != null || props['aria-labelledby'] != null;
+  const a11yProps = hasAccessibleName
+    ? ({role: 'img'} as const)
+    : ({'aria-hidden': true} as const);
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox={viewBox}
-      aria-hidden="true"
+      {...a11yProps}
       {...mergeProps(
         themeProps('svg-icon', {variation, size, color}),
         stylex.props(

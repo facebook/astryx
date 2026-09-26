@@ -1,7 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+/**
+ * @file ChatMessageList.test.tsx
+ * @input React Testing Library, Vitest, and the public ChatMessageList surface
+ * @output Observable log, empty-state, alignment, and async-loading regressions
+ * @position Colocated component behavior tests
+ */
+
+import {describe, it, expect, vi} from 'vitest';
+import {act, render, screen} from '@testing-library/react';
 import {ChatMessageList} from './ChatMessageList';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageBubble} from './ChatMessageBubble';
@@ -55,6 +62,11 @@ describe('ChatMessageList', () => {
     expect(screen.getByText('No messages yet')).toBeTruthy();
   });
 
+  it('renders an accepted numeric empty state', () => {
+    render(<ChatMessageList emptyState={0}>{[]}</ChatMessageList>);
+    expect(screen.getByRole('log')).toHaveTextContent('0');
+  });
+
   it('applies density class', () => {
     render(
       <ChatMessageList density="compact" data-testid="list">
@@ -62,7 +74,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('accepts gap independently from density', () => {
@@ -72,7 +84,7 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('list');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('applies data-testid', () => {
@@ -82,5 +94,101 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     expect(screen.getByTestId('chat-list')).toBeTruthy();
+  });
+
+  // With no scrollToTopAction the spacer is the only aria-hidden element in
+  // the list, so its presence maps 1:1 to the aria-hidden count.
+  it('renders the bottom spacer by default', () => {
+    render(
+      <ChatMessageList data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(1);
+  });
+
+  it('renders the bottom spacer when align="bottom"', () => {
+    render(
+      <ChatMessageList align="bottom" data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(1);
+  });
+
+  it('omits the spacer when align="top"', () => {
+    render(
+      <ChatMessageList align="top" data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(
+      screen.getByTestId('list').querySelectorAll('[aria-hidden]'),
+    ).toHaveLength(0);
+  });
+
+  it('still renders children when align="top"', () => {
+    render(
+      <ChatMessageList align="top">
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble>Hello</ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>,
+    );
+    expect(screen.getByText('Hello')).toBeTruthy();
+  });
+
+  it('loads older messages through the top sentinel and exposes pending status', async () => {
+    let notify!: IntersectionObserverCallback;
+    let complete!: () => void;
+    const observeSentinel = vi.fn();
+    const disconnect = vi.fn();
+    const action = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          complete = resolve;
+        }),
+    );
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe = observeSentinel;
+      disconnect = disconnect;
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    try {
+      const {unmount} = render(
+        <ChatMessageList scrollToTopAction={action}>
+          <div>Earlier message</div>
+        </ChatMessageList>,
+      );
+      expect(observeSentinel).toHaveBeenCalledTimes(1);
+      act(() => {
+        notify(
+          [{isIntersecting: false} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(action).not.toHaveBeenCalled();
+      act(() => {
+        notify(
+          [{isIntersecting: true} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeTruthy();
+      await act(async () => complete());
+      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+      unmount();
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -62,9 +62,11 @@ function validateDocs(docs) {
  *
  * External packages come from configured integrations that declare a components
  * root; each becomes a scannable package keyed by its docsDir. `configured`
- * reports whether ANY integration declared a components root — it lets an empty
- * result distinguish "nothing configured" (`false`) from "configured but
- * nothing discovered" (`true`), which the list leaf surfaces as `meta`.
+ * reports whether the project configured ANY integration — including one whose
+ * manifest failed to load, which contributes nothing but is emphatically not
+ * "nothing configured". It lets an empty result distinguish "nothing
+ * configured" (`false`) from "configured but nothing discovered" (`true`),
+ * which the list leaf surfaces as `meta`.
  *
  * @returns {Promise<{packages: ScannedPackage[], configured: boolean}>}
  */
@@ -84,7 +86,7 @@ export async function discoverPackages() {
       docsDir: integration.components,
     }));
   if (explicitPackages.length === 0) {
-    return {packages: [], configured: false};
+    return {packages: [], configured: loadedIntegrations.length > 0};
   }
 
   const packages = scanAllPackages(

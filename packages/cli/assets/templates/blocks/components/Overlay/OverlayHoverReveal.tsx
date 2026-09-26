@@ -28,7 +28,7 @@ export default function OverlayHoverReveal() {
       content={<Button label="Quick view" variant="secondary" size="sm" />}>
       <AspectRatio ratio={16 / 9} style={frame}>
         <img
-          src="https://lookaside.facebook.com/assets/astryx/light-working-horizontal-1.png"
+          src="/template-assets/light-working-horizontal-1.png"
           alt="Workspace preview"
           style={image}
         />

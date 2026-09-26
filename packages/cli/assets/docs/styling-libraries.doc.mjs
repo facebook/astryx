@@ -56,7 +56,7 @@ export const docs = {
               '`@astryxdesign/core/tailwind-theme.css`',
             ],
             [
-              'Token resolver APIs',
+              'Design token resolver APIs',
               'JavaScript needs token values for charts, canvas, SVG, or config objects',
               "`resolveThemeToken(theme, '--color-data-categorical-blue', {mode})`",
             ],
@@ -351,7 +351,7 @@ tokens: {
     },
   },
   shortcuts: {
-    'xds-card': 'bg-surface text-primary border border-border rounded-lg p-4',
+    'astryx-card': 'bg-surface text-primary border border-border rounded-lg p-4',
   },
 });`,
         },

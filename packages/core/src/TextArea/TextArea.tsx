@@ -22,6 +22,7 @@ import {
   useTransition,
   useRef,
   useCallback,
+  useMemo,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
@@ -45,16 +46,19 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -66,7 +70,14 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
     display: 'block',
-    padding: 0,
+    // Zero the shared wrapper inset with matching longhands, not the `padding`
+    // shorthand: StyleX ranks longhands above shorthands regardless of merge
+    // order, so a `padding: 0` shorthand loses to the base's
+    // paddingBlock/paddingInline. The wrapper would keep a duplicate inset that
+    // the <textarea>'s own padding then doubles — insetting the text and
+    // pushing the native resize grip in from the corner.
+    paddingBlock: 0,
+    paddingInline: 0,
     // Internal inline padding for the textarea's text. Defined on the wrapper
     // so the counter (a sibling overlay) inherits the same value and stays
     // aligned with the text edge. Kept as an internal var so it can later be
@@ -84,9 +95,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -98,7 +114,7 @@ const styles = stylex.create({
     resize: 'vertical',
   },
   textareaDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Reserve start padding so text clears the start icon.
   // inline inset + 16px icon (sm) + 8px gap
@@ -237,6 +253,15 @@ export interface TextAreaProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Whether the textarea is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only textarea is not dimmed
+   * and stays in the tab order — use it for a value the user should see and
+   * send but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Explains why the textarea is disabled. When set together with
    * `isDisabled`, the textarea shows a tooltip with this text on hover and
    * keyboard focus, and stays focusable (via `aria-disabled`) so the reason is
@@ -296,10 +321,13 @@ export interface TextAreaProps extends Omit<
    */
   onPaste?: (e: ClipboardEvent<HTMLTextAreaElement>) => void;
   /**
-   * Maximum number of characters allowed.
-   * When set, displays a character counter below the textarea.
+   * Maximum number of characters allowed, counted as user-perceived
+   * characters — an emoji or flag sequence counts as one. When set,
+   * displays a character counter below the textarea.
    * Does not enforce the limit natively — the counter shows error styling
-   * when exceeded, and the consumer can validate via onChange.
+   * when exceeded, and the consumer can validate via onChange. Validate with
+   * `characterCount` (exported from this package) rather than `value.length`
+   * so enforcement matches the displayed count.
    */
   maxLength?: number;
   /**
@@ -326,6 +354,13 @@ export interface TextAreaProps extends Omit<
    * Callback fired when the textarea loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the textarea unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.TextareaHTMLAttributes<HTMLTextAreaElement>['autoComplete'];
 }
 
 /**
@@ -350,6 +385,7 @@ export function TextArea({
   placeholder,
   rows = 3,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   status,
   statusVariant = 'attached',
@@ -372,6 +408,7 @@ export function TextArea({
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
@@ -461,11 +498,15 @@ export function TextArea({
     // Value can't change while showing a disabled message (the field is
     // read-only and non-native-disabled), but guard the handler too so the
     // optimistic value and callbacks never fire.
-    if (isDisabled) {
+    if (isDisabled || isReadOnly) {
       return;
     }
     const newValue = e.target.value;
-    announceCounter(newValue.length);
+    // Guarded here, not just inside announceCounter, so textareas without a
+    // maxLength never pay for segmenting the whole value on each keystroke.
+    if (maxLength != null) {
+      announceCounter(characterCount(newValue));
+    }
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
       startTransition(async () => {
@@ -474,6 +515,15 @@ export function TextArea({
       });
     }
   };
+
+  // Counter semantics count user-perceived characters, so an emoji or flag
+  // sequence counts as one character, not its code units.
+  // Only measured when a counter exists — segmentation is O(value length),
+  // and memoized so re-renders that keep the same value skip it entirely.
+  const valueLength = useMemo(
+    () => (maxLength != null ? characterCount(optimisticValue) : 0),
+    [maxLength, optimisticValue],
+  );
 
   const effectivelyDisabled = isDisabled || isBusy;
 
@@ -518,7 +568,18 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {size, status: status?.type ?? null}),
+          themeProps(
+            'text-area',
+            {
+              size,
+              status: status?.type ?? null,
+              disabled: isDisabled ? 'disabled' : null,
+              readonly: isReadOnly ? 'readonly' : null,
+            },
+            // `textarea` ran the compound name together; keep it emitted so
+            // existing themes continue to work.
+            {legacyNames: ['textarea']},
+          ),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -538,9 +599,9 @@ export function TextArea({
         )}
         <textarea
           {...rest}
-          ref={mergeRefs(ref, textareaRef)}
+          ref={useMergedRefs(ref, textareaRef)}
           id={id}
-          name={htmlName}
+          name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
           onChange={handleChange}
           onPaste={onPaste}
@@ -553,27 +614,35 @@ export function TextArea({
           // handleChange guard keep the value from changing.
           disabled={isDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          readOnly={showsDisabledMessage || undefined}
+          readOnly={isReadOnly || showsDisabledMessage || undefined}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired && !isOptional ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||
-            (maxLength != null && optimisticValue.length > maxLength)
+            (maxLength != null && valueLength > maxLength)
               ? 'true'
               : undefined
           }
           aria-busy={isBusy || undefined}
-          {...stylex.props(
-            styles.textarea,
-            textareaSizeStyles[size],
-            isDisabled && styles.textareaDisabled,
-            Boolean(startIcon) && styles.textareaWithStartIcon,
-            (status || isBusy) && styles.textareaWithStatus,
-            isBusy && !!statusIcon && styles.textareaWithBusyStatus,
-            maxLength != null && styles.textareaWithCounter,
+          {...mergeProps(
+            themeProps('text-area-control'),
+            stylex.props(
+              styles.textarea,
+              textareaSizeStyles[size],
+              isDisabled && styles.textareaDisabled,
+              Boolean(startIcon) && styles.textareaWithStartIcon,
+              // Reserve trailing space only when the end slot actually renders
+              // something (spinner or on-field status icon). The `detached`
+              // status variant suppresses the on-field icon — its glyph lives
+              // in the message box below — so reserving here would inset the
+              // text for an icon that never appears.
+              (isBusy || statusIcon != null) && styles.textareaWithStatus,
+              isBusy && statusIcon != null && styles.textareaWithBusyStatus,
+              maxLength != null && styles.textareaWithCounter,
+            ),
           )}
         />
         {(isBusy || statusIcon) && (
@@ -585,17 +654,20 @@ export function TextArea({
         {maxLength != null && (
           <div
             id={counterID}
-            {...stylex.props(
-              styles.counter,
-              optimisticValue.length > maxLength && styles.counterError,
+            {...mergeProps(
+              themeProps('text-area-counter'),
+              stylex.props(
+                styles.counter,
+                valueLength > maxLength && styles.counterError,
+              ),
             )}>
-            {optimisticValue.length > maxLength && (
+            {valueLength > maxLength && (
               // Non-color cue so the over-limit state isn't conveyed by the red
               // color alone (WCAG 1.4.1). Decorative — the count text and the
               // live-region announcement carry the meaning.
               <Icon icon="warning" size="sm" />
             )}
-            {optimisticValue.length}/{maxLength}
+            {valueLength}/{maxLength}
           </div>
         )}
       </div>

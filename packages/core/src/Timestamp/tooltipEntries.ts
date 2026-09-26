@@ -24,6 +24,7 @@
 import {devWarn} from '../utils/devWarning';
 import {formatInstant} from './formatInstant';
 import type {InstantFormat} from './formatInstant';
+import type {Locale} from '../i18n/types';
 
 // =============================================================================
 // Types
@@ -72,12 +73,26 @@ export interface TimestampTooltipEntry {
    * Supplied already translated; Timestamp never invents or localizes labels.
    */
   label?: string;
+  /**
+   * Whether this row shows a copy-to-clipboard button, rendered in a dedicated
+   * trailing action column so the buttons line up across rows regardless of
+   * each value's width. The action column is only reserved when at least one
+   * row is copyable, so a fully read-only card has no trailing gutter.
+   *
+   * Defaults to `false` — rows are read-only unless opted in. Set `true` for a
+   * row whose value is worth pasting elsewhere, such as a machine-readable
+   * `system_date_time` value shown beside human-readable zones that only need
+   * to be read.
+   * @default false
+   */
+  isCopyable?: boolean;
 }
 
 /** A rendered tooltip line. */
 export interface TimestampTooltipLine {
   label?: string;
   value: string;
+  isCopyable: boolean;
 }
 
 // =============================================================================
@@ -116,7 +131,9 @@ function resolveTimezoneID(timezoneID: string | undefined): string | undefined {
   // degrade to the viewer's zone and say so, mirroring how an unparseable
   // `value` is handled in Timestamp.tsx.
   try {
-    new Intl.DateTimeFormat(undefined, {timeZone: timezoneID});
+    // Locale does not affect time-zone identifier validity; pin one so this
+    // validation path stays explicit and deterministic.
+    new Intl.DateTimeFormat('en-US', {timeZone: timezoneID});
   } catch {
     if (!warnedTimezoneIDs.has(timezoneID)) {
       warnedTimezoneIDs.add(timezoneID);
@@ -188,6 +205,7 @@ function shouldShowZoneName(
 export function formatTooltipLines(
   date: Date,
   entries: ReadonlyArray<TimestampTooltipEntry>,
+  locale: Locale,
 ): ReadonlyArray<TimestampTooltipLine> {
   const resolved = entries.map(entry => resolveTimezoneID(entry.timezoneID));
   const hasMultipleZones = new Set(resolved.map(zoneKey)).size > 1;
@@ -198,7 +216,8 @@ export function formatTooltipLines(
 
     return {
       ...(entry.label === undefined ? {} : {label: entry.label}),
-      value: formatInstant(date, format, {
+      isCopyable: entry.isCopyable ?? false,
+      value: formatInstant(date, format, locale, {
         timeZone,
         isTimezoneShown: shouldShowZoneName(
           format,

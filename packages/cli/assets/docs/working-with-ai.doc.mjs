@@ -38,7 +38,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'That\'s it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference) pulled from your installed version. After a version bump, run it again to update in place.',
+          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade` reports a stale block and `astryx upgrade --apply` refreshes it.",
         },
         {
           type: 'prose',
@@ -50,7 +50,8 @@ export const docs = {
           label: 'Manual options',
           code: `npx @astryxdesign/cli init --features agents --agent claude    # .claude/CLAUDE.md
 npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules
-npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
+npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
+npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)`,
         },
       ],
     },
@@ -72,7 +73,7 @@ npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copi
         },
         {
           type: 'prose',
-          text: 'It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values) and a CLI quick reference. After setup, you shouldn\'t need to manually correct your AI on these conventions; the agent docs handle it at the system level.',
+          text: "It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values), a CLI quick reference, and package-labeled integration guidance when a configured manifest declares `agentDocs`. After setup, you shouldn't need to manually correct your AI on these conventions; the agent docs handle it at the system level.",
         },
       ],
     },
@@ -125,7 +126,7 @@ If you don't know all three, run \`npx @astryxdesign/cli init --features agents\
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
 }`,
         },
         {
@@ -181,7 +182,7 @@ astryx docs tokens --dense`,
           label: 'MCP config (same for all tools)',
           code: `{
   "mcpServers": {
-    "xds": {
+    "astryx": {
       "type": "url",
       "url": "https://astryx.atmeta.com/mcp"
     }

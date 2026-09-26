@@ -13,11 +13,15 @@ import {
   formatHookParams,
 } from '../../lib/hook-format.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../../foundation/response/json.mjs';
+import {emit, section, text, list, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
+import {defineCommand} from '../../lib/define-command.mjs';
+import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {hook as hookApi} from '../../../../api/hook/hook.mjs';
-import {findRelatedBlocks} from '../../../../api/template/template.mjs';
+import {doc as hookCommand} from '../hook.doc.mjs';
+import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
 
 /**
  * The api layer's hook() widens its return to `{type: string, data: unknown}`,
@@ -31,15 +35,29 @@ import {findRelatedBlocks} from '../../../../api/template/template.mjs';
  * )} HookResult
  */
 
+/**
+ * What the run answered with. The list view groups hooks by category, so the
+ * count is every hook across the groups — names or docs, depending on detail.
+ *
+ * @param {HookResult} result
+ * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  if (result.type === 'hook.list') {
+    const count = Object.values(result.data.components).reduce(
+      (total, items) => total + items.length,
+      0,
+    );
+    return resultSet({count, resultKind: 'hook'});
+  }
+  return resultSet({count: 1, resultKind: 'hook', directMatch: true});
+}
+
 /** @param {import('commander').Command} program */
 export function registerHook(program) {
-  program
-    .command('hook [name]')
-    .description('List hooks or print hook docs')
-    .option('--list', 'List all hooks grouped by category')
-    .option('--category <category>', 'List hooks in a specific category')
-    .option('--params', 'Print only the parameters table')
-    .action(
+  defineCommand(program, hookCommand, {
+    fn: hookFn,
+    action:
       /**
        * @param {string|undefined} name
        * @param {{list?: boolean, category?: string, params?: boolean}} options
@@ -57,8 +75,7 @@ export function registerHook(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
-        return;
+        return cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
       }
 
       /** @type {HookResult} */
@@ -74,11 +91,14 @@ export function registerHook(program) {
         }));
       } catch (e) {
         const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       // ── Text output ────────────────────────────────────────────
       switch (result.type) {
@@ -88,93 +108,87 @@ export function registerHook(program) {
           if (result.data.detail === 'full') {
             // --detail full — dense per-hook docs grouped by category
             // (import block, best practices, full params + returns tables, related).
+            // The whole view is one markdown document: a `## <category>` heading
+            // over each category's concatenated hook docs.
             const groups = result.data.components;
-            humanLog('');
+            /** @type {import('../../formatters/index.mjs').Block[]} */
+            const out = [];
             for (const [cat, items] of Object.entries(groups)) {
-              humanLog(`## ${cat}\n`);
-              for (const item of items) {
-                const importPath = item.importPath || '@astryxdesign/core/hooks';
-                humanLog(formatHookCompact(item, importPath));
-              }
+              const body = items
+                .map(item =>
+                  formatHookCompact(item, item.importPath || '@astryxdesign/core/hooks'),
+                )
+                .join('\n');
+              out.push(code(`## ${cat}\n\n${body}`));
             }
+            emit(...out);
             break;
           }
 
           if (result.data.detail === 'compact') {
-            // --detail compact — name + 1-line description per entry.
+            // --detail compact — one record (name + description) per hook,
+            // grouped by category.
             const groups = result.data.components;
-            humanLog('');
+            /** @type {import('../../formatters/index.mjs').Block[]} */
+            const out = [];
             for (const [cat, items] of Object.entries(groups)) {
-              humanLog(cat);
-              for (const item of items) {
-                const desc = item.description ? ` — ${item.description}` : '';
-                humanLog(`  ${item.name}${desc}`);
-              }
-              humanLog('');
+              out.push(section(cat), records(items, {fields: ['name', 'description']}));
             }
-            humanLog(`Usage: ${run} hook <name>`);
-            humanLog('');
+            out.push(text(`Usage: ${run} hook <name>`));
+            emit(...out);
             break;
           }
 
-          // --detail names (default for list views) — names only.
+          // --detail names (default for list views) — names only, grouped by
+          // category.
           const groups = result.data.components;
           if (options.category) {
             const [cat, hookNames] = Object.entries(groups)[0];
-            humanLog(`\n${cat}:`);
-            for (const h of hookNames) humanLog(`  ${h}`);
-            humanLog('');
+            emit(section(`${cat}:`), list(hookNames));
           } else {
-            humanLog('');
+            /** @type {import('../../formatters/index.mjs').Block[]} */
+            const out = [];
             for (const [category, hookNames] of Object.entries(groups)) {
-              humanLog(category);
-              for (const h of hookNames) humanLog(`  ${h}`);
+              out.push(section(category), list(hookNames));
             }
-            humanLog('');
-            humanLog(`Usage: ${run} hook <name>`);
-            humanLog('');
+            out.push(text(`Usage: ${run} hook <name>`));
+            emit(...out);
           }
           break;
         }
 
         case 'hook.detail': {
-          if (detail === 'brief') {
-            humanLog(formatHookBrief(result.data));
-          } else if (detail === 'compact') {
-            const importPath = result.data.importPath || '@astryxdesign/core/hooks';
-            humanLog(formatHookCompact(result.data, importPath));
-          } else {
-            humanLog(formatHookFull(result.data));
-          }
-          // Show related block templates from relatedComponents
-          const relatedComps = result.data.relatedComponents || [];
-          /** @type {import('../../../../api/template/template.mjs').DiscoveredTemplate[]} */
-          const allBlocks = [];
-          for (const comp of relatedComps) {
-            const blocks = await findRelatedBlocks(comp);
-            for (const b of blocks) {
-              if (!allBlocks.some(existing => existing.dirName === b.dirName)) {
-                allBlocks.push(b);
-              }
-            }
-          }
-          if (allBlocks.length > 0) {
-            humanLog('\nRelated block templates:\n');
-            for (const b of allBlocks) {
-              humanLog(`  ${b.dirName}`);
-              if (b.description) humanLog(`    ${b.description}`);
-            }
-            humanLog('');
-          }
+          const doc =
+            detail === 'brief'
+              ? formatHookBrief(result.data)
+              : detail === 'compact'
+                ? formatHookCompact(
+                    result.data,
+                    result.data.importPath || '@astryxdesign/core/hooks',
+                  )
+                : formatHookFull(result.data);
+
+          // Text projects the envelope only. Block templates are JSON-backed
+          // under `component <name> --blocks`.
+          const related = result.data.relatedComponents ?? [];
+          emit(
+            code(doc),
+            related.length > 0 &&
+              text(
+                `Block templates: ${run} component <name> --blocks for ${related.join(', ')}`,
+              ),
+          );
           break;
         }
 
         case 'hook.detail.params': {
-          humanLog(formatHookParams({params: result.data, name: name}));
+          emit(code(formatHookParams({params: result.data, name})));
           break;
         }
       }
-    });
+      return answered;
+    },
+  });
 }
 
 // Re-export lib functions for external consumers

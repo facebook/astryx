@@ -6,35 +6,85 @@ name: CLI Smoke Test
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ['main']
     paths-ignore:
-      - "apps/docsite/**"
+      - 'apps/docsite/**'
   merge_group:
 
 permissions: {}
 
 concurrency:
-  group: "cli-smoke-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  group: 'cli-smoke-${{ github.event.merge_group.head_sha || github.head_ref }}'
   cancel-in-progress: true
 
 jobs:
   smoke-test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 50
+
+      - name: Classify changed files
+        if: github.event_name == 'pull_request'
+        id: scope
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=50
+          MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          if [ -z "$MERGE_BASE" ]; then
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CLASSIFIER_ROOT="$RUNNER_TEMP/change-scope"
+          CLASSIFIER_DIR="$CLASSIFIER_ROOT/.github/scripts"
+          REGISTRY_DIR="$CLASSIFIER_ROOT/scripts"
+          mkdir -p "$CLASSIFIER_DIR" "$REGISTRY_DIR"
+          CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
+          MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
+          REGISTRY="$REGISTRY_DIR/component-packages.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
+            git diff --name-status "$MERGE_BASE"...HEAD \
+              | node "$CLASSIFIER" --github-output
+          else
+            # Missing trusted policy cannot grant a specialized lane.
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
+              >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip CLI checks for spec-only changes
+        if: steps.scope.outputs.spec_only == 'true'
+        run: echo "Spec-only PR — CLI behavior cannot change"
 
       - uses: ./.github/actions/setup
+        if: steps.scope.outputs.spec_only != 'true'
 
       - name: CLI smoke test
+        if: steps.scope.outputs.spec_only != 'true'
         run: node .github/scripts/cli-smoke-test.mjs
 
       - name: Typecheck JSON API types
+        if: steps.scope.outputs.spec_only != 'true'
         run: cd packages/cli && pnpm typecheck:json-api
 
       - name: CLI --json smoke test
+        if: steps.scope.outputs.spec_only != 'true'
         run: node .github/scripts/cli-json-smoke-test.mjs
 
       - name: API ↔ CLI parity test
+        if: steps.scope.outputs.spec_only != 'true'
         run: node .github/scripts/api-cli-parity-test.mjs --no-baseline
+
+      # The CDN starter page is the only thing we ship that runs with no
+      # bundler and no test double for the CDNs, so it is verified by rendering
+      # it. Needs network access to jsDelivr, esm.sh and the npm registry.
+      - name: Install Playwright
+        if: steps.scope.outputs.spec_only != 'true'
+        run: npx playwright install chromium
+
+      - name: CDN starter page smoke test
+        if: steps.scope.outputs.spec_only != 'true'
+        run: node .github/scripts/cdn-template-smoke-test.mjs

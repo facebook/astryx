@@ -170,8 +170,8 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
  * via the unified `(file, api)`/jscodeshift contract; a code codemod runs
  * against discovered source files. Any future core config codemod (e.g. a
  * v0.1.3 one) must set `meta.codemodType = 'config'` and author its transform
- * with the same `(file, api) => string | null | undefined` contract used by
- * `createConfigCodemod`.
+ * with the same `(file, api) => string | null | undefined` contract used by a
+ * `type: 'config'` codemod.
  *
  * @param {{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
  * @param {string} version
@@ -195,6 +195,89 @@ function toUnifiedEntry(transformEntry, version) {
 }
 
 /**
+ * What a core PROJECT codemod plans: whole files to write and delete under the
+ * project root, or the problems that stop it. Paths in `writes` and `deletes`
+ * are absolute; `problems` name package-relative files.
+ *
+ * @typedef {object} ProjectCodemodPlan
+ * @property {Array<{path: string, contents: string}>} writes
+ * @property {string[]} deletes
+ * @property {Array<{file: string, message: string}>} problems
+ */
+
+/**
+ * Run one core PROJECT codemod (`meta.codemodType === 'project'`): instead of
+ * rewriting the files it is handed, it reads the project and plans whole-file
+ * writes and deletions, which this applies (or previews) as one unit. A plan
+ * that names a problem changes nothing. Core-only: integration codemods keep
+ * the file contract.
+ *
+ * @param {{name: string, transform: unknown}} transformEntry
+ * @param {{apply: boolean, root: string, log: {success: (m: string) => void, warn: (m: string) => void, error: (m: string) => void}}} options
+ * @returns {Promise<{filesChanged: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>}>}
+ */
+async function runProjectCodemod({name, transform}, {apply, root, log}) {
+  /** @param {string} file */
+  const rel = file => path.relative(root, file).split(path.sep).join('/');
+  /** @type {ProjectCodemodPlan} */
+  let plan;
+  try {
+    plan = await /** @type {(root: string) => Promise<ProjectCodemodPlan>} */ (
+      transform
+    )(root);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log.error(`    ✗ ${message}`);
+    return {
+      filesChanged: 0,
+      writtenFiles: [],
+      errors: [{file: '.', codemod: name, error: message}],
+    };
+  }
+  if (plan.problems.length > 0) {
+    for (const {file, message} of plan.problems) {
+      log.error(`    ✗ ${file} — ${message}`);
+    }
+    return {
+      filesChanged: 0,
+      writtenFiles: [],
+      errors: plan.problems.map(({file, message}) => ({
+        file,
+        codemod: name,
+        error: message,
+      })),
+    };
+  }
+  /** @type {string[]} */
+  const writtenFiles = [];
+  for (const write of plan.writes) {
+    if (apply) {
+      fs.mkdirSync(path.dirname(write.path), {recursive: true});
+      fs.writeFileSync(write.path, write.contents, 'utf-8');
+      writtenFiles.push(write.path);
+      log.success(`    ✓ ${rel(write.path)}`);
+    } else {
+      log.warn(`    ~ ${rel(write.path)} (would write)`);
+    }
+  }
+  // Deletions go last, so a failed write leaves a state a rerun completes.
+  for (const file of plan.deletes) {
+    if (apply) {
+      fs.rmSync(file);
+      writtenFiles.push(file);
+      log.success(`    ✓ ${rel(file)} (removed)`);
+    } else {
+      log.warn(`    ~ ${rel(file)} (would remove)`);
+    }
+  }
+  return {
+    filesChanged: plan.writes.length + plan.deletes.length,
+    writtenFiles,
+    errors: [],
+  };
+}
+
+/**
  * Run codemods against source files.
  *
  * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
@@ -204,11 +287,19 @@ function toUnifiedEntry(transformEntry, version) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
+ * @param {string} [options.root] - Project root a project codemod reads (default: the process cwd)
  * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, silent = false},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    silent = false,
+    root = process.cwd(),
+  },
 ) {
   // No-op stub object so silent mode skips log output entirely without
   // littering the body with `if (!silent)` guards.
@@ -221,11 +312,14 @@ export async function runCodemods(
 
   const resolvedPath = path.resolve(srcPath);
 
-  // Config codemods target the consumer's astryx.config.* and never read
-  // source files, so a missing --path should not block them. Only hard-fail
-  // on a missing source path when there is at least one CODE codemod to run.
+  // Config and project codemods never read the files under --path, so a
+  // missing --path should not block them. Only hard-fail on a missing source
+  // path when there is at least one CODE codemod to run.
   const hasCodeCodemod = versionManifests.some(({transforms}) =>
-    transforms.some(t => t.meta?.codemodType !== 'config'),
+    transforms.some(
+      t =>
+        t.meta?.codemodType !== 'config' && t.meta?.codemodType !== 'project',
+    ),
   );
   const sourcePathExists = fs.existsSync(resolvedPath);
 
@@ -290,6 +384,22 @@ export async function runCodemods(
       // `(file, api)` contract and targets the consumer's astryx.config.*.
       // A core entry signals "config" via `meta.codemodType === 'config'`
       // (see toUnifiedEntry).
+      if (meta?.codemodType === 'project') {
+        const result = await runProjectCodemod(transformEntry, {
+          apply,
+          root,
+          log,
+        });
+        if (result.errors.length > 0) {
+          errors.push(...result.errors);
+        } else if (result.filesChanged > 0) {
+          totalFilesChanged += result.filesChanged;
+          totalTransformsApplied += 1;
+          writtenFiles.push(...result.writtenFiles);
+        }
+        continue;
+      }
+
       if (meta?.codemodType === 'config') {
         const result = runConfigCodemod(toUnifiedEntry(transformEntry, version), {
           apply,

@@ -2,6 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Timestamp> = {
@@ -80,7 +81,7 @@ const meta: Meta<typeof Timestamp> = {
     },
     hasTooltip: {
       control: 'boolean',
-      description: 'Show tooltip on hover',
+      description: 'Show copyable hover card on hover',
     },
     isTimezoneShown: {
       control: 'boolean',
@@ -144,6 +145,66 @@ export const RelativeShortFormat: Story = {
   ),
 };
 
+const relativeThresholds = [
+  {label: 'Present clamp · 5 seconds ago', offsetSeconds: -5},
+  {label: 'Past seconds begin · 10 seconds ago', offsetSeconds: -10},
+  {label: 'Past minutes begin · 60 seconds ago', offsetSeconds: -60},
+  {label: 'Past hours begin · 1 hour ago', offsetSeconds: -3600},
+  {label: 'Past days begin · 1 day ago', offsetSeconds: -86400},
+  {label: 'Past months begin · 30 days ago', offsetSeconds: -30 * 86400},
+  {label: 'Past years begin · 365 days ago', offsetSeconds: -365 * 86400},
+  {label: 'Future skew clamp · 30 seconds', offsetSeconds: 30},
+  {label: 'Future seconds begin · 31 seconds', offsetSeconds: 31},
+  {label: 'Future minutes begin · 60 seconds', offsetSeconds: 60},
+  {label: 'Future hours begin · 1 hour', offsetSeconds: 3600},
+  {label: 'Future days begin · 1 day', offsetSeconds: 86400},
+  {label: 'Future months begin · 30 days', offsetSeconds: 30 * 86400},
+  {label: 'Future years begin · 365 days', offsetSeconds: 365 * 86400},
+] as const;
+
+function RelativeThresholds({locale}: {locale: string}) {
+  const now = Date.now() / 1000;
+  return (
+    <InternationalizationProvider locale={locale}>
+      <div style={{width: 680}}>
+        <Text type="large" weight="bold">
+          Relative-time transition points
+        </Text>
+        <Text type="supporting" color="secondary" display="block">
+          Provider locale: {locale}
+        </Text>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(280px, 1fr) minmax(160px, auto)',
+            gap: '10px 32px',
+            marginTop: 20,
+          }}>
+          {relativeThresholds.map(({label, offsetSeconds}) => (
+            <div key={label} style={{display: 'contents'}}>
+              <Text type="supporting" color="secondary">
+                {label}
+              </Text>
+              <Timestamp
+                value={now + offsetSeconds}
+                format="relative"
+                hasTooltip={false}
+                type="body"
+                color="primary"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </InternationalizationProvider>
+  );
+}
+
+export const RelativeThresholdsEnglish: Story = {
+  name: 'Relative thresholds · English',
+  render: () => <RelativeThresholds locale="en-US" />,
+};
+
 export const DateFormat: Story = {
   args: {
     value: '2026-02-19T17:00:00Z',
@@ -188,12 +249,13 @@ export const TimeFormat: Story = {
 };
 
 export const TooltipTimezones: Story = {
-  name: 'Tooltip — multiple time zones',
+  name: 'Hover card — configuration examples',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
       <div>
         <Text type="supporting" color="secondary">
-          Local + UTC, default format — hover or tab to the timestamp
+          Local + UTC, default format — hover or tab to the timestamp, then copy
+          any row
         </Text>
         <div>
           <Timestamp
@@ -208,7 +270,7 @@ export const TooltipTimezones: Story = {
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          Three labelled zones — the widest case the 300px tooltip holds
+          Three labelled zones — the widest case the card holds
         </Text>
         <div>
           <Timestamp
@@ -254,6 +316,112 @@ export const TooltipTimezones: Story = {
             value="2026-02-19T17:00:00Z"
             format="date_time"
             tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const CopyableHoverCard: Story = {
+  name: 'Copyable hover card',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local, UTC, another zone, and Unix seconds — hover or tab, then copy
+          any row
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'Asia/Tokyo',
+                format: 'date_time',
+                label: 'Tokyo',
+              },
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          A single UTC entry — one copyable row, on an absolute format that has
+          no hover card of its own
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const PerEntryCopyable: Story = {
+  name: 'Per-entry copyable',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Mixed: human-readable rows are read-only; only the machine value opts
+          into a copy button
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+                isCopyable: true,
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Fully read-only card — no row opts in, so there is no copy button and
+          no trailing action column
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Single read-only row with no label — the value sits flush at the
+          leading edge
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[{}]}
           />
         </div>
       </div>

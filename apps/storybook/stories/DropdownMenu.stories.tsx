@@ -1,16 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
+import {Badge} from '@astryxdesign/core/Badge';
 import {useState} from 'react';
 import {
   DropdownMenu,
   DropdownMenuItem,
+  DropdownMenuDivider,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
-import {Divider} from '@astryxdesign/core/Divider';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
   TrashIcon,
@@ -23,6 +26,7 @@ import {
   UserIcon,
   EllipsisHorizontalIcon,
   Cog6ToothIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof DropdownMenu> = {
@@ -39,13 +43,19 @@ const meta: Meta<typeof DropdownMenu> = {
     items: {
       description: 'Menu items (items, dividers, or sections)',
     },
+    presentation: {
+      control: 'select',
+      options: ['popover', 'bottom-sheet'],
+      description: 'Surface used to present data-driven menu actions',
+    },
     isMenuOpen: {
       control: 'boolean',
       description: 'Controlled open state',
     },
     menuWidth: {
       control: 'text',
-      description: 'Custom menu width (number for px or CSS string)',
+      description:
+        'Minimum menu width for lengths, or preferred width for intrinsic keywords; capped to the available viewport space',
     },
     placement: {
       control: 'select',
@@ -66,6 +76,81 @@ const meta: Meta<typeof DropdownMenu> = {
 
 export default meta;
 type Story = StoryObj<typeof DropdownMenu>;
+
+const readinessStyles = stylex.create({
+  viewportStoryCanvas: {
+    boxSizing: 'border-box',
+    inlineSize: '100%',
+    minBlockSize: '100dvh',
+    paddingBlockStart: spacingVars['--spacing-4'],
+    paddingBlockEnd: spacingVars['--spacing-4'],
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-4'],
+    overflow: 'clip',
+  },
+  edgeAnchorRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+});
+
+const PROJECT_ACTIONS = [
+  {
+    label: 'Edit project',
+    description: 'Update the project details.',
+    icon: PencilIcon,
+  },
+  {
+    label: 'Duplicate project',
+    description: 'Create a copy of this project.',
+    icon: DocumentDuplicateIcon,
+  },
+  {
+    label: 'Share project',
+    description: 'Invite people to collaborate.',
+    icon: ShareIcon,
+  },
+  {
+    label: 'Archive project',
+    description: 'Move this project out of active work.',
+    icon: ArchiveBoxIcon,
+  },
+] as const;
+
+function CompactDrillInActionSheet() {
+  return (
+    <DropdownMenu
+      button={{label: 'Project actions'}}
+      presentation="bottom-sheet"
+      items={[
+        {label: 'Rename project', icon: PencilIcon},
+        {
+          label: 'Move to project',
+          icon: FolderPlusIcon,
+          items: PROJECT_DESTINATIONS.slice(0, 4).map(([label, team]) => ({
+            label,
+            description: team,
+            icon: FolderPlusIcon,
+          })),
+        },
+        {label: 'Archive project', icon: ArchiveBoxIcon},
+      ]}
+    />
+  );
+}
+
+const PROJECT_DESTINATIONS = [
+  ['Apollo launch', 'Marketing'],
+  ['Customer insights', 'Research'],
+  ['Design systems', 'Platform'],
+  ['Growth experiments', 'Product'],
+  ['Incident review', 'Operations'],
+  ['Mobile quality', 'Engineering'],
+  ['Quarterly planning', 'Strategy'],
+  ['Recruiting plan', 'People'],
+  ['Security follow-up', 'Trust'],
+  ['Website refresh', 'Brand'],
+] as const;
 
 // Basic usage
 export const Default: Story = {
@@ -180,6 +265,30 @@ export const WithDisabledItems: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {
+          label: 'Duplicate',
+          icon: 'copy',
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: 'close',
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}
+    />
+  ),
+};
+
 // Controlled mode
 export const Controlled: Story = {
   render: () => {
@@ -205,6 +314,32 @@ export const Controlled: Story = {
         />
       </div>
     );
+  },
+};
+
+// Mounted already open: the menu is visible on first render, but focus stays
+// where it was. Only an open the user initiates moves focus into the first
+// item; from the focused trigger, ArrowDown walks into the open menu (#5976).
+export const MountedOpen: Story = {
+  render: function MountedOpenStory() {
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <DropdownMenu
+        button={{label: 'Sort'}}
+        isMenuOpen={isOpen}
+        onOpenChange={setIsOpen}>
+        <DropdownMenuItem label="Newest" />
+        <DropdownMenuItem label="Oldest" />
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A controlled menu mounted with `isMenuOpen` true renders open without taking focus; `document.activeElement` stays on the page until the user opens the menu themselves. Tab to the trigger, then ArrowDown enters the already-open menu at the first item.',
+      },
+    },
   },
 };
 
@@ -294,6 +429,32 @@ export const WithOnClick: Story = {
           ]}
         />
       </div>
+    );
+  },
+};
+
+export const StaysOpenOnSelect: Story = {
+  render: () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {
+            label: copied ? 'Copied' : 'Copy session ID',
+            icon: <DocumentDuplicateIcon style={{width: 16, height: 16}} />,
+            hasCloseOnSelect: false,
+            onClick: () => setCopied(true),
+          },
+          {label: 'Rename'},
+          {label: 'Delete', variant: 'destructive'},
+        ]}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCopied(false);
+          }
+        }}
+      />
     );
   },
 };
@@ -407,7 +568,7 @@ export const CompoundBasic: Story = {
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <Divider />
+      <DropdownMenuDivider />
       <DropdownMenuItem
         icon={TrashIcon}
         label="Delete"
@@ -431,7 +592,7 @@ export const CompoundWithDisabled: Story = {
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <Divider />
+      <DropdownMenuDivider />
       <DropdownMenuItem
         icon={TrashIcon}
         label="Delete (no permission)"
@@ -474,7 +635,7 @@ export const CompoundConditional: Story = {
           />
           {canDelete && (
             <>
-              <Divider />
+              <DropdownMenuDivider />
               <DropdownMenuItem
                 icon={TrashIcon}
                 label="Delete"
@@ -768,5 +929,303 @@ export const SubmenuDataDriven: Story = {
           'Data-driven parity: give a menu item a nested `items` array and it becomes a submenu automatically — no separate item type.',
       },
     },
+  },
+};
+
+// The same menu — dividers and a trailing shortcut hint — expressed in each
+// mode. Neither could express both before: data mode had no `endContent`,
+// compound mode had no divider component.
+export const ModeParity: Story = {
+  parameters: {layout: 'padded'},
+  render: () => (
+    <div style={{display: 'flex', gap: 160, justifyContent: 'center'}}>
+      <DropdownMenu
+        button={{label: 'Data mode'}}
+        menuWidth={220}
+        items={[
+          {
+            label: 'Search',
+            icon: MagnifyingGlassIcon,
+            endContent: <Badge label="⌘K" />,
+          },
+          {
+            label: 'Duplicate',
+            icon: DocumentDuplicateIcon,
+            endContent: <Badge label="⌘D" />,
+          },
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, variant: 'destructive'},
+        ]}
+      />
+      <DropdownMenu button={{label: 'Compound mode'}} menuWidth={220}>
+        <DropdownMenuItem
+          icon={MagnifyingGlassIcon}
+          label="Search"
+          endContent={<Badge label="⌘K" />}
+        />
+        <DropdownMenuItem
+          icon={DocumentDuplicateIcon}
+          label="Duplicate"
+          endContent={<Badge label="⌘D" />}
+        />
+        <DropdownMenuDivider />
+        <DropdownMenuItem
+          icon={TrashIcon}
+          label="Delete"
+          variant="destructive"
+        />
+      </DropdownMenu>
+    </div>
+  ),
+};
+
+// =============================================================================
+// Responsive and Interaction Readiness Evidence
+// =============================================================================
+
+export const ActionSheetPresentation: Story = {
+  name: 'Presentation / action sheet',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Forces DropdownMenu’s bottom-sheet presentation for a short, flat set of actions. It uses BottomSheet behavior including dialog focus, a scrim, Escape, and swipe dismissal.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'Project actions'}}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
+export const AdaptiveActionPresentation: Story = {
+  name: 'Presentation / adaptive action menu',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Uses DropdownMenu’s adaptive presentation: a BottomSheet on compact coarse-pointer layouts and an anchored popover elsewhere.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="adaptive"
+        button={{label: 'Project actions'}}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
+export const CompactDrillInPresentation: Story = {
+  name: 'Presentation / compact drill-in hierarchy',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Uses DropdownMenu’s bottom-sheet presentation for a hierarchy that cannot fit as adjacent flyouts. Move to project drills into a second list with a Back action while BottomSheet owns the modal contract.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <CompactDrillInActionSheet />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const submenuRow = Array.from(canvasElement.querySelectorAll('li')).find(
+        item => item.textContent?.includes('Move to project'),
+      );
+      submenuRow?.querySelector('button')?.click();
+    }
+  },
+};
+
+export const CompactDrillInPresentationRTL: Story = {
+  ...CompactDrillInPresentation,
+  name: 'Presentation / compact drill-in hierarchy / RTL',
+  globals: {
+    viewport: {value: 'mobile1', isRotated: false},
+    direction: 'rtl',
+  },
+};
+
+export const ViewportFit: Story = {
+  name: 'Readiness / viewport fit',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Uses the actual Storybook viewport. The menu requests a 640px minimum width near the inline edge and must keep 16px safe-area-aware gutters instead of widening the page.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.edgeAnchorRow)}>
+        <DropdownMenu
+          button={{label: 'Project actions'}}
+          alignment="end"
+          menuWidth={640}
+          items={[
+            {label: 'Rename project', onClick: () => {}},
+            {label: 'Duplicate project', onClick: () => {}},
+            {
+              label: 'Share with external collaborators and reviewers',
+              onClick: () => {},
+            },
+            {type: 'divider'},
+            {label: 'Archive project', onClick: () => {}},
+          ]}
+        />
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
+export const TallContentOverflow: Story = {
+  name: 'Readiness / tall content overflow',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Uses the actual Storybook viewport and a realistic project list. The anchored menu stays at or below 300px and scrolls internally, so its actions remain reachable without scrolling the page.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu button={{label: 'Move to project'}} menuWidth={280}>
+        {PROJECT_DESTINATIONS.map(([label, team]) => (
+          <DropdownMenuItem
+            key={label}
+            label={label}
+            description={team}
+            onClick={() => {}}
+          />
+        ))}
+      </DropdownMenu>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
+export const SubmenuViewportFit: Story = {
+  name: 'Readiness / submenu edge fit',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Uses the actual Storybook viewport with concise parent and child menus that can fit side by side. The submenu flips toward the available side, remains separated from its parent, and stays within viewport gutters. Use the compact drill-in example when the hierarchy cannot fit this contract.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.edgeAnchorRow)}>
+        <DropdownMenu
+          button={{label: 'Project actions'}}
+          alignment="end"
+          menuWidth={140}>
+          <DropdownMenuItem label="Rename" onClick={() => {}} />
+          <DropdownMenuSubMenu label="Move to" menuWidth={140}>
+            <DropdownMenuItem label="Research" onClick={() => {}} />
+            <DropdownMenuItem label="Platform" onClick={() => {}} />
+            <DropdownMenuItem label="Engineering" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+          <DropdownMenuItem label="Archive" onClick={() => {}} />
+        </DropdownMenu>
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (!(trigger instanceof HTMLElement)) {
+      return;
+    }
+    trigger.click();
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    const submenuTrigger = canvasElement.querySelector(
+      '[role="menuitem"][aria-haspopup="menu"]',
+    );
+    if (submenuTrigger instanceof HTMLElement) {
+      submenuTrigger.click();
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => resolve()),
+      );
+
+      const openMenus = Array.from(
+        canvasElement.querySelectorAll<HTMLElement>('[role="menu"]'),
+      ).filter(menu => menu.getClientRects().length > 0);
+      const [parentMenu, submenu] = openMenus;
+      if (parentMenu && submenu) {
+        const parentRect = parentMenu.getBoundingClientRect();
+        const submenuRect = submenu.getBoundingClientRect();
+        const isSeparated =
+          submenuRect.right <= parentRect.left ||
+          submenuRect.left >= parentRect.right;
+        if (!isSeparated) {
+          throw new Error('Submenu must not overlap its parent menu');
+        }
+      }
+    }
   },
 };

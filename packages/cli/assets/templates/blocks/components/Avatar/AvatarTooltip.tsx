@@ -15,17 +15,17 @@ export default function AvatarTooltip() {
         </Text>
         <Stack direction="horizontal" gap={4} vAlign="center">
           <Avatar
-            src="https://lookaside.facebook.com/assets/astryx/DATA-Ana-Thomas.png"
+            src="/template-assets/DATA-Ana-Thomas.png"
             name="Ana Thomas"
             size="xl"
           />
           <Avatar
-            src="https://lookaside.facebook.com/assets/astryx/DATA-Drew-Young.png"
+            src="/template-assets/DATA-Drew-Young.png"
             name="Drew Young"
             size="xl"
           />
           <Avatar
-            src="https://lookaside.facebook.com/assets/astryx/DATA-Jihoo-Song.png"
+            src="/template-assets/DATA-Jihoo-Song.png"
             name="Jihoo Song"
             size="xl"
           />
@@ -36,7 +36,7 @@ export default function AvatarTooltip() {
           Custom tooltip text
         </Text>
         <Avatar
-          src="https://lookaside.facebook.com/assets/astryx/DATA-Itai-Jordaan.png"
+          src="/template-assets/DATA-Itai-Jordaan.png"
           name="Itai Jordaan"
           size="xl"
           tooltip="Itai Jordaan · Engineering Lead"

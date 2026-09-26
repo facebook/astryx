@@ -58,7 +58,6 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const pageStyle: CSSProperties = {
   minHeight: '100%',
   backgroundColor: 'var(--color-background-body)',
-  padding: 'var(--spacing-6)',
 };
 // Cap the column at 400px but let it shrink to fit narrow screens (Stack
 // has no maxWidth prop, so it's set here).
@@ -87,7 +86,7 @@ export default function LoginSimple() {
   };
 
   return (
-    <Center axis="both" style={pageStyle}>
+    <Center axis="both" padding={6} style={pageStyle}>
       <VStack gap={4} hAlign="center" style={contentStyle}>
         {/* Logo */}
         <VStack gap={2} hAlign="center">

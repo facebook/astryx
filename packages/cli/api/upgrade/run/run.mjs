@@ -9,18 +9,20 @@
  * plus the early up_to_date exit — each delegated to the `status` leaf so the
  * status envelope + its human lines live in one place.
  *
- * Pipeline (--apply): detect installed core → refresh agent-docs (every path) →
- * run CORE codemods (before Project.load, so a core CONFIG codemod can repair an
- * otherwise-invalid config) → load config → discover + run INTEGRATION codemods
- * → post-codemod hooks. Integration DISCOVERY errors skip that integration;
- * EXECUTION errors abort. Errors throw AstryxError (stable code); human progress
- * is emitted through the shared `logger` (silent by default).
+ * Pipeline (--apply): detect installed core → run CORE codemods (before
+ * Project.load, so a core CONFIG codemod can repair an otherwise-invalid
+ * config) → load config → discover + run INTEGRATION codemods → reconcile
+ * ShadCN-copied compositions → post-codemod hooks → render + refresh agent docs
+ * from final post-upgrade state. Integration DISCOVERY errors skip that
+ * integration; execution errors abort before the agent-doc write.
  */
 
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
-  refreshAgentDocs,
+  prepareAgentDocsRefresh,
+  applyAgentDocsRefresh,
+  inspectAgentDocs,
   uniqueFiles,
   runPostCodemodHooks,
   getCoreVersionManifests,
@@ -31,6 +33,10 @@ import {
   selectIntegrationCodemodsFor,
   runIntegrationCodemodsStep,
 } from '../_adapter.mjs';
+import {
+  logRegistryCompositionSummary,
+  reconcileRegistryCompositions,
+} from '../registry/registry.mjs';
 import {
   statusUpToDate,
   statusNoCodemods,
@@ -85,15 +91,46 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
   const targetVersion = installed.version;
 
+  const reconcileCompositions = async () => {
+    if (options.codemod) return null;
+    const result = await reconcileRegistryCompositions(
+      {apply, path: path_},
+      {
+        cwd,
+        expectedVersion:
+          installed.packageName === '@astryxdesign/core'
+            ? targetVersion
+            : undefined,
+        requireExpectedVersion: true,
+      },
+    );
+    if (result.summary.found > 0) {
+      logRegistryCompositionSummary(result.summary);
+      return result;
+    }
+    return null;
+  };
+
   logger.log(`From version: ${currentVersion}`);
   logger.log(`Installed target: ${targetVersion} (${installed.packageName})`);
 
-  // Sync the managed agent-docs block FIRST — it documents the installed library
-  // independent of codemods, so refresh on every path (issue #4168).
-  const agentDocs = refreshAgentDocs({cwd, installedVersion: targetVersion, apply: apply || false});
-
+  // Up-to-date check — no codemods will run, safe to render agent docs now.
   if (!options.force && semverGte(currentVersion, targetVersion)) {
-    return statusUpToDate({from: currentVersion, to: targetVersion, agentDocs});
+    const registryResult = await reconcileCompositions();
+    const agentDocsPlan = await prepareAgentDocsRefresh({
+      cwd,
+      installedVersion: targetVersion,
+      apply,
+    });
+    const agentDocs = apply
+      ? applyAgentDocsRefresh(agentDocsPlan)
+      : agentDocsPlan.summary;
+    return statusUpToDate({
+      from: currentVersion,
+      to: targetVersion,
+      agentDocs,
+      ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
+    });
   }
 
   const versionManifests = await getCoreVersionManifests(currentVersion, targetVersion);
@@ -134,6 +171,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     path: path_,
     codemod: options.codemod,
     skipCodemods,
+    root: cwd,
   });
   const coreResult = codemodResult && 'totalFilesChanged' in codemodResult ? codemodResult : null;
 
@@ -152,13 +190,23 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     // change (the codemod that would repair it).
     const codemodWouldFixConfig = hasCoreConfigCodemod && (coreResult?.totalFilesChanged ?? 0) > 0;
     if (!apply && codemodWouldFixConfig) {
+      // Lightweight inspection — no config/Project load (config is still broken
+      // in dry-run; the codemod previewed a fix but did not write it).
+      const inspection = inspectAgentDocs(cwd, targetVersion);
       return statusConfigFixable(
         {
           from: currentVersion,
           to: targetVersion,
           configError: configErr.message,
           configCodemods: coreConfigCodemodNames,
-          agentDocs,
+          agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
+            status: inspection.status,
+            installedVersion: targetVersion,
+            fromVersions: inspection.blockVersions,
+            files: inspection.staleFiles,
+            refreshed: false,
+            action: inspection.status === 'missing' ? 'nudge-init' : 'none',
+          }),
         },
       );
     }
@@ -193,7 +241,22 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   if (versionManifests.length === 0 && !hasIntegrationCodemods) {
-    return statusNoCodemods({from: currentVersion, to: targetVersion, agentDocs});
+    const registryResult = await reconcileCompositions();
+    // No codemods in range — safe to render agent docs from current state.
+    const agentDocsPlan = await prepareAgentDocsRefresh({
+      cwd,
+      installedVersion: targetVersion,
+      apply,
+    });
+    const agentDocs = apply
+      ? applyAgentDocsRefresh(agentDocsPlan)
+      : agentDocsPlan.summary;
+    return statusNoCodemods({
+      from: currentVersion,
+      to: targetVersion,
+      agentDocs,
+      ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
+    });
   }
 
   if (totalTransforms === 0 && totalOptional === 0) {
@@ -210,15 +273,18 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   /**
-   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
+   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
    */
   const receipt = {
     from: currentVersion,
     to: targetVersion,
     codemods: totalTransforms,
     integrations: integrations.map(i => i.name ?? i.__spec),
-    agentDocsRefreshed: agentDocs.refreshed,
-    agentDocs,
+    agentDocsRefreshed: false,
+    agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
+      status: 'current', installedVersion: targetVersion,
+      fromVersions: [], files: [], refreshed: false, action: 'none',
+    }),
   };
 
   let integrationResult = null;
@@ -232,12 +298,19 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     });
   }
 
+  const registryResult = await reconcileCompositions();
+
   const mergedFilesChanged = (coreResult?.totalFilesChanged ?? 0) + (integrationResult?.totalFilesChanged ?? 0);
   const mergedTransformsApplied = (coreResult?.totalTransformsApplied ?? 0) + (integrationResult?.totalTransformsApplied ?? 0);
-  const mergedWrittenFiles = [...(coreResult?.writtenFiles ?? []), ...(integrationResult?.writtenFiles ?? [])];
+  const mergedWrittenFiles = [
+    ...(coreResult?.writtenFiles ?? []),
+    ...(integrationResult?.writtenFiles ?? []),
+    ...(registryResult?.writtenFiles ?? []),
+  ];
   const mergedErrors = [...(coreResult?.errors ?? []), ...(integrationResult?.errors ?? [])];
+  const registryFilesChanged = registryResult?.writtenFiles.length ?? 0;
 
-  if (postCodemodHooks.length > 0 && mergedFilesChanged > 0) {
+  if (postCodemodHooks.length > 0 && (mergedFilesChanged > 0 || registryFilesChanged > 0)) {
     const files = uniqueFiles(mergedWrittenFiles).map(file => path.relative(cwd, file));
     try {
       await runPostCodemodHooks(postCodemodHooks, {packageDir: cwd, files, apply: apply || false});
@@ -253,6 +326,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   receipt.filesChanged = mergedFilesChanged;
   receipt.transformsApplied = mergedTransformsApplied;
   receipt.errors = mergedErrors;
+  if (registryResult) receipt.registryCompositions = registryResult.summary;
 
   if (receipt.errors?.length > 0) {
     const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
@@ -260,7 +334,25 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
   }
 
-  logger.log((apply ? 'Upgrade complete' : 'Dry run complete') + '\n');
+  // All codemods + hooks succeeded — render from final post-upgrade state.
+  const agentDocsPlan = await prepareAgentDocsRefresh({
+    cwd,
+    installedVersion: targetVersion,
+    apply,
+    fresh: true,
+  });
+  const completedAgentDocs = apply
+    ? applyAgentDocsRefresh(agentDocsPlan)
+    : agentDocsPlan.summary;
+  receipt.agentDocs = completedAgentDocs;
+  receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
+
+  const registryOk = receipt.registryCompositions?.ok ?? true;
+  logger.log(
+    registryOk
+      ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
+      : 'Upgrade finished with unresolved registry items\n',
+  );
   return {
     type: 'upgrade.run',
     data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (/** @type {unknown} */ (receipt)),

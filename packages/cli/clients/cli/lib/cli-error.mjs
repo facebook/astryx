@@ -52,6 +52,7 @@
 
 import {isJsonMode, jsonError as _jsonError, humanWarn} from '../../../foundation/response/json.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {setOutcome} from '../../../foundation/debug/index.mjs';
 
 /**
  * Suggestion object — matches the shape used by API errors and the JSON
@@ -97,6 +98,12 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 export function cliError(message, options = {}) {
   const {suggestions, exitCode = 1, hard = true} = options;
   const code = options.code || ERROR_CODES.ERR_UNKNOWN;
+
+  // Record before either branch below exits. This is the single most important
+  // instrumentation point in the CLI: `hard` defaults to true, so both paths
+  // end in `process.exit` and nothing downstream — no `finally`, no postAction
+  // hook — gets another chance to classify the failure.
+  setOutcome('error', {exitCode, error: new Error(message), code});
 
   if (isJsonMode()) {
     // jsonError emits the envelope on stdout and calls process.exit(1).

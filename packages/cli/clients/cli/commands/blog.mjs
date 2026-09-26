@@ -15,39 +15,34 @@
  */
 
 import {getRunPrefix} from '../../../foundation/env/package-manager.mjs';
-import {humanLog, jsonOut} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, record, records, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
+import {doc as blogCommand} from './blog.doc.mjs';
+import {doc as blogFn} from '../../../api/blog/blog.doc.mjs';
 
-/**
- * @param {import('../../../api/blog/blog.type.mjs').BlogListData} data
- * @param {string} run
- */
-function formatList({feedUrl, posts}, run) {
-  const lines = [`\nAstryx blog · feed: ${feedUrl}\n`];
-  if (posts.length === 0) {
-    lines.push('No posts found in the feed.');
-    return lines.join('\n');
-  }
-  for (const p of posts) {
-    lines.push(`  ${p.slug}`);
-    lines.push(`    ${p.title}`);
-    if (p.type) lines.push(`    ${p.type}`);
-    if (p.textUrl) lines.push(`    ${p.textUrl}`);
-    lines.push('');
-  }
-  lines.push(`Read one: ${run} astryx blog <slug>`);
-  return lines.join('\n');
-}
+/** Every field of a post in the JSON, in order; record() skips empty ones. */
+const POST_FIELDS = [
+  'slug',
+  'title',
+  'description',
+  'date',
+  'type',
+  'authors',
+  'link',
+  'textUrl',
+];
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerBlog(program) {
-  program
-    .command('blog [slug]')
-    .description('Read the Astryx blog from the published feed')
-    .action(async (/** @type {string | undefined} */ slug) => {
+  defineCommand(program, blogCommand, {
+    fn: blogFn,
+    action: async (/** @type {string | undefined} */ slug) => {
       const run = getRunPrefix();
       /** @type {import('../../../api/blog/blog.type.mjs').BlogListResponse | import('../../../api/blog/blog.type.mjs').BlogDetailResponse} */
       let result;
@@ -55,24 +50,51 @@ export function registerBlog(program) {
         result = await blogApi(slug);
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
+
+      // A post is a doc: the feed lists them, a slug resolves one.
+      const answered =
+        result.type === 'blog.list'
+          ? resultSet({
+              count: result.data.posts.length,
+              resultKind: 'doc',
+            })
+          : resultSet({count: 1, resultKind: 'doc', directMatch: true});
 
       if (program.opts().json) {
         jsonOut(result);
-        return;
+        return answered;
       }
 
       if (result.type === 'blog.list') {
-        humanLog(formatList(result.data, run));
+        const {feedUrl, posts} = result.data;
+        if (posts.length === 0) {
+          emit(
+            section('Astryx blog'),
+            record({feedUrl}),
+            text('No posts found in the feed.'),
+          );
+          return answered;
+        }
+        emit(
+          section('Astryx blog'),
+          record({feedUrl}),
+          records(posts, {fields: POST_FIELDS}),
+          text(`Read one: ${run} astryx blog <slug>`),
+        );
       } else {
-        // blog.detail — print the feed URL, then the plaintext body.
-        humanLog(`Feed: ${result.data.feedUrl}\n`);
-        humanLog(result.data.text);
+        // blog.detail — the post's fields and the feed URL, then the body
+        // verbatim (code() so article typography/spacing isn't ASCII-normalized).
+        emit(
+          record(result.data, {fields: [...POST_FIELDS, 'feedUrl']}),
+          code(result.data.text),
+        );
       }
-    });
+      return answered;
+    },
+  });
 }

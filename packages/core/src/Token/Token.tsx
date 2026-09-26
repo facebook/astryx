@@ -36,6 +36,8 @@ import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
@@ -135,28 +137,16 @@ const styles = stylex.create({
     minWidth: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
@@ -173,22 +163,15 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     outline: 'none',
     overflow: 'hidden',
     minWidth: 0,
-  },
-  focusVisibleOutline: {
-    outline: {
-      default: null,
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
   },
   removeButton: {
     all: 'unset',
@@ -198,15 +181,14 @@ const styles = stylex.create({
     position: 'relative',
     padding: 0,
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-full'],
     width: '16px',
     height: '16px',
     color: 'inherit',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
     '::after': {
       content: '""',
       position: 'absolute',
@@ -319,6 +301,7 @@ export function Token({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: TokenProps) {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -337,7 +320,7 @@ export function Token({
         onRemove(e);
       }}
       disabled={isDisabled}
-      {...stylex.props(styles.removeButton)}>
+      {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
   );
@@ -356,8 +339,8 @@ export function Token({
 
   const sharedProps = {
     'data-testid': testId,
-    'aria-label': isLabelHidden ? label : undefined,
-    'aria-description': description,
+    ...(isLabelHidden ? {'aria-label': label} : {}),
+    ...(description != null ? {'aria-description': description} : {}),
   };
 
   if (role === 'link') {
@@ -366,21 +349,23 @@ export function Token({
         <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href as string}
-          aria-disabled={isDisabled || undefined}
-          {...sharedProps}
           {...mergeProps(
             themeProps('token', {color, size}),
-            stylex.props(
+            focusOutlineProps.focusVisible(
               styles.base,
               sizeStyles[size],
               colorStyles[color],
               styles.interactive,
+              interactionOverlayStyles.backgroundImage,
               isDisabled && styles.disabled,
               xstyle,
             ),
             className,
             style,
-          )}>
+          )}
+          {...rest}
+          {...(isDisabled ? {'aria-disabled': true} : {})}
+          {...sharedProps}>
           {content}
         </LinkComponent>
       );
@@ -412,21 +397,22 @@ export function Token({
             {label}
           </span>
         }
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
-            styles.focusVisibleOutline,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
         )}
+        {...rest}
+        {...sharedProps}
       />
     );
   }
@@ -444,21 +430,22 @@ export function Token({
       <span
         ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
-            styles.focusVisibleOutline,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
-        )}>
+        )}
+        {...rest}
+        {...sharedProps}>
         {icon}
         <button
           type="button"
@@ -482,7 +469,6 @@ export function Token({
   return (
     <span
       ref={ref}
-      {...sharedProps}
       {...mergeProps(
         themeProps('token', {color, size}),
         stylex.props(
@@ -494,7 +480,9 @@ export function Token({
         ),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      {...sharedProps}>
       {content}
     </span>
   );

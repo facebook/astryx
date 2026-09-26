@@ -23,7 +23,7 @@ import type {SizeValue} from '../utils/types';
 import {FieldLabel} from './FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
-import {spacingVars, borderVars} from '../theme/tokens.stylex';
+import {spacingVars, borderVars, sizeVars} from '../theme/tokens.stylex';
 import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
@@ -35,6 +35,12 @@ const styles = stylex.create({
   container: {
     display: 'flex',
     flexDirection: 'column',
+    // The Field root owns the local stacking boundary (AST-027): the input
+    // wrapper's z-index (1, above the attached status box) and the attached
+    // status layer (-1) order parts inside this surface only. Without this,
+    // detached/tooltip fields — whose input wrapper renders outside the
+    // attached-status wrapper — compete with page-level stacking (#5689).
+    isolation: 'isolate',
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],
@@ -52,6 +58,20 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     isolation: 'isolate',
+    // Extend an attached FieldStatus behind the lower half of the control.
+    // Half-height is the maximum effective corner radius CSS can render, even
+    // when a theme uses a pill value such as --radius-full (9999px).
+    '--_field-status-overlap': {
+      default: `calc(${sizeVars['--size-element-md']} / 2)`,
+      ':has(> [data-size="sm"])': `calc(${sizeVars['--size-element-sm']} / 2)`,
+      ':has(> [data-size="lg"])': `calc(${sizeVars['--size-element-lg']} / 2)`,
+    },
+  },
+  attachedStatusLayer: {
+    // Keep the overlapping background below both Astryx inputs and custom
+    // controls. The isolated wrapper contains this negative stacking layer.
+    position: 'relative',
+    zIndex: -1,
   },
 });
 
@@ -250,6 +270,9 @@ export function Field({
         message={status.message}
         id={resolvedMessageID}
         variant={statusVariant}
+        xstyle={
+          statusVariant === 'attached' ? styles.attachedStatusLayer : undefined
+        }
       />
     ) : null;
 

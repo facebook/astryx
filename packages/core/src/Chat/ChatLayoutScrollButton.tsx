@@ -23,6 +23,7 @@ import {
   spacingVars,
   radiusVars,
   shadowVars,
+  sizeVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -30,6 +31,7 @@ import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
@@ -66,8 +68,14 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: shadowVars['--shadow-med'],
-    height: '32px',
-    transitionProperty: 'opacity, transform, max-width',
+    // The pill clips its own content, so it must track the height of the
+    // md Button it wraps. A literal would clip that Button under any theme
+    // that retunes the element scale.
+    height: sizeVars['--size-element-md'],
+    // `visibility` rides the same transition so the fade-out still plays:
+    // it flips to `visible` immediately on the way in and only at the end
+    // of the duration on the way out.
+    transitionProperty: 'opacity, transform, max-width, visibility',
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionDuration: {
       default: durationVars['--duration-fast-max'],
@@ -77,14 +85,19 @@ const styles = stylex.create({
   hidden: {
     opacity: 0,
     pointerEvents: 'none',
-    maxWidth: '32px',
+    // The hidden pill paints nothing, so focus landing on it would have no
+    // visible indicator (WCAG 2.2 SC 2.4.7). `opacity` and `pointer-events`
+    // leave the button in sequential focus navigation; `visibility` removes it.
+    visibility: 'hidden',
+    maxWidth: sizeVars['--size-element-md'],
   },
   visible: {
     opacity: 1,
     pointerEvents: 'auto',
+    visibility: 'visible',
   },
   collapsed: {
-    maxWidth: '32px',
+    maxWidth: sizeVars['--size-element-md'],
   },
   expanded: {
     maxWidth: '200px',
@@ -126,15 +139,25 @@ export function ChatLayoutScrollButton({
 }: ChatLayoutScrollButtonProps) {
   const t = useTranslator();
   return (
+    // Two elements, two responsibilities. The outer one centres the pill and
+    // holds the gap above the composer — spacing outside the pill's border
+    // box, which the pill cannot own itself. The inner one is the pill: it is
+    // what a reader sees, so it carries the painted surface AND the public
+    // theming target. Keeping the target on the outer element would satisfy
+    // every automated check while leaving a theme styling an invisible
+    // full-width row (architecture:component-theming-surface INV4).
     <div
       ref={ref}
       {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
       {...rest}>
       <div
-        {...stylex.props(
-          styles.container,
-          isVisible ? styles.visible : styles.hidden,
-          label ? styles.expanded : styles.collapsed,
+        {...mergeProps(
+          themeProps('chat-layout-scroll-button'),
+          stylex.props(
+            styles.container,
+            isVisible ? styles.visible : styles.hidden,
+            label ? styles.expanded : styles.collapsed,
+          ),
         )}>
         <Button
           label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
@@ -144,6 +167,7 @@ export function ChatLayoutScrollButton({
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"
+          isIconOnly={!label}
           onClick={onClick}
           xstyle={[styles.button, label ? styles.buttonWithLabel : null]}>
           {label ?? undefined}

@@ -11,6 +11,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {search, scoreCandidate, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
@@ -27,6 +29,33 @@ const OPTS = {cwd: REPO_ROOT};
 // The CLI-level cases spawn a subprocess (its own 30s cap) but still run under
 // the vitest per-test timeout. Give both the same generous scan budget.
 const SCAN_TIMEOUT = 30_000;
+
+/**
+ * A JSON value as the formatters print it (they normalize typography to ASCII).
+ * @param {unknown} value
+ */
+function asText(value) {
+  return (Array.isArray(value) ? value.join(', ') : String(value))
+    .replace(/[\u2014\u2013]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00a0/g, ' ')
+    .trimEnd();
+}
+
+/**
+ * Whether some text line prints `key:` with this value. The command field gains
+ * the caller's invocation prefix, so the value is matched as the line's end; a
+ * multi-line value is matched by its first line.
+ * @param {string[]} lines
+ * @param {string} key
+ * @param {unknown} value
+ */
+function printsField(lines, key, value) {
+  const shown = asText(value).split('\n')[0].trimEnd();
+  return lines.some(line => line.startsWith(`${key}:`) && line.trimEnd().endsWith(shown));
+}
 
 describe('search() API — ranking', () => {
   it('ranks an exact component name match first', async () => {
@@ -172,6 +201,20 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.status).toBe(1);
   });
 
+  it.each(['1.5', '5abc'])(
+    'refuses --limit %s like search({limit}) does, in both modes',
+    async value => {
+      await expect(
+        search('x', {...OPTS, limit: Number(value)}),
+      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+      const json = await runCli(['--json', 'search', 'x', '--limit', value], REPO_ROOT);
+      expect(json.status).toBe(1);
+      expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+      const text = await runCli(['search', 'x', '--limit', value], REPO_ROOT);
+      expect(text.status).toBe(1);
+    },
+  );
+
   it('emits a valid --json envelope', async () => {
     const r = await runCli(['--json', 'search', 'button'], REPO_ROOT);
     expect(r.status).toBe(0);
@@ -180,7 +223,29 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(parsed.type).toBe('search');
     expect(parsed.data.query).toBe('button');
     expect(Array.isArray(parsed.data.results)).toBe(true);
+    expect(parsed.data.matchCount).toBeGreaterThanOrEqual(
+      parsed.data.results.length,
+    );
     expect(parsed.data.results[0].name).toBe('Button');
+  });
+
+  it('says how many matched when --limit cut the list short', async () => {
+    // The text view is a projection of the JSON, and the JSON now carries the
+    // match total. A bare "(2)" heading over a capped list reads as "that is
+    // all Astryx has", which is the conclusion `search` exists to prevent.
+    const capped = await runCli(
+      ['search', 'button', '--type', 'component', '--limit', '2'],
+      REPO_ROOT,
+    );
+    expect(capped.status).toBe(0);
+    expect(capped.stdout).toMatch(/^Results for "button" \(2 of \d+\)$/m);
+
+    const uncapped = await runCli(
+      ['search', 'button', '--type', 'component', '--limit', '500'],
+      REPO_ROOT,
+    );
+    expect(uncapped.stdout).toMatch(/^Results for "button" \(\d+\)$/m);
+    expect(uncapped.stdout).not.toMatch(/Results for "button" \(\d+ of/);
   });
 
   it('emits a valid --json envelope with empty results for no match', async () => {
@@ -189,11 +254,61 @@ describe('search CLI — exit codes + JSON contract', () => {
     const parsed = JSON.parse(r.stdout);
     expect(parsed.type).toBe('search');
     expect(parsed.data.results).toEqual([]);
+    expect(parsed.data.matchCount).toBe(0);
   });
 
-  it('shows the follow-up command hint in human output', async () => {
+  it('renders each result as a greppable key: value record', async () => {
     const r = await runCli(['search', 'button'], REPO_ROOT);
     expect(r.stdout).toContain('astryx component Button');
-    expect(r.stdout).toContain('[component]');
+    // Fields mirror the JSON object and are line-greppable.
+    expect(r.stdout).toMatch(/^name:\s+Button$/m);
+    expect(r.stdout).toMatch(/^domain:\s+component$/m);
+    expect(r.stdout).toContain('description:');
+  });
+
+  it('prints every result field under its JSON key (score and reason with --verbose)', async () => {
+    // One query that reaches all four domains, so every per-domain field shows.
+    const args = ['search', 'theme', '--limit', '60'];
+    const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
+    expect(new Set(env.data.results.map(r => r.domain))).toEqual(new Set(SEARCH_DOMAINS));
+    const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
+    const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
+    for (const result of env.data.results) {
+      for (const [key, value] of Object.entries(result)) {
+        if (value == null || value === '') continue;
+        const label = `${result.domain} ${result.name}: ${key}`;
+        expect(printsField(verbose, key, value), label).toBe(true);
+        if (key !== 'score' && key !== 'reason') {
+          expect(printsField(plain, key, value), label).toBe(true);
+        }
+      }
+    }
+  }, 90_000);
+
+  it('--verbose exits 0 and prints import/match detail', async () => {
+    // Regression: the boolean verbose flag was named --detail, which collided
+    // with the value-taking global `--detail <level>` — a bare `search
+    // --detail` errored "argument missing" and the verbose output was
+    // unreachable. It is now `--verbose`.
+    const r = await runCli(['search', 'button', '--verbose'], REPO_ROOT);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('import:');
+    // Ranking detail: pre-formatter this was a single `match: <reason> (score N)`
+    // line; it's now separate `score:` / `reason:` record fields mirroring --json.
+    expect(r.stdout).toContain('score:');
+    expect(r.stdout).toContain('reason:');
+  });
+
+  it('exits 1 with ERR_CORE_NOT_FOUND when no @astryxdesign/core is reachable', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
+    try {
+      const json = await runCli(['--json', 'search', 'button'], empty);
+      expect(json.status).toBe(1);
+      expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
+      const text = await runCli(['search', 'button'], empty);
+      expect(text.status).toBe(1);
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
   });
 }, SCAN_TIMEOUT);

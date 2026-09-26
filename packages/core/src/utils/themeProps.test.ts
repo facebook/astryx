@@ -1,39 +1,45 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {themeDataAttributes, themeProps} from './themeProps';
 
 describe('themeProps', () => {
-  it('returns base class for component', () => {
+  it('returns the stable target class for a component', () => {
     expect(themeProps('card').className).toBe('astryx-card');
   });
 
-  it('adds variant classes', () => {
+  it('continues to emit released bare prop and state classes through 0.7.0', () => {
     expect(
       themeProps('button', {variant: 'secondary', size: 'sm'}).className,
     ).toBe('astryx-button secondary sm');
-  });
-
-  it('prefixes numeric values with prop name', () => {
-    expect(themeProps('heading', {level: 1}).className).toBe(
-      'astryx-heading level-1',
+    expect(themeProps('switch', {checked: 'checked'}).className).toBe(
+      'astryx-switch checked',
     );
   });
 
-  it('skips null and undefined props', () => {
+  it('prefixes numeric compatibility classes with the prop name', () => {
+    expect(themeProps('heading', {level: 1}).className).toBe(
+      'astryx-heading level-1',
+    );
+    expect(themeProps('heading', {level: '3'}).className).toBe(
+      'astryx-heading level-3',
+    );
+  });
+
+  it('skips nullish compatibility classes', () => {
     expect(
       themeProps('button', {variant: 'primary', size: undefined}).className,
     ).toBe('astryx-button primary');
   });
 
-  it('works with no props', () => {
-    expect(themeProps('divider').className).toBe('astryx-divider');
-  });
-
-  it('handles string numeric values', () => {
-    expect(themeProps('heading', {level: '3'}).className).toBe(
-      'astryx-heading level-3',
-    );
+  it('continues to emit deprecated target-name aliases when requested', () => {
+    expect(
+      themeProps(
+        'progress-bar',
+        {variant: 'positive'},
+        {legacyNames: ['progressbar']},
+      ).className,
+    ).toBe('astryx-progress-bar positive astryx-progressbar');
   });
 
   it('reflects visual props as data attributes', () => {
@@ -58,7 +64,7 @@ describe('themeProps', () => {
     });
   });
 
-  it('returns class and data attributes together', () => {
+  it('returns compatibility classes and canonical data attributes together', () => {
     expect(themeProps('button', {variant: 'primary', size: 'sm'})).toEqual({
       className: 'astryx-button primary sm',
       'data-variant': 'primary',

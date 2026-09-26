@@ -27,6 +27,7 @@ export interface PaginationVariantMap {
   count: true;
   compact: true;
   dots: true;
+  input: true;
   none: true;
 }
 

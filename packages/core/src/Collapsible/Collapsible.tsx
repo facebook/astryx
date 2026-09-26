@@ -42,10 +42,13 @@ import {
 
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
-import {useIcon} from '../Icon';
+import type {CollapsibleChevronPosition} from './CollapsibleGroupContext';
+import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 const styles = stylex.create({
   root: {
@@ -64,7 +67,10 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -73,25 +79,27 @@ const styles = stylex.create({
     paddingBlock: 0,
     // `all: unset` above wipes the UA focus outline; restore a keyboard-only
     // focus ring using the standard token/offset (WCAG 2.4.7).
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
     textBoxEdge: 'cap alphabetic',
     textBoxTrim: 'trim-both',
+    // Fill the row rather than hug the label. For a text trigger this changes
+    // nothing — `space-between` already had it against the start edge and the
+    // chevron against the end — but it is what lets a composed trigger put
+    // something out at the far edge, next to the chevron, rather than trailing
+    // the label with the free space stranded after it.
+    //
+    // Growing only. The flex floor stays at `auto`, so a label still cannot be
+    // squeezed narrower than its own content and nothing that used to fit
+    // starts overlapping the chevron.
+    flexGrow: 1,
   },
   // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
   // button blocks click + keyboard activation; these styles restore the
   // visual affordance that `all: unset` wipes.
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   // Chevron indicator
@@ -100,16 +108,45 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    // The chevron is sized off the trigger's own type size (--text-large-size,
+    // 17px), which sits between Icon's `sm` (16px) and `md` (20px) boxes.
+    // Pinning the box to the token keeps the glyph exactly the size it was
+    // when it was a bare 1em SVG inheriting the trigger's font-size, and keeps
+    // it tracking the trigger if a theme retunes that step.
+    width: typeScaleVars['--text-large-size'],
+    height: typeScaleVars['--text-large-size'],
+    fontSize: typeScaleVars['--text-large-size'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    color: colorVars['--color-icon-secondary'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
   },
   chevronClosed: {
     transform: 'rotate(0deg)',
+  },
+  // Leading chevron. `space-between` puts nothing between the arrow and the
+  // label — they are adjacent flex children — so the gap is the chevron's own.
+  chevronStart: {
+    marginInlineEnd: spacingVars['--spacing-2'],
+  },
+  // A leading arrow rotates a quarter turn rather than a half: it points into
+  // the row when closed and turns down when open, which is the disclosure
+  // convention TreeList already uses. RTL mirrors it so "into the row" still
+  // means towards the content, and the mirror is spelled out per state because
+  // a bare `transform` would otherwise overwrite the rotation.
+  chevronStartOpen: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
+  },
+  chevronStartClosed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
   // Content area
   contentHidden: {
@@ -205,6 +242,21 @@ export interface CollapsibleProps extends BaseProps {
   onOpenChange?: (isOpen: boolean) => void;
 
   /**
+   * Logical position of the disclosure chevron.
+   *
+   * - `end` (default): a trailing indicator that points down when collapsed and
+   *   up when expanded.
+   * - `start`: a leading disclosure arrow ahead of the label. It points inward
+   *   toward the content when collapsed, mirrors under RTL, and points down when
+   *   expanded.
+   *
+   * Inside a CollapsibleGroup this defaults to the group's `chevronPosition`.
+   *
+   * @default 'end'
+   */
+  chevronPosition?: CollapsibleChevronPosition;
+
+  /**
    * Unique identifier for this collapsible within an CollapsibleGroup.
    * Required when using inside a group for coordination.
    */
@@ -260,6 +312,7 @@ export function Collapsible({
   isOpen: controlledIsOpen,
   isDisabled = false,
   onOpenChange,
+  chevronPosition,
   value,
   ref,
   xstyle,
@@ -292,12 +345,41 @@ export function Collapsible({
   const presentation = use(CollapsibleGroupPresentationContext);
   const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
-
-  const chevronIcon = useIcon('chevronDown');
+  // The item wins over the group so a single row can differ, but the group is
+  // the level this is normally set at — mixed sides in one list read as a bug.
+  const position = chevronPosition ?? presentation?.chevronPosition ?? 'end';
+  const isChevronAtStart = position === 'start';
 
   // Links the trigger to the region it shows/hides so assistive tech can move
   // from the button to its controlled content (disclosure pattern).
   const contentId = useId();
+
+  const chevron = (
+    <Icon
+      // The glyph is part of the placement, not a separate choice: a trailing
+      // indicator points down and flips up, a leading one points into the row
+      // and turns down. Rotating `chevronDown` by a quarter turn would leave
+      // the closed state pointing the wrong way.
+      icon={isChevronAtStart ? 'chevronRight' : 'chevronDown'}
+      // Nearest size to the trigger's 17px type step; `chevron` re-pins the
+      // exact box (see the style) so the glyph does not resize.
+      size="sm"
+      // Was `--color-icon-secondary` on the old wrapper span; `secondary`
+      // is the same token, expressed as an Icon color.
+      color="secondary"
+      xstyle={[
+        styles.chevron,
+        isChevronAtStart && styles.chevronStart,
+        isChevronAtStart
+          ? isOpen
+            ? styles.chevronStartOpen
+            : styles.chevronStartClosed
+          : isOpen
+            ? styles.chevronOpen
+            : styles.chevronClosed,
+      ]}
+    />
+  );
 
   return (
     <div
@@ -327,20 +409,19 @@ export function Collapsible({
           themeProps('collapsible-trigger', {
             density: density ?? undefined,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.trigger,
             density != null && triggerDensity[density],
+            // The system's pressed overlay on the disclosure row. The trigger
+            // has no hover surface of its own, so this is the one background
+            // it paints, and only while it is pressed.
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             isDisabled && styles.triggerDisabled,
           ),
         )}>
+        {isChevronAtStart && chevron}
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
-        <span
-          {...stylex.props(
-            styles.chevron,
-            isOpen ? styles.chevronOpen : styles.chevronClosed,
-          )}>
-          {chevronIcon}
-        </span>
+        {!isChevronAtStart && chevron}
       </button>
       <div
         id={contentId}

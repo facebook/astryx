@@ -9,19 +9,19 @@ import {Text} from '@astryxdesign/core/Text';
 const USERS = [
   {
     name: 'Itai Jordaan',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Itai-Jordaan.png',
+    src: '/template-assets/DATA-Itai-Jordaan.png',
     role: 'Engineering Lead',
     variant: 'success' as const,
   },
   {
     name: 'Margot Schroder',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Margot-Schroder.png',
+    src: '/template-assets/DATA-Margot-Schroder.png',
     role: 'Product Designer',
     variant: 'neutral' as const,
   },
   {
     name: 'Daniela Gimenez',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Daniela-Gimenez.png',
+    src: '/template-assets/DATA-Daniela-Gimenez.png',
     role: 'Engineering Manager',
     variant: 'error' as const,
   },

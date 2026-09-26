@@ -25,11 +25,20 @@ import {configure} from '@testing-library/react';
 // Keeps the jsdom defaults (script, style).
 configure({defaultIgnore: 'script, style, [data-astryx-live-region]'});
 
-// Polyfill for matchMedia (not supported in jsdom)
+// Polyfill for matchMedia (not supported in jsdom).
+//
+// `(hover: hover)` reports TRUE: jsdom models a desktop browser driven by a
+// mouse, and userEvent's hover()/unhover() dispatch real mouseenter/mouseleave.
+// Reporting false made every hover-gated behavior (useMenuHover, HoverCard,
+// Tooltip) silently dead in tests — the hover-then-click bug fixed in #3121
+// went unnoticed in three components partly because no unit test could reach
+// the hover path. Tests that need a touch device override this per-test.
+const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
+
 if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string) => {
     const mql: MediaQueryList = {
-      matches: false,
+      matches: HOVER_CAPABLE.test(query),
       media: query,
       onchange: null,
       addListener: () => {},
@@ -58,7 +67,7 @@ if (typeof window.matchMedia === 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query: string) => ({
-      matches: false,
+      matches: HOVER_CAPABLE.test(query),
       media: query,
       onchange: null,
       addListener: () => {},
@@ -67,5 +76,30 @@ if (typeof window.matchMedia === 'undefined') {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }),
+  });
+}
+
+// Polyfill for localStorage (this jsdom build exposes none).
+// Used by useResizable's `autoSaveId` persistence.
+if (typeof window.localStorage === 'undefined') {
+  const store = new Map<string, string>();
+  Object.defineProperty(window, 'localStorage', {
+    writable: true,
+    value: {
+      get length() {
+        return store.size;
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => {
+        store.clear();
+      },
+    } satisfies Storage,
   });
 }

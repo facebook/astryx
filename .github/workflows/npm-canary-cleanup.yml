@@ -40,7 +40,7 @@ permissions:
 jobs:
   prune:
     name: Prune canary versions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout
         uses: actions/checkout@v7

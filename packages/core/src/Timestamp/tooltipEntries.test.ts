@@ -16,12 +16,17 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
-import {formatTooltipLines} from './tooltipEntries';
+import {formatTooltipLines as formatTooltipLinesForLocale} from './tooltipEntries';
+
+const formatTooltipLines = (
+  date: Parameters<typeof formatTooltipLinesForLocale>[0],
+  entries: Parameters<typeof formatTooltipLinesForLocale>[1],
+) => formatTooltipLinesForLocale(date, entries, 'en-US');
 
 /** 2026-02-19T17:00:00Z — chosen so several zones land on different dates. */
 const INSTANT = new Date('2026-02-19T17:00:00Z');
 
-const LOCAL_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const LOCAL_ZONE = Intl.DateTimeFormat('en-US').resolvedOptions().timeZone;
 
 describe('formatTooltipLines', () => {
   // --- Explicit zones: exact, locale-free, TZ-agnostic ---
@@ -86,7 +91,7 @@ describe('formatTooltipLines', () => {
       for (const timezoneID of ['UTC', 'Asia/Tokyo']) {
         const [line] = formatTooltipLines(INSTANT, [{timezoneID, format}]);
         expect(line.value).toBe(
-          new Intl.DateTimeFormat(undefined, {
+          new Intl.DateTimeFormat('en-US', {
             ...SHARED_DATE_FORMAT_OPTIONS[format],
             timeZone: timezoneID,
           }).format(INSTANT),
@@ -208,7 +213,7 @@ describe('formatTooltipLines', () => {
       {format: 'date_time'},
       {format: 'system_date_time'},
     ]);
-    const localName = new Intl.DateTimeFormat(undefined, {
+    const localName = new Intl.DateTimeFormat('en-US', {
       timeZoneName: 'short',
     })
       .formatToParts(INSTANT)
@@ -230,7 +235,7 @@ describe('formatTooltipLines', () => {
     // aria-describedby, and that element's accessible name is the LOCAL
     // absolute time. A lone foreign-zone line with no marker is therefore
     // announced right after a local time, with nothing to say it is not one.
-    const zoneName = new Intl.DateTimeFormat(undefined, {
+    const zoneName = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Tokyo',
       timeZoneName: 'short',
     })
@@ -248,7 +253,7 @@ describe('formatTooltipLines', () => {
     // The consumer never named a zone, so there is nothing to disambiguate
     // against — this must stay as bare as the visible text is by default.
     const [line] = formatTooltipLines(INSTANT, [{format: 'date_time'}]);
-    const localName = new Intl.DateTimeFormat(undefined, {
+    const localName = new Intl.DateTimeFormat('en-US', {
       timeZoneName: 'short',
     })
       .formatToParts(INSTANT)
@@ -510,6 +515,15 @@ describe('formatTooltipLines', () => {
     // label column; only an omitted label is truly absent.
     const [line] = formatTooltipLines(INSTANT, [{label: ''}]);
     expect(line.label).toBe('');
+  });
+
+  it('marks lines read-only by default and copyable only when opted in', () => {
+    const lines = formatTooltipLines(INSTANT, [
+      {label: 'Local'},
+      {label: 'ISO', format: 'system_date_time', isCopyable: true},
+      {label: 'Off', isCopyable: false},
+    ]);
+    expect(lines.map(l => l.isCopyable)).toEqual([false, true, false]);
   });
 
   // --- Ordering and arity ---

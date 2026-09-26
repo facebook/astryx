@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {extractComponents} from '../_adapter.mjs';
+import {extractComponents} from '../../../foundation/discovery/template-adapter.mjs';
 
 const STRUCTURAL = new Set([
   'AppShell',
@@ -42,7 +42,6 @@ const SPATIAL_PROPS = [
   'rowGap',
   'columnGap',
   'columns',
-  'minChildWidth',
   'hasDivider',
   'defaultHasDividers',
   'variant',
@@ -224,8 +223,8 @@ function extractSkeleton(source) {
  * Build the `template.skeleton` envelope for an already-resolved template.
  * `match` may be undefined when `--skeleton` is run without a name — the same
  * "specify a template name" error the dispatcher's resolution would surface.
- * @param {import('../_adapter.mjs').DiscoveredTemplate | undefined} match
- * @param {import('../_adapter.mjs').DiscoveredTemplate[]} templates
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate | undefined} match
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate[]} templates
  * @returns {import('../template.type.mjs').TemplateSkeletonResponse}
  */
 export function templateSkeleton(match, templates) {

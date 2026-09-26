@@ -10,23 +10,23 @@ import {Text} from '@astryxdesign/core/Text';
 const USERS = [
   {
     name: 'Ami Pena',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Ami-Pena.png',
+    src: '/template-assets/DATA-Ami-Pena.png',
   },
   {
     name: 'Drew Young',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Drew-Young.png',
+    src: '/template-assets/DATA-Drew-Young.png',
   },
   {
     name: 'Gabriela Fernandez',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Gabriela-Fernandez.png',
+    src: '/template-assets/DATA-Gabriela-Fernandez.png',
   },
   {
     name: 'Jihoo Song',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Jihoo-Song.png',
+    src: '/template-assets/DATA-Jihoo-Song.png',
   },
   {
     name: 'Nam Tran',
-    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Nam-Tran.png',
+    src: '/template-assets/DATA-Nam-Tran.png',
   },
 ];
 

@@ -157,7 +157,7 @@ export function TableHeaderCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        themeProps('table-header-cell'),
+        themeProps('table-header-cell', {density: ctx?.density}),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

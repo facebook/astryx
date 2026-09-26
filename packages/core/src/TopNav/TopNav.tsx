@@ -243,9 +243,7 @@ export function TopNav({
           </div>
         )}
         {hasCollapsibleContent && mobileContent && (
-          <div {...stylex.props(styles.drawerDivider)}>
-            <Divider />
-          </div>
+          <Divider xstyle={styles.drawerDivider} />
         )}
         {mobileContent && (
           <div {...stylex.props(styles.drawerExtraContent)}>

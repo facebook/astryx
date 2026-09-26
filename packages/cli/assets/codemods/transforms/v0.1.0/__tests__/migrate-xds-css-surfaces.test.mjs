@@ -69,13 +69,13 @@ describe('migrate-xds-css-surfaces', () => {
     const input = [
       `@import '@xds/core/reset.css';`,
       `@import '@xds/core/xds.css';`,
-      `@import '@xds/theme-default/theme.css';`,
+      `@import '@xds/theme-daily/theme.css';`,
     ].join('\n');
     const output = await applyTransform(input);
     expect(output).toContain(`@import '@astryxdesign/core/reset.css';`);
     // xds.css is renamed to astryx.css (file rename, not just scope swap).
     expect(output).toContain(`@import '@astryxdesign/core/astryx.css';`);
-    // theme-default collapses to theme-neutral.
+    // theme-daily collapses to theme-neutral.
     expect(output).toContain(
       `@import '@astryxdesign/theme-neutral/theme.css';`,
     );

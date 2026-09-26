@@ -4,13 +4,14 @@
 
 /**
  * @file shared.tsx
- * @input Schedule events, dates, timezone IDs, and display metadata
+ * @input Schedule events, dates, timezone IDs, provider locale, and display metadata
  * @output Shared rendering primitives, formatters, and styles for schedule views
  * @position Internal view utility module; consumed by Monthly, Weekly, Day, and List views
  */
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
@@ -113,14 +114,36 @@ export function ScheduleMonthTitle({
   date: PlainDate;
   timezoneID: string;
 }) {
-  const month = new Intl.DateTimeFormat(undefined, {
-    month: 'long',
-    timeZone: timezoneID,
-  }).format(new Date(Date.UTC(date.year, date.month - 1, date.day, 12)));
+  const {locale} = useScheduleContext();
   return (
-    <>
-      <span {...stylex.props(styles.titleEmphasis)}>{month}</span> {date.year}
-    </>
+    <LocalizedMonthTitle date={date} timezoneID={timezoneID} locale={locale} />
+  );
+}
+
+function LocalizedMonthTitle({
+  date,
+  timezoneID,
+  locale,
+}: {
+  date: PlainDate;
+  timezoneID: string;
+  locale: Locale;
+}) {
+  const parts = new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: timezoneID,
+    calendar: 'gregory',
+  }).formatToParts(new Date(plainDateToInstant(date, timezoneID, 12)));
+
+  return parts.map((part, index) =>
+    part.type === 'month' ? (
+      <span key={index} {...stylex.props(styles.titleEmphasis)}>
+        {part.value}
+      </span>
+    ) : (
+      part.value
+    ),
   );
 }
 
@@ -133,22 +156,33 @@ export function ScheduleRangeMonthTitle({
   end: PlainDate;
   timezoneID: string;
 }) {
+  const {locale} = useScheduleContext();
   if (start.year === end.year && start.month === end.month) {
     return <ScheduleMonthTitle date={start} timezoneID={timezoneID} />;
   }
 
-  const startMonth = formatWithPlainDate(start, timezoneID, {month: 'long'});
-  const endMonth = formatWithPlainDate(end, timezoneID, {month: 'long'});
+  const startMonth = formatWithPlainDate(
+    start,
+    timezoneID,
+    {month: 'long'},
+    locale,
+  );
+  const endMonthTitle = (
+    <LocalizedMonthTitle date={end} timezoneID={timezoneID} locale={locale} />
+  );
   return start.year === end.year ? (
     <>
       <span {...stylex.props(styles.titleEmphasis)}>{startMonth}</span> -{' '}
-      <span {...stylex.props(styles.titleEmphasis)}>{endMonth}</span> {end.year}
+      {endMonthTitle}
     </>
   ) : (
     <>
-      <span {...stylex.props(styles.titleEmphasis)}>{startMonth}</span>{' '}
-      {start.year} -{' '}
-      <span {...stylex.props(styles.titleEmphasis)}>{endMonth}</span> {end.year}
+      <LocalizedMonthTitle
+        date={start}
+        timezoneID={timezoneID}
+        locale={locale}
+      />{' '}
+      - {endMonthTitle}
     </>
   );
 }
@@ -164,11 +198,11 @@ export function EventPill({
   timezoneID?: string;
   isPast?: boolean;
 }) {
-  const {categories} = useScheduleContext();
+  const {categories, locale} = useScheduleContext();
   const category = getEventCategory(event, categories);
   const timeLabel =
     day != null && timezoneID != null && !isDayEvent(event)
-      ? formatEventTime(event, day, timezoneID)
+      ? formatEventTime(event, day, timezoneID, locale)
       : null;
   return (
     <span
@@ -203,11 +237,11 @@ export function MonthEventPill({
   timezoneID: string;
   isPast?: boolean;
 }) {
-  const {categories} = useScheduleContext();
+  const {categories, locale} = useScheduleContext();
   const category = getEventCategory(event, categories);
   const timeLabel = isDayEvent(event)
     ? null
-    : formatEventStartTime(event, timezoneID);
+    : formatEventStartTime(event, timezoneID, locale);
   return (
     <span
       {...stylex.props(
@@ -241,23 +275,30 @@ export function ListEventRow({
   timezoneID: string;
   isPast?: boolean;
 }) {
-  const {categories} = useScheduleContext();
+  const {categories, locale} = useScheduleContext();
   const category = getEventCategory(event, categories);
   return (
-    <div {...stylex.props(styles.listEventRow, isPast && styles.listEventPast)}>
+    <div {...stylex.props(styles.listEventRow)}>
       <span
         aria-hidden
         {...stylex.props(
           styles.listEventDot,
           eventDotColorStyle(category.color),
+          isPast && styles.listEventDotPast,
         )}
       />
       <span {...stylex.props(styles.listEventTime)}>
         {isDayEvent(event)
           ? 'All day'
-          : formatEventTimeRange(event, timezoneID)}
+          : formatEventTimeRange(event, timezoneID, locale)}
       </span>
-      <span {...stylex.props(styles.listEventTitle)}>{event.title}</span>
+      <span
+        {...stylex.props(
+          styles.listEventTitle,
+          isPast && styles.listEventTitlePast,
+        )}>
+        {event.title}
+      </span>
     </div>
   );
 }
@@ -358,58 +399,89 @@ export function formatWithPlainDate(
   date: PlainDate,
   timezoneID: string,
   options: Intl.DateTimeFormatOptions,
+  locale: Locale,
 ): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     ...options,
     timeZone: timezoneID,
+    calendar: 'gregory',
   }).format(new Date(plainDateToInstant(date, timezoneID, 12)));
 }
 
-export function formatMonthTitle(date: PlainDate, timezoneID: string): string {
-  return formatWithPlainDate(date, timezoneID, {
-    month: 'long',
-    year: 'numeric',
-  });
+export function formatMonthTitle(
+  date: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return formatWithPlainDate(
+    date,
+    timezoneID,
+    {
+      month: 'long',
+      year: 'numeric',
+    },
+    locale,
+  );
 }
 
 export function formatWeekTitle(
   start: PlainDate,
   end: PlainDate,
   timezoneID: string,
+  locale: Locale,
 ): string {
   if (start.year === end.year && start.month === end.month) {
-    return formatMonthTitle(start, timezoneID);
+    return formatMonthTitle(start, timezoneID, locale);
   }
-  const startMonth = formatWithPlainDate(start, timezoneID, {month: 'long'});
-  const endMonth = formatWithPlainDate(end, timezoneID, {month: 'long'});
+  const startMonth = formatWithPlainDate(
+    start,
+    timezoneID,
+    {month: 'long'},
+    locale,
+  );
+  const endMonthTitle = formatMonthTitle(end, timezoneID, locale);
   return start.year === end.year
-    ? `${startMonth} - ${endMonth} ${end.year}`
-    : `${startMonth} ${start.year} - ${endMonth} ${end.year}`;
+    ? `${startMonth} - ${endMonthTitle}`
+    : `${formatMonthTitle(start, timezoneID, locale)} - ${endMonthTitle}`;
 }
 
-export function formatFullDate(date: PlainDate, timezoneID: string): string {
-  return formatWithPlainDate(date, timezoneID, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+export function formatFullDate(
+  date: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return formatWithPlainDate(
+    date,
+    timezoneID,
+    {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    },
+    locale,
+  );
 }
 
 export function formatWeekday(
   date: PlainDate,
   timezoneID: string,
   weekday: 'short' | 'long',
+  locale: Locale,
 ): string {
-  return formatWithPlainDate(date, timezoneID, {weekday});
+  return formatWithPlainDate(date, timezoneID, {weekday}, locale);
 }
 
-export function formatDayNumber(date: PlainDate, timezoneID: string): string {
-  return formatWithPlainDate(date, timezoneID, {day: 'numeric'});
+export function formatDayNumber(
+  date: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return formatWithPlainDate(date, timezoneID, {day: 'numeric'}, locale);
 }
 
-export function formatHour(hour: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+export function formatHour(hour: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(2026, 0, 1, hour)));
@@ -418,8 +490,9 @@ export function formatHour(hour: number): string {
 export function formatTimezoneAbbreviation(
   date: PlainDate,
   timezoneID: string,
+  locale: Locale,
 ): string {
-  const part = new Intl.DateTimeFormat(undefined, {
+  const part = new Intl.DateTimeFormat(locale, {
     timeZone: timezoneID,
     timeZoneName: 'short',
   })
@@ -432,8 +505,9 @@ export function formatEventTime(
   event: CalendarInstantEvent,
   day: PlainDate,
   timezoneID: string,
+  locale: Locale,
 ): string {
-  const formatter = new Intl.DateTimeFormat(undefined, {
+  const formatter = new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
     timeZone: timezoneID,
@@ -446,8 +520,9 @@ export function formatEventTime(
 export function formatEventTimeRange(
   event: CalendarInstantEvent,
   timezoneID: string,
+  locale: Locale,
 ): string {
-  const formatter = new Intl.DateTimeFormat(undefined, {
+  const formatter = new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
     timeZone: timezoneID,
@@ -460,8 +535,9 @@ export function formatEventTimeRange(
 export function formatEventStartTime(
   event: CalendarInstantEvent,
   timezoneID: string,
+  locale: Locale,
 ): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
     timeZone: timezoneID,
@@ -473,11 +549,12 @@ export function formatEventAccessibilityLabel(
   day: PlainDate,
   timezoneID: string,
   categories: ReadonlyArray<ScheduleCategory>,
+  locale: Locale,
 ): string {
   const category = getEventCategory(event, categories);
   const timeLabel = isDayEvent(event)
     ? 'all day'
-    : formatEventTime(event, day, timezoneID);
+    : formatEventTime(event, day, timezoneID, locale);
   return `${event.title}, ${category.label}, ${timeLabel}`;
 }
 
@@ -1072,7 +1149,13 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
-  listEventPast: {
+  // A past row is muted with the secondary text token, which the theme
+  // guarantees at AA. Fading the whole row with opacity instead pulled its
+  // text toward the surface behind it — 2.35:1 on the light theme.
+  listEventTitlePast: {
+    color: colorVars['--color-text-secondary'],
+  },
+  listEventDotPast: {
     opacity: 0.5,
   },
   eventBlue: {

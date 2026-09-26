@@ -6,11 +6,13 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {existsCaseExact} from '../fs/paths.mjs';
+import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
 /** The owner package name for built-in (core) components. */
-export const CORE_PACKAGE = '@astryxdesign/core';
+export const CORE_PACKAGE = CORE_PROVIDER_ID;
 
 /** Conventional doc-file suffixes for integration components (same-stem). */
 const INTEGRATION_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
@@ -243,27 +245,27 @@ export function findComponentReadme(coreDir, name) {
 
   // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/Astryx{Name}.doc.mjs
   const direct = path.join(srcDir, name, exactDoc);
-  if (fs.existsSync(direct)) return direct;
+  if (existsCaseExact(direct, srcDir)) return direct;
   const directXds = path.join(srcDir, name, xdsDoc);
-  if (fs.existsSync(directXds)) return directXds;
+  if (existsCaseExact(directXds, srcDir)) return directXds;
 
   // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
-    if (fs.existsSync(nested)) return nested;
+    if (existsCaseExact(nested, srcDir)) return nested;
     const nestedXds = path.join(srcDir, entry.name, name, xdsDoc);
-    if (fs.existsSync(nestedXds)) return nestedXds;
+    if (existsCaseExact(nestedXds, srcDir)) return nestedXds;
   }
 
   // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/Astryx{Name}.doc.mjs
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const perComp = path.join(srcDir, entry.name, exactDoc);
-    if (fs.existsSync(perComp)) return perComp;
+    if (existsCaseExact(perComp, srcDir)) return perComp;
     const perCompXds = path.join(srcDir, entry.name, xdsDoc);
-    if (fs.existsSync(perCompXds)) return perCompXds;
+    if (existsCaseExact(perCompXds, srcDir)) return perCompXds;
   }
 
   // Sub-component fallback: find the source file, then walk up
@@ -321,7 +323,7 @@ export function findComponentSource(coreDir, name) {
     // Check for an exact match (prefixed or bare) first
     for (const candidate of candidateFiles) {
       const exact = path.join(dirPath, candidate);
-      if (fs.existsSync(exact)) return exact;
+      if (existsCaseExact(exact, dirPath)) return exact;
     }
 
     // Recurse into subdirectories
@@ -336,7 +338,7 @@ export function findComponentSource(coreDir, name) {
 
   // Search in the component's directory
   const directDir = path.join(srcDir, name);
-  if (fs.existsSync(directDir)) {
+  if (existsCaseExact(directDir, srcDir)) {
     const found = searchDir(directDir);
     if (found) return found;
   }
@@ -346,7 +348,7 @@ export function findComponentSource(coreDir, name) {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nestedDir = path.join(srcDir, entry.name, name);
-    if (fs.existsSync(nestedDir)) {
+    if (existsCaseExact(nestedDir, srcDir)) {
       const found = searchDir(nestedDir);
       if (found) return found;
     }
@@ -374,7 +376,9 @@ export function resolveImportPath(coreDir, componentName) {
 
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
-  const exactMatch = exportKeys.find(k => k.toLowerCase() === `./${componentName}`.toLowerCase());
+  const exactMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${componentName}`.toLowerCase(),
+  );
   if (exactMatch) {
     return `@astryxdesign/core/${exactMatch.slice(2)}`;
   }
@@ -386,7 +390,9 @@ export function resolveImportPath(coreDir, componentName) {
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
-  const topMatch = exportKeys.find(k => k.toLowerCase() === `./${topDir}`.toLowerCase());
+  const topMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${topDir}`.toLowerCase(),
+  );
   if (topMatch) {
     return `@astryxdesign/core/${topMatch.slice(2)}`;
   }
@@ -394,38 +400,115 @@ export function resolveImportPath(coreDir, componentName) {
   return '@astryxdesign/core';
 }
 
-// ── External package discovery ───────────────────────────────────────
-
 /**
- * Discover components from an external package's docs directory.
- * Scans for *.doc.mjs files and returns their names as a flat array.
+ * Does a package's `exports` map publish this subpath?
  *
- * @deprecated Use discoverExternalComponentsGrouped for group-aware discovery.
- * @param {string} docsDir
- * @returns {string[]}
+ * Node matches a subpath either by an exact key or by a PATTERN key holding a
+ * single `*`, which stands for any (possibly empty) run of characters — so
+ * `./*` publishes `./Carousel` just as surely as a literal `./Carousel` key
+ * does. A key whose target is `null` blocks the subpath instead of publishing
+ * it, and a package with no map at all publishes nothing by subpath.
+ *
+ * Exact-key-only matching is why this is a function rather than a lookup: it
+ * reported the bare package for every wildcard package, which is a specifier
+ * that need not resolve at all when the package has no `.` export.
+ *
+ * @param {Record<string, unknown>|null|undefined} exportsMap
+ * @param {string} subpath e.g. `./Carousel`
+ * @returns {boolean}
  */
-export function discoverExternalComponents(docsDir) {
-  if (!fs.existsSync(docsDir)) return [];
-  /** @type {string[]} */
-  const components = [];
-
-  /** @param {string} dirPath */
-  function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
-    for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-      const fullPath = path.join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        scanDir(fullPath);
-      } else if (entry.name.endsWith('.doc.mjs')) {
-        components.push(entry.name.replace('.doc.mjs', ''));
-      }
+function exportsPublish(exportsMap, subpath) {
+  if (!exportsMap || typeof exportsMap !== 'object') return false;
+  if (subpath in exportsMap) return exportsMap[subpath] != null;
+  for (const [key, target] of Object.entries(exportsMap)) {
+    const star = key.indexOf('*');
+    if (star === -1) continue;
+    // One `*` per key, per the spec; a second is not a pattern.
+    if (key.indexOf('*', star + 1) !== -1) continue;
+    const prefix = key.slice(0, star);
+    const suffix = key.slice(star + 1);
+    if (
+      subpath.length >= prefix.length + suffix.length &&
+      subpath.startsWith(prefix) &&
+      subpath.endsWith(suffix)
+    ) {
+      return target != null;
     }
   }
-
-  scanDir(docsDir);
-  return components.sort();
+  return false;
 }
+
+/**
+ * Resolve the specifier an integration component is imported from. An authored
+ * doc import is canonical; otherwise resolve against the owning package's
+ * `exports` map.
+ *
+ * A component lives in a directory that need not share its name — several
+ * components can be exported from one entry point — so the specifier has to
+ * come from the directory the doc file sits in, checked against `exports`,
+ * rather than from the component name. Falls back to the package root when the
+ * package does not publish that subpath, matching what a consumer would have
+ * to write by hand.
+ *
+ * Lives here, beside {@link resolveImportPath}, because more than one surface
+ * answers "where is this imported from" and they have to agree: `component`
+ * reports it as ownership metadata and `search` reports it on every hit. When
+ * each resolved it for itself the two disagreed, and an import specifier that
+ * does not resolve is worse than no answer.
+ *
+ * `exportsMap` is the map `loadIntegrations` already parsed onto the loaded
+ * integration, so the common path reads no manifest at all. `undefined` means
+ * the caller has no parsed map — a record built by hand rather than by the
+ * loader — and only then is the manifest read here. `null` means the loader
+ * looked and the package has no `exports`, which is an answer, not a gap: it
+ * must not trigger a read. Resolution that depended on every producer of a
+ * record remembering to populate a field would degrade silently, and silently
+ * is how this bug got here.
+ *
+ * @param {{exportsMap?: Record<string, unknown>|null, packageDir?: string, docPath?: string|null, packageName: string}} owner
+ * @param {string} componentName
+ * @param {string|null} [authoredImport]
+ * @returns {string}
+ */
+export function resolveIntegrationImportPath(
+  owner,
+  componentName,
+  authoredImport,
+) {
+  if (authoredImport) return authoredImport;
+  const {exportsMap, packageDir, docPath, packageName} = owner;
+  const map =
+    exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
+  const directory = docPath
+    ? path.basename(path.dirname(docPath))
+    : componentName;
+  return exportsPublish(map, `./${directory}`)
+    ? `${packageName}/${directory}`
+    : packageName;
+}
+
+/**
+ * Read a package's `exports` map from disk. The fallback for a loaded-
+ * integration record that carries no parsed map; {@link loadIntegrations}
+ * populates one for every integration it loads.
+ *
+ * @param {string|undefined} packageDir
+ * @returns {Record<string, unknown>|null}
+ */
+function readPackageExports(packageDir) {
+  if (!packageDir) return null;
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    return manifest.exports ?? null;
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+    return null;
+  }
+}
+
+// ── External package discovery ───────────────────────────────────────
 
 /**
  * Discover components from an external package's docs directory,

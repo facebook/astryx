@@ -6,9 +6,9 @@ import React from 'react';
 
 /**
  * @file AppShell.tsx
- * @input Uses React, Layout, LayoutHeader, LayoutPanel, LayoutContent, StyleX
- * @output Exports AppShell component and AppShellProps type
- * @position Application-level layout shell — the top-level wrapper for any app.
+ * @input Uses React, Theme-resolved breakpoints, Layout, navigation slots, and StyleX
+ * @output Exports AppShell component and AppShellProps with SSR-safe mobile layout
+ * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
@@ -50,13 +50,20 @@ import {AppShellMobileContext} from './AppShellMobileContext';
 import type {AppShellMobileContextValue} from './AppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs, isRenderable} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useThemeDefinition} from '../theme/useTheme';
+import {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  type WidthBreakpointName,
+} from '../theme/themeAdaptations';
 import type {AppShellVariantMap} from './index';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
   ? ({
@@ -72,13 +79,6 @@ const ActivityWrapper = HasActivity
 // Constants
 // =============================================================================
 
-const BREAKPOINT_VALUES: Record<AppShellBreakpoint, number> = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  none: 0,
-};
-
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 
 // =============================================================================
@@ -86,13 +86,10 @@ const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 // =============================================================================
 
 /**
- * SideNav breakpoint options.
- * - `sm`: 640px
- * - `md`: 768px
- * - `lg`: 1024px
- * - `none`: Never auto-collapse
+ * SideNav breakpoint options. Named points resolve through the nearest Theme;
+ * without an active theme they use Astryx's default width-breakpoint map.
  */
-export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
+export type AppShellBreakpoint = WidthBreakpointName | 'none';
 
 /**
  * Navigation background style:
@@ -139,7 +136,10 @@ export interface MobileNavConfig {
   content?: ReactNode;
 
   /**
-   * Breakpoint below which mobile nav activates.
+   * Named Theme width point below which mobile nav activates. `sm`, `md`,
+   * `lg`, `xl`, and `2xl` resolve through the nearest Theme's effective
+   * `adaptations.widthBreakpoints`; equality belongs to the wider layout.
+   * Use `none` to disable automatic mobile mode.
    * @default 'md'
    */
   breakpoint?: AppShellBreakpoint;
@@ -147,7 +147,8 @@ export interface MobileNavConfig {
   /**
    * SSR hint: whether the initial render should assume mobile layout.
    * Seeds the breakpoint state so the server-rendered HTML matches
-   * the client on mobile devices, avoiding a layout flash.
+   * the client on mobile devices, avoiding a layout flash. Ignored when
+   * `breakpoint` is `none`, which is always non-mobile.
    *
    * Derive from the User-Agent header or a device-detection cookie
    * in a server component, then pass down.
@@ -217,7 +218,7 @@ export interface AppShellProps extends BaseProps<HTMLDivElement> {
    * <AppShell mobileNav={{ hasToggle: false }}>
    *   <MobileNavToggle />
    * </AppShell>
-   * <AppShell mobileNav={<MobileNav title="Menu">...</MobileNav>} />
+   * <AppShell mobileNav={<MobileNav header="Menu">...</MobileNav>} />
    * <AppShell mobileNav={false} />
    * ```
    */
@@ -267,6 +268,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    overflow: 'clip',
   },
   variantWash: {
     backgroundColor: colorVars['--color-background-body'],
@@ -341,6 +343,15 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: typeScaleVars['--text-body-size'],
   },
+  // Programmatic focus target for the skip link. The main container is only
+  // focusable via tabIndex={-1} (never tabbable), so a focus ring around the
+  // entire content area would be noise rather than guidance — suppress it.
+  mainFocusTarget: {
+    outline: {
+      default: null,
+      ':focus': 'none',
+    },
+  },
 
   elevatedBackdrop: {
     position: 'absolute',
@@ -384,7 +395,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-2'],
   },
-  // Sticky header for auto height mode
+  // Sticky header for auto height mode. The header stays at its local
+  // stacking level — Field-owned input surfaces contain their own local
+  // z-index layers (AST-027), so no escalated page-level value is needed
+  // for the header to paint above scrolled content.
   headerSticky: {
     position: 'sticky',
     top: 0,
@@ -400,8 +414,8 @@ const styles = stylex.create({
     flexShrink: 0,
     overflow: 'clip',
     position: 'sticky',
-    top: 'var(--appshell-header-height, 0px)',
-    height: 'calc(100dvh - var(--appshell-header-height, 0px))',
+    top: 'var(--_app-shell-header-height, 0px)',
+    height: 'calc(100dvh - var(--_app-shell-header-height, 0px))',
     // Ensure children (LayoutPanel → SideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
@@ -419,7 +433,7 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * Application-level layout shell. Provides the structural frame for an app:
+ * Page shell for an application. Provides the structural frame for an app:
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
@@ -432,7 +446,7 @@ const styles = stylex.create({
  *   topNav={<TopNav label="Navigation" heading={<TopNavHeading heading="My App" />} />}
  *   sideNav={<SideNav>{navSections}</SideNav>}
  *   mobileNav={
- *     <MobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
+ *     <MobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} header="My App">
  *       {navSections}
  *     </MobileNav>
  *   }>
@@ -457,6 +471,7 @@ export function AppShell({
   ...rest
 }: AppShellProps) {
   const t = useTranslator();
+  const activeTheme = useThemeDefinition();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -492,26 +507,42 @@ export function AppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
+  const activeWidthBreakpoints = activeTheme?.__adaptations?.widthBreakpoints;
   const breakpointQuery =
     sideNavBreakpoint === 'none'
-      ? '(max-width: 0px)'
-      : `(max-width: ${BREAKPOINT_VALUES[sideNavBreakpoint]}px)`;
+      ? '(width < 0px)'
+      : `(width < ${
+          activeWidthBreakpoints?.[sideNavBreakpoint] ??
+          DEFAULT_WIDTH_BREAKPOINTS[sideNavBreakpoint]
+        }px)`;
   const isBelowBreakpoint = useMediaQuery(
     breakpointQuery,
-    mobileNavConfig?.defaultIsMobile,
+    sideNavBreakpoint === 'none' ? false : mobileNavConfig?.defaultIsMobile,
   );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 
+  const mobileNavOnOpenChange = mobileNavConfig?.onOpenChange;
   const setMobileNavOpen = useCallback(
     (open: boolean) => {
       if (!mobileNavIsControlled) {
         setUncontrolledMobileOpen(open);
       }
-      mobileNavConfig?.onOpenChange?.(open);
+      mobileNavOnOpenChange?.(open);
     },
-    [mobileNavIsControlled, mobileNavConfig],
+    // Depend on the callback itself, not on the config object: the documented
+    // usage is an inline `mobileNav={{isOpen, onOpenChange}}` literal, which is
+    // a new object every render and would otherwise churn this callback and the
+    // context value memo built from it on every render of the shell.
+    [mobileNavIsControlled, mobileNavOnOpenChange],
   );
+
+  // Move focus to the main content container when the skip link is activated.
+  // Hash navigation alone doesn't reliably move focus in every browser, so
+  // focus the target explicitly (it's focusable via tabIndex={-1}).
+  const handleSkipLinkClick = useCallback(() => {
+    document.getElementById(MAIN_CONTENT_ID)?.focus();
+  }, []);
 
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
@@ -531,6 +562,11 @@ export function AppShell({
       : variant === 'surface'
         ? styles.navAreaSurface
         : undefined;
+  // Section normally inherits the shell's surface background. Its auto-height
+  // header needs to paint that surface itself while content scrolls beneath it.
+  const headerAreaStyle =
+    navAreaStyle ??
+    (isAuto && variant === 'section' ? styles.navAreaSurface : undefined);
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
@@ -561,11 +597,10 @@ export function AppShell({
 
     const updateHeight = () => {
       const height = headerEl.getBoundingClientRect().height;
-      shellEl.style.setProperty('--appshell-header-height', `${height}px`);
+      shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
-    observeResize(headerEl, () => updateHeight());
-    return () => unobserveResize(headerEl);
+    return observeResize(headerEl, () => updateHeight());
   }, [isAuto]);
 
   // =========================================================================
@@ -653,17 +688,19 @@ export function AppShell({
       </LayoutHeader>
     ) : undefined;
 
-  const headerContent =
-    headerInner != null ? (
-      <div
-        ref={headerRef}
-        {...mergeProps(
-          themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
-        )}>
-        {headerInner}
-      </div>
-    ) : undefined;
+  const headerContent = isRenderable(headerInner) ? (
+    <div
+      ref={headerRef}
+      // Top-level banner landmark for the header region (topNav + banner).
+      // Safe here: the wrapper is never nested inside main/nav/other landmarks.
+      role="banner"
+      {...mergeProps(
+        themeProps('app-shell-header', {variant}),
+        stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
+      )}>
+      {headerInner}
+    </div>
+  ) : undefined;
 
   // =========================================================================
   // Build sideNav content
@@ -705,8 +742,11 @@ export function AppShell({
       padding={contentPadding ?? 0}
       role="main"
       id={MAIN_CONTENT_ID}
+      // Focusable skip-link target (WCAG 2.4.1) — without tabIndex, several
+      // browsers won't move focus to the div when the skip link is activated.
+      tabIndex={-1}
       isScrollable={isFill}
-      xstyle={contentAreaStyle}>
+      xstyle={[contentAreaStyle, styles.mainFocusTarget]}>
       {children}
     </LayoutContent>
   );
@@ -738,9 +778,14 @@ export function AppShell({
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <div
+        // Banner landmark for the mobile top bar, so the sidenav-only layout
+        // exposes the same landmark structure as the topNav one. Only when
+        // there is no headerContent: a banner slot with no topNav renders both,
+        // and two sibling banner regions is worse than the one this restores.
+        role={headerContent == null ? 'banner' : undefined}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
           <div
@@ -760,7 +805,7 @@ export function AppShell({
     <AppShellMobileContext value={mobileContextValue}>
       <div
         {...rest}
-        ref={mergeRefs(ref, shellRef)}
+        ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
           themeProps('app-shell', {variant}),
@@ -782,9 +827,10 @@ export function AppShell({
         {/* Skip-to-content link */}
         <a
           href={`#${MAIN_CONTENT_ID}`}
-          {...stylex.props(styles.skipLink)}
+          onClick={handleSkipLinkClick}
+          {...focusOutlineProps.focusVisible(styles.skipLink)}
           data-testid="skip-to-content">
-          Skip to content
+          {t('@astryx.appShell.skipToContent')}
         </a>
 
         <Layout

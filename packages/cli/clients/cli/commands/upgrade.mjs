@@ -15,27 +15,19 @@
 import {jsonOut, jsonError} from '../../../foundation/response/json.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {AstryxError} from '../../../api/error.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
 import {upgrade as upgradeApi} from '../../../api/upgrade/upgrade.mjs';
+import {doc as upgradeCommand} from './upgrade.doc.mjs';
+import {doc as upgradeFn} from '../../../api/upgrade/upgrade.doc.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerUpgrade(program) {
-  program
-    .command('upgrade')
-    .description('Run codemods to migrate between versions')
-    .option('--from <version>', 'Previous version before the dependency upgrade')
-    .option('--apply', 'Write changes to disk (default: dry-run)', false)
-    .option('--force', 'Run codemods even if --from is newer than the installed version', false)
-    .option('--codemod <name>', 'Run a specific transform only')
-    .option('--skip-codemod <name...>', 'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.')
-    .option('--integration <package-or-file>', 'Explicit integration package name or integration file path (repeatable)',
-      /** @param {string} value @param {string[]} previous */
-      (value, previous) => [...(previous ?? []), value], [])
-    .option('--path <dir>', 'Source directory to scan', './src')
-    .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
-    .option('--list', 'List available codemods', false)
-    .action(
+  const cmd = defineCommand(program, upgradeCommand, {
+    fn: upgradeFn,
+    action:
       /**
        * @param {import('../../../api/upgrade/upgrade.mjs').UpgradeOptions} options
        */
@@ -43,7 +35,7 @@ export function registerUpgrade(program) {
         const json = program.opts().json || false;
         logger.setSilent(json);
 
-        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
+        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRegistryResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
           result = await upgradeApi(options, {cwd: process.cwd()});
@@ -56,12 +48,43 @@ export function registerUpgrade(program) {
           if (e instanceof AstryxError) {
             if (json) jsonError(e.message, undefined, e.code);
             else process.exitCode = 1;
-            return;
+            return NO_RESULT_SET;
           }
           throw e;
         }
 
         if (json) jsonOut(result);
+
+        const registrySummary =
+          result.type === 'upgrade.registry'
+            ? result.data
+            : result.type === 'upgrade.run'
+              ? result.data.registryCompositions
+              : result.type === 'upgrade.status' &&
+                  'registryCompositions' in result.data
+                ? result.data.registryCompositions
+                : undefined;
+        if (registrySummary && !registrySummary.ok) process.exitCode = 1;
+
+        // `--list` is the one lookup here: which migrations exist for the
+        // range. Everything else migrates the project — an effect, reported by
+        // the receipt rather than counted.
+        return result.type === 'upgrade.list'
+          ? resultSet({count: result.data.length, resultKind: 'migration'})
+          : NO_RESULT_SET;
       },
+  });
+
+  // `--integration` is a repeatable value flag: multiple flags accumulate into
+  // the string[] the API expects. defineCommand builds a plain value option
+  // (its [] default comes from the doc), so restore the collector coercion that
+  // the previous inline `.option(..., fn, [])` supplied. Help output is
+  // unaffected — only parse-time value assembly.
+  const integration = cmd.options.find(o => o.long === '--integration');
+  if (integration) {
+    integration.argParser(
+      /** @param {string} value @param {string[]} previous */
+      (value, previous) => [...(previous ?? []), value],
     );
+  }
 }

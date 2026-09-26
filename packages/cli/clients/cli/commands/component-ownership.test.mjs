@@ -47,7 +47,12 @@ const INTEGRATION_ISSUES = 'https://example.com/meta/issues';
  * Returns the absolute `components` dir so the Project.load mock can hand back a
  * resolved integration entry.
  */
-function createFixture({withSource = true, extraComponent = null} = {}) {
+function createFixture({
+  withSource = true,
+  extraComponent = null,
+  packageExports = null,
+  entryPoint = null,
+} = {}) {
   const realCoreDir = path.resolve(import.meta.dirname, '..', '..', '..', '..', 'core');
   const coreDir = path.join(tmpDir, 'packages', 'core');
   fs.mkdirSync(path.dirname(coreDir), {recursive: true});
@@ -58,7 +63,11 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
   fs.mkdirSync(compDir, {recursive: true});
   fs.writeFileSync(
     path.join(intDir, 'package.json'),
-    JSON.stringify({name: INTEGRATION_NAME, version: '1.2.3'}),
+    JSON.stringify({
+      name: INTEGRATION_NAME,
+      version: '1.2.3',
+      ...(packageExports ? {exports: packageExports} : {}),
+    }),
   );
   fs.writeFileSync(
     path.join(compDir, 'MetaAppShell.doc.mjs'),
@@ -81,6 +90,20 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
     );
   }
 
+  // A component whose directory is an entry point exporting several
+  // components, so the directory name and the component name differ.
+  if (entryPoint) {
+    const entryDir = path.join(compDir, entryPoint.directory);
+    fs.mkdirSync(entryDir, {recursive: true});
+    const ownSpecifier = entryPoint.importSpec
+      ? `\n  import: '${entryPoint.importSpec}',`
+      : '';
+    fs.writeFileSync(
+      path.join(entryDir, `${entryPoint.component}.doc.mjs`),
+      `export const docs = {\n  name: '${entryPoint.component}',${ownSpecifier}\n  usage: { description: '${entryPoint.component} from an entry point.' },\n};\n`,
+    );
+  }
+
   const integration = {
     name: INTEGRATION_NAME,
     version: '1.2.3',
@@ -88,6 +111,7 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
     templates: undefined,
     codemods: undefined,
     issuesUrl: INTEGRATION_ISSUES,
+    __packageDir: intDir,
   };
   projectLoadMock.mockResolvedValue({
     integrations: [INTEGRATION_NAME],
@@ -162,7 +186,9 @@ describe('component() — integration ownership via config', () => {
     expect(result.data.name).toBe('MetaAppShell');
     expect(result.data.package).toBe(INTEGRATION_NAME);
     expect(result.data.sourceAvailable).toBe(true);
-    expect(result.data.import).toBe(`${INTEGRATION_NAME}/MetaAppShell`);
+    // This fixture declares no `exports`, so there is no subpath to import
+    // from and the specifier is the package root.
+    expect(result.data.import).toBe(INTEGRATION_NAME);
   });
 
   it('--package resolves the integration component', async () => {
@@ -215,6 +241,40 @@ describe('component() — integration ownership via config', () => {
     const result = await component('AppShell', {cwd: tmpDir, package: INTEGRATION_NAME});
     expect(result.type).toBe('component.detail');
     expect(result.data.package).toBe(INTEGRATION_NAME);
+  });
+
+  it('resolves the import specifier against the package exports map', async () => {
+    // The doc sits in a `Toolbar` directory but the component is
+    // `ToolbarSearch`, so a specifier built from the component name would
+    // point at a subpath the package does not export.
+    createFixture({
+      packageExports: {'.': './index.js', './Toolbar': './components/Toolbar/index.js'},
+      entryPoint: {directory: 'Toolbar', component: 'ToolbarSearch'},
+    });
+    const result = await component('ToolbarSearch', {cwd: tmpDir});
+    expect(result.data.import).toBe(`${INTEGRATION_NAME}/Toolbar`);
+  });
+
+  it('falls back to the package root when the directory is not an exported subpath', async () => {
+    createFixture({
+      packageExports: {'.': './index.js'},
+      entryPoint: {directory: 'Toolbar', component: 'ToolbarSearch'},
+    });
+    const result = await component('ToolbarSearch', {cwd: tmpDir});
+    expect(result.data.import).toBe(INTEGRATION_NAME);
+  });
+
+  it('keeps a specifier the doc file states for itself', async () => {
+    createFixture({
+      packageExports: {'.': './index.js', './Toolbar': './components/Toolbar/index.js'},
+      entryPoint: {
+        directory: 'Toolbar',
+        component: 'ToolbarSearch',
+        importSpec: `${INTEGRATION_NAME}/Toolbar/Search`,
+      },
+    });
+    const result = await component('ToolbarSearch', {cwd: tmpDir});
+    expect(result.data.import).toBe(`${INTEGRATION_NAME}/Toolbar/Search`);
   });
 
   it('JSON list includes integration components as {name, package} objects', async () => {

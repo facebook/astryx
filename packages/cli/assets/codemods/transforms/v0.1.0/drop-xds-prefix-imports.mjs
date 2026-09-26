@@ -65,6 +65,22 @@ export const meta = {
 const XDS_CORE_SOURCE = /^@xds\/core(\/.*)?$/;
 
 /**
+ * Compute a collision alias for an XDS-prefixed identifier by replacing the
+ * `XDS` segment IN PLACE with `Astryx` (as opposed to prefixing the bare name).
+ * This keeps hook names well-formed:
+ *
+ *   XDSButton       -> AstryxButton
+ *   XDSLinkProvider -> AstryxLinkProvider
+ *   useXDSToast     -> useAstryxToast   (NOT AstryxuseToast)
+ *
+ * Only the first `XDS` occurrence is replaced, matching how `bareName` strips a
+ * single leading prefix.
+ */
+function aliasName(/** @type {any} */ name) {
+  return name.replace('XDS', 'Astryx');
+}
+
+/**
  * Compute the bare (unprefixed) name for an XDS-prefixed identifier.
  * Returns null if the name is not XDS-prefixed in a renameable way.
  */
@@ -190,7 +206,12 @@ export default function transformer(file, api) {
     if (!node) return;
     if (
       (node.type === 'FunctionDeclaration' ||
-        node.type === 'ClassDeclaration') &&
+        node.type === 'ClassDeclaration' ||
+        // Type-only bindings share the module namespace for our purposes: a
+        // `type Tab`/`interface Theme` collides with an un-prefixed `XDSTab`/
+        // `XDSTheme` type import and would create a duplicate declaration.
+        node.type === 'TSTypeAliasDeclaration' ||
+        node.type === 'TSInterfaceDeclaration') &&
       node.id
     ) {
       existingBindings.add(node.id.name);
@@ -239,10 +260,13 @@ export default function transformer(file, api) {
       if (bare !== importedName && existingBindings.has(bare)) {
         // COLLISION: the bare name is already a top-level binding in this file
         // (e.g. a local `export function CodeBlock` alongside imported
-        // `XDSCodeBlock`). Un-prefixing directly would create a duplicate
-        // declaration, so alias the import to `Astryx<Name>` and rename the
+        // `XDSCodeBlock`, or a `type Tab` alongside `XDSTab`). Un-prefixing
+        // directly would create a duplicate declaration (TS2451), so alias the
+        // import by replacing `XDS` with `Astryx` in place and rename the
         // import's references to that alias, leaving the local binding intact.
-        const alias = `Astryx${bare}`;
+        // In-place replacement keeps hooks well-formed: `useXDSToast` becomes
+        // `useAstryxToast`, not `AstryxuseToast`.
+        const alias = aliasName(importedName);
         localRenames.set(importedName, alias);
         existingBindings.add(alias);
         hasChanges = true;
@@ -322,18 +346,27 @@ export default function transformer(file, api) {
     }
     // Don't double-rewrite the import specifier we already handled.
     if (parent.type === 'ImportSpecifier') return;
+    // JSX element tag names are handled by a source-string splice after
+    // `toSource()` (see renameJsxElementNamesInSource). Mutating them here
+    // would dirty the enclosing JSXElement and make recast collapse whitespace
+    // around adjacent `{expressions}`. Under the tsx parser a JSX tag-name
+    // JSXIdentifier is a subtype of Identifier, so it surfaces in this
+    // `find(j.Identifier)` pass and must be explicitly skipped.
+    if (isJsxElementNameIdentifier(path)) return;
     path.node.name = newName;
     hasChanges = true;
   });
 
-  // JSX element names: <XDSButton> -> <Button>
-  root.find(j.JSXIdentifier).forEach((/** @type {any} */ path) => {
-    const newName = localRenames.get(path.node.name);
-    if (newName) {
-      path.node.name = newName;
-      hasChanges = true;
-    }
-  });
+  // JSX element names (`<XDSButton>` -> `<Button>`) are intentionally NOT
+  // renamed via AST mutation here. Mutating a JSXIdentifier in place dirties the
+  // enclosing JSXElement; when that element is the argument of a parenthesized
+  // `return ( <JSX/> )` (i.e. every React component body), recast declines a
+  // surgical child reprint and generically re-prints the whole return argument.
+  // Its generic JSXElement printer drops significant whitespace from JSXText
+  // that sits next to a `{expression}` -- so `hello {name} world` collapses to
+  // `hello {name}world`. Instead we splice the element-name renames directly
+  // into the emitted source string (below), which never re-prints the subtree.
+  // See renameJsxElementNamesInSource for the mechanism.
 
   // 5. Rename TS type references in generic type-argument positions.
   //
@@ -389,5 +422,98 @@ export default function transformer(file, api) {
   };
   renameTypeReferences(root.get().node);
 
-  return hasChanges ? root.toSource() : undefined;
+  if (!hasChanges) return undefined;
+
+  // Emit the AST-based renames, then splice the JSX element-name renames onto
+  // the emitted string (see the note in the JSX section above for why element
+  // names cannot be renamed through the AST without collapsing whitespace).
+  const emitted = root.toSource();
+  return renameJsxElementNamesInSource(j, emitted, localRenames);
+}
+
+/**
+ * Rename JSX element tag names (`<XDSButton>` / `</XDSButton>`) by splicing the
+ * new names directly into the already-emitted source, so recast never re-prints
+ * the surrounding JSX subtree (which would strip whitespace next to
+ * `{expressions}`).
+ *
+ * Spans are computed by re-parsing `source` itself, so the offsets are always
+ * valid against the string we splice into -- no dependency on the original
+ * pre-transform offsets. Splices are applied right-to-left (descending start
+ * offset) so earlier offsets stay valid as we go.
+ *
+ * Only the identifier that IS the element's tag name is renamed:
+ * - `<Foo attr />`            -> the `Foo` opening-name only (not `attr`)
+ * - `<Ns.Foo />` / `<Foo.Bar>`-> the specific member-expression identifier that
+ *   maps in `renames`; the other part of the member name is preserved
+ *
+ * @param {any} j jscodeshift instance (already bound to the tsx parser)
+ * @param {string} source emitted source to rewrite
+ * @param {Map<string, string>} renames localName -> newLocalName
+ * @returns {string}
+ */
+function renameJsxElementNamesInSource(j, source, renames) {
+  if (renames.size === 0) return source;
+
+  const root = j(source);
+
+  /** @type {Array<{start: number, end: number, name: string}>} */
+  const edits = [];
+
+  root.find(j.JSXIdentifier).forEach((/** @type {any} */ path) => {
+    const node = path.node;
+    const newName = renames.get(node.name);
+    if (!newName || newName === node.name) return;
+
+    // The identifier must BE an element tag name -- the `.name` of a
+    // JSXOpeningElement/JSXClosingElement, or the matching part of a
+    // JSXMemberExpression tag name. Attribute names, attribute values, and the
+    // non-matching half of a member-expression name must be left alone.
+    if (!isJsxElementNameIdentifier(path)) return;
+
+    if (typeof node.start !== 'number' || typeof node.end !== 'number') return;
+    edits.push({start: node.start, end: node.end, name: newName});
+  });
+
+  if (edits.length === 0) return source;
+
+  edits.sort((a, b) => b.start - a.start);
+
+  let out = source;
+  for (const {start, end, name} of edits) {
+    out = out.slice(0, start) + name + out.slice(end);
+  }
+  return out;
+}
+
+/**
+ * Is this JSXIdentifier path the tag name of its element (opening or closing),
+ * as opposed to an attribute name or a namespace/member-expression segment we
+ * should not rename? For member-expression tag names (`<Foo.Bar>`) we accept
+ * the identifier regardless of which segment it is -- the caller only reaches
+ * here for identifiers whose name is in the rename map, and each renamed
+ * identifier maps independently, so `<Foo.Bar>` renames only the segment(s)
+ * that actually map.
+ *
+ * @param {any} path jscodeshift path to a JSXIdentifier
+ * @returns {boolean}
+ */
+function isJsxElementNameIdentifier(path) {
+  const parent = path.parent && path.parent.node;
+  if (!parent) return false;
+
+  if (
+    parent.type === 'JSXOpeningElement' ||
+    parent.type === 'JSXClosingElement'
+  ) {
+    return parent.name === path.node;
+  }
+
+  // `<Foo.Bar>` / `<A.B.C>`: the tag name is a JSXMemberExpression whose
+  // segments are JSXIdentifiers. Rename the specific matching segment only.
+  if (parent.type === 'JSXMemberExpression') {
+    return parent.object === path.node || parent.property === path.node;
+  }
+
+  return false;
 }

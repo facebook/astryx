@@ -250,10 +250,7 @@ function TokenInspector() {
         <Stack direction="horizontal" gap={2} vAlign="center">
           <Heading level={4}>Token Inspector</Heading>
           <Badge label={name} />
-          <Badge
-            variant={mode === 'dark' ? 'neutral' : 'info'}
-            label={mode}
-          />
+          <Badge variant={mode === 'dark' ? 'neutral' : 'info'} label={mode} />
         </Stack>
         <div
           style={{
@@ -314,7 +311,7 @@ const oceanTheme = defineTheme({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/Theme',
+  title: 'Core/Themes/Theme',
   parameters: {
     docs: {
       description: {

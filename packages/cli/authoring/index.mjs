@@ -11,15 +11,26 @@
  * `type` directly.
  *
  * Types (config, integration, codemod, and the doc vocabulary —
- * component/hook/reference/template) are re-exported via `./index.ts`.
+ * component/hook/reference/template/theme) are re-exported via `./index.ts`.
  */
 
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
+export {
+  parseGapReportHandler,
+  parseGapReportReceipt,
+} from './gap-report/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
+export {parseDebugEvent} from './debug/parse.mjs';
 export {parseDoc} from './doctypes/parse.mjs';
 export {parseComponent} from './doctypes/component/parse.mjs';
 export {parseHook} from './doctypes/hook/parse.mjs';
+export {parseFunction} from './doctypes/function/parse.mjs';
 export {parseReference} from './doctypes/reference/parse.mjs';
 export {parseTemplate} from './doctypes/template/parse.mjs';
+export {parseSchema} from './doctypes/schema/parse.mjs';
+export {parseCommand} from './doctypes/command/parse.mjs';
+export {parseEnum} from './doctypes/enum/parse.mjs';
+export {parseNamespace} from './doctypes/namespace/parse.mjs';
+export {parseTheme} from './doctypes/theme/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';

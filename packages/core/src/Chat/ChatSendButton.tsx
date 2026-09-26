@@ -24,6 +24,7 @@ import {useIcon} from '../Icon';
 import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
+import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -94,7 +95,7 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
     ...rest
   } = props;
 
-  const handleSend = onSend ?? (() => context?.onSubmit(''));
+  const handleSend = onSend ?? (() => context?.onSubmit(context.value));
   const defaultStopIcon = useIcon('stop');
   const defaultSendIcon = useIcon('arrowUp');
 
@@ -117,9 +118,7 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
       {...rest}
-      {...themeProps('chat-send-button')}
-      className={className}
-      style={style}
+      {...mergeProps(themeProps('chat-send-button'), {className}, style)}
       xstyle={[styles.root, xstyle]}
     />
   );

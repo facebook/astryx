@@ -14,6 +14,7 @@ export type {
   DateInputProps,
   DateInputSize,
   DateInputFormat,
+  DateInputNativePicker,
   DateInputStatus,
   DateInputStatusType,
 } from './DateInput';

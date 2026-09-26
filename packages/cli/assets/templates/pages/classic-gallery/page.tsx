@@ -47,52 +47,52 @@ interface GalleryImage {
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-scene-horizontal-1.png',
+    src: '/template-assets/moody-scene-horizontal-1.png',
     alt: 'Moody scene landscape',
     category: 'scene',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-lifestyle-vertical-1.png',
+    src: '/template-assets/moody-lifestyle-vertical-1.png',
     alt: 'Moody lifestyle portrait',
     category: 'lifestyle',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-home-vertical-1.png',
+    src: '/template-assets/moody-home-vertical-1.png',
     alt: 'Moody home interior',
     category: 'home',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-scene-horizontal-2.png',
+    src: '/template-assets/moody-scene-horizontal-2.png',
     alt: 'Moody scene vista',
     category: 'scene',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-lifestyle-vertical-2.png',
+    src: '/template-assets/moody-lifestyle-vertical-2.png',
     alt: 'Moody lifestyle scene',
     category: 'lifestyle',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-lifestyle-horizontal-1.png',
+    src: '/template-assets/moody-lifestyle-horizontal-1.png',
     alt: 'Moody lifestyle horizontal',
     category: 'lifestyle',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-scene-vertical-1.png',
+    src: '/template-assets/moody-scene-vertical-1.png',
     alt: 'Moody scene vertical',
     category: 'scene',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-home-vertical-2.png',
+    src: '/template-assets/moody-home-vertical-2.png',
     alt: 'Moody home vertical',
     category: 'home',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-home-horizontal-1.png',
+    src: '/template-assets/moody-home-horizontal-1.png',
     alt: 'Moody home horizontal',
     category: 'home',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/moody-scene-vertical-2.png',
+    src: '/template-assets/moody-scene-vertical-2.png',
     alt: 'Moody scene vertical',
     category: 'scene',
   },

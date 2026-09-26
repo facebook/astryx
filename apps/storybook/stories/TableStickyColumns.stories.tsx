@@ -108,7 +108,11 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-const note = {marginBottom: 8, fontSize: 14, color: '#666'} as const;
+const note = {
+  marginBottom: 8,
+  fontSize: 14,
+  color: 'var(--color-text-secondary)',
+} as const;
 
 /**
  * Pin the leading `Name` column to the start edge. Scroll horizontally — the

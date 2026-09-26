@@ -22,6 +22,7 @@ export * from './AvatarGroup';
 export * from './Badge';
 export * from './Banner';
 export * from './Blockquote';
+export * from './BottomSheet';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './ButtonGroup';
@@ -33,6 +34,7 @@ export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
 export * from './CommandPalette';
+export * from './ComplexSelector';
 export * from './Chat';
 export * from './Markdown';
 export * from './Citation';
@@ -41,6 +43,7 @@ export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
+export * from './ScrollableArea';
 export * from './Divider';
 export * from './VisuallyHidden';
 export * from './EmptyState';
@@ -53,6 +56,7 @@ export * from './NavIcon';
 export * from './NavMenu';
 export * from './Slider';
 export * from './Stack';
+export * from './Stepper';
 export * from './Switch';
 export * from './DateInput';
 export * from './DateTimeInput';
@@ -67,6 +71,7 @@ export * from './SelectableCard';
 export * from './Selector';
 export * from './MultiSelector';
 export * from './Icon';
+export * from './Indicator';
 export * from './InputGroup';
 export * from './Item';
 export * from './Text';
@@ -131,6 +136,8 @@ export type {
   ToastOptions,
   ToastDismissFn,
   ShowToastFn,
+  ToastContentRenderProps,
+  ToastContentRenderFn,
 } from './Toast';
 
 // Popover component and hook
@@ -154,6 +161,9 @@ export * from './Spinner';
 // Timestamp display
 export * from './Timestamp';
 
+// Elapsed timer display
+export * from './Timer';
+
 // Overlay
 export * from './Overlay';
 export * from './Outline';
@@ -173,24 +183,3 @@ export * from './theme';
 
 // Internationalization
 export * from './i18n';
-
-// Doc types — for external library authors writing .doc.mjs files.
-// @deprecated Import these from `@astryxdesign/cli/authoring` instead. These
-// re-exports are kept for one release cycle and will be removed; `astryx upgrade`
-// repoints them automatically.
-export type {
-  ComponentDoc,
-  SingleComponentDoc,
-  MultiComponentDoc,
-  ComponentPropDoc,
-  ComponentEntry,
-  ComponentThemingTarget,
-  ComponentThemingVar,
-  ComponentThemingDerivedVar,
-  ComponentTranslationDoc,
-  ComponentGroupDoc,
-  ReferenceDoc,
-  ReferenceSection,
-  ReferenceContentBlock,
-  ReferenceTokenPreviewType,
-} from '@astryxdesign/cli/authoring';

@@ -1,7 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {isValidSemver, semverCompare, semverGt, semverGte} from './semver.mjs';
+import {
+  isValidSemver,
+  satisfiesRange,
+  semverCompare,
+  semverGt,
+  semverGte,
+} from './semver.mjs';
 
 describe('semverCompare', () => {
   it('orders patch versions numerically (not lexicographically)', () => {
@@ -63,5 +69,43 @@ describe('isValidSemver', () => {
     expect(isValidSemver(null)).toBe(false);
     expect(isValidSemver(undefined)).toBe(false);
     expect(isValidSemver(123)).toBe(false);
+  });
+});
+
+describe('satisfiesRange', () => {
+  it('handles caret ranges, including 0.x semantics', () => {
+    expect(satisfiesRange('0.19.0', '^0.19.0')).toBe(true);
+    expect(satisfiesRange('0.19.2', '^0.19.0')).toBe(true);
+    // 0.x caret is locked to the minor — the peer-dep bug that motivated this.
+    expect(satisfiesRange('0.10.1', '^0.19.0')).toBe(false);
+    expect(satisfiesRange('0.20.0', '^0.19.0')).toBe(false);
+    // major > 0 caret allows any minor/patch below the next major.
+    expect(satisfiesRange('1.5.0', '^1.2.0')).toBe(true);
+    expect(satisfiesRange('2.0.0', '^1.2.0')).toBe(false);
+  });
+
+  it('handles comparators and partial versions', () => {
+    expect(satisfiesRange('19.0.0', '>=19.0.0')).toBe(true);
+    expect(satisfiesRange('20.1.0', '>=19.0.0')).toBe(true);
+    expect(satisfiesRange('18.2.0', '>=19.0.0')).toBe(false);
+    expect(satisfiesRange('0.10.5', '^0.10')).toBe(true);
+    expect(satisfiesRange('0.11.0', '^0.10')).toBe(false);
+  });
+
+  it('handles exact, tilde, unions, and wildcards', () => {
+    expect(satisfiesRange('1.2.3', '1.2.3')).toBe(true);
+    expect(satisfiesRange('1.2.4', '1.2.3')).toBe(false);
+    expect(satisfiesRange('1.2.9', '~1.2.0')).toBe(true);
+    expect(satisfiesRange('1.3.0', '~1.2.0')).toBe(false);
+    expect(satisfiesRange('16.14.0', '>=16 <18 || >=19')).toBe(true);
+    expect(satisfiesRange('18.0.0', '>=16 <18 || >=19')).toBe(false);
+    expect(satisfiesRange('19.0.0', '*')).toBe(true);
+  });
+
+  it('never emits a false mismatch on non-semver input or unparseable ranges', () => {
+    expect(satisfiesRange('not-a-version', '^0.19.0')).toBe(true);
+    expect(satisfiesRange('0.10.1', '')).toBe(true);
+    expect(satisfiesRange('0.10.1', 'latest')).toBe(true);
+    expect(satisfiesRange('0.10.1', 'workspace:*')).toBe(true);
   });
 });

@@ -1,12 +1,134 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: false,
+    description:
+      'Standalone Field shell that provides the label and optional supporting content; omitted inside InputGroup.',
+  },
+  {
+    name: 'Trigger',
+    required: true,
+    description:
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
+  },
+  {
+    name: 'Icon-rendered start icon',
+    required: false,
+    description:
+      'Optional leading semantic icon or icon component rendered through Icon.',
+  },
+  {
+    name: 'Caller-rendered start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of the trigger.',
+  },
+  {
+    name: 'Trigger clear button',
+    required: false,
+    description:
+      'Shared clear action that removes the selected value when hasClear is enabled.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description:
+      'Status glyph shown in place of the disclosure indicator for attached or tooltip status.',
+  },
+  {
+    name: 'Indicator icon',
+    required: false,
+    description:
+      'Trailing chevron shown when status presentation does not replace it; reflects collapsed or expanded state.',
+  },
+  {
+    name: 'Search row',
+    required: false,
+    description:
+      'Panel header with a borderless search input and optional clear action.',
+  },
+  {
+    name: 'Search icon',
+    required: false,
+    description:
+      'Leading magnifier rendered through Icon inside the search row.',
+  },
+  {
+    name: 'Search clear button',
+    required: false,
+    description:
+      'Shared clear action shown in the search row while a query is present.',
+  },
+  {
+    name: 'Option row',
+    required: false,
+    description: 'Selectable row for one supplied option.',
+  },
+  {
+    name: 'SelectorOption-rendered content',
+    required: false,
+    description:
+      'Option content rendered with SelectorOption, either by the default renderer or by renderOption when it returns SelectorOption.',
+  },
+  {
+    name: 'Bare caller-rendered option content',
+    required: false,
+    description:
+      'Arbitrary content returned directly by renderOption without opting into SelectorOption.',
+  },
+  {
+    name: 'Option selection indicator',
+    required: false,
+    description:
+      'Resolved selection mark rendered for each option in its checked or unchecked state. Its layout space collapses when the resolved indicator draws nothing.',
+  },
+  {
+    name: 'Option divider',
+    required: false,
+    description:
+      'Divider supplied in the public options data to separate adjacent option groups.',
+  },
+  {
+    name: 'Section heading',
+    required: false,
+    description: 'Visible heading for a labeled group of option rows.',
+  },
+  {
+    name: 'Empty state',
+    required: false,
+    description:
+      'Message shown when the shared panel content has no options or no search matches.',
+  },
+  {
+    name: 'Pointer popup',
+    required: false,
+    description:
+      'Anchored painted surface that hosts the shared panel content for popover presentation.',
+  },
+  {
+    name: 'Touch sheet heading',
+    required: false,
+    description:
+      'Heading above the shared panel content in bottom-sheet presentation.',
+  },
+  {
+    name: 'Touch sheet',
+    required: false,
+    description:
+      'BottomSheet surface that hosts the same panel content for bottom-sheet presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Selector',
   displayName: 'Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'selector',
     'select',
@@ -21,13 +143,40 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-selector', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-selector',
+        visualProps: ['variant', 'size', 'status'],
+        states: ['disabled', 'readonly'],
+      },
       {className: 'astryx-selector-option'},
-      {className: 'astryx-selector-clear-icon'},
+      {
+        className: 'astryx-selector-option-row',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
+      {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
+      {className: 'astryx-selector-empty-state'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
+      {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
+  playground: {
+    defaults: {
+      label: 'Fruit',
+      options: [
+        {value: 'apple', label: 'Apple'},
+        {value: 'orange', label: 'Orange'},
+        {value: 'banana', label: 'Banana'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',
@@ -39,7 +188,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -63,7 +212,7 @@ export const docs = {
       name: 'hasSearch',
       type: 'boolean',
       description:
-        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region.',
+        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region. The search field has built-in affordances: a leading magnifier icon and, once a query is typed, a trailing clear (✕) button that resets the query and returns focus to the input.',
       default: 'false',
     },
     {
@@ -71,6 +220,20 @@ export const docs = {
       type: 'string',
       description: 'Placeholder text for the search input.',
       default: "'Search...'",
+    },
+    {
+      name: 'emptyText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+      default: "'No options'",
+    },
+    {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+      default: "'No results found'",
     },
     {
       name: 'placeholder',
@@ -85,9 +248,23 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'variant',
+      type: "'input' | 'ghost'",
+      description:
+        'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
+      default: "'input'",
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disables the selector.',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the selector read-only: the selected value stays visible, focusable, and included in form submission, and retains its combobox identity with aria-readonly. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {
@@ -132,10 +309,10 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
-      default: "'attached'",
+        'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
+      default: "'attached' for input selectors; 'detached' for ghost selectors",
     },
     {
       name: 'renderOption',
@@ -144,10 +321,41 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'renderValue',
+      type: '(option: SelectorOptionData) => ReactNode',
+      description:
+        'Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56), always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
+    },
+    {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which logical edge of the option row carries a rendered selection mark. An empty mark consumes no space, so selected and unselected labels may shift or have different available width. end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
+      name: 'presentation',
+      type: "'popover' | 'bottom-sheet' | 'adaptive'",
+      description:
+        'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
+      default: "'popover'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'Icon displayed at the start of the selector trigger.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a loading spinner in the trigger.',
+      default: 'false',
     },
     {
       name: 'xstyle',
@@ -159,7 +367,7 @@ export const docs = {
   components: [{name: 'SelectorOption'}],
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -187,6 +395,16 @@ export const docs = {
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon as part of one decorated input surface.',
       },
       {
+        guidance: true,
+        description:
+          'Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the selector should become a bottom sheet on compact touch screens.',
+      },
+      {
         guidance: false,
         description:
           'Use for action menus; use Dropdown Menu for triggering commands or navigation.',
@@ -217,38 +435,7 @@ export const docs = {
           'Wrap a disabled Selector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
       },
     ],
-    anatomy: [
-      {
-        name: 'Label',
-        required: false,
-        description: 'Text label displayed above the selector.',
-      },
-      {
-        name: 'Placeholder',
-        required: false,
-        description: 'Hint text shown when no value is selected.',
-      },
-      {
-        name: 'Description',
-        required: false,
-        description: 'Helper text providing additional context.',
-      },
-      {
-        name: 'Left Icon',
-        required: false,
-        description: 'Icon displayed to the left of the selected value.',
-      },
-      {
-        name: 'Value',
-        required: true,
-        description: 'The currently selected item displayed in the selector.',
-      },
-      {
-        name: 'List',
-        required: true,
-        description: 'The dropdown list of selectable options.',
-      },
-    ],
+    anatomy,
   },
 };
 
@@ -256,7 +443,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -309,38 +496,7 @@ export const docsZh = {
           'Wrap a disabled Selector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
       },
     ],
-    anatomy: [
-      {
-        name: 'Label',
-        required: false,
-        description: 'Text label displayed above the selector.',
-      },
-      {
-        name: 'Placeholder',
-        required: false,
-        description: 'Hint text shown when no value is selected.',
-      },
-      {
-        name: 'Description',
-        required: false,
-        description: 'Helper text providing additional context.',
-      },
-      {
-        name: 'Left Icon',
-        required: false,
-        description: 'Icon displayed to the left of the selected value.',
-      },
-      {
-        name: 'Value',
-        required: true,
-        description: 'The currently selected item displayed in the selector.',
-      },
-      {
-        name: 'List',
-        required: true,
-        description: 'The dropdown list of selectable options.',
-      },
-    ],
+    anatomy,
   },
 };
 
@@ -348,7 +504,7 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -374,6 +530,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
       },
       {
         guidance: false,
@@ -406,37 +567,6 @@ export const docsDense = {
           'Wrap a disabled Selector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
       },
     ],
-    anatomy: [
-      {
-        name: 'Label',
-        required: false,
-        description: 'Text label displayed above the selector.',
-      },
-      {
-        name: 'Placeholder',
-        required: false,
-        description: 'Hint text shown when no value is selected.',
-      },
-      {
-        name: 'Description',
-        required: false,
-        description: 'Helper text providing additional context.',
-      },
-      {
-        name: 'Left Icon',
-        required: false,
-        description: 'Icon displayed to the left of the selected value.',
-      },
-      {
-        name: 'Value',
-        required: true,
-        description: 'The currently selected item displayed in the selector.',
-      },
-      {
-        name: 'List',
-        required: true,
-        description: 'The dropdown list of selectable options.',
-      },
-    ],
+    anatomy,
   },
 };

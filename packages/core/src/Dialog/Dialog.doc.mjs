@@ -30,6 +30,11 @@ export const docs = {
     container: true,
     targets: [
       {className: 'astryx-dialog', visualProps: ['variant']},
+      {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
+      {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
+      {className: 'astryx-dialog-header-close-icon'},
     ],
     vars: [
       {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
@@ -62,23 +67,21 @@ export const docs = {
     {
       name: 'width',
       type: 'number | string',
-      description: 'Width of the dialog in pixels or any CSS value.',
+      description: 'Preferred width of the dialog in pixels or any CSS value. Standard dialogs clamp to their container and the dynamic viewport with spacing-token gutters so narrow viewports keep content on screen.',
       default: '400',
     },
     {
       name: 'maxHeight',
       type: 'number | string',
-      description: 'Maximum height of the dialog.',
-      default: "'75vh'",
+      description: 'Maximum height of the dialog. Defaults to a dynamic viewport value so browser UI changes are reflected where supported.',
+      default: "'75dvh'",
     },
     {
       name: 'position',
       type: 'DialogPosition',
       description:
         'Static position for the dialog; centered by default when omitted. ' +
-        'Prefer logical `start`/`end` (they map correctly under RTL) over the ' +
-        'deprecated physical `left`/`right`, which do not mirror. Logical ' +
-        'wins if both are set.',
+        'Use logical `start`/`end` for inline offsets so positioned dialogs mirror correctly under RTL.',
     },
     {
       name: 'variant',
@@ -91,6 +94,11 @@ export const docs = {
       type: "'required' | 'form' | 'info'",
       description: 'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
       default: "'info'",
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Internal padding of the dialog using the spacing scale step.',
     },
     {
       name: 'isInline',

@@ -247,6 +247,35 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
+  it('peer-deps: fix names a scoped missing peer (no empty install command)', () => {
+    const coreDir = installCore('0.0.14', {'@stylexjs/stylex': '^0.19.0'});
+    const res = checkPeerDeps({cwd: tmpDir, coreDir});
+    expect(res.status).toBe('warn');
+    // The scope must survive version-stripping — `split('@')[0]` used to drop it,
+    // leaving a bare `npm install ` with no package name.
+    expect(res.fix).toContain('npm install @stylexjs/stylex');
+    expect(res.fix).not.toMatch(/npm install\s*`/);
+  });
+
+  it('peer-deps: WARN when an installed peer is out of the declared range', () => {
+    const coreDir = installCore('0.0.14', {'@stylexjs/stylex': '^0.19.0'});
+    // Present, but a stale range resolved an incompatible version.
+    installPkg('@stylexjs/stylex', '0.10.1');
+    const res = checkPeerDeps({cwd: tmpDir, coreDir});
+    expect(res.status).toBe('warn');
+    expect(res.message).toContain('0.10.1');
+    expect(res.message).toContain('^0.19.0');
+    // The fix pins the required range so it overrides the stale one.
+    expect(res.fix).toContain('@stylexjs/stylex@^0.19.0');
+  });
+
+  it('peer-deps: PASS when an installed peer satisfies the range', () => {
+    const coreDir = installCore('0.0.14', {'@stylexjs/stylex': '^0.19.0'});
+    installPkg('@stylexjs/stylex', '0.19.2');
+    const res = checkPeerDeps({cwd: tmpDir, coreDir});
+    expect(res.status).toBe('pass');
+  });
+
   it('package-manager: INFO, reports yarn from lockfile', () => {
     fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '');
     const res = checkPackageManager({cwd: tmpDir});
@@ -324,4 +353,46 @@ describe('doctor — command', () => {
       process.exitCode = prevExit;
     }
   });
+});
+
+describe('doctor — text output mirrors the JSON', () => {
+  /** @param {string} line */
+  const field = line => /^(\w+):\s+(.*)$/.exec(line)?.slice(1) ?? [line, ''];
+
+  it('prints every check and summary field under its JSON key', async () => {
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.chdir(tmpDir);
+    try {
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      const {checks, summary} = JSON.parse(logCalls.join('\n')).data;
+      logCalls = [];
+      await createProgram().parseAsync(['node', 'astryx', 'doctor']);
+      const blocks = logCalls
+        .join('\n')
+        .split(/\n{2,}/)
+        .map(block => block.split('\n').map(field));
+
+      for (const check of checks) {
+        const block = blocks.find(fields =>
+          fields.some(([key, value]) => key === 'id' && value === check.id),
+        );
+        expect(block, `no text record for check ${check.id}`).toBeDefined();
+        expect(
+          /** @type {string[][]} */ (block).map(([key]) => key).sort(),
+        ).toEqual(Object.keys(check).sort());
+      }
+
+      const heading = blocks.findIndex(
+        fields => fields.length === 1 && fields[0][0] === 'summary',
+      );
+      expect(heading, 'no summary section').toBeGreaterThan(-1);
+      expect(blocks[heading + 1]).toEqual(
+        Object.entries(summary).map(([key, count]) => [key, String(count)]),
+      );
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+    }
+  }, 60_000);
 });

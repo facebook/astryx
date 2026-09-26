@@ -20,8 +20,18 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          label: 'Set up the design system',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+        },
+        {
+          type: 'prose',
+          text: 'Then give it a look. Every app gets a theme whether or not anyone picks one, so it is worth one question at setup rather than revisiting screens later that were built around the wrong look:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Give it a look',
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },
@@ -34,13 +44,13 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Add the core package, a theme, and the CLI to your existing project.',
+          text: 'Add the core package and its `@stylexjs/stylex` peer dependency, plus a theme and the CLI.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
+          code: `npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
           type: 'prose',
@@ -71,11 +81,28 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `astryx docs theme` for the full theming guide.',
+          text: 'Available themes:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`@astryxdesign/theme-neutral`: muted and minimal; a good starting point',
+            '`@astryxdesign/theme-butter`: warm, golden tones with blue accents',
+            '`@astryxdesign/theme-chocolate`: rich chocolate and caramel tones',
+            '`@astryxdesign/theme-gothic`: dark-only theme with ink and noir influences',
+            '`@astryxdesign/theme-matcha`: earthy greens and botanical tones',
+            '`@astryxdesign/theme-stone`: warm neutrals inspired by sandstone',
+            '`@astryxdesign/theme-y2k`: playful early-2000s pop aesthetic',
+          ],
         },
         {
           type: 'prose',
           text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `astryx docs migration` before building screens.',
+        },
+        {
+          type: 'prose',
+          text: 'Run `astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -165,7 +192,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
 }`,
         },
         {

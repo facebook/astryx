@@ -11,7 +11,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 
 const SHOWCASE_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png';
+  '/template-assets/light-scene-horizontal-1.png';
 
 export default function MediaThemeShowcase() {
   return (

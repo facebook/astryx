@@ -11,11 +11,11 @@
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {extractComponents} from '../_adapter.mjs';
+import {extractComponents} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Build the `template.show` envelope for an already-resolved template.
- * @param {import('../_adapter.mjs').DiscoveredTemplate} match
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
  * @returns {import('../template.type.mjs').TemplateShowResponse}
  */
 export function templateShow(match) {

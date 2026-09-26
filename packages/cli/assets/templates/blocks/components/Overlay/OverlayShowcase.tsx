@@ -29,7 +29,7 @@ export default function OverlayShowcase() {
           overflow: 'clip',
         }}>
         <img
-          src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
+          src="/template-assets/light-scene-horizontal-1.png"
           alt="Abstract landscape"
           style={{width: '100%', height: '100%', objectFit: 'cover'}}
         />

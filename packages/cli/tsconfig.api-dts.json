@@ -12,8 +12,10 @@
   "include": [
     "api/**/*.mjs",
     "api/**/*.d.ts",
-    "foundation/**/*.d.ts",
-    "authoring/**/*.d.ts",
+    "authoring/**/*.mjs",
+    "authoring/**/*.ts",
+    "foundation/**/*.mjs",
+    "foundation/**/*.ts",
     "clients/cli/lib/*.d.ts",
     "assets/codemods/*.d.ts"
   ],

@@ -58,7 +58,7 @@ jobs:
   # Stable publish — manual dispatch only. Publishes the `latest` dist-tag.
   publish:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: 4-core-ubuntu
     # Dedicated, non-cancelling group. Independent of the canary group so a
     # canary push can never cancel or queue ahead of a stable release.
     concurrency:
@@ -117,7 +117,7 @@ jobs:
   canary:
     name: Publish canary to npm
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: 4-core-ubuntu
     # Dedicated group, cancel-in-progress so a newer main push supersedes an
     # in-flight canary. Independent of the stable group, so this can never
     # cancel or starve a stable dispatch.

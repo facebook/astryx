@@ -6,7 +6,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   discoverComponents,
-  discoverExternalComponents,
   discoverExternalComponentsGrouped,
   findExternalComponentDoc,
   findComponentReadme,
@@ -14,6 +13,9 @@ import {
   levenshteinDistance,
   findClosestComponents,
 } from './component/index.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
+
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../..');
 
 let tmpDir;
 
@@ -387,71 +389,6 @@ describe('findClosestComponents', () => {
   });
 });
 
-describe('discoverExternalComponents', () => {
-  it('finds .doc.mjs files in the docs directory', () => {
-    const docsDir = path.join(tmpDir, 'src');
-    const compDir = path.join(docsDir, 'Employee');
-    fs.mkdirSync(compDir, {recursive: true});
-    fs.writeFileSync(path.join(compDir, 'EmployeeHoverCard.doc.mjs'), '');
-    fs.writeFileSync(path.join(compDir, 'EmployeeLink.doc.mjs'), '');
-
-    const result = discoverExternalComponents(docsDir);
-    expect(result).toEqual(['EmployeeHoverCard', 'EmployeeLink']);
-  });
-
-  it('scans nested directories recursively', () => {
-    const docsDir = path.join(tmpDir, 'src');
-    const deepDir = path.join(docsDir, 'a', 'b', 'c');
-    fs.mkdirSync(deepDir, {recursive: true});
-    fs.writeFileSync(path.join(deepDir, 'DeepComponent.doc.mjs'), '');
-
-    const result = discoverExternalComponents(docsDir);
-    expect(result).toEqual(['DeepComponent']);
-  });
-
-  it('ignores non-.doc.mjs files', () => {
-    const docsDir = path.join(tmpDir, 'src');
-    fs.mkdirSync(docsDir, {recursive: true});
-    fs.writeFileSync(path.join(docsDir, 'Foo.doc.mjs'), '');
-    fs.writeFileSync(path.join(docsDir, 'Foo.tsx'), '');
-    fs.writeFileSync(path.join(docsDir, 'README.md'), '');
-    fs.writeFileSync(path.join(docsDir, 'index.mjs'), '');
-
-    const result = discoverExternalComponents(docsDir);
-    expect(result).toEqual(['Foo']);
-  });
-
-  it('skips node_modules and __tests__ directories', () => {
-    const docsDir = path.join(tmpDir, 'src');
-    const nmDir = path.join(docsDir, 'node_modules', 'dep');
-    const testDir = path.join(docsDir, '__tests__');
-    fs.mkdirSync(nmDir, {recursive: true});
-    fs.mkdirSync(testDir, {recursive: true});
-    fs.writeFileSync(path.join(nmDir, 'Hidden.doc.mjs'), '');
-    fs.writeFileSync(path.join(testDir, 'TestOnly.doc.mjs'), '');
-    fs.writeFileSync(path.join(docsDir, 'Visible.doc.mjs'), '');
-
-    const result = discoverExternalComponents(docsDir);
-    expect(result).toEqual(['Visible']);
-  });
-
-  it('returns empty array for nonexistent directory', () => {
-    const result = discoverExternalComponents(path.join(tmpDir, 'nope'));
-    expect(result).toEqual([]);
-  });
-
-  it('returns sorted results', () => {
-    const docsDir = path.join(tmpDir, 'src');
-    fs.mkdirSync(docsDir, {recursive: true});
-    fs.writeFileSync(path.join(docsDir, 'Zebra.doc.mjs'), '');
-    fs.writeFileSync(path.join(docsDir, 'Alpha.doc.mjs'), '');
-    fs.writeFileSync(path.join(docsDir, 'Middle.doc.mjs'), '');
-
-    const result = discoverExternalComponents(docsDir);
-    expect(result).toEqual(['Alpha', 'Middle', 'Zebra']);
-  });
-});
-
 describe('discoverExternalComponentsGrouped', () => {
   it('reads group: from doc files and groups components', () => {
     const docsDir = path.join(tmpDir, 'src');
@@ -656,4 +593,20 @@ describe('searchComponents', () => {
     );
     expect(results.length).toBe(0);
   });
+});
+
+describe('component <Name> text output', () => {
+  // The text is a projection of the JSON envelope: it may show less, never
+  // data the envelope does not carry.
+  it('shows no related-block records that the JSON lacks', async () => {
+    const json = await runCli(['--json', 'component', 'Button'], REPO_ROOT);
+    expect(json.code).toBe(0);
+    expect(JSON.stringify(JSON.parse(json.stdout).data)).not.toContain('dirName');
+
+    const text = await runCli(['component', 'Button'], REPO_ROOT);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain('# Button');
+    expect(text.stdout).not.toMatch(/^dirName:/m);
+    expect(text.stdout).not.toContain('Related block templates');
+  }, 30_000);
 });

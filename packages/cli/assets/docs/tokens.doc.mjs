@@ -3,7 +3,7 @@
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 184 tokens across 12 categories.
+// Total: 188 tokens across 13 categories.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
@@ -560,6 +560,40 @@ export const docs = {
         }
       ],
       "previewType": "border-line"
+    },
+    {
+      "title": "Focus Tokens",
+      "content": [
+        {
+          "type": "prose",
+          "text": "The keyboard focus ring, shared by every component that draws one. Override these to restyle focus across the system."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Token",
+            "Value"
+          ],
+          "rows": [
+            [
+              "--focus-outline-width",
+              "2px"
+            ],
+            [
+              "--focus-outline-style",
+              "solid"
+            ],
+            [
+              "--focus-outline-color",
+              "var(--color-accent)"
+            ],
+            [
+              "--focus-outline-offset",
+              "3px"
+            ]
+          ]
+        }
+      ]
     },
     {
       "title": "Radius Tokens",

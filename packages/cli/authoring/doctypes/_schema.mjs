@@ -3,15 +3,207 @@
 /**
  * @file Sealed doc load-boundary schemas (doctypes-internal).
  *
- * These zod schemas are the implementation detail behind the doctypes parsers.
- * They are NOT part of the public authoring surface: nothing outside
- * `authoring/doctypes/**` imports them, and they never appear in a public type.
- * They accept BOTH the stamped formats (`type: 'component' | 'function' |
- * 'generic'`) and the legacy loose `export const docs = {...}` shape, so the
- * ~600+ existing docs keep validating unchanged.
+ * Existing doctypes keep their historical top-level passthrough policy so
+ * already-published docs continue to load. NamespaceDoc and every semantic
+ * content block are strict: a misspelled field cannot reach a renderer as
+ * missing data.
  */
 
 import {z} from 'zod';
+
+/** @typedef {import('./base/type.js').AuthoredDocGraphFields} AuthoredDocGraphFieldsType */
+/** @typedef {import('./base/type.js').AuthoredDocKind} AuthoredDocKind */
+/** @typedef {import('./namespace/type.js').NamespaceDoc} NamespaceDoc */
+/** @typedef {import('./reference/type.js').ReferenceContentBlock} ReferenceContentBlock */
+/** @typedef {import('./reference/type.js').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('./component/type.js').SingleComponentDoc} SingleComponentDoc */
+/** @typedef {import('./base/type.js').ComponentPropDoc} ComponentPropDoc */
+/** @typedef {import('./hook/type.js').HookDoc} HookDoc */
+/** @typedef {import('./function/type.js').FunctionDoc} FunctionDoc */
+/** @typedef {import('./schema/type.js').SchemaDoc} SchemaDoc */
+/** @typedef {import('./command/type.js').CommandDoc} CommandDoc */
+/** @typedef {import('./enum/type.js').EnumDoc} EnumDoc */
+
+const nonEmptyString = z.string().min(1);
+
+/** Every authored doc-kind discriminant accepted by parseDoc. */
+export const AuthoredDocKindSchema = z.enum([
+  'component',
+  'function',
+  'generic',
+  'page',
+  'block',
+  'schema',
+  'command',
+  'enum',
+  'namespace',
+]);
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<z.infer<typeof AuthoredDocKindSchema>, AuthoredDocKind>
+ * >} _AuthoredDocKindDriftLock
+ */
+
+/** Shared optional graph fields for every authored doc kind. */
+export const AuthoredDocGraphFields = {
+  placement: z
+    .object({
+      parent: nonEmptyString,
+      slot: nonEmptyString.optional(),
+      order: z.number().int().safe().optional(),
+    })
+    .strict()
+    .optional(),
+  aliases: z.array(nonEmptyString).optional(),
+  audience: z.enum(['public', 'internal']).optional(),
+};
+
+const _AuthoredDocGraphSchema = z.object(AuthoredDocGraphFields).strict();
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     z.infer<typeof _AuthoredDocGraphSchema>,
+ *     AuthoredDocGraphFieldsType
+ *   >
+ * >} _AuthoredDocGraphDriftLock
+ */
+
+const ProseBlockSchema = z
+  .object({type: z.literal('prose'), text: nonEmptyString})
+  .strict();
+const HeadingBlockSchema = z
+  .object({
+    type: z.literal('heading'),
+    level: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
+    text: nonEmptyString,
+  })
+  .strict();
+const CodeBlockSchema = z
+  .object({
+    type: z.literal('code'),
+    lang: nonEmptyString,
+    code: z.string(),
+    label: nonEmptyString.optional(),
+  })
+  .strict();
+const TableBlockSchema = z
+  .object({
+    type: z.literal('table'),
+    headers: z.array(z.string()).min(1),
+    rows: z.array(z.array(z.string())),
+  })
+  .strict()
+  .superRefine((table, context) => {
+    table.rows.forEach((row, index) => {
+      if (row.length !== table.headers.length) {
+        context.addIssue({
+          code: 'custom',
+          path: ['rows', index],
+          message: `expected ${table.headers.length} cells`,
+        });
+      }
+    });
+  });
+const ListBlockSchema = z
+  .object({
+    type: z.literal('list'),
+    style: z.enum(['ordered', 'unordered', 'do', 'dont']),
+    items: z.array(nonEmptyString).min(1),
+  })
+  .strict();
+const TokenReferenceBlockSchema = z
+  .object({
+    type: z.literal('token-ref'),
+    topic: nonEmptyString,
+    section: nonEmptyString,
+  })
+  .strict();
+const WorkflowBlockSchema = z
+  .object({
+    type: z.literal('workflow'),
+    title: nonEmptyString.optional(),
+    steps: z
+      .array(
+        z
+          .object({
+            title: nonEmptyString,
+            description: nonEmptyString.optional(),
+            references: z.array(nonEmptyString).min(1).optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict();
+const CollectionBlockSchema = z
+  .object({
+    type: z.literal('collection'),
+    title: nonEmptyString.optional(),
+    source: z.object({slot: nonEmptyString}).strict(),
+    presentation: z.enum(['list', 'cards', 'compact']).optional(),
+    whenEmpty: z.enum(['show', 'omit']).optional(),
+  })
+  .strict();
+const ReferenceBlockSchema = z
+  .object({
+    type: z.literal('reference'),
+    target: nonEmptyString,
+    projection: z
+      .object({
+        fields: z.array(nonEmptyString).min(1).optional(),
+        sections: z.array(nonEmptyString).min(1).optional(),
+      })
+      .strict()
+      .optional(),
+    presentation: z.enum(['summary', 'compact', 'full']).optional(),
+  })
+  .strict();
+
+/** Runtime schema for every existing and V1 semantic content block. */
+export const ReferenceContentBlockSchema = z.discriminatedUnion('type', [
+  ProseBlockSchema,
+  HeadingBlockSchema,
+  CodeBlockSchema,
+  TableBlockSchema,
+  ListBlockSchema,
+  TokenReferenceBlockSchema,
+  WorkflowBlockSchema,
+  CollectionBlockSchema,
+  ReferenceBlockSchema,
+]);
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
+ *     z.infer<typeof ReferenceContentBlockSchema>,
+ *     ReferenceContentBlock
+ *   >
+ * >} _ReferenceContentBlockDriftLock
+ */
+
+const ReferenceSectionSchema = z
+  .object({
+    id: nonEmptyString.optional(),
+    title: nonEmptyString,
+    category: z.string().optional(),
+    content: z.array(ReferenceContentBlockSchema),
+    previewType: z
+      .enum([
+        'swatch',
+        'shadow-box',
+        'radius-box',
+        'spacing-bar',
+        'size-bar',
+        'border-line',
+        'duration-bar',
+        'easing-curve',
+        'font-sample',
+      ])
+      .optional(),
+  })
+  .strict();
 
 const PropSchema = z
   .object({
@@ -42,10 +234,12 @@ const ReturnSchema = z
   .passthrough();
 
 const BaseDocFields = {
+  ...AuthoredDocGraphFields,
   name: z.string().min(1, 'name is required'),
   displayName: z.string().optional(),
   description: z.string().optional(),
   usage: z.unknown().optional(),
+  import: z.string().min(1).optional(),
   group: z.string().optional(),
   category: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -55,38 +249,413 @@ const BaseDocFields = {
   isHiddenFromOverview: z.boolean().optional(),
 };
 
-/** New-format stamped component doc (`type: 'component'`). */
-export const ComponentDocKindSchema = z
+const ComponentBaseSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('component'),
-    props: z.array(PropSchema),
     theming: z.unknown().optional(),
     playground: z.unknown().optional(),
     examples: z.array(z.unknown()).optional(),
   })
   .passthrough();
 
-/** New-format stamped function/hook doc (`type: 'function'`). */
+/**
+ * One entry in a group doc's `components`: a full ComponentEntry or a
+ * name-only ComponentRef. Readers look every entry up by `name`, so that much
+ * is checked here; the rest passes through, as on an unstamped doc.
+ */
+const ComponentGroupEntrySchema = z
+  .object({name: z.string().min(1, 'component name is required')})
+  .passthrough();
+
+/**
+ * New-format stamped component doc (`type: 'component'`): one component's
+ * `props`, or the `components` a group doc documents together. These are the
+ * shapes the published ComponentDoc type allows, and the ones an unstamped doc
+ * may already take.
+ */
+export const ComponentDocKindSchema = ComponentBaseSchema.extend({
+  props: z.array(PropSchema).optional(),
+  components: z.array(ComponentGroupEntrySchema).optional(),
+}).superRefine((doc, context) => {
+  if (doc.props == null && doc.components == null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['props'],
+      message:
+        'expected the props array, or `components` for a doc that groups several components',
+    });
+  }
+});
+
+/**
+ * A stamped component doc as it loads. The loader accepts what the unstamped
+ * format always accepted, so stamping an existing doc never breaks it:
+ * `displayName` may be missing, `category` is any string, `usage`, `theming`,
+ * `playground` and `examples` pass through unchecked, and a doc has `props`,
+ * `components`, or both; each `components` entry needs only a `name`. Every
+ * other field matches the published type.
+ *
+ * @typedef {Omit<SingleComponentDoc,
+ *     'type' | 'displayName' | 'category' | 'usage' | 'theming' | 'examples' | 'playground' | 'props'>
+ *   & {type: 'component', displayName?: string, category?: string, usage?: unknown,
+ *     theming?: unknown, examples?: unknown[], playground?: unknown,
+ *     props?: ComponentPropDoc[], components?: Array<{name: string}>}} LoadedComponentDoc
+ */
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof ComponentDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedComponentDoc>
+ *   >
+ * >} _ComponentDocDriftLock
+ */
+
+/** Return entry for generalized function docs. */
+const FunctionReturnSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    type: z.string().min(1, 'return type is required'),
+    description: z.string(),
+  })
+  .passthrough();
+
+/** New-format stamped function doc (`type: 'function'`). */
 export const FunctionDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('function'),
     params: z.array(ParamSchema),
-    returns: z.array(ReturnSchema),
+    returns: z.array(FunctionReturnSchema),
   })
   .passthrough();
 
-/** New-format stamped generic reference/topic doc (`type: 'generic'`). */
+/**
+ * A stamped function doc as it loads: as with components, `displayName` may be
+ * missing and `usage` passes through unchecked.
+ *
+ * @typedef {Omit<FunctionDoc, 'type' | 'displayName' | 'usage'>
+ *   & {type: 'function', displayName?: string, usage?: unknown}} LoadedFunctionDoc
+ */
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof FunctionDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedFunctionDoc>
+ *   >
+ * >} _FunctionDocDriftLock
+ */
+
+/**
+ * Every HookDoc is a FunctionDoc, so the one function schema covers both.
+ *
+ * @typedef {import('../_shared/contract.js').Expect<[HookDoc] extends [FunctionDoc] ? true : false>} _HookDocIsFunctionDocLock
+ */
+
+/**
+ * Stamped generic reference/topic doc (`type: 'generic'`). `title` and
+ * `sections` stay optional at this parser boundary for docs produced by the
+ * shipped v0.3.0 factory-removal codemod. When present, all rich fields and
+ * semantic blocks are validated.
+ */
 export const GenericDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('generic'),
+    title: nonEmptyString.optional(),
+    sections: z.array(ReferenceSectionSchema).min(1).optional(),
+    replaces: nonEmptyString.optional(),
+    extends: nonEmptyString.optional(),
+    tokenCategory: z.string().optional(),
+  })
+  .passthrough()
+  .superRefine((doc, context) => {
+    if (doc.replaces != null && doc.extends != null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['extends'],
+        message: 'declares both `replaces` and `extends`; choose one',
+      });
+    }
+    const sectionIds = new Set();
+    doc.sections?.forEach((section, index) => {
+      if (section.id == null) return;
+      if (sectionIds.has(section.id)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['sections', index, 'id'],
+          message: `duplicate section id "${section.id}"`,
+        });
+      }
+      sectionIds.add(section.id);
+    });
+  });
+
+/**
+ * A stamped generic doc as the load check accepts it. `title`, `description`
+ * and `sections` may be missing, as in docs the v0.3.0 factory-removal codemod
+ * produced; `parseReference` then fills them (title from `displayName` or
+ * `name`, an empty description, no sections), so its result is a full
+ * ReferenceDoc. Only a doc with a description and sections is a usable topic
+ * (see `problemsInTopic`).
+ *
+ * @typedef {Omit<ReferenceDoc, 'type' | 'title' | 'description' | 'sections'>
+ *   & {type: 'generic'}
+ *   & Partial<Pick<ReferenceDoc, 'title' | 'description' | 'sections'>>} LoadedReferenceDoc
+ */
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof GenericDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<LoadedReferenceDoc>
+ *   >
+ * >} _ReferenceDocDriftLock
+ */
+
+/** Recursive field descriptor for a SchemaDoc. */
+const SchemaFieldSchema =
+  /** @type {import('zod').ZodType<import('./schema/type.js').SchemaFieldDoc>} */ (
+    z.lazy(() =>
+      z
+        .object({
+          name: z.string().min(1, 'field name is required'),
+          type: z
+            .string({error: 'field type is required'})
+            .min(1, 'field type is required'),
+          description: z.string(),
+          required: z.boolean().optional(),
+          default: z.string().optional(),
+          example: z.string().optional(),
+          deprecated: z.string().optional(),
+          fields: z.array(SchemaFieldSchema).optional(),
+        })
+        .passthrough(),
+    )
+  );
+
+/** New stamped schema doc (`type: 'schema'`). */
+export const SchemaDocKindSchema = z
+  .object({
+    ...AuthoredDocGraphFields,
+    type: z.literal('schema'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    description: z.string(),
+    namespace: z.string().optional(),
+    appliesTo: z.string().optional(),
+    fields: z.array(SchemaFieldSchema),
+    examples: z
+      .array(
+        z
+          .object({label: z.string().optional(), code: z.string()})
+          .passthrough(),
+      )
+      .optional(),
+    notes: z.array(ReferenceContentBlockSchema).optional(),
   })
   .passthrough();
 
-// ── Legacy loose format (unchanged, kept for back-compat) ─────────────
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof SchemaDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<SchemaDoc & {type: 'schema'}>
+ *   >
+ * >} _SchemaDocDriftLock
+ */
+
+/** New stamped command doc (`type: 'command'`). */
+export const CommandDocKindSchema = z
+  .object({
+    ...AuthoredDocGraphFields,
+    type: z.literal('command'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    summary: z.string(),
+    description: z.string().optional(),
+    namespace: z.string().optional(),
+    fn: z.string().optional(),
+    args: z
+      .array(
+        z
+          .object({
+            name: z.string().min(1),
+            param: z.string().optional(),
+            description: z.string().optional(),
+            required: z.boolean().optional(),
+            variadic: z.boolean().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    options: z
+      .array(
+        z
+          .object({
+            flag: z.string().min(1),
+            param: z.string().optional(),
+            description: z.string().optional(),
+            choices: z.array(z.string()).optional(),
+            default: z
+              .union([z.string(), z.boolean(), z.array(z.string())])
+              .optional(),
+            cliOnly: z.boolean().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    subcommands: z.array(z.string()).optional(),
+    examples: z
+      .array(
+        z
+          .object({
+            label: z.string().optional(),
+            cli: z.string(),
+            output: z.string().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    exitCodes: z
+      .array(z.object({code: z.number(), when: z.string()}).passthrough())
+      .optional(),
+    related: z.array(z.string()).optional(),
+    notes: z.array(ReferenceContentBlockSchema).optional(),
+  })
+  .passthrough();
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof CommandDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<CommandDoc & {type: 'command'}>
+ *   >
+ * >} _CommandDocDriftLock
+ */
+
+/** New stamped enum doc (`type: 'enum'`). */
+export const EnumDocKindSchema = z
+  .object({
+    ...AuthoredDocGraphFields,
+    type: z.literal('enum'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    description: z.string(),
+    namespace: z.string().optional(),
+    members: z.array(
+      z
+        .object({
+          value: z.string().min(1, 'member value is required'),
+          description: z.string(),
+          deprecated: z.string().optional(),
+        })
+        .passthrough(),
+    ),
+  })
+  .passthrough();
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<
+ *     import('../_shared/contract.js').NamedFields<z.infer<typeof EnumDocKindSchema>>,
+ *     import('../_shared/contract.js').NamedFields<EnumDoc & {type: 'enum'}>
+ *   >
+ * >} _EnumDocDriftLock
+ */
+
+const NamespaceSlotSchema = z
+  .object({
+    title: nonEmptyString,
+    accepts: z
+      .object({
+        kinds: z.array(AuthoredDocKindSchema).min(1),
+        providers: z.enum(['same', 'configured']).optional(),
+      })
+      .strict(),
+  })
+  .strict();
+
+/** The one new authored doctype: a hierarchy and layout owner. */
+export const NamespaceDocKindSchema = z
+  .object({
+    ...AuthoredDocGraphFields,
+    type: z.literal('namespace'),
+    name: nonEmptyString,
+    title: nonEmptyString,
+    summary: nonEmptyString,
+    keywords: z.array(nonEmptyString).optional(),
+    slots: z
+      .record(nonEmptyString, NamespaceSlotSchema)
+      .refine(slots => Object.keys(slots).length > 0, {
+        message: 'at least one slot is required',
+      }),
+    adopts: z
+      .array(
+        z
+          .object({
+            source: z
+              .object({
+                group: nonEmptyString,
+                kinds: z.array(AuthoredDocKindSchema).min(1).optional(),
+              })
+              .strict(),
+            into: nonEmptyString,
+            groupBy: z.literal('kind').optional(),
+          })
+          .strict(),
+      )
+      .optional(),
+    blocks: z.array(ReferenceContentBlockSchema).optional(),
+  })
+  .strict()
+  .superRefine((doc, context) => {
+    const slots = new Set(Object.keys(doc.slots));
+    doc.adopts?.forEach((rule, index) => {
+      const slot = doc.slots[rule.into];
+      if (slot == null) {
+        context.addIssue({
+          code: 'custom',
+          path: ['adopts', index, 'into'],
+          message: `must name a declared slot; received "${rule.into}"`,
+        });
+        return;
+      }
+      /** @type {AuthoredDocKind[]} */
+      const adoptedKinds =
+        rule.groupBy === 'kind' ? ['namespace'] : (rule.source.kinds ?? []);
+      adoptedKinds.forEach(kind => {
+        if (!slot.accepts.kinds.includes(kind)) {
+          context.addIssue({
+            code: 'custom',
+            path: ['adopts', index, 'into'],
+            message: `slot "${rule.into}" does not accept adopted kind "${kind}"`,
+          });
+        }
+      });
+    });
+    doc.blocks?.forEach((block, index) => {
+      if (block.type === 'collection' && !slots.has(block.source.slot)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['blocks', index, 'source', 'slot'],
+          message: `must name a declared slot; received "${block.source.slot}"`,
+        });
+      }
+    });
+  });
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
+ *     z.infer<typeof NamespaceDocKindSchema>,
+ *     NamespaceDoc
+ *   >
+ * >} _NamespaceDocDriftLock
+ */
+
+// Legacy loose format stays permissive for backward compatibility.
 const LegacyBaseDocSchema = z.object({
+  ...AuthoredDocGraphFields,
   name: z.string().min(1, 'name is required'),
   displayName: z.string().optional(),
   description: z.string().optional(),
@@ -107,6 +676,37 @@ const LegacyBaseDocSchema = z.object({
   relatedHooks: z.array(z.string()).optional(),
 });
 
+const LegacyReferenceDocSchema = LegacyBaseDocSchema.extend({
+  title: nonEmptyString,
+  description: z.string(),
+  sections: z.array(ReferenceSectionSchema).min(1),
+  replaces: nonEmptyString.optional(),
+  extends: nonEmptyString.optional(),
+  tokenCategory: z.string().optional(),
+})
+  .passthrough()
+  .superRefine((doc, context) => {
+    if (doc.replaces != null && doc.extends != null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['extends'],
+        message: 'declares both `replaces` and `extends`; choose one',
+      });
+    }
+    const sectionIds = new Set();
+    doc.sections.forEach((section, index) => {
+      if (section.id == null) return;
+      if (sectionIds.has(section.id)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['sections', index, 'id'],
+          message: `duplicate section id "${section.id}"`,
+        });
+      }
+      sectionIds.add(section.id);
+    });
+  });
+
 const LegacySingleComponentDocSchema = LegacyBaseDocSchema.extend({
   props: z.array(PropSchema),
 }).passthrough();
@@ -126,10 +726,11 @@ const LegacySubComponentDocSchema = LegacyBaseDocSchema.extend({
   props: z.array(PropSchema),
 }).passthrough();
 
-/** The permissive legacy union (sub-component first, then hook, multi, single). */
+/** The permissive legacy union (sub-component, hook, multi, single, then reference). */
 export const LegacyDocSchema = z.union([
   LegacySubComponentDocSchema,
   LegacyHookDocSchema,
   LegacyMultiComponentDocSchema,
   LegacySingleComponentDocSchema,
+  LegacyReferenceDocSchema,
 ]);

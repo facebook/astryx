@@ -131,7 +131,20 @@ function tokenize(str, line, startCol) {
  * @param {string} raw
  * @returns {import('./xle-ast').XLEValue}
  */
-export function parseValue(raw) {
+const MAX_VALUE_DEPTH = 64;
+
+/**
+ * @param {string} raw
+ * @param {number} [_depth]
+ * @returns {import('./xle-ast').XLEValue}
+ */
+export function parseValue(raw, _depth = 0) {
+  if (_depth > MAX_VALUE_DEPTH) {
+    throw new XLEParseError(
+      `Attribute value nested too deeply (limit ${MAX_VALUE_DEPTH})`,
+      0, 0,
+    );
+  }
   const s = raw.trim();
   if (/^(['"]).*\1$/.test(s)) return s.slice(1, -1);
   if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
@@ -144,14 +157,14 @@ export function parseValue(raw) {
     for (const part of splitTop(s.slice(1, -1), ',')) {
       const idx = part.indexOf(':');
       if (idx === -1) obj[part.trim()] = true;
-      else obj[part.slice(0, idx).trim()] = parseValue(part.slice(idx + 1));
+      else obj[part.slice(0, idx).trim()] = parseValue(part.slice(idx + 1), _depth + 1);
     }
     return obj;
   }
   if (s.startsWith('[') && s.endsWith(']')) {
-    return splitTop(s.slice(1, -1), ',').map(parseValue);
+    return splitTop(s.slice(1, -1), ',').map(v => parseValue(v, _depth + 1));
   }
-  if (s.includes(',')) return splitTop(s, ',').map(parseValue);
+  if (s.includes(',')) return splitTop(s, ',').map(v => parseValue(v, _depth + 1));
   return s; // bare ident — enum string
 }
 

@@ -18,7 +18,7 @@ An open source design system that's fully customizable and built for how we buil
 [![Storybook](https://img.shields.io/badge/Storybook-live-ff4785?logo=storybook&logoColor=white)](https://facebook.github.io/astryx/storybook/)
 [![Sandbox](https://img.shields.io/badge/Sandbox-playground-A9792B)](https://facebook.github.io/astryx/sandbox/)
 
-**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://facebook.github.io/astryx/storybook/)** · **[Sandbox](https://facebook.github.io/astryx/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)**
+**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://facebook.github.io/astryx/storybook/)** · **[Sandbox](https://facebook.github.io/astryx/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)** · **[Discord](https://discord.com/invite/XnsUcFykEP)**
 
 </div>
 
@@ -39,19 +39,19 @@ It ships 150+ accessible components, brand-level theming, dark mode, ready-to-sh
 
 Astryx requires **React 19** or later (`react` and `react-dom` are peer dependencies of `@astryxdesign/core`).
 
-Install Astryx and a theme:
+Install Astryx, a theme, and its peer dependencies:
 
 ```bash
 # npm
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 npm install -D @astryxdesign/cli
 
 # pnpm
-pnpm add @astryxdesign/core @astryxdesign/theme-neutral
+pnpm add @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 pnpm add -D @astryxdesign/cli
 
 # yarn
-yarn add @astryxdesign/core @astryxdesign/theme-neutral
+yarn add @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 yarn add -D @astryxdesign/cli
 ```
 
@@ -112,6 +112,9 @@ Battle-tested design solutions for common interactions and workflows: table page
 ## Contributing
 
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
+
+Questions, or want a hand with a PR? Come find us in
+**[Discord](https://discord.com/invite/XnsUcFykEP)**.
 
 Our conventions and review rubrics live in the
 [Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing) —
