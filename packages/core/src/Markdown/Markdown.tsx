@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
+import {Link} from '../Link/Link';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
@@ -70,6 +71,7 @@ import {
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
 import {projectMarkdownHeadings} from './headingProjection';
+import type {MarkdownHeadingProjection} from './headingProjection';
 import {getPreparedMarkdownDocumentDefinition} from './preparedDocument';
 import type {PreparedMarkdownDocument} from './preparedDocument';
 import type {
@@ -86,6 +88,11 @@ type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
+
+interface MarkdownHeadingRenderContext {
+  readonly projection: MarkdownHeadingProjection;
+  readonly hasPermalinks: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -190,6 +197,13 @@ export interface MarkdownProps<
    * @default 1
    */
   headingLevelStart?: 1 | 2 | 3 | 4 | 5 | 6;
+  /**
+   * Adds native fragment links beside top-level default headings. Heading ids
+   * and custom heading renderers are unchanged; custom renderers own any
+   * permalink presentation.
+   * @default false
+   */
+  hasHeadingPermalinks?: boolean;
   isStreaming?: boolean;
   onLinkClick?: (
     href: string,
@@ -339,6 +353,25 @@ const styles = stylex.create({
   documentHeading: {
     // Local document-navigation geometry: no shared spacing role represents it.
     scrollMarginBlockStart: '64px',
+  },
+  headingPermalinkRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: spacingVars['--spacing-1'],
+  },
+  headingInPermalinkRow: {
+    color: 'inherit',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'inherit',
+    marginBlock: 0,
+    marginInline: 0,
+    minWidth: 0,
+  },
+  headingPermalink: {
+    flexShrink: 0,
+    textDecoration: 'none',
   },
   h1: {
     fontSize: typeScaleVars['--text-heading-1-size'],
@@ -1259,7 +1292,7 @@ function renderBlock(
   components: Partial<MarkdownComponents> | undefined,
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<RenderBlockNode, string>,
+  headingContext?: MarkdownHeadingRenderContext,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1291,7 +1324,8 @@ function renderBlock(
       // traversal parseOutlineFromMarkdown uses (which skips headings nested
       // in blockquotes / list items), so rendered ids and outline ids stay
       // identical — including duplicate-slug numbering.
-      const headingId = headingIdMap?.get(node);
+      const headingId = headingContext?.projection.ids.get(node);
+      const headingLabel = headingContext?.projection.labels.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
@@ -1301,26 +1335,75 @@ function renderBlock(
         );
       }
       const Tag = `h${level}` as const;
+      const headingBlockProps = mergeProps(
+        themeProps('markdown-heading', {density, level}),
+        stylex.props(
+          styles.headingBase,
+          headingStyles[level],
+          spacing,
+          contentWidthValue != null
+            ? dynamicStyles.proseWidth(contentWidthValue)
+            : null,
+          contentAlign !== 'start'
+            ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+            : null,
+          isFirst && styles.noMarginBlockStart,
+          isLast && styles.noMarginBlockEnd,
+        ),
+      );
+      if (
+        headingContext?.hasPermalinks === true &&
+        headingId != null &&
+        headingLabel != null
+      ) {
+        return (
+          <div
+            key={index}
+            {...mergeProps(
+              headingBlockProps,
+              stylex.props(styles.headingPermalinkRow),
+            )}>
+            <Tag
+              id={headingId}
+              {...stylex.props(
+                styles.headingInPermalinkRow,
+                variant === 'document' && styles.documentHeading,
+              )}>
+              {headingChildren}
+            </Tag>
+            <Link
+              href={`#${headingId}`}
+              label={t('@astryx.markdown.headingPermalink', {
+                heading: headingLabel,
+              })}
+              onClick={
+                onLinkClick == null
+                  ? undefined
+                  : event => {
+                      const result = onLinkClick(
+                        `#${headingId}`,
+                        event as React.MouseEvent<HTMLAnchorElement>,
+                      );
+                      if (result === false) {
+                        event.preventDefault();
+                      }
+                    }
+              }
+              type="inherit"
+              color="secondary"
+              xstyle={styles.headingPermalink}>
+              #
+            </Link>
+          </div>
+        );
+      }
       return (
         <Tag
           key={index}
           id={headingId}
           {...mergeProps(
-            themeProps('markdown-heading', {density, level}),
-            stylex.props(
-              styles.headingBase,
-              headingStyles[level],
-              variant === 'document' && styles.documentHeading,
-              spacing,
-              contentWidthValue != null
-                ? dynamicStyles.proseWidth(contentWidthValue)
-                : null,
-              contentAlign !== 'start'
-                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-                : null,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
-            ),
+            headingBlockProps,
+            stylex.props(variant === 'document' && styles.documentHeading),
           )}>
           {headingChildren}
         </Tag>
@@ -1926,6 +2009,7 @@ export function Markdown<
   variant = 'default',
   density = 'default',
   headingLevelStart = 1,
+  hasHeadingPermalinks = false,
   isStreaming = false,
   onLinkClick,
   sources,
@@ -2092,21 +2176,24 @@ export function Markdown<
     ],
   );
 
-  // Assign each top-level heading the slug that parseOutlineFromMarkdown
-  // would derive for it, so Outline hash links built from the same source
-  // always find a matching DOM id. Mirrors that function's traversal exactly:
-  // top-level blocks only, one shared duplicate-numbering sequence.
+  // Project top-level heading ids and labels exactly as
+  // parseOutlineFromMarkdown does, so every Outline or permalink target stays
+  // aligned — including one shared duplicate-numbering sequence.
   // NOTE: must stay above the `display === 'inline'` early return below —
   // hooks cannot be conditional.
-  const headingIdMap = useMemo(() => {
+  const headingProjection = useMemo(() => {
     if (preparedDefinition != null) {
-      return preparedDefinition.headingProjection.ids;
+      return preparedDefinition.headingProjection;
     }
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    return projectMarkdownHeadings(blocks, preparedPlugins).ids;
+    return projectMarkdownHeadings(blocks, preparedPlugins);
   }, [preparedDefinition, display, blocks, preparedPlugins]);
+  const headingContext =
+    headingProjection == null
+      ? undefined
+      : {projection: headingProjection, hasPermalinks: hasHeadingPermalinks};
 
   const parsedInlineNodes = useMemo(() => {
     if (display !== 'inline') {
@@ -2277,7 +2364,7 @@ export function Markdown<
           components,
           preparedPlugins,
           t,
-          headingIdMap,
+          headingContext,
         ),
       )}
     </div>

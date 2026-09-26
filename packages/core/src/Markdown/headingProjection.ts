@@ -29,6 +29,10 @@ export interface MarkdownHeadingProjection {
     MarkdownAstBlockContent<MarkdownExtensionNode>,
     string
   >;
+  readonly labels: ReadonlyMap<
+    MarkdownAstBlockContent<MarkdownExtensionNode>,
+    string
+  >;
 }
 
 /** Project top-level heading identity once for rendering and navigation. */
@@ -39,6 +43,10 @@ export function projectMarkdownHeadings(
   const counts = new Map<string, number>();
   const headings: ProjectedMarkdownHeading[] = [];
   const ids = new Map<MarkdownAstBlockContent<MarkdownExtensionNode>, string>();
+  const labels = new Map<
+    MarkdownAstBlockContent<MarkdownExtensionNode>,
+    string
+  >();
 
   for (const block of blocks) {
     if (block.type !== 'heading') {
@@ -50,7 +58,8 @@ export function projectMarkdownHeadings(
     const id = uniqueSlug(slugify(label), counts);
     headings.push({node: block, id, label, level: block.depth});
     ids.set(block, id);
+    labels.set(block, label);
   }
 
-  return {headings, ids};
+  return {headings, ids, labels};
 }
