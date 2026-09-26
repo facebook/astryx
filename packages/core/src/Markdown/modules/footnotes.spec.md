@@ -12,12 +12,16 @@ owners: [cixzhang]
 review_triggers: [public-api, behavior, accessibility, navigation, theming]
 verified_by:
   [
-    packages/core/src/Markdown/parser.test.ts,
-    packages/core/src/Markdown/incremental.test.ts,
-    packages/core/src/Markdown/Markdown.test.tsx,
+    packages/core/src/Markdown/footnotes.parser.test.ts,
+    packages/core/src/Markdown/footnotes.incremental.test.ts,
+    packages/core/src/Markdown/footnotes.protocol.test.ts,
+    packages/core/src/Markdown/footnoteProjection.test.ts,
+    packages/core/src/Markdown/footnotes.render.test.tsx,
     packages/core/src/Markdown/Markdown.public.test.ts,
+    packages/core/src/Markdown/parser.public.test.ts,
     packages/core/src/Markdown/preparedDocument.public.test.ts,
     packages/core/src/Markdown/remark.test.tsx,
+    packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
   ]
 parent_component: component:Markdown
 references:
@@ -28,15 +32,15 @@ references:
 
 ## Contract at a glance
 
-| Area            | Contract                                                                                                                                                                                                                                                                                  |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract | `footnotes="github"` enables Core-owned block footnotes; matching parser and prepared-document options expose explicit footnote-enabled result unions.                                                                                                                                    |
-| Behavior        | Resolved `[^label]` references link to one end-of-document definition numbered by first rendered reference; every occurrence has one backlink.                                                                                                                                            |
-| End-user impact | Readers get native, keyboard-operable, localized footnote navigation without raw HTML, generated custom-renderer markup, or a second scrolling model.                                                                                                                                     |
-| Builder impact  | Builders opt in explicitly. Omission leaves every source byte, parser union, AST value, DOM node, heading ID, and streaming cache on the released path.                                                                                                                                   |
-| Compatibility   | Additive and block-only. Existing headings allocate IDs first; authored links keep `components.link`, while generated footnote links compose the configured `LinkProvider` and `onLinkClick`.                                                                                             |
-| Review checks   | Reject implicit enablement, inline display, plugin-owned footnotes, unresolved-reference swallowing, duplicate-definition data loss, heading-ID changes, unstable repeated-reference IDs, missing backlinks, source-order numbering drift, Remark approximation, or streaming divergence. |
-| Governing rules | [`spec:AST-036` FR3, FR7, FR9–FR16, FR24, FR32, FR36, FR41](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md); [`family:navigation-destinations`](../../../../../docs/families/navigation-destinations.md).                                         |
+| Area            | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract | `footnotes="github"` enables Core-owned block footnotes; matching parser and prepared-document options expose explicit footnote-enabled result unions.                                                                                                                                                                                                                                                                                       |
+| Behavior        | Resolved `[^label]` references link to one end-of-document definition numbered by first rendered reference; every occurrence has one backlink.                                                                                                                                                                                                                                                                                               |
+| End-user impact | Readers get native, keyboard-operable, localized footnote navigation without raw HTML, generated custom-renderer markup, or a second scrolling model.                                                                                                                                                                                                                                                                                        |
+| Builder impact  | Builders opt in explicitly. Omission leaves source bytes, runtime AST values, released parser-result unions, DOM, heading IDs, and streaming work on the released path. The public canonical AST union gains the two Core node kinds.                                                                                                                                                                                                        |
+| Compatibility   | Runtime behavior is additive and block-only. Exhaustive consumers of `MarkdownAstNode`, `MarkdownAstBlockContent`, or `MarkdownAstPhrasingContent` add the new cases when upgrading; released `parseMarkdown` result unions remain narrow unless the option is present. Existing headings allocate IDs first; authored links keep `components.link`, while generated footnote links compose the configured `LinkProvider` and `onLinkClick`. |
+| Review checks   | Reject implicit enablement, inline display, plugin-owned footnotes, unresolved-reference swallowing, duplicate-definition data loss, heading-ID changes, unstable repeated-reference IDs, missing backlinks, source-order numbering drift, Remark approximation, or streaming divergence.                                                                                                                                                    |
+| Governing rules | [`spec:AST-036` FR3, FR7, FR9–FR16, FR24, FR32, FR36, FR41](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown`](../Markdown.spec.md); [`family:navigation-destinations`](../../../../../docs/families/navigation-destinations.md).                                                                                                                                                                                            |
 
 This table is a review projection; the body below is authoritative.
 
@@ -49,12 +53,17 @@ Core because they coordinate the whole document and share its ID namespace.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive, explicit, and block-only
+- Released default runtime preserved: `yes`
+- Compatibility class: additive runtime behavior with one canonical-type exhaustiveness migration
 - Migration decision: `spec:AST-036/DEC-10`
 
-No existing caller migrates. A builder opts in only where `[^label]` should be
-interpreted as footnote syntax.
+No caller must opt in at runtime. Existing `parseMarkdown` and incremental result
+unions remain narrow unless `footnotes: 'github'` is present. The public canonical
+AST unions now include `footnoteReference` and `footnoteDefinition` because transforms,
+visitors, and prepared documents share one canonical tree; TypeScript consumers with an
+exhaustive switch over `MarkdownAstNode`, `MarkdownAstPhrasingContent`, or
+`MarkdownAstBlockContent` must add those cases when upgrading. Default canonical parse
+values do not contain either node.
 
 ## Ownership boundary
 
@@ -85,7 +94,8 @@ interpreted as footnote syntax.
 | Concept                         | Closed values or states                                          | Meaning                                                                                      | Default        | Owner                       | Stability |
 | ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------- | --------------------------- | --------- |
 | `Markdown.footnotes`            | absent or `'github'`                                             | Enables block definition/reference parsing and Core rendering.                               | absent         | `module:Markdown/footnotes` | stable    |
-| Parser `footnotes`              | absent or `'github'`                                             | Selects explicit footnote-enabled parser result families.                                    | absent         | `module:Markdown/footnotes` | stable    |
+| Block parser `footnotes`        | absent or `'github'`                                             | Selects explicit footnote-enabled released result families.                                  | absent         | `module:Markdown/footnotes` | stable    |
+| Canonical AST unions            | include both Core footnote node kinds                            | Lets transforms and visitors handle one shared tree; values appear only for enabled parses.  | widened type   | `spec:AST-036`              | stable    |
 | Canonical reference             | `{type: 'footnoteReference', identifier, label}`                 | One resolved source reference; `identifier` is normalized and `label` preserves source text. | none           | `module:Markdown/footnotes` | stable    |
 | Canonical definition            | `{type: 'footnoteDefinition', identifier, label, children}`      | One first-wins top-level definition with ordinary block children.                            | none           | `module:Markdown/footnotes` | stable    |
 | Released opt-in result families | footnotes, or math plus footnotes                                | Preserve narrow default unions while representing the two new node kinds recursively.        | legacy unions  | `module:Markdown/footnotes` | stable    |
@@ -114,15 +124,19 @@ or widened string is not an accepted opt-in.
    spaces or one tab. A blank line belongs only when the next nonblank line is such an
    indented continuation. The continuation indent is removed before its body is parsed.
 5. The combined body must contain non-whitespace content. It is parsed as ordinary
-   block Markdown under the same citations, autolinks, math, and native plugin syntax,
-   but nested footnote declarations and references remain literal.
+   block Markdown under the same citations, autolinks, math, and eligible inline plugin
+   syntax. Native transforms may visit its descendants; block extension syntax retains
+   the protocol's top-level-only rule. Nested footnote declarations and references remain
+   literal.
 6. Definitions inside a list item, blockquote, table, fenced code block, display math,
    or another definition are literal source. A definition cannot interrupt a paragraph.
 7. Definitions match case-insensitively after normalization. The first valid definition
    wins; a later duplicate and all of its source remain ordinary Markdown rather than
    disappearing.
 8. A reference is `[^label]` in eligible phrasing. It becomes a node only when a winning
-   definition exists. Unresolved, malformed, escaped, code-contained, image-contained,
+   definition exists. At a line start after zero to three spaces, a following `:` keeps
+   the marker declaration-shaped and literal; after ordinary paragraph text, `:` is
+   trailing prose. Unresolved, malformed, escaped, code-contained, image-contained,
    link-label, and definition-body forms remain literal.
 
 This profile uses GitHub's familiar marker and two-space continuation form; the name
@@ -131,29 +145,43 @@ part of Astryx Markdown.
 
 ## Behavioral contract
 
-| ID   | Invariant                                                                                                                                                                                                                                                           | Basis                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| FR1  | Footnote syntax is recognized only with the exact `'github'` opt-in and only for block documents; inline display rejects the option.                                                                                                                                | additive API                   |
-| FR2  | Canonical nodes use MDAST-aligned `footnoteReference` and `footnoteDefinition` names and fields. Default released parser calls stay on their existing unions; explicit opt-ins return recursive footnote or math-plus-footnote families.                            | `spec:AST-036` FR3, FR9, FR32  |
-| FR3  | Grammar and protected contexts follow the eight source rules above. Unresolved references and later duplicate definitions remain literal, copyable Markdown.                                                                                                        | readable fallback              |
-| FR4  | Numbering follows the first rendered resolved reference after native transforms. Repeated references share one number and definition; unreferenced definitions produce no rendered section item.                                                                    | document semantics             |
-| FR5  | Every rendered reference has one unique fragment target and every rendered definition has backlinks to all of its references, in source/render order. Navigation uses native fragments and does not move focus or call `scrollIntoView`.                            | accessibility, navigation      |
-| FR6  | Top-level heading IDs allocate first and remain byte-for-byte unchanged. Footnote definition and reference IDs then reserve the same document-global namespace, use normalized Unicode slugs with deterministic fallback/suffixes, and never collide with headings. | `spec:AST-036` FR15–FR16       |
-| FR7  | Generated reference and backlink controls use Core Link, the configured `LinkProvider`, and `onLinkClick`; `components.link` remains limited to authored Markdown links.                                                                                            | navigation ownership           |
-| FR8  | A native transform may read, move, or remove parsed footnote nodes and transform definition descendants, but cannot mint, duplicate, or change a reference/definition's Core-owned identifier or label.                                                             | `spec:AST-036` FR10–FR15       |
-| FR9  | The Remark adapter remains fail-closed for either footnote node, including an otherwise no-op plugin. It never translates footnotes into ordinary links or drops definitions.                                                                                       | `spec:AST-036` FR18–FR20, FR41 |
-| FR10 | Prepared documents retain their footnote projection and render without reparsing. Source and prepared rendering produce identical numbering, IDs, DOM semantics, and navigation.                                                                                    | `component:Markdown` FR26      |
-| FR11 | Incremental output converges at every character boundary. A definition remains in the mutable tail until its continuation is closed; changes to the effective definition-label set invalidate settled references, while unchanged settled nodes retain reuse.       | `spec:AST-036` FR13, FR36      |
-| FR12 | Omission preserves current parse work and output. Enabled definition collection is linear in the mutable/full input, and identity projection visits the transformed tree once; there is no per-reference document scan.                                             | optional-work contract         |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                        | Basis                          |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1  | Footnote syntax is recognized only with the exact `'github'` opt-in and only for block documents. The released extendable `MarkdownProps` interface retains `display?: TextDisplay`; the component rejects an enabled inline combination at runtime.                                                                                                                                                             | additive API                   |
+| FR2  | Canonical nodes use MDAST-aligned `footnoteReference` and `footnoteDefinition` names and fields. The shared public canonical unions include both kinds, so exhaustive canonical-AST consumers add their cases when upgrading. Default released parser calls stay on their existing unions; explicit opt-ins return recursive footnote or math-plus-footnote families.                                            | `spec:AST-036` FR3, FR9, FR32  |
+| FR3  | Grammar and protected contexts follow the eight source rules above. Unresolved references and later duplicate definitions remain literal, copyable Markdown.                                                                                                                                                                                                                                                     | readable fallback              |
+| FR4  | Numbering follows the first rendered resolved reference after native transforms. Repeated references share one number and definition; unreferenced definitions produce no rendered section item.                                                                                                                                                                                                                 | document semantics             |
+| FR5  | Every rendered reference has one page-unique fragment target and every rendered definition has backlinks to all of its references, in source/render order. Each Markdown instance scopes the fragment graph with its root `id` or an SSR-safe generated identity. Navigation uses native fragments and does not move focus or call `scrollIntoView`.                                                             | accessibility, navigation      |
+| FR6  | Top-level heading IDs allocate before the document-local footnote requests. Headings without references remain byte-for-byte unchanged; when footnotes are enabled, a resolved reference contributes no heading-label text, matching its numbered control rather than its source marker. Scoped footnote IDs use normalized Unicode slugs with deterministic fallback/suffixes and cannot collide with headings. | `spec:AST-036` FR15–FR16       |
+| FR7  | Generated reference and backlink controls use Core Link, the configured `LinkProvider`, and `onLinkClick`; `components.link` remains limited to authored Markdown links.                                                                                                                                                                                                                                         | navigation ownership           |
+| FR8  | A native transform may read, move, or remove parsed footnote nodes and transform definition descendants, but cannot mint, duplicate, or change a reference/definition's Core-owned identifier or label.                                                                                                                                                                                                          | `spec:AST-036` FR10–FR15       |
+| FR9  | The Remark adapter remains fail-closed for either footnote node, including an otherwise no-op plugin. It never translates footnotes into ordinary links or drops definitions.                                                                                                                                                                                                                                    | `spec:AST-036` FR18–FR20, FR41 |
+| FR10 | Prepared documents retain their footnote projection and render without reparsing. Source and prepared rendering produce identical numbering, requested IDs, DOM semantics, and navigation when rendered at the same component identity (or with the same explicit root `id`).                                                                                                                                    | `component:Markdown` FR26      |
+| FR11 | Incremental output converges at every character boundary. A definition remains in the mutable tail until its continuation is closed; changes to the effective definition-label set invalidate settled references, while unchanged settled nodes retain reuse.                                                                                                                                                    | `spec:AST-036` FR13, FR36      |
+| FR12 | Omission preserves current parse work and output. Enabled definition collection is linear in the mutable/full input, and identity projection visits the transformed tree once; there is no per-reference document scan.                                                                                                                                                                                          | optional-work contract         |
+
+Fragment identity is observable and exact:
+
+- A definition requests `footnote-${slugify(identifier) || 'note'}`.
+- A reference requests `footnote-reference-${slugify(identifier) || 'note'}`.
+- The shared allocator appends `-1`, `-2`, and so on when a requested ID is
+  already reserved.
+- All top-level heading IDs are reserved first, then all referenced definition ID
+  requests in first-reference order, then each reference ID request in rendered order.
+  This ordering is shared by source and prepared rendering.
+- Rendered footnote IDs prefix each request with `${scope}:`, where `scope` is the
+  Markdown root's explicit `id` or an SSR-safe React instance identity. The colon
+  separator is outside the heading slug alphabet, making every default instance's
+  footnote graph page-unique and disjoint from Markdown heading IDs.
 
 ## Rendering and navigation contract
 
 - A resolved reference renders as one superscript native fragment Link whose visible
   text is the assigned number and whose localized accessible name identifies that
   footnote.
-- Referenced definitions render once in an ordered list inside a labelled semantic
-  section after all ordinary visible blocks, ordered by first reference rather than
-  definition placement.
+- Referenced definitions render once in an ordered list inside a semantic section
+  headed by one localized visually hidden `h2`, after all ordinary visible blocks,
+  ordered by first reference rather than definition placement.
 - Definition children use the same built-in block renderers, density, content width,
   content alignment, plugin renderers, authored-link override, and math renderer as
   the owning document. Definition declaration nodes never render at their source
@@ -170,9 +198,10 @@ part of Astryx Markdown.
 - **AR1 — native relationships.** Every reference and backlink is an ordinary `href`
   fragment pair with a unique target; keyboard, assistive technology, browser history,
   and no-JavaScript behavior use native navigation.
-- **AR2 — named region.** The generated footnote section is a labelled semantic region
-  containing one ordered list. The label, reference names, and backlink names are
-  localized.
+- **AR2 — discoverable section.** The generated footnote section starts with one
+  localized visually hidden `h2` and contains one ordered list; it does not create
+  another named region when several Markdown documents share a page. The heading,
+  reference names, and backlink names are localized.
 - **AR3 — stable reading order.** Definition order follows first reference order and
   definition content preserves its authored block order. Repeated references do not
   duplicate definition prose.
@@ -203,8 +232,9 @@ theme targets.
   built-ins, never plugin extension nodes.
 - `module:Markdown/remark` remains intentionally narrower and rejects footnote trees.
 - `module:Outline/parseOutlineFromMarkdown` continues to project only top-level
-  headings. Footnote definitions and headings nested inside them never create Outline
-  items.
+  headings and accepts the matching `footnotes: 'github'` option so heading text and
+  IDs agree with enabled Markdown. Footnote definitions and headings nested inside
+  them never create Outline items.
 - `family:navigation-destinations` owns native-link and LinkProvider behavior.
 
 ## Content boundary
@@ -216,15 +246,15 @@ resolution.
 
 ## Verification map
 
-| Contract       | Verification                                                                                          | Representative states                                                                                                                        | Failure expectation                                                                                            |
-| -------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Grammar/AST    | Parser canonical and released-projection fixtures                                                     | omitted/enabled, escaped/malformed, multiline, LF/CRLF, protected contexts, nested declarations, duplicates, unresolved, math/plugins        | Default union/output widening, swallowed source, wrong first winner, or invalid placement fails.               |
-| Identity       | Deterministic projection fixtures                                                                     | duplicate labels, repeated references, Unicode/punctuation labels, heading collisions, transformed order, removed definitions                | Changed heading ID, duplicate DOM ID, unstable suffix, wrong number, or nonliteral orphan fails.               |
-| Rendering/a11y | DOM, role/name, focusability, LinkProvider, `onLinkClick`, theme-target, SSR, and accessibility tests | one/many/unreferenced notes, repeated references, custom authored-link/heading/paragraph renderers, default/document variants, RTL-ready CSS | Missing region/list/link semantics, custom-link takeover, imperative scroll/focus, or inaccessible link fails. |
-| Streaming      | Every-character full/incremental parity and reuse fixtures                                            | reference before definition, growing continuation, definition removal/replacement, terminal incomplete input, LF/CRLF, math/plugins          | Prefix oscillation, stale settled reference, premature definition settlement, or final mismatch fails.         |
-| Prepared       | Prepared-document public and DOM fixtures                                                             | footnotes alone, math plus footnotes, plugins/transforms, heading collisions                                                                 | Reparse, projection drift, or source/prepared DOM difference fails.                                            |
-| Remark         | Adapter rejection fixtures                                                                            | source and plugin-authored footnote nodes, no-op and mutating plugins                                                                        | Acceptance, silent drop, ordinary-link approximation, or lost readable fallback fails.                         |
-| Repository     | Typecheck, lint, formatting, knowledge, changeset, package-boundary, and client-boundary checks       | every implementation change                                                                                                                  | Internal content, stale docs/types, or a new parser-to-client dependency blocks merge.                         |
+| Contract       | Verification                                                                                             | Representative states                                                                                                                        | Failure expectation                                                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Grammar/AST    | Parser canonical and released-projection fixtures                                                        | omitted/enabled, escaped/malformed, multiline, LF/CRLF, protected contexts, nested declarations, duplicates, unresolved, math/plugins        | Default union/output widening, swallowed source, wrong first winner, or invalid placement fails.                                           |
+| Identity       | Deterministic projection fixtures                                                                        | duplicate labels, repeated references, Unicode/punctuation labels, heading collisions, transformed order, removed definitions                | Changed heading ID, duplicate DOM ID, unstable suffix, wrong number, or nonliteral orphan fails.                                           |
+| Rendering/a11y | DOM, heading/name, focusability, LinkProvider, `onLinkClick`, theme-target, SSR, and accessibility tests | one/many/unreferenced notes, repeated references, custom authored-link/heading/paragraph renderers, default/document variants, RTL-ready CSS | Missing hidden heading/list/link semantics, duplicate page IDs, custom-link takeover, imperative scroll/focus, or inaccessible link fails. |
+| Streaming      | Every-character full/incremental parity and reuse fixtures                                               | reference before definition, growing continuation, definition removal/replacement, terminal incomplete input, LF/CRLF, math/plugins          | Prefix oscillation, stale settled reference, premature definition settlement, or final mismatch fails.                                     |
+| Prepared       | Prepared-document public and DOM fixtures                                                                | footnotes alone, math plus footnotes, plugins/transforms, heading collisions                                                                 | Reparse, projection drift, or source/prepared DOM difference fails.                                                                        |
+| Remark         | Adapter rejection fixtures                                                                               | source and plugin-authored footnote nodes, no-op and mutating plugins                                                                        | Acceptance, silent drop, ordinary-link approximation, or lost readable fallback fails.                                                     |
+| Repository     | Typecheck, lint, formatting, knowledge, changeset, package-boundary, and client-boundary checks          | every implementation change                                                                                                                  | Internal content, stale docs/types, or a new parser-to-client dependency blocks merge.                                                     |
 
 ## Decision log
 

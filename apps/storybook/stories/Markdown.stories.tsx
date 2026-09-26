@@ -44,6 +44,10 @@ const meta: Meta<typeof Markdown> = {
     hasHeadingPermalinks: {
       control: 'boolean',
     },
+    footnotes: {
+      control: 'select',
+      options: [undefined, 'github'],
+    },
     isStreaming: {control: 'boolean'},
     display: {
       control: 'select',
@@ -200,6 +204,38 @@ export const HeadingPermalinks: Story = {
     children:
       '# Installation\n\nInstall the package.\n\n## Configuration\n\nConfigure the application.\n\n## Configuration\n\nDuplicate labels keep unique destinations.',
     hasHeadingPermalinks: true,
+  },
+};
+
+export const Footnotes: Story = {
+  args: {
+    children: [
+      '# Research notes',
+      '',
+      'The first claim has context.[^source] A repeated reference points to the same note.[^source]',
+      '',
+      'A second claim uses another note.[^detail]',
+      '',
+      '[^detail]: Definitions are ordered by their first rendered reference, not by declaration order.',
+      '',
+      '[^source]: Footnotes use native fragment navigation and one backlink per reference.',
+    ].join('\n'),
+    footnotes: 'github',
+    variant: 'document',
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole('region', {name: 'Footnotes'}),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getAllByRole('link', {name: 'Go to footnote 1'}),
+    ).toHaveLength(2);
+    await expect(
+      canvas.getByRole('link', {
+        name: 'Back to reference 2 for footnote 1',
+      }),
+    ).toHaveAttribute('href', '#footnote-reference-source-1');
   },
 };
 

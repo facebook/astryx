@@ -9,6 +9,10 @@
 
 import type {MarkdownAstRoot} from './ast';
 import {
+  projectMarkdownFootnotes,
+  type MarkdownFootnoteProjection,
+} from './footnoteProjection';
+import {
   projectMarkdownHeadings,
   type MarkdownHeadingProjection,
 } from './headingProjection';
@@ -54,6 +58,7 @@ export interface PrepareMarkdownDocumentOptions<
   readonly sourceIds?: ReadonlySet<string>;
   readonly autolink?: 'gfm';
   readonly math?: boolean;
+  readonly footnotes?: 'github';
   readonly plugins?: Plugins;
 }
 
@@ -63,6 +68,7 @@ interface PreparedMarkdownDocumentDefinition {
   readonly source: string;
   readonly root: MarkdownAstRoot<MarkdownExtensionNode>;
   readonly headingProjection: MarkdownHeadingProjection;
+  readonly footnoteProjection: MarkdownFootnoteProjection | undefined;
   readonly plugins: PreparedMarkdownPlugins | undefined;
 }
 
@@ -96,6 +102,7 @@ export function prepareMarkdownDocument<
       sourceIds: options.sourceIds,
       autolink: options.autolink,
       math: options.math,
+      footnotes: options.footnotes,
       plugins: preparedPlugins?.syntaxEntries,
     },
     true,
@@ -111,6 +118,10 @@ export function prepareMarkdownDocument<
     root.children,
     preparedPlugins,
   );
+  const footnoteProjection =
+    options.footnotes === 'github'
+      ? projectMarkdownFootnotes(root.children, headingProjection)
+      : undefined;
   const outline = Object.freeze(
     headingProjection.headings.map(({id, label, level}) =>
       Object.freeze({id, label, level}),
@@ -131,6 +142,7 @@ export function prepareMarkdownDocument<
       source,
       root,
       headingProjection,
+      footnoteProjection,
       plugins: preparedPlugins,
     } satisfies PreparedMarkdownDocumentDefinition),
   });

@@ -99,6 +99,11 @@ describe('parseOutlineFromMarkdown', () => {
     ).toEqual([
       {id: 'https-example-com', label: 'https://example.com', level: 1},
     ]);
+    expect(
+      parseOutlineFromMarkdown('# Notes[^detail]\n\n[^detail]: Hidden', {
+        footnotes: 'github',
+      }),
+    ).toEqual([{id: 'notes', label: 'Notes', level: 1}]);
   });
 
   it('flattens inline formatting into the label text', () => {

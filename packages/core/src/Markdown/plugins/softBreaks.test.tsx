@@ -96,6 +96,30 @@ describe('markdownSoftBreaksPlugin', () => {
     });
   });
 
+  it('transforms eligible prose inside enabled footnote definitions', () => {
+    const root = parseMarkdownAst(
+      'Body[^note].\n\n[^note]: First line\n  Second line',
+      {footnotes: 'github', plugins: [markdownSoftBreaksPlugin]},
+    );
+    const definition = root.children.find(
+      node => node.type === 'footnoteDefinition',
+    );
+
+    expect(definition).toMatchObject({
+      type: 'footnoteDefinition',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {type: 'text', value: 'First line'},
+            {type: 'break'},
+            {type: 'text', value: 'Second line'},
+          ],
+        },
+      ],
+    });
+  });
+
   it('preserves the no-plugin path and opaque contexts', () => {
     expect(
       parseMarkdownAst('No line ending', {

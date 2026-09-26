@@ -33,8 +33,12 @@ import type {
 import type {
   BlockNode,
   BlockNodeWithMath,
+  BlockNodeWithFootnotes,
+  BlockNodeWithMathAndFootnotes,
   InlineNode,
   InlineNodeWithMath,
+  InlineNodeWithFootnotes,
+  InlineNodeWithMathAndFootnotes,
   MarkdownAstImage,
   MarkdownDocumentProps,
   MarkdownProps,
@@ -137,8 +141,9 @@ describe('Markdown public parser types', () => {
   it('keeps source and prepared document props mutually exclusive', () => {
     const document = prepareMarkdownDocument('# Prepared');
     const sourceProps: MarkdownProps = {
-      children: '# Source',
+      children: '# Source[^note]\n\n[^note]: Definition.',
       hasHeadingPermalinks: true,
+      footnotes: 'github',
     };
     const documentProps: MarkdownDocumentProps = {
       document,
@@ -154,7 +159,32 @@ describe('Markdown public parser types', () => {
         // @ts-expect-error document props replace string children
         children: '# Source',
       };
-      return {mixedSource, mixedDocument};
+      const inlineFootnotes: MarkdownProps = {
+        children: 'Inline[^note]',
+        display: 'inline',
+        // Kept type-compatible for the released extendable interface; the
+        // component rejects this document-level combination at runtime.
+        footnotes: 'github',
+      };
+      interface WrappedMarkdownProps extends MarkdownProps {
+        wrapperLabel?: string;
+      }
+      const wrappedSource: WrappedMarkdownProps = {
+        children: '# Wrapped',
+        wrapperLabel: 'example',
+      };
+      const preparedFootnotes: MarkdownDocumentProps = {
+        document,
+        // @ts-expect-error prepared documents capture syntax options during preparation
+        footnotes: 'github',
+      };
+      return {
+        mixedSource,
+        mixedDocument,
+        inlineFootnotes,
+        wrappedSource,
+        preparedFootnotes,
+      };
     }
 
     expectTypeOf(sourceProps.children).toBeString();
@@ -213,6 +243,55 @@ describe('Markdown public parser types', () => {
     expectTypeOf<
       Extract<BlockNodeWithMath, {type: 'math'}>['value']
     >().toBeString();
+  });
+
+  it('types direct and incremental footnote opt-ins with explicit unions', () => {
+    const direct = parseMarkdown('Body[^note].\n\n[^note]: Definition.', {
+      footnotes: 'github',
+    });
+    const incremental = parseMarkdownIncremental(
+      'Body[^note].\n\n[^note]: Definition.',
+      createIncrementalState<false, true>(),
+      {footnotes: 'github'},
+    );
+    const combined = parseMarkdown('Math[^note].\n\n[^note]: $$x$$', {
+      math: true,
+      footnotes: 'github',
+    });
+
+    expectTypeOf(direct).toEqualTypeOf<BlockNodeWithFootnotes[]>();
+    expectTypeOf(incremental).toEqualTypeOf<BlockNodeWithFootnotes[]>();
+    expectTypeOf(combined).toEqualTypeOf<BlockNodeWithMathAndFootnotes[]>();
+    expectTypeOf<
+      Extract<
+        InlineNodeWithFootnotes,
+        {type: 'footnoteReference'}
+      >['identifier']
+    >().toBeString();
+    expectTypeOf<
+      Extract<
+        InlineNodeWithMathAndFootnotes,
+        {type: 'footnoteReference'}
+      >['label']
+    >().toBeString();
+    expectTypeOf<
+      Extract<BlockNodeWithFootnotes, {type: 'footnoteDefinition'}>['children']
+    >().toMatchTypeOf<BlockNodeWithFootnotes[]>();
+
+    function compileOnlyFootnoteGuards() {
+      parseMarkdownIncremental(
+        'Body[^note].\n\n[^note]: Definition.',
+        // @ts-expect-error footnote parsing requires a footnote-enabled state
+        createIncrementalState(),
+        {
+          footnotes: 'github',
+        },
+      );
+      const dynamicOptions: {footnotes: string} = {footnotes: 'github'};
+      // @ts-expect-error callers must preserve the exact footnote dialect
+      parseMarkdown('Body[^note].\n\n[^note]: Definition.', dynamicOptions);
+    }
+    expectTypeOf(compileOnlyFootnoteGuards).toBeFunction();
   });
 
   it('exports typed plugin construction and node-kind visitors', () => {
