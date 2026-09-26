@@ -473,9 +473,9 @@ export type SelectorSize = 'sm' | 'md' | 'lg';
 
 /**
  * Menu placement for {@link Selector}: the four explicit layer directions,
- * plus the two selector-specific modes — `'overlay'` (the selected option
- * over the trigger, the default) and `'offset'` (clear of the trigger by
- * the standard menu gap, direction left to the layer).
+ * plus two selector-specific modes: `'overlay'` (the selected option over
+ * the trigger, the default) and `'offset'` (clear of the trigger by the
+ * standard menu gap; currently the same position as `'below'`).
  */
 export type SelectorPlacement = LayerPlacement | 'overlay' | 'offset';
 
@@ -713,8 +713,9 @@ interface SelectorPropsBase<
    *   trigger and clamped to the viewport, native-select style. Falls back
    *   to `'offset'` when `hasSearch` is set, since the search input replaces
    *   the selected option at the top of the menu.
-   * - `'offset'`: clear of the trigger by the standard menu gap; the
-   *   direction is left to the layer.
+   * - `'offset'`: clear of the trigger by the standard menu gap instead of
+   *   overlaying it. It currently uses the `'below'` position, including the
+   *   layer's usual flips near viewport edges.
    * - `'above' | 'below' | 'start' | 'end'`: explicit layer positioning
    *   (for example, `placement="above"` for bottom-fixed toolbars).
    *
@@ -1158,8 +1159,8 @@ export function Selector<T extends SelectorOptionType>(
   const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
   const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
   // 'overlay' pins the menu below and pulls it up by the measured margin;
-  // 'offset' starts from the standard menu position (below) and leaves the
-  // direction to the layer's position-try fallbacks.
+  // 'offset' uses the standard menu position (below) with its usual
+  // position-try fallbacks, the same as an explicit 'below'.
   const popoverPlacement: LayerPlacement =
     placement == null || placement === 'overlay' || placement === 'offset'
       ? 'below'

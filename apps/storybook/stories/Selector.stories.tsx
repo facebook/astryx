@@ -70,7 +70,7 @@ const meta: Meta<typeof Selector> = {
       control: 'select',
       options: ['overlay', 'offset', 'above', 'below', 'start', 'end'],
       description:
-        "Where the open menu sits relative to the trigger. 'overlay' (the default) pulls the menu up so the selected option sits over the trigger; 'offset' clears it by the standard menu gap and leaves the direction to the layer.",
+        "Where the open menu sits relative to the trigger. 'overlay' (the default) pulls the menu up so the selected option sits over the trigger; 'offset' clears it by the standard menu gap instead (currently the same position as 'below').",
     },
     presentation: {
       control: 'radio',
