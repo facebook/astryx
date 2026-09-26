@@ -161,7 +161,9 @@ mode from `?theme=`, defaulting to light, so screenshots are unchanged). The
 scan reads the color-scheme the page actually rendered in and records it in
 `effectiveThemes`. A preview that pins light, such as one built before it
 honoured `?theme=`, lists only `light` in `themesScanned` instead of claiming
-a dark pass it never rendered.
+a dark pass it never rendered. When a page sets no root background, the scan
+makes the painted canvas colour explicit first, because axe on its own
+measures contrast against white even when the page renders dark.
 
 Generate the sidecar after building previews — target-neutral, the same axe
 rules run against every target's rendered output:

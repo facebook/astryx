@@ -435,18 +435,32 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
     return results?.['tc-1'];
   }
 
+  // Mirrors the Astryx preview entry: mode comes from ?theme, default light
+  const THEME_FROM_QUERY =
+    '<script>document.documentElement.style.colorScheme = ' +
+    "new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';" +
+    '</script>';
+
   it('scans dark for real when the preview takes its mode from ?theme', async () => {
-    // Mirrors the Astryx preview entry: mode comes from ?theme, default light
-    const forPrompt = await scanFixture(
-      '<script>document.documentElement.style.colorScheme = ' +
-        "new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';" +
-        '</script>',
-      DARK_ONLY_CONTRAST,
-    );
+    const forPrompt = await scanFixture(THEME_FROM_QUERY, DARK_ONLY_CONTRAST);
     const contrast = forPrompt?.violations.find(v => v.id === 'color-contrast');
     expect(contrast?.themes).toEqual(['dark']);
     expect(forPrompt?.themesScanned).toEqual(['light', 'dark']);
     expect(forPrompt?.effectiveThemes).toEqual({light: 'light', dark: 'dark'});
+  }, 120_000);
+
+  it('measures dark contrast against the dark canvas the page paints', async () => {
+    // Nothing sets a background, so the browser paints the canvas in the
+    // page's color-scheme; axe on its own assumes a white page and would
+    // flag the dark theme's light-grey text (Astryx table headers, #4229)
+    const forPrompt = await scanFixture(
+      THEME_FROM_QUERY,
+      '<p style="color: light-dark(#474747, #9e9e9e)">Secondary text</p>',
+    );
+    expect(forPrompt?.themesScanned).toEqual(['light', 'dark']);
+    expect(forPrompt?.violations.map(v => v.id)).not.toContain(
+      'color-contrast',
+    );
   }, 120_000);
 
   it('does not claim a dark scan for a preview pinned to light', async () => {

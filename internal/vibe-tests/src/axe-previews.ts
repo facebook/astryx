@@ -10,12 +10,11 @@
  * Loads each preview in headless Chromium (light + dark, requested through
  * both prefers-color-scheme and ?theme=), records which theme each scan
  * actually rendered in, runs axe-core against the live rendered DOM, and
- * writes per-prompt violations keyed by
- * promptId — the same sidecar pattern as build-errors.json. The next
- * universal-aggregate run picks the sidecar up automatically and folds the
- * violations into the accessibility dimension (issue #4145): this is what
- * lets the score see focus, ARIA wiring, and contrast — things the static
- * scan of consumer code structurally cannot.
+ * writes per-prompt violations keyed by promptId — the same sidecar pattern
+ * as build-errors.json. The next universal-aggregate run picks the sidecar
+ * up automatically and folds the violations into the accessibility dimension
+ * (issue #4145): this is what lets the score see focus, ARIA wiring, and
+ * contrast — things the static scan of consumer code structurally cannot.
  *
  * build-previews writes every listed iteration's previews under the first
  * iteration's previews/, so each iteration reads them from there (override
@@ -282,6 +281,21 @@ export async function scanIteration(opts: {
               document.querySelector('[data-astryx-theme]') ??
               document.documentElement;
             return getComputedStyle(root).colorScheme;
+          });
+
+          // axe treats a transparent page as white, but the browser paints
+          // the canvas in the page's color-scheme (dark for a dark preview).
+          // When no root background is set, make that canvas explicit so
+          // contrast is measured against what actually renders.
+          await page.evaluate(() => {
+            const html = document.documentElement;
+            const transparent = 'rgba(0, 0, 0, 0)';
+            if (
+              getComputedStyle(html).backgroundColor === transparent &&
+              getComputedStyle(document.body).backgroundColor === transparent
+            ) {
+              html.style.backgroundColor = 'Canvas';
+            }
           });
 
           const axe = await new AxeBuilder({page}).analyze();
