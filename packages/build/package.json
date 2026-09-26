@@ -54,6 +54,7 @@
     "lightningcss": "^1.32.0"
   },
   "devDependencies": {
+    "enhanced-resolve": "^5.21.6",
     "esbuild": "catalog:"
   },
   "peerDependenciesMeta": {
