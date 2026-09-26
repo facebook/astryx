@@ -39,7 +39,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    image: '/template-assets/illustrative-horizontal-1.png',
+    image:
+      '/template-assets/illustrative-horizontal-1.png',
   },
   {
     id: 2,
@@ -47,7 +48,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    image: '/template-assets/illustrative-vertical-1.png',
+    image:
+      '/template-assets/illustrative-vertical-1.png',
   },
   {
     id: 3,
@@ -55,7 +57,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    image: '/template-assets/illustrative-horizontal-3.png',
+    image:
+      '/template-assets/illustrative-horizontal-3.png',
   },
   {
     id: 4,
@@ -63,7 +66,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    image: '/template-assets/illustrative-horizontal-4.png',
+    image:
+      '/template-assets/illustrative-horizontal-4.png',
   },
   {
     id: 5,
@@ -71,7 +75,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
-    image: '/template-assets/illustrative-horizontal-5.png',
+    image:
+      '/template-assets/illustrative-horizontal-5.png',
   },
   {
     id: 6,
@@ -79,7 +84,8 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    image: '/template-assets/illustrative-horizontal-2.png',
+    image:
+      '/template-assets/illustrative-horizontal-2.png',
   },
 ];
 

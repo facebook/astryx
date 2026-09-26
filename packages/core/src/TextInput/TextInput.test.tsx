@@ -1131,3 +1131,4 @@ describe('TextInput text size', () => {
     );
   });
 });
+

@@ -288,8 +288,7 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<File | File[] | null>(null);
     const [b, setB] = useState<File | File[] | null>(null);
     return (
-      <div
-        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
         <FileInput
           label="Attached (default)"
           value={a}

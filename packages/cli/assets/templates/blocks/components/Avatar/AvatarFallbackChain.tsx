@@ -36,7 +36,10 @@ export default function AvatarFallbackChain() {
         <Text type="supporting">Both invalid, has name</Text>
       </HStack>
       <HStack gap={3} vAlign="center">
-        <Avatar src="/template-assets/does-not-exist-primary.jpg" size="lg" />
+        <Avatar
+          src="/template-assets/does-not-exist-primary.jpg"
+          size="lg"
+        />
         <Text type="supporting">All invalid, no name</Text>
       </HStack>
     </VStack>

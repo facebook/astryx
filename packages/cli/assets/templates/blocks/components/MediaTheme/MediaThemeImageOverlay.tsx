@@ -9,7 +9,8 @@ import {Section} from '@astryxdesign/core/Section';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-const LANDSCAPE_IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
+const LANDSCAPE_IMAGE_URL =
+  '/template-assets/light-scene-horizontal-1.png';
 
 export default function MediaThemeImageOverlay() {
   return (

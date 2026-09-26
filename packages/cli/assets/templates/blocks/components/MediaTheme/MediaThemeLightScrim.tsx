@@ -9,7 +9,8 @@ import {Section} from '@astryxdesign/core/Section';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-const BRIGHT_ROOM_IMAGE_URL = '/template-assets/light-home-square-1.png';
+const BRIGHT_ROOM_IMAGE_URL =
+  '/template-assets/light-home-square-1.png';
 
 export default function MediaThemeLightScrim() {
   return (

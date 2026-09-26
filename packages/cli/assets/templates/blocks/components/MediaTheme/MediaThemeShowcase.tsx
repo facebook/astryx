@@ -10,7 +10,8 @@ import {Button} from '@astryxdesign/core/Button';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 
-const SHOWCASE_IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
+const SHOWCASE_IMAGE_URL =
+  '/template-assets/light-scene-horizontal-1.png';
 
 export default function MediaThemeShowcase() {
   return (
