@@ -873,6 +873,29 @@ describe('Tokenizer', () => {
       expect(screen.queryByText('Create "existing"')).not.toBeInTheDocument();
     });
 
+    it('suppresses Create case-insensitively for already-selected label', async () => {
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[{id: 'u1', label: 'Alice'}]}
+          onChange={() => {}}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "alice"')).not.toBeInTheDocument();
+    });
+
     it('does not show Create option when hasCreate is false', async () => {
       render(
         <Tokenizer
