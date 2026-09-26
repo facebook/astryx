@@ -4,7 +4,7 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens
+ * @input Uses React, native dialog, StyleX, IconButton and navigation focus recovery
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -31,6 +31,7 @@ import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useDisabledFocusRecovery} from '../hooks/useDisabledFocusRecovery';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, rtlStyles} from '../utils';
@@ -321,6 +322,9 @@ export function Lightbox({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mergedDialogRef = useMergedRefs(ref, dialogRef);
   const containerRef = useRef<HTMLDivElement>(null);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
 
@@ -359,6 +363,21 @@ export function Lightbox({
   const isVideo = currentType === 'video';
   const canPrev = isGallery && index > 0;
   const canNext = isGallery && index < mediaArray.length - 1;
+
+  const previousFocus = useDisabledFocusRecovery(!canPrev, previousRef, () =>
+    isOpen
+      ? nextRef.current != null && !nextRef.current.disabled
+        ? nextRef.current
+        : closeRef.current
+      : null,
+  );
+  const nextFocus = useDisabledFocusRecovery(!canNext, nextRef, () =>
+    isOpen
+      ? previousRef.current != null && !previousRef.current.disabled
+        ? previousRef.current
+        : closeRef.current
+      : null,
+  );
 
   // Scroll lock
   useScrollLock(isOpen);
@@ -628,13 +647,13 @@ export function Lightbox({
             icon={<Icon icon="close" size="sm" color="inherit" />}
             label={t('@astryx.lightbox.close')}
             variant="ghost"
+            ref={closeRef}
             onClick={handleClose}
             xstyle={[styles.closeButton, styles.controlButton]}
           />
 
-          {/* Gallery nav: prev — stays mounted and is disabled at the start of
-            the range so pressing/arrowing to the boundary doesn't unmount the
-            focused control and drop focus to <body>. */}
+          {/* Keep gallery controls mounted; committed disablement transfers
+            their focus to the opposite control when a boundary is reached. */}
           {isGallery && (
             <IconButton
               icon={
@@ -648,6 +667,8 @@ export function Lightbox({
               label={t('@astryx.lightbox.previous')}
               variant="ghost"
               isDisabled={!canPrev}
+              ref={previousRef}
+              {...previousFocus}
               onClick={goToPrev}
               xstyle={[styles.navButton, styles.navPrev, styles.controlButton]}
             />
@@ -716,6 +737,8 @@ export function Lightbox({
               label={t('@astryx.lightbox.next')}
               variant="ghost"
               isDisabled={!canNext}
+              ref={nextRef}
+              {...nextFocus}
               onClick={goToNext}
               xstyle={[styles.navButton, styles.navNext, styles.controlButton]}
             />
