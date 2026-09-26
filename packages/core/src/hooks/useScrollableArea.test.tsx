@@ -30,6 +30,7 @@ const testStyles = stylex.create({
 interface FixtureProps {
   axis?: ScrollAxis;
   chaining?: ScrollOverscroll;
+  keyboardOwner?: 'viewport' | 'contentOrViewport';
   stickyContainment?: ScrollStickyContainment;
   externalRef?: Ref<HTMLDivElement>;
   onScroll?: React.UIEventHandler<HTMLDivElement>;
@@ -38,6 +39,7 @@ interface FixtureProps {
 function Fixture({
   axis = 'inline',
   chaining = 'allow',
+  keyboardOwner = 'viewport',
   stickyContainment,
   externalRef,
   onScroll,
@@ -45,7 +47,7 @@ function Fixture({
   const {getViewportProps, getContentProps, state} = useScrollableArea({
     axis,
     keyboardAccess: {
-      owner: 'viewport',
+      owner: keyboardOwner,
       label: 'Scrollable results',
       role: 'region',
     },
@@ -468,24 +470,27 @@ describe('useScrollableArea', () => {
     expect(document.activeElement).toBe(viewport);
   });
 
-  it('drops the retained tab stop once the blurred viewport stays fitting', () => {
-    render(<Fixture />);
-    const viewport = screen.getByTestId('viewport');
-    makeMeasurable(viewport);
-    setGeometry(viewport, {scrollWidth: 180});
-    void act(() => viewport.dispatchEvent(new Event('scroll')));
-    flushFrame();
+  it.each(['viewport', 'contentOrViewport'] as const)(
+    'drops the retained %s tab stop once the blurred viewport stays fitting',
+    keyboardOwner => {
+      render(<Fixture keyboardOwner={keyboardOwner} />);
+      const viewport = screen.getByTestId('viewport');
+      makeMeasurable(viewport);
+      setGeometry(viewport, {scrollWidth: 180});
+      void act(() => viewport.dispatchEvent(new Event('scroll')));
+      flushFrame();
 
-    void act(() => viewport.focus());
-    setGeometry(viewport, {scrollWidth: 100});
-    void act(() => viewport.dispatchEvent(new Event('scroll')));
-    flushFrame();
-    expect(viewport).toHaveAttribute('tabindex', '-1');
-    expect(document.activeElement).toBe(viewport);
+      void act(() => viewport.focus());
+      setGeometry(viewport, {scrollWidth: 100});
+      void act(() => viewport.dispatchEvent(new Event('scroll')));
+      flushFrame();
+      expect(viewport).toHaveAttribute('tabindex', '-1');
+      expect(document.activeElement).toBe(viewport);
 
-    void act(() => viewport.blur());
-    expect(viewport).not.toHaveAttribute('tabindex');
-  });
+      void act(() => viewport.blur());
+      expect(viewport).not.toHaveAttribute('tabindex');
+    },
+  );
 
   it('composes caller refs and handlers without losing behavior', () => {
     const externalRef = vi.fn();

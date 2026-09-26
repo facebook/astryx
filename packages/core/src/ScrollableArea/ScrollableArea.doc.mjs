@@ -18,7 +18,6 @@ export const docs = {
       {guidance: true, description: 'Use logical padding props on the content box so nested full-bleed components receive the same inset geometry.'},
       {guidance: true, description: 'Set `isFullBleed` only when the viewport itself should reach an ancestor container edge; it is off by default.'},
       {guidance: true, description: 'Set `stickyContainment="always"` only when a fitting viewport should intentionally remain a Sticky boundary.'},
-      {guidance: true, description: 'Target `data-axis` on the viewport for theme selectors; `data-scrollable-inline`/`data-scrollable-block` (effective axes) and the `data-scroll-*` axis and edge attributes are live behavior state for presentation hooks.'},
       {guidance: false, description: 'Hide the native scrollbar without another visible and operable overflow affordance.'},
       {guidance: false, description: 'Add another overflow wrapper around ScrollableArea; one native viewport should own scrolling.'},
     ],
