@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6656,
+    "headSha": "5ea3d97fdcb502d5a75ec3ef8059c59bcf206ba2",
+    "headRef": "markdown-upgrade/01-loose-fences",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 36250602090,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6656/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6656/sandbox/",
+      "indexSha256": null
+    }
+  }
+}
