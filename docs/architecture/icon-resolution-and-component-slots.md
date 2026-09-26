@@ -23,7 +23,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/cli/api/theme/build/build.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-032/DEC-2]
 ---
 
 # Icon resolution and component slots
@@ -50,8 +50,8 @@ without changing every use of the same shared icon.
 
 The system needs two separate choices:
 
-1. which shared icon name a component role uses; and
-2. which artwork the active theme uses for that shared icon name.
+1. which icon name a component role uses; and
+2. which artwork the active theme uses for that name.
 
 Keeping those choices separate avoids turning every component detail into a new
 global icon name.
@@ -101,7 +101,7 @@ export interface ComponentIconSlotMap {
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
 
 export type ComponentIconMap = Partial<
-  Record<ComponentIconSlotName, IconName | null>
+  Record<ComponentIconSlotName, IconName | NamespacedIconName | null>
 >;
 ```
 
@@ -115,8 +115,9 @@ External component packages add their slots by augmenting the same public
 `<component-kebab>-<semantic-role>`. The role describes why the icon exists, not
 its current shape or direction.
 
-`defineTheme({componentIcons})` maps a component slot to a shared `IconName` or
-to `null`. It is separate from `defineTheme({icons})`:
+`defineTheme({componentIcons})` maps a component slot to a shared `IconName`, to
+a namespaced key (`<namespace>:<name>`), or to `null`. It is separate from
+`defineTheme({icons})`:
 
 ```ts
 defineTheme({
@@ -130,8 +131,10 @@ defineTheme({
 });
 ```
 
-The slot map says which shared meaning a component role uses. The icon map says
-which artwork draws that shared meaning.
+The slot map says which name a component role uses. The icon map says which
+artwork draws that name. A slot names a namespaced key when the theme's artwork
+for that role has no shared meaning; the theme or a library supplies the key's
+artwork, and the key never enters `IconName`.
 
 ### Component slot precedence
 
@@ -142,14 +145,15 @@ A component resolves an icon-bearing role in this order:
 3. the component's declared fallback `IconName | null`.
 
 `undefined` means “use the next fallback.” `null` means “render no icon.” A
-mapped `IconName` continues through shared icon resolution.
+mapped name continues through shared icon resolution; a mapped namespaced key
+that resolves to no artwork also uses the fallback.
 
 Shared resolver modules apply this order consistently:
 
-- `getComponentIconName(slot, fallback, source)` resolves the slot to a shared
-  `IconName | null`;
-- `getComponentIcon(slot, fallback, source)` resolves that shared name to
-  artwork; and
+- `getComponentIconName(slot, fallback, source)` resolves the slot to an
+  `IconName`, a namespaced key, or `null`;
+- `getComponentIcon(slot, fallback, source)` resolves that name to artwork,
+  using the fallback when a namespaced key has none; and
 - the client hook resolves the same slot and fallback from the active theme.
 
 Components use these resolvers instead of reading `componentIcons` directly.
@@ -179,14 +183,16 @@ This record does not choose the migration design or timeline.
 - **INV2 — Slots are typed and owner-declared.** Every Core slot is listed in
   `ComponentIconSlotMap`. External packages extend that map instead of adding
   unowned Core strings.
-- **INV3 — Slots map to shared meanings.** A `componentIcons` value is an
-  `IconName` or `null`, never concrete artwork.
+- **INV3 — Slots map to names, never artwork.** A `componentIcons` value is an
+  `IconName`, a namespaced key, or `null`, never concrete artwork. A namespaced
+  key never enters `IconName`.
 - **INV4 — Null suppresses a slot.** `componentIcons[slot] = null` intentionally
-  renders no icon. An absent mapping uses the component fallback.
+  renders no icon. An absent mapping, or a namespaced mapping that resolves to no
+  artwork, uses the component fallback.
 - **INV5 — Every slot declares a fallback.** The owning component declares one
   `IconName | null`; themes do not need to repeat defaults.
 - **INV6 — Resolution order is stable.** Instance content wins over theme slot
-  mapping. Slot mapping chooses a shared name before the shared registry chooses
+  mapping. Slot mapping chooses a name before the shared registry chooses
   artwork.
 - **INV7 — Component slots do not grow the shared name set.** Adding a slot does
   not widen `IconName`.
@@ -277,18 +283,21 @@ theme-level role.
 
 ## Deciding specs
 
-None. This record consolidates the existing shared registry behavior and the
+- `spec:AST-032/DEC-2` — a slot may name a namespaced key whose artwork the
+  theme supplies, and an unresolved key falls back (INV3, INV4).
+
+This record otherwise consolidates the existing shared registry behavior and the
 approved typed component-slot model.
 
 ## Verification
 
-| Invariant        | Evidence                                                        | Failure signal                                                                      |
-| ---------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| INV1, INV3, INV6 | Registry resolver tests and one rendered component fixture      | A component slot resolves concrete artwork directly or skips shared icon resolution |
-| INV2, INV5       | Type tests plus component `.doc.mjs` metadata checks            | A Core slot is an untyped string or has no owner/fallback                           |
-| INV4             | Resolver and component tests with `componentIcons[slot] = null` | A null mapping falls through and still renders an icon                              |
-| INV7             | Shared-name type and registry snapshot tests                    | Adding a component slot widens `IconName`                                           |
-| INV8             | Representative Selector and component-owner tests               | A theme must know component rendering details to replace artwork                    |
-| INV9             | Theme-authoring, application, and compilation owner tests       | This record invents a second normalization or active-theme path                     |
-| INV10            | Shipped-key compatibility fixtures and new-slot negative tests  | A shipped key stops working without a separate compatibility decision               |
-| Documentation    | Component metadata and generated CLI/docsite fixtures           | A themeable slot cannot be discovered with its owner, fallback, and purpose         |
+| Invariant        | Evidence                                                                                             | Failure signal                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| INV1, INV3, INV6 | Registry resolver tests and one rendered component fixture, including a namespaced mapping           | A component slot resolves concrete artwork directly, skips shared icon resolution, or rejects a namespaced mapping |
+| INV2, INV5       | Type tests plus component `.doc.mjs` metadata checks                                                 | A Core slot is an untyped string or has no owner/fallback                                                          |
+| INV4             | Resolver and component tests with `componentIcons[slot] = null` and an unresolved namespaced mapping | A null mapping falls through and still renders an icon, or an unresolved namespaced mapping renders nothing        |
+| INV7             | Shared-name type and registry snapshot tests                                                         | Adding a component slot widens `IconName`                                                                          |
+| INV8             | Representative Selector and component-owner tests                                                    | A theme must know component rendering details to replace artwork                                                   |
+| INV9             | Theme-authoring, application, and compilation owner tests                                            | This record invents a second normalization or active-theme path                                                    |
+| INV10            | Shipped-key compatibility fixtures and new-slot negative tests                                       | A shipped key stops working without a separate compatibility decision                                              |
+| Documentation    | Component metadata and generated CLI/docsite fixtures                                                | A themeable slot cannot be discovered with its owner, fallback, and purpose                                        |
