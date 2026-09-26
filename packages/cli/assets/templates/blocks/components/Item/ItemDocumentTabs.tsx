@@ -11,6 +11,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Item} from '@astryxdesign/core/Item';
 import {HStack} from '@astryxdesign/core/Layout';
+import {mergeProps} from '@astryxdesign/core/utils';
 import {DocumentIcon, PlusIcon, XMarkIcon} from '@heroicons/react/24/outline';
 
 const TABS = [
@@ -24,11 +25,14 @@ const styles = stylex.create({
   rule: {height: 16},
   hidden: {visibility: 'hidden'},
   tab: {flexShrink: 1, width: 164, minWidth: 96},
-  action: {margin: 'calc(-1 * var(--spacing-1))'},
+  action: {margin: 'calc(-1 * var(--spacing-1))', transitionProperty: 'none'},
 });
-
 function DocumentTab({name, isActive}: (typeof TABS)[number]) {
   const {getContainerProps, getContentRevealProps} = useContainerReveal();
+  const revealProps = getContentRevealProps({
+    forceVisibility: isActive ? 'shown' : undefined,
+    isLayoutPreserved: true,
+  });
   return (
     <Item
       label={name}
@@ -50,10 +54,7 @@ function DocumentTab({name, isActive}: (typeof TABS)[number]) {
           variant="ghost"
           size="sm"
           icon={<Icon icon={XMarkIcon} size="sm" />}
-          {...getContentRevealProps({
-            forceVisibility: isActive ? 'shown' : undefined,
-          })}
-          xstyle={styles.action}
+          {...mergeProps(revealProps, stylex.props(styles.action))}
         />
       }
       xstyle={styles.tab}
