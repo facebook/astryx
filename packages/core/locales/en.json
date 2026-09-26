@@ -1011,6 +1011,10 @@
     "defaultMessage": "{count} tool calls",
     "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."
   },
+  "@astryx.chatActivityGroup.groupLabel": {
+    "defaultMessage": "{count} steps",
+    "description": "Summary label shown in the group header when a mixed activity group (reasoning + tool calls) is expanded. {count} is the number of activity items."
+  },
   "@astryx.chatTriggerMenu.suggestions": {
     "defaultMessage": "Suggestions",
     "description": "Screen-reader-only fallback label for the popover listbox opened by a trigger character (`@`, `/`) in the chat composer when the trigger provides no specific label."
