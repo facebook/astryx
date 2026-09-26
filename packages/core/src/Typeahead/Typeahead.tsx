@@ -9,8 +9,9 @@
  * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
  *
  * Owns the input wrapper (border, padding, status styles), selected value
- * token with spacing compensation, and edit mode behavior. Delegates
- * search, keyboard navigation, and dropdown to BaseTypeahead.
+ * token with spacing compensation, edit mode behavior, and the input-field
+ * family's value-busy state (`isLoading`, `changeAction`). Delegates search,
+ * keyboard navigation, and dropdown to BaseTypeahead, which owns search-busy.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
@@ -24,6 +25,8 @@ import React, {
   useRef,
   useMemo,
   useState,
+  useOptimistic,
+  useTransition,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -31,6 +34,7 @@ import {
   BusyIndicatorLaneProvider,
   createBusyIndicatorLane,
   useIsBusy,
+  InputBusyProvider,
   type BusyIndicatorLane,
 } from './busyIndicatorLane';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -61,6 +65,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -111,6 +116,14 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   value: T | null;
   /** Callback when selection changes. */
   onChange: (item: T | null) => void;
+  /**
+   * Async action on change. Fires after `onChange` with the same proposed
+   * item and runs in a React transition: the item shows optimistically and
+   * the field is busy (Spinner and `aria-busy`) until `value` catches up.
+   * Selection and the clear button both go through it. See the input-field
+   * family contract in `docs/families/input-fields.md`.
+   */
+  changeAction?: (item: T | null) => void | Promise<void>;
   /** Render function for dropdown items. Default: TypeaheadItem. */
   renderItem?: (item: T) => ReactNode;
   /** Placeholder text. */
@@ -153,6 +166,14 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * ```
    */
   disabledMessage?: string;
+  /**
+   * Whether the field value is resolving or being saved. Shows the busy
+   * Spinner in the end lane and sets `aria-busy` on the combobox. The search
+   * source and its results are unaffected — a search in flight has its own,
+   * BaseTypeahead-owned busy state that shares the same indicator.
+   * @default false
+   */
+  isLoading?: boolean;
   /** Show clear button. @default true */
   hasClear?: boolean;
   /** Auto-focus on mount. @default false */
@@ -307,7 +328,7 @@ const wrapperSizeStyles = stylex.create({
 /**
  * The field's inline-end lane: the busy Spinner, then the clear button.
  *
- * A separate component so that subscribing to the busy state re-renders THIS
+ * A separate component so that subscribing to the search-busy state re-renders THIS
  * and nothing else. Subscribing from `Typeahead` itself would re-render the
  * whole field — and, in the Tokenizer that shares this design, every selected
  * token — twice per search for one glyph.
@@ -317,14 +338,20 @@ const wrapperSizeStyles = stylex.create({
  */
 function EndLane({
   lane,
+  isInputBusy,
   loadingLabel,
   clear,
 }: {
   lane: BusyIndicatorLane;
+  /** The field's own value-busy state; the lane carries the base's search-busy. */
+  isInputBusy: boolean;
   loadingLabel: string;
   clear: ReactNode;
 }) {
-  const isBusy = useIsBusy(lane);
+  const isSourceBusy = useIsBusy(lane);
+  // One indicator for both meanings: a search in flight and a value being
+  // resolved or saved share the Spinner rather than each painting one.
+  const isBusy = isInputBusy || isSourceBusy;
   if (!isBusy && clear == null) {
     return null;
   }
@@ -334,6 +361,29 @@ function EndLane({
       {clear}
     </div>
   );
+}
+
+/**
+ * A pending `changeAction` proposal: the item shown optimistically and the
+ * controlled `value` it was proposed against. The proposal stands only while
+ * `value` is still that base; a parent that accepts or replaces the value
+ * mid-Action ends it at once (input-fields.md FR6).
+ */
+type ValueProposal<T> = {item: T | null; base: T | null};
+
+/**
+ * Item identity is its `id`, as for the listbox's selected option: a parent
+ * re-rendering the same item as a fresh object has not replaced it.
+ */
+function isSameItem<T extends SearchableItem>(a: T | null, b: T | null) {
+  return a === b || (a != null && b != null && a.id === b.id);
+}
+
+/** Focus the token's internal button, the part keyboard users operate. */
+function focusToken(tokenEl: HTMLElement | null) {
+  if (tokenEl) {
+    (tokenEl.querySelector('button') ?? tokenEl).focus();
+  }
 }
 
 export function Typeahead<T extends SearchableItem>({
@@ -350,6 +400,7 @@ export function Typeahead<T extends SearchableItem>({
   searchSource,
   value,
   onChange,
+  changeAction,
   renderItem,
   placeholder,
   hasEntriesOnFocus,
@@ -358,6 +409,7 @@ export function Typeahead<T extends SearchableItem>({
   emptySearchResultsText,
   isDisabled = false,
   disabledMessage,
+  isLoading = false,
   hasClear = true,
   hasAutoFocus,
   size: sizeProp,
@@ -381,6 +433,19 @@ export function Typeahead<T extends SearchableItem>({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const tokenRef = useRef<HTMLElement>(null);
+  // Whether the token held focus as it left. Read in the ref's cleanup, which
+  // React runs before it removes the node, while focus is still observable.
+  const tokenHadFocusRef = useRef(false);
+  const setTokenRef = useCallback((node: HTMLElement | null) => {
+    tokenRef.current = node;
+    if (node == null) {
+      return;
+    }
+    return () => {
+      tokenHadFocusRef.current = node.contains(document.activeElement);
+      tokenRef.current = null;
+    };
+  }, []);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper (which already exists) and
@@ -408,18 +473,85 @@ export function Typeahead<T extends SearchableItem>({
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<T | null>(null);
 
-  // Show token when value is selected and not in edit mode
-  const showToken = value != null && !isEditing;
+  // The family's Transition Action: `onChange` first, the proposed item shown
+  // optimistically, the Action in a transition, and one busy presentation
+  // until `value` accepts or replaces it (input-fields.md FR6). The pending
+  // proposal is the optimistic state, reverted to null as its Action settles
+  // (stacked proposals keep the latest), and it shows only while `value` is
+  // still the one it was proposed against: a replacement arriving mid-Action
+  // wins at once instead of waiting for the old Action to settle. With no
+  // `changeAction` nothing is proposed and the shown value is the prop.
+  const [, startTransition] = useTransition();
+  const [proposal, proposeValue] = useOptimistic<ValueProposal<T> | null>(null);
+  const optimisticValue =
+    proposal !== null && isSameItem(proposal.base, value)
+      ? proposal.item
+      : value;
+  // Value busy, as distinct from search busy: the base owns the latter and
+  // reports it through the lane. Both reach the one Spinner in the end lane
+  // and the combobox's aria-busy (FR5, FR7).
+  const isInputBusy = isLoading || !isSameItem(optimisticValue, value);
+
+  const commitValue = useCallback(
+    (item: T | null) => {
+      onChange(item);
+      if (changeAction) {
+        startTransition(async () => {
+          proposeValue({item, base: value});
+          await changeAction(item);
+        });
+      }
+    },
+    [onChange, changeAction, proposeValue, value],
+  );
+
+  // Show token when value is selected and not in edit mode. The optimistic
+  // value, so a pending Action's proposed item is what the token shows.
+  const showToken = optimisticValue != null && !isEditing;
+
+  // The token and the input take turns as the visible control, so when they
+  // swap, focus goes to the one that stays. A withdrawn token that held focus
+  // (an Action not accepted, the parent clearing the value) hands it to the
+  // input rather than dropping it to the document; a token restored over the
+  // focused input (a clear Action not accepted) takes it, since the input is
+  // now hidden and out of the Tab order. Transitions only, so a token present
+  // on mount leaves autofocus alone; Escape and blur have already moved focus
+  // off the input by the time the token returns. Edit mode focuses the input
+  // itself once the label is in the query; focusing it earlier would open the
+  // entries shown on an empty field.
+  const wasTokenShownRef = useRef(showToken);
+  useIsomorphicLayoutEffect(() => {
+    if (wasTokenShownRef.current === showToken) {
+      return;
+    }
+    wasTokenShownRef.current = showToken;
+    if (showToken) {
+      if (document.activeElement === inputRef.current) {
+        focusToken(tokenRef.current);
+      }
+      return;
+    }
+    const tokenHadFocus = tokenHadFocusRef.current;
+    tokenHadFocusRef.current = false;
+    if (
+      tokenHadFocus &&
+      !isEditing &&
+      (document.activeElement == null ||
+        document.activeElement === document.body)
+    ) {
+      inputRef.current?.focus();
+    }
+  }, [showToken, isEditing]);
 
   // Enter edit mode: remove token visually, populate input with value label
   const handleEnterEditMode = useCallback(() => {
-    if (isDisabled || !value) {
+    if (isDisabled || !optimisticValue) {
       return;
     }
-    setEditingValue(value);
+    setEditingValue(optimisticValue);
     setIsEditing(true);
     // The base will receive onChangeQuery with the value's label
-    onChangeQuery?.(value.label);
+    onChangeQuery?.(optimisticValue.label);
     requestAnimationFrame(() => {
       const input = inputRef.current;
       if (input) {
@@ -429,13 +561,13 @@ export function Typeahead<T extends SearchableItem>({
           window.HTMLInputElement.prototype,
           'value',
         )?.set;
-        nativeInputValueSetter?.call(input, value.label);
+        nativeInputValueSetter?.call(input, optimisticValue.label);
         input.dispatchEvent(new Event('input', {bubbles: true}));
         input.focus();
         input.setSelectionRange(0, input.value.length);
       }
     });
-  }, [isDisabled, value, onChangeQuery]);
+  }, [isDisabled, optimisticValue, onChangeQuery]);
 
   // Handle blur: restore token if editing and no selection was made
   const handleBlur = useCallback(
@@ -459,30 +591,25 @@ export function Typeahead<T extends SearchableItem>({
     (item: T | null) => {
       setIsEditing(false);
       setEditingValue(null);
-      onChange(item);
+      commitValue(item);
       // After selection, focus the token so keyboard users stay in the component.
       // Use requestAnimationFrame because the token renders on the next cycle.
       if (item) {
         requestAnimationFrame(() => {
-          const tokenEl = tokenRef.current;
-          if (tokenEl) {
-            // Focus the internal button inside the token
-            const button = tokenEl.querySelector('button');
-            (button ?? tokenEl).focus();
-          }
+          focusToken(tokenRef.current);
         });
       }
     },
-    [onChange],
+    [commitValue],
   );
 
   // Handle clear (explicit X button on token)
   const handleClear = useCallback(() => {
     setIsEditing(false);
     setEditingValue(null);
-    onChange(null);
+    commitValue(null);
     inputRef.current?.focus();
-  }, [onChange]);
+  }, [commitValue]);
 
   // Handle Escape during edit mode — restore token
   const handleKeyDown = useCallback(
@@ -569,49 +696,55 @@ export function Typeahead<T extends SearchableItem>({
           <div {...stylex.props(styles.contentLane)}>
             {showToken && (
               <Token
-                ref={tokenRef}
-                label={value.label}
+                ref={setTokenRef}
+                label={optimisticValue.label}
                 size={size}
                 onClick={handleEnterEditMode}
                 isDisabled={isDisabled}
                 xstyle={styles.tokenOverlay}
               />
             )}
-            <BaseTypeahead
-              ref={inputRef}
-              searchSource={searchSource}
-              value={value}
-              onChange={handleChange}
-              renderItem={renderItem}
-              placeholder={showToken ? undefined : placeholder}
-              hasEntriesOnFocus={hasEntriesOnFocus}
-              maxMenuItems={maxMenuItems}
-              minQueryLength={minQueryLength}
-              emptySearchResultsText={emptySearchResultsText}
-              isDisabled={isDisabled}
-              hasAutoFocus={hasAutoFocus}
-              isFocusableDisabled={showsDisabledMessage}
-              inputId={inputId}
-              ariaDescribedBy={ariaDescribedBy}
-              ariaLabelledBy={ariaLabelledBy}
-              onChangeQuery={onChangeQuery}
-              onOpenChange={onOpenChange}
-              debounceMs={debounceMs}
-              anchorRef={wrapperRef}
-              onKeyDown={handleKeyDown}
-              inputXStyle={showToken ? styles.inputHidden : undefined}
-              // While the token is shown the input is invisible and inert behind
-              // it — take it out of the Tab order so keyboard users don't hit a
-              // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
-              // programmatically focusable: entering edit mode and clearing both
-              // refocus it once the token goes away.
-              inputTabIndex={showToken ? -1 : undefined}
-              size={size}
-            />
+            {/* The field's half of busy travels the other way, so the
+                combobox's aria-busy covers a value being saved as well as a
+                search in flight. */}
+            <InputBusyProvider value={isInputBusy}>
+              <BaseTypeahead
+                ref={inputRef}
+                searchSource={searchSource}
+                value={optimisticValue}
+                onChange={handleChange}
+                renderItem={renderItem}
+                placeholder={showToken ? undefined : placeholder}
+                hasEntriesOnFocus={hasEntriesOnFocus}
+                maxMenuItems={maxMenuItems}
+                minQueryLength={minQueryLength}
+                emptySearchResultsText={emptySearchResultsText}
+                isDisabled={isDisabled}
+                hasAutoFocus={hasAutoFocus}
+                isFocusableDisabled={showsDisabledMessage}
+                inputId={inputId}
+                ariaDescribedBy={ariaDescribedBy}
+                ariaLabelledBy={ariaLabelledBy}
+                onChangeQuery={onChangeQuery}
+                onOpenChange={onOpenChange}
+                debounceMs={debounceMs}
+                anchorRef={wrapperRef}
+                onKeyDown={handleKeyDown}
+                inputXStyle={showToken ? styles.inputHidden : undefined}
+                // While the token is shown the input is invisible and inert behind
+                // it — take it out of the Tab order so keyboard users don't hit a
+                // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
+                // programmatically focusable: entering edit mode and clearing both
+                // refocus it once the token goes away.
+                inputTabIndex={showToken ? -1 : undefined}
+                size={size}
+              />
+            </InputBusyProvider>
           </div>
         </BusyIndicatorLaneProvider>
         <EndLane
           lane={busyLane}
+          isInputBusy={isInputBusy}
           loadingLabel={t('@astryx.typeahead.loading')}
           clear={
             hasClear && value && !isDisabled ? (
