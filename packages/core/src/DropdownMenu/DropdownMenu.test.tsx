@@ -22,6 +22,7 @@ import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {rulesWithSelector} from '../__tests__/pressState';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -1412,6 +1413,32 @@ describe('DropdownMenu theming slots', () => {
     expect(divider).toHaveClass('astryx-dropdown-menu-divider');
     // Still carries the base Divider slot so global divider theming applies too.
     expect(divider).toHaveClass('astryx-divider');
+  });
+});
+
+describe('DropdownMenuItem interaction overlay', () => {
+  it("paints one overlay on a row, not Item's stacked under its own", () => {
+    // The row is an Item, and its xstyle paints the menu's :focus/:active
+    // background-color. Item's own hover/press overlay has to be on that
+    // same property so the xstyle replaces it; on any other property the
+    // two would stack and a hovered (and so focused) row would darken twice.
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick: () => {}}]}
+      />,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    const overlayProperties = new Set(
+      [':hover', ':focus', ':active']
+        .flatMap(pseudo => rulesWithSelector(row, pseudo))
+        .flatMap(rule =>
+          ['background-color', 'background-image', 'box-shadow'].filter(
+            property => rule.includes(`${property}:`),
+          ),
+        ),
+    );
+    expect([...overlayProperties]).toEqual(['background-color']);
   });
 });
 

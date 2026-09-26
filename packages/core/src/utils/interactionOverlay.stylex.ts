@@ -7,7 +7,7 @@
 /**
  * @file Shared hover and pressed overlay states
  * @input Uses StyleX and the semantic interaction-overlay color tokens
- * @output Exports reusable background-color and background-image state styles
+ * @output Exports reusable background-color, background-image and box-shadow state styles
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -32,6 +32,8 @@ const HOVER_HOVER = '@media (hover: hover)';
 const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 const neutralImage = `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`;
+const hoverShadow = `inset 0 0 0 100vmax ${colorVars['--color-overlay-hover']}`;
+const pressedShadow = `inset 0 0 0 100vmax ${colorVars['--color-overlay-pressed']}`;
 
 export const interactionOverlayStyles = stylex.create({
   backgroundColor: {
@@ -72,6 +74,26 @@ export const interactionOverlayStyles = stylex.create({
           default: null,
           ':hover': `${hoverImage}, ${neutralImage}`,
           ':active': `${pressedImage}, ${neutralImage}`,
+        },
+      },
+    },
+  },
+  /**
+   * The overlay as an inset box-shadow, for a surface whose background-color
+   * is its own fill (Item's `muted` variant). It paints above that fill like
+   * `backgroundImage`, but a box-shadow interpolates where a gradient does
+   * not, so hover and press still fade under a `box-shadow` transition.
+   */
+  boxShadow: {
+    boxShadow: {
+      default: null,
+      [ENABLED]: {
+        default: null,
+        ':active': pressedShadow,
+        [HOVER_HOVER]: {
+          default: null,
+          ':hover': hoverShadow,
+          ':active': pressedShadow,
         },
       },
     },

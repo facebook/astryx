@@ -68,7 +68,10 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   ],
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
   'hover-card': [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
-  item: [{property: 'paddingInline', vars: ['--_item-inset-inline']}],
+  item: [
+    {property: 'paddingInline', vars: ['--_item-inset-inline']},
+    {property: 'paddingBlock', vars: ['--_item-padding-block']},
+  ],
   'number-input': [
     {property: 'padding', expand: 'container'},
     {property: 'borderRadius', vars: ['--_field-radius']},
