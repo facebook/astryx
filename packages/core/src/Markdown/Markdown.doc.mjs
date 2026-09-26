@@ -61,6 +61,12 @@ const anatomy = [
     description:
       'Ordered list generated after visible blocks, introduced by one localized visually hidden heading when Core footnotes are enabled and referenced.',
   },
+  {
+    name: 'KaTeX expression',
+    required: false,
+    description:
+      'Optional lazy math output from the separately imported MarkdownKaTeX renderer; readable source remains when loading or typesetting fails.',
+  },
 ];
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -266,6 +272,10 @@ export const docs = {
         className: 'astryx-markdown-footnotes',
         visualProps: ['density'],
       },
+      {
+        className: 'astryx-markdown-katex',
+        visualProps: ['display'],
+      },
     ],
   },
   usage: {
@@ -346,7 +356,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Provide components.math only for documents that use dollar-delimited math. The renderer owns typesetting and accessible output; Astryx passes the expression as text and never executes raw HTML.',
+          "Import MarkdownKaTeX from '@astryxdesign/core/Markdown/katex' for a lazy first-party renderer with accessible MathML, locked-down trust settings, readable source fallback, and an optional KaTeX peer. Provide components.math only for documents that use dollar-delimited math; Astryx passes the expression as inert text and never executes raw authored HTML.",
       },
       {
         guidance: true,
@@ -597,16 +607,12 @@ const entityPlugins = [
 `,
     },
     {
-      label: 'Math renderer',
+      label: 'KaTeX math',
       code: `
-import {BlockMath, InlineMath} from 'react-katex';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {MarkdownKaTeX} from '@astryxdesign/core/Markdown/katex';
 
-function MathExpression({value, display}) {
-  const Component = display === 'block' ? BlockMath : InlineMath;
-  return <Component math={value} />;
-}
-
-<Markdown components={{math: MathExpression}}>
+<Markdown components={{math: MarkdownKaTeX}}>
   {'Inline $x_1 + y$ and display math:\\n\\n$$\\n\\\\sum_i x_i\\n$$'}
 </Markdown>;
 `,
@@ -813,6 +819,12 @@ export const docsZh = {
         description:
           '已解析脚注的文档末尾区域。可覆盖分隔线、间距、文本颜色和字号；生成的引用与返回链接仍由 Link 主题拥有。',
       },
+      {
+        className: 'astryx-markdown-katex',
+        visualProps: ['display'],
+        description:
+          '通过可选 MarkdownKaTeX 渲染器生成的行内或块级数学表达式。可覆盖颜色、字体和间距。',
+      },
     ],
   },
   usage: {
@@ -893,7 +905,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Provide components.math only for documents that use dollar-delimited math. The renderer owns typesetting and accessible output; Astryx passes the expression as text and never executes raw HTML.',
+          "Import MarkdownKaTeX from '@astryxdesign/core/Markdown/katex' for a lazy first-party renderer with accessible MathML, locked-down trust settings, readable source fallback, and an optional KaTeX peer. Provide components.math only for documents that use dollar-delimited math; Astryx passes the expression as inert text and never executes raw authored HTML.",
       },
       {
         guidance: true,
@@ -995,7 +1007,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Provide components.math only for documents that use dollar-delimited math; the renderer owns typesetting and accessible output.',
+          "Import MarkdownKaTeX from '@astryxdesign/core/Markdown/katex' for lazy first-party KaTeX rendering with MathML, locked-down trust, and readable source fallback; the renderer is an optional peer.",
       },
       {
         guidance: true,
