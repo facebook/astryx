@@ -27,6 +27,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   type ReactNode,
@@ -495,6 +496,32 @@ export function Dialog({
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  // Capture the rising edge in a layout effect, not during render: a write
+  // during render survives an abandoned/interrupted render (React can call
+  // a render function without committing it), which can leave this ref
+  // pointing at a focus target from a render that never took effect. A
+  // layout effect only ever runs for a render that actually committed.
+  //
+  // It still has to be a layout effect and not the plain effect below:
+  // ALL layout effects in a commit (children's included) finish before ANY
+  // passive effect anywhere in that same commit runs, so this capture still
+  // beats a descendant's own mount-time autofocus (e.g. DialogHeader's),
+  // which runs in a plain effect (#5637).
+  //
+  // Starts false rather than isOpen: a Dialog first mounted with
+  // isOpen={true} (e.g. AlertDialog) still needs its rising edge to fire
+  // on that very first commit, not be treated as already-open.
+  //
+  // There is no document during server rendering; guarded so SSR doesn't
+  // throw, though this effect never actually runs there regardless.
+  const wasOpenRef = useRef(false);
+  useLayoutEffect(() => {
+    if (isOpen && !wasOpenRef.current && typeof document !== 'undefined') {
+      triggerElementRef.current = document.activeElement as HTMLElement | null;
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
@@ -510,9 +537,8 @@ export function Dialog({
     }
 
     if (isOpen) {
-      // Capture the currently focused element as the trigger — used for
-      // directional animation origin and focus restoration on close.
-      triggerElementRef.current = document.activeElement as HTMLElement | null;
+      // The trigger was already captured in the layout effect above — before
+      // any child mount effect could move focus onto the dialog's own content.
 
       // Set directional CSS custom properties before opening
       const trigger = triggerElementRef.current;

@@ -11,7 +11,8 @@
 
 import {useState} from 'react';
 import {readFileSync} from 'node:fs';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {renderToString} from 'react-dom/server';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {
   Dialog,
@@ -967,6 +968,109 @@ describe('Dialog', () => {
       expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
         '0px',
       );
+    });
+  });
+
+  describe('trigger capture (#5637)', () => {
+    it('restores focus to the external trigger, not a child that autofocuses on open', () => {
+      const opener = document.createElement('button');
+      opener.type = 'button';
+      document.body.appendChild(opener);
+      opener.focus();
+
+      const {rerender} = render(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+      expect(opener).toHaveFocus();
+
+      // Content (including DialogHeader's autofocusing title) mounts only
+      // once isOpen flips true — the shape from the issue repro.
+      rerender(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Review" />
+        </Dialog>,
+      );
+
+      // DialogHeader's own mount effect focuses the title; Dialog must still
+      // have captured `opener`, not the title, as the trigger to restore to.
+      expect(screen.getByRole('heading', {name: 'Review'})).toHaveFocus();
+
+      rerender(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+
+      expect(opener).toHaveFocus();
+      opener.remove();
+    });
+
+    describe('server rendering', () => {
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      it('renders an initially open dialog without a document', () => {
+        // The trigger is captured in a layout effect, which never runs
+        // during server rendering, but this guards the SSR path either way.
+        vi.stubGlobal('document', undefined);
+
+        expect(() =>
+          renderToString(
+            <Dialog isOpen={true} onOpenChange={() => {}}>
+              <DialogHeader title="Review" />
+            </Dialog>,
+          ),
+        ).not.toThrow();
+      });
+    });
+
+    it('keeps the external trigger as the return target through focus churn while still open', () => {
+      // The capture only fires on the isOpen false→true edge (wasOpenRef),
+      // so it must not be clobbered by anything that moves focus while the
+      // dialog stays open — the shape of an interrupted close that reopens
+      // before the trigger ref is nulled.
+      const opener = document.createElement('button');
+      opener.type = 'button';
+      document.body.appendChild(opener);
+      opener.focus();
+
+      const {rerender} = render(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+
+      rerender(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Review" />
+        </Dialog>,
+      );
+      expect(screen.getByRole('heading', {name: 'Review'})).toHaveFocus();
+
+      // Something else grabs focus while the dialog is still open — a retry,
+      // an unrelated re-render, anything that is not the closing edge.
+      const distractor = document.createElement('button');
+      distractor.type = 'button';
+      document.body.appendChild(distractor);
+      distractor.focus();
+      rerender(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Review" />
+        </Dialog>,
+      );
+
+      rerender(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+
+      expect(opener).toHaveFocus();
+      opener.remove();
+      distractor.remove();
     });
   });
 });
