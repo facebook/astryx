@@ -77,6 +77,11 @@ describe('a11y story identity migration', () => {
         'core/SideNavCollapseButton',
       ],
       ['a11y-button-pattern--chat-send', 'core/ChatSendButton'],
+      ['a11y-chatsendbutton-audit--chat-send-small', 'core/ChatSendButton'],
+      [
+        'a11y-chatsendbutton-audit--chat-send-stop-small',
+        'core/ChatSendButton',
+      ],
       ['a11y-checkbox-pattern--input-checked', 'core/CheckboxInput'],
       [
         'a11y-checkbox-pattern--menu-item-checked',

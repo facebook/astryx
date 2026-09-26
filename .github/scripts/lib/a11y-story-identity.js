@@ -5,7 +5,7 @@
 
 /**
  * @file Canonical owners and audited legacy-baseline aliases for a11y contract stories.
- * @input Stable Storybook IDs from the checked-in Button, Checkbox, and Radio inventories.
+ * @input Stable Storybook IDs from checked-in a11y inventories and audit fixtures.
  * @output Canonical package owners plus exact prior baseline story identities.
  * @position Migration boundary between reusable contract fixtures and the a11y baseline.
  */
@@ -15,6 +15,7 @@ const A11Y_STORY_OWNER_PREFIXES = Object.freeze([
   ['a11y-button-pattern--clickable-card-', 'core/ClickableCard'],
   ['a11y-button-pattern--sidenav-collapse-', 'core/SideNavCollapseButton'],
   ['a11y-button-pattern--chat-send', 'core/ChatSendButton'],
+  ['a11y-chatsendbutton-audit--', 'core/ChatSendButton'],
   ['a11y-button-pattern--button-', 'core/Button'],
   ['a11y-checkbox-pattern--list-item-', 'core/CheckboxListItem'],
   ['a11y-checkbox-pattern--menu-item-', 'core/DropdownMenuCheckboxItem'],

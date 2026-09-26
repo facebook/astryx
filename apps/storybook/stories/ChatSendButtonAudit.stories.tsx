@@ -12,7 +12,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {ChatSendButton} from '@astryxdesign/core/Chat';
 
 const meta = {
-  title: 'a11y/Button pattern',
+  title: 'a11y/ChatSendButton audit',
   component: ChatSendButton,
   tags: ['no-visual'],
   parameters: {

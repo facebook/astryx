@@ -92,7 +92,7 @@ const FIXTURES: Record<string, Fixture> = {
   },
   sendSm: {
     key: 'send-sm',
-    storyId: 'a11y-button-pattern--chat-send-small',
+    storyId: 'a11y-chatsendbutton-audit--chat-send-small',
     name: 'Send',
     state: 'send',
     size: 'sm',
@@ -100,7 +100,7 @@ const FIXTURES: Record<string, Fixture> = {
   },
   stopSm: {
     key: 'stop-sm',
-    storyId: 'a11y-button-pattern--chat-send-stop-small',
+    storyId: 'a11y-chatsendbutton-audit--chat-send-stop-small',
     name: 'Stop',
     state: 'stop',
     size: 'sm',
