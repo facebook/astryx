@@ -28,6 +28,8 @@ verified_by:
     packages/core/src/Markdown/katex/MarkdownKaTeX.test.tsx,
     packages/core/src/Markdown/katex/MarkdownKaTeX.integration.test.tsx,
     packages/core/src/Markdown/katex/MarkdownKaTeX.public.test.tsx,
+    packages/core/src/Markdown/mermaid/mermaid.test.tsx,
+    packages/core/src/Markdown/mermaid/mermaid.integration.test.tsx,
     packages/core/src/Markdown/plugins/softBreaks.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
@@ -117,6 +119,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The separately imported `Markdown/katex` adapter's lazy loading, accessible
   HTML-and-MathML output, disabled trusted commands, source-preserving failure
   state, source-free diagnostics, and `markdown-katex` target.
+- The separately imported `Markdown/mermaid` semantic-fence adapter's lazy
+  loading, serialized global-engine configuration, strict SVG output,
+  source-preserving CodeBlock fallback, source-free diagnostics, and
+  `markdown-mermaid` target.
 - Applying the canonical `plugins` protocol in the fixed syntax → immutable
   transform → render order while preserving built-in lexical shields, Core-owned
   semantics, and local readable fallback.
@@ -238,6 +244,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR30 | `hasHeadingPermalinks` adds one localized native fragment Link as a sibling of each top-level ID-bearing default Heading. It reuses the shared Outline ID and link provider, leaves the Heading accessible name unchanged, adds no nested-heading control or programmatic scrolling, and is not implied by `variant`. Custom heading renderers remain full replacements and receive no wrapper or permalink.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | FR31 | `footnotes="github"` is an independent block-only syntax opt-in. Resolved references render numbered Core Links to one end section with a localized visually hidden heading, ordered by first rendered reference; every occurrence receives one backlink. Each instance prefixes its fragment graph with the root `id` or an SSR-safe generated identity, while heading IDs allocate before the document-local requests. Definitions render through existing block/component/plugin seams, unresolved references and later duplicate definitions remain literal, generated links compose `LinkProvider` and `onLinkClick`, and `variant="document"` never enables the feature. Exact grammar, identity, parser families, transform ownership, streaming, prepared-document, Remark, and migration rules belong to `module:Markdown/footnotes`. |
 | FR32 | Importing `@astryxdesign/core/Markdown/katex` provides a `components.math`-compatible renderer without adding KaTeX to the default Markdown bundle. It loads the optional peer after mount, emits KaTeX HTML plus MathML with trusted author commands disabled and third-party strict logging suppressed, never uses a raw authored-HTML sink, and retains delimiter-bearing source when loading or typesetting fails. Failures expose fixed source-free diagnostics. The visible renderer root owns `markdown-katex` with the reflected `display` axis.                                                                                                                                                                                                                                                                                       |
+| FR33 | Importing `@astryxdesign/core/Markdown/mermaid` provides a semantic-fence plugin for exact `mermaid` fences without adding Mermaid to default bundles. `components.code` retains precedence. The plugin preserves the ordinary CodeBlock while loading or after failure, serializes Mermaid's global configuration, locks strict security and SVG-label settings after host configuration, mounts only parsed SVG with active content and unsafe navigation removed, never binds authored interactions, and reports fixed source-free diagnostics. Its visible root owns `markdown-mermaid`.                                                                                                                                                                                                                                                   |
 
 FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
@@ -279,6 +286,7 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | Math renderer absent    | Dollar-delimited source follows the released Markdown grammar and no `math` node or renderer output exists.                                                           | Currency, unmatched delimiters, and ordinary prose.                                               |
 | Math renderer present   | Complete supported delimiters are opaque to Markdown formatting and are passed to the renderer as inert text.                                                         | Inline or block display and any renderer-owned output.                                            |
 | KaTeX adapter           | The optional subpath stays outside default bundles, then produces trusted-command-disabled HTML plus MathML or retains delimiter-bearing source on failure.           | Supported KaTeX options, inline or block display, and caller styling.                             |
+| Mermaid adapter         | Exact `mermaid` fences keep a CodeBlock until strict, non-HTML SVG is ready and keep that fallback on any load, parse, render, or SVG-validation failure.             | Host Mermaid theme/layout configuration and optional fence title.                                 |
 | Streaming math          | Incomplete math is withheld; once complete, the streamed nodes equal the full-parse nodes at top level and inside list/blockquote containers.                         | Delimiters and expression text may arrive in separate chunks; source ranges remain optional.      |
 | Plugins omitted         | Released parser unions, AST, DOM, targets, heading IDs, and performance remain unchanged.                                                                             | Omitted or empty list; both are one empty transform pipeline.                                     |
 | Plugins enabled         | Fixed syntax → immutable transform → render order, validated roots, readable fallback, and matching Markdown/Outline heading identity remain invariant.               | Syntax, transforms, renderers, helper execution plans, plugin order, and live post-parse state.   |
@@ -355,6 +363,7 @@ required accessible meaning or make meaning color-only.
 | Image            | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
 | Footnote section | Presents referenced definitions as compact end matter with native return links.    | Module contract                | Supporting     | FR31               |
 | KaTeX expression | Typesets opted-in math through the separately imported optional adapter.           | Component contract             | Supporting     | FR32               |
+| Mermaid diagram  | Renders an opted-in semantic fence as inert SVG with source fallback.              | Component contract             | Prominent      | FR33               |
 | Math             | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
 
 Custom renderers replace the existing default parts rather than becoming nested
@@ -378,13 +387,15 @@ block renderer. The Document remains Markdown-owned in every display mode.
   "Divider": {"target": "markdown-hr"},
   "Image": {"target": "markdown-image"},
   "Footnote section": {"target": "markdown-footnotes"},
-  "KaTeX expression": {"target": "markdown-katex"}
+  "KaTeX expression": {"target": "markdown-katex"},
+  "Mermaid diagram": {"target": "markdown-mermaid"}
 }
 ```
 
-The map records nine established targets plus the optional `markdown-footnotes`
-and separately imported `markdown-katex` targets. For Heading, Paragraph, Code
-block, Blockquote, Divider, and safe Image, a custom
+The map records nine established targets plus the optional `markdown-footnotes`,
+separately imported `markdown-katex`, and separately imported
+`markdown-mermaid` targets. For Heading, Paragraph, Code block, Blockquote,
+Divider, and safe Image, a custom
 renderer replaces the default part and therefore replaces its local target. The
 `markdown-codeblock` spelling is a released compatibility anomaly: the current
 naming rule would produce `markdown-code-block`, but shipped targets are frozen
