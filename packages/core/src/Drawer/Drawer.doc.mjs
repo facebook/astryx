@@ -6,6 +6,8 @@ export const docs = {
   displayName: 'Drawer',
   group: 'Drawer',
   category: 'Overlay',
+  // Promoted from @astryxdesign/lab; keep the prior registry route working.
+  registry: {aliases: ['lab/drawer']},
   keywords: [
     'drawer',
     'side panel',

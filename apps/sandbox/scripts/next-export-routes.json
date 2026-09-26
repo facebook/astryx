@@ -290,6 +290,8 @@
     "/templates/DividerShowcase/",
     "/templates/DividerVariants/",
     "/templates/DividerVertical/",
+    "/templates/DrawerRowInspector/",
+    "/templates/DrawerShowcase/",
     "/templates/DropdownMenuActions/",
     "/templates/DropdownMenuBottomSheet/",
     "/templates/DropdownMenuItemBasic/",

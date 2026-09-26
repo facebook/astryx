@@ -10,11 +10,19 @@
 import migrateThemeCatalogToDescriptors, {
   meta as migrateThemeCatalogToDescriptorsMeta,
 } from './migrate-theme-catalog-to-descriptors.mjs';
+import migrateLabDrawerImports, {
+  meta as migrateLabDrawerImportsMeta,
+} from './migrate-lab-drawer-imports.mjs';
 
 export default [
   {
     name: 'migrate-theme-catalog-to-descriptors',
     transform: migrateThemeCatalogToDescriptors,
     meta: migrateThemeCatalogToDescriptorsMeta,
+  },
+  {
+    name: 'migrate-lab-drawer-imports',
+    transform: migrateLabDrawerImports,
+    meta: migrateLabDrawerImportsMeta,
   },
 ];

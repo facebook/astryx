@@ -14,7 +14,7 @@ applies_to:
     packages/core/src/Layer/,
     packages/core/src/Popover/,
     packages/core/src/Dialog/,
-    packages/lab/src/Drawer/,
+    packages/core/src/Drawer/,
     packages/core/src/DropdownMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
@@ -165,11 +165,11 @@ contract. The current shared stack registers present layers with `close` or
 active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
+Tooltip, HoverCard, Dialog, Drawer, Popover, DropdownMenu, Lightbox,
 MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
 and HoverCard report current DOM presence; Popover and DropdownMenu register
 through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
-Lab Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
+Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
 native platform close requests. Other family members still use local Escape
 handling as listed in `family:overlay-dismissal`.
 
@@ -310,8 +310,8 @@ be updated only as that work ships.
   menu-cascade parent-close chain.
 - Dialog families own native modal/backdrop presentation and their local channel
   policies.
-- Lab Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while
-  the shared dismissal stack owns Escape and platform close routing.
+- Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while the
+  shared dismissal stack owns Escape and platform close routing.
 - `LayerProvider`, `ToastContext`, `useToast`, and `ToastViewport` own current
   notification state, dispatch, and viewport rendering.
 - CommandPalette owns command search and selection; Dialog owns its native modal

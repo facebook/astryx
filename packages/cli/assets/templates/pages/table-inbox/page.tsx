@@ -1652,21 +1652,22 @@ const COMPOSER_TOOLS: {
 /**
  * The compose sheet.
  *
- * **`BottomSheet hasScrim={false}`, which is the only non-modal surface in
- * core.** With the scrim off the sheet opens with `show()` rather than
- * `showModal()`, so it never enters the top layer, never makes the page inert
- * and never locks body scroll: the inbox behind it stays live. That matters
+ * **`BottomSheet hasScrim={false}` keeps this bottom-edge composer non-modal.**
+ * With the scrim off the sheet opens with `show()` rather than `showModal()`,
+ * so it never enters the top layer, never makes the page inert and never locks body scroll: the inbox behind it stays live. That matters
  * more here than anywhere else in this template, because writing a message is
  * exactly when someone needs to go back and read one — check what a customer
  * actually said, copy an order number out of a thread. A modal composer
  * answers that with "close me first".
  *
- * The trade is position, and it is worth naming. A sheet rises from the bottom
- * edge, centred: its positioner is `inset-inline: 0` with
+ * The trade is bottom-edge geometry, and it is worth naming. Drawer can keep
+ * page context live from an inline edge, but this composer intentionally rises
+ * from the bottom. BottomSheet's positioner is `inset-inline: 0` with
  * `justify-content: center`, and there is no anchor, side or width prop. So
- * this cannot be docked to the inline-end corner the way a `Dialog` can be.
- * `Dialog` takes a static `position` and would put the window in that corner —
- * but `Dialog` is always modal, so buying the corner costs the live inbox.
+ * this cannot be docked to the inline-end corner the way a `Dialog` or Drawer
+ * can be. `Dialog` takes a static `position` and would put the window in that
+ * corner — but `Dialog` is always modal, so buying the corner costs the live
+ * inbox.
  * `ChatComposerDrawer` is a false friend: despite the name it is an in-flow
  * disclosure tray for a ChatComposer's attachments, with no positioning of its
  * own.

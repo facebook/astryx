@@ -2959,7 +2959,7 @@
       "kind": "component",
       "id": "@astryxdesign/core/component",
       "provider": "@astryxdesign/core",
-      "count": 175,
+      "count": 176,
       "oldCliRoute": "astryx component <id>",
       "oldDocsiteUrl": "/components/<id>",
       "docsiteExceptions": {
@@ -3026,7 +3026,7 @@
       "kind": "block",
       "id": "@astryxdesign/core/block",
       "provider": "@astryxdesign/core",
-      "count": 656,
+      "count": 658,
       "oldCliRoute": "astryx template <id> --type block",
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/core/block",

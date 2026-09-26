@@ -441,7 +441,7 @@
   },
   {
     "component": "Drawer",
-    "storyId": "lab-drawer--sides",
+    "storyId": "core-drawer--sides",
     "dims": ["D4"],
     "setup": {
       "click": "button:has-text(\"Open from end\")"

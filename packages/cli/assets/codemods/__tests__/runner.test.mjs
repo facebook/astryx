@@ -193,6 +193,65 @@ describe('runCodemods — unified config codemod path', () => {
       [path.join(srcDir, 'a.ts'), path.join(srcDir, 'b.ts')].sort(),
     );
   });
+
+  it('missing --path only blocks when a selected CODE codemod would run', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+
+    // One project codemod and one code codemod staged together, as a version
+    // manifest may legitimately contain (e.g. `next` while a promotion is
+    // staged alongside a project migration).
+    const versionManifests = [
+      {
+        version: 'next',
+        transforms: [
+          {
+            name: 'synthetic-project-codemod',
+            meta: {
+              title: 'Synthetic project codemod',
+              codemodType: 'project',
+            },
+            transform: async () => ({writes: [], deletes: [], problems: []}),
+          },
+          {
+            name: 'synthetic-code-codemod',
+            meta: {title: 'Synthetic code codemod'},
+            transform: file => file.source,
+          },
+        ],
+      },
+    ];
+
+    // Unfiltered: the code codemod needs the missing source path, so the run
+    // reports the structured failure instead of running anything.
+    const unfiltered = await runCodemods(versionManifests, {
+      apply: false,
+      path: './missing-src',
+      silent: true,
+    });
+    expect(unfiltered).toMatchObject({ok: false, reason: 'source_path_missing'});
+
+    // Selecting only the project codemod must not be blocked by the missing
+    // source path the skipped code codemod would have needed.
+    const projectOnly = await runCodemods(versionManifests, {
+      apply: false,
+      path: './missing-src',
+      codemod: 'synthetic-project-codemod',
+      silent: true,
+    });
+    expect(projectOnly).toMatchObject({errors: []});
+
+    // The same selection through skipCodemods behaves identically.
+    const skipped = await runCodemods(versionManifests, {
+      apply: false,
+      path: './missing-src',
+      skipCodemods: new Set(['synthetic-code-codemod']),
+      silent: true,
+    });
+    expect(skipped).toMatchObject({errors: []});
+  });
 });
 
 describe('findSourceFiles — scan boundaries (symlink + build dirs)', () => {

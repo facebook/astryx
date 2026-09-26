@@ -12,7 +12,7 @@ owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
-    packages/lab/src/Drawer/Drawer.test.tsx,
+    packages/core/src/Drawer/Drawer.test.tsx,
     packages/core/src/Layer/useLayerDismissal.test.tsx,
     packages/core/src/Layer/layerDismissalFamilies.test.tsx,
     .github/scripts/modal-close-visibility.js,
@@ -39,12 +39,12 @@ system_specs: [spec:AST-027/DEC-3]
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Lab surface     | No public-API delta. At this commit, the experimental `@astryxdesign/lab` root exports `Drawer` and `DrawerProps`; `DrawerProps` extends `BaseProps<HTMLDialogElement>`, separately declares `ref`, and requires `isOpen`, `onOpenChange`, `label`, and `children`. This records current reachability, not a stable compatibility promise.                                                                                                                                                          |
+| Current Core surface    | Breaking import-path move with no runtime delta. At this commit, `@astryxdesign/core` exports `Drawer` and `DrawerProps` from the package root and the `./Drawer` subpath, and the `@astryxdesign/lab` exports are removed; `DrawerProps` extends `BaseProps<HTMLDialogElement>`, separately declares `ref`, and requires `isOpen`, `onOpenChange`, `label`, and `children`.                                                                                                                                                          |
 | Behavior                | Drawer-owned visibility is controlled by the caller for a viewport-relative, full-height logical-side overlay. `hasScrim` at native open selects `showModal()` or a manual Popover API host; changing it while open is unsupported. The shared layer dismissal stack gates Escape and platform close for the full rendered lifetime, the browser top layer owns paint order in both presentations, exit renders current children, and completed close returns focus to the element focused at open.  |
-| End-user impact         | Behavioral hardening only: Escape and platform close now resolve through the shared topmost/IME decision across overlay families, non-modal drawers paint in the browser top layer instead of a page-level z-index band, one dismissal request affects one surface even during exit or reopen, and focus returns to the opening element after completed close. Props, motion, sizing, and modal semantics are otherwise unchanged.                                                                  |
-| Builder impact          | None; there is no migration or new caller choice. State and content remain caller-owned; Drawer renders the caller's current children during exit. Sibling composition remains current consumer guidance, and a consumer `onKeyDown` that prevents default still cancels Escape dismissal.                                                                                                                                                                                                          |
-| Compatibility/readiness | Behavioral hardening inside Lab with no public prop, default, or theming-target change; Drawer remains experimental in Lab, this record remains `draft`, and its candidate statements require approval. FR13–FR14 record shared-family and top-layer conformance replacing the previously recorded gaps.                                                                                                                                                                                            |
-| Review checks           | Reject regional, docked, or block-axis models; claims that modality and scrim are currently independent; reintroduction of a Drawer-local Escape registry or page-level z-index band; claims that mixed-presentation or nested stacking is guaranteed beyond the shared stack's contract; or claims of stable API/theming compatibility.                                                                                                                                                            |
+| End-user impact         | None; runtime behavior, motion, sizing, dismissal ordering, and accessibility are unchanged from the hardened Lab component.                                                                  |
+| Builder impact          | Breaking import move: `@astryxdesign/lab` no longer exports Drawer; imports move to `@astryxdesign/core` (root or `./Drawer` subpath) and `astryx upgrade --apply` rewrites supported imports. CLI scaffolding gains Drawer blocks (DrawerShowcase, DrawerRowInspector) and Drawer-based templates. Props, defaults, and caller-owned state are unchanged.                                                                                                                                                                                                          |
+| Compatibility/readiness | Breaking changeset for the import-path move with no behavior change versus the hardened Lab Drawer; Drawer becomes a stable Core component, while this record remains `draft` and its candidate statements require approval. FR13–FR14 record shared-family and top-layer conformance.                                                                                                                                                                                            |
+| Review checks           | Reject regional, docked, or block-axis models; claims that modality and scrim are currently independent; reintroduction of a Drawer-local Escape registry or page-level z-index band; claims that mixed-presentation or nested stacking is guaranteed beyond the shared stack's contract; behavior or theming deltas beyond the import-path move; or a surviving Lab export.                                                                                                                                                            |
 | Record context          | `component:Drawer` FR1–FR14 and AR1–AR6 are draft candidate statements. Linked records govern only within their own declared authority and scope.                                                                                                                                                                                                                                                                                                                                                   |
 
 This table summarizes the draft body below; it does not change this record's declared authority.
@@ -56,21 +56,23 @@ floats over the current page without reflowing it. It supports modal inspection
 with a scrim and non-modal master-detail inspection that leaves the page behind
 available.
 
-This draft records the viewport-only Lab component after its current
-layer-lifecycle hardening. It introduces no new public prop or scope concept. In
-particular, it does not revive a regional, pane-scoped, or container-targeted
-Drawer model.
+This draft records the stable viewport-only Core component after its
+layer-lifecycle hardening and package promotion. It introduces no new prop or
+scope concept. In particular, it does not revive a regional, pane-scoped, or
+container-targeted Drawer model.
 
 ## Compatibility and migration
 
-- Released default preserved: `not yet released`; Drawer remains in
-  `@astryxdesign/lab`.
-- Compatibility class: behavioral hardening inside Lab; public props, defaults,
-  root element, styling inputs, and controlled ownership remain unchanged.
+- Released default preserved: `yes`; existing Lab behavior and defaults become the
+  stable Core defaults.
+- Compatibility class: breaking import-path move from `@astryxdesign/lab` to
+  `@astryxdesign/core/Drawer`; runtime props, defaults, root element, styling
+  inputs, and controlled ownership remain unchanged.
 - Controlled/uncontrolled behavior: unchanged for Drawer-owned paths; callers
   provide `isOpen`, while direct native mutation through the public dialog ref is
   outside that guarantee.
-- Migration decision: none.
+- Migration decision: `astryx upgrade --apply` rewrites supported Lab Drawer
+  imports and re-exports to `@astryxdesign/core/Drawer`.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -107,13 +109,14 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 
 | Concept            | Closed values or states                       | Meaning                                                           | Availability by state                                           | Default                 | Owner              | Stability                 | Invalid-value behavior                                 |
 | ------------------ | --------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------ | ------------------ | ------------------------- | ------------------------------------------------------ |
-| visibility         | open, closed                                  | whether caller-controlled Drawer presentation is requested        | all presentations                                               | caller-controlled       | `component:Drawer` | experimental Lab contract | required controlled value                              |
-| logical edge       | inline start, inline end                      | viewport edge from which the panel enters and exits               | open and exiting                                                | inline end              | `component:Drawer` | experimental Lab contract | closed type rejects other values                       |
-| presentation       | modal with scrim, non-modal without scrim     | native host mode and associated document semantics                | chosen when the native host opens; live changes are unsupported | modal with scrim        | `component:Drawer` | experimental Lab contract | one current boolean selects the initial mode           |
-| inline-size budget | pixel number or valid CSS length              | desktop inline size and reveal-mode mobile cap                    | desktop and mobile page-reveal mode                             | `400px`                 | `component:Drawer` | experimental Lab contract | invalid CSS lengths are unsupported                    |
-| mobile coverage    | page reveal, full viewport                    | whether narrow viewports retain a visible page strip              | viewports at or below the mobile boundary                       | 56px page reveal        | `component:Drawer` | experimental Lab contract | closed boolean                                         |
-| close affordance   | built-in close button present, absent         | whether Drawer supplies its top-trailing close action             | modal and non-modal presentations                               | present                 | `component:Drawer` | experimental Lab contract | closed boolean                                         |
-| sibling order      | earlier opened, later opened, exiting, closed | shared-stack Escape eligibility and browser top-layer paint order | sibling Drawers in either presentation                          | later opened is topmost | `component:Drawer` | experimental Lab contract | nested composition is outside the documented contract  |
+| visibility         | open, closed                                  | whether caller-controlled Drawer presentation is requested        | all presentations                                               | caller-controlled       | `component:Drawer` | stable Core contract      | required controlled value                              |
+| logical edge       | inline start, inline end                      | viewport edge from which the panel enters and exits               | open and exiting                                                | inline end              | `component:Drawer` | stable Core contract      | closed type rejects other values                       |
+| presentation       | modal with scrim, non-modal without scrim     | native host mode and associated document semantics                | chosen when the native host opens; live changes are unsupported | modal with scrim        | `component:Drawer` | stable Core contract      | one current boolean selects the initial mode           |
+| inline-size budget | pixel number or valid CSS length              | desktop inline size and reveal-mode mobile cap                    | desktop and mobile page-reveal mode                             | `400px`                 | `component:Drawer` | stable Core contract      | invalid CSS lengths are unsupported                    |
+| mobile coverage    | page reveal, full viewport                    | whether narrow viewports retain a visible page strip              | viewports at or below the mobile boundary                       | 56px page reveal        | `component:Drawer` | stable Core contract      | closed boolean                                         |
+| close affordance   | built-in close button present, absent         | whether Drawer supplies its top-trailing close action             | modal and non-modal presentations                               | present                 | `component:Drawer` | stable Core contract      | closed boolean                                         |
+| sibling order      | earlier opened, later opened, exiting, closed | shared-stack Escape eligibility and browser top-layer paint order | sibling Drawers in either presentation                          | later opened is topmost | `component:Drawer` | stable Core contract      | nested composition is outside the documented contract  |
+
 
 ## Behavioral and layout contract
 
@@ -129,7 +132,7 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 | FR8  | Opening MUST present the native host, capture the element focused before opening, and attempt to focus the first rendered `[data-autofocus]` descendant, if any. After a completed controlled close releases the native host, Drawer MUST attempt to restore focus to the captured element.                                                                                                                    | Current presence hook and focus tests                      | Verified for completed controlled close                                                                  |
 | FR9  | Closing MUST retain the panel host, content region, edge, and native presentation while the exit remains visible and continue rendering the caller's current `children`. The transform transition is authoritative, a computed-duration backstop prevents a lost event from stranding the host, and native release and React hiding land together so no frame paints outside the top layer.                    | Current lifecycle tests and browser close-visibility guard | Observable outcome verified                                                                              |
 | FR10 | Sibling Drawers MUST be composed as siblings. The last-opened present sibling owns the first Escape request through the shared stack; a closing sibling retains that ownership through its visible exit, and reopening registers a new active cycle so one request never closes two surfaces. Paint order in both presentations follows the browser top layer's chronological order.                            | Current docs, shared stack, and tests                      | Verified current behavior                                                                                |
-| FR11 | At this commit, `DrawerProps` extends `BaseProps<HTMLDialogElement>` and separately declares `ref`. The root filters `open`, merges `xstyle`, `className`, and `style`, forwards remaining unclaimed props, composes consumer `onClick`, forwards consumer `onKeyDown` ahead of the shared document-level Escape owner, and owns `aria-label`, `aria-modal`, and `onCancel`. A consumer `onKeyDown` that prevents default cancels shared-stack Escape dismissal for the press. | Current source and focused keyboard tests                  | Recorded current Lab behavior; not a stable compatibility decision                                       |
+| FR11 | At this commit, `DrawerProps` extends `BaseProps<HTMLDialogElement>` and separately declares `ref`. The root filters `open`, merges `xstyle`, `className`, and `style`, forwards remaining unclaimed props, composes consumer `onClick`, forwards consumer `onKeyDown` ahead of the shared document-level Escape owner, and owns `aria-label`, `aria-modal`, and `onCancel`. A consumer `onKeyDown` that prevents default cancels shared-stack Escape dismissal for the press. | Current source and focused keyboard tests                  | Recorded current behavior for the stable Core surface                                                    |
 | FR12 | At this commit, the painted root dialog emits the documented `drawer` target and `side` selector axis and applies the container-padding reset. No separate Drawer target is currently emitted for content or scrim; future target qualification remains owned by `architecture:component-theming-surface`.                                                                                                     | Current source, docs, and structural target metadata       | Current reachability only; no target-admission decision                                                  |
 | FR13 | Drawer MUST join the shared dismissal stack for its full rendered lifetime, provide logical depth to descendant layers, route platform close through the same topmost/IME decision, and preserve consumer `preventDefault()` ownership.                                                                                                                                                                        | Shared family contract and focused tests                   | Verified current conformance                                                                             |
 | FR14 | Non-modal Drawer MUST use a manual Popover API host so cross-surface order comes from the browser top layer rather than a page-level z-index band. The reduced fallback may use `dialog.show()` only below the Popover API support floor.                                                                                                                                                                      | Current source, browser guard, and `spec:AST-027`          | Verified current conformance                                                                             |
@@ -235,8 +238,8 @@ does not decide future target qualification.
 - `architecture:layer-runtime` owns the distinction between native modal hosting,
   non-modal dialog presentation, top-layer behavior, and shared layer plumbing.
 - `architecture:public-component-api` owns stable API admission and compatibility.
-  Drawer remains experimental in Lab; FR11 records current DOM/ref/event
-  reachability without making a stable compatibility decision.
+  Drawer now exposes its documented DOM/ref/event and controlled-state contract
+  through the stable Core package; FR11 records that surface.
 - `architecture:react-component-runtime` owns effect/resource cleanup, native-host
   synchronization, and node/lifecycle safety. This draft records Drawer-owned
   visible close and focus-handoff outcomes.
@@ -270,7 +273,7 @@ API, theming, scope, or layer-system decision.
 None. Regional placement, independent modality/scrim axes, and block-axis sheets
 are outside the current component boundary. Any future proposal for them requires
 fresh public-API and design authority rather than being inferred from this
-current-state backfill.
+stable component contract.
 
 ## Content boundary
 

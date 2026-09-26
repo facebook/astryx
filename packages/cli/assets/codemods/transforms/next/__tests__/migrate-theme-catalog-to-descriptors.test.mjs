@@ -72,7 +72,9 @@ const run = (apply, srcPath = root) =>
   runCodemods([{version: 'next', transforms: manifest}], {
     apply,
     path: srcPath,
-    codemod: undefined,
+    // This file exercises only the theme-catalog codemod; other staged next
+    // codemods (e.g. the Drawer import move) have their own suites.
+    codemod: 'migrate-theme-catalog-to-descriptors',
     silent: true,
     root,
   });
@@ -81,6 +83,7 @@ describe('migrate-theme-catalog-to-descriptors', () => {
   it('is staged for the next release as a project codemod', () => {
     expect(manifest.map(t => [t.name, t.meta.codemodType])).toEqual([
       ['migrate-theme-catalog-to-descriptors', 'project'],
+      ['migrate-lab-drawer-imports', undefined],
     ]);
   });
 
