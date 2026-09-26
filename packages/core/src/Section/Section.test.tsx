@@ -432,7 +432,10 @@ describe('Section isScrollable', () => {
       </Section>,
     );
     const {outer} = getBoxes();
+    // The reset must not clobber a minHeight the caller asked for.
     expect(outer.getAttribute('style')).toContain('--x-minHeight: 120px');
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+    // ...and the reset still frees the inline axis.
     expect(getComputedStyle(outer).minWidth).toBe('0');
   });
 
@@ -452,5 +455,30 @@ describe('Section isScrollable', () => {
     const {outer, inner} = getBoxes();
     expect(outer.hasAttribute('isscrollable')).toBe(false);
     expect(inner.hasAttribute('isscrollable')).toBe(false);
+  });
+
+  it('composes the file-explorer column recipe', () => {
+    // The dogfood case from #2623: a fixed-width, self-scrolling column with
+    // an end divider, sized by its StackItem inside a horizontally scrolling
+    // strip.
+    render(
+      <Section
+        width={240}
+        height="100%"
+        padding={2}
+        variant="transparent"
+        dividers={['end']}
+        isScrollable
+        data-testid="section">
+        Content
+      </Section>,
+    );
+    const {outer, inner} = getBoxes();
+    expect(outer.getAttribute('style')).toContain('--x-width: 240px');
+    expect(getComputedStyle(outer).minHeight).toBe('0');
+    expect(getComputedStyle(inner).overflow).toBe('auto');
+    // The divider still lives on the painted surface, so it stays put while
+    // the content scrolls underneath it.
+    expect(getComputedStyle(inner).borderInlineEndWidth).toBe('1px');
   });
 });
