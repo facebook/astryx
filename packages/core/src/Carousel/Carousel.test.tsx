@@ -850,4 +850,87 @@ describe('Carousel', () => {
       expect(scroller).not.toHaveAttribute('data-padding');
     });
   });
+
+  describe('edge fade', () => {
+    function getScroller() {
+      const region = screen.getByRole('region');
+      return region.firstElementChild as HTMLElement;
+    }
+
+    function makeOverflowing(el: HTMLElement, scrollLeft: number) {
+      Object.defineProperty(el, 'scrollWidth', {
+        value: 500,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'scrollLeft', {
+        value: scrollLeft,
+        writable: true,
+        configurable: true,
+      });
+      fireEvent.scroll(el);
+    }
+
+    function injectedCss(): string {
+      let out = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            out += rule.cssText + '\n';
+          }
+        } catch {
+          // Ignore cross-origin sheets.
+        }
+      }
+      return out;
+    }
+
+    it('fades the physical left edge when only the start overflows (LTR)', () => {
+      render(
+        <Carousel aria-label="Fade">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller, 300);
+      expect(getComputedStyle(scroller).maskImage).toContain(
+        'linear-gradient(to right',
+      );
+    });
+
+    it('fades the physical right edge when only the end overflows (LTR)', () => {
+      render(
+        <Carousel aria-label="Fade">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller, 0);
+      expect(getComputedStyle(scroller).maskImage).toContain(
+        'linear-gradient(to left',
+      );
+    });
+
+    it('mirrors both single-edge fade gradients under RTL', () => {
+      render(
+        <Carousel aria-label="Fade">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const css = injectedCss();
+      expect(css).toMatch(
+        /:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*mask-image:\s*linear-gradient\(to left/,
+      );
+      expect(css).toMatch(
+        /:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*mask-image:\s*linear-gradient\(to right/,
+      );
+    });
+  });
+
 });

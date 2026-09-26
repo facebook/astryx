@@ -1,5 +1,76 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Pagination',
+    required: true,
+    description:
+      'Navigation landmark containing the current paging controls and optional page-size selector.',
+  },
+  {
+    name: 'Page-size selector',
+    required: false,
+    description: 'Optional Selector for choosing how many items appear per page.',
+  },
+  {
+    name: 'First/last buttons',
+    required: false,
+    description:
+      'Optional Button controls that jump to the first or last known page.',
+  },
+  {
+    name: 'Previous/next buttons',
+    required: true,
+    description:
+      'Button controls that move backward or forward through the pages.',
+  },
+  {
+    name: 'Page number button',
+    required: false,
+    description:
+      'Button for one directly selectable page in the numbered presentation.',
+  },
+  {
+    name: 'Ellipsis',
+    required: false,
+    description:
+      'Visual omission marker between non-adjacent page-number buttons.',
+  },
+  {
+    name: 'Count readout',
+    required: false,
+    description:
+      'Text showing the current item range and total item count.',
+  },
+  {
+    name: 'Compact readout',
+    required: false,
+    description: 'Text showing the current page and total page count.',
+  },
+  {
+    name: 'Dot',
+    required: false,
+    description:
+      'Page indicator control that reflects and changes the active page.',
+  },
+  {
+    name: 'Page input label',
+    required: false,
+    description: 'Leading visible label for the editable page-number field.',
+  },
+  {
+    name: 'Page input',
+    required: false,
+    description: 'NumberInput used to enter a page directly.',
+  },
+  {
+    name: 'Page input total',
+    required: false,
+    description: 'Trailing text showing the known total page count.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -138,6 +209,7 @@ export const docs = {
     },
   },
   usage: {
+    anatomy,
     description:
       'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [
@@ -280,6 +352,7 @@ export const docsZh = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [
@@ -300,6 +373,7 @@ export const docsDense = {
   description:
     'Standalone pagination controls for navigating content pages. Supports multiple display variants + works w/ known totals or cursor-based pagination.',
   usage: {
+    anatomy,
     description:
       'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [

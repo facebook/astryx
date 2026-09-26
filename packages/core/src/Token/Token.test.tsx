@@ -65,7 +65,7 @@ describe('Token', () => {
       />,
     );
     const token = screen.getByTestId('token-custom');
-    expect(token).toHaveClass('astryx-token', 'brand');
+    expect(token).toHaveClass('astryx-token');
     expect(token).toHaveAttribute('data-color', 'brand');
   });
 

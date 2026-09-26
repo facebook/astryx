@@ -1,7 +1,7 @@
 {
   "name": "@astryxdesign/build",
-  "version": "0.5.0",
-  "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
+  "version": "0.6.3",
+  "description": "Build plugins for Astryx source builds — babel, PostCSS, and Vite integrations",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -40,15 +40,18 @@
     "prepack": "pnpm build"
   },
   "peerDependencies": {
-    "@stylexjs/babel-plugin": ">=0.18.0",
     "@babel/core": ">=7.0.0",
+    "@stylexjs/babel-plugin": ">=0.18.0",
     "@stylexjs/unplugin": ">=0.18.0",
     "vite": "catalog:"
   },
   "dependencies": {
+    "autoprefixer": "^10.5.2",
+    "browserslist": "^4.28.4",
     "fast-glob": "^3.3.0",
     "glob-parent": "^6.0.0",
-    "is-glob": "^4.0.0"
+    "is-glob": "^4.0.0",
+    "lightningcss": "^1.32.0"
   },
   "devDependencies": {
     "esbuild": "catalog:"

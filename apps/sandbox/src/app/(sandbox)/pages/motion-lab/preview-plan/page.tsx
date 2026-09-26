@@ -14,6 +14,7 @@
  * by the general shape.
  */
 
+import {COST_LABEL, COST_VARIANT} from '../motionCost';
 import {useMemo, useState} from 'react';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Banner} from '@astryxdesign/core/Banner';
@@ -92,12 +93,24 @@ function RowCard({row}: {row: PreviewRow}) {
               }
             />
             <Badge label={PRIORITY_LABEL[row.priority]} />
+            {row.motionCost !== 'idle' && (
+              <Badge
+                variant={COST_VARIANT[row.motionCost]}
+                label={`${COST_LABEL[row.motionCost]} idle cost`}
+              />
+            )}
           </HStack>
           <HStack gap={3} wrap="wrap">
             <Text type="supporting" color="secondary">
               {`Today: ${row.today}`}
             </Text>
           </HStack>
+          {row.motionCostWhy != null && (
+            <Text type="supporting" color="secondary">
+              <strong>{`${COST_LABEL[row.motionCost]} idle cost: `}</strong>
+              {row.motionCostWhy}
+            </Text>
+          )}
           <Text type="supporting" color="secondary">
             {`Gap: ${row.gap}`}
           </Text>

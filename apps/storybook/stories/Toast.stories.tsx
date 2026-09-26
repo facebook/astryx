@@ -4,7 +4,11 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Toast, useToast, ToastViewport} from '@astryxdesign/core/Toast';
-import type {ToastOptions, ToastType} from '@astryxdesign/core/Toast';
+import type {
+  ToastContentRenderProps,
+  ToastOptions,
+  ToastType,
+} from '@astryxdesign/core/Toast';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
@@ -13,6 +17,11 @@ import {Stack} from '@astryxdesign/core/Stack';
 import {Heading} from '@astryxdesign/core/Text';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Text} from '@astryxdesign/core/Text';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   narrowLayoutReference: {
@@ -483,6 +492,50 @@ export const MobileRtlSafeAreaPlacement: StoryObj = {
   },
 };
 
+export const MobileSwipeToDismiss: StoryObj = {
+  name: 'Mobile situations / Swipe to dismiss',
+  render: () => (
+    <MobileCanvas
+      title="Swipe dismissal"
+      description="Swipe is an enhancement only; the surface fades as it approaches the edge, and the visible close button remains the simple alternative.">
+      <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Use touch or pen input, or browser touch emulation, to swipe the
+            toast toward its configured block edge: up for top placement, down
+            for bottom placement. This matches the direction each Toast enters
+            and exits, keeping one spatial model for the whole interaction. The
+            gesture claims the touch only after dominant travel matches the
+            dismiss edge, so opposite-direction and horizontal page scrolling
+            remain available. Pen is supported as direct-contact input; mouse
+            dragging is ignored to avoid conflicting with desktop text
+            selection, where the close button remains available.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-swipe-dismiss',
+                body: 'Swipe or close me',
+                isAutoHide: false,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: {
+    ...mobileStoryParameters,
+    docs: {
+      story: {
+        ...mobileStoryParameters.docs.story,
+        description:
+          'Interactive vertical edge swipe-to-dismiss example using real ToastViewport behavior. The vertical axis intentionally matches the Toast placement and motion model: top Toasts leave upward and bottom Toasts leave downward. A non-passive touchmove handoff claims only dominant travel toward that edge; opposite-direction and horizontal page scrolling remain available. Pen is supported as direct-contact input, while mouse drag is excluded to avoid conflicting with desktop selection; the close button and F6 keyboard access remain available.',
+      },
+    },
+  },
+};
+
 export const MobileMotionEdgeAwareEntrance: StoryObj = {
   name: 'Mobile situations / Motion edge-aware entrance',
   render: () => (
@@ -832,3 +885,188 @@ function ThemedToastTriggers() {
 }
 
 function noop() {}
+
+// =============================================================================
+// Custom content (renderContent)
+// =============================================================================
+
+const customContentStyles = stylex.create({
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-3'],
+    width: '100%',
+  },
+  stripe: {
+    alignSelf: 'stretch',
+    width: 4,
+    borderRadius: radiusVars['--radius-full'],
+    flexShrink: 0,
+  },
+  stripeInfo: {backgroundColor: colorVars['--color-accent']},
+  stripeError: {backgroundColor: colorVars['--color-text-red']},
+  text: {flex: 1, minWidth: 0},
+});
+
+function ProductToastContent({
+  type,
+  body,
+  endContent,
+  dismiss,
+}: ToastContentRenderProps) {
+  return (
+    <div {...stylex.props(customContentStyles.row)}>
+      <div
+        {...stylex.props(
+          customContentStyles.stripe,
+          type === 'error'
+            ? customContentStyles.stripeError
+            : customContentStyles.stripeInfo,
+        )}
+      />
+      <div {...stylex.props(customContentStyles.text)}>{body}</div>
+      {endContent}
+      <Button
+        label="Dismiss custom toast"
+        variant="ghost"
+        size="sm"
+        onClick={dismiss}
+      />
+    </div>
+  );
+}
+
+function ContentWithoutDismiss({type, body}: ToastContentRenderProps) {
+  return (
+    <div {...stylex.props(customContentStyles.row)}>
+      <div
+        {...stylex.props(
+          customContentStyles.stripe,
+          type === 'error'
+            ? customContentStyles.stripeError
+            : customContentStyles.stripeInfo,
+        )}
+      />
+      <div {...stylex.props(customContentStyles.text)}>{body}</div>
+    </div>
+  );
+}
+
+const renderProductContent = (toast: ToastContentRenderProps) => (
+  <ProductToastContent {...toast} />
+);
+
+export const CustomContent: StoryObj = {
+  name: 'Custom content (renderContent)',
+  render: function CustomContentStory() {
+    const toast = useToast();
+    return (
+      <Stack direction="horizontal" gap={2} wrap="wrap">
+        <Button
+          label="Show"
+          onClick={() => {
+            toast({
+              body: 'Your changes have been saved.',
+              renderContent: renderProductContent,
+            });
+          }}
+        />
+        <Button
+          label="With an action"
+          variant="secondary"
+          onClick={() => {
+            toast({
+              body: 'Row deleted.',
+              endContent: <Button variant="ghost" size="sm" label="Undo" />,
+              renderContent: renderProductContent,
+            });
+          }}
+        />
+        <Button
+          label="Error"
+          variant="destructive"
+          onClick={() => {
+            toast({
+              body: 'Could not reach the server.',
+              type: 'error',
+              renderContent: renderProductContent,
+            });
+          }}
+        />
+        <Button
+          label="Layout without a close"
+          variant="ghost"
+          onClick={() => {
+            toast({
+              body: 'This layout relies on auto-hide.',
+              renderContent: toastProps => (
+                <ContentWithoutDismiss {...toastProps} />
+              ),
+            });
+          }}
+        />
+        <Button
+          label="Without renderContent"
+          variant="ghost"
+          onClick={() => {
+            toast({body: 'A toast from code that knows nothing about it.'});
+          }}
+        />
+      </Stack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`renderContent` replaces the content of one toast's card and receives a `dismiss` callback. The custom layout composes its own Astryx `Button`; a layout without a close is left as-is and can rely on auto-hide. The last button omits `renderContent`, showing the ordinary Astryx layout and dismiss control.",
+      },
+    },
+  },
+};
+
+// =============================================================================
+// Logical placement
+// =============================================================================
+
+/**
+ * The viewport is rendered IN THE STORY TREE, not through the provider-less
+ * fallback the other stories use, and `isTopLayer` keeps its default.
+ *
+ * Both details are load-bearing for the RTL audit:
+ *
+ * - the fallback container is appended to `<body>`, outside the decorator that
+ *   sets `dir`, so a toast raised there can never flip and reads as a false
+ *   not-RTL;
+ * - `isTopLayer={false}` drops the `popover` attribute, and with it the UA
+ *   `width: fit-content` this placement has to survive — a story without the
+ *   popover would pass whether or not the viewport can span the inline axis.
+ */
+export const LogicalPlacement: StoryObj = {
+  name: 'Logical placement follows direction',
+  render: function LogicalPlacementStory() {
+    return (
+      <ToastViewport position="bottomEnd" maxVisible={1}>
+        <LogicalPlacementTrigger />
+      </ToastViewport>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`bottomEnd` is a logical placement: the toast sits on the inline END edge, which is the right in LTR and the left in RTL. The viewport spans the inline axis and aligns the card within itself, so the card follows the document direction with no per-direction styling.',
+      },
+    },
+  },
+};
+
+function LogicalPlacementTrigger() {
+  const toast = useToast();
+  return (
+    <Button
+      label="Show toast"
+      onClick={() => toast({body: 'Placement follows the document direction.'})}
+    />
+  );
+}

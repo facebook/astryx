@@ -4,7 +4,7 @@
 
 /**
  * @file ChatToolCalls.tsx
- * @input Uses React, StyleX, theme tokens
+ * @input Uses React, StyleX, semantic icon registry, theme tokens
  * @output Exports ChatToolCalls component
  * @position Chat component — displays tool/function call invocations
  *
@@ -224,17 +224,6 @@ const styles = stylex.create({
     height: '16px',
     borderRadius: radiusVars['--radius-full'],
   },
-  statusIconCircle: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 'inherit',
-    backgroundColor: 'currentColor',
-    opacity: 0.15,
-  },
-  statusIconInner: {
-    position: 'relative',
-    display: 'inline-flex',
-  },
   callName: {
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -351,8 +340,8 @@ const styles = stylex.create({
 const STATUS_ICON_NAMES: Record<ChatToolCallStatus, IconName | null> = {
   pending: 'clock',
   running: null,
-  complete: 'check',
-  error: 'close',
+  complete: 'success',
+  error: 'error',
 };
 
 const STATUS_STYLES: Record<
@@ -364,6 +353,26 @@ const STATUS_STYLES: Record<
   complete: styles.colorComplete,
   error: styles.colorError,
 };
+
+function getStatusAnnouncement(
+  t: ReturnType<typeof useTranslator>,
+  status: ChatToolCallStatus,
+  errorMessage?: string,
+): string {
+  if (status === 'error' && errorMessage != null) {
+    return t('@astryx.chatToolCalls.error', {message: errorMessage});
+  }
+  switch (status) {
+    case 'pending':
+      return t('@astryx.chatToolCalls.status.pending');
+    case 'running':
+      return t('@astryx.chatToolCalls.status.running');
+    case 'complete':
+      return t('@astryx.chatToolCalls.status.complete');
+    case 'error':
+      return t('@astryx.chatToolCalls.status.error');
+  }
+}
 
 function getToolCallKey(call: ChatToolCallItem): string {
   return getKey(call.key, () =>
@@ -390,6 +399,11 @@ function CallRow({call}: {call: ChatToolCallItem}) {
   const hasDetail = call.resultDetail != null;
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const detailId = useId();
+  const statusAnnouncement = getStatusAnnouncement(
+    t,
+    status,
+    call.errorMessage,
+  );
 
   const toggleDetail = hasDetail
     ? () => setIsDetailOpen(prev => !prev)
@@ -417,32 +431,17 @@ function CallRow({call}: {call: ChatToolCallItem}) {
         title={status === 'error' ? call.errorMessage : undefined}
         {...stylex.props(styles.statusIcon, STATUS_STYLES[status])}>
         {status === 'running' ? (
-          <Spinner size="sm" shade="subtle" />
+          <Spinner size="sm" shade="subtle" aria-hidden="true" />
         ) : status === 'pending' ? (
-          <Spinner size="sm" shade="subtle" />
+          <Spinner size="sm" shade="subtle" aria-hidden="true" />
         ) : (
-          <>
-            <span {...stylex.props(styles.statusIconCircle)} />
-            <span {...stylex.props(styles.statusIconInner)}>
-              <Icon
-                icon={STATUS_ICON_NAMES[status] ?? 'check'}
-                size="xsm"
-                color="inherit"
-              />
-            </span>
-          </>
+          <Icon
+            icon={STATUS_ICON_NAMES[status] ?? 'success'}
+            size="xsm"
+            color="inherit"
+          />
         )}
-        {status === 'error' && call.errorMessage != null && (
-          // The title attribute above is hover-only; expose the error detail
-          // as real text so it reaches screen readers, keyboard, and touch
-          // users. Rendering it inside the row also folds it into the
-          // accessible name of expandable (role="button") rows.
-          <VisuallyHidden>
-            {t('@astryx.chatToolCalls.error', {
-              message: call.errorMessage ?? '',
-            })}
-          </VisuallyHidden>
-        )}
+        <VisuallyHidden>{statusAnnouncement}</VisuallyHidden>
       </span>
       <span {...stylex.props(styles.callName)}>{call.name}</span>
       {call.node != null && (
@@ -581,6 +580,11 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
   // Multiple calls: latest call at surface with chevron to expand all
   const latestCall = calls[calls.length - 1];
   const latestStatus = latestCall.status ?? 'complete';
+  const latestStatusAnnouncement = getStatusAnnouncement(
+    t,
+    latestStatus,
+    latestCall.errorMessage,
+  );
 
   return (
     <div
@@ -620,21 +624,17 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
             <span
               {...stylex.props(styles.statusIcon, STATUS_STYLES[latestStatus])}>
               {latestStatus === 'running' ? (
-                <Spinner size="sm" shade="subtle" />
+                <Spinner size="sm" shade="subtle" aria-hidden="true" />
               ) : latestStatus === 'pending' ? (
-                <Spinner size="sm" shade="subtle" />
+                <Spinner size="sm" shade="subtle" aria-hidden="true" />
               ) : (
-                <>
-                  <span {...stylex.props(styles.statusIconCircle)} />
-                  <span {...stylex.props(styles.statusIconInner)}>
-                    <Icon
-                      icon={STATUS_ICON_NAMES[latestStatus] ?? 'check'}
-                      size="xsm"
-                      color="inherit"
-                    />
-                  </span>
-                </>
+                <Icon
+                  icon={STATUS_ICON_NAMES[latestStatus] ?? 'success'}
+                  size="xsm"
+                  color="inherit"
+                />
               )}
+              <VisuallyHidden>{latestStatusAnnouncement}</VisuallyHidden>
             </span>
             <span {...stylex.props(styles.callName)}>{latestCall.name}</span>
             {latestCall.target != null && (

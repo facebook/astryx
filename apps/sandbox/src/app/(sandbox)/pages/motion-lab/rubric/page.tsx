@@ -14,6 +14,14 @@
  * trust.
  */
 
+import {
+  COST_EVIDENCE,
+  COST_LABEL,
+  COST_RULE,
+  COST_SUMMARY,
+  COST_VARIANT,
+  LOOP_INVENTORY,
+} from '../motionCost';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
@@ -332,6 +340,9 @@ function CriterionCard({criterion}: {criterion: Criterion}) {
           {criterion.guidance === 'reversal' && (
             <Badge variant="error" label="Reverses published guidance" />
           )}
+          {criterion.guidance === 'overreach' && (
+            <Badge variant="warning" label="Narrowed to fit its sources" />
+          )}
           {criterion.guidance === 'aligned' && (
             <Badge variant="success" label="Already published" />
           )}
@@ -353,12 +364,20 @@ function CriterionCard({criterion}: {criterion: Criterion}) {
             {criterion.evidence}
           </Text>
         )}
+        {criterion.contradictionNote != null && (
+          <Text type="supporting" color="secondary">
+            <strong>Pulls against criterion {criterion.contradicts}: </strong>
+            {criterion.contradictionNote}
+          </Text>
+        )}
         {criterion.guidanceNote != null && (
           <Text type="supporting" color="secondary">
             <strong>
               {criterion.guidance === 'reversal'
                 ? 'Contradicts the published Motion page: '
-                : 'Cites the published Motion page: '}
+                : criterion.guidance === 'overreach'
+                  ? 'Claimed more than its sources support: '
+                  : 'Cites the published Motion page: '}
             </strong>
             {criterion.guidanceNote}{' '}
             <Link href="/pages/motion-lab/published/">See the conflicts</Link>
@@ -465,7 +484,7 @@ export default function MotionRubricPage() {
       </VStack>
 
       <VStack gap={3}>
-        <Heading level={2}>The twelve</Heading>
+        <Heading level={2}>The thirteen</Heading>
         {RUBRIC_CRITERIA.map(criterion => (
           <CriterionCard key={criterion.id} criterion={criterion} />
         ))}
@@ -714,6 +733,63 @@ export default function MotionRubricPage() {
       </VStack>
 
       <VStack gap={3}>
+        <Heading level={2}>Every loop in the system, and what it costs</Heading>
+        <Text color="secondary">{COST_SUMMARY}</Text>
+        <Banner
+          status="info"
+          title="Why a loop gets its own criterion"
+          description={
+            <VStack gap={2}>
+              <Text>{COST_RULE}</Text>
+              <Text type="supporting" color="secondary">
+                {COST_EVIDENCE}
+              </Text>
+            </VStack>
+          }
+        />
+        <Table density="balanced">
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell>Loop</TableHeaderCell>
+              <TableHeaderCell>Animates</TableHeaderCell>
+              <TableHeaderCell>Contained</TableHeaderCell>
+              <TableHeaderCell>Reduced-motion arm</TableHeaderCell>
+              <TableHeaderCell>Idle cost</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {LOOP_INVENTORY.map(loop => (
+              <TableRow key={`${loop.where}-${loop.component}`}>
+                <TableCell>
+                  <VStack gap={0.5}>
+                    <Text weight="semibold">{loop.component}</Text>
+                    <Text type="supporting" color="secondary">
+                      {loop.file}
+                    </Text>
+                    <Text type="supporting" color="secondary">
+                      {loop.note}
+                    </Text>
+                  </VStack>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={loop.compositorSafe ? 'success' : 'error'}
+                    label={loop.animates}
+                  />
+                </TableCell>
+                <TableCell>{loop.contained ? 'yes' : 'no'}</TableCell>
+                <TableCell>{loop.hasReducedMotionArm ? 'yes' : 'no'}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={COST_VARIANT[loop.cost]}
+                    label={COST_LABEL[loop.cost]}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
         <Heading level={2}>A principle the rubric drops</Heading>
         <Card padding={4}>
           <VStack gap={2}>

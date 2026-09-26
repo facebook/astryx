@@ -234,6 +234,12 @@ console.log('\nswizzle --json');
 checkJson('swizzle --list', ['swizzle', '--list'], {expectType: 'swizzle.list'});
 checkJson('swizzle (not found)', ['swizzle', 'NonexistentComponent99'], {expectError: true});
 
+// ── Gap reports ─────────────────────────────────────────────────────
+console.log('\ngap-report --json');
+checkJson('gap-report --list-categories', ['gap-report', '--list-categories'], {
+  expectType: 'gap-report.categories',
+});
+
 // ── Build ────────────────────────────────────────────────────────────
 console.log('\nbuild --json');
 checkJson('build (playbook)', ['build'], {expectType: 'build.help'});

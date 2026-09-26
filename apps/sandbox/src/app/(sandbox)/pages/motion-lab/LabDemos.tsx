@@ -31,6 +31,13 @@ import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Tab, TabList} from '@astryxdesign/core/TabList';
+// A swizzled copy of core's TabList carrying the proposed travelling indicator.
+import {
+  Tab as ProposedTab,
+  TabList as ProposedTabList,
+} from './proposed/TabList';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Token} from '@astryxdesign/core/Token';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -432,60 +439,34 @@ export function DialogRig({mode}: {mode: Mode}) {
 const TAB_NAMES = ['Overview', 'Activity', 'Members', 'Settings', 'Billing'];
 
 export function TabIndicatorRig({mode}: {mode: Mode}) {
-  const [index, setIndex] = useState(0);
-  const rowRef = useRef<HTMLDivElement | null>(null);
-  const indicatorRef = useRef<HTMLSpanElement | null>(null);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [value, setValue] = useState(TAB_NAMES[0]);
+  useLoop(
+    () =>
+      setValue(v => TAB_NAMES[(TAB_NAMES.indexOf(v) + 1) % TAB_NAMES.length]),
+    2000,
+  );
 
-  const move = useCallback(() => {
-    if (mode !== 'after') {
-      return;
-    }
-    const row = rowRef.current;
-    const tab = tabRefs.current[index];
-    const indicator = indicatorRef.current;
-    if (row == null || tab == null || indicator == null) {
-      return;
-    }
-    const r = tab.getBoundingClientRect();
-    const p = row.getBoundingClientRect();
-    indicator.style.width = `${r.width - 16}px`;
-    indicator.style.transform = `translateX(${r.left - p.left + 8}px)`;
-  }, [index, mode]);
-
-  useEffect(() => {
-    move();
-  }, [move]);
-
-  useLoop(() => setIndex(i => (i + 1) % TAB_NAMES.length), 2000);
+  // Both panes are TabList. `before` is core's, where every tab owns an
+  // indicator and they cross-fade on opacity; `after` is a swizzled copy of
+  // that source with one indicator that travels on transform. Same component,
+  // and the difference is the diff — see proposed/TabList/.
+  const List = mode === 'after' ? ProposedTabList : TabList;
+  const Item = mode === 'after' ? ProposedTab : Tab;
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
-      <div ref={rowRef} {...stylex.props(sx.tabRow)}>
-        {TAB_NAMES.map((name, i) => (
-          <button
-            key={name}
-            ref={el => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-            aria-selected={i === index}
-            onClick={() => setIndex(i)}
-            {...stylex.props(sx.tab, i === index && sx.tabSelected)}>
-            <Text type="supporting">{name}</Text>
-            {mode === 'before' && (
-              <span {...stylex.props(sx.tabBar, i === index && sx.tabBarOn)} />
-            )}
-          </button>
+      <List
+        value={value}
+        onChange={setValue}
+        {...(mode === 'after' ? {hasTravellingIndicator: true} : null)}>
+        {TAB_NAMES.map(name => (
+          <Item key={name} value={name} label={name} />
         ))}
-        {mode === 'after' && (
-          <span ref={indicatorRef} className={styles.indicator} />
-        )}
-      </div>
+      </List>
       <Hint>
         {mode === 'before'
-          ? 'Each tab owns its own bar and cross-fades. Nothing travels, so the eye has to re-find the selection after every change.'
-          : 'One indicator travels on --ease-move. The eye follows it, so the selection is never lost.'}
+          ? 'Core\u2019s TabList. Each tab draws its own indicator and they cross-fade on opacity, so nothing travels and the eye has to re-find the selection after every change.'
+          : 'One indicator for the strip, moved with transform on --ease-move. Compositor-only, and the eye can follow it. Jump between distant tabs to judge the duration — a bar crossing five tabs feels different from one crossing two.'}
       </Hint>
     </VStack>
   );
@@ -583,6 +564,22 @@ export function RailRig({mode}: {mode: Mode}) {
   const [collapsed, setCollapsed] = useState(false);
   useLoop(() => setCollapsed(v => !v), 2800);
 
+  // Hand-built, unlike the TabList and CheckboxInput demos on this page.
+  //
+  // A real fork of core's SideNav needs `SideNavCollapseContext` on the public
+  // surface — SideNav is a provider, and core exports only the reader hook
+  // `useSideNavCollapse`. Importing the context by relative path compiles and
+  // is silently wrong: the app resolves `@astryxdesign/core/*` to dist, so a
+  // relative import of src yields a SECOND React context object, and core's
+  // SideNavItem/Heading/Section read the other one, see the default
+  // `{isCollapsed: false}`, and render labels inside a narrow rail with no
+  // error anywhere.
+  //
+  // So this pane approximates the rail rather than being it, and the demo is
+  // weaker for it. The one-line fix is `export {SideNavCollapseContext}` from
+  // packages/core/src/SideNav/index.ts, beside the hook — exactly how
+  // SideNavRenderContext is already exported three lines below. Deferred: it is
+  // a public API surface change and wants its own review.
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
       <div {...stylex.props(sx.frame)}>
@@ -608,8 +605,8 @@ export function RailRig({mode}: {mode: Mode}) {
       </div>
       <Hint>
         {mode === 'before'
-          ? 'Only the chevron rotates. The rail snaps between widths, so the content beside it jumps.'
-          : 'The rail\u2019s own width animates on --ease-move and the labels fade slightly ahead of it. width is a layout property, so this is a deliberate criterion-6 exception that needs a written reason.'}
+          ? 'Only the chevron rotates. The rail snaps between widths, so the content beside it jumps. Approximated \u2014 see the note in LabDemos.tsx for why this one is not the real SideNav.'
+          : 'The rail\u2019s own width animates on --ease-move. width is a layout property, so this is a deliberate criterion-6 exception \u2014 the transform alternative leaves neighbouring content un-reflowed until the animation ends, which reads worse on a rail this narrow.'}
       </Hint>
     </VStack>
   );
@@ -1059,12 +1056,29 @@ export function CheckTickRig({
 }) {
   const [checked, setChecked] = useState(false);
   useLoop(() => setChecked(v => !v), 2000);
-  const cls =
-    technique === 'draw'
-      ? styles.checkDraw
-      : technique === 'scale'
-        ? styles.checkScale
-        : styles.checkHard;
+
+  // The "today" pane is the real component. Core's CheckboxInput tints its box
+  // and border on change and the tick simply appears; drawing that by hand
+  // would be asserting the finding rather than showing it. The other two are
+  // hand-built because they are the proposals — core has no drawn or scaled
+  // tick to demonstrate.
+  if (technique === 'hard') {
+    return (
+      <HStack gap={2} vAlign="center">
+        <CheckboxInput
+          label="Real CheckboxInput"
+          isLabelHidden
+          value={checked}
+          onChange={setChecked}
+        />
+        <Text type="supporting" color="secondary">
+          Real CheckboxInput — the tick appears instantly
+        </Text>
+      </HStack>
+    );
+  }
+
+  const cls = technique === 'draw' ? styles.checkDraw : styles.checkScale;
 
   return (
     <HStack gap={2} vAlign="center">
@@ -1080,11 +1094,7 @@ export function CheckTickRig({
         </svg>
       </button>
       <Text type="supporting" color="secondary">
-        {technique === 'hard'
-          ? 'Appears instantly'
-          : technique === 'draw'
-            ? 'Draws along its path'
-            : 'Scales in'}
+        {technique === 'draw' ? 'Draws along its path' : 'Scales in'}
       </Text>
     </HStack>
   );

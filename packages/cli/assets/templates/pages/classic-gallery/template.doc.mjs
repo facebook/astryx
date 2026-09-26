@@ -4,8 +4,7 @@
 export const doc = {
   name: 'Classic Gallery',
   displayName: 'Classic Gallery',
-  description:
-    'Responsive image gallery with a centered intro header and category filter tabs.',
+  description: 'Uniform grid of equal-ratio media tiles under a centered intro, with filter tabs that narrow the set in place. Regular rhythm, unlike the variable-height masonry variant. Gallery, photos, images, pictures, or portfolio index.',
   type: 'page',
   isReady: true,
   category: 'Gallery - Basic',

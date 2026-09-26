@@ -6,6 +6,8 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerDocs} from './docs.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
+import {displayWidth} from '../formatters/index.mjs';
 
 let tmpDir;
 
@@ -35,6 +37,7 @@ describe('registerDocs', () => {
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('principles');
     expect(output).toContain('tokens');
+    expect(output).not.toContain('shadcn-compatibility');
   });
 
   it('errors for unknown topic', async () => {
@@ -98,4 +101,90 @@ describe('migration docs', () => {
     expect(output).toContain('Recommended Order');
     expect(output).toContain('Map shadcn and Radix Primitives');
   });
+});
+
+describe('progressive reads', () => {
+  const SLOW = 60_000;
+  /** @param {string} out */
+  const widest = out => Math.max(...out.split('\n').map(line => line.length));
+
+  it('lists every topic on one line each', async () => {
+    const {status, stdout} = await runCli(['docs']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^principles +\S/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it("prints a topic's section index with the keys to read by", async () => {
+    const {status, stdout} = await runCli(['docs', 'theme', '--index']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^quick-start +Quick Start/m);
+    expect(stdout).toContain('docs theme <section>');
+    expect(stdout).toMatch(/Read everything: +\S.* docs theme$/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it('prints one section by its key', async () => {
+    const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^## Quick Start/m);
+  }, SLOW);
+
+  it('prints the whole topic by default, as before', async () => {
+    const index = await runCli(['docs', 'theme', '--index']);
+    const full = await runCli(['docs', 'theme']);
+    expect(full.status).toBe(0);
+    expect(full.stdout).toMatch(/^## Quick Start/m);
+    expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
+    expect((await runCli(['--detail', 'full', 'docs', 'theme'])).stdout).toBe(
+      full.stdout,
+    );
+    expect(widest(full.stdout.replace(/```[\s\S]*?```/g, ''))).toBeLessThanOrEqual(
+      120,
+    );
+  }, SLOW);
+
+  it('returns the matching envelopes as JSON', async () => {
+    const envelope = async args => JSON.parse((await runCli([...args, '--json'])).stdout);
+    expect((await envelope(['docs', 'theme'])).type).toBe('docs.detail');
+    expect((await envelope(['docs', 'theme', '--index'])).type).toBe(
+      'docs.index',
+    );
+    expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
+      'docs.detail.section',
+    );
+  }, SLOW);
+});
+
+describe('text width in every language', () => {
+  const SLOW = 60_000;
+  /** Widest line outside code blocks, in terminal columns. */
+  const widest = out => {
+    let inCode = false;
+    let max = 0;
+    for (const line of out.split('\n')) {
+      if (/^\s*```/.test(line)) {
+        inCode = !inCode;
+        continue;
+      }
+      // A single unbreakable token (a long URL) cannot wrap without breaking it.
+      const oneToken = !/\s/.test(line.trim());
+      if (!inCode && !line.startsWith('#') && !oneToken) {
+        max = Math.max(max, displayWidth(line));
+      }
+    }
+    return max;
+  };
+
+  it.each([
+    [['docs', 'theme', '--index', '--lang', 'zh']],
+    [['docs', 'theme', '--lang', 'zh']],
+    [['--detail', 'full', 'docs', 'theme', '--lang', 'zh']],
+    [['--detail', 'full', 'docs', 'internationalization']],
+    [['--detail', 'full', 'docs', 'styling']],
+  ])('%j fits in 120 columns', async args => {
+    const {status, stdout} = await runCli(args);
+    expect(status).toBe(0);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
 });
