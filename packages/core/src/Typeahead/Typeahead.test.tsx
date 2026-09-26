@@ -1336,6 +1336,23 @@ describe('Typeahead collapsed input tab order', () => {
     expect(screen.getByRole('combobox')).not.toHaveFocus();
   });
 
+  it('hands focus to the input when the parent clears the value under a focused token', () => {
+    const at = (value: SearchableItem | null) => (
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={value}
+        onChange={() => {}}
+      />
+    );
+    const view = render(at(fruits[0]));
+    screen.getByRole('button', {name: fruits[0].label}).focus();
+    // The token leaves with the value; focus goes to the input that takes its
+    // place rather than falling to the document.
+    view.rerender(at(null));
+    expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
   it('keeps the input in the Tab order when no token is shown', () => {
     render(
       <Typeahead
@@ -2784,6 +2801,96 @@ describe('input busy: isLoading and changeAction', () => {
     expect(input).not.toHaveAttribute('aria-busy');
     // Edit mode reads the replacement, not the superseded proposal.
     await enterEditMode(view.container, input, 'Banana');
+  });
+
+  it('keeps the proposal and busy state when the parent re-renders the same item as a fresh object', async () => {
+    const {changeAction, resolvers} = deferredAction();
+    // A parent mapping its rows (`{id: row.id, label: row.name}`) passes a
+    // new object for the same item on every render. That is not a
+    // replacement: item identity is its `id`, as for the listbox selection.
+    const at = (value: SearchableItem | null) => (
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={value}
+        onChange={() => {}}
+        changeAction={changeAction}
+        debounceMs={0}
+      />
+    );
+    const view = render(at({...fruits[1]}));
+    const input = screen.getByRole('combobox');
+    await enterEditMode(view.container, input, 'Banana');
+    await selectApple(input);
+    await waitFor(() => {
+      expect(token(view.container)).toHaveTextContent('Apple');
+    });
+
+    view.rerender(at({...fruits[1]}));
+    expect(token(view.container)).toHaveTextContent('Apple');
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getAllByRole('status', {name: 'Loading'})).toHaveLength(1);
+    expect(changeAction).toHaveBeenCalledTimes(1);
+
+    // Not accepted: the proposal leaves as its Action settles.
+    await settleAction(resolvers[0]);
+    expect(token(view.container)).toHaveTextContent('Banana');
+    expect(input).not.toHaveAttribute('aria-busy');
+  });
+
+  it('returns focus to the input when an unaccepted selection Action withdraws the focused token', async () => {
+    const {changeAction, resolvers} = deferredAction();
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        changeAction={changeAction}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    await selectApple(input);
+    // The post-selection frame hands focus to the proposed token.
+    await act(async () => {
+      await new Promise(r => requestAnimationFrame(r));
+    });
+    expect(screen.getByRole('button', {name: 'Apple'})).toHaveFocus();
+
+    // Not accepted: the token leaves with its proposal, and focus moves to
+    // the input that takes its place instead of falling to the document.
+    await settleAction(resolvers[0]);
+    expect(token(container)).toBeNull();
+    expect(input).toHaveFocus();
+  });
+
+  it('moves focus to the restored token when a clear Action is not accepted', async () => {
+    const {changeAction, resolvers} = deferredAction();
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={apple}
+        onChange={() => {}}
+        changeAction={changeAction}
+        hasClear
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+    await waitFor(() => {
+      expect(token(container)).toBeNull();
+    });
+    expect(input).toHaveFocus();
+
+    // Not accepted: the token comes back over the input, which is hidden and
+    // out of the Tab order again, so focus moves to the token.
+    await settleAction(resolvers[0]);
+    expect(token(container)).toHaveTextContent('Apple');
+    expect(input).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('button', {name: 'Apple'})).toHaveFocus();
+    expect(input).not.toHaveFocus();
   });
 
   it('keeps busy feedback while focusable-disabled and blocks every Action path', async () => {

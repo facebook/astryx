@@ -65,6 +65,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -370,6 +371,21 @@ function EndLane({
  */
 type ValueProposal<T> = {item: T | null; base: T | null};
 
+/**
+ * Item identity is its `id`, as for the listbox's selected option: a parent
+ * re-rendering the same item as a fresh object has not replaced it.
+ */
+function isSameItem<T extends SearchableItem>(a: T | null, b: T | null) {
+  return a === b || (a != null && b != null && a.id === b.id);
+}
+
+/** Focus the token's internal button, the part keyboard users operate. */
+function focusToken(tokenEl: HTMLElement | null) {
+  if (tokenEl) {
+    (tokenEl.querySelector('button') ?? tokenEl).focus();
+  }
+}
+
 export function Typeahead<T extends SearchableItem>({
   ref,
   label,
@@ -417,6 +433,19 @@ export function Typeahead<T extends SearchableItem>({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const tokenRef = useRef<HTMLElement>(null);
+  // Whether the token held focus as it left. Read in the ref's cleanup, which
+  // React runs before it removes the node, while focus is still observable.
+  const tokenHadFocusRef = useRef(false);
+  const setTokenRef = useCallback((node: HTMLElement | null) => {
+    tokenRef.current = node;
+    if (node == null) {
+      return;
+    }
+    return () => {
+      tokenHadFocusRef.current = node.contains(document.activeElement);
+      tokenRef.current = null;
+    };
+  }, []);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper (which already exists) and
@@ -455,11 +484,13 @@ export function Typeahead<T extends SearchableItem>({
   const [, startTransition] = useTransition();
   const [proposal, proposeValue] = useOptimistic<ValueProposal<T> | null>(null);
   const optimisticValue =
-    proposal !== null && proposal.base === value ? proposal.item : value;
+    proposal !== null && isSameItem(proposal.base, value)
+      ? proposal.item
+      : value;
   // Value busy, as distinct from search busy: the base owns the latter and
   // reports it through the lane. Both reach the one Spinner in the end lane
   // and the combobox's aria-busy (FR5, FR7).
-  const isInputBusy = isLoading || optimisticValue !== value;
+  const isInputBusy = isLoading || !isSameItem(optimisticValue, value);
 
   const commitValue = useCallback(
     (item: T | null) => {
@@ -477,6 +508,37 @@ export function Typeahead<T extends SearchableItem>({
   // Show token when value is selected and not in edit mode. The optimistic
   // value, so a pending Action's proposed item is what the token shows.
   const showToken = optimisticValue != null && !isEditing;
+
+  // The token and the input take turns as the visible control, so when they
+  // swap, focus goes to the one that stays. A withdrawn token that held focus
+  // (an Action not accepted, the parent clearing the value) hands it to the
+  // input rather than dropping it to the document; a token restored over the
+  // focused input (a clear Action not accepted) takes it, since the input is
+  // now hidden and out of the Tab order. Transitions only, so a token present
+  // on mount leaves autofocus alone; Escape and blur have already moved focus
+  // off the input by the time the token returns.
+  const wasTokenShownRef = useRef(showToken);
+  useIsomorphicLayoutEffect(() => {
+    if (wasTokenShownRef.current === showToken) {
+      return;
+    }
+    wasTokenShownRef.current = showToken;
+    if (showToken) {
+      if (document.activeElement === inputRef.current) {
+        focusToken(tokenRef.current);
+      }
+      return;
+    }
+    const tokenHadFocus = tokenHadFocusRef.current;
+    tokenHadFocusRef.current = false;
+    if (
+      tokenHadFocus &&
+      (document.activeElement == null ||
+        document.activeElement === document.body)
+    ) {
+      inputRef.current?.focus();
+    }
+  }, [showToken]);
 
   // Enter edit mode: remove token visually, populate input with value label
   const handleEnterEditMode = useCallback(() => {
@@ -531,12 +593,7 @@ export function Typeahead<T extends SearchableItem>({
       // Use requestAnimationFrame because the token renders on the next cycle.
       if (item) {
         requestAnimationFrame(() => {
-          const tokenEl = tokenRef.current;
-          if (tokenEl) {
-            // Focus the internal button inside the token
-            const button = tokenEl.querySelector('button');
-            (button ?? tokenEl).focus();
-          }
+          focusToken(tokenRef.current);
         });
       }
     },
@@ -636,7 +693,7 @@ export function Typeahead<T extends SearchableItem>({
           <div {...stylex.props(styles.contentLane)}>
             {showToken && (
               <Token
-                ref={tokenRef}
+                ref={setTokenRef}
                 label={optimisticValue.label}
                 size={size}
                 onClick={handleEnterEditMode}

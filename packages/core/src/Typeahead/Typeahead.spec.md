@@ -154,9 +154,13 @@ This draft changes two combobox facts: `aria-busy` also reflects input busy
 (see Public concepts), and while the field is disabled with a reason the
 combobox's own key handling stops, so ArrowDown no longer opens the entries
 shown on focus and Enter no longer selects one (`family:input-fields` FR4).
-It adds no Typeahead-local accessibility requirement and does not otherwise
-change existing field, combobox, listbox, option, live-region, focus, or
-dismissal behavior.
+When the selected token and the input swap places, focus now moves to the one
+that stays: a focused token that is withdrawn (an Action not accepted, or the
+parent clearing the value) hands focus to the input, and a token restored over
+the focused input (a clear Action not accepted) takes it. It adds no other
+Typeahead-local accessibility requirement and does not otherwise change
+existing field, combobox, listbox, option, live-region, focus, or dismissal
+behavior.
 
 ## Design relationships
 
