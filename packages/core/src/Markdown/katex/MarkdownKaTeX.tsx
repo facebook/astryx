@@ -13,8 +13,8 @@ import {useEffect, useMemo, useRef, useState, type ComponentType} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type katex from 'katex';
 import type {KatexOptions} from 'katex';
-import 'katex/dist/katex.min.css';
 import type {BaseProps} from '../../BaseProps';
+import {spacingVars} from '../../theme/tokens.stylex';
 import {Code} from '../../Code';
 import {mergeProps} from '../../utils';
 import {themeProps} from '../../utils/themeProps';
@@ -60,8 +60,18 @@ type KaTeXModule = {readonly default: typeof katex};
 
 let katexModulePromise: Promise<KaTeXModule> | undefined;
 
+async function importKaTeX(): Promise<KaTeXModule> {
+  const [, module] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Core sees the local shim; source-mapped consumers do not.
+    // @ts-ignore KaTeX publishes this stylesheet without type declarations.
+    import('katex/dist/katex.min.css'),
+    import('katex'),
+  ]);
+  return module;
+}
+
 async function loadKaTeX(): Promise<KaTeXModule> {
-  katexModulePromise ??= import('katex');
+  katexModulePromise ??= importKaTeX();
   return katexModulePromise;
 }
 
@@ -113,6 +123,7 @@ const styles = stylex.create({
   },
   block: {
     display: 'block',
+    marginBlock: spacingVars['--spacing-4'],
     overflowX: 'auto',
     overflowY: 'hidden',
     overscrollBehaviorInline: 'contain',
