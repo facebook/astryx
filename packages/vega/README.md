@@ -140,14 +140,15 @@ import {VegaChart} from '@astryxdesign/vega';
 between, it rebuilds the View only when `spec`, `compileOptions`,
 `parseConfig`, `parseOptions`, or `viewOptions` **changes value** — these props
 are compared by value against the values the live View was built from, not by
-reference. Two consequences, and you need neither `useMemo` nor a discipline
-about object identity for either:
+reference. Consequences include:
 
 - an object literal rebuilt inline on every render does **not** tear the chart
   down;
 - a spec you edit **in place** — held in a ref, a module constant, or shared
   between renders — **is** picked up, because the comparison is against a copy
-  taken when the View was built, not against the previous props.
+  taken when the View was built, not against the previous props;
+- filling a hole in a sparse array counts as a value change and rebuilds the
+  View.
 
 Functions inside those props (a `tooltip` handler, `logger`, `loader`, `expr`,
 or `fieldTitle`) and class instances are compared by reference, since their
