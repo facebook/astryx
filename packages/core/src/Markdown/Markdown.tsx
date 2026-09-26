@@ -4,7 +4,7 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, canonical AST, optional plugins and custom renderers
+ * @input Markdown string or matching prepared document, optional plugins and custom renderers
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
@@ -70,6 +70,8 @@ import {
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
 import {projectMarkdownHeadings} from './headingProjection';
+import {getPreparedMarkdownDocumentDefinition} from './preparedDocument';
+import type {PreparedMarkdownDocument} from './preparedDocument';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -161,6 +163,8 @@ export interface MarkdownProps<
 > extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLDivElement> | React.Ref<HTMLSpanElement>;
   children: string;
+  /** Prepared documents use the separate `MarkdownDocumentProps` branch. */
+  document?: never;
   /**
    * Display type. Markdown defaults to block.
    * Use 'inline' for markdown spans embedded inside surrounding text.
@@ -239,6 +243,19 @@ export interface MarkdownProps<
    */
   autolink?: 'gfm';
 }
+
+/** Props for rendering a finished document prepared by Core exactly once. */
+export type MarkdownDocumentProps = Omit<
+  MarkdownProps<readonly []>,
+  'children' | 'document' | 'display' | 'isStreaming' | 'plugins' | 'autolink'
+> & {
+  readonly document: PreparedMarkdownDocument<MarkdownExtensionNode>;
+  readonly children?: never;
+  readonly display?: 'block';
+  readonly isStreaming?: false;
+  readonly plugins?: never;
+  readonly autolink?: never;
+};
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -1876,7 +1893,8 @@ export function Markdown<
   const Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
 >({
   ref,
-  children,
+  children: sourceChildren,
+  document,
   display = 'block',
   density = 'default',
   headingLevelStart = 1,
@@ -1895,7 +1913,24 @@ export function Markdown<
   style,
   'data-testid': testId,
   ...props
-}: MarkdownProps<Plugins>): React.ReactElement {
+}: MarkdownProps<Plugins> | MarkdownDocumentProps): React.ReactElement {
+  const preparedDefinition =
+    document == null ? null : getPreparedMarkdownDocumentDefinition(document);
+  if (document != null && preparedDefinition == null) {
+    throw new Error(
+      'Markdown document must come from prepareMarkdownDocument().',
+    );
+  }
+  if (document != null && (display !== 'block' || isStreaming)) {
+    throw new Error(
+      'Markdown document supports only non-streaming block rendering.',
+    );
+  }
+  const children = document?.source ?? sourceChildren;
+  if (children == null) {
+    throw new Error('Markdown requires children or a prepared document.');
+  }
+
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
@@ -1904,8 +1939,8 @@ export function Markdown<
     [sources],
   );
 
-  const preparedPlugins = useMemo(() => {
-    if (plugins == null) {
+  const configuredPlugins = useMemo(() => {
+    if (preparedDefinition != null || plugins == null) {
       return undefined;
     }
     try {
@@ -1914,7 +1949,9 @@ export function Markdown<
       reportMarkdownPluginFailure('configuration', 'transform', error);
       return undefined;
     }
-  }, [plugins]);
+  }, [preparedDefinition, plugins]);
+  const preparedPlugins =
+    preparedDefinition == null ? configuredPlugins : preparedDefinition.plugins;
   const syntaxPlugins = useStableMarkdownSyntaxEntries(preparedPlugins);
   const hasMathRenderer = components?.math != null;
   const legacyParseOptions = useMemo<
@@ -1951,6 +1988,9 @@ export function Markdown<
   }
 
   const parsedBlocks = useMemo(() => {
+    if (preparedDefinition != null) {
+      return preparedDefinition.root.children;
+    }
     if (display === 'inline') {
       return [];
     }
@@ -1981,6 +2021,7 @@ export function Markdown<
         : parseMarkdownAst(children, legacyParseOptions)
     ).children;
   }, [
+    preparedDefinition,
     display,
     smoothedText,
     children,
@@ -1998,14 +2039,22 @@ export function Markdown<
     : children;
   const blocks = useMemo(
     () =>
-      applyMarkdownTransforms(
-        {type: 'root', children: parsedBlocks},
-        preparedPlugins,
-        transformSource,
-        !isStreaming,
-        'block',
-      ).children,
-    [parsedBlocks, preparedPlugins, transformSource, isStreaming],
+      preparedDefinition == null
+        ? applyMarkdownTransforms(
+            {type: 'root', children: parsedBlocks},
+            preparedPlugins,
+            transformSource,
+            !isStreaming,
+            'block',
+          ).children
+        : parsedBlocks,
+    [
+      preparedDefinition,
+      parsedBlocks,
+      preparedPlugins,
+      transformSource,
+      isStreaming,
+    ],
   );
 
   // Assign each top-level heading the slug that parseOutlineFromMarkdown
@@ -2015,11 +2064,14 @@ export function Markdown<
   // NOTE: must stay above the `display === 'inline'` early return below —
   // hooks cannot be conditional.
   const headingIdMap = useMemo(() => {
+    if (preparedDefinition != null) {
+      return preparedDefinition.headingProjection.ids;
+    }
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
     return projectMarkdownHeadings(blocks, preparedPlugins).ids;
-  }, [display, blocks, preparedPlugins]);
+  }, [preparedDefinition, display, blocks, preparedPlugins]);
 
   const parsedInlineNodes = useMemo(() => {
     if (display !== 'inline') {
