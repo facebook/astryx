@@ -8,6 +8,10 @@ export const docs = {
   displayName: 'List Item',
   isHiddenFromOverview: true,
   description: 'List item with label, description, start/end content slots, and interactive patterns.',
+  // Own playground so this page doesn't inherit List's multi-item defaults.
+  playground: {
+    defaults: {label: 'Notifications', description: 'Manage your alerts'},
+  },
   props: [
     {
       name: 'label',

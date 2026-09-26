@@ -8,6 +8,14 @@ export const docs = {
   group: 'Layout',
   category: 'Layout',
   keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'TextInput', props: {label: 'Name'}},
+        {__element: 'TextInput', props: {label: 'Email'}},
+      ],
+    },
+  },
   props: [
     {
       name: 'direction',
