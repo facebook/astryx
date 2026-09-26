@@ -441,6 +441,29 @@ export function deriveSpacingUsage(coreSrcDir) {
     return component;
   }
 
+  /** Components (undefined outside any) that import or re-export each file. */
+  const referrers = new Map();
+  for (const file of files) {
+    const {imports, reexports} = byPath.get(file);
+    for (const {from} of [...imports, ...reexports]) {
+      const target = resolveModule(file, from, byPath);
+      if (!target) continue;
+      if (!referrers.has(target)) referrers.set(target, new Set());
+      referrers.get(target).add(componentOf(path.relative(root, file)));
+    }
+  }
+
+  /**
+   * A file referenced only by other components is a shared primitive its
+   * directory merely hosts: Field/PanelSearchInput is rendered by Selector and
+   * MultiSelector, never by Field.
+   */
+  function isHostedPrimitive(file) {
+    const own = componentOf(path.relative(root, file));
+    const from = referrers.get(file);
+    return Boolean(own && from && [...from].every(c => c && c !== own));
+  }
+
   /** @type {Map<string, {components: Set<string>, viaProps: Set<string>}>} */
   const usage = new Map();
   function record(token, component, scale) {
@@ -468,16 +491,20 @@ export function deriveSpacingUsage(coreSrcDir) {
     // Module-local styles can only affect the file that declares them, except
     // where the value flows through a public `--astryx-<component>-*` property,
     // which names its owner outright (see core naming.ts).
-    recordAll(analysis.local, own);
+    recordAll(analysis.local, isHostedPrimitive(file) ? undefined : own);
 
     // Exported style objects belong to whoever applies them.
     for (const {from, names} of analysis.imports) {
       const target = resolveModule(file, from, byPath);
       if (!target) continue;
-      // A module outside every component directory (hooks/) cannot
-      // self-credit its local styles, yet its markup renders inside whatever
-      // mounts it — so those refs flow to the importer.
-      if (!componentOf(path.relative(root, target))) {
+      // A module outside every component directory (hooks/), or a primitive
+      // hosted in another component's, cannot self-credit its local styles,
+      // yet its markup renders inside whatever mounts it — so those refs flow
+      // to the importer.
+      if (
+        !componentOf(path.relative(root, target)) ||
+        isHostedPrimitive(target)
+      ) {
         recordAll(byPath.get(target).local, own);
       }
       for (const name of names) {

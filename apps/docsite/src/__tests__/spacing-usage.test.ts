@@ -573,6 +573,16 @@ describe('deriveSpacingUsage (synthetic fixtures)', () => {
     write('HookUser/HookUser.tsx', [
       "import {useThing} from '../hooks/useThing';",
     ]);
+    write('Host/Panel.tsx', [
+      "import {spacingVars} from '../theme/tokens.stylex';",
+      'const styles = {',
+      "  row: {gap: spacingVars['--spacing-6']},",
+      '};',
+      'export function Panel() {',
+      '  return styles;',
+      '}',
+    ]);
+    write('Borrower/Borrower.tsx', ["import {Panel} from '../Host/Panel';"]);
     write('Rooty.tsx', [
       "import {spacingVars} from './theme/tokens.stylex';",
       'const styles = {',
@@ -585,7 +595,7 @@ describe('deriveSpacingUsage (synthetic fixtures)', () => {
     fs.rmSync(fixtureDir, {recursive: true, force: true});
   });
 
-  it('follows aliased imports, aliased re-exports, and hook modules', () => {
+  it('follows aliased imports, re-exports, hooks, and hosted primitives', () => {
     expect(deriveSpacingUsage(fixtureDir)).toEqual({
       // import {shared as mine} still attributes the source binding.
       '--spacing-1': {components: ['AliasImp'], viaProps: []},
@@ -593,6 +603,9 @@ describe('deriveSpacingUsage (synthetic fixtures)', () => {
       '--spacing-3': {components: ['BarrelUser'], viaProps: []},
       // hooks/ names no component, so its refs flow to the mounting file.
       '--spacing-5': {components: ['HookUser'], viaProps: []},
+      // Host/Panel is imported only from another component dir (the shape of
+      // Field/PanelSearchInput): Borrower renders it, Host does not.
+      '--spacing-6': {components: ['Borrower'], viaProps: []},
       // Rooty.tsx at the root is a file, not a component dir: no phantom
       // "Rooty.tsx" entry may appear for --spacing-12.
     });
