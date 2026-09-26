@@ -68,7 +68,7 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
   | Astryx sheet   | BottomSheet calendar           | BottomSheet date/time wheels      | BottomSheet time wheels (DEC-3)                                                   |
   | Native         | Browser/OS date picker         | Browser/OS date + time pickers    | Browser/OS time picker                                                            |
 
-  `text-input` is `TimeInput`-only — it exists solely for its released `never` (FR3); a picker-less date field has no released need and would silently drop the calendar affordance: `DateInput` and `DateTimeInput`
+  `text-input` is `TimeInput`-only (maintainer-confirmed: imdreamrunner, 2026-09-25) — it exists solely for its released `never` (FR3); a picker-less date field has no released need and would silently drop the calendar affordance: `DateInput` and `DateTimeInput`
   MUST NOT accept it — their exported `presentation` types exclude it, so it
   is a compile-time error, with no runtime surface defined for it. Their five
   values are `popover | bottom-sheet | native | adaptive-bottom-sheet |
