@@ -250,17 +250,26 @@ function isInheritedPlatformDecl(declFile) {
  * An intersection (`BaseProps & {onClick}`) yields one synthetic symbol
  * carrying every constituent's declaration, so a prop is passthrough only
  * when all of them are platform. A declaration-less (key-remapped) prop is
- * component API.
+ * component API. A key that accepts nothing is not: `minSizePx?: never`
+ * exists only so a removed prop fails to compile (strict reads it as
+ * `undefined`).
  *
+ * @param {import('typescript').TypeChecker} checker
  * @param {import('typescript').Type} type
  * @param {Set<string>} into
  * @returns {Set<string>}
  */
-function collectPublicProps(type, into) {
+function collectPublicProps(checker, type, into) {
   for (const symbol of propertySymbols(type)) {
     const name = symbol.getName();
     if (name.startsWith('__')) continue;
     if (isSkippedProp(name)) continue;
+    if (
+      checker.getTypeOfSymbol(symbol).flags &
+      (ts.TypeFlags.Never | ts.TypeFlags.Undefined)
+    ) {
+      continue;
+    }
     const declFiles = (symbol.getDeclarations() ?? []).map(
       decl => decl.getSourceFile().fileName,
     );
@@ -282,8 +291,10 @@ const UNDERIVABLE = Symbol('underivable');
  * array's are positions); or UNDERIVABLE for `any`, `unknown`, `object`, and
  * an unconstrained type parameter. A constrained type parameter
  * (`<P extends SharedProps>(props: P)`) reads as its constraint, so a union
- * constraint is still walked per member. A union or intersection is a bag
- * when any member is.
+ * constraint is still walked per member — and so does a conditional or
+ * indexed type deferred on one (`useResizable`'s
+ * `config: MultiResizableArgument<Config>`). A union or intersection is a
+ * bag when any member is.
  *
  * @param {import('typescript').TypeChecker} checker
  * @param {import('typescript').Type} type
@@ -298,7 +309,7 @@ function asPropBag(checker, type) {
   }
   // A tuple or array's members (`0`, `length`) are not props.
   if (checker.isTupleType(type) || checker.isArrayType(type)) return null;
-  if (type.isTypeParameter()) {
+  if (type.flags & ts.TypeFlags.InstantiableNonPrimitive) {
     const constraint = checker.getBaseConstraintOfType(type);
     if (!constraint) return UNDERIVABLE;
     return asPropBag(checker, constraint);
@@ -351,7 +362,7 @@ function propsFromSignature(checker, symbol) {
       for (const candidate of types) {
         const bag = asPropBag(checker, candidate);
         if (bag === UNDERIVABLE) underivable = true;
-        else if (bag) collectPublicProps(bag, props);
+        else if (bag) collectPublicProps(checker, bag, props);
       }
     }
   }
@@ -370,7 +381,9 @@ function propsFromSignature(checker, symbol) {
  */
 function propsFromDeclaration(checker, node) {
   const bag = asPropBag(checker, checker.getTypeAtLocation(node));
-  return bag && bag !== UNDERIVABLE ? collectPublicProps(bag, new Set()) : bag;
+  return bag && bag !== UNDERIVABLE
+    ? collectPublicProps(checker, bag, new Set())
+    : bag;
 }
 
 /**

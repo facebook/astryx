@@ -1380,9 +1380,13 @@ describe('checkContract — real components, not fixtures', () => {
     );
     const {missing, unresolved} = await checkContract(src);
     expect(unresolved).toEqual([]);
-    expect(
-      missing.filter(m => m.component === 'useResizable').map(m => m.prop),
-    ).toContain('brandNewMultiProp');
+    const reported = missing
+      .filter(m => m.component === 'useResizable')
+      .map(m => m.prop);
+    expect(reported).toContain('brandNewMultiProp');
+    // `RejectRemovedPixelBounds` adds `minSizePx?: never` so a removed key
+    // fails to compile; it is not a prop anyone can pass.
+    expect(reported).not.toContain('minSizePx');
   });
 
   it('checks the real Code doc that lives in CodeBlock/ against CodeProps declared in Code/', async () => {
@@ -1772,6 +1776,30 @@ describe('checkContract — parameter shapes the signature route must read', () 
     const {missing, unresolved} = await checkContract(src);
     expect(unresolved).toEqual([]);
     expect(missing.map(m => m.prop)).toEqual(['beta']);
+  });
+
+  it('reads a conditional type over a constrained type parameter as its constraint, never a key typed never (the useResizable shape)', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Hook/useThing.ts': `
+        export interface UseThingConfig { wait: number; leading?: boolean }
+        type RejectRemoved<C> = C extends unknown
+          ? C & {waitMs?: never}
+          : never;
+        export function useThing<const C extends UseThingConfig>(
+          config: RejectRemoved<C>,
+        ) {
+          return config;
+        }
+      `,
+      'Hook/useThing.doc.mjs': `
+        export const docs = {name: 'useThing', props: [{name: 'wait'}]};
+      `,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    expect(unresolved).toEqual([]);
+    // `waitMs?: never` only rejects a removed key: nothing can be passed to it.
+    expect(missing.map(m => m.prop)).toEqual(['leading']);
   });
 
   it('skips a union of primitives and treats a union of unconstrained generics as underivable', async () => {
