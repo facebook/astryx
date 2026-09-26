@@ -1225,3 +1225,98 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     expect(getByTestId('state')).toHaveTextContent('closed');
   });
 });
+
+describe('contextRef anchor-name churn (#5398)', () => {
+  // Both candidate trigger elements always mount; only which one currently
+  // receives `layer.ref` changes, so switching `refTarget` makes React call
+  // the outgoing element's ref with `null` and the incoming one's ref with
+  // itself in the same commit — the exact churn shape a combined ref utility
+  // (e.g. Tooltip's) produces.
+  function ChurnHarness({
+    refTarget,
+    onReady,
+  }: {
+    refTarget: 'x' | 'y' | 'none';
+    onReady?: (anchorId: string) => void;
+  }) {
+    const layer = useLayerInternal({mode: 'context'});
+    onReady?.(layer.anchorId);
+    return (
+      <>
+        <button
+          type="button"
+          data-testid="x"
+          ref={refTarget === 'x' ? layer.ref : undefined}>
+          X
+        </button>
+        <button
+          type="button"
+          data-testid="y"
+          ref={refTarget === 'y' ? layer.ref : undefined}>
+          Y
+        </button>
+        {layer.render(<span>Layer content</span>)}
+      </>
+    );
+  }
+
+  function anchorNamesOf(el: HTMLElement): string[] {
+    return el.style.anchorName
+      .split(',')
+      .map(name => name.trim())
+      .filter(Boolean);
+  }
+
+  it('keeps the anchor name through a transient null-then-same-element reattach', () => {
+    let anchorId = '';
+    const {getByTestId, rerender} = render(
+      <ChurnHarness refTarget="x" onReady={id => (anchorId = id)} />,
+    );
+    const x = getByTestId('x');
+    expect(anchorNamesOf(x)).toContain(anchorId);
+
+    // No await between these two: the churn (null, then the same element
+    // again) happens within one synchronous stretch, before the pending
+    // removal's microtask ever gets a chance to run.
+    rerender(<ChurnHarness refTarget="none" onReady={id => (anchorId = id)} />);
+    rerender(<ChurnHarness refTarget="x" onReady={id => (anchorId = id)} />);
+
+    expect(anchorNamesOf(x)).toContain(anchorId);
+  });
+
+  it('removes the old element and adds the new one when a different element takes over the ref', () => {
+    let anchorId = '';
+    const {getByTestId, rerender} = render(
+      <ChurnHarness refTarget="x" onReady={id => (anchorId = id)} />,
+    );
+    const x = getByTestId('x');
+    const y = getByTestId('y');
+    expect(anchorNamesOf(x)).toContain(anchorId);
+    expect(anchorNamesOf(y)).not.toContain(anchorId);
+
+    rerender(<ChurnHarness refTarget="y" onReady={id => (anchorId = id)} />);
+
+    expect(anchorNamesOf(x)).not.toContain(anchorId);
+    expect(anchorNamesOf(y)).toContain(anchorId);
+  });
+
+  it('removes the anchor name once a persistent (still-mounted) anchor genuinely lets go of the ref', async () => {
+    let anchorId = '';
+    const {getByTestId, rerender} = render(
+      <ChurnHarness refTarget="x" onReady={id => (anchorId = id)} />,
+    );
+    const x = getByTestId('x');
+    expect(anchorNamesOf(x)).toContain(anchorId);
+
+    // `x` stays mounted — only the ref moves off it, nothing reattaches.
+    await act(async () => {
+      rerender(
+        <ChurnHarness refTarget="none" onReady={id => (anchorId = id)} />,
+      );
+      // Let the deferred-removal microtask actually run.
+      await Promise.resolve();
+    });
+
+    expect(anchorNamesOf(x)).not.toContain(anchorId);
+  });
+});

@@ -351,6 +351,88 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/**
+ * Calls `onReady` once every CSS animation/transition running on `anchor` or
+ * one of its ancestors, AT THE NEXT FRAME, has finished. Calls it
+ * synchronously if `document.getAnimations` does not exist (jsdom). Returns a
+ * cancel function.
+ *
+ * `getBoundingClientRect()` reflects an ancestor's CSS transform, so an
+ * anchor sitting inside a running entry animation — Dialog's own
+ * scale/translate enter transition, e.g. — keeps reporting a different box
+ * every frame for as long as that animation runs, even though a
+ * `ResizeObserver` sees no size change at all (a transform never changes the
+ * anchor's own layout box). Anchoring a layer to the trigger's box mid
+ * transition, rather than the one it settles into, has produced a CSS
+ * anchor-positioning resolution that never gets revisited once the trigger
+ * stops moving — the layer is stranded at its unanchored fallback position
+ * for the rest of that open (#5398).
+ *
+ * The check itself waits one frame before reading `document.getAnimations()`:
+ * a CSS animation just triggered by a `display`/class change (exactly what
+ * unhides a Dialog's content) is not yet in that list in the same task —
+ * measured directly, not assumed — so checking synchronously would always see
+ * zero animations and defeat the whole guard. One frame is enough for the UA
+ * to have started it.
+ *
+ * Only a FINITE animation is waited on. `Animation.finished` never resolves
+ * for one with `iterationCount: Infinity` (it never reaches the finished play
+ * state), so a continuously-animating ancestor — `StatusDot`'s pulse, e.g. —
+ * would otherwise block a layer that anchors to it from ever opening.
+ */
+
+/**
+ * Upper bound on how many animation frames `show()` polls an anchor for a
+ * real layout box before giving up and opening anyway. See the bounded-poll
+ * comment where this is used, in `show()`.
+ */
+const ANCHOR_WAIT_MAX_FRAMES = 60;
+
+function waitForAncestorAnimations(
+  anchor: HTMLElement,
+  onReady: () => void,
+): () => void {
+  if (typeof document.getAnimations !== 'function') {
+    onReady();
+    return () => {};
+  }
+  let cancelled = false;
+  const handle = requestAnimationFrame(() => {
+    if (cancelled) {
+      return;
+    }
+    const running = document.getAnimations().filter(animation => {
+      const target =
+        animation.effect instanceof KeyframeEffect
+          ? animation.effect.target
+          : null;
+      if (
+        !(target instanceof Node) ||
+        !(target === anchor || target.contains(anchor))
+      ) {
+        return false;
+      }
+      const timing = animation.effect?.getComputedTiming();
+      return timing?.iterations !== Infinity;
+    });
+    if (running.length === 0) {
+      onReady();
+      return;
+    }
+    void Promise.all(
+      running.map(async animation => animation.finished.catch(() => {})),
+    ).then(() => {
+      if (!cancelled) {
+        onReady();
+      }
+    });
+  });
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(handle);
+  };
+}
+
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -532,6 +614,13 @@ function useLayerImplementation(
   // reference lets the ref callback recognize and reopen its replacement.
   const openedPopoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  // A detach (contextRef(null)) still in its transient window — cancelled if
+  // the same element reattaches before the microtask runs, applied
+  // (removing the anchor name) otherwise. See contextRef below.
+  const pendingTriggerDetachRef = useRef<{
+    element: HTMLElement;
+    cancelled: boolean;
+  } | null>(null);
   // Context layers place a persistent inert marker at their real JSX position.
   // Its parent tells us whether the final layer can stay inline or needs a
   // corrective portal, including after the render call moves.
@@ -622,7 +711,7 @@ function useLayerImplementation(
     setContextMount(null);
   }, [mode, lazyMount]);
 
-  const show = useCallback(() => {
+  const openNow = useCallback(() => {
     // Every caller lands here, so this is where the dismissing press is
     // absorbed: opening now would reopen the popup that same press closed.
     if (wasJustDismissed()) {
@@ -652,7 +741,121 @@ function useLayerImplementation(
     wasJustDismissed,
   ]);
 
+  // A wait for the anchor to have a layout box, started by a show() that
+  // found the anchor still at 0x0. Cancelled by the next show()/hide() or by
+  // unmount, so a stale wait from a closed-then-reopened layer never fires
+  // openNow() after the fact.
+  const pendingAnchorWaitRef = useRef<(() => void) | null>(null);
+
+  const cancelPendingAnchorWait = useCallback(() => {
+    pendingAnchorWaitRef.current?.();
+    pendingAnchorWaitRef.current = null;
+  }, []);
+
+  // A trigger with no box — 0x0, as every element not yet laid out reports —
+  // is not a valid CSS anchor. Opening against it now resolves the popover to
+  // its fallback position (the viewport corner), and unlike a live layout
+  // change, that resolution does not get revisited once the trigger later
+  // gets a box: the popover is stuck there for the rest of this open.
+  //
+  // The concrete case this guards: a Dialog mounts its children before it
+  // opens (`isOpen` gates only `showModal()`, not rendering), so a context
+  // layer with `isDefaultOpen` or a controlled `isOpen={true}` inside one can
+  // mount, and show() can run, while the trigger sits inside a `<dialog>`
+  // that hasn't gone modal yet and so has no box. Anchor readiness lives here
+  // rather than in each caller because this is the one place that already
+  // owns the trigger element (`triggerRef`, set by `contextRef` below) and the
+  // one place every context-mode show() funnels through.
+  const show = useCallback(() => {
+    cancelPendingAnchorWait();
+
+    const anchor = mode === 'context' ? triggerRef.current : null;
+    if (!anchor) {
+      openNow();
+      return;
+    }
+    const rect = anchor.getBoundingClientRect();
+    if (rect.width !== 0 || rect.height !== 0) {
+      pendingAnchorWaitRef.current = waitForAncestorAnimations(anchor, openNow);
+      return;
+    }
+    // No API to wait on (jsdom, an old browser): same fallback
+    // sharedResizeObserver.ts uses for the same gap — skip the wait rather
+    // than throw, and open against whatever box is available now.
+    if (
+      typeof ResizeObserver === 'undefined' ||
+      typeof requestAnimationFrame === 'undefined'
+    ) {
+      pendingAnchorWaitRef.current = waitForAncestorAnimations(anchor, openNow);
+      return;
+    }
+    // Two readiness signals race, whichever resolves first wins:
+    //
+    // - A real ResizeObserver, same as before. Fast for a block-level
+    //   trigger (the common case) — a real browser typically delivers the
+    //   first entry within a frame of the anchor becoming visible.
+    // - A bounded rAF poll of the anchor's own getBoundingClientRect(). A
+    //   ResizeObserver reliably does not deliver ANY entry at all for a
+    //   purely `display: inline`, non-replaced box — exactly the shape a
+    //   text-only Tooltip/HoverCard trigger's wrapper `<span>` is — so
+    //   observing one alone can leave this wait never resolving, not just
+    //   resolving late (#5398). Bounded because an environment that never
+    //   produces real layout (jsdom's getBoundingClientRect is always
+    //   all-zero, when nothing else has already stubbed a resolvable
+    //   ResizeObserver) would otherwise reschedule a frame forever, which
+    //   under fake timers (`vi.runAllTimers()`) never terminates.
+    //
+    // Racing both, rather than polling alone, keeps a synchronous-firing
+    // test ResizeObserver stub (several component tests use one, modeling a
+    // real observer's typical behavior for an already-visible element)
+    // resolving exactly as fast as it always did — the poll below never even
+    // starts in that case.
+    const state: {resolved: boolean; rafHandle: number | null} = {
+      resolved: false,
+      rafHandle: null,
+    };
+    const resolve = () => {
+      if (state.resolved) {
+        return;
+      }
+      state.resolved = true;
+      observer.disconnect();
+      if (state.rafHandle != null) {
+        cancelAnimationFrame(state.rafHandle);
+      }
+      pendingAnchorWaitRef.current = waitForAncestorAnimations(anchor, openNow);
+    };
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry && (entry.contentRect.width || entry.contentRect.height)) {
+        resolve();
+      }
+    });
+    observer.observe(anchor);
+    if (!state.resolved) {
+      let framesWaited = 0;
+      const poll = () => {
+        const box = anchor.getBoundingClientRect();
+        framesWaited += 1;
+        if (box.width || box.height || framesWaited >= ANCHOR_WAIT_MAX_FRAMES) {
+          resolve();
+          return;
+        }
+        state.rafHandle = requestAnimationFrame(poll);
+      };
+      state.rafHandle = requestAnimationFrame(poll);
+    }
+    pendingAnchorWaitRef.current = () => {
+      state.resolved = true;
+      observer.disconnect();
+      if (state.rafHandle != null) {
+        cancelAnimationFrame(state.rafHandle);
+      }
+    };
+  }, [mode, openNow, cancelPendingAnchorWait]);
+
   const hide = useCallback(() => {
+    cancelPendingAnchorWait();
     pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
@@ -674,21 +877,66 @@ function useLayerImplementation(
       onHide?.();
     }
     clearContextMount();
-  }, [onHide, clearContextMount]);
+  }, [onHide, clearContextMount, cancelPendingAnchorWait]);
 
   // Stable ref for the trigger element (context mode only).
+  //
+  // A caller's OWN ref to the trigger can churn identity for reasons that
+  // have nothing to do with the trigger itself changing (e.g. Tooltip
+  // imperatively re-invoking a combined ref callback whenever one of its
+  // interaction handlers changes identity) — React or the caller then calls
+  // this ref with `null` and immediately after with the very same element.
+  // Removing `anchor-name` on that `null` call and re-adding it on the
+  // reattach is a real DOM mutation each time, and an already-open layer's
+  // `position-try-fallbacks` resolution does not automatically get revisited
+  // once the anchor comes back — the layer is left stuck at the unanchored
+  // fallback position for the rest of that open (#5398), even though the
+  // trigger never actually left the document.
+  //
+  // `addAnchorName` is already idempotent (skips the DOM write if the name
+  // is already present), so a `null` call defers the removal instead of
+  // applying it immediately: `triggerRef.current` is left pointing at the
+  // stale element, and a microtask is queued to actually remove its anchor
+  // name — but only if nothing has reattached to that exact element by
+  // then. A transient null-then-same-element churn cancels the pending
+  // removal on the reattach, so the anchor name (and the layer's anchor
+  // resolution) is never disturbed. A `null` followed by a DIFFERENT real
+  // element still removes the old element's name immediately, in the same
+  // synchronous call that adds the new one — no need to wait, since that is
+  // a genuine reassignment, not churn. A `null` followed by nothing (a real
+  // unmount) lets the microtask's removal go through, so a detached trigger
+  // does not keep carrying a dead anchor name forever (the current Popover
+  // contract: detaching the trigger removes its anchor association).
   const contextRef = useCallback(
     (el: HTMLElement | null) => {
+      if (!el) {
+        const stale = triggerRef.current;
+        if (!stale) {
+          return;
+        }
+        const pending = {element: stale, cancelled: false};
+        pendingTriggerDetachRef.current = pending;
+        queueMicrotask(() => {
+          if (pending.cancelled || triggerRef.current !== stale) {
+            return;
+          }
+          removeAnchorName(stale, anchorId);
+          triggerRef.current = null;
+        });
+        return;
+      }
+      // Reattaching the exact element a pending detach targeted: cancel it,
+      // the churn never happened as far as the anchor name is concerned.
+      if (pendingTriggerDetachRef.current?.element === el) {
+        pendingTriggerDetachRef.current.cancelled = true;
+        pendingTriggerDetachRef.current = null;
+      }
       // Remove only THIS layer's anchor name from the previous element so
       // other layers sharing the same trigger keep their anchors.
       if (triggerRef.current && triggerRef.current !== el) {
         removeAnchorName(triggerRef.current, anchorId);
       }
-
-      if (el) {
-        addAnchorName(el, anchorId);
-      }
-
+      addAnchorName(el, anchorId);
       triggerRef.current = el;
     },
     [anchorId],
@@ -736,7 +984,10 @@ function useLayerImplementation(
   useEffect(() => {
     // Install capture-phase gesture tracking before the first interaction.
     currentGesture();
-    return () => forgetDismissalRef.current?.();
+    return () => {
+      forgetDismissalRef.current?.();
+      pendingAnchorWaitRef.current?.();
+    };
   }, []);
 
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
