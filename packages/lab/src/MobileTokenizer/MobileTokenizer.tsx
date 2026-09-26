@@ -39,7 +39,10 @@ import {IconButton} from '@astryxdesign/core/IconButton';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
-import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import type {
+  SearchableItem,
+  SearchSource,
+} from '@astryxdesign/core/Typeahead';
 import {
   colorVars,
   radiusVars,
@@ -278,14 +281,7 @@ export function MobileTokenizer<T extends SearchableItem>({
       return () => clearTimeout(timer);
     }
     void run();
-  }, [
-    isAddOpen,
-    query,
-    searchSource,
-    minQueryLength,
-    maxMenuItems,
-    debounceMs,
-  ]);
+  }, [isAddOpen, query, searchSource, minQueryLength, maxMenuItems, debounceMs]);
 
   const createItem = useMemo<T | null>(() => {
     const trimmed = query.trim();
@@ -350,14 +346,9 @@ export function MobileTokenizer<T extends SearchableItem>({
                   onClick={() => setActiveSheet(null)}
                 />
               </div>
-              <div
-                {...stylex.props(styles.list)}
-                data-testid="mobile-tokenizer-manage-list">
+              <div {...stylex.props(styles.list)} data-testid="mobile-tokenizer-manage-list">
                 {value.length === 0 ? (
-                  <Text
-                    type="supporting"
-                    color="secondary"
-                    xstyle={styles.empty}>
+                  <Text type="supporting" color="secondary" xstyle={styles.empty}>
                     No items yet
                   </Text>
                 ) : (
@@ -418,18 +409,11 @@ export function MobileTokenizer<T extends SearchableItem>({
                     <span {...stylex.props(styles.rowLabel)}>
                       <Text type="body">{createItem.label}</Text>
                     </span>
-                    <span
-                      {...stylex.props(styles.toggleMark)}
-                      aria-hidden="true">
-                      +
-                    </span>
+                    <span {...stylex.props(styles.toggleMark)} aria-hidden="true">+</span>
                   </button>
                 )}
                 {!isSearching && results.length === 0 && createItem == null ? (
-                  <Text
-                    type="supporting"
-                    color="secondary"
-                    xstyle={styles.empty}>
+                  <Text type="supporting" color="secondary" xstyle={styles.empty}>
                     {emptySearchResultsText}
                   </Text>
                 ) : (
@@ -443,23 +427,14 @@ export function MobileTokenizer<T extends SearchableItem>({
                         role="option"
                         aria-selected={isSelected}
                         aria-disabled={rowDisabled || undefined}
-                        {...stylex.props(
-                          styles.row,
-                          rowDisabled && styles.rowDisabled,
-                        )}
+                        {...stylex.props(styles.row, rowDisabled && styles.rowDisabled)}
                         onClick={() =>
                           isSelected ? handleRemove(item) : handleAdd(item)
                         }>
                         <span {...stylex.props(styles.rowLabel)}>
-                          {renderItem ? (
-                            renderItem(item)
-                          ) : (
-                            <Text type="body">{item.label}</Text>
-                          )}
+                          {renderItem ? renderItem(item) : <Text type="body">{item.label}</Text>}
                         </span>
-                        <span
-                          {...stylex.props(styles.toggleMark)}
-                          aria-hidden="true">
+                        <span {...stylex.props(styles.toggleMark)} aria-hidden="true">
                           {isSelected ? <Icon icon="check" size="sm" /> : '+'}
                         </span>
                       </button>
