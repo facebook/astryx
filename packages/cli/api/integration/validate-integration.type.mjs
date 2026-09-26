@@ -32,9 +32,13 @@
 
 /**
  * `astryx --json doctor integration validate [package]`.
+ *
+ * `validated` is false in exactly one case: no integration manifest was found,
+ * so nothing was checked. An empty `issues` then means "not looked at", not
+ * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

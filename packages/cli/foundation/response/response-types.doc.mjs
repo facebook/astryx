@@ -250,7 +250,7 @@ export const doc = {
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
     },
 
     // manifest
@@ -281,22 +281,22 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
     },
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
     },
     {
       value: 'integration.component-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
-        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
     },
 
     // layout (XLE/XLO)

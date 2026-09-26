@@ -26,7 +26,7 @@ export const doc = {
     {
       type: 'integration.doc-conflicts',
       description:
-        'Integration identity, structural issues, and classified Core doc relationships.',
+        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural issues, and classified Core doc relationships.',
     },
   ],
   examples: [

@@ -216,10 +216,10 @@ async function runProjectDoctor(program) {
 async function runIntegrationValidation(program, pkg) {
   const result = await validateIntegration(pkg);
   if (program.opts().json) jsonOut(result);
-  else if (result.data.name === null) {
+  else if (!result.data.validated) {
     emit(
       text(
-        'No astryx.integration.* found next to package.json. ' +
+        'Nothing was validated: no astryx.integration.* found next to package.json. ' +
           'To validate an installed integration: astryx doctor integration validate <package>',
       ),
     );
@@ -242,10 +242,10 @@ async function runAuthoringCheck(program, pkg, kind) {
         : await integrationDocConflicts(pkg);
 
   if (program.opts().json) jsonOut(result);
-  else if (result.data.name === null) {
+  else if (!result.data.validated) {
     emit(
       text(
-        'No astryx.integration.* found next to package.json. ' +
+        'Nothing was checked: no astryx.integration.* found next to package.json. ' +
           `To check an installed integration: astryx doctor integration ${kind} <package>`,
       ),
     );

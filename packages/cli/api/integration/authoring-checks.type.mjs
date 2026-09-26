@@ -44,21 +44,25 @@
  */
 
 /**
+ * Each of the three authoring checks reports `validated`: false means no
+ * integration manifest was found, so nothing was inspected and the empty
+ * conflicts/findings list carries no information about the package.
+ *
  * @typedef {object} IntegrationTemplateConflictResponse
  * @property {'integration.template-conflicts'} type
- * @property {{name: string | null, version: string | null, conflicts: IntegrationTemplateConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, conflicts: IntegrationTemplateConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 /**
  * @typedef {object} IntegrationComponentConflictResponse
  * @property {'integration.component-conflicts'} type
- * @property {{name: string | null, version: string | null, conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 /**
  * @typedef {object} IntegrationDocConflictResponse
  * @property {'integration.doc-conflicts'} type
- * @property {{name: string | null, version: string | null, findings: IntegrationDocFinding[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

@@ -625,3 +625,58 @@ describe('integration diagnostics are read-only', () => {
     expect({pkg: snapshot(pkgDir), consumer: snapshot(consumer)}).toEqual(before);
   });
 });
+
+describe('validated separates "checked and clean" from "never checked"', () => {
+  // `doctor integration validate --json` from a directory with no manifest
+  // returned {name: null, version: null, issues: []} and exit 0 — the same
+  // envelope a healthy, fully validated integration produces. Wire that into
+  // CI from the wrong directory and it is green forever.
+  it('is false for every check when no manifest is found', async () => {
+    const dir = path.join(tmpDir, 'plain');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: 'plain-app', version: '1.0.0'}),
+    );
+
+    const validate = await validateIntegration(undefined, {cwd: dir});
+    expect(validate.data.validated).toBe(false);
+    expect(validate.data.issues).toEqual([]);
+
+    const templates = await integrationTemplateConflicts(undefined, {cwd: dir});
+    const components = await integrationComponentConflicts(undefined, {cwd: dir});
+    const docs = await integrationDocConflicts(undefined, {cwd: dir});
+    expect(templates.data.validated).toBe(false);
+    expect(components.data.validated).toBe(false);
+    expect(docs.data.validated).toBe(false);
+  });
+
+  it('is true for a real integration, whose empty issue list then means healthy', async () => {
+    const dir = path.join(tmpDir, 'integration');
+    writePackage(dir, {manifest: 'export default {};\n'});
+
+    const validate = await validateIntegration(undefined, {cwd: dir});
+    expect(validate.data.validated).toBe(true);
+    expect(validate.data.name).toBe('@acme/widgets');
+
+    const templates = await integrationTemplateConflicts(undefined, {cwd: dir});
+    const components = await integrationComponentConflicts(undefined, {cwd: dir});
+    const docs = await integrationDocConflicts(undefined, {cwd: dir});
+    expect(templates.data.validated).toBe(true);
+    expect(components.data.validated).toBe(true);
+    expect(docs.data.validated).toBe(true);
+  });
+
+  it('is true for an installed package that could not be found — that is a real finding', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer', version: '1.0.0'}),
+    );
+
+    const res = await validateIntegration('@acme/nope', {cwd: consumer});
+    expect(res.data.validated).toBe(true);
+    expect(summarizeIssues(res.data.issues).errors).toBeGreaterThan(0);
+  });
+});
