@@ -45,22 +45,6 @@ afterEach(() => {
 });
 
 describe('DateInput presentation', () => {
-  it('text-input renders a typed field with no calendar toggle', () => {
-    stubPointer(false);
-    render(
-      <DateInput
-        label="Ship date"
-        presentation="text-input"
-        onChange={() => {}}
-      />,
-    );
-    expect(
-      screen.getByRole('textbox', {name: 'Ship date'}),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Open calendar'})).toBeNull();
-    expect(screen.queryByRole('combobox')).toBeNull();
-  });
-
   it('popover forces the calendar field on a coarse pointer', () => {
     stubPointer(true);
     render(
@@ -103,14 +87,16 @@ describe('DateInput presentation', () => {
     render(
       <DateInput
         label="Ship date"
-        presentation="text-input"
+        presentation="bottom-sheet"
         nativePicker="always"
         onChange={() => {}}
       />,
     );
-    expect(
-      screen.getByRole('textbox', {name: 'Ship date'}),
-    ).toBeInTheDocument();
+    // A sheet on a fine pointer can only come from `presentation`: the
+    // deprecated `always` alone would have rendered the native field.
+    expect(screen.getByRole('combobox', {name: 'Ship date'})).toHaveAttribute(
+      'readonly',
+    );
     expect(document.querySelector('input[type="date"]')).toBeNull();
   });
 

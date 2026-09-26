@@ -8,7 +8,7 @@
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import {DateTimeInput} from './DateTimeInput';
 import {resetDateSegmentProbe} from '../DateInput/nativeDateSegments';
 
@@ -70,31 +70,20 @@ describe('DateTimeInput presentation', () => {
     expect(document.querySelectorAll('input[readonly]').length).toBe(2);
   });
 
-  it('text-input renders typed fields with no calendar toggle', () => {
-    stubPointer(true);
-    render(
-      <DateTimeInput
-        label="Event"
-        presentation="text-input"
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.queryByRole('button', {name: 'Open calendar'})).toBeNull();
-    expect(document.querySelector('input[type="date"]')).toBeNull();
-    expect(document.querySelectorAll('input[readonly]').length).toBe(0);
-  });
-
   it('presentation wins over nativePicker (FR4)', () => {
     stubPointer(false);
     render(
       <DateTimeInput
         label="Event"
-        presentation="text-input"
+        presentation="bottom-sheet"
         nativePicker="always"
         onChange={() => {}}
       />,
     );
+    // A sheet on a fine pointer can only come from `presentation`: the
+    // deprecated `always` alone would have rendered both native controls.
     expect(document.querySelector('input[type="date"]')).toBeNull();
     expect(document.querySelector('input[type="time"]')).toBeNull();
+    expect(document.querySelectorAll('input[readonly]').length).toBe(2);
   });
 });

@@ -158,9 +158,9 @@ export const docs = {
     },
     {
       name: 'presentation',
-      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      type: "'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
       description:
-        "Which surface draws the date picker. 'adaptive-native' (the default) uses Astryx's calendar popover on a fine pointer and the browser/OS picker (input type=date) on a coarse pointer, keeping Astryx fallbacks where a native control cannot express the value; 'native' always uses the browser/OS picker with no fallback; 'adaptive-bottom-sheet' uses the popover on a fine pointer and Astryx's bottom-sheet picker on a coarse pointer; 'popover' and 'bottom-sheet' force that Astryx surface on every pointer; 'text-input' keeps only the typed field and opens no picker. Use a non-native presentation for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express.",
+        "Which surface draws the date picker. 'adaptive-native' (the default) uses Astryx's calendar popover on a fine pointer and the browser/OS picker (input type=date) on a coarse pointer, keeping Astryx fallbacks where a native control cannot express the value; 'native' always uses the browser/OS picker with no fallback; 'adaptive-bottom-sheet' uses the popover on a fine pointer and Astryx's bottom-sheet picker on a coarse pointer; 'popover' and 'bottom-sheet' force that Astryx surface on every pointer. Every value opens a picker; a typed-only field is TimeInput's alone. Use a non-native presentation for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express.",
       default: "'adaptive-native'",
     },
     {
@@ -461,9 +461,9 @@ export const docsZh = {
     },
     {
       name: 'presentation',
-      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      type: "'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
       description:
-        "由哪个界面绘制日期选择器。'adaptive-native'（默认）在精细指针上使用 Astryx 日历弹出层、在粗指针上使用浏览器/操作系统选择器（input type=date），且原生控件无法表达值时保留 Astryx 回退；'native' 始终使用浏览器/操作系统选择器且不回退；'adaptive-bottom-sheet' 在精细指针上用弹出层、在粗指针上用 Astryx 底部选择器；'popover' 与 'bottom-sheet' 在任何指针上强制使用对应 Astryx 界面；'text-input' 只保留可输入字段、不打开任何选择器。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用非原生呈现，原生选择器无法表达这些。",
+        "由哪个界面绘制日期选择器。'adaptive-native'（默认）在精细指针上使用 Astryx 日历弹出层、在粗指针上使用浏览器/操作系统选择器（input type=date），且原生控件无法表达值时保留 Astryx 回退；'native' 始终使用浏览器/操作系统选择器且不回退；'adaptive-bottom-sheet' 在精细指针上用弹出层、在粗指针上用 Astryx 底部选择器；'popover' 与 'bottom-sheet' 在任何指针上强制使用对应 Astryx 界面。每个值都会打开选择器；仅输入字段的呈现只属于 TimeInput。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用非原生呈现，原生选择器无法表达这些。",
       default: "'adaptive-native'",
     },
     {
@@ -579,7 +579,7 @@ export const docsDense = {
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     presentation:
-      "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx; 'text-input' = typed field only. use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
+      "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens a picker (no text-only value; that is TimeInput's). use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',

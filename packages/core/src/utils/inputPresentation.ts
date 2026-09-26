@@ -22,14 +22,47 @@ export type InputPresentation =
   | 'adaptive-bottom-sheet'
   | 'adaptive-native';
 
+/** `presentation` for components without a text-only surface: all except `TimeInput` exclude `text-input` (AST-043). */
+export type PickerPresentation = Exclude<InputPresentation, 'text-input'>;
+
 /** The surface a resolved `InputPresentation` actually renders. */
 export type InputPresentationSurface =
   'text-input' | 'desktop' | 'sheet' | 'native';
 
+/** The surface a resolved `PickerPresentation` renders: one where a picker opens. */
+export type PickerPresentationSurface = Exclude<
+  InputPresentationSurface,
+  'text-input'
+>;
+
 /** Deprecated picker policy (`spec:AST-043` FR3). */
 export type LegacyNativePicker = 'touch' | 'always' | 'never';
 
-export const DEFAULT_INPUT_PRESENTATION: InputPresentation = 'adaptive-native';
+/**
+ * Typed as the narrower policy because the default opens a picker for every
+ * component; it is still a valid `InputPresentation`.
+ */
+export const DEFAULT_INPUT_PRESENTATION: PickerPresentation = 'adaptive-native';
+
+/**
+ * Map a deprecated `nativePicker` value to its `presentation` equivalent for
+ * a component whose every surface opens a picker (`DateInput`,
+ * `DateTimeInput`). Their released `never` was Astryx's own pickers on every
+ * pointer, so no value maps to `text-input` — which is what lets the return
+ * type exclude it.
+ */
+export function pickerPresentationFromNativePicker(
+  nativePicker: LegacyNativePicker,
+): PickerPresentation {
+  switch (nativePicker) {
+    case 'touch':
+      return 'adaptive-native';
+    case 'always':
+      return 'native';
+    case 'never':
+      return 'adaptive-bottom-sheet';
+  }
+}
 
 /**
  * Map a deprecated `nativePicker` value to its `presentation` equivalent.
@@ -40,14 +73,29 @@ export function presentationFromNativePicker(
   nativePicker: LegacyNativePicker,
   component: 'date' | 'time',
 ): InputPresentation {
-  switch (nativePicker) {
-    case 'touch':
-      return 'adaptive-native';
-    case 'always':
-      return 'native';
-    case 'never':
-      return component === 'time' ? 'text-input' : 'adaptive-bottom-sheet';
+  if (component === 'time' && nativePicker === 'never') {
+    return 'text-input';
   }
+  return pickerPresentationFromNativePicker(nativePicker);
+}
+
+/**
+ * The effective picker-only policy: explicit `presentation` wins over the
+ * deprecated prop. The narrow twin of {@link effectiveInputPresentation} for
+ * `DateInput` and `DateTimeInput`, whose `presentation` cannot be
+ * `text-input`.
+ */
+export function effectivePickerPresentation(
+  presentation: PickerPresentation | undefined,
+  nativePicker: LegacyNativePicker | undefined,
+): PickerPresentation {
+  if (presentation !== undefined) {
+    return presentation;
+  }
+  if (nativePicker !== undefined) {
+    return pickerPresentationFromNativePicker(nativePicker);
+  }
+  return DEFAULT_INPUT_PRESENTATION;
 }
 
 /** The effective policy: explicit `presentation` wins over the deprecated prop. */
@@ -65,14 +113,12 @@ export function effectiveInputPresentation(
   return DEFAULT_INPUT_PRESENTATION;
 }
 
-/** Resolve a policy to the surface rendered for the current pointer. */
-export function resolveInputPresentation(
-  presentation: InputPresentation,
+/** Resolve a picker-only policy to the surface rendered for the current pointer. */
+export function resolvePickerPresentation(
+  presentation: PickerPresentation,
   isCoarsePointer: boolean,
-): InputPresentationSurface {
+): PickerPresentationSurface {
   switch (presentation) {
-    case 'text-input':
-      return 'text-input';
     case 'popover':
       return 'desktop';
     case 'bottom-sheet':
@@ -84,4 +130,14 @@ export function resolveInputPresentation(
     case 'adaptive-native':
       return isCoarsePointer ? 'native' : 'desktop';
   }
+}
+
+/** Resolve a policy to the surface rendered for the current pointer. */
+export function resolveInputPresentation(
+  presentation: InputPresentation,
+  isCoarsePointer: boolean,
+): InputPresentationSurface {
+  return presentation === 'text-input'
+    ? 'text-input'
+    : resolvePickerPresentation(presentation, isCoarsePointer);
 }

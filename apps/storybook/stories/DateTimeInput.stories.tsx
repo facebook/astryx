@@ -77,7 +77,6 @@ const meta: Meta<typeof DateTimeInput> = {
     presentation: {
       control: 'select',
       options: [
-        'text-input',
         'popover',
         'bottom-sheet',
         'native',
@@ -91,7 +90,7 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+        "Deprecated — use presentation ('touch' → 'adaptive-native', 'always' → 'native', 'never' → 'adaptive-bottom-sheet'); presentation wins when both are set",
     },
     numberOfMonths: {
       control: 'radio',

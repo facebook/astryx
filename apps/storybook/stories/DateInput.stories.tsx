@@ -110,7 +110,6 @@ const meta: Meta<typeof DateInput> = {
     presentation: {
       control: 'select',
       options: [
-        'text-input',
         'popover',
         'bottom-sheet',
         'native',
@@ -124,7 +123,7 @@ const meta: Meta<typeof DateInput> = {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        'Whether the browser or Astryx draws the picker for each pointer type',
+        "Deprecated — use presentation ('touch' → 'adaptive-native', 'always' → 'native', 'never' → 'adaptive-bottom-sheet'); presentation wins when both are set",
     },
   },
 };

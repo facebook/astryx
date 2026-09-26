@@ -81,7 +81,7 @@ const meta: Meta<typeof TimeInput> = {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        'Native browser/OS time picker on touch by default, native wherever compatible, or Astryx typed field everywhere',
+        "Deprecated — use presentation ('touch' → 'adaptive-native', 'always' → 'native', 'never' → 'text-input'); presentation wins when both are set",
     },
     increment: {
       control: 'number',
