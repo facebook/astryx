@@ -125,7 +125,7 @@ export const docs = {
           name: 'hasAutoFocus',
           type: 'boolean',
           description:
-            'Whether to move focus into the popover when it opens. Keyboard activation focuses the first content control; pointer activation focuses the labeled dialog container so an action does not appear preselected. Set to false for inline showcases or documentation previews.',
+            'Whether to move focus into the popover when it opens. Focus enters the first genuine content control; dialogs with none fall back to the labeled surface. The generated fallback close control stays hidden until reached through keyboard navigation. Set to false for input-owned focus, inline showcases, or documentation previews.',
           default: 'true',
         },
         {
@@ -168,8 +168,8 @@ export const docs = {
     targets: [
       // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      // Deprecated compatibility alias. Existing themes keep working during
-      // migration; new themes target `popover`.
+      // Deprecated compatibility alias. Existing themes remain supported;
+      // new themes target `popover`.
       {
         className: 'astryx-popover-surface',
         deprecatedFor: 'popover',
@@ -202,7 +202,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -231,7 +231,7 @@ export const docs = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',
@@ -347,7 +347,7 @@ export const docsZh = {
           name: 'hasAutoFocus',
           type: 'boolean',
           description:
-            '弹出框打开时是否自动聚焦第一个可聚焦元素。内联展示或文档预览设为 false。',
+            '弹出框打开时是否将焦点移入其中。优先聚焦调用方内容中的第一个控件；若对话框没有此类控件，则聚焦带标签的表面。生成的关闭按钮仅在键盘导航到达时显示。',
           default: 'true',
         },
         {
@@ -371,8 +371,8 @@ export const docsZh = {
     targets: [
       // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      // Deprecated compatibility alias. Existing themes keep working during
-      // migration; new themes target `popover`.
+      // Deprecated compatibility alias. Existing themes remain supported;
+      // new themes target `popover`.
       {
         className: 'astryx-popover-surface',
         deprecatedFor: 'popover',
@@ -405,7 +405,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -434,7 +434,7 @@ export const docsZh = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',
@@ -472,7 +472,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -501,7 +501,7 @@ export const docsDense = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',
@@ -541,7 +541,7 @@ export const docsDense = {
           'Whether to include hidden close button for accessibility.',
         closeButtonLabel: 'Label for hidden close button.',
         hasAutoFocus:
-          'Move focus into the popover on open; keyboard targets the first control and pointer targets the dialog container.',
+          'Move focus into genuine popover content on open, with a labeled-surface fallback; the generated close control stays hidden until reached by keyboard.',
         hasLightDismiss:
           'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
         hasEscapeDismiss:

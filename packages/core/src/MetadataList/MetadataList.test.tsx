@@ -148,7 +148,9 @@ describe('MetadataList', () => {
         </MetadataList>,
       );
 
-      expect(gridTemplateOf(container)).toContain('repeat(3, auto 1fr)');
+      expect(gridTemplateOf(container)).toContain(
+        'repeat(3, auto minmax(0, 1fr))',
+      );
     });
 
     it('leaves the grid to the static rule for columns="multi"', () => {
@@ -178,7 +180,7 @@ describe('MetadataList', () => {
         </MetadataList>,
       );
 
-      expect(gridTemplateOf(container)).toContain('120px 1fr');
+      expect(gridTemplateOf(container)).toContain('120px minmax(0, 1fr)');
     });
   });
 });

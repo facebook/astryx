@@ -45,6 +45,7 @@ import {computeTargetAndRel} from './computeTargetAndRel';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -368,6 +369,9 @@ export function Link({
             styles.base,
             styles.buttonReset,
             linkColorStyles[color],
+            // The system's pressed overlay behind the text; the hover stays the
+            // colour change above, so a press is the one background it paints.
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,
@@ -427,6 +431,7 @@ export function Link({
           focusOutlineProps.focusVisible(
             styles.base,
             linkColorStyles[color],
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,

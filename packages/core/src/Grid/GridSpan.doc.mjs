@@ -8,6 +8,13 @@ export const docs = {
   displayName: 'Grid Span',
   isHiddenFromOverview: true,
   description: 'Grid item that spans multiple columns or rows.',
+  playground: {
+    wrapper: {component: 'Grid', props: {columns: 3, gap: 2}},
+    defaults: {
+      columns: 2,
+      children: 'Spans 2 columns',
+    },
+  },
   props: [
     {
       name: 'columns',

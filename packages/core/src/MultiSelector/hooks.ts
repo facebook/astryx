@@ -13,6 +13,7 @@
  */
 
 import {useCallback, useRef, useState} from 'react';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import type {MultiSelectorOptionData} from './types';
 
 interface UseMultiComboboxOptions {
@@ -20,7 +21,7 @@ interface UseMultiComboboxOptions {
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
-  onOpen: () => void;
+  onOpen: () => unknown;
   onClose: () => void;
   onToggle: (itemValue: string) => void;
   /**
@@ -34,12 +35,6 @@ interface UseMultiComboboxOptions {
    * The Delete/Backspace clear path is skipped when false.
    */
   hasValue?: boolean;
-  /**
-   * Whether the browser's light dismiss just closed the popup. The trigger
-   * click that follows belongs to that same press, so acting on it would
-   * reopen the popup the user just closed.
-   */
-  wasJustDismissed?: () => boolean;
   listboxId: string;
 }
 
@@ -68,7 +63,6 @@ export function useMultiCombobox({
   onToggle,
   onClear,
   hasValue = false,
-  wasJustDismissed,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -94,26 +88,35 @@ export function useMultiCombobox({
   }, [onClose]);
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled || wasJustDismissed?.()) {
+    if (isDisabled) {
       return;
     }
     if (isOpen) {
       closeAndReset();
     } else {
-      onOpen();
-      if (!hasSearch) {
+      const didOpen = onOpen() !== false;
+      if (didOpen && !hasSearch) {
         setHighlightedIndex(0);
       }
     }
-  }, [isDisabled, wasJustDismissed, isOpen, onOpen, closeAndReset, hasSearch]);
+  }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
+
+  // The scroll effect lives here, the highlight owner, so the hover/keyboard
+  // split is shared instead of re-implemented in MultiSelector.tsx (#6077).
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+  });
 
   const onItemMouseEnter = useCallback(
     (item: MultiSelectorOptionData, index: number) => {
       if (!item.disabled) {
-        setHighlightedIndex(index);
+        highlightOnHover(index);
       }
     },
-    [],
+    [highlightOnHover],
   );
 
   const onKeyDown = useCallback(
@@ -128,8 +131,9 @@ export function useMultiCombobox({
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(0);
+            if (onOpen() !== false) {
+              setHighlightedIndex(0);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
@@ -143,8 +147,9 @@ export function useMultiCombobox({
         case 'ArrowUp':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            if (onOpen() !== false) {
+              setHighlightedIndex(selectableItems.length - 1);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
@@ -165,8 +170,8 @@ export function useMultiCombobox({
               onToggle(item.value);
             }
           } else if (!isOpen) {
-            onOpen();
-            if (!hasSearch) {
+            const didOpen = onOpen() !== false;
+            if (didOpen && !hasSearch) {
               setHighlightedIndex(0);
             }
           }
@@ -232,25 +237,23 @@ export function useMultiCombobox({
           // Typeahead only when search is not present
           if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
-            }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
             const matchIndex = selectableItems.findIndex(
               item =>
                 !item.disabled &&
                 item.label?.toLowerCase().startsWith(newTypeahead),
             );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
+            const didOpen = isOpen || matchIndex < 0 || onOpen() !== false;
+            if (didOpen) {
+              setTypeahead(newTypeahead);
+              if (typeaheadTimeoutRef.current) {
+                clearTimeout(typeaheadTimeoutRef.current);
               }
-              setHighlightedIndex(matchIndex);
+              typeaheadTimeoutRef.current = setTimeout(() => {
+                setTypeahead('');
+              }, 500);
+              if (matchIndex >= 0) {
+                setHighlightedIndex(matchIndex);
+              }
             }
           }
           break;

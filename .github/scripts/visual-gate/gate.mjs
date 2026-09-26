@@ -40,14 +40,15 @@ import {
   accountBaseline,
   baselineVisualStories,
   buildPlan,
+  canonicalBaselineStories,
   createReleasePlan,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
   existingComponentBaselinePlan,
   readStoryIndex,
   readThemeCatalog,
   resolvePrVisualTotalShotLimit,
   storiesInPackages,
-  storiesInStorybookGroups,
   summarizeBaselineAccounting,
   withThemeMetadata,
 } from './lib/plan.mjs';
@@ -196,10 +197,10 @@ async function plan() {
     REPO_ROOT,
   );
   const packageStories = storiesInPackages(indexedStories, storyPackages);
-  const stories = storiesInStorybookGroups(
-    packageStories,
-    config.stableStoryGroups,
-  );
+  const stories = canonicalBaselineStories(packageStories, {
+    groups: config.stableStoryGroups,
+    packages: storyPackages,
+  });
   const {manifest: baselineManifest} = readBaseline(baselineDir);
   const componentThemes = acceptedVisualThemes(
     baselineManifest,
@@ -300,7 +301,20 @@ async function plan() {
   };
 }
 
+/** How this run describes what it planned, for a refusal a human has to act on. */
+function plannedScope() {
+  if (planFile) return 'The exact trusted plan';
+  if (components.length) return `Component scope ${components.join(', ')}`;
+  return `Tier scope ${tiers.join(', ')}`;
+}
+
 async function runCapture(shots, releasePlan = null) {
+  // An empty plan is not a clean run. Every lane that captures pixels refuses
+  // one here, on the way in, so a scope whose keys are missing from the
+  // accepted baseline cannot report the absence of evidence as evidence.
+  if (shots.length === 0) {
+    throw new Error(emptyVisualPlanMessage(plannedScope()));
+  }
   if (shots.length > config.visualPlanSafetyLimit) {
     throw new Error(
       `Visual plan has ${shots.length} shots; safety limit is ${config.visualPlanSafetyLimit}.`,
@@ -408,7 +422,7 @@ async function check() {
       version: 1,
       status: 'skipped',
       generatedAt: new Date().toISOString(),
-      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — no visual comparison was performed. Run the full canonical plan through CI before relying on this scope.`,
       context: {
         ...captureIdentity(),
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
@@ -516,7 +530,11 @@ async function check() {
 
   stageReportImages({
     reportDir,
-    keys: comparison.changes.map(change => change.key),
+    keys: [
+      ...comparison.changes.map(change => change.key),
+      ...comparison.added,
+      ...comparison.removed,
+    ],
     currentDir: outDir,
     baselinePath: path.join(baselineDir, 'shots'),
   });
@@ -786,18 +804,27 @@ async function main() {
       }
       const currentManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
       const verdictPath = path.join(outDir, 'verdict.json');
-      const verdict = fs.existsSync(verdictPath)
-        ? JSON.parse(fs.readFileSync(verdictPath, 'utf8'))
-        : null;
+      let verdict = null;
+      if (fs.existsSync(verdictPath)) {
+        try {
+          verdict = JSON.parse(fs.readFileSync(verdictPath, 'utf8'));
+        } catch (error) {
+          throw new Error(`Refusing to promote: ${verdictPath} is unreadable (${error.message}).`);
+        }
+      }
+      // accept() validates the verdict against the current baseline before
+      // writing, including the narrowly allowed full browser refresh.
       const requested = flag('keys');
       const removed = new Set(verdict?.removed ?? []);
+      // The dispatch form invites "a, b" — trim each key before it meets the
+      // key validation in accept().
       const named =
         !requested || requested === 'all'
           ? [
               ...Object.keys(currentManifest.shots),
               ...(has('prune') ? removed : []),
             ]
-          : requested.split(',').filter(Boolean);
+          : requested.split(',').map(key => key.trim()).filter(Boolean);
       if (new Set(named).size !== named.length) throw new Error('accept repeats a shot key.');
       const prune = has('prune') ? named.filter(key => removed.has(key)) : [];
       const keys = named.filter(key => currentManifest.shots[key]);
@@ -825,6 +852,7 @@ async function main() {
         baselineDir,
         captureDir: outDir,
         currentManifest: baselineManifest,
+        verdict,
         keys,
         reason: flag('reason') ?? '',
         actor: flag('actor') ?? process.env.GITHUB_ACTOR ?? process.env.USER ?? 'unknown',

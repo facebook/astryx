@@ -134,6 +134,12 @@ function storyPackageNames(entry, storybookDir, repoRoot, catalog) {
   return {
     packageNames: names.length ? names : [owner],
     packageName: owner,
+    // The package that OWNS the component's source, when Storybook recorded
+    // one. `packageName` can be inferred from imports or from the title, so it
+    // says which package a story belongs to; this says which package publishes
+    // the thing it photographs, and only that answers "may this story own a
+    // canonical baseline frame".
+    componentPackage: fromComponent ?? null,
     stableVisual: eligible(catalog.get(owner)),
   };
 }
@@ -336,7 +342,7 @@ export function createReleasePlan(shots) {
  *
  * @param {string} storybookDir
  * @param {Iterable<string>} excluded - story ids (or `prefix*`) excluded by config
- * @returns {Array<{id: string, title: string, name: string, component: string, tags: string[]}>}
+ * @returns {Array<{id: string, title: string, name: string, component: string, tags: string[], packageNames: string[], packageName: string, componentPackage: string | null, stableVisual: boolean}>}
  */
 export function readStoryIndex(storybookDir, excluded = [], repoRoot) {
   const exclusions = [...excluded];
@@ -391,15 +397,43 @@ function componentOf(entry) {
  */
 export function storiesInPackages(stories, packages) {
   if (packages.includes('*')) return stories;
-  const wanted = new Set(packages.map(name => name.startsWith('@') ? name : `@astryxdesign/${name.toLowerCase()}`));
+  const wanted = new Set(packages.map(configuredPackageName));
   return stories.filter(story => story.stableVisual && story.packageNames.some(name => wanted.has(name)));
 }
 
-/** Restrict canonical baselines to named Storybook title groups. */
-export function storiesInStorybookGroups(stories, groups) {
+/** Config names a package either by its Storybook group (`Core`) or in full. */
+function configuredPackageName(name) {
+  return name.startsWith('@') ? name : `@astryxdesign/${name.toLowerCase()}`;
+}
+
+/**
+ * Which stories may own canonical baseline frames.
+ *
+ * The question is ownership, and a Storybook title is only ever evidence of
+ * it. A story that merely IMPORTS Core components must not own a canonical
+ * frame; a component Core publishes must not lose its frames because its story
+ * happens to be titled under another group. Storybook records the source file
+ * of the component a story declares, and `readStoryIndex` resolves that file
+ * to its workspace package, so when the index has that fact it decides.
+ * `groups` is the fallback for stories that declare no component at all —
+ * composed demos and template pages — where the title group is the only
+ * ownership signal there is.
+ *
+ * `*` is an explicit audit override in either list, never the release default.
+ *
+ * @param {ReturnType<typeof readStoryIndex>} stories
+ * @param {{groups: string[], packages: string[]}} owners
+ */
+export function canonicalBaselineStories(stories, {groups, packages}) {
   if (groups.includes('*')) return stories;
-  const wanted = new Set(groups);
-  return stories.filter(story => wanted.has(String(story.title).split('/')[0]));
+  const everyPackage = packages.includes('*');
+  const wantedGroups = new Set(groups);
+  const wantedPackages = new Set(packages.map(configuredPackageName));
+  return stories.filter(story =>
+    story.componentPackage
+      ? everyPackage || wantedPackages.has(story.componentPackage)
+      : wantedGroups.has(String(story.title).split('/')[0]),
+  );
 }
 
 /**
@@ -528,6 +562,22 @@ export function resolvePrVisualTotalShotLimit({
 /** Component review budgets are shared by the ordinary and trusted planners. */
 export function exceedsPrVisualShotLimit(count, limit) {
   return count > limit;
+}
+
+/**
+ * Why every lane refuses an empty plan.
+ *
+ * A run that captures nothing compares nothing, so a clean verdict from one
+ * reports the absence of evidence as evidence. Every lane reaches that state
+ * the same way — a scope whose keys are not in the accepted baseline — so they
+ * refuse it with one sentence rather than three behaviors, and they name the
+ * one path that can seed the missing frames.
+ *
+ * @param {string} scope - what the lane planned, named for the message
+ * @returns {string}
+ */
+export function emptyVisualPlanMessage(scope) {
+  return `${scope} planned no shots; an empty plan compares nothing and cannot report clean. Seed coverage through the manual baseline workflow.`;
 }
 
 /**

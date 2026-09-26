@@ -7,7 +7,7 @@
   "baselineThemes": ["neutral", "probe"],
   "$stableStoryPackages": "Only these workspace packages may own stable visual stories.",
   "stableStoryPackages": ["Core"],
-  "$stableStoryGroups": "Only these Storybook title groups may own canonical baseline frames, even when another group imports Core components.",
+  "$stableStoryGroups": "Ownership fallback for stories that declare no component: only these Storybook title groups may own canonical baseline frames, so a story from another group cannot earn one merely by importing Core. A story that DOES declare a component published by stableStoryPackages owns its frames wherever it is titled.",
   "stableStoryGroups": ["Core"],
   "$prVisualShotLimit": "Review ceiling for focused component shots and broad shared-infrastructure plans. Theme-only matrices are not component-budgeted.",
   "prVisualShotLimit": 240,

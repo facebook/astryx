@@ -14,6 +14,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {component} from './component.mjs';
 import {AstryxError} from '../error.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 // api/component/ -> up 4 = repo root (has packages/core, which findCoreDir walks to).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -159,5 +160,42 @@ describe('component dispatcher — category guard', () => {
       expect(err).toBeInstanceOf(AstryxError);
       expect(err.code).toBe('ERR_UNKNOWN_CATEGORY');
     }
+  }, SLOW);
+});
+
+describe('component dispatcher — detail and lang guards', () => {
+  // `detail` and `lang` are the same controls as the CLI's --detail and --lang:
+  // same accepted values, same error codes.
+  it('rejects a detail level the CLI rejects, with the same code', async () => {
+    const cliRun = await runCli(['--json', 'component', '--list', '--detail', 'bogus'], cwd);
+    expect(cliRun.code).toBe(1);
+    expect(JSON.parse(cliRun.stdout).code).toBe('ERR_INVALID_DETAIL');
+
+    const bogus = /** @type {any} */ ('bogus');
+    for (const call of [
+      () => component(undefined, {cwd, list: true, detail: bogus}),
+      () => component('Button', {cwd, detail: bogus}),
+    ]) {
+      const err = await call().catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_INVALID_DETAIL');
+    }
+  }, SLOW);
+
+  it('rejects a lang the CLI rejects, with the same code', async () => {
+    const cliRun = await runCli(['--json', 'component', 'Button', '--lang', 'fr'], cwd);
+    expect(cliRun.code).toBe(1);
+    expect(JSON.parse(cliRun.stdout).code).toBe('ERR_INVALID_LANG');
+
+    for (const call of [
+      () => component('Button', {cwd, lang: 'fr'}),
+      () => component(undefined, {cwd, list: true, detail: 'compact', lang: 'fr'}),
+    ]) {
+      const err = await call().catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_INVALID_LANG');
+    }
+    const zh = await component('Button', {cwd, lang: 'zh'});
+    expect(zh.type).toBe('component.detail');
   }, SLOW);
 });

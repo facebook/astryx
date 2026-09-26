@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-017
@@ -10,13 +10,47 @@ approved_by: cixzhang
 approved_at: 2026-09-02
 phase: accepted
 owners: [cixzhang, josephfarina]
-affects_architecture: [architecture:public-component-api]
+affects_architecture:
+  [architecture:public-component-api, architecture:cli-surface]
 affects_families: []
-affects_contributing: [contributing:release-process, contributing:templates]
+affects_contributing:
+  [
+    contributing:release-process,
+    contributing:templates,
+    contributing:cli-conventions,
+  ]
 affects_consumer_docs: [release-process, templates]
 ---
 
 # Published compatibility and breaking-change classification system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "compatibility": [
+      "DEC-1",
+      "DEC-5",
+      "DEC-6",
+      "DEC-7",
+      "DEC-8",
+      "FR3",
+      "FR4",
+      "FR5",
+      "FR12",
+      "FR14",
+      "FR15",
+      "FR16",
+      "FR17",
+      "FR18",
+      "FR19",
+      "FR20"
+    ]
+  }
+}
+```
 
 ## Intent
 
@@ -28,10 +62,15 @@ The label is a compatibility classification, not a risk or severity score. A
 small, safe rename can be breaking; a large rewrite can be nonbreaking when it
 preserves the released contract.
 
+For CLI controls, keep every supported behavior discoverable and put each control on
+the narrowest surface that owns it. Global controls require evidence that their value
+and meaning are global. Cross-cutting guarantees must be complete, observable, and
+independent for each invocation.
+
 ## Non-goals
 
 - Freezing implementation details or every byte of generated example code.
-- Defining component, template, or CLI naming conventions.
+- Defining component or template naming conventions.
 - Treating private packages, canaries, or unreleased work as stable public API.
 - Replacing the release process, Changesets, or migration tooling.
 
@@ -114,6 +153,101 @@ preserves the released contract.
   adapter when needed; otherwise classify the narrower or higher-floor range as
   breaking, describe the range change in its Changeset release note, and meet FR8's
   migration obligation.
+- **FR13 — Stable machine schemas project every field.** A stable CLI response
+  contract includes fields inside discriminated `data` entries as well as the
+  outer envelope. Every field is present in the canonical response type, contract
+  tests, text projection where the command provides one, and complete
+  consumer-facing schema documentation. Adding an optional field is nonbreaking
+  when old consumers continue unchanged, but it remains a public schema update and
+  does not bypass current-authority review or documentation.
+- **FR14 — No supported CLI behavior is hidden.** Any Astryx CLI behavior
+  available in a supported flow—including behavior selected automatically and
+  behavior selected by an Astryx-owned control—is a public surface and MUST be
+  documented and discoverable. Every caller-settable control that changes command
+  selection, work, output, side effects, or exit behavior is part of that surface,
+  whether spelled as a command, option, positional argument, package field, or
+  configuration key. The CLI MUST NOT define or read an Astryx-owned environment
+  variable for any purpose. A variable is Astryx-owned when Astryx defines its
+  semantics, regardless of its name or prefix; standard platform variables remain
+  outside this prohibition unless Astryx assigns them an Astryx-specific meaning.
+  Automation MUST use the documented programmatic API.
+  Public controls MUST define their accepted values, default, precedence and
+  interactions, error behavior, and a representative invocation. Commands and
+  options MUST appear in generated help and the machine-readable manifest.
+  Automatic behavior and other controls MUST either appear there or be linked from
+  those discovery surfaces to consumer documentation. A
+  normal invocation mode MUST have a documented command, option, or configuration
+  surface. Private test hooks and maintainer rollout gates MAY affect tests,
+  diagnostics, or staged availability without becoming public controls, but they MUST
+  NOT use environment variables, require action from supported consumers, or serve as
+  the sole interface to a supported mode. The user-facing behavior they gate remains
+  subject to this requirement once supported.
+- **FR15 — Global controls require CLI-wide value and semantics.** An option is
+  global when the root parser accepts it across commands or the manifest lists it in
+  `globalOptions`. A new behavior-changing option MAY be global only when it
+  represents one coherent CLI-wide invariant, solves a demonstrated
+  supported-consumer need that a narrower surface cannot solve, and has defined,
+  meaningful, non-no-op behavior for every executable command and subcommand. The proposal MUST enumerate those surfaces
+  from generated help and the machine-readable manifest and state the control's
+  behavior, output or error effect, and verification for each one. A command on
+  which the control has no meaningful effect is evidence that the proposed scope is too broad. A behavior that applies to only part of the
+  CLI MUST be placed on the nearest command, command group, or programmatic API that
+  owns it. The same name MUST keep the same meaning throughout that scope, and names
+  MUST describe the exact controlled capability rather than make broad claims such as
+  `safe`, `secure`, `trusted`, or `isolated`. A safety or trust control MUST also
+  define its trust boundary and fail closed before untrusted input can execute or
+  cause a side effect.
+- **FR16 — Cross-cutting guarantees define and close their boundary.** A claim that
+  prevents a class of execution, data access, or side effect MUST define the trusted
+  inputs, denied actions, and the points where protection begins and ends. It MUST
+  cover every current entry point and fail closed for an unknown or newly added
+  extension point.
+- **FR17 — Suppressed work is observable.** When a safety or reduced-capability
+  control intentionally omits a normally available source, capability, or unit of
+  work, every successful machine-readable result MUST identify the active mode and
+  what category was omitted. Human-readable output MUST project the same fact. A
+  partial or empty result MUST NOT look like an ordinary complete success. If the
+  operation cannot produce a useful conforming result, it MUST return a stable
+  structured error and, for the CLI, a nonzero exit code before any write or external
+  side effect.
+- **FR18 — Programmatic controls are explicit and invocation-scoped.** A
+  programmatic control MUST be an explicit API input and MUST NOT depend on ambient
+  mutable process state. Concurrent calls MUST be able to select different values
+  independently. When the CLI and programmatic API expose the same control, they MUST
+  share accepted values, defaults, precedence, observable behavior, and error
+  semantics.
+- **FR19 — Configuration is admitted only on evidence.** A new configuration key,
+  or a new accepted value that changes CLI behavior, MUST be justified by a
+  reproducible supported-consumer case in which automatic detection and
+  established project conventions produce the wrong result. The proposal MUST
+  record that case and the convention it tried first. When an established
+  convention or automatic detection can express the need, the CLI MUST use it
+  instead of adding configuration. Configuration MUST NOT duplicate a value the
+  CLI can derive.
+- **FR20 — Integration contributions compose predictably and visibly.** A
+  configuration setting MAY accept contributions from integrations only when its
+  entry in the public configuration contract (the exported `AstryxConfig` type
+  and the configuration schema reference consumers read through the CLI) states:
+  that integrations may contribute; the exact form of a contribution; how the app
+  value and all contributions combine, and in what order; the one documented
+  control through which an app refuses inherited contributions; and what happens
+  when a contribution fails. The setting owns that rule; an integration cannot
+  change it. An integration declares each contribution statically in its
+  integration module, either as a field of the exported `AstryxIntegration`
+  manifest type or as a documented named export, and the integration authoring
+  reference documents that form. Importing an integration module MUST NOT
+  contribute anything as a side effect. The CLI MUST let a caller inspect the
+  effective value of each such setting and the source of each part (the app or a
+  named integration) through a documented command or programmatic API. Unless a
+  setting's contract states and justifies otherwise: app and integration
+  contributions combine rather than replace one another; the app's own value
+  applies first, then integrations in their resolved order; a failing
+  contribution is skipped without removing the others or changing the command's
+  result; the app refuses all inherited contributions through one documented
+  control; and loading the project more than once in one invocation applies each
+  contribution once. No integration contribution can remove or weaken a value
+  supplied by the app or by another integration. When a setting protects the
+  project, a failed contribution MUST fail closed instead of being skipped.
 
 ### Platform support
 
@@ -141,18 +275,48 @@ updates:
 - changing or completely rebuilding the template's emitted starter page updates
   content for future generations without modifying projects that already copied it.
 
-The stable compatibility boundary remains the CLI operation and response schema,
-not the individual entries currently present in the template catalog.
+The stable compatibility boundary remains the CLI operation and complete response
+schema, not the individual entries currently present in the template catalog.
+Nested entry fields are public schema even when optional; their type, tests, text
+projection where present, and consumer schema documentation move together.
+
+The CLI already generates command help, README tables, and a machine-readable
+manifest. This amendment extends that discoverability standard to every supported
+behavior, including automatic behavior and controls outside command syntax. Existing
+Astryx-owned environment controls are non-conforming and must move to documented
+commands, options, configuration, or programmatic APIs; this record does not choose
+their individual migrations. Removing an existing variable still follows FR3–FR8:
+a breaking removal needs concrete migration guidance, and silently ignoring the old
+input is not a migration. This record does not authorize any specific global control.
+A future proposal must prove meaningful behavior across every command under FR15 or place the control on the narrower command and API surfaces that own the
+behavior. These decisions change policy only, so they do not change runtime output or
+a published package and require no Changeset.
+
+The existing `debug` setting is the reference behavior for FR20: the app handler
+and every integration handler run, the app first; a throwing handler is skipped
+without affecting the others or the command; `inheritDebug: false` in the
+package's `astryx` field refuses inherited handlers; and a repeated project load
+delivers each event once. Its configuration schema entry states that rule, and
+the `cli-integrations` authoring topic documents the `debug` named export. Draft
+AST-031 details the same model for runtime handler features. No command yet
+reports an effective contributed value with its sources, so existing contributed
+settings do not meet FR20's inspection requirement; this record does not choose
+that command. FR19 applies to new configuration; this amendment does not
+reclassify existing keys.
 
 ## Verification
 
-| Contract | Verification                                                                             | Representative states                                                      | Mutation or failure expectation                                                                                           |
-| -------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | PR compatibility statement plus latest stable package inspection                         | released export, behavior, CLI command; unreleased and private surface     | A change is labeled from diff size or possibility alone, or a released contract change is missed                          |
-| FR4–FR6  | Old-usage type/runtime/CLI regression test                                               | alias retained, deprecation warning, broad rewrite, low-adoption caller    | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                         |
-| FR7–FR8  | `pnpm check:changesets` plus migration review                                            | breaking and patch Changesets; codemoddable and non-codemoddable migration | Category and bump diverge, or a breaking release gives no usable migration path                                           |
-| FR9–FR11 | CLI contract tests plus template catalog and output tests                                | slug rename, metadata edit, source rebuild, command or schema change       | Catalog data is frozen as API, or a command/schema incompatibility is mislabeled as a catalog-only edit                   |
-| FR12     | Minimum and representative supported-version tests plus manifest and release-note review | retained range, narrowed range, adapter, coordinated upgrade               | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration |
+| Contract  | Verification                                                                                                                     | Representative states                                                                                                | Mutation or failure expectation                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                                               | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                         |
+| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                                              | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                        |
+| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                                           | Category and bump diverge, or a breaking release gives no usable migration path                                                                                                                          |
+| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                        | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                           |
+| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                                         | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                |
+| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                | command, option, API/config, private rollout/test hook                                                               | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                             |
+| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                             | global invariant, scoped command group, single command, programmatic API                                             | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                               |
+| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                     | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                          | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                           |
+| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                     | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection |
 
 ## Decision log
 
@@ -206,6 +370,112 @@ describes the new range and its FR8 migration tells consumers how to move.
 Rejected: marking every dependency bump breaking, which would freeze compatible
 maintenance, or calling an update nonbreaking merely because a coordinated upgrade
 works, which would break supported independent consumers.
+
+### DEC-4 — Stable CLI response fields receive complete projections
+
+**Reference:** `spec:AST-017/DEC-4`
+**Decider:** `cixzhang`, `2026-09-06`
+
+Treat every field in a stable machine-readable CLI response—including nested
+entry fields—as public schema. Keep its canonical type, contract tests, applicable
+text output, and complete consumer documentation aligned in the same change.
+
+An optional field addition may remain nonbreaking when old consumers continue
+unchanged. That compatibility result does not make the field private or waive
+current-authority and documentation requirements.
+
+Rejected: documenting only the outer envelope, relying on implementation typedefs
+as consumer documentation, or treating a response-entry field as mutable catalog
+data merely because the value it carries may evolve.
+
+### DEC-5 — Supported CLI behavior is never hidden
+
+**Reference:** `spec:AST-017/DEC-5`
+**Decider:** `josephfarina`, `2026-09-23`
+
+Any Astryx CLI behavior available in a supported flow is public and must be
+documented and discoverable, including behavior selected automatically. A control
+that can change supported CLI behavior is public and must be documented and
+discoverable. Its status follows the behavior it changes, not whether it is spelled
+as a command, option, package field, or configuration key.
+
+Use an option for invocation-scoped behavior, placed on the nearest command or
+command group that owns it; a global option must meet FR15's CLI-wide evidence bar.
+Use a documented configuration surface for persistent project behavior. Do not
+introduce Astryx-owned environment variables, including aliases for another surface.
+Automation uses the documented programmatic API. Private tests use injected test
+seams instead of environment variables. A maintainer rollout gate may control staged
+availability, but it is not a public user interface, must not use an environment
+variable, and cannot be the only way to reach a supported mode. The user-facing
+behavior it gates becomes subject to this requirement once supported.
+
+Rejected: documented or undocumented environment-variable controls, naming a hidden
+rollout gate as the user interface, or describing a behavior only in prose while
+omitting it—or a direct link to its documentation—from generated help and the
+machine-readable manifest.
+
+### DEC-6 — Global CLI controls prove global value
+
+**Reference:** `spec:AST-017/DEC-6`
+**Decider:** `josephfarina`, `2026-09-23`
+
+Treat a behavior-changing global control as a last resort, not as the default home for
+invocation-scoped behavior. Because it changes every command, it requires current
+system-spec authority before implementation. Its proposal must show one stable
+invariant with meaningful behavior for every command, a supported-consumer need that
+narrower command or API scope cannot satisfy, and a manifest-derived command matrix that verifies the claim. A
+no-op or different meaning on any command means the control is scoped too broadly.
+
+Put narrower behavior on the nearest command, command group, or programmatic API that
+owns it. Name the control for the exact capability it changes rather than using broad
+quality claims such as `safe`, `secure`, `trusted`, or `isolated`. A safety or trust
+control also defines its trust boundary and fails closed before untrusted input can
+execute or cause a side effect.
+
+Rejected: making a control global because several implementations share a switch,
+because root parsing is convenient, or because unrelated commands can silently ignore
+it. Those approaches enlarge the public surface without establishing coherent value.
+
+### DEC-7 — Cross-cutting controls are complete, observable, and per invocation
+
+**Reference:** `spec:AST-017/DEC-7`
+**Decider:** `josephfarina`, `2026-09-23`
+
+Define a cross-cutting guarantee by its complete boundary, not by the current list of
+implementation sites. Unknown and future extension points fail closed.
+
+Make work omitted by a safety or reduced-capability mode part of the result contract
+so a partial result cannot be mistaken for a complete one. When no useful result
+remains, return a stable error before writes or external effects. Pass programmatic controls as explicit inputs, keep
+them independent across concurrent calls, and preserve semantics across equivalent CLI
+and API surfaces.
+
+Rejected: best-effort interception of known loaders, silent fallback to partial or
+empty results, process-global mutable switches, and separate CLI and API meanings. Each can
+make the advertised guarantee false while the happy-path tests remain green.
+
+### DEC-8 — Configuration is a last resort, and contributions compose
+
+**Reference:** `spec:AST-017/DEC-8`
+**Decider:** `josephfarina`, `2026-09-23`
+
+Every configuration key is permanent public surface under FR3 and FR14, and it
+asks every consumer to make a decision. A key often hides a gap in detection, so
+detection and established conventions come first, and a new key needs a
+reproduced case where they fail.
+
+Integration contributions let one package set shared behavior once, as the
+`debug` setting does for organization-wide debug logs, while the app keeps the
+final say. The setting defines how contributions combine; an integration only
+declares its contribution, in the documented form. Contributions combine with the
+app value instead of replacing it, they are isolated from one another, each part
+of the effective value can be traced to its source, and a protective setting
+fails closed.
+
+Rejected: adding a key because it is easy to add, a key that duplicates a
+convention or a derivable value, an integration silently replacing an app value,
+an integration defining its own merge rule, contributions made by import side
+effects, and one broken integration disabling a setting for every app.
 
 ## Open questions
 

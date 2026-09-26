@@ -23,7 +23,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {RadioListContext} from './RadioList';
-import {mergeProps, isRenderable} from '../utils';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useIndicator} from '../Indicator';
@@ -39,8 +40,28 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
+  // The row remains the large press target, but nested links and buttons keep
+  // their independent action and do not make the radio appear pressed. This
+  // owner-drawn layer also survives a theme replacing the indicator component.
+  indicatorPressOverlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-full'],
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: 'transparent',
+        [stylex.when.ancestor(
+          ':active:not(:has(a:active,button:active,[role="button"]:active,[role="link"]:active))',
+          indicatorScope,
+        )]: colorVars['--color-overlay-pressed'],
+      },
+    },
+  },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
@@ -49,25 +70,11 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
   },
   inputDisabled: {
@@ -118,21 +125,23 @@ export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
    * Accepts a plain string or a ReactNode for rich content. Links and buttons
    * in the label keep their own behavior; only non-interactive row clicks
    * delegate to the radio. The radio points at the rendered label for its
-   * accessible name, so a rich label still names it from its own text — pass
-   * `aria-label` when that text is absent or too noisy to announce.
+   * accessible name, so a rich label still names it from its own text. Pass
+   * `aria-label` when that text is absent. When visible text is present, the
+   * override must retain every visible word so speech-input users can say what
+   * they see.
    */
   label: ReactNode;
   /**
    * Plain-text accessible name for the radio, applied to the control rather
-   * than the row. It replaces the name the label would otherwise supply — a
-   * plain string label included — so reach for it when a rich label's own
-   * text is absent or reads badly, not as a routine addition.
+   * than the row. It replaces the name the label would otherwise supply. Use
+   * it when a rich label has no visible text; otherwise the value must retain
+   * every visible word.
    *
    * @example
    * ```
    * <RadioListItem
    *   label={<span>Pro plan <Badge label="Recommended" /></span>}
-   *   aria-label="Pro plan"
+   *   aria-label="Pro plan Recommended option"
    *   value="pro"
    * />
    * ```
@@ -233,7 +242,11 @@ export function RadioListItem({
 
   const radioCircle = (
     <div
-      {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}
+      {...stylex.props(
+        styles.radioWrapper,
+        wrapperSizeStyles[size],
+        !isDisabled && styles.indicatorPressOverlay,
+      )}
       {...focusProps}>
       <input
         ref={radioRef}
@@ -268,6 +281,8 @@ export function RadioListItem({
         aria-describedby={hasDescription ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
+          rtlStyles.centerInline('-50%'),
+          styles.inputCoarse,
           wrapperSizeStyles[size],
           isDisabled && styles.inputDisabled,
         )}

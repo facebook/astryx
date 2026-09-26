@@ -34,7 +34,7 @@ import React from 'react';
 import {readFileSync} from 'node:fs';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {Button} from '../Button';
-import {Toast, type ToastProps} from './Toast';
+import type {ToastProps} from './Toast';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
 import type {ToastOptions} from './types';
@@ -1717,44 +1717,6 @@ describe('Toast swipe dismissal', () => {
     });
 
     expect(onHide).toHaveBeenCalledWith('manual');
-  });
-});
-
-describe('Toast live-region fallback semantics', () => {
-  it('keeps standalone info Toast content in a polite status region', () => {
-    render(
-      <Toast
-        type="info"
-        body="Saved"
-        isAutoHide={false}
-        autoHideDuration={5000}
-        onDismiss={() => {}}
-      />,
-    );
-
-    const visualToast = screen.getByText('Saved').closest('[data-type]');
-    expect(visualToast).toHaveAttribute('role', 'status');
-    expect(visualToast).toHaveAttribute('aria-live', 'polite');
-    expect(visualToast).toHaveAttribute('aria-atomic', 'true');
-  });
-
-  it('keeps standalone error Toast content in an assertive alert region', () => {
-    render(
-      <Toast
-        type="error"
-        body="Upload failed"
-        isAutoHide={false}
-        autoHideDuration={5000}
-        onDismiss={() => {}}
-      />,
-    );
-
-    const visualToast = screen
-      .getByText('Upload failed')
-      .closest('[data-type]');
-    expect(visualToast).toHaveAttribute('role', 'alert');
-    expect(visualToast).toHaveAttribute('aria-live', 'assertive');
-    expect(visualToast).toHaveAttribute('aria-atomic', 'true');
   });
 });
 

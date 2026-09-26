@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks/utils, BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks/utils, named BottomSheetPanel, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -39,7 +39,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
+import {useDevWarning, useScrollLock} from '../hooks';
+import {isImeKeyEvent} from '../utils';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -378,6 +379,7 @@ function StandaloneBottomSheet({
           ref={ref}
           state={panelState}
           height={height}
+          label={label}
           snapPoints={snapPoints}
           isSwipeDismissAllowed={purpose === 'info'}
           isPageScrollLocked={shouldPresent && hasScrim}
@@ -536,6 +538,7 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
+        label={label}
         snapPoints={snapPoints}
         isSwipeDismissAllowed={purpose === 'info'}
         isPageScrollLocked={hasScrim}

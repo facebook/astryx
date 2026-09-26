@@ -4,6 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
+- **[Pull request intents](docs/contributing/pull-requests.md)** — choose one primary intent, its evidence bar, and the matching PR template
 - **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
@@ -42,7 +43,7 @@ Download and install from https://nodejs.org
 ### pnpm
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
-the `packageManager` and `devEngines.packageManager` fields of
+the `packageManager` field of
 `package.json`). You can install pnpm directly:
 
 ```bash
@@ -78,22 +79,19 @@ corepack enable
 Verify installation:
 
 ```bash
-node --version   # v22.x.x or v24.x.x
+node --version   # v24.x.x
 pnpm --version   # 11.x.x
 ```
 
 ## Getting Started
 
 ```bash
-# Clone the repo
-git clone https://github.com/facebook/astryx.git
+# Clone without downloading historical file contents up front
+git clone --filter=blob:none https://github.com/facebook/astryx.git
 cd astryx
 
 # Install dependencies
 pnpm install
-
-# Build core package first (required for Storybook)
-pnpm -F @astryxdesign/core build
 
 # Start Storybook for component development
 cd apps/storybook
@@ -102,19 +100,9 @@ pnpm dev
 
 ### Running Storybook
 
-Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
-
-**First time setup:**
-
-```bash
-# Build all packages
-pnpm build
-
-# Or build just core
-pnpm -F @astryxdesign/core build
-```
-
-**Start Storybook:**
+Storybook resolves every workspace package to its `src/` directory and compiles
+it itself, so a fresh clone needs no build step first — `pnpm install` then
+`pnpm dev` is enough.
 
 ```bash
 cd apps/storybook
@@ -127,21 +115,13 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:**
-
-```bash
-# Rebuild core package
-pnpm -F @astryxdesign/core build
-
-# Restart Storybook to see changes
-cd apps/storybook
-pnpm dev
-```
+**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
+serves the edited source, so the story updates on save — no rebuild, no restart.
 
 ### Running the Doc Site
 
 The doc site (`apps/docsite/`) is a Next.js app that renders the component
-documentation at https://astryx.dev. To run it locally:
+documentation at https://astryx.atmeta.com. To run it locally:
 
 ```bash
 # First time only — build the workspace packages it depends on
@@ -377,7 +357,7 @@ That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs
 Author the docs _before_ the handler: `defineCommand` builds the Commander command from the `CommandDoc`, so the handler needs it to exist.
 
 1. Add the behavior under `api/<name>/`, with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth) and a test.
-2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `search` pair as a template.
+2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `blog` pair as a template.
 3. Write the thin handler in `clients/cli/commands/<name>.mjs`, registering it with `defineCommand(program, <name>Command, {fn: <name>Fn, action})` so `--help` and the manifest come from the doc. Call its `register<Name>` from `clients/cli/index.mjs`.
 4. Run the checks below. The drift harness catches a doc that disagrees with the live command, and `check:cli-structure` catches a missing typedef, doc, or test.
 
@@ -469,6 +449,32 @@ When the audit reports baseline entries as "resolved", delete them from
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
 
+### Accessibility spec-test contracts
+
+axe finds broad markup violations; it does not know that a switch has to turn
+back off. The reusable **accessibility spec tests** in
+[`internal/a11y-spec/`](internal/a11y-spec/README.md) encode one adopted
+WAI-ARIA APG pattern as a standards-traceable contract, and components bind to
+it. Each expectation names the WCAG success criterion or APG requirement it
+comes from, the evidence layer that can observe it, and whether it gates.
+
+They run in two lanes, and the split is the point: jsdom proves DOM-layer facts
+in `pnpm test`, and everything that needs a computed accessibility tree, real
+focus, or real activation is reported `unrun` there and proven in Chromium.
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+```
+
+Adopting the pattern in a new component means binding to the existing contract,
+not copying its assertions — see the package README and
+[`docs/specs/AST-020`](docs/specs/AST-020/spec.md) /
+[`docs/specs/AST-021`](docs/specs/AST-021/spec.md).
+
 ### RTL audits
 
 PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
@@ -520,6 +526,26 @@ paint on some of them. The `@astryx/disabled-cursor` lint rule (autofixable)
 enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
 apps/storybook/dist` hit-tests every disabled element in a built Storybook in
 Chromium and fails on any other cursor.
+
+### Playground preview isolation
+
+The docsite playground runs user-authored code in a sandboxed iframe with an
+opaque origin, tied to the page only by a nonce-attested MessagePort handshake
+(`apps/docsite/src/app/playground/previewChannel.ts`). The `docsite-browser`
+job feeds the existing required `docsite-test` check and proves that boundary
+in Chromium against a production build: a reloaded
+preview document recovers with the current code and theme, and a document that
+previewed code navigated the frame to receives nothing. The sandbox only exists
+in production builds (`next dev` cannot serve its assets to an opaque origin),
+so the specs need a build first:
+
+```bash
+pnpm build                                   # workspace packages the docsite imports
+pnpm -F @astryxdesign/docsite build
+npx playwright install chromium
+
+pnpm test:docsite-browser
+```
 
 ## Versioning & Releases
 

@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.5.2",
+  "version": "0.6.3",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -99,17 +99,25 @@
     "prepack": "pnpm sync:api-types"
   },
   "dependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/parser": "7.29.8",
+    "@babel/plugin-transform-typescript": "7.29.7",
+    "@babel/types": "7.29.8",
+    "ast-types": "0.16.3",
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",
+    "node-diff3": "3.2.1",
+    "postcss": "^8.5.23",
+    "postcss-selector-parser": "^7.1.5",
+    "recast": "0.23.21",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-neutral": "*",
-    "gpt-tokenizer": "^3.4.0"
+    "@astryxdesign/theme-neutral": "*"
   },
   "peerDependenciesMeta": {
     "@astryxdesign/charts": {
@@ -130,6 +138,10 @@
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",
-    "gpt-tokenizer": "^3.4.0"
+    "@heroicons/react": "^2.2.0",
+    "@stylexjs/stylex": "catalog:",
+    "@types/babel__core": "^7.20.5",
+    "lucide-react": "^1.18.0",
+    "recharts": "^3.9.2"
   }
 }

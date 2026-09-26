@@ -11,7 +11,9 @@ import {
   accountBaseline,
   baselineVisualStories,
   buildPlan,
+  canonicalBaselineStories,
   createReleasePlan,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
   existingComponentBaselinePlan,
   readStoryIndex,
@@ -20,7 +22,6 @@ import {
   resolvePrVisualTotalShotLimit,
   shotKey,
   storiesInPackages,
-  storiesInStorybookGroups,
   summarizeBaselineAccounting,
   uncoveredTargets,
 } from './plan.mjs';
@@ -67,8 +68,10 @@ describe('storiesInPackages', () => {
   });
 });
 
-describe('storiesInStorybookGroups', () => {
-  it('keeps only canonical title groups even when another group imports Core', () => {
+describe('canonicalBaselineStories', () => {
+  const owners = {groups: ['Core'], packages: ['Core']};
+
+  it('keeps only canonical title groups when no story declares a component', () => {
     const mixed = [
       ...stories,
       story({
@@ -85,8 +88,48 @@ describe('storiesInStorybookGroups', () => {
       }),
     ];
     expect(
-      storiesInStorybookGroups(mixed, ['Core']).map(story => story.id),
+      canonicalBaselineStories(mixed, owners).map(story => story.id),
     ).toEqual(stories.map(story => story.id));
+  });
+
+  it('keeps a published component whose only story is titled under another group', () => {
+    const resizable = story({
+      id: 'lab-resizable--horizontal-split',
+      title: 'Lab/Resizable',
+      name: 'Horizontal Split',
+      component: 'Resizable',
+      componentPackage: '@astryxdesign/core',
+    });
+    expect(
+      canonicalBaselineStories([...stories, resizable], owners).map(
+        story => story.id,
+      ),
+    ).toContain('lab-resizable--horizontal-split');
+  });
+
+  it('drops a canary component even when its story is titled under a canonical group', () => {
+    const labInCore = story(
+      {
+        id: 'core-drawer--default',
+        title: 'Core/Drawer',
+        name: 'Default',
+        component: 'Drawer',
+        componentPackage: '@astryxdesign/lab',
+      },
+      '@astryxdesign/lab',
+      false,
+    );
+    expect(
+      canonicalBaselineStories([...stories, labInCore], owners).map(
+        story => story.id,
+      ),
+    ).toEqual(stories.map(story => story.id));
+  });
+
+  it('allows an explicit all-groups audit without changing the release default', () => {
+    expect(canonicalBaselineStories(stories, {...owners, groups: ['*']})).toEqual(
+      stories,
+    );
   });
 });
 
@@ -221,6 +264,14 @@ describe('exceedsPrVisualShotLimit', () => {
   it('allows the exact configured ceiling and rejects one more', () => {
     expect(exceedsPrVisualShotLimit(240, 240)).toBe(false);
     expect(exceedsPrVisualShotLimit(241, 240)).toBe(true);
+  });
+});
+
+describe('emptyVisualPlanMessage', () => {
+  it('names the scope that planned nothing and the one path that seeds frames', () => {
+    expect(emptyVisualPlanMessage('Component scope Resizable')).toMatch(
+      /^Component scope Resizable planned no shots;.*manual baseline workflow\.$/,
+    );
   });
 });
 
@@ -441,6 +492,7 @@ describe('readStoryIndex package metadata', () => {
     fs.mkdirSync(path.join(storybook, 'stories'), {recursive: true});
     fs.mkdirSync(dist);
     fs.writeFileSync(path.join(storybook, 'stories/Composite.stories.tsx'), "import {Table} from '@astryxdesign/core/Table';");
+    fs.writeFileSync(path.join(storybook, 'stories/Dune.stories.tsx'), "import {Table} from '@astryxdesign/core/Table';");
     fs.writeFileSync(path.join(storybook, 'stories/Lab.stories.tsx'), "import {Thing} from '@astryxdesign/lab'; import {Button} from '@astryxdesign/core/Button';");
     fs.writeFileSync(path.join(storybook, 'stories/CoreMixed.stories.tsx'), "import {Thing} from '@astryxdesign/lab'; import {Layer} from '@astryxdesign/core/Layer';");
     fs.writeFileSync(path.join(storybook, 'stories/Probe.stories.tsx'), "import {Button} from '@astryxdesign/core/Button';");
@@ -452,6 +504,10 @@ describe('readStoryIndex package metadata', () => {
       mixed: {type: 'story', id: 'core-layer--default', title: 'Core/Layer', name: 'Default', importPath: './stories/CoreMixed.stories.tsx'},
       probe: {type: 'story', id: 'core-probe--default', title: 'Core/Themes/Probe Theme', name: 'Default', importPath: './stories/Probe.stories.tsx'},
       prOnly: {type: 'story', id: 'core-new--default', title: 'Core/New', name: 'Default', importPath: './stories/NewPrOnly.stories.tsx'},
+      // A Core component whose only story sits under another title group, and a
+      // template page that merely composes Core components.
+      elsewhere: {type: 'story', id: 'lab-resizable--split', title: 'Lab/Resizable', name: 'Split', componentPath: '../../packages/core/src/Resizable/index.ts', importPath: './stories/Resizable.stories.tsx'},
+      template: {type: 'story', id: 'dune--overview', title: 'Dune', name: 'Overview', importPath: './stories/Dune.stories.tsx'},
       skipped: {type: 'story', id: 'core-skip--default', title: 'Core/Skip', name: 'Default', tags: ['no-visual']},
     }}));
     return {root, dist};
@@ -469,6 +525,33 @@ describe('readStoryIndex package metadata', () => {
       expect(indexed.find(value => value.id === 'core-probe--default')).toMatchObject({packageName: '@astryxdesign/theme-probe', stableVisual: false});
       expect(indexed.find(value => value.id === 'core-new--default')).toMatchObject({packageName: '@astryxdesign/core', packageNames: ['@astryxdesign/core'], stableVisual: true});
       expect(indexed.some(value => value.id === 'core-skip--default')).toBe(false);
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
+  });
+
+  it('resolves canonical ownership from the declared component, not the title group', () => {
+    const {root, dist} = fixture();
+    try {
+      const indexed = readStoryIndex(dist, [], root);
+      expect(indexed.find(value => value.id === 'lab-resizable--split')).toMatchObject({
+        component: 'Resizable',
+        packageName: '@astryxdesign/core',
+        componentPackage: '@astryxdesign/core',
+      });
+      expect(indexed.find(value => value.id === 'dune--overview')).toMatchObject({
+        packageName: '@astryxdesign/core',
+        componentPackage: null,
+      });
+      const canonical = canonicalBaselineStories(
+        storiesInPackages(indexed, ['Core']),
+        {groups: ['Core'], packages: ['Core']},
+      ).map(value => value.id);
+      // A published Core component keeps its frames wherever its story is
+      // titled; a template page that only imports Core still owns none.
+      expect(canonical).toContain('lab-resizable--split');
+      expect(canonical).not.toContain('dune--overview');
+      expect(canonical).not.toContain('charts-bar--default');
     } finally {
       fs.rmSync(root, {recursive: true, force: true});
     }

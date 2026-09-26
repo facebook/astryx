@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Tests for the build API (playbook signal + composition kit).
+ * @file Tests for the build API (playbook + composition kit).
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -20,10 +20,21 @@ const REPO = path.resolve(
 vi.setConfig({testTimeout: 30000});
 
 describe('build API', () => {
-  it('no query → build.help playbook signal', async () => {
+  it('no query → build.help carries the playbook as data', async () => {
     const r = await build();
     expect(r.type).toBe('build.help');
-    expect(r.data).toEqual({playbook: true});
+    if (r.type !== 'build.help') return;
+    expect(r.data.playbook).toBe(true);
+    expect(r.data.title).toMatch(/build a page/i);
+    expect(r.data.steps.length).toBeGreaterThan(0);
+    for (const step of r.data.steps) {
+      expect(step.title).toBeTruthy();
+      expect(step.commands.length).toBeGreaterThan(0);
+    }
+    expect(r.data.rules.length).toBeGreaterThan(0);
+    // Bare subcommands: the caller adds its own invocation.
+    const commands = [...r.data.steps.flatMap(s => s.commands), ...r.data.related];
+    for (const {command} of commands) expect(command).not.toMatch(/^(astryx|npx|pnpm|yarn|bunx?)\b/);
   });
 
   it('query → build.kit with raw entries + static frame/foundation', async () => {
@@ -33,7 +44,7 @@ describe('build API', () => {
     expect(r.data.query).toBe('dashboard');
     expect(r.data.hasResults).toBe(true);
     const raw = await search('dashboard', {cwd: REPO, limit: 60});
-    expect(r.data.matchCount).toBe(raw.data.results.length);
+    expect(r.data.matchCount).toBe(raw.data.matchCount);
     expect(r.data.frame).toContain('AppShell');
     expect(r.data.foundation).toContain('Button');
     expect(Array.isArray(r.data.pages)).toBe(true);
@@ -107,18 +118,32 @@ describe('build API', () => {
     expect(r.data.blocks).toHaveLength(0);
     expect(r.data.domain).toHaveLength(0);
   });
+
+  it('reports the total match count, not the search limit it was capped to', async () => {
+    // The regression: matchCount was the length of the LIMITED result list, so
+    // it reported the cap rather than what the query matched. A reader (and
+    // the recorded run that quotes it) then reads "this idea matched 1 thing"
+    // for a query that matched dozens, and cannot tell a thin kit caused by a
+    // narrow query from one caused by the cap.
+    const capped = await build('dashboard', {cwd: REPO, limit: 1});
+    const full = await build('dashboard', {cwd: REPO, limit: 60});
+    if (capped.type !== 'build.kit' || full.type !== 'build.kit') {
+      throw new Error('expected build.kit');
+    }
+    expect(capped.data.matchCount).toBe(full.data.matchCount);
+    expect(capped.data.matchCount).toBeGreaterThan(1);
+
+    // The payload still respects the limit it was given — the truthful count
+    // is not an excuse to return an unbounded kit.
+    const surfaced =
+      capped.data.pages.length +
+      capped.data.blocks.length +
+      capped.data.domain.length;
+    expect(surfaced).toBeLessThanOrEqual(1);
+  });
 });
 
 describe('build kit — coverage gates the pages group', () => {
-  it('never offers a page that answered less than half the query', async () => {
-    const r = await build('actionable warning banner', {cwd: REPO});
-    expect(r.type).toBe('build.kit');
-    if (r.type !== 'build.kit') return;
-    for (const p of r.data.pages) {
-      expect(p.matchedTerms / p.queryTerms).toBeGreaterThanOrEqual(0.5);
-    }
-  });
-
   it('does not call a one-word coincidence a direct match', async () => {
     // A page's keywords include every component its source renders, so any
     // page that happens to render a Banner keyword-matched "banner" at 90 —
@@ -138,14 +163,18 @@ describe('build kit — coverage gates the pages group', () => {
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(true);
-    expect(r.data.pages[0].matchedTerms).toBe(r.data.pages[0].queryTerms);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page).not.toHaveProperty('matchedTerms');
+      expect(page).not.toHaveProperty('queryTerms');
+    }
   });
 
   it('leaves single-concept queries alone (nothing to cover)', async () => {
     const r = await build('dashboard', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
-    for (const p of r.data.pages) expect(p.queryTerms).toBe(1);
+    expect(r.data.pages.length).toBeGreaterThan(0);
   });
 });
 
@@ -178,6 +207,43 @@ describe('build kit — a thin kit says what to try next', () => {
     expect(r.data.hasResults).toBe(true);
     expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBe(0);
     expect(r.data.hint).toBeTruthy();
+  });
+
+  it('recommends reading the layout, not scaffolding it, on a loose match', async () => {
+    // The kit already decides this: `directMatch` false means the top page is
+    // a reference, and the renderer says so in prose. The page's `command` is
+    // what a program reads instead of that prose, so it has to agree — before
+    // this it still said `template <name>`, the scaffold.
+    const r = await build('notifications', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(false);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page.command).toMatch(/--skeleton$/);
+    }
+  });
+
+  it('recommends scaffolding on a direct match', async () => {
+    const r = await build('contact form', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page.command).not.toMatch(/--skeleton/);
+    }
+  });
+
+  it('keeps the recommendation package-manager-agnostic', async () => {
+    // Appending a flag must not turn into prefixing an invocation; that stays
+    // the renderer's job.
+    const r = await build('notifications', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    for (const page of r.data.pages) {
+      expect(page.command).not.toMatch(/^(pnpm|npm|yarn|bun|npx)\b/);
+    }
   });
 
   it('keeps recovery commands bare, for the caller to render', async () => {

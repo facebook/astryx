@@ -17,9 +17,9 @@ import {jsonOut} from '../../../../foundation/response/json.mjs';
 import {emit, section, text, list, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {defineCommand} from '../../lib/define-command.mjs';
+import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {hook as hookApi} from '../../../../api/hook/hook.mjs';
-import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {doc as hookCommand} from '../hook.doc.mjs';
 import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
 
@@ -34,6 +34,24 @@ import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
  *   | import('../../../../api/hook/hook.type.mjs').HookDetailParamsResponse
  * )} HookResult
  */
+
+/**
+ * What the run answered with. The list view groups hooks by category, so the
+ * count is every hook across the groups — names or docs, depending on detail.
+ *
+ * @param {HookResult} result
+ * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  if (result.type === 'hook.list') {
+    const count = Object.values(result.data.components).reduce(
+      (total, items) => total + items.length,
+      0,
+    );
+    return resultSet({count, resultKind: 'hook'});
+  }
+  return resultSet({count: 1, resultKind: 'hook', directMatch: true});
+}
 
 /** @param {import('commander').Command} program */
 export function registerHook(program) {
@@ -57,8 +75,7 @@ export function registerHook(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
-        return;
+        return cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
       }
 
       /** @type {HookResult} */
@@ -74,11 +91,14 @@ export function registerHook(program) {
         }));
       } catch (e) {
         const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       // ── Text output ────────────────────────────────────────────
       switch (result.type) {
@@ -148,24 +168,15 @@ export function registerHook(program) {
                   )
                 : formatHookFull(result.data);
 
-          // Show related block templates from relatedComponents
-          const relatedComps = result.data.relatedComponents || [];
-          /** @type {import('../../../../api/template/template.mjs').DiscoveredTemplate[]} */
-          const allBlocks = [];
-          for (const comp of relatedComps) {
-            const blocks = await findRelatedBlocks(comp);
-            for (const b of blocks) {
-              if (!allBlocks.some(existing => existing.dirName === b.dirName)) {
-                allBlocks.push(b);
-              }
-            }
-          }
-
+          // Text projects the envelope only. Block templates are JSON-backed
+          // under `component <name> --blocks`.
+          const related = result.data.relatedComponents ?? [];
           emit(
             code(doc),
-            allBlocks.length > 0 && section('Related block templates'),
-            allBlocks.length > 0 &&
-              records(allBlocks, {fields: ['dirName', 'description']}),
+            related.length > 0 &&
+              text(
+                `Block templates: ${run} component <name> --blocks for ${related.join(', ')}`,
+              ),
           );
           break;
         }
@@ -175,6 +186,7 @@ export function registerHook(program) {
           break;
         }
       }
+      return answered;
     },
   });
 }

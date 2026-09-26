@@ -12,18 +12,23 @@ export const doc = {
   type: 'command',
   name: 'upgrade',
   displayName: 'astryx upgrade',
-  namespace: 'cli',
-  summary: 'Run codemods to migrate between versions',
+  namespace: 'cli/commands',
+  summary: 'Migrate versions and update ShadCN-copied compositions',
   description:
     'Migrates project source from a previous Astryx version to the installed one by ' +
-    'running the registered codemods, and refreshes the managed agent-docs block. ' +
-    'Dry-run by default (preview only); pass --apply to write changes to disk.',
+    'running the registered codemods, and refreshes the fully rendered managed ' +
+    'agent-docs block when Core or configured integration guidance changes. ' +
+    'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
+    'Anything a post-codemod hook prints goes to stderr, so stdout carries only the result. ' +
+    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
   fn: 'upgrade',
   options: [
     {
       flag: '--from <version>',
       param: 'options.from',
-      description: 'Previous version before the dependency upgrade',
+      description:
+        'Previous version before the dependency upgrade; required unless --list or --registry is set. ' +
+        'The target is the installed @astryxdesign/core version, or legacy @xds/core when @astryxdesign/core is not installed',
     },
     {
       flag: '--apply',
@@ -41,7 +46,9 @@ export const doc = {
     {
       flag: '--codemod <name>',
       param: 'options.codemod',
-      description: 'Run a specific transform only',
+      description:
+        'Run only the named codemod. Optional codemods run only when named here; a normal run skips them. ' +
+        'Also skips the check of ShadCN-copied compositions. An unknown name exits 1 with ERR_UNKNOWN_CODEMOD when the version range has codemods',
     },
     {
       flag: '--skip-codemod <name...>',
@@ -50,10 +57,10 @@ export const doc = {
         'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.',
     },
     {
-      flag: '--integration <package-or-file>',
+      flag: '--integration <package>',
       param: 'options.integration',
       description:
-        'Explicit integration package name or integration file path (repeatable)',
+        'Explicit integration specifier (repeatable). Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.',
       default: [],
     },
     {
@@ -65,25 +72,43 @@ export const doc = {
     {
       flag: '--install-deps',
       param: 'options.installDeps',
-      description: 'Auto-install jscodeshift without prompting',
+      description:
+        'Install jscodeshift when it is missing. Without it, a missing jscodeshift fails the command with ERR_DEP_MISSING',
+      default: false,
+    },
+    {
+      flag: '--registry',
+      param: 'options.registry',
+      description:
+        'Only reconcile ShadCN-copied compositions; --from is not required. ' +
+        'Combining it with --list, --from, --force, --codemod, --skip-codemod, --integration or --install-deps exits 1 with ERR_INVALID_ARGUMENT',
       default: false,
     },
     {
       flag: '--list',
       param: 'options.list',
-      description: 'List available codemods',
+      description:
+        'List available codemods and do nothing else. Every other flag is ignored, except --registry, which is refused (exit 1)',
       default: false,
     },
   ],
   examples: [
     {label: 'List available codemods', cli: 'astryx upgrade --list --json'},
+    {
+      label: 'Update ShadCN-copied compositions',
+      cli: 'astryx upgrade --registry --apply',
+    },
     {label: 'Apply a migration', cli: 'astryx upgrade --from 0.1.0 --apply'},
   ],
   exitCodes: [
     {code: 0, when: 'success (including dry-run previews)'},
     {
       code: 1,
-      when: 'missing or invalid --from, a --path escape, an unknown codemod, or a codemod failure',
+      when:
+        'missing or invalid --from, --registry with --list or a migration flag, a --path escape, ' +
+        'no installed @astryxdesign/core (or legacy @xds/core), jscodeshift missing and not installed by --install-deps, ' +
+        'an astryx.config that fails validation and that no pending config codemod repairs, ' +
+        'an unknown codemod, a codemod or post-codemod hook failure, or unresolved registry items',
     },
   ],
   related: ['init', 'doctor'],

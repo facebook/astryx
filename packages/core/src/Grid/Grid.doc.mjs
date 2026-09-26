@@ -43,6 +43,17 @@ export const docs = {
       {className: 'astryx-grid-span'},
     ],
   },
+  playground: {
+    defaults: {
+      columns: 3,
+      gap: 2,
+      children: [
+        {__element: 'Card', props: {padding: 4}, children: 'Item 1'},
+        {__element: 'Card', props: {padding: 4}, children: 'Item 2'},
+        {__element: 'Card', props: {padding: 4}, children: 'Item 3'},
+      ],
+    },
+  },
   description: 'Grid container with fixed or responsive columns.',
   props: [
     {

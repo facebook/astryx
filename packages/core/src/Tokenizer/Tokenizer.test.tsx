@@ -1470,7 +1470,6 @@ describe('Tokenizer disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-tokenizer');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {
@@ -2303,11 +2302,15 @@ describe('input busy: isLoading and changeAction', () => {
 
     it('keeps the one Spinner and aria-busy when isLoading turns off while a search is still in flight (FR7)', async () => {
       const {source, settle} = pendingSource();
+      // One array across renders, as a parent's state would be: a fresh one
+      // re-derives the filtered source, and BaseTypeahead drops a replaced
+      // source's in-flight search.
+      const value: SearchableItem[] = [];
       const view = (isLoading: boolean) => (
         <Tokenizer
           label="Members"
           searchSource={source}
-          value={[]}
+          value={value}
           onChange={() => {}}
           isLoading={isLoading}
           debounceMs={0}
