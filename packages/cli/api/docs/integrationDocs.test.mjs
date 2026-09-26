@@ -177,6 +177,112 @@ describe('integration-contributed topics', () => {
     expect(extended.data.sections.length).toBe(builtin.data.sections.length + 1);
   }, SLOW);
 
+  it('migrates a real built-in section to a stable ID without duplicating it', async () => {
+    const builtin = await docs('theme');
+    // Readers see a key on every section; the migration case is one whose
+    // source authors no id.
+    const {docs: authored} = await import('../../assets/docs/theme.doc.mjs');
+    const target = authored.sections.find(section => section.id == null);
+    expect(target).toBeDefined();
+    scaffold({
+      'theme-internal.doc.mjs': topic({
+        name: 'theme-internal',
+        extends: 'theme',
+        sections: [
+          {
+            id: 'acme-theme-setup',
+            title: target.title,
+            content: [{type: 'prose', text: 'Use the Acme theme.'}],
+          },
+        ],
+      }),
+    });
+
+    const extended = await docs('theme', undefined, {cwd: tmpDir});
+    expect(extended.data.sections).toHaveLength(builtin.data.sections.length);
+    const matches = extended.data.sections.filter(
+      section => section.title === target.title,
+    );
+    expect(matches).toEqual([
+      expect.objectContaining({
+        id: 'acme-theme-setup',
+        content: [{type: 'prose', text: 'Use the Acme theme.'}],
+      }),
+    ]);
+  }, SLOW);
+
+  it('replaces a real built-in section by the key its index shows', async () => {
+    const index = await docs('theme', undefined, {index: true});
+    const target = index.data.sections[0];
+    scaffold({
+      'theme-internal.doc.mjs': topic({
+        name: 'theme-internal',
+        extends: 'theme',
+        sections: [
+          {
+            id: target.id,
+            title: `${target.title} with Acme`,
+            content: [{type: 'prose', text: 'Acme first.'}],
+          },
+        ],
+      }),
+    });
+
+    const extended = await docs('theme', undefined, {cwd: tmpDir});
+    expect(extended.data.sections).toHaveLength(index.data.sections.length);
+    expect(extended.data.sections.filter(s => s.id === target.id)).toEqual([
+      expect.objectContaining({content: [{type: 'prose', text: 'Acme first.'}]}),
+    ]);
+    const read = await docs('theme', target.id, {cwd: tmpDir});
+    expect(read.data.title).toBe(`${target.title} with Acme`);
+  }, SLOW);
+
+  it.each(['zh', 'dense'])(
+    'replaces translated real sections by their authored titles under --%s',
+    async lang => {
+      const english = await docs('theme');
+      const englishTitles = english.data.sections.map(section => section.title);
+      expect(englishTitles).toEqual(
+        expect.arrayContaining(['Quick Start', 'Theme Props']),
+      );
+      scaffold({
+        'theme-internal.doc.mjs': topic({
+          name: 'theme-internal',
+          extends: 'theme',
+          sections: [
+            {
+              id: 'acme-quick-start',
+              title: 'Quick Start',
+              content: [{type: 'prose', text: 'Acme quick start.'}],
+            },
+            {
+              title: 'Theme Props',
+              content: [{type: 'prose', text: 'Acme props.'}],
+            },
+          ],
+        }),
+      });
+
+      const base = await docs('theme', undefined, {lang});
+      expect(base.data.sections.map(section => section.title)).not.toEqual(
+        englishTitles,
+      );
+      const extended = await docs('theme', undefined, {cwd: tmpDir, lang});
+      expect(extended.data.sections).toHaveLength(base.data.sections.length);
+      expect(
+        extended.data.sections.filter(
+          section => section.id === 'acme-quick-start',
+        ),
+      ).toHaveLength(1);
+      expect(
+        extended.data.sections.filter(
+          section => section.content[0]?.text === 'Acme props.',
+        ),
+      ).toHaveLength(1);
+    },
+    SLOW,
+  );
+
   it('offers the contributed topics as suggestions on an unknown one', async () => {
     scaffold({'deploying.doc.mjs': topic()});
     await expect(docs('nope-not-a-topic', undefined, {cwd: tmpDir})).rejects.toBeInstanceOf(

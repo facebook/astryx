@@ -10,6 +10,16 @@ const meta: Meta<typeof DateTimeInput> = {
   title: 'Core/DateTimeInput',
   component: DateTimeInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date-time field that fits the pointer it is used with. On a mouse or trackpad it renders the existing side-by-side date and time inputs: the date half opens a calendar popover, and the time half accepts typed entry plus optional preset times.\n\n' +
+          "Where the primary pointer is a finger (`pointer: coarse`), the closed control still renders separate Date and Time segments; tapping either segment opens a bottom sheet directly to the matching section. A segmented Date/Time pill stays at the top of the sheet for switching; Date reuses Astryx's custom swipable month picker and month/year wheels, its Save date action advances to Time, and Time uses accessible hour/minute/second wheels with the final Save action. The public props are the same on both surfaces.\n\n" +
+          '**Seeing the touch surface:** open any story on a phone/tablet or in device emulation reporting a coarse pointer. No separate story is needed because the same component chooses the surface at runtime.',
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',
@@ -64,6 +74,12 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+    },
     numberOfMonths: {
       control: 'radio',
       options: [1, 2],
@@ -71,7 +87,8 @@ const meta: Meta<typeof DateTimeInput> = {
     },
     timeIncrement: {
       control: 'number',
-      description: 'Minutes to increment/decrement with arrow keys',
+      description:
+        'Desktop only: minutes to increment/decrement with arrow keys. Mobile touch uses wheels.',
     },
   },
 };
@@ -92,6 +109,23 @@ export const Default: Story = {
   },
 };
 
+export const NarrowContainer: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{width: '320px', maxWidth: '100%'}}>
+        <DateTimeInput {...args} value={value} onChange={setValue} />
+      </div>
+    );
+  },
+  args: {
+    label: 'Meeting time',
+    hasClear: true,
+  },
+};
+
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
@@ -101,6 +135,39 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event time',
+  },
+};
+
+export const NativePickerModes: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateTimeInput
+          label="nativePicker='touch' (default)"
+          description="Native date and compatible time controls on a coarse primary pointer"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <DateTimeInput
+          label="nativePicker='always'"
+          description="Native date and compatible time controls on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <DateTimeInput
+          label="nativePicker='never'"
+          description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
+        />
+      </div>
+    );
   },
 };
 
@@ -338,6 +405,7 @@ export const TwoMonthCalendar: Story = {
   args: {
     label: 'Travel departure',
     numberOfMonths: 2,
+    nativePicker: 'never',
   },
 };
 

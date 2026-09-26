@@ -58,6 +58,12 @@ const meta: Meta<typeof ContextMenu> = {
       control: 'boolean',
       description: 'Disable custom context menu',
     },
+    presentation: {
+      control: 'select',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description:
+        'Cursor popover, BottomSheet, or adaptive compact-touch presentation',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -386,4 +392,89 @@ export const WithSelectableItems: Story = {
       },
     },
   },
+};
+
+export const BottomSheetPresentation: Story = {
+  name: 'Presentation / BottomSheet',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'The real ContextMenu component forced to BottomSheet presentation. Long-press opens this surface on touch; this story opens it with a contextmenu event so the sheet is directly reviewable.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16}}>
+      <ContextMenu
+        data-testid="bottom-sheet-context-menu"
+        presentation="bottom-sheet"
+        label="Document actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {
+            label: 'Duplicate',
+            icon: DocumentDuplicateIcon,
+            onClick: () => {},
+          },
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}>
+        <div {...stylex.props(triggerStyles.area)}>
+          Long-press or right-click for document actions
+        </div>
+      </ContextMenu>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector(
+      '[data-testid="bottom-sheet-context-menu"]',
+    );
+    trigger?.dispatchEvent(
+      new MouseEvent('contextmenu', {bubbles: true, clientX: 40, clientY: 40}),
+    );
+  },
+};
+
+export const AdaptivePresentation: Story = {
+  name: 'Presentation / adaptive',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'Uses the built-in adaptive policy: BottomSheet at 768px and below with a coarse primary pointer, cursor-positioned popover otherwise. Important actions still need a visible MoreMenu or equivalent entry point.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16}}>
+      <ContextMenu
+        presentation="adaptive"
+        label="Document actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}>
+        <div {...stylex.props(triggerStyles.area)}>
+          Long-press or right-click for document actions
+        </div>
+      </ContextMenu>
+    </div>
+  ),
 };

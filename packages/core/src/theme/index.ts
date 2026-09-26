@@ -22,6 +22,7 @@ export {
   defineTheme,
   generateThemeCSS,
   generateOnMediaCSS,
+  generateAdaptationCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -38,12 +39,29 @@ export {
 export type {
   DefineThemeInput,
   DefinedTheme,
+  ResolvedDefinedTheme,
   CoreTokenName,
   TokenName,
   TokenValue,
   ComponentStyleMap,
   StyleOverrides,
 } from './defineTheme';
+
+// Ordered environment-conditioned theme adaptations
+export {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  WIDTH_BREAKPOINT_NAMES,
+} from './themeAdaptations';
+export type {
+  WidthBreakpointName,
+  WidthBreakpoints,
+  ThemeAdaptations,
+  ThemeAdaptationCondition,
+  ThemeAdaptationWidthCondition,
+  ThemeAdaptationRule,
+  ThemeAdaptationValue,
+  ThemeAdaptationTypographyConfig,
+} from './themeAdaptations';
 
 export type {
   SyntaxTokenName,

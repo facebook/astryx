@@ -146,7 +146,7 @@ export default function RootLayout({children, params}) {
         },
         {
           type: 'prose',
-          text: 'In a plain client app, set the same attribute on `<html>` whenever the locale changes. (`getLocaleDirection()` safely returns `\'ltr\'` for anything it doesn\'t recognize, so you can call it with any locale string.)',
+          text: "In a plain client app, set the same attribute on `<html>` whenever the locale changes. (`getLocaleDirection()` safely returns `'ltr'` for anything it doesn't recognize, so you can call it with any locale string.)",
         },
         {
           type: 'prose',
@@ -345,7 +345,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "When you author a component that needs to respond to direction, resolve it from the DOM, not from a render-time JavaScript read, and reach for the lightest tool that works. In priority order:",
+          text: 'When you author a component that needs to respond to direction, resolve it from the DOM, not from a render-time JavaScript read, and reach for the lightest tool that works. In priority order:',
         },
         {
           type: 'heading',
@@ -354,7 +354,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "Use `insetInlineStart`, `paddingInlineEnd`, `marginInline`, and friends instead of physical `left`/`right`. Most mirroring needs nothing more; the browser flips it from the ambient `dir`. The `@astryx/no-physical-properties` ESLint rule enforces this.",
+          text: 'Use `insetInlineStart`, `paddingInlineEnd`, `marginInline`, and friends instead of physical `left`/`right`. Most mirroring needs nothing more; the browser flips it from the ambient `dir`. The `@astryx/no-physical-properties` ESLint rule enforces this.',
         },
         {
           type: 'heading',
@@ -363,7 +363,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "Render one fixed glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only applies under `[dir=\"rtl\"]`). It flips from the ancestor `dir` through the cascade, so it works on the server with no hydration flash. Do not pick `chevronLeft` vs `chevronRight` in JS. This is how Pagination, Calendar, and Carousel handle their chevrons.",
+          text: 'Render one fixed glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only applies under `[dir="rtl"]`). It flips from the ancestor `dir` through the cascade, so it works on the server with no hydration flash. Do not pick `chevronLeft` vs `chevronRight` in JS. This is how Pagination, Calendar, and Carousel handle their chevrons.',
         },
         {
           type: 'code',
@@ -388,7 +388,7 @@ function NextButton() {
         },
         {
           type: 'prose',
-          text: "For things CSS can't express; keyboard arrow-key mapping, drag/scroll math; read direction at interaction time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never during render. The focus primitives (`useListFocus`, `useGridFocus`, `useTreeFocus`) already auto-detect direction from their container, so arrow keys flip for free; don't pass a direction flag to them. (`isRtl` on `useListFocus`/`useGridFocus` is deprecated in favor of auto-detection, and new hooks don't accept it.)",
+          text: "For things CSS can't express; keyboard arrow-key mapping, drag/scroll math; read direction at interaction time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never during render. The focus primitives (`useListFocus`, `useGridFocus`, `useTreeFocus`) already auto-detect direction from their container, so arrow keys flip for free; don't pass a direction flag to them.",
         },
         {
           type: 'heading',

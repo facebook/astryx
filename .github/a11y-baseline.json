@@ -29,24 +29,9 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "ChatComposerInput::Async Search::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
       "key": "ChatComposerInput::Controlled::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "ChatComposerInput::Custom Render Item::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ChatComposerInput::Custom Render::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
     },
     {
       "key": "ChatComposerInput::Disabled::color-contrast",
@@ -54,49 +39,14 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "ChatComposerInput::Grouped Items::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ChatComposerInput::Mention Trigger::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
       "key": "ChatComposerInput::Mention Trigger::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "ChatComposerInput::Multiple Triggers::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
       "key": "ChatComposerInput::Multiple Triggers::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "ChatComposerInput::Slash Commands::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ChatComposerInput::Token Variants::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ChatLayout::Full AI Chat::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ChatLayout::Panel View::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
     },
     {
       "key": "ChatReasoning::Collapsed::color-contrast",
