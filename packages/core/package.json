@@ -624,6 +624,11 @@
       "types": "./dist/utils/index.d.ts",
       "default": "./dist/utils/index.js"
     },
+    "./Markdown/ansi": {
+      "source": "./src/Markdown/ansi/index.ts",
+      "types": "./dist/Markdown/ansi/index.d.ts",
+      "default": "./dist/Markdown/ansi/index.js"
+    },
     "./Markdown/document": {
       "source": "./src/Markdown/document/index.ts",
       "types": "./dist/Markdown/document/index.d.ts",
