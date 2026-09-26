@@ -224,13 +224,19 @@ test, applicable text, and consumer-documentation projections.
   there is no catalog file under a root and no per-item map or list in the
   manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
   compatibility path, not a second authoring convention.
-- **INV25 — Every CLI doc names the topic that reads it.** Each command, API
-  function, schema, and enum doc the CLI ships declares a `namespace`.
-  `cli/commands` and `cli/api` docs are sections of `astryx docs cli`, keyed
-  `commands-<name>` and `api-<name>`; `authoring` docs are sections of
+- **INV25 — Every CLI doc names the group that reads it.** Each command, API
+  function, schema, and enum doc the CLI ships declares a `namespace`. The docs
+  tree adopts `cli/commands` and `cli/api` docs, one route each under
+  `cli/commands` and `cli/api/<kind>s`; `authoring` docs are sections of
   `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
-  CLI doc has no namespace, names one no topic reads, or disagrees with the
+  CLI doc has no namespace, names one nothing reads, or disagrees with the
   authoring list, so every doc the CLI ships stays readable from the CLI.
+- **INV26 — The docs tree gives each doc one home (`spec:AST-044`).** The tree
+  is compiled in `foundation/doc-compiler/tree.mjs` from namespace docs, the
+  guides they place, and the typed docs they adopt; the CLI's own tree files
+  live in `assets/docs/tree/`. A namespace never lists or scans its children.
+  `astryx docs <route>` reads it one level at a time, and `astryx doctor` fails
+  on any tree error diagnostic or unplaced CLI doc.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -251,6 +257,8 @@ updated in the same pull request when it moves an invariant:
   module access to the environment (INV20–INV21);
 - adding a command, API function, schema, or enum doc, or a namespace a CLI
   doc may declare (INV25);
+- adding a docs-tree namespace or guide, or changing how a doc gets its home or
+  its route (INV26);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
 - changing what `integration pack --check` executes, resolves, or proves about

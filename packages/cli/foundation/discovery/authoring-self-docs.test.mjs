@@ -60,17 +60,25 @@ describe('authoring self-docs', () => {
   );
 });
 
-describe('what the authoring docs say about the unbuilt docs graph', () => {
-  it('marks exactly the fields topic loading rejects as not read yet', () => {
+describe('what the authoring docs say about the docs tree', () => {
+  it('marks exactly the fields the docs tree does not read yet', () => {
     const notReadYet = graphFieldsDoc.fields
       .filter(field => /Not read yet/.test(field.description))
       .map(field => field.name);
-    expect(notReadYet.sort()).toEqual([...GRAPH_ONLY_FIELDS].sort());
+    // The tree reads `placement` for the CLI's own docs (spec:AST-044); the
+    // other graph fields are still refused by every topic reader.
+    expect(notReadYet.sort()).toEqual(
+      GRAPH_ONLY_FIELDS.filter(field => field !== 'placement').sort(),
+    );
     for (const field of graphFieldsDoc.fields) {
-      if (notReadYet.includes(field.name)) {
+      if (GRAPH_ONLY_FIELDS.includes(field.name)) {
         expect(field.description).toMatch(/fails to load/);
       }
     }
+    const placement = graphFieldsDoc.fields.find(f => f.name === 'placement');
+    expect(placement.description).toMatch(
+      /Read for the CLI's own namespaces and guides/,
+    );
     expect(graphFieldsDoc.description).toMatch(/not built yet/);
   });
 
@@ -84,8 +92,10 @@ describe('what the authoring docs say about the unbuilt docs graph', () => {
     expect(content.description).toMatch(/fails to load/);
   });
 
-  it('says namespace docs are not loaded yet', () => {
-    expect(namespaceDoc.description).toMatch(/Not loaded yet/);
+  it("says the docs tree reads only the CLI's own namespace docs", () => {
+    expect(namespaceDoc.description).toMatch(
+      /reads only the CLI's own namespace docs/,
+    );
     expect(
       problemsInTopic({
         ...namespaceDoc.examples?.[0],
@@ -93,7 +103,7 @@ describe('what the authoring docs say about the unbuilt docs graph', () => {
         name: 'x',
       }),
     ).toEqual([
-      '"x" is a namespace doc. Only the docs graph reads namespace docs, and it is not built yet; remove this file from the docs directory.',
+      '"x" is a namespace doc. Only the docs tree reads namespace docs, and in this release it reads only the CLI\'s own (spec:AST-044); remove this file from the docs directory.',
     ]);
   });
 });

@@ -77,6 +77,20 @@ export function sectionKey(section) {
 }
 
 /**
+ * A name as a docs-tree route segment: lowercase words joined by hyphens, so
+ * `integrationPackCheck` and `integration pack` both read naturally.
+ * @param {string} name
+ * @returns {string}
+ */
+export function routeSegment(name) {
+  return String(name)
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
  * Problems with the keys of a topic's sections: an authored id that is not a
  * stable key, a title no key derives from, and two sections sharing a key.
  * Keys are never suffixed to make them unique, because readers link to them.

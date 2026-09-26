@@ -23,6 +23,7 @@ import {
   doctor,
   checkAuthoringDocs,
   checkCliDocs,
+  checkDocsTree,
   checkDocsProgressiveDisclosure,
   checkImplicitIntegrations,
   checkProviderIdentity,
@@ -476,7 +477,7 @@ describe('checkCliDocs', () => {
         id: 'cli-docs',
         label: 'CLI docs',
         status: 'pass',
-        message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
       });
     },
     SLOW,
@@ -516,6 +517,66 @@ describe('checkCliDocs', () => {
     },
     SLOW,
   );
+});
+
+describe('checkDocsTree', () => {
+  it(
+    'passes on this repo: every CLI doc in a cli group has one route',
+    async () => {
+      const {loadDocsTree} = await import(
+        '../../foundation/doc-compiler/tree.mjs'
+      );
+      const tree = await loadDocsTree({fresh: true});
+      const nodes = [...tree.nodes.values()];
+      const namespaces = nodes.filter(node => node.kind === 'namespace').length;
+      expect(await checkDocsTree()).toEqual({
+        id: 'docs-tree',
+        label: 'Docs tree',
+        status: 'pass',
+        message: `The docs tree has ${namespaces} namespaces and ${nodes.length - namespaces} docs, each at one route.`,
+      });
+    },
+    SLOW,
+  );
+
+  it('fails on a tree with a broken placement, and names the fix', async () => {
+    const {buildDocsTree} = await import(
+      '../../foundation/doc-compiler/tree.mjs'
+    );
+    const tree = buildDocsTree({
+      namespaces: [
+        {
+          provider: '@acme/kit',
+          source: '@acme/kit/tree/guides.doc.mjs',
+          doc: {
+            type: 'namespace',
+            name: 'guides',
+            title: 'Guides',
+            summary: 'Every guide.',
+            slots: {all: {title: 'All', accepts: {kinds: ['generic']}}},
+          },
+        },
+      ],
+      docs: [
+        {
+          provider: '@acme/kit',
+          source: '@acme/kit/tree/setup.doc.mjs',
+          kind: 'generic',
+          name: 'setup',
+          title: 'Setup',
+          summary: 'Set it up.',
+          group: null,
+          placement: {parent: 'namespace:guidez'},
+        },
+      ],
+    });
+    const c = await checkDocsTree(undefined, {tree});
+    expect(c).toMatchObject({id: 'docs-tree', status: 'fail'});
+    expect(c.message).toContain(
+      '@acme/kit/tree/setup.doc.mjs: placement.parent "namespace:guidez" names no namespace; @acme/kit declares "guides".',
+    );
+    expect(c.fix).toMatch(/a placement names a namespace of its own package/);
+  });
 });
 
 describe('checkAuthoringDocs against the public authoring surface', () => {

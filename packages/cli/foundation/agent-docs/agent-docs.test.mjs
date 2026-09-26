@@ -134,13 +134,22 @@ describe('generateCompressedIndex', () => {
     const line = topicLine(generateCompressedIndex('1.0.0'));
     for (const topic of [
       'getting-started',
-      'cli-integrations',
       'browser-support',
       'styling-libraries',
       'working-with-ai',
     ]) {
       expect(line).toContain(topic);
     }
+  });
+
+  it('points to the CLI docs tree on a line of its own', () => {
+    // The integration guide lives in the docs tree now (cli/integrations), so
+    // the topic line no longer names it; the tree's entry point does.
+    const block = generateCompressedIndex('1.0.0');
+    expect(block).toContain(
+      '  docs cli           commands, API reference, integration authoring (one level at a time)',
+    );
+    expect(topicLine(block)).not.toContain('cli-integrations');
   });
 
   it('lists the topics it is given, so an integration’s reach the agent', () => {

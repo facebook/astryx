@@ -31,14 +31,15 @@ export interface DocPlacement {
 }
 
 /**
- * Graph metadata shared by every authored doc kind. Reserved for the docs
- * graph, which is not built yet: nothing reads these fields, and a reference
- * topic that sets one fails to load.
+ * Tree metadata shared by every authored doc kind. The docs tree reads
+ * `placement` for the CLI's own namespaces and guides (spec:AST-044); nothing
+ * reads `aliases` or `audience` yet. A reference topic outside the docs tree
+ * that sets one fails to load.
  */
 export interface AuthoredDocGraphFields {
-  /** Requested canonical parent in the docs graph. Not read yet. */
+  /** The doc's one parent in the docs tree. Read for the CLI's own docs. */
   placement?: DocPlacement;
-  /** Prior routes or names the docs graph will keep resolving. Not read yet. */
+  /** Prior routes or names the docs tree will keep resolving. Not read yet. */
   aliases?: string[];
   /** Docs bundle audience; omit for public docs. Not read yet. */
   audience?: DocAudience;

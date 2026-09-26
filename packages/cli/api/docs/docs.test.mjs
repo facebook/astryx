@@ -69,6 +69,84 @@ describe('docs() dispatcher routing', () => {
     });
   }, SLOW);
 
+  it('lists the docs tree\'s top-level namespaces after the topics', async () => {
+    const {data} = await docs();
+    const namespaces = data.filter(entry => entry.kind === 'namespace');
+    expect(namespaces.map(entry => entry.topic)).toEqual(['cli']);
+    expect(data.at(-1)?.topic).toBe('cli');
+    expect(data[0].kind).toBeUndefined();
+  }, SLOW);
+
+  it('a namespace route -> docs.node, one level of children', async () => {
+    const r = await docs('cli/api');
+    expect(r.type).toBe('docs.node');
+    expect(r.data).toMatchObject({
+      id: '@astryxdesign/cli/namespace/api',
+      route: 'cli/api',
+      kind: 'namespace',
+      package: '@astryxdesign/cli',
+      breadcrumb: [{route: 'cli', title: 'Astryx CLI'}],
+      content: [],
+    });
+    expect(r.data.slots.flatMap(slot => slot.children.map(c => c.route))).toEqual([
+      'cli/api/functions',
+      'cli/api/schemas',
+      'cli/api/enums',
+    ]);
+  }, SLOW);
+
+  it('a typed doc route -> docs.node with its content', async () => {
+    const r = await docs('cli/api/functions/search');
+    expect(r.type).toBe('docs.node');
+    expect(r.data).toMatchObject({
+      id: '@astryxdesign/cli/function/search',
+      kind: 'function',
+      title: 'search()',
+      slots: [],
+    });
+    expect(r.data.breadcrumb.map(link => link.route)).toEqual([
+      'cli',
+      'cli/api',
+      'cli/api/functions',
+    ]);
+    expect(JSON.stringify(r.data.content)).toContain(
+      '`astryx search` runs it. Read it with `astryx docs cli/commands/search`.',
+    );
+  }, SLOW);
+
+  it('a guide the tree places is a topic, read by its route', async () => {
+    expect((await docs('cli/integrations')).type).toBe('docs.detail');
+    const index = await docs('cli/integrations', undefined, {index: true});
+    expect(index).toMatchObject({type: 'docs.index', data: {name: 'cli/integrations'}});
+    expect((await docs('cli/integrations', 'components')).type).toBe(
+      'docs.detail.section',
+    );
+  }, SLOW);
+
+  it('the guide\'s old flat name is gone', async () => {
+    await expect(docs('cli-integrations')).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_TOPIC',
+    });
+  }, SLOW);
+
+  it('a section of a namespace -> ERR_UNKNOWN_SECTION, naming its children', async () => {
+    const err = await docs('cli', 'commands').catch(e => e);
+    expect(err).toBeInstanceOf(AstryxError);
+    expect(err.code).toBe('ERR_UNKNOWN_SECTION');
+    expect(err.suggestions.map(s => s.name)).toEqual([
+      'cli/integrations',
+      'cli/commands',
+      'cli/api',
+    ]);
+  }, SLOW);
+
+  it('an unknown route suggests the children of the deepest namespace it reaches', async () => {
+    const err = await docs('cli/api/functions/serch').catch(e => e);
+    expect(err.code).toBe('ERR_UNKNOWN_TOPIC');
+    expect(err.suggestions.map(s => s.name)).toContain('cli/api/functions/search');
+    expect(err.suggestions.every(s => s.name.startsWith('cli/api/functions/'))).toBe(true);
+  }, SLOW);
+
   it('non-string topic -> ERR_UNKNOWN_TOPIC (not a raw TypeError)', async () => {
     for (const bad of [123, {}, ['tokens'], true]) {
       const err = await docs(/** @type {any} */ (bad)).catch(e => e);

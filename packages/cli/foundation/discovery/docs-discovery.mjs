@@ -90,6 +90,8 @@ const TOPIC_NAME_RE = /^[\w-]+$/;
  * @property {string} [replaces] the topic this one took the place of
  * @property {Array<{package: string, path: string}>} extensions overlays to
  *   merge onto the base doc, in the order their integrations were configured
+ * @property {boolean} [tree] a guide that only the docs tree reads, by its
+ *   route; never a flat topic
  */
 
 /**
@@ -144,7 +146,10 @@ export const GRAPH_BLOCK_TYPES = new Set([
   'reference',
 ]);
 
-/** Doc fields only the docs graph reads; a topic that sets one fails to load. */
+/**
+ * Doc fields only the docs tree reads. A flat topic that sets one fails to
+ * load; a guide the tree places may set `placement` (spec:AST-044).
+ */
 export const GRAPH_ONLY_FIELDS = ['placement', 'aliases', 'audience'];
 
 /**
@@ -180,14 +185,16 @@ const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
  * where the file that needs fixing can be named.
  *
  * @param {any} doc a parsed doc
+ * @param {{placement?: boolean}} [options] `placement`: the doc is a guide the
+ *   docs tree places, so its `placement` field is read, not rejected
  * @returns {string[]} problems, each already pointed at a place in the doc
  */
-export function problemsInTopic(doc) {
+export function problemsInTopic(doc, {placement = false} = {}) {
   // A namespace doc is valid authoring that only the docs graph reads. Said
   // plainly, instead of as the topic fields it does not have.
   if (doc?.type === 'namespace') {
     return [
-      `"${doc.name}" is a namespace doc. Only the docs graph reads namespace docs, and it is not built yet; remove this file from the docs directory.`,
+      `"${doc.name}" is a namespace doc. Only the docs tree reads namespace docs, and in this release it reads only the CLI's own (spec:AST-044); remove this file from the docs directory.`,
     ];
   }
   /** @type {string[]} */
@@ -203,6 +210,8 @@ export function problemsInTopic(doc) {
     );
   }
   for (const field of GRAPH_ONLY_FIELDS) {
+    // A guide the docs tree places carries `placement`; the tree reads it.
+    if (field === 'placement' && placement) continue;
     if (doc?.[field] != null) {
       problems.push(
         `${field}: requires the compiled graph reader and is not supported by legacy topic readers`,

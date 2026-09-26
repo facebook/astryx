@@ -34,7 +34,12 @@ import {
   docsIndexBytes,
   oversizedDocSections,
 } from '../../foundation/discovery/docs-output-budget.mjs';
-import {compileTopic, lowerTopic, overlayLanguages} from '../docs/_adapter.mjs';
+import {
+  compileTopic,
+  guideEntry,
+  lowerTopic,
+  overlayLanguages,
+} from '../docs/_adapter.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
@@ -882,9 +887,13 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
 const CLI_DOCS_FIX =
   "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
 
+/** How the docs-tree check's problems are fixed. */
+const DOCS_TREE_FIX =
+  'Fix each placement or adoption rule the message names: a placement names a namespace of its own package, one of its slots, and a slot that accepts its kind; exactly one namespace adopts each doc; every route belongs to one doc.';
+
 /**
  * Every command, API function, schema, and enum doc the CLI ships declares a
- * namespace, and the topic that namespace names reads it: `astryx docs cli`
+ * namespace, and something reads it: the docs tree under `astryx docs cli`
  * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
  * @param {DoctorContext | Partial<DoctorContext>} _ctx
  * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
@@ -911,10 +920,9 @@ export async function checkCliDocs(_ctx, options = {}) {
       ...audit.failed.map(
         ({source, error}) => `${source} failed to load: ${error}`,
       ),
-      ...audit.keyProblems.map(problem => `\`astryx docs cli\`: ${problem}`),
       ...audit.oversized.map(
         ({key, bytes}) =>
-          `cli section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+          `CLI doc "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
       ),
     ];
     if (problems.length > 0) {
@@ -930,7 +938,7 @@ export async function checkCliDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
     };
   } catch (err) {
     return {
@@ -938,6 +946,67 @@ export async function checkCliDocs(_ctx, options = {}) {
       label,
       status: 'fail',
       message: `The CLI docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/**
+ * The docs tree builds with no error, and every CLI typed doc in a `cli/...`
+ * group has a route in it (spec:AST-044): each placement names a namespace of
+ * its own package and a slot that accepts it, exactly one namespace adopts
+ * each doc, and each route belongs to one doc.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{tree?: import('../../foundation/doc-compiler/tree.mjs').DocsTree}} [options]
+ *   test seam: a tree to check instead of the CLI's own
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkDocsTree(_ctx, options = {}) {
+  const id = 'docs-tree';
+  const label = 'Docs tree';
+  try {
+    const {loadDocsTree} =
+      await import('../../foundation/doc-compiler/tree.mjs');
+    const tree = options.tree ?? (await loadDocsTree({fresh: true}));
+    const problems = tree.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => `${d.source ?? d.provider ?? 'docs tree'}: ${d.message}`);
+    if (options.tree === undefined) {
+      const {loadCliSelfDocs, CLI_DOC_NAMESPACES} =
+        await import('../../foundation/discovery/cli-self-docs.mjs');
+      const placed = new Set([...tree.nodes.values()].map(node => node.id));
+      for (const {source, doc} of (await loadCliSelfDocs()).loaded) {
+        if (CLI_DOC_NAMESPACES[doc.namespace]?.reader !== 'tree') continue;
+        if (!placed.has(`@astryxdesign/cli/${doc.type}/${doc.name}`)) {
+          problems.push(
+            `${source} has namespace "${doc.namespace}", but no docs-tree namespace adopts it`,
+          );
+        }
+      }
+    }
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: DOCS_TREE_FIX,
+      };
+    }
+    const nodes = [...tree.nodes.values()];
+    const namespaces = nodes.filter(node => node.kind === 'namespace').length;
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `The docs tree has ${namespaces} namespaces and ${nodes.length - namespaces} docs, each at one route.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The docs tree could not be built: ${err instanceof Error ? err.message : String(err)}`,
       fix: 'Reinstall @astryxdesign/cli.',
     };
   }
@@ -965,7 +1034,14 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   let topics = 0;
   const catalog = ctx.docsCatalog;
   if (catalog) {
-    for (const entry of catalog.entries()) {
+    // A guide the docs tree places is a topic read by its route; it is held
+    // to the same budget as every flat topic.
+    const {loadDocsTree} =
+      await import('../../foundation/doc-compiler/tree.mjs');
+    const guides = [...(await loadDocsTree({selfDocs: false})).nodes.values()]
+      .filter(node => node.kind === 'generic')
+      .map(guideEntry);
+    for (const entry of [...catalog.entries(), ...guides]) {
       for (const lang of [null, ...overlayLanguages(entry)]) {
         const where = lang ? `${entry.name} [${lang}]` : entry.name;
         try {
@@ -1101,6 +1177,7 @@ export async function runChecks(options = {}) {
   }
   checks.push(await checkAuthoringDocs(ctx));
   checks.push(await checkCliDocs(ctx));
+  checks.push(await checkDocsTree(ctx));
   checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};

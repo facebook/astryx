@@ -2,8 +2,8 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Read every command and API function with `astryx docs cli`. (#6498)
+[feat] Read the CLI's docs as a tree, one level at a time. (#6498, #6626)
 
-`astryx docs cli` has one section for each command (`commands-<name>`) and for each API function, plus the JSON output envelope, error codes, and response types (`api-<name>`). Every command, API function, schema, and enum doc the CLI ships now declares the `namespace` that reads it, and `astryx doctor` fails when one has none or names one no topic reads.
+`astryx docs cli` lists the CLI's guides and reference. `astryx docs cli/commands` lists every command, `astryx docs cli/api` lists the API's functions, schemas, and enums, and a route such as `astryx docs cli/api/functions/search` prints one doc. `--json` returns `docs.node` for a namespace or typed doc, and `astryx docs` lists the `cli` namespace after the topics. Every command, API function, schema, and enum doc the CLI ships declares the `namespace` that reads it, and `astryx doctor` fails when one has none, names one nothing reads, or has no route in the tree.
 
 @josephfarina

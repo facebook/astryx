@@ -21,16 +21,16 @@ The CLI documents itself, so these commands print what the installed version doe
 
 - `astryx <command> --help`: one command's arguments and options.
 - `astryx manifest --json`: every command, option, and response type, as JSON.
-- `astryx docs cli --index`: one section for each command (`commands-<name>`)
-  and each API function, plus the JSON output envelope, error codes, and
-  response types (`api-<name>`). Read one with `astryx docs cli <key>`, for
-  example `astryx docs cli api-search`.
+- `astryx docs cli`: the CLI's docs tree, one level at a time.
+  `astryx docs cli/commands` lists every command, `astryx docs cli/api` lists
+  the API's functions, schemas, and enums, and a route such as
+  `astryx docs cli/api/functions/search` prints one.
 - `astryx docs authoring --index`: the authoring reference, with one section for
   each file an author writes: the `astryx.config.*` file, the
   `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,
   `TemplateDoc`, `ThemeDoc`, and the rest). Read one section with
   `astryx docs authoring <section>`, for example `astryx docs authoring config`.
-- `astryx docs cli-integrations`: the guide to building an integration package.
+- `astryx docs cli/integrations`: the guide to building an integration package.
 - `astryx docs`: every docs topic, including the design-system guides (for
   example `tokens`, `theme`, and `layout`).
 
@@ -430,6 +430,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `docs.detail`                     | One topic's full ReferenceDoc, with token-ref blocks inlined.                                                                                                                                                                                                                                                                                                                                                                              |
 | `docs.index`                      | One topic's section index (--index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary).                                                                                                                                                                                                                                  |
 | `docs.detail.section`             | One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined.                                                                                                                                                                                                                                                                                                                                                     |
+| `docs.node`                       | One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down) or a typed doc's content.                                                                                                                                                                                                                                               |
 | `blog.list`                       | The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.                                                                                                                                                                                                                                                                                                   |
 | `blog.detail`                     | One post's metadata plus the feed URL and the post's full plaintext body.                                                                                                                                                                                                                                                                                                                                                                  |
 | `discover.list`                   | The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".                                                                                                                                                                                                                                                         |
@@ -677,5 +678,5 @@ For the full authoring walkthrough (component doc format, template packaging
 and `exports` requirements, and codemod authoring), see the guide:
 
 ```bash
-astryx docs cli-integrations
+astryx docs cli/integrations
 ```
