@@ -238,7 +238,18 @@ const styles = stylex.create({
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    minHeight: `${LINE_HEIGHT_PX}px`,
+    // The single-line floor, not just the line-height: `editable` and
+    // `placeholder` both add `spacingVars['--spacing-1']` padding on the
+    // block axis on top of their shared line-height, and normally that's
+    // what keeps the root this tall (the editable region reserves its own
+    // padded box even when empty). A disabled, empty editable stops
+    // reserving that empty line at all in Chromium (contentEditable=false
+    // collapses to just its padding), and the absolutely positioned
+    // placeholder that would otherwise stand in for it doesn't contribute
+    // to layout height — so without this explicit floor accounting for the
+    // same padding, the root shrinks by that padding's height the moment
+    // isDisabled flips true, moving anything bottom-aligned beside it.
+    minHeight: `calc(${LINE_HEIGHT_PX}px + 2 * ${spacingVars['--spacing-1']})`,
   },
   editable: {
     outline: 'none',
