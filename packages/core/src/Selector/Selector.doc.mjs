@@ -188,7 +188,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, options}).',
       required: true,
     },
     {
