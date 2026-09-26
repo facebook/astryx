@@ -32,6 +32,9 @@ verified_by:
     packages/core/src/Markdown/mermaid/mermaid.integration.test.tsx,
     packages/core/src/Markdown/ansi/ansi.test.tsx,
     packages/core/src/Markdown/ansi/ansi.public.test.tsx,
+    packages/core/src/Markdown/shiki/shiki.test.tsx,
+    packages/core/src/Markdown/shiki/shiki.integration.test.tsx,
+    packages/core/src/Markdown/shiki/shiki.public.test.tsx,
     packages/core/src/Markdown/plugins/softBreaks.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
@@ -128,6 +131,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The separately imported `Markdown/ansi` semantic-fence adapter's bounded SGR
   interpretation, terminal-control removal, plain-text DOM and clipboard value,
   themeable palette, CodeBlock behavior, and `markdown-ansi` target.
+- The separately imported `Markdown/shiki` semantic-fence adapter's lazy engine,
+  declared-language ownership, Astryx syntax-theme mapping or one explicit Shiki
+  theme, bounded work,
+  source-validating fallback, source-free diagnostics, and `markdown-shiki`
+  target.
 - Applying the canonical `plugins` protocol in the fixed syntax → immutable
   transform → render order while preserving built-in lexical shields, Core-owned
   semantics, and local readable fallback.
@@ -251,6 +259,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR32 | Importing `@astryxdesign/core/Markdown/katex` provides a `components.math`-compatible renderer without adding KaTeX to the default Markdown bundle. It loads the optional peer after mount, emits KaTeX HTML plus MathML with trusted author commands disabled and third-party strict logging suppressed, never uses a raw authored-HTML sink, and retains delimiter-bearing source when loading or typesetting fails. Failures expose fixed source-free diagnostics. The visible renderer root owns `markdown-katex` with the reflected `display` axis.                                                                                                                                                                                                                                                                                       |
 | FR33 | Importing `@astryxdesign/core/Markdown/mermaid` provides a semantic-fence plugin for exact `mermaid` fences without adding Mermaid to default bundles. `components.code` retains precedence. The plugin preserves the ordinary CodeBlock while loading or after failure, serializes Mermaid's global configuration, locks strict security and SVG-label settings after host configuration, mounts only parsed SVG with active content and unsafe navigation removed, never binds authored interactions, and reports fixed source-free diagnostics. Its visible root owns `markdown-mermaid`.                                                                                                                                                                                                                                                   |
 | FR34 | Importing `@astryxdesign/core/Markdown/ansi` provides a dependency-free semantic-fence plugin for exact `ansi` fences. `components.code` retains precedence. The plugin interprets bounded SGR color and emphasis state, removes terminal control sequences and non-text control characters, renders no authored markup, preserves line boundaries, and gives CodeBlock the resulting plain text as both its DOM content and clipboard value. Hosts can override the complete terminal palette and unlocked CodeBlock options. Its visible root owns `markdown-ansi`.                                                                                                                                                                                                                                                                          |
+| FR35 | Importing `@astryxdesign/core/Markdown/shiki` provides a semantic-fence plugin for an explicit language set without adding Shiki to default bundles. `components.code` retains precedence. The engine loads only after mount; loading, unsupported input, invalid source projections, or tokenization failure preserves the ordinary CodeBlock and emits fixed source-free diagnostics. Successful output uses only source-validating text tokens with safe theme-native classes or one explicitly selected Shiki theme, bounded per-line work, and no raw-HTML sink. Its visible root owns `markdown-shiki`.                                                                                                                                                                                                                                  |
 
 FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
@@ -280,27 +289,28 @@ text. Outside a table cell, inline code retains its authored backslashes.
 
 ### Representative states
 
-| State                   | Required invariant                                                                                                                                                    | Allowed variation                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Default block content   | Every parsed block uses its corresponding current Markdown target.                                                                                                    | Block count, order, density, content width, and alignment.                                        |
-| Custom block renderers  | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                                   | Replacement structure and styling.                                                                |
-| Ordered/unordered list  | List carries `markdown-list`.                                                                                                                                         | Marker kind, start value, item count, and nested content.                                         |
-| Task list               | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.                      | Checked values, item content, and adjacent plain items.                                           |
-| Safe block image        | Default Image carries `markdown-image`, preserves its optional authored title, or a custom image renderer replaces it.                                                | Source, alternative text, and optional title.                                                     |
-| Unsafe block image URL  | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                                   | Alternative text shown by the fallback.                                                           |
-| Inline display          | Document carries `markdown`; no block target renders.                                                                                                                 | Inline text, links, code, citations, plugins, and opt-in inline math.                             |
-| Math renderer absent    | Dollar-delimited source follows the released Markdown grammar and no `math` node or renderer output exists.                                                           | Currency, unmatched delimiters, and ordinary prose.                                               |
-| Math renderer present   | Complete supported delimiters are opaque to Markdown formatting and are passed to the renderer as inert text.                                                         | Inline or block display and any renderer-owned output.                                            |
-| KaTeX adapter           | The optional subpath stays outside default bundles, then produces trusted-command-disabled HTML plus MathML or retains delimiter-bearing source on failure.           | Supported KaTeX options, inline or block display, and caller styling.                             |
-| Mermaid adapter         | Exact `mermaid` fences keep a CodeBlock until strict, non-HTML SVG is ready and keep that fallback on any load, parse, render, or SVG-validation failure.             | Host Mermaid theme/layout configuration and optional fence title.                                 |
-| ANSI adapter            | Exact `ansi` fences remove terminal controls, preserve plain text and line boundaries, and render bounded SGR state through trusted styled CodeBlock tokens.          | Standard, 256-color, true-color, emphasis, reset, custom palette, and CodeBlock options.          |
-| Streaming math          | Incomplete math is withheld; once complete, the streamed nodes equal the full-parse nodes at top level and inside list/blockquote containers.                         | Delimiters and expression text may arrive in separate chunks; source ranges remain optional.      |
-| Plugins omitted         | Released parser unions, AST, DOM, targets, heading IDs, and performance remain unchanged.                                                                             | Omitted or empty list; both are one empty transform pipeline.                                     |
-| Plugins enabled         | Fixed syntax → immutable transform → render order, validated roots, readable fallback, and matching Markdown/Outline heading identity remain invariant.               | Syntax, transforms, renderers, helper execution plans, plugin order, and live post-parse state.   |
-| Prepared block document | The prepared canonical root, renderer ownership, and heading IDs are reused without reparsing or re-transforming; its readonly outline targets the rendered headings. | Source text, parser options, plugins, and resulting blocks/items.                                 |
-| Heading permalinks      | Each top-level default Heading keeps its accessible name and shared ID while an adjacent localized Link targets that exact fragment.                                  | Independent from document presentation; custom and nested headings omit it.                       |
-| Core footnotes          | Resolved references and repeated backlinks form one native fragment graph; unreferenced definitions stay hidden and heading IDs stay fixed.                           | Definition source order, reference repetition, document variant, density, and prepared rendering. |
-| Native frontmatter      | A complete leading block is absent from rendered content and yields typed metadata; unfinished streaming input is withheld.                                           | Metadata schema and values are caller-defined finite data.                                        |
+| State                   | Required invariant                                                                                                                                                    | Allowed variation                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Default block content   | Every parsed block uses its corresponding current Markdown target.                                                                                                    | Block count, order, density, content width, and alignment.                                         |
+| Custom block renderers  | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                                   | Replacement structure and styling.                                                                 |
+| Ordered/unordered list  | List carries `markdown-list`.                                                                                                                                         | Marker kind, start value, item count, and nested content.                                          |
+| Task list               | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.                      | Checked values, item content, and adjacent plain items.                                            |
+| Safe block image        | Default Image carries `markdown-image`, preserves its optional authored title, or a custom image renderer replaces it.                                                | Source, alternative text, and optional title.                                                      |
+| Unsafe block image URL  | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                                   | Alternative text shown by the fallback.                                                            |
+| Inline display          | Document carries `markdown`; no block target renders.                                                                                                                 | Inline text, links, code, citations, plugins, and opt-in inline math.                              |
+| Math renderer absent    | Dollar-delimited source follows the released Markdown grammar and no `math` node or renderer output exists.                                                           | Currency, unmatched delimiters, and ordinary prose.                                                |
+| Math renderer present   | Complete supported delimiters are opaque to Markdown formatting and are passed to the renderer as inert text.                                                         | Inline or block display and any renderer-owned output.                                             |
+| KaTeX adapter           | The optional subpath stays outside default bundles, then produces trusted-command-disabled HTML plus MathML or retains delimiter-bearing source on failure.           | Supported KaTeX options, inline or block display, and caller styling.                              |
+| Mermaid adapter         | Exact `mermaid` fences keep a CodeBlock until strict, non-HTML SVG is ready and keep that fallback on any load, parse, render, or SVG-validation failure.             | Host Mermaid theme/layout configuration and optional fence title.                                  |
+| ANSI adapter            | Exact `ansi` fences remove terminal controls, preserve plain text and line boundaries, and render bounded SGR state through trusted styled CodeBlock tokens.          | Standard, 256-color, true-color, emphasis, reset, custom palette, and CodeBlock options.           |
+| Shiki adapter           | Configured languages retain an ordinary CodeBlock until lazy source-validating tokens are ready; failures never replace readable code.                                | Default or explicit languages, Astryx or selected Shiki theme, work bounds, and CodeBlock options. |
+| Streaming math          | Incomplete math is withheld; once complete, the streamed nodes equal the full-parse nodes at top level and inside list/blockquote containers.                         | Delimiters and expression text may arrive in separate chunks; source ranges remain optional.       |
+| Plugins omitted         | Released parser unions, AST, DOM, targets, heading IDs, and performance remain unchanged.                                                                             | Omitted or empty list; both are one empty transform pipeline.                                      |
+| Plugins enabled         | Fixed syntax → immutable transform → render order, validated roots, readable fallback, and matching Markdown/Outline heading identity remain invariant.               | Syntax, transforms, renderers, helper execution plans, plugin order, and live post-parse state.    |
+| Prepared block document | The prepared canonical root, renderer ownership, and heading IDs are reused without reparsing or re-transforming; its readonly outline targets the rendered headings. | Source text, parser options, plugins, and resulting blocks/items.                                  |
+| Heading permalinks      | Each top-level default Heading keeps its accessible name and shared ID while an adjacent localized Link targets that exact fragment.                                  | Independent from document presentation; custom and nested headings omit it.                        |
+| Core footnotes          | Resolved references and repeated backlinks form one native fragment graph; unreferenced definitions stay hidden and heading IDs stay fixed.                           | Definition source order, reference repetition, document variant, density, and prepared rendering.  |
+| Native frontmatter      | A complete leading block is absent from rendered content and yields typed metadata; unfinished streaming input is withheld.                                           | Metadata schema and values are caller-defined finite data.                                         |
 
 ### Transformation and precedence order
 
@@ -357,22 +367,23 @@ required accessible meaning or make meaning color-only.
 
 ## Design relationships
 
-| Anatomy or state     | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
-| -------------------- | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Document             | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
-| Heading              | Presents one parsed heading; an optional permalink targets its shared ID.          | Current source and public docs | Prominent      | FR2, FR3, FR5      |
-| Paragraph            | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
-| List                 | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
-| Code block           | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
-| Blockquote           | Presents quoted block content on the default path.                                 | Current source and public docs | Prominent      | FR2, FR3           |
-| Table                | Presents parsed rows and columns in a keyboard-scrollable block wrapper.           | Current source and public docs | Prominent      | FR2                |
-| Divider              | Presents a horizontal separation between blocks.                                   | Current source and public docs | Supporting     | FR2, FR3           |
-| Image                | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
-| Footnote section     | Presents referenced definitions as compact end matter with native return links.    | Module contract                | Supporting     | FR31               |
-| KaTeX expression     | Typesets opted-in math through the separately imported optional adapter.           | Component contract             | Supporting     | FR32               |
-| Mermaid diagram      | Renders an opted-in semantic fence as inert SVG with source fallback.              | Component contract             | Prominent      | FR33               |
-| ANSI terminal output | Renders opted-in terminal styling around plain, copyable CodeBlock text.           | Component contract             | Prominent      | FR34               |
-| Math                 | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
+| Anatomy or state       | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
+| ---------------------- | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Document               | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
+| Heading                | Presents one parsed heading; an optional permalink targets its shared ID.          | Current source and public docs | Prominent      | FR2, FR3, FR5      |
+| Paragraph              | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
+| List                   | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
+| Code block             | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
+| Blockquote             | Presents quoted block content on the default path.                                 | Current source and public docs | Prominent      | FR2, FR3           |
+| Table                  | Presents parsed rows and columns in a keyboard-scrollable block wrapper.           | Current source and public docs | Prominent      | FR2                |
+| Divider                | Presents a horizontal separation between blocks.                                   | Current source and public docs | Supporting     | FR2, FR3           |
+| Image                  | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
+| Footnote section       | Presents referenced definitions as compact end matter with native return links.    | Module contract                | Supporting     | FR31               |
+| KaTeX expression       | Typesets opted-in math through the separately imported optional adapter.           | Component contract             | Supporting     | FR32               |
+| Mermaid diagram        | Renders an opted-in semantic fence as inert SVG with source fallback.              | Component contract             | Prominent      | FR33               |
+| ANSI terminal output   | Renders opted-in terminal styling around plain, copyable CodeBlock text.           | Component contract             | Prominent      | FR34               |
+| Shiki-highlighted code | Renders opted-in grammar tokens while retaining the CodeBlock interaction shell.   | Component contract             | Prominent      | FR35               |
+| Math                   | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
 
 Custom renderers replace the existing default parts rather than becoming nested
 Markdown anatomy. The opt-in math renderer is also not default anatomy and gets no
@@ -397,14 +408,15 @@ block renderer. The Document remains Markdown-owned in every display mode.
   "Footnote section": {"target": "markdown-footnotes"},
   "KaTeX expression": {"target": "markdown-katex"},
   "Mermaid diagram": {"target": "markdown-mermaid"},
-  "ANSI terminal output": {"target": "markdown-ansi"}
+  "ANSI terminal output": {"target": "markdown-ansi"},
+  "Shiki-highlighted code": {"target": "markdown-shiki"}
 }
 ```
 
 The map records nine established targets plus the optional `markdown-footnotes`,
-separately imported `markdown-katex`, `markdown-mermaid`, and `markdown-ansi`
-targets. For Heading, Paragraph, Code block, Blockquote, Divider, and safe
-Image, a custom
+separately imported `markdown-katex`, `markdown-mermaid`, `markdown-ansi`, and
+`markdown-shiki` targets. For Heading, Paragraph, Code block, Blockquote,
+Divider, and safe Image, a custom
 renderer replaces the default part and therefore replaces its local target. The
 `markdown-codeblock` spelling is a released compatibility anomaly: the current
 naming rule would produce `markdown-code-block`, but shipped targets are frozen
