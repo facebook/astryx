@@ -611,6 +611,18 @@
     "defaultMessage": "Row status",
     "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
   },
+  "@astryx.table.selection.bulkActionsLabel": {
+    "defaultMessage": "Bulk actions",
+    "description": "Accessible name for the contextual Toolbar shown while Table rows are selected."
+  },
+  "@astryx.table.selection.clearAll": {
+    "defaultMessage": "Unselect All",
+    "description": "Visible button label that clears the complete controlled Table row selection, including keys outside the current view."
+  },
+  "@astryx.table.selection.selectedCount": {
+    "defaultMessage": "{count, number} selected",
+    "description": "Visible status in TableSelectionToolbar showing the number of selected rows."
+  },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
     "description": "Aria label for the \"select all rows\" checkbox in a Table header."

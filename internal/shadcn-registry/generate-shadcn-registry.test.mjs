@@ -314,6 +314,40 @@ describe('buildShadcnRegistry', () => {
     expect(counts.skippedUnpublishedBlocks).toBe(1);
   });
 
+  it('omits production blocks that import an unpublished named component', () => {
+    const root = mkdtempSync(
+      path.join(tmpdir(), 'astryx-shadcn-unpublished-component-'),
+    );
+    const outDir = path.join(root, 'shadcn');
+    try {
+      const input = fixture();
+      input.blocks.push({
+        ...input.blocks[0],
+        dirName: 'ButtonFuture',
+        name: 'Button — Future',
+        displayName: 'Button — Future',
+        componentsUsed: ['Button', 'FutureButton'],
+        source:
+          "import {Button, FutureButton} from '@astryxdesign/core/Button';\n" +
+          'export default function ButtonFuture() { return <><Button label="Save" /><FutureButton /></>; }\n',
+      });
+
+      const result = generateShadcnRegistryForTarget({
+        target: 'latest',
+        outDir,
+        ...input,
+      });
+
+      expect(result.total).toBe(3);
+      expect(result.skippedUnpublishedBlocks).toBe(1);
+      expect(
+        existsSync(path.join(outDir, 'showcases', 'button', 'future.json')),
+      ).toBe(false);
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('writes canonical nested paths and compatibility aliases', () => {
     const outDir = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-routes-'));
     try {
