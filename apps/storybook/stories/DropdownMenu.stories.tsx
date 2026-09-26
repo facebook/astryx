@@ -485,8 +485,9 @@ export const CustomItemRender: Story = {
   ),
 };
 
-// Icon-only trigger — renders as a square icon button (e.g., "⋯" menu)
+// Label-hidden icon trigger with the default chevron.
 export const IconOnly: Story = {
+  tags: ['visual-baseline'],
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
       <DropdownMenu
@@ -494,6 +495,7 @@ export const IconOnly: Story = {
           label: 'More options',
           icon: <EllipsisHorizontalIcon />,
           variant: 'ghost',
+          size: 'sm',
           isIconOnly: true,
         }}
         items={[
@@ -510,12 +512,23 @@ export const IconOnly: Story = {
           label: 'Settings',
           icon: <Cog6ToothIcon />,
           variant: 'secondary',
+          size: 'md',
           isIconOnly: true,
         }}
         items={[
           {label: 'Preferences', onClick: () => console.log('Preferences')},
           {label: 'Account', onClick: () => console.log('Account')},
         ]}
+      />
+      <DropdownMenu
+        button={{
+          label: 'Search options',
+          icon: <MagnifyingGlassIcon />,
+          variant: 'primary',
+          size: 'lg',
+          isIconOnly: true,
+        }}
+        items={[{label: 'Search projects'}, {label: 'Search people'}]}
       />
     </div>
   ),
