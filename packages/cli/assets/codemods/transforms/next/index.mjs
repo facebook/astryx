@@ -7,14 +7,14 @@
  * this file into the resolved version folder.
  */
 
-import renameDropdownMenuRadioDotTarget, {
-  meta as renameDropdownMenuRadioDotTargetMeta,
-} from './rename-dropdown-menu-radio-dot-target.mjs';
+import migrateThemeCatalogToDescriptors, {
+  meta as migrateThemeCatalogToDescriptorsMeta,
+} from './migrate-theme-catalog-to-descriptors.mjs';
 
 export default [
   {
-    name: 'rename-dropdown-menu-radio-dot-target',
-    transform: renameDropdownMenuRadioDotTarget,
-    meta: renameDropdownMenuRadioDotTargetMeta,
+    name: 'migrate-theme-catalog-to-descriptors',
+    transform: migrateThemeCatalogToDescriptors,
+    meta: migrateThemeCatalogToDescriptorsMeta,
   },
 ];

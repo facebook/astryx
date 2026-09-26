@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {Chart, bar, ChartGrid, ChartAxis, currency} from '@astryxdesign/charts';
 import {monthlyData, groupedStackData, profitLossData} from './_data';
+import {useLocale} from '@astryxdesign/core';
 
 const meta: Meta<typeof Chart> = {
   title: 'Charts/Bar',
@@ -18,23 +19,26 @@ const axes = (
 );
 
 export const Simple: StoryObj = {
-  render: () => (
-    <Chart
-      data={monthlyData}
-      xKey="month"
-      title="Monthly Revenue"
-      series={[bar('revenue', {color: '#3b82f6'})]}
-      tooltip
-      grid={<ChartGrid />}
-      axes={
-        <>
-          <ChartAxis position="bottom" />
-          <ChartAxis position="left" tickFormat={currency()} />
-        </>
-      }
-      height={300}
-    />
-  ),
+  render: () => {
+    const locale = useLocale();
+    return (
+      <Chart
+        data={monthlyData}
+        xKey="month"
+        title="Monthly Revenue"
+        series={[bar('revenue', {color: '#3b82f6'})]}
+        tooltip
+        grid={<ChartGrid />}
+        axes={
+          <>
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" tickFormat={currency('$', locale)} />
+          </>
+        }
+        height={300}
+      />
+    );
+  },
 };
 
 export const Stacked: StoryObj = {

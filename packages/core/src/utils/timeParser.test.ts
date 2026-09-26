@@ -135,6 +135,9 @@ describe('parseTimeInput', () => {
   it('parses compact formats', () => {
     expect(parseTimeInput('1430')).toBe('14:30');
     expect(parseTimeInput('0000')).toBe('00:00');
+    expect(parseTimeInput('0230pm')).toBe('14:30');
+    expect(parseTimeInput('1230am')).toBe('00:30');
+    expect(parseTimeInput('023045pm', true)).toBe('14:30:45');
   });
 
   it('parses hour-only with meridiem', () => {
@@ -259,7 +262,9 @@ describe('adjustTime', () => {
 
   it('wraps large negative deltas in constant time', () => {
     expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7)).toBe('10:00');
-    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7 - 30)).toBe('09:30');
+    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7 - 30)).toBe(
+      '09:30',
+    );
   });
 
   it('adds minutes', () => {

@@ -58,7 +58,7 @@ describe('warnOnIntegrationIssues', () => {
     expect(errLines).toHaveLength(1);
     expect(errLines[0]).toBe(
       'Warning: @acme/widgets has 1 integration issue(s). ' +
-        'Run: astryx validate-integration @acme/widgets',
+        'Run: astryx doctor integration validate @acme/widgets',
     );
   });
 
@@ -66,6 +66,23 @@ describe('warnOnIntegrationIssues', () => {
     const integration = loaded({components: 'does-not-exist'});
     await warnOnIntegrationIssues([integration], {json: true});
     expect(errLines).toHaveLength(0);
+  });
+
+  it('warns for a manifest that failed to load, which declares no roots', async () => {
+    // loadIntegrations records __loadError and no contribution roots, so every
+    // on-disk check finds nothing — without the load error itself counting as
+    // an issue, a stale manifest is silent everywhere.
+    const integration = {
+      ...loaded({name: '@acme/stale'}),
+      __loadError: 'createIntegration is not a function',
+    };
+    await warnOnIntegrationIssues([integration], {json: false});
+
+    expect(errLines).toHaveLength(1);
+    expect(errLines[0]).toBe(
+      'Warning: @acme/stale has 1 integration issue(s). ' +
+        'Run: astryx doctor integration validate @acme/stale',
+    );
   });
 
   it('emits nothing for an integration with no issues', async () => {

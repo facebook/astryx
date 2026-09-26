@@ -20,7 +20,12 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {Command} from 'commander';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {installJsonShim} from './json-shim.mjs';
+import {setJsonMode} from '../../../foundation/response/json.mjs';
 
 function parseJson(stdout) {
   return JSON.parse(stdout);
@@ -61,7 +66,7 @@ describe('--json shim: --help renders JSON envelope', () => {
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('help');
     expect(parsed.data.command).toBe('astryx theme build');
-    expect(parsed.data.usage).toMatch(/<file>/);
+    expect(parsed.data.usage).toMatch(/<files\.\.\.>/);
   });
 });
 
@@ -205,5 +210,83 @@ describe('--json shim: stdout discipline under --json', () => {
       const {stderr} = await runCli(args);
       expect(stderr, `stderr should be empty for: ${args.join(' ')}`).toBe('');
     }
+  });
+});
+
+describe('--json shim: help shown for a failed invocation is an error envelope', () => {
+  it('astryx help bogus --json emits ERR_UNKNOWN_COMMAND, exit 1', async () => {
+    const {status, stdout, stderr} = await runCli(['help', 'bogus', '--json']);
+    expect(status).toBe(1);
+    expect(stderr).toBe('');
+    const parsed = parseJson(stdout);
+    expect(parsed).not.toHaveProperty('type');
+    expect(parsed.apiVersion).toBe(1);
+    expect(parsed.code).toBe('ERR_UNKNOWN_COMMAND');
+    expect(parsed.error).toMatch(/bogus/);
+  });
+
+  it('astryx layout --json (group, no subcommand) emits ERR_MISSING_ARGUMENT, exit 1', async () => {
+    const {status, stdout, stderr} = await runCli(['layout', '--json']);
+    expect(status).toBe(1);
+    expect(stderr).toBe('');
+    const parsed = parseJson(stdout);
+    expect(parsed).not.toHaveProperty('type');
+    expect(parsed.code).toBe('ERR_MISSING_ARGUMENT');
+    expect(parsed.suggestions.map((s) => s.name)).toContain('layout expand');
+  });
+
+  it('astryx layout (no --json) still prints help to stderr, exit 1', async () => {
+    const {status, stdout, stderr} = await runCli(['layout']);
+    expect(status).toBe(1);
+    expect(stdout).toBe('');
+    expect(stderr).toMatch(/Usage: astryx layout/);
+  });
+
+  it('the real binary emits the same envelope for help bogus --json', () => {
+    // One program per process, so the root's own outputHelp patch is used here.
+    const bin = fileURLToPath(new URL('../bin/astryx.mjs', import.meta.url));
+    const res = spawnSync(process.execPath, [bin, 'help', 'bogus', '--json'], {
+      encoding: 'utf-8',
+      timeout: 20_000,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toBe('');
+    const parsed = parseJson(res.stdout);
+    expect(parsed).not.toHaveProperty('type');
+    expect(parsed.code).toBe('ERR_UNKNOWN_COMMAND');
+  });
+
+  it('a group added after install gets the same error envelope', () => {
+    const program = new Command('astryx');
+    installJsonShim(program);
+    // Added later, so only the prototype-level patch covers its outputHelp.
+    const late = new Command('late');
+    late.command('child');
+    program.addCommand(late);
+    /** @type {string[]} */
+    const writes = [];
+    const origWrite = process.stdout.write;
+    // @ts-expect-error - test-only capture
+    process.stdout.write = (chunk) => writes.push(String(chunk)) > 0;
+    setJsonMode(true);
+    delete process.__xdsJsonHandled;
+    try {
+      late.outputHelp({error: true});
+    } finally {
+      process.stdout.write = origWrite;
+      setJsonMode(false);
+      delete process.__xdsJsonHandled;
+    }
+    const parsed = parseJson(writes.join(''));
+    expect(parsed.code).toBe('ERR_MISSING_ARGUMENT');
+    expect(parsed.suggestions).toEqual([{name: 'late child', reason: 'available subcommand'}]);
+  });
+
+  it('astryx help layout --json still emits the help envelope, exit 0', async () => {
+    const {status, stdout} = await runCli(['help', 'layout', '--json']);
+    expect(status).toBe(0);
+    const parsed = parseJson(stdout);
+    expect(parsed.type).toBe('help');
+    expect(parsed.data.command).toBe('astryx layout');
   });
 });

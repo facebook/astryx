@@ -159,6 +159,25 @@ describe('useInputStatusIcon — no dangling aria-describedby (WCAG 1.3.1)', () 
     ).not.toBeInTheDocument();
     expectNoDanglingDescribedBy(container);
   });
+
+  it('keeps the tooltip status button interactive inside a non-interactive trailing slot', () => {
+    // TextArea positions its trailing slot as an absolute overlay with
+    // `pointer-events: none` (correct for the decorative spinner/icon it was
+    // built for). The focusable status button owns its own interactivity so
+    // hover still opens the tooltip there — keyboard focus always worked, the
+    // pointer path did not until the button set `pointer-events: auto`.
+    render(
+      <TextArea
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const statusButton = screen.getByRole('button', {name: 'Error details'});
+    expect(statusButton).toHaveStyle({pointerEvents: 'auto'});
+  });
 });
 
 describe('useInputStatusIcon — input-status-icon theme target', () => {

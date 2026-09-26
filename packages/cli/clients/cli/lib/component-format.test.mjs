@@ -1,7 +1,44 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {formatBrief, formatFull} from './component-format.mjs';
+import {formatBrief, formatCompact, formatFull} from './component-format.mjs';
+
+describe('component accessibility guidance', () => {
+  const docs = {
+    name: 'Button',
+    description: 'An action.',
+    usage: {
+      accessibility: [
+        {name: 'Loading', description: 'Expose aria-busy and block duplicate activation.'},
+      ],
+    },
+    props: [],
+  };
+
+  it('renders a dedicated section in full output', () => {
+    const out = formatFull(docs);
+    expect(out).toContain('## Accessibility');
+    expect(out).toContain('- **Loading:** Expose aria-busy and block duplicate activation.');
+  });
+
+  it('keeps accessibility guidance in compact agent output', () => {
+    const out = formatCompact(docs, 'Button');
+    expect(out).toContain('## Accessibility');
+    expect(out).toContain('Expose aria-busy and block duplicate activation.');
+  });
+
+  it('omits the section when a component has no authored requirements', () => {
+    expect(formatFull({...docs, usage: {}})).not.toContain('## Accessibility');
+  });
+
+  it('ignores legacy non-array accessibility content', () => {
+    const legacyDocs = {...docs, usage: {accessibility: 'Follow WCAG guidance.'}};
+
+    expect(() => formatFull(legacyDocs)).not.toThrow();
+    expect(formatFull(legacyDocs)).not.toContain('## Accessibility');
+    expect(formatCompact(legacyDocs, 'Button')).not.toContain('## Accessibility');
+  });
+});
 
 describe('formatFull sub-component rendering', () => {
   // Regression guard: sub-components are sometimes declared as a bare
@@ -78,7 +115,7 @@ describe('formatFull theming override keys', () => {
       description: 'A table.',
       theming: {
         targets: [
-          {className: 'astryx-base-table'},
+          {className: 'astryx-table-header'},
           {className: 'astryx-table-cell'},
         ],
       },
@@ -86,11 +123,42 @@ describe('formatFull theming override keys', () => {
     const out = formatFull(docs);
 
     // Correct keys: class name minus the astryx- prefix.
-    expect(out).toContain("'base-table': {");
+    expect(out).toContain("'table-header': {");
     expect(out).toContain("'table-cell': {");
     // The verbatim DOM class names must not be advertised as override keys.
-    expect(out).not.toContain("'astryx-base-table': {");
+    expect(out).not.toContain("'astryx-table-header': {");
     expect(out).not.toContain("'astryx-table-cell': {");
+  });
+});
+
+describe('deprecated theming target guidance', () => {
+  const docs = {
+    name: 'Example',
+    description: 'An example.',
+    theming: {
+      targets: [
+        {className: 'astryx-old-target', deprecatedFor: 'new-target'},
+        {className: 'astryx-new-target'},
+      ],
+    },
+  };
+
+  it('names the canonical replacement in full component docs', () => {
+    expect(formatFull(docs)).toContain(
+      '`astryx-old-target` _(deprecated; use `new-target`)_',
+    );
+  });
+
+  it('excludes deprecated targets from copyable defineTheme examples', () => {
+    const out = formatFull(docs);
+    expect(out).not.toContain("'old-target': {");
+    expect(out).toContain("'new-target': {");
+  });
+
+  it('keeps the replacement in brief agent guidance', () => {
+    expect(formatBrief(docs, 'Example')).toContain(
+      'astryx-old-target deprecated->new-target',
+    );
   });
 });
 

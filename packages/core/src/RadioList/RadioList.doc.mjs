@@ -6,12 +6,12 @@ export const docs = {
   name: 'RadioList',
   displayName: 'Radio List',
   group: 'Radio',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'astryx-radio-list-item'},
+      {className: 'astryx-radio-list-item', visualProps: ['size'], states: ['selected', 'disabled']},
       {className: 'astryx-radio-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
       {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
       {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'radio-indicator'},
@@ -132,6 +132,17 @@ export const docs = {
     {name: 'RadioListItem'},
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Radio circle',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Selected'],
+        description:
+          'The circle edge (unselected) and fill (selected) must have at least 3:1 contrast with the surface behind them. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     description:
       'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [

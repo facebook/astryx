@@ -35,6 +35,8 @@
  */
 
 import {API_VERSION} from '../../../foundation/response/json.mjs';
+import {commandDocsOf} from './define-command.mjs';
+import {doc as manifestDoc} from '../commands/manifest.doc.mjs';
 
 /**
  * Response `type` discriminators each fully-qualified command can emit in
@@ -46,6 +48,7 @@ import {API_VERSION} from '../../../foundation/response/json.mjs';
  * @type {Record<string, string[]>}
  */
 export const RESPONSE_TYPES = {
+  init: ['init.run', 'init.remove'],
   component: [
     'component.list',
     'component.detail',
@@ -54,7 +57,7 @@ export const RESPONSE_TYPES = {
     'component.detail.showcase',
     'component.detail.blocks',
   ],
-  docs: ['docs.list', 'docs.detail', 'docs.detail.section'],
+  docs: ['docs.list', 'docs.index', 'docs.detail', 'docs.detail.section'],
   blog: ['blog.list', 'blog.detail'],
   discover: [
     'discover.list',
@@ -65,20 +68,30 @@ export const RESPONSE_TYPES = {
   search: ['search'],
   build: ['build.help', 'build.kit'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
+  'gap-report': ['gap-report.categories', 'gap-report.file'],
   template: [
     'template.list',
     'template.show',
     'template.skeleton',
     'template.copy',
+    'template.cdn',
   ],
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
-  'theme build': ['theme.build', 'theme.build.check'],
+  'theme build': ['theme.build', 'theme.build.check', 'theme.build.batch'],
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],
+  'theme template': ['theme.template'],
+  'theme targets': ['theme.targets'],
+  'theme palette generate': ['theme.palette.generate'],
+  'integration add': ['integration.add'],
+  'integration pack': ['integration.pack-check'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
-  'validate-integration': ['integration.validate'],
+  'doctor integration validate': ['integration.validate'],
+  'doctor integration templates': ['integration.template-conflicts'],
+  'doctor integration components': ['integration.component-conflicts'],
+  'doctor integration docs': ['integration.doc-conflicts'],
   'layout expand': ['layout.expand'],
   'layout check': ['layout.check'],
   'layout grammar': ['layout.grammar'],
@@ -94,7 +107,12 @@ const EXAMPLES = {
     'astryx component XDSButton',
     'astryx component XDSButton --props --json',
   ],
-  docs: ['astryx docs', 'astryx docs spacing --json'],
+  docs: [
+    'astryx docs',
+    'astryx docs spacing --json',
+    'astryx docs theme --index',
+    'astryx docs theme quick-start',
+  ],
   discover: ['astryx discover --json'],
   search: [
     'astryx search modal --json',
@@ -102,7 +120,15 @@ const EXAMPLES = {
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
-  template: ['astryx template --json', 'astryx template dashboard ./src/app'],
+  'gap-report': [
+    'astryx gap-report --list-categories',
+    "astryx gap-report Button --category docs_gap --reason 'Missing keyboard example'",
+  ],
+  template: [
+    'astryx template --json',
+    'astryx template dashboard ./src/app',
+    'astryx template --cdn',
+  ],
   hook: ['astryx hook', 'astryx hook useFocusTrap --json'],
   'theme build': [
     'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
@@ -113,14 +139,40 @@ const EXAMPLES = {
     'astryx theme add matcha',
     'astryx theme add matcha ./src/themes/matcha',
   ],
+  'theme template': ['astryx theme template', 'astryx theme template --json'],
+  'theme targets': [
+    'astryx theme targets Switch',
+    'astryx --json theme targets',
+  ],
+  'theme palette generate': [
+    'astryx theme palette generate palette.config.json',
+    'astryx theme palette generate palette.config.json --out ocean.palette.json',
+  ],
+  'integration add': [
+    'astryx integration add component AcmeWidget',
+    'astryx integration add doc deploying --dry-run --json',
+  ],
+  'integration pack': ['astryx integration pack --check --json'],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],
-  'validate-integration': [
-    'astryx validate-integration',
-    'astryx validate-integration @acme/widgets --json',
+  'doctor integration validate': [
+    'astryx doctor integration validate',
+    'astryx doctor integration validate @acme/widgets --json',
   ],
-  init: ['astryx init'],
+  'doctor integration templates': [
+    'astryx doctor integration templates',
+    'astryx doctor integration templates @acme/widgets --json',
+  ],
+  'doctor integration components': [
+    'astryx doctor integration components',
+    'astryx doctor integration components @acme/widgets --json',
+  ],
+  'doctor integration docs': [
+    'astryx doctor integration docs',
+    'astryx doctor integration docs @acme/widgets --json',
+  ],
+  init: ['astryx init', 'astryx init --all --json'],
   'layout expand': [
     `astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`,
   ],
@@ -188,6 +240,18 @@ function fullName(cmd, root) {
 }
 
 /**
+ * The docs a command was built from. `manifest` is registered by hand in
+ * index.mjs, so its CommandDoc is read here.
+ * @param {import('commander').Command} cmd
+ * @param {string} name
+ */
+function docsOf(cmd, name) {
+  return (
+    commandDocsOf(cmd) ?? (name === 'manifest' ? {doc: manifestDoc} : undefined)
+  );
+}
+
+/**
  * Recursively describe a Commander command and its subcommands.
  *
  * @param {import('commander').Command} cmd
@@ -201,6 +265,8 @@ function describeCommand(cmd, root, jsonSupported) {
   // (e.g. the postinstall shim) — agents never invoke these directly.
   // `_hidden` is a Commander internal not present on its public types.
   if (!name || /** @type {any} */ (cmd)._hidden || name === 'help') return null;
+
+  const docs = docsOf(cmd, name);
 
   const subcommands = /** @type {object[]} */ (
     (cmd.commands || [])
@@ -233,6 +299,12 @@ function describeCommand(cmd, root, jsonSupported) {
   if (RESPONSE_TYPES[name]) entry.responseTypes = [...RESPONSE_TYPES[name]];
 
   if (EXAMPLES[name]) entry.examples = [...EXAMPLES[name]];
+
+  const exitCodes = (docs?.doc.exitCodes ?? []).map(({code, when}) => ({
+    code,
+    when,
+  }));
+  if (exitCodes.length > 0) entry.exitCodes = exitCodes;
 
   // Sort subcommands by name for a stable, agent-facing contract — the same
   // guarantee the top-level command list makes. Otherwise Commander

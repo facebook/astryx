@@ -40,7 +40,7 @@ const INPUT_STATUS_VARS = {
  * the stone neutral palette doesn't carry a distinct green stop.
  */
 const stoneSyntax = defineSyntaxTheme({
-  name: 'xds-stone',
+  name: 'astryx-stone',
   tokens: {
     keyword: ['#645a72', '#b2a7c1'], // Purple T40 / T70
     string: ['#4e6357', '#9bb19a'], // Teal T40 / Green T70
@@ -105,7 +105,9 @@ export const stoneTheme = defineTheme({
 
     // Text — H=291
     '--color-text-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
-    '--color-text-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    // T40/T70 keeps normal secondary text above AA on every stone surface,
+    // including the muted and tinted fills that components pair it with.
+    '--color-text-secondary': ['#5e5e63', '#ababb0'], // Stone Neutral T40 / T70
     '--color-text-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
     '--color-text-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-on-dark': '#FFFFFF',
@@ -219,8 +221,11 @@ export const stoneTheme = defineTheme({
 
     // =========================================================================
     // Radius — clean and subtle
+    //   --radius-none and --radius-full are always fixed and must never be
+    //   scaled by a theme (see defineTheme's radius config docs) — 0 and
+    //   9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.125rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.25rem',
     '--radius-element': '0.5rem',
     '--radius-container': '0.75rem',
@@ -319,7 +324,7 @@ export const stoneTheme = defineTheme({
     // the same color family as the matching status surface). Dark = T70.
     // Hexes from the preview Tonal Palettes ramp. accent (default) +
     // indeterminate both route to blue for the in-progress / loading look.
-    'progressbar-fill': {
+    'progress-bar-fill': {
       'variant:accent': {
         backgroundColor: 'light-dark(#d7e4f5, #a0acbc)', // Blue T90 / T70
       },
@@ -336,7 +341,7 @@ export const stoneTheme = defineTheme({
 
     // Track default --color-background-muted reads near-body in stone;
     // redirect to --color-skeleton so the channel stays visible.
-    'progressbar-track': {
+    'progress-bar-track': {
       base: {
         backgroundColor: 'var(--color-skeleton)',
       },
@@ -368,7 +373,7 @@ export const stoneTheme = defineTheme({
     // Input status borders + icons across all 9 input components share the
     // same softer T60/T70 redirection. See INPUT_STATUS_VARS above.
     'text-input': INPUT_STATUS_VARS,
-    textarea: INPUT_STATUS_VARS,
+    'text-area': INPUT_STATUS_VARS,
     'number-input': INPUT_STATUS_VARS,
     'date-input': INPUT_STATUS_VARS,
     'time-input': INPUT_STATUS_VARS,

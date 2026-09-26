@@ -25,6 +25,7 @@ import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -168,6 +169,24 @@ describe('DateInput', () => {
 
     expect(within(container).getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+  });
+
+  it('resolves the invalid-date announcement from the i18n catalog', () => {
+    const {container} = render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.dateInput.invalidDate': 'Ungültiges Datum'}}}>
+        <DateInput label="Date" onChange={() => {}} />
+      </InternationalizationProvider>,
+    );
+
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: {value: '13/45/2024'},
+    });
+
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Ungültiges Datum',
+    );
   });
 
   it('reverts to previous value on blur when input is invalid', async () => {
@@ -514,6 +533,27 @@ describe('DateInput', () => {
     onChange.mockClear();
     fireEvent.keyDown(input, {key: 'Enter'});
 
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
+  it('does not commit on a composing Enter (IME)', () => {
+    const onChange = vi.fn();
+    render(<DateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate fires before compositionend; it must not be read as
+    // "commit the typed date".
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still commits.
+    fireEvent.keyDown(input, {key: 'Enter'});
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
@@ -877,6 +917,27 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
     });
 
+    it('updates when the InternationalizationProvider locale changes (#5074)', () => {
+      const renderDateInput = (locale: 'en-US' | 'es-ES') => (
+        <InternationalizationProvider locale={locale}>
+          <DateInput
+            label="Date"
+            value="2026-01-25"
+            onChange={() => {}}
+            format="date_long"
+          />
+        </InternationalizationProvider>
+      );
+      const {rerender} = render(renderDateInput('en-US'));
+
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+
+      rerender(renderDateInput('es-ES'));
+      expect(
+        screen.getByDisplayValue('25 de enero de 2026'),
+      ).toBeInTheDocument();
+    });
+
     it('renders the ISO shape for format="system_date"', () => {
       render(
         <DateInput
@@ -1061,8 +1122,8 @@ describe('DateInput clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name rides along for a
-    // deprecation window.
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-input-clear-icon');
@@ -1088,8 +1149,8 @@ describe('DateInput clear icon theme target', () => {
   it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
     // The clear affordance now composes the shared InputClearButton (a ghost
     // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target and — for a deprecation window — the
-    // original `astryx-date-input-clear-icon`. Aside from those target classes
+    // `astryx-input-clear-icon` target plus the supported compatibility alias
+    // `astryx-date-input-clear-icon`. Aside from those target classes
     // it matches the shared button's own `close`/`sm`/`secondary` glyph
     // exactly, so the default look is defined in one place.
     render(
@@ -1146,7 +1207,7 @@ describe('DateInput clear icon theme target', () => {
     expect(css).toContain('.astryx-date-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-date-input-clear-icon:hover {');
+    expect(css).toContain('.astryx-date-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -1238,7 +1299,9 @@ describe('DateInput calendar-toggle icon theme target', () => {
     expect(css).toContain('.astryx-date-input-toggle-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-date-input-toggle-icon.expanded');
+    expect(css).toContain(
+      '.astryx-date-input-toggle-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -1250,7 +1313,6 @@ describe('DateInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

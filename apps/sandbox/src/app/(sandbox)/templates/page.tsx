@@ -11,7 +11,7 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import NextLink from 'next/link';
+import NextLink from '../../../router';
 
 import {Badge} from '@astryxdesign/core/Badge';
 import type {BadgeVariant} from '@astryxdesign/core/Badge';
@@ -981,7 +981,7 @@ export default function TemplatesPage() {
         ref={drawerRef}
         id={AUDIT_PANEL_ID}
         isOpen={isAuditPanelOpen && selectedRow?.audit != null}
-        onClose={() => setIsAuditPanelOpen(false)}
+        onOpenChange={setIsAuditPanelOpen}
         label={
           selectedRow
             ? selectedRow.name + ' template audit details'
@@ -989,7 +989,7 @@ export default function TemplatesPage() {
         }
         hasScrim={false}
         hasCloseButton
-        size={560}>
+        width={560}>
         {selectedRow ? <TemplateAuditDetails row={selectedRow} /> : null}
       </Drawer>
     </>

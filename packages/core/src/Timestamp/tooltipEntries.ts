@@ -24,6 +24,7 @@
 import {devWarn} from '../utils/devWarning';
 import {formatInstant} from './formatInstant';
 import type {InstantFormat} from './formatInstant';
+import type {Locale} from '../i18n/types';
 
 // =============================================================================
 // Types
@@ -130,7 +131,9 @@ function resolveTimezoneID(timezoneID: string | undefined): string | undefined {
   // degrade to the viewer's zone and say so, mirroring how an unparseable
   // `value` is handled in Timestamp.tsx.
   try {
-    new Intl.DateTimeFormat(undefined, {timeZone: timezoneID});
+    // Locale does not affect time-zone identifier validity; pin one so this
+    // validation path stays explicit and deterministic.
+    new Intl.DateTimeFormat('en-US', {timeZone: timezoneID});
   } catch {
     if (!warnedTimezoneIDs.has(timezoneID)) {
       warnedTimezoneIDs.add(timezoneID);
@@ -202,6 +205,7 @@ function shouldShowZoneName(
 export function formatTooltipLines(
   date: Date,
   entries: ReadonlyArray<TimestampTooltipEntry>,
+  locale: Locale,
 ): ReadonlyArray<TimestampTooltipLine> {
   const resolved = entries.map(entry => resolveTimezoneID(entry.timezoneID));
   const hasMultipleZones = new Set(resolved.map(zoneKey)).size > 1;
@@ -213,7 +217,7 @@ export function formatTooltipLines(
     return {
       ...(entry.label === undefined ? {} : {label: entry.label}),
       isCopyable: entry.isCopyable ?? false,
-      value: formatInstant(date, format, {
+      value: formatInstant(date, format, locale, {
         timeZone,
         isTimezoneShown: shouldShowZoneName(
           format,

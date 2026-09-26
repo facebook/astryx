@@ -192,6 +192,144 @@ describe('expandColorScale — neutral-only themes (#2279)', () => {
   });
 });
 
+describe('expandColorScale — tuple accent (#2279)', () => {
+  const LIGHT_SEED = '#B7410E';
+  const DARK_SEED = '#48CAE4';
+
+  it('accepts a [light, dark] tuple and generates the accent tokens', () => {
+    const tokens = expandColorScale({accent: [LIGHT_SEED, DARK_SEED]});
+    for (const key of ACCENT_TOKENS) {
+      expect(tokens).toHaveProperty(key);
+    }
+    expect(tokens['--color-accent']).toMatch(/^light-dark\(#/);
+    expect(tokens['--color-on-accent']).toMatch(/^light-dark\(#/);
+  });
+
+  it('a same-halves tuple matches the single-string expansion, token for token', () => {
+    // Pins the string path as the tuple fast path: introducing tuples must
+    // not re-color any existing single-accent theme.
+    const fromString = expandColorScale({accent: LIGHT_SEED});
+    const fromTuple = expandColorScale({accent: [LIGHT_SEED, LIGHT_SEED]});
+    expect(fromTuple).toEqual(fromString);
+  });
+
+  it('derives the light palette from the light seed and the dark palette from the dark seed', () => {
+    // Every generated light-dark() pair takes its light half from the light
+    // seed's palettes and its dark half from the dark seed's, so resolving
+    // each mode must agree with the matching single-accent expansion.
+    const tuple = defineTheme({
+      name: 'tuple',
+      color: {accent: [LIGHT_SEED, DARK_SEED]},
+    });
+    const fromLight = defineTheme({name: 'light', color: {accent: LIGHT_SEED}});
+    const fromDark = defineTheme({name: 'dark', color: {accent: DARK_SEED}});
+
+    const generatedKeys = Object.keys(
+      expandColorScale({accent: [LIGHT_SEED, DARK_SEED]}),
+    );
+    const tupleLight = resolveThemeTokens(tuple, {mode: 'light'});
+    const refLight = resolveThemeTokens(fromLight, {mode: 'light'});
+    const tupleDark = resolveThemeTokens(tuple, {mode: 'dark'});
+    const refDark = resolveThemeTokens(fromDark, {mode: 'dark'});
+    for (const key of generatedKeys) {
+      expect(tupleLight[key], `${key} (light)`).toBe(refLight[key]);
+      expect(tupleDark[key], `${key} (dark)`).toBe(refDark[key]);
+    }
+  });
+
+  it('differing seeds produce a dark half the light seed would not', () => {
+    // Regression guard: the dark half must not silently reuse the light seed.
+    const tuple = defineTheme({
+      name: 'tuple-differs',
+      color: {accent: [LIGHT_SEED, DARK_SEED]},
+    });
+    const single = defineTheme({
+      name: 'single',
+      color: {accent: LIGHT_SEED},
+    });
+    expect(
+      resolveThemeTokens(tuple, {mode: 'dark'})['--color-accent'],
+    ).not.toBe(resolveThemeTokens(single, {mode: 'dark'})['--color-accent']);
+  });
+
+  it('keeps the derived accent tokens as references with a tuple accent', () => {
+    const tokens = expandColorScale({accent: [LIGHT_SEED, DARK_SEED]});
+    expect(tokens['--color-text-accent']).toBe('var(--color-accent)');
+    expect(tokens['--color-icon-accent']).toBe('var(--color-accent)');
+    expect(tokens['--color-accent-muted']).toContain('var(--color-accent)');
+  });
+
+  it('honours neutralStyle with a tuple accent', () => {
+    const warm = expandColorScale({
+      accent: [LIGHT_SEED, DARK_SEED],
+      neutralStyle: 'warm',
+    });
+    const cool = expandColorScale({
+      accent: [LIGHT_SEED, DARK_SEED],
+      neutralStyle: 'cool',
+    });
+    expect(warm['--color-neutral']).not.toBe(cool['--color-neutral']);
+  });
+});
+
+describe('accent precedence — color config vs tokens overrides (#2279)', () => {
+  const CONFIG_ACCENT: [string, string] = ['#B7410E', '#48CAE4'];
+  const TOKEN_ACCENT: [string, string] = ['#AA0000', '#FF5555'];
+
+  it('tokens["--color-accent"] wins over the color-generated accent', () => {
+    const theme = defineTheme({
+      name: 'precedence-base',
+      color: {accent: CONFIG_ACCENT},
+      tokens: {'--color-accent': TOKEN_ACCENT},
+    });
+    expect(theme.tokens['--color-accent']).toBe(
+      `light-dark(${TOKEN_ACCENT[0]}, ${TOKEN_ACCENT[1]})`,
+    );
+  });
+
+  it('reference tokens follow the tokens override at runtime', () => {
+    const theme = defineTheme({
+      name: 'precedence-refs',
+      color: {accent: CONFIG_ACCENT},
+      tokens: {'--color-accent': TOKEN_ACCENT},
+    });
+    const light = resolveThemeTokens(theme, {mode: 'light'});
+    expect(light['--color-text-accent']).toBe(TOKEN_ACCENT[0]);
+    expect(light['--color-icon-accent']).toBe(TOKEN_ACCENT[0]);
+    const dark = resolveThemeTokens(theme, {mode: 'dark'});
+    expect(dark['--color-text-accent']).toBe(TOKEN_ACCENT[1]);
+  });
+
+  it('baked --color-on-accent stays derived from the color.accent seed', () => {
+    // Documented divergence: a tokens override of --color-accent does not
+    // re-derive --color-on-accent, which is a baked contrast computation
+    // against the color.accent seed. Consumers who override the accent via
+    // tokens must override --color-on-accent too (or pass the tuple through
+    // color.accent so the whole palette re-derives).
+    const overridden = defineTheme({
+      name: 'precedence-on-accent',
+      color: {accent: CONFIG_ACCENT},
+      tokens: {'--color-accent': TOKEN_ACCENT},
+    });
+    const generated = defineTheme({
+      name: 'generated-on-accent',
+      color: {accent: CONFIG_ACCENT},
+    });
+    expect(overridden.tokens['--color-on-accent']).toBe(
+      generated.tokens['--color-on-accent'],
+    );
+  });
+
+  it('an explicit --color-on-accent token wins over the generated one', () => {
+    const theme = defineTheme({
+      name: 'precedence-on-accent-explicit',
+      color: {accent: CONFIG_ACCENT},
+      tokens: {'--color-on-accent': '#FFFFFF'},
+    });
+    expect(theme.tokens['--color-on-accent']).toBe('#FFFFFF');
+  });
+});
+
 describe('expandColorScale + defineTheme integration', () => {
   it('explicit token overrides win over generated values', () => {
     const theme = defineTheme({

@@ -125,13 +125,26 @@ const sortStyles = stylex.create({
     border: 'none',
     padding: 0,
     margin: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     width: '100%',
     height: '100%',
     textAlign: 'inherit',
     borderRadius: radiusVars['--radius-inner'],
+  },
+  // The button is a full-width flex container, so the `textAlign` a column's
+  // `align` puts on the <th> cannot position its contents. Mirror the column
+  // alignment onto the main axis, or an `align: 'end'` numeric column ends up
+  // with a left-hugging header over right-aligned figures.
+  buttonAlignCenter: {
+    justifyContent: 'center',
+  },
+  buttonAlignEnd: {
+    justifyContent: 'flex-end',
   },
   iconWrapperUnsorted: {
     display: 'inline-flex',
@@ -303,7 +316,14 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   return (
     <button
       type="button"
-      {...focusOutlineProps.focusVisible(sortStyles.button)}
+      {...focusOutlineProps.focusVisible(
+        sortStyles.button,
+        column.align === 'end'
+          ? sortStyles.buttonAlignEnd
+          : column.align === 'center'
+            ? sortStyles.buttonAlignCenter
+            : null,
+      )}
       aria-label={ariaLabel}
       onClick={handleClick}>
       <span>{children}</span>

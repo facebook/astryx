@@ -1,5 +1,60 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Tree list',
+    required: true,
+    description: 'Container that presents the hierarchical tree.',
+  },
+  {
+    name: 'Header',
+    required: false,
+    description: 'Caller-provided content that visibly names the tree.',
+  },
+  {
+    name: 'Item',
+    required: true,
+    description: 'Painted row for one node in the hierarchy.',
+  },
+  {
+    name: 'Chevron',
+    required: false,
+    description:
+      'Expand and collapse control rendered for an Item with children.',
+  },
+  {
+    name: 'Chevron glyph',
+    required: false,
+    description: 'Directional symbol rendered by Icon inside a Chevron.',
+  },
+  {
+    name: 'Item label',
+    required: true,
+    description: 'Primary content that identifies an Item.',
+  },
+  {
+    name: 'Item description',
+    required: false,
+    description: 'Secondary text rendered below an Item label.',
+  },
+  {
+    name: 'Start content',
+    required: false,
+    description: 'Caller-provided content rendered before an Item label.',
+  },
+  {
+    name: 'End content',
+    required: false,
+    description: 'Caller-provided content rendered after an Item label.',
+  },
+  {
+    name: 'Guide',
+    required: false,
+    description: 'Connector line that shows parent-child relationships.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -24,7 +79,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list', visualProps: ['density', 'variant']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
       {className: 'astryx-tree-list-chevron', states: ['state']},
       {className: 'astryx-tree-list-item-label', states: ['selected']},
@@ -33,6 +88,7 @@ export const docs = {
     vars: [
       {name: '--tree-list-indent', description: 'Per-level indentation step. Each nesting level indents its rows by this distance, and the guide lines follow it so they stay aligned. Set it on the `tree-list` target to retune the metric (e.g. `var(--spacing-5)` for a wider indent).', default: 'var(--spacing-4)'},
       {name: '--tree-list-row-gap', description: 'Vertical gap between adjacent rows. Default `2px` (var(--spacing-0-5)) gives a subtle separation; set it on the `tree-list` target to widen or close the gap. The connector guides span the gap automatically (the line stays continuous) and do not overhang the last row, so no guide-height tuning is needed.', default: 'var(--spacing-0-5)'},
+      {name: '--_tree-indent', description: 'Distance one row is indented, computed per row from --tree-list-indent and the row depth. Set --tree-list-indent to retune indentation; this is the resolved value.', default: '0px', private: true},
     ],
   },
   components: [
@@ -45,7 +101,7 @@ export const docs = {
           name: 'items',
           type: 'TreeListItemData[]',
           description:
-            'Recursive tree item data. Each item has id, label, optional children array, and optional isExpanded boolean for initial state.',
+            'Recursive tree item data with id, label, optional children and isExpanded, plus optional xstyle, className, and style applied to that item row.',
           required: true,
         },
         {
@@ -78,6 +134,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
@@ -103,7 +160,7 @@ export const docsZh = {
   group: 'TreeList',
   theming: {
     targets: [
-      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list', visualProps: ['density', 'variant']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
       {className: 'astryx-tree-list-chevron', states: ['state']},
       {className: 'astryx-tree-list-item-label', states: ['selected']},
@@ -157,6 +214,7 @@ export const docsZh = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
@@ -174,6 +232,7 @@ export const docsDense = {
   description:
     'Data-driven tree list for hierarchical data w/ expand/collapse, branch lines, interactive items. Flat items array w/ recursive children, no composition, no cloneElement.',
   usage: {
+    anatomy,
     description:
       'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
@@ -185,7 +244,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+    items: 'Recursive tree item data w/ id, label, optional children + isExpanded, plus optional xstyle/className/style on its row.',
     density: 'Spacing density for items.',
     variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
     header: 'Header content, linked to tree via aria-labelledby.',
@@ -197,7 +256,7 @@ export const docsDense = {
       displayName: 'Tree List',
       description: 'Tree list container. Accepts items data + rendering config. Expansion managed internally.',
       propDescriptions: {
-        items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+        items: 'Recursive tree item data w/ id, label, optional children + isExpanded, plus optional xstyle/className/style on its row.',
         density: 'Spacing density for items.',
         variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
         header: 'Header content, linked to tree via aria-labelledby.',

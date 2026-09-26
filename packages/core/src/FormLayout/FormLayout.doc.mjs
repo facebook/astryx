@@ -17,6 +17,12 @@ export const docs = {
       default: "'vertical'",
     },
     {
+      name: 'defaultOptionality',
+      type: "'optional' | 'required'",
+      description:
+        'The state the form treats as its default, so only the exception shows an optional/required indicator. With "optional", only fields marked isRequired show an indicator; with "required", only fields marked isOptional do. A field that restates the default shows nothing. Under "required" the unmarked fields also expose aria-required so screen readers match the visual default; aria-required only, never the native required attribute. Leave unset for today\'s per-field behavior.',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description:
@@ -63,6 +69,12 @@ export const docsZh = {
       description:
         '控制字段排列方式。vertical 从上到下堆叠，horizontal 从左到右排列且等比弹性增长，horizontal-labels 使用 CSS Grid 将标签放在输入框左侧（在窄视口 <=480px 时折叠为垂直布局）。',
       default: "'vertical'",
+    },
+    {
+      name: 'defaultOptionality',
+      type: "'optional' | 'required'",
+      description:
+        '表单视为默认的状态，因此仅例外字段显示可选/必填指示器。设为 "optional" 时，仅标记 isRequired 的字段显示指示器；设为 "required" 时，仅标记 isOptional 的字段显示。与默认一致的字段不显示任何内容。设为 "required" 时，未标记的字段仍会暴露 aria-required，使屏幕阅读器与视觉默认一致——仅作用于 aria-required，不改变原生 required 属性。不设置则保持当前逐字段行为。',
     },
     {
       name: 'children',
@@ -122,6 +134,7 @@ export const docsDense = {
   },
   propDescriptions: {
     direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses <=480px).',
+    defaultOptionality: 'State the form treats as default, so only the exception is marked. "optional" → only isRequired fields show an indicator; "required" → only isOptional fields do. Under "required" unmarked fields also expose aria-required (aria only, not native required). Unset = per-field behavior.',
     children: 'Form fields to arrange. Accepts Astryx inputs + Field-wrapped custom controls.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },

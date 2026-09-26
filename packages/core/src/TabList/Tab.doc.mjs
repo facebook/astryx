@@ -40,7 +40,13 @@ export const docs = {
       name: 'href',
       type: 'string',
       description:
-        'URL to navigate to; when provided, the tab renders as an anchor element.',
+        'URL to navigate to; when provided, the tab renders as an anchor element. Ignored in a TabList given an explicit role="tablist".',
+    },
+    {
+      name: 'panelId',
+      type: 'string',
+      description:
+        'Id of the panel this tab controls, wired up as aria-controls where the TabList speaks the tabs pattern. Put the same id on the panel element. No effect under the navigation pattern, and a development warning says so.',
     },
     {
       name: 'as',
@@ -137,6 +143,12 @@ export const docsZh = {
       name: 'href',
       type: 'string',
       description: '要导航到的 URL；提供时，标签渲染为锚点元素。',
+    },
+    {
+      name: 'panelId',
+      type: 'string',
+      description:
+        'Id of the panel this tab controls, wired up as aria-controls where the TabList speaks the tabs pattern. Put the same id on the panel element. No effect under the navigation pattern, and a development warning says so.',
     },
     {
       name: 'as',

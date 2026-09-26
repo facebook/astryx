@@ -9,6 +9,10 @@ Internal build-time scripts. Not shipped, not part of any package.
 | `upload-crowdin-screenshots.mjs` | Build storybook, capture in-context screenshots for i18n catalog keys, upload to Crowdin, and POST tag positions so each screenshot pixel-links to the matching source string.                             |
 | `lib/crowdin-strategies.mjs`     | Declarative measurement strategies (visibleText, option, placeholder, ariaLabel, chipOperator, filterInput, footerButton, srOnlyLabel, srOnlyReveal) used by the upload script to resolve tag coordinates. |
 
+The file-level context Crowdin shows beside every string in the catalog is a
+field on the file record, not something `crowdin.yml` can declare; a step in
+`.github/workflows/crowdin-upload.yml` sets it after the source upload.
+
 ## upload-crowdin-screenshots.mjs
 
 Automates the "screenshot with in-context tags" flow for [Crowdin](https://crowdin.com/), the translation platform used by astryx.
@@ -61,7 +65,11 @@ Some catalog strings are aria-labels on widgets that render no visible text (bar
 - `srOnlyLabel` — tag rect lands on the visible ancestor widget. Best when the widget has some other identifying feature (icon, adjacent text).
 - `srOnlyReveal` — injects a small yellow label bubble next to the widget during screenshot capture, then tags the bubble. Translators see the actual aria-label text pinned to the widget. Best when the widget has no visible cue at all.
 
-Reveal bubbles only exist inside the screenshot pipeline — they are never rendered in production.
+Reveal bubbles only exist inside the screenshot pipeline — they are never rendered in production. A bubble beside a widget at the edge of the viewport slides along that edge until it fits.
+
+### A tag has to fit the screenshot
+
+Crowdin rejects a tag rectangle that leaves the uploaded image, so every strategy requires the viewport to contain a candidate's rect. A match below the fold is reported unresolved rather than trimmed or scrolled into view — widen the target's `viewport` if a string you want tagged sits outside it.
 
 ### Deterministic tagging, not `--auto-tag`
 

@@ -48,4 +48,21 @@ describe('template.copy — overwrite + path safety', () => {
     ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
     expect(fs.existsSync(path.join(dir, '..', 'escape.tsx'))).toBe(false);
   }, SLOW);
+
+  it('rejects a directory target whose page.tsx is a symlink leading outside cwd', async () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'tmpl-copy-outside-'));
+    try {
+      const victim = path.join(outside, 'victim.tsx');
+      fs.writeFileSync(victim, 'OUTSIDE');
+      fs.mkdirSync(path.join(dir, 'dest'));
+      fs.symlinkSync(victim, path.join(dir, 'dest', 'page.tsx'));
+
+      await expect(
+        template('blank', {targetPath: './dest', overwrite: true, cwd: dir}),
+      ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
+      expect(fs.readFileSync(victim, 'utf-8')).toBe('OUTSIDE');
+    } finally {
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
+  }, SLOW);
 });

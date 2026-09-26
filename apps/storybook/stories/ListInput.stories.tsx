@@ -2,8 +2,8 @@
 
 /**
  * @file ListInput.stories.tsx
- * @input Uses ListInput with controlled data, Astryx field controls, column width helpers, React, and StyleX
- * @output Storybook examples spanning realistic use cases, validation scopes, density, responsiveness, tokenized collection motion, and reordering
+ * @input Uses ListInput with controlled data, Astryx field controls, column width helpers, the Theme provider, React, and StyleX
+ * @output Storybook examples spanning realistic use cases, validation scopes, density, responsiveness, tokenized collection motion, reordering, the disabled and loading states, row volume, and a pinned light/dark theme matrix
  * @position Lab component stories; documents the consumer-facing ListInput API
  */
 
@@ -15,7 +15,11 @@ import {DateInput} from '@astryxdesign/core/DateInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {Selector} from '@astryxdesign/core/Selector';
 import {pixel, proportional} from '@astryxdesign/core/Table';
+import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {Theme} from '@astryxdesign/core';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 import {ListInput, type ListInputColumn} from '@astryxdesign/lab';
 const storyStyles = stylex.create({
   canvas: {
@@ -29,6 +33,22 @@ const storyStyles = stylex.create({
   narrowCanvas: {
     width: 360,
     maxWidth: '100%',
+  },
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 32,
+  },
+  themePane: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    padding: 20,
+    borderRadius: 8,
+    // Must be a token, not a literal: the pane's whole job is to render the
+    // surface each nested Theme resolves to, so a hardcoded colour would sit
+    // under text that follows the theme and fail contrast in one of the modes.
+    backgroundColor: colorVars['--color-background-body'],
   },
 });
 
@@ -901,6 +921,171 @@ export const ResponsiveItinerary: Story = {
       description: {
         story:
           'Exercises the 640px container breakpoint, 32px separation between stacked record groups, repeated labels, a long value, DateInput popovers, item-order validation, and reorder/remove controls aligned beside each record’s first field.',
+      },
+    },
+  },
+};
+
+/**
+ * A read-only rendering of the tag editor, used by the disabled, loading, and
+ * theme stories so each one differs by exactly the prop it demonstrates.
+ */
+function StaticTagsExample({
+  isDisabled,
+  isLoading,
+  status,
+}: {
+  isDisabled?: boolean;
+  isLoading?: boolean;
+  status?: React.ComponentProps<typeof ListInput<TagOption>>['status'];
+}) {
+  const [tags, setTags] = useState(INITIAL_TAGS.slice(0, 3));
+  const columns = useMemo(() => createTagColumns(() => {}), []);
+
+  return (
+    <ListInput<TagOption>
+      label="Tag options"
+      description="Each row keeps its colour and label."
+      value={tags}
+      onChange={setTags}
+      getItemKey={tag => tag.id}
+      createItem={() => ({id: crypto.randomUUID(), color: 'blue', label: ''})}
+      columns={columns}
+      itemName="tag"
+      isDisabled={isDisabled}
+      isLoading={isLoading}
+      status={status}
+      isReorderable
+    />
+  );
+}
+
+/** Every field and mutation control locked while the list stays readable. */
+export const Disabled: Story = {
+  render: () => <StaticTagsExample isDisabled />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sets `aria-disabled` on the group and disables each field, the reorder handle, the remove action, and Add. The values stay legible rather than being hidden, so a disabled list still communicates its contents.',
+      },
+    },
+  },
+};
+
+/** The list marked busy while an async operation settles. */
+export const Loading: Story = {
+  render: () => <StaticTagsExample isLoading />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Sets `aria-busy` on the group and locks the same controls `isDisabled` does. Loading is distinct from disabled: it means the current values may still change, so an in-flight keyboard reorder is cancelled rather than committed.',
+      },
+    },
+  },
+};
+
+/** The three list-level status types side by side. */
+export const ValidationStatuses: Story = {
+  render: () => (
+    <div {...stylex.props(storyStyles.stack)}>
+      <StaticTagsExample
+        status={{type: 'error', message: 'Add at least five tag options.'}}
+      />
+      <StaticTagsExample
+        status={{
+          type: 'warning',
+          message: 'Two tags share a colour, which may be hard to tell apart.',
+        }}
+      />
+      <StaticTagsExample
+        status={{type: 'success', message: 'All tag options are valid.'}}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The other stories only exercise `error`. `warning` and `success` use the same list-level slot and are described by the group, so a screen reader reaches them from any field inside the list.',
+      },
+    },
+  },
+};
+
+const STRESS_TAGS: TagOption[] = Array.from({length: 25}, (_, index) => ({
+  id: `stress-${index}`,
+  color: COLOR_OPTIONS[index % COLOR_OPTIONS.length].value,
+  label:
+    index % 5 === 0
+      ? `Extremely long tag label ${index} that has to wrap or truncate rather than widen the row past its container`
+      : `Tag ${index}`,
+}));
+
+function StressExample() {
+  const [tags, setTags] = useState(STRESS_TAGS);
+  const columns = useMemo(() => createTagColumns(() => {}), []);
+
+  return (
+    <ListInput<TagOption>
+      label="Tag options at volume"
+      description="Twenty-five records, every fifth one carrying an over-long label."
+      value={tags}
+      onChange={setTags}
+      getItemKey={tag => tag.id}
+      createItem={() => ({id: crypto.randomUUID(), color: 'blue', label: ''})}
+      columns={columns}
+      itemName="tag"
+      isReorderable
+    />
+  );
+}
+
+/** Row volume and over-long values in one place. */
+export const Stress: Story = {
+  render: () => <StressExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Checks that column tracks stay stable as row count grows, that an over-long label cannot widen the row past its container, and that reorder stays usable when the list is taller than the viewport.',
+      },
+    },
+  },
+};
+
+/** The same list pinned to light and dark, including a nested override. */
+export const ThemeMatrix: Story = {
+  render: () => (
+    <div {...stylex.props(storyStyles.stack)}>
+      <Theme theme={neutralTheme} mode="light">
+        <div {...stylex.props(storyStyles.themePane)}>
+          <Text weight="bold">Light</Text>
+          <StaticTagsExample />
+        </div>
+      </Theme>
+      <Theme theme={neutralTheme} mode="dark">
+        <div {...stylex.props(storyStyles.themePane)}>
+          <Text weight="bold">Dark</Text>
+          <StaticTagsExample />
+          <Theme theme={neutralTheme} mode="light">
+            <div {...stylex.props(storyStyles.themePane)}>
+              <Text weight="bold">Light nested inside dark</Text>
+              <StaticTagsExample
+                status={{type: 'error', message: 'Add at least five tags.'}}
+              />
+            </div>
+          </Theme>
+        </div>
+      </Theme>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Pins both modes into one frame so a theme regression is visible without toggling the toolbar, and nests a light theme inside a dark one to confirm the component reads its colours from the nearest provider rather than the document root.',
       },
     },
   },
