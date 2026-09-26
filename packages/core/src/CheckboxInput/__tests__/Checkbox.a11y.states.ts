@@ -400,11 +400,5 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabelSelector: '[data-a11y-visible-label]',
     pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-disabled',
-    declaredNotDelivered: [
-      {
-        fact: 'focusable',
-        owned: 'checkbox.focus.declared-inoperable-reachable',
-      },
-    ],
   },
 ] as const satisfies ReadonlyArray<CheckboxBindingState>;
