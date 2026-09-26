@@ -44,7 +44,7 @@ import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -128,6 +128,11 @@ const styles = stylex.create({
     '--button-icon-only-aspect': '1 / 1',
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
+    paddingBlock: 0,
+  },
+  iconOnlyWithEndContent: {
+    aspectRatio: 'auto',
+    paddingInline: spacingVars['--spacing-2'],
     paddingBlock: 0,
   },
   endContentWrapper: {
@@ -243,8 +248,8 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   form?: string;
   /**
    * Accessible label for the button (required for accessibility).
-   * Rendered as visible text by default. When `isIconOnly` is true,
-   * used as aria-label instead.
+   * Rendered as visible text by default. When `isIconOnly` is true and `icon`
+   * is renderable, used as aria-label instead; otherwise remains visible.
    */
   label: string;
   /**
@@ -300,7 +305,10 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   icon?: ReactNode;
   /**
-   * When true, renders as a square icon-only button with `label` as aria-label.
+   * When true, hides the visible label and uses `label` as the accessible name.
+   * A button with only `icon` remains square; providing `endContent` expands the
+   * button to fit both visual elements. If `icon` is not renderable, the button
+   * falls back to its visible label.
    * Requires `icon` to be provided.
    * @default false
    */
@@ -317,8 +325,10 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   children?: ReactNode;
   /**
-   * Content rendered after the label text (badge, icon, chevron, etc.).
-   * Ignored when `isIconOnly` is true to preserve square aspect ratio.
+   * Content rendered after the label or leading icon (badge, icon, chevron,
+   * etc.). When `isIconOnly` is true, the label stays hidden while this content
+   * remains visible and is treated as decorative; include any meaning it conveys
+   * in `label`.
    *
    * Wrapped in a container that inherits the button's text color,
    * so child elements match the button variant's color automatically.
@@ -515,7 +525,13 @@ const groupStyles = stylex.create({
  * <Button label="Click me" />
  * <Button label="Primary action" variant="primary" />
  * <Button label="Delete" variant="destructive" />
- * <Button label="Settings" icon={<GearIcon />} variant="ghost" isIconOnly />
+ * <Button
+ *   label="Settings menu"
+ *   icon={<GearIcon />}
+ *   endContent={<ChevronDownIcon />}
+ *   variant="ghost"
+ *   isIconOnly
+ * />
  * <Button label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" isIconOnly />
  * <Button label="Edit" icon={<PencilIcon />} />
  * <Button label="Messages" endContent={<Badge label={3} />} />
@@ -577,8 +593,12 @@ export function Button({
   // active state and must retain contrast. Only explicitly disabled controls
   // receive the visually dimmed treatment.
   const visuallyDisabled = isDisabled || groupDisabled;
-  // isIconOnly prop is the source of truth for icon-only rendering.
-  // When false (default), label is always rendered as visible text.
+  const hasIcon = isRenderable(icon);
+  const hasEndContent = isRenderable(endContent);
+  const isLabelHidden = isIconOnly && hasIcon;
+
+  // Without a renderable icon, an icon-only request falls back to the visible
+  // label so the control never becomes visually empty.
 
   const LinkComponent = useLinkComponent(as);
 
@@ -641,7 +661,8 @@ export function Button({
   const sharedStylexProps = focusOutlineProps.focusVisible(
     styles.base,
     sizeStyles[size],
-    isIconOnly && styles.iconOnly,
+    isLabelHidden &&
+      (hasEndContent ? styles.iconOnlyWithEndContent : styles.iconOnly),
     interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.inactive,
     visuallyDisabled && styles.disabled,
@@ -703,7 +724,7 @@ export function Button({
               : loadingStyles.hiddenContent),
         )}
         aria-hidden={isLoadingState || undefined}>
-        {icon && (
+        {hasIcon && (
           <span
             {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
             <IconDefaultSizeProvider value={iconSize}>
@@ -711,11 +732,15 @@ export function Button({
             </IconDefaultSizeProvider>
           </span>
         )}
-        {isIconOnly ? null : (
+        {isLabelHidden ? null : (
           <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
         )}
-        {!isIconOnly && endContent && (
-          <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>
+        {hasEndContent && (
+          <span
+            {...stylex.props(styles.endContentWrapper)}
+            aria-hidden={isLabelHidden || undefined}>
+            {endContent}
+          </span>
         )}
       </span>
       {/* Live region for loading state announcements */}
@@ -730,8 +755,8 @@ export function Button({
   // 2. Loading state on non-icon-only (announce the button's purpose)
   // 3. Children differ from label (children are visible, label is accessible name)
   const needsAriaLabel =
-    (isIconOnly && label !== '') ||
-    (isLoadingState && !isIconOnly) ||
+    (isLabelHidden && label !== '') ||
+    (isLoadingState && !isLabelHidden) ||
     (children != null && children !== label);
   const ariaLabelProp = needsAriaLabel ? {'aria-label': label} : null;
 

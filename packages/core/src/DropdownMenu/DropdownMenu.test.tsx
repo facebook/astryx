@@ -1544,6 +1544,49 @@ describe('DropdownMenu icon-only mode', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
+  it.each(['popover', 'bottom-sheet'] as const)(
+    'keeps the chevron visible for an icon-only %s trigger',
+    presentation => {
+      render(
+        <DropdownMenu
+          button={{
+            label: 'More options',
+            icon: <span data-testid="icon">⋯</span>,
+            variant: 'ghost',
+            isIconOnly: true,
+          }}
+          presentation={presentation}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />,
+      );
+      const button = screen.getByRole('button', {name: 'More options'});
+      expect(screen.getByTestId('icon')).toBeInTheDocument();
+      expect(button.querySelector('.astryx-icon')).toBeInTheDocument();
+      expect(button).not.toHaveTextContent('More options');
+    },
+  );
+
+  it.each(['popover', 'bottom-sheet'] as const)(
+    'prefers custom endContent to the default icon-only %s chevron',
+    presentation => {
+      render(
+        <DropdownMenu
+          button={{
+            label: 'More options',
+            icon: <span data-testid="icon">⋯</span>,
+            endContent: <span data-testid="custom-end">custom</span>,
+            isIconOnly: true,
+          }}
+          presentation={presentation}
+          items={[{label: 'Edit'}]}
+        />,
+      );
+      const button = screen.getByRole('button', {name: 'More options'});
+      expect(screen.getByTestId('custom-end')).toBeInTheDocument();
+      expect(button.querySelector('.astryx-icon')).not.toBeInTheDocument();
+    },
+  );
+
   it('renders icon + label when children are provided on button', () => {
     render(
       <DropdownMenu

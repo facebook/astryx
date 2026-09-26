@@ -441,10 +441,9 @@ function DropdownMenuBottomSheet({
     [setOpen],
   );
 
-  const isIconOnly = button.isIconOnly === true;
   const resolvedEndContent =
     button.endContent ??
-    (hasChevron && !isIconOnly ? (
+    (hasChevron ? (
       <Icon icon="chevronDown" size="sm" color="inherit" />
     ) : undefined);
 
@@ -872,11 +871,9 @@ function DropdownMenuPopover({
     [popover.isOpen, openAndFocus, focusFirst, listRef],
   );
 
-  // Icon-only
-  const isIconOnly = button.isIconOnly === true;
   const resolvedEndContent =
     button.endContent ??
-    (hasChevron && !isIconOnly ? (
+    (hasChevron ? (
       <Icon icon="chevronDown" size="sm" color="inherit" />
     ) : undefined);
 
