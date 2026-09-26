@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetPanel.tsx
- * @input Uses React, StyleX, theme tokens, sheet gestures, shared scroll behavior, and the host label
+ * @input Uses React, StyleX, theme tokens, text/provider boundaries, sheet gestures, shared scroll behavior, and the host label
  * @output Internal BottomSheetPanel with a keyboard-reachable scrolling body and motion-state types
  * @position Shared presentation layer for standalone and switcher BottomSheets
  *
@@ -47,6 +47,8 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {
   isValidSnapPoint,
@@ -656,6 +658,7 @@ export function BottomSheetPanel({
       {...mergeProps(
         themeProps('bottom-sheet'),
         stylex.props(
+          layerTextReset.reset,
           styles.sheet,
           overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,
@@ -698,7 +701,7 @@ export function BottomSheetPanel({
           ),
         })}>
         <div {...getContentProps<HTMLDivElement>(stylex.props(styles.content))}>
-          {children}
+          <LayerContentBoundary>{children}</LayerContentBoundary>
         </div>
       </div>
     </div>
