@@ -51,7 +51,9 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByTestId('icon')).toBeTruthy();
   });
 
-  it('records the current divider and icon behavior without settling it', () => {
+  it('detects changes to the current divider and icon output for OQ1', () => {
+    // OQ1 is unresolved. This assertion detects current-output changes; it does
+    // not select whether Divider should render, reject, or warn on the icon.
     render(
       <ChatSystemMessage
         icon={<span data-testid="divider-icon">*</span>}
@@ -148,5 +150,18 @@ describe('ChatSystemMessage', () => {
     const root = screen.getByTestId('empty-partition');
     expect(root).toHaveAttribute('role', 'status');
     expect(root).toContainElement(screen.getByRole('separator'));
+  });
+
+  it('records Divider numeric-zero output for the shared FR15 advisory', () => {
+    render(
+      <ChatSystemMessage variant="divider" data-testid="divider-zero">
+        {0}
+      </ChatSystemMessage>,
+    );
+    const root = screen.getByTestId('divider-zero');
+    const separator = screen.getByRole('separator');
+    expect(root).toHaveTextContent('00');
+    expect(separator).not.toHaveAccessibleName();
+    expect(separator).not.toHaveAttribute('aria-labelledby');
   });
 });

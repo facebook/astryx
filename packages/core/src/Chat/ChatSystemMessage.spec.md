@@ -80,6 +80,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Sender identity, avatar, bubble, transcript ordering, or scrolling.
 - Divider rule paint, label placement, separator role, or separator naming, which are delegated to `component:Divider`.
 - Long Divider-label overflow and forced-colors rule paint, which remain shared `component:Divider` advisories rather than ChatSystemMessage-owned defects.
+- Divider's falsey-label rendering. Empty string and empty Fragment content leave the separator without a visible label or accessible name; numeric zero renders stray `00` text with no accessible name. This is a shared `spec:AST-002/FR15` advisory routed to `component:Divider`.
 - The semantic or directional meaning of caller-provided content or icon artwork.
 - Announcement timing or spoken output; claims at that layer require `spec:AST-009` evidence.
 
@@ -98,21 +99,23 @@ observable public surface without deciding the unresolved divider/icon contract.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                              | Basis                                                                                                       | Draft review state                                      |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| FR1 | The default branch MUST render the required content in a centered, noninteractive status row, allow long content to wrap within the available inline space, and preserve optional icon geometry. | Current source, released docs, tests, and examples                                                          | Verified current behavior                               |
-| FR2 | The divider branch MUST render the required content through Divider as a labelled horizontal separator inside the component's status root.                                                       | Current source, released docs, Divider implementation, tests, and examples                                  | Verified current behavior                               |
-| FR3 | The divider branch currently ignores `icon`; this draft MUST NOT convert that observation into a stable restriction, a requirement to render the icon, or a warning policy.                      | `architecture:public-component-api/INV3`, `architecture:public-component-api/INV5`, and `spec:AST-002/FR15` | Human API decision required; see OQ1                    |
-| FR4 | Supported root DOM, data, ARIA, className, style, xstyle, and ref inputs MUST reach or compose on the root while component-owned `role="status"` and reflected `variant` remain intact.          | Current source plus `architecture:public-component-api/INV5-INV8`                                           | Verified current behavior and existing focused evidence |
-| FR5 | The component MUST use semantic color, spacing, and typography tokens and logical layout; the `variant` state remains reflected on the single `chat-system-message` target.                      | Current source, `architecture:theme-tokens`, and theming architecture                                       | Verified current behavior                               |
-| FR6 | The component remains render-only: props determine output without Effects, state mirrors, observers, listeners, timers, or owned async resources.                                                | Current source and `architecture:react-component-runtime/INV1-INV8`                                         | Verified current behavior                               |
+| ID  | Candidate invariant                                                                                                                                                                                                       | Basis                                                                                                       | Draft review state                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| FR1 | The default branch MUST render the required content in a centered, noninteractive status row, allow long content to wrap within the available inline space, and preserve optional icon geometry.                          | Current source, released docs, tests, and examples                                                          | Verified current behavior                               |
+| FR2 | For truthy content, the divider branch MUST render the content through Divider as a labelled horizontal separator inside the component's status root. Falsey content follows the shared Divider advisory recorded in AV1. | Current source, released docs, Divider implementation, tests, and examples                                  | Verified current behavior; shared Divider advisory      |
+| FR3 | The divider branch currently ignores `icon`; this draft MUST NOT convert that observation into a stable restriction, a requirement to render the icon, or a warning policy.                                               | `architecture:public-component-api/INV3`, `architecture:public-component-api/INV5`, and `spec:AST-002/FR15` | Human API decision required; see OQ1                    |
+| FR4 | Supported root DOM, data, ARIA, className, style, xstyle, and ref inputs MUST reach or compose on the root while component-owned `role="status"` and reflected `variant` remain intact.                                   | Current source plus `architecture:public-component-api/INV5-INV8`                                           | Verified current behavior and existing focused evidence |
+| FR5 | The component MUST use semantic color, spacing, and typography tokens and logical layout; the `variant` state remains reflected on the single `chat-system-message` target.                                               | Current source, `architecture:theme-tokens`, and theming architecture                                       | Verified current behavior                               |
+| FR6 | The component remains render-only: props determine output without Effects, state mirrors, observers, listeners, timers, or owned async resources.                                                                         | Current source and `architecture:react-component-runtime/INV1-INV8`                                         | Verified current behavior                               |
 
 ### Allowed variation
 
 - **AV1 - Caller content.** Text and other React content may vary while remaining
   self-contained. Empty strings, numeric zero, and empty Fragments are reachable
-  `ReactNode` partitions and retain the status root; Divider currently omits its
-  labelled separator for falsey content.
+  `ReactNode` partitions and retain the status root and separator. Empty string and
+  empty Fragment content produce no visible label or accessible name; numeric zero
+  paints stray `00` text with no accessible name. The falsey-label behavior is a
+  shared `spec:AST-002/FR15` advisory routed to `component:Divider`.
 - **AV2 - Caller styling.** Supported root styling inputs may extend the component
   without replacing owned status semantics or variant reflection.
 - **AV3 - Delegated Divider paint.** Divider owns its rule and label paint and may
@@ -120,15 +123,15 @@ observable public surface without deciding the unresolved divider/icon contract.
 
 ### Representative states
 
-| State                 | Required invariant                                                                       | Allowed variation                           |
-| --------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Default               | Centered status content is present.                                                      | Content, theme, and root styling.           |
-| Default with icon     | Optional icon content and visible content render together.                               | Caller-provided artwork and content.        |
-| Default long content  | Content wraps without crossing either inline edge or creating page overflow.             | Theme and localized content.                |
-| Divider               | A labelled horizontal separator presents the supplied content.                           | Label content, theme, and root styling.     |
-| Divider with icon     | Current output is measured without deciding the ignored-input contract.                  | No behavior change until OQ1 is resolved.   |
-| Empty ReactNode       | The status root remains; delegated Divider output follows current falsey-label behavior. | Empty string, numeric zero, empty Fragment. |
-| Narrow/coarse pointer | The noninteractive row remains visible without horizontal page overflow.                 | Theme and supported content.                |
+| State                 | Required invariant                                                                                                          | Allowed variation                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Default               | Centered status content is present.                                                                                         | Content, theme, and root styling.           |
+| Default with icon     | Optional icon content and visible content render together.                                                                  | Caller-provided artwork and content.        |
+| Default long content  | Content wraps without crossing either inline edge or creating page overflow.                                                | Theme and localized content.                |
+| Divider               | A labelled horizontal separator presents the supplied content.                                                              | Label content, theme, and root styling.     |
+| Divider with icon     | Current output is measured without deciding the ignored-input contract.                                                     | No behavior change until OQ1 is resolved.   |
+| Empty ReactNode       | The status root and separator remain; empty content has no label/name, while numeric zero paints stray `00` without a name. | Empty string, numeric zero, empty Fragment. |
+| Narrow/coarse pointer | The noninteractive row remains visible without horizontal page overflow.                                                    | Theme and supported content.                |
 
 ### Transformation and precedence order
 
@@ -150,9 +153,10 @@ observable public surface without deciding the unresolved divider/icon contract.
 - **AR1 - Status exposure.** The root currently exposes `role="status"` for both
   variants. Browser evidence may prove role exposure; spoken announcement timing is
   outside this draft and requires `spec:AST-009` evidence.
-- **AR2 - Divider relationship.** The divider branch delegates a horizontal
-  `separator` whose labelled target contains the visible label; focused DOM tests
-  verify the computed accessible name.
+- **AR2 - Divider relationship.** For truthy content, the divider branch delegates a
+  horizontal `separator` whose labelled target contains the visible label; focused DOM
+  tests verify the computed accessible name. Falsey content follows the shared Divider
+  advisory in AV1.
 - **AR3 - Caller content.** Visible content remains the self-contained message.
   Caller-provided icon content does not replace that text.
 - **AR4 - Noninteractive surface.** The component introduces no focus target,
@@ -172,8 +176,9 @@ icon artwork, live-region timing, or divider/icon behavior.
 
 ## Family and system relationships
 
-- `component:Divider` owns the delegated labelled separator structure, role, name,
-  and paint.
+- `component:Divider` owns the delegated separator structure, role, name,
+  paint, long-label overflow, and falsey-label behavior. The numeric-zero `00`
+  output with no accessible name is a shared `spec:AST-002/FR15` advisory.
 - `architecture:public-component-api` owns released exports, BaseProps reachability,
   styling composition, and the ref contract.
 - `architecture:component-theming-surface` owns the target/anatomy mapping and
@@ -189,17 +194,17 @@ icon artwork, live-region timing, or divider/icon behavior.
 
 ## Verification map
 
-| Contract                  | Verification                                                                                                    | Representative states                                                                                                              | Mutation or failure expectation                                                                                                                    | Audit section                           |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| FR1, AR1, AR3             | `ChatSystemMessage.test.tsx`, scoped axe, and exact-head Chromium receipts                                      | Default, default with icon, long content, nested live log, neutral light/dark                                                      | Missing content, status role, icon content, wrapping, or browser-visible subject fails focused or browser evidence.                                | `audit:ChatSystemMessage/accessibility` |
-| FR2, AR2                  | `ChatSystemMessage.test.tsx`, Divider tests, scoped axe, and exact-head Chromium receipts                       | Divider in neutral light/dark                                                                                                      | Lost separator role, label association, orientation, content, or paint fails focused or browser evidence.                                          | `audit:ChatSystemMessage/behavior`      |
-| FR3                       | Closed audit inventory and exact-head observation of the divider/icon partition                                 | Divider with supplied icon                                                                                                         | The audit must expose, not silently omit, the unresolved branch; implementation remains unchanged until owner decision.                            | `audit:ChatSystemMessage/public-api`    |
-| FR4                       | Mutation-sensitive root-passthrough tests, source inspection, type checks, and target reflection                | Default and divider roots                                                                                                          | Removing ref, className, style, xstyle, ARIA forwarding, or owned role precedence fails focused tests.                                             | `audit:ChatSystemMessage/public-api`    |
-| FR5                       | `themingTargets.test.ts`, source inspection, generated build, and exact-head computed paint                     | Both variants and color modes                                                                                                      | Target/state metadata drift, raw styling, physical layout, or unresolved mode paint fails checks or browser evidence.                              | `audit:ChatSystemMessage/theming`       |
-| FR6                       | Source inspection, strict lint, and component test suite                                                        | Every render                                                                                                                       | Adding hidden state or an owned external resource triggers runtime review and corresponding evidence.                                              | `audit:ChatSystemMessage/code-health`   |
-| RTL relation              | Source-hashed verified-N/A record                                                                               | Both variants and caller-owned icon content                                                                                        | Directional component-owned content, physical positioning, ordering, scroll/drag, overlay, or horizontal keyboard behavior invalidates the record. | `audit:ChatSystemMessage/i18n-rtl`      |
-| Browser matrix            | `ChatSystemMessage.a11y.chromium.spec.ts` exact-head 10-sensor receipts                                         | Default, icon, wrapped long content, divider, unresolved divider/icon, nested live log, 320px/coarse pointer, light/dark, D7 pairs | Stale build, wrong story, incorrect mode, missing semantics, default overflow, failed contrast, blank crop, or page error fails closed.            | `audit:ChatSystemMessage/visual`        |
-| Documentation and surface | Consumer docs, published declarations, block metadata, explicit story ownership, exports, and `check:knowledge` | Props, `./Chat` subpath, four blocks, draft record                                                                                 | Missing or stale public docs, export, owner route, target map, or knowledge shape fails validation or review.                                      | `audit:ChatSystemMessage/docs`          |
+| Contract                  | Verification                                                                                                    | Representative states                                                                                                              | Mutation or failure expectation                                                                                                                           | Audit section                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| FR1, AR1, AR3             | `ChatSystemMessage.test.tsx`, scoped axe, and exact-head Chromium receipts                                      | Default, default with icon, long content, nested live log, neutral light/dark                                                      | Missing content, status role, icon content, wrapping, or browser-visible subject fails focused or browser evidence.                                       | `audit:ChatSystemMessage/accessibility` |
+| FR2, AR2                  | `ChatSystemMessage.test.tsx`, Divider tests, scoped axe, and exact-head Chromium receipts                       | Truthy divider labels plus empty string, numeric zero, and empty Fragment observations                                             | Lost separator role, truthy label association, orientation, content, or paint fails focused or browser evidence; falsey anomalies stay routed to Divider. | `audit:ChatSystemMessage/behavior`      |
+| FR3                       | Closed audit inventory and exact-head observation of the divider/icon partition                                 | Divider with supplied icon                                                                                                         | The audit must expose, not silently omit, the unresolved branch; implementation remains unchanged until owner decision.                                   | `audit:ChatSystemMessage/public-api`    |
+| FR4                       | Mutation-sensitive root-passthrough tests, source inspection, type checks, and target reflection                | Default and divider roots                                                                                                          | Removing ref, className, style, xstyle, ARIA forwarding, or owned role precedence fails focused tests.                                                    | `audit:ChatSystemMessage/public-api`    |
+| FR5                       | `themingTargets.test.ts`, source inspection, generated build, and exact-head computed paint                     | Both variants and color modes                                                                                                      | Target/state metadata drift, raw styling, physical layout, or unresolved mode paint fails checks or browser evidence.                                     | `audit:ChatSystemMessage/theming`       |
+| FR6                       | Source inspection, strict lint, and component test suite                                                        | Every render                                                                                                                       | Adding hidden state or an owned external resource triggers runtime review and corresponding evidence.                                                     | `audit:ChatSystemMessage/code-health`   |
+| RTL relation              | Source-hashed verified-N/A record                                                                               | Both variants and caller-owned icon content                                                                                        | Directional component-owned content, physical positioning, ordering, scroll/drag, overlay, or horizontal keyboard behavior invalidates the record.        | `audit:ChatSystemMessage/i18n-rtl`      |
+| Browser matrix            | `ChatSystemMessage.a11y.chromium.spec.ts` exact-head 10-sensor receipts                                         | Default, icon, wrapped long content, divider, unresolved divider/icon, nested live log, 320px/coarse pointer, light/dark, D7 pairs | Stale build, wrong story, incorrect mode, missing semantics, default overflow, failed contrast, blank crop, or page error fails closed.                   | `audit:ChatSystemMessage/visual`        |
+| Documentation and surface | Consumer docs, published declarations, block metadata, explicit story ownership, exports, and `check:knowledge` | Props, `./Chat` subpath, four blocks, draft record                                                                                 | Missing or stale public docs, export, owner route, target map, or knowledge shape fails validation or review.                                             | `audit:ChatSystemMessage/docs`          |
 
 ## Decision log
 

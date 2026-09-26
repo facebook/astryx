@@ -27,7 +27,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        'Optional caller-provided icon content associated with the message. Wrap in Icon for consistent sizing.',
+        'Optional caller-provided icon content. Rendered before the message in the default variant; the divider variant currently does not render it. Wrap in Icon for consistent sizing.',
       slotElements: [
         {
           __element: 'Icon',
@@ -91,7 +91,7 @@ export const docs = {
         name: 'Icon content',
         required: false,
         description:
-          'Optional caller-provided icon content associated with the message. Variant-specific behavior remains under review.',
+          'Rendered before the message in the default variant; the divider variant currently does not render it.',
       },
       {
         name: 'Divider',
@@ -113,7 +113,7 @@ export const docsZh = {
       '事实性系统消息内容，如日期、加入/离开通知或状态变更；较长的 default 内容会在可用宽度内换行。',
     variant:
       "视觉变体。'default' 渲染居中文本。'divider' 通过 Divider 在两侧添加水平线，用于日期分隔和段落分隔。",
-    icon: '与系统消息关联的可选调用方图标内容。使用 Icon 包裹以获得一致的尺寸。',
+    icon: '可选的调用方图标内容。default 变体会在消息前渲染；divider 变体当前不会渲染。使用 Icon 包裹以获得一致的尺寸。',
     xstyle: '用于布局自定义的 StyleX 样式。',
   },
   theming: {
@@ -157,7 +157,7 @@ export const docsDense = {
       'factual React content: date, join/leave, status change; long default content wraps',
     variant:
       'default=centered text, divider=horizontal lines via Divider for date/section breaks',
-    icon: 'optional caller-provided icon content; wrap in Icon',
+    icon: 'optional caller icon; rendered before default message; divider currently does not render it',
     xstyle: 'additional StyleX layout styles',
   },
 };

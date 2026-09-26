@@ -219,16 +219,7 @@ async function openCase(
   page.on('pageerror', error => errors.push(String(error)));
   browserVersion = page.context().browser()?.version() ?? 'unknown';
   await page.goto(storyUrl(auditCase.storyId, mode));
-  const target = page.locator(`[data-system-message-case="${auditCase.key}"]`);
-  await target.waitFor();
-  await page
-    .locator('[data-system-message-case]')
-    .evaluateAll((elements, selectedCase) => {
-      for (const element of elements) {
-        const candidate = element as HTMLElement;
-        candidate.hidden = candidate.dataset.systemMessageCase !== selectedCase;
-      }
-    }, auditCase.key);
+  await page.locator(`[data-system-message-case="${auditCase.key}"]`).waitFor();
   await page.waitForFunction(
     expected =>
       document.documentElement.getAttribute('data-theme') === expected,
@@ -267,6 +258,28 @@ async function capture(
     const rect = root.getBoundingClientRect();
     const contentRect = content?.getBoundingClientRect() ?? null;
     const liveLog = root.closest<HTMLElement>('[role="log"]');
+    const textLineTops = new Set<number>();
+    const textWalker = document.createTreeWalker(
+      textElement,
+      NodeFilter.SHOW_TEXT,
+    );
+    for (
+      let textNode = textWalker.nextNode();
+      textNode != null;
+      textNode = textWalker.nextNode()
+    ) {
+      if ((textNode.textContent ?? '').trim() === '') {
+        continue;
+      }
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      for (const lineRect of range.getClientRects()) {
+        if (lineRect.width > 0 && lineRect.height > 0) {
+          textLineTops.add(Math.round(lineRect.top * 2) / 2);
+        }
+      }
+    }
+    const textLineCount = textLineTops.size;
     const parse = (value: string) => {
       const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
       return channels.length >= 3
@@ -345,9 +358,7 @@ async function capture(
         contentRect == null || contentRect.left >= rect.left - 1,
       contentEndsWithinRoot:
         contentRect == null || contentRect.right <= rect.right + 1,
-      contentWraps:
-        contentRect != null &&
-        contentRect.height > Number.parseFloat(textStyle.fontSize) * 1.5,
+      textLineCount,
       liveLog:
         liveLog == null
           ? null
@@ -457,6 +468,7 @@ async function capture(
     iconCount: auditCase.expectedIconCount,
     interactiveCount: 0,
     expectWrap: auditCase.expectWrap ?? false,
+    textLineExpectation: auditCase.expectWrap ? 'multiple' : 'single',
     liveLog: auditCase.nestedInLiveLog
       ? {role: 'log', ariaLive: 'polite'}
       : null,
@@ -467,6 +479,10 @@ async function capture(
       failures.push(message);
     }
   };
+
+  const textLineCountMatches = expected.expectWrap
+    ? actual.textLineCount >= 2
+    : actual.textLineCount === 1;
 
   check(actual.storyId === expected.storyId, 'Storybook story id drifted');
   check(actual.selectorCount === 1, 'expected exactly one audit subject');
@@ -495,6 +511,10 @@ async function capture(
   );
   check(actual.direction === expected.direction, 'computed direction drifted');
   check(actual.overflowFree, 'component or page has horizontal overflow');
+  check(
+    textLineCountMatches,
+    `text line count ${actual.textLineCount} does not match the ${expected.textLineExpectation} expectation`,
+  );
   if (expected.expectWrap) {
     check(
       actual.contentStartsWithinRoot,
@@ -504,7 +524,6 @@ async function capture(
       actual.contentEndsWithinRoot,
       'long content crosses the root end edge',
     );
-    check(actual.contentWraps, 'long content does not wrap');
   }
   check(
     JSON.stringify(actual.liveLog) === JSON.stringify(expected.liveLog),
@@ -650,6 +669,7 @@ async function capture(
         overflowFree: true,
         nonZero: true,
         wraps: expected.expectWrap,
+        textLineExpectation: expected.textLineExpectation,
         insideInlineEdges: expected.expectWrap,
       },
       observed: {
@@ -657,7 +677,7 @@ async function capture(
         contentGeometry: actual.contentGeometry,
         contentStartsWithinRoot: actual.contentStartsWithinRoot,
         contentEndsWithinRoot: actual.contentEndsWithinRoot,
-        contentWraps: actual.contentWraps,
+        textLineCount: actual.textLineCount,
         overflowFree: actual.overflowFree,
       },
       passed:
@@ -665,10 +685,9 @@ async function capture(
         actual.geometry.width > 0 &&
         actual.geometry.height > 0 &&
         actual.overflowFree &&
+        textLineCountMatches &&
         (!expected.expectWrap ||
-          (actual.contentStartsWithinRoot &&
-            actual.contentEndsWithinRoot &&
-            actual.contentWraps)),
+          (actual.contentStartsWithinRoot && actual.contentEndsWithinRoot)),
     },
     'Settled render': {
       expected: {fontsReady: true, pageErrors: 0, storyError: false},
@@ -896,13 +915,15 @@ test.afterAll(async () => {
           },
           emptyContentPartitions: {
             emptyString:
-              'Accepted ReactNode input; the status root remains and visible text is empty in both variants.',
+              'Focused unit evidence: the status root and separator remain; no visible label or accessible name is produced.',
             numericZero:
-              'Accepted ReactNode input; default renders 0 while delegated Divider currently renders no label.',
+              'Focused unit evidence: the status root and separator remain; Divider paints two zero text nodes (textContent="00") with no accessible name.',
             emptyFragment:
-              'Accepted ReactNode input; the status root remains and visible text is empty in both variants.',
+              'Focused unit evidence: the status root and separator remain; no visible label or accessible name is produced.',
           },
           sharedAdvisories: {
+            dividerFalseyLabel:
+              'Under spec:AST-002/FR15, empty string and empty Fragment content leave the separator without a visible label or accessible name, while numeric zero paints stray textContent="00" with no accessible name. This shared advisory is routed to component:Divider.',
             dividerLongLabelOverflow:
               'Source inspection shows that a long divider label can cross the inline edge because Divider owns a non-shrinking label. This is routed to component:Divider without assigning the defect to ChatSystemMessage.',
             dividerForcedColors:
