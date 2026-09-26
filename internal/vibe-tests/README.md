@@ -139,7 +139,7 @@ The `accessibility` dimension has two bases (see issue #4145):
   even examine; 0 means the score carries no signal.
 - **Accessibility (runtime + hygiene)** — when `axe-results.json` exists in
   the iteration directory, axe-core violations from the rendered preview DOM
-  (light + dark, headless Chromium) fold into the score by impact
+  (light + dark requested, headless Chromium) fold into the score by impact
   (critical -15, serious -10, moderate -8, minor -3 per violation rule).
   A static finding that axe also checks (`img-no-alt` → `image-alt`,
   `input-no-label` → `label`, `icon-button-no-label` → `button-name`,
@@ -153,7 +153,8 @@ The `accessibility` dimension has two bases (see issue #4145):
 
 When only some prompts have runtime data, reports label the dimension
 **Accessibility (mixed: k/n runtime)** instead of calling the whole score
-runtime-backed; the comparison views count every target they show.
+runtime-backed; the comparison views count every target they show, and the
+overview's dimension cards count the baseline they show a delta against.
 
 Each preview is scanned once with light and once with dark requested (both
 `prefers-color-scheme` and `?theme=`; Astryx previews take their `Theme`
