@@ -204,6 +204,14 @@ describe('build-css astryx.css', () => {
     }
   });
 
+  it('keeps raw position-try rules selector-free and parseable', () => {
+    expect(astryxCss).toContain(
+      '@position-try --astryx-menu-block-start-full-axis {',
+    );
+    expect(astryxCss).toContain('position-area: self-inline-end span-all;');
+    expect(astryxCss).not.toMatch(/@position-try[^{}]+\{[^{}]*html\[/);
+  });
+
   it('does not produce per-component CSS files', async () => {
     // Verify the cleanup — no common.css or per-component styles.css
     await expect(

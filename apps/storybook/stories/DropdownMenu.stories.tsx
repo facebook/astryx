@@ -87,10 +87,27 @@ const readinessStyles = stylex.create({
     paddingInlineStart: spacingVars['--spacing-4'],
     paddingInlineEnd: spacingVars['--spacing-4'],
     overflow: 'clip',
+    position: 'relative',
   },
   edgeAnchorRow: {
     display: 'flex',
     justifyContent: 'flex-end',
+  },
+  fallbackAnchorRow: {
+    position: 'absolute',
+    left: 85,
+  },
+  rtlFallbackAnchor: {
+    direction: 'rtl',
+    position: 'absolute',
+    left: 200,
+    top: 80,
+  },
+  verticalFullAxisAnchor: {
+    position: 'absolute',
+    left: 220,
+    top: 100,
+    writingMode: 'vertical-rl',
   },
 });
 
@@ -1091,8 +1108,170 @@ export const CompactDrillInPresentationRTL: Story = {
   },
 };
 
+async function openReadinessMenu(
+  canvasElement: HTMLElement,
+  label: string,
+): Promise<{menu: HTMLElement; trigger: HTMLElement}> {
+  const trigger = Array.from(
+    canvasElement.querySelectorAll<HTMLElement>('button'),
+  ).find(
+    button =>
+      button.getAttribute('aria-label') === label ||
+      button.textContent?.includes(label),
+  );
+  if (trigger == null) {
+    throw new Error(`Expected the ${label} trigger`);
+  }
+  trigger.click();
+  await new Promise<void>(resolve =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  const menu = canvasElement.querySelector<HTMLElement>(
+    `[role="menu"][aria-label="${label}"]`,
+  );
+  if (menu == null || menu.getClientRects().length === 0) {
+    throw new Error(`Expected the ${label} menu to be open`);
+  }
+  return {menu, trigger};
+}
+
+function assertSafeInlineGeometry(menu: HTMLElement): DOMRect {
+  const box = menu.getBoundingClientRect();
+  if (box.left < 15 || box.right > window.innerWidth - 15) {
+    throw new Error(
+      `Menu escaped viewport gutters: ${box.left}px–${box.right}px`,
+    );
+  }
+  return box;
+}
+
+export const PositionFallbackBeforeSizing: Story = {
+  name: 'Readiness / position fallback before sizing',
+  tags: ['visual-baseline'],
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Places a 220px menu on an arbitrary trigger whose start and end alignments both collide. The browser must shift the menu within safe viewport gutters before width containment is considered.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.fallbackAnchorRow)}>
+        <DropdownMenu
+          button={{
+            label: 'Help',
+            icon: <EllipsisHorizontalIcon />,
+            isIconOnly: true,
+          }}
+          menuWidth={220}
+          items={[
+            {label: 'View documentation', onClick: () => {}},
+            {label: 'Help and feedback', onClick: () => {}},
+            {type: 'divider'},
+            {label: 'About Astryx', onClick: () => {}},
+          ]}
+        />
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const {menu} = await openReadinessMenu(canvasElement, 'Help');
+    const box = assertSafeInlineGeometry(menu);
+    if (box.width < 219) {
+      throw new Error(`Menu resized before fallback: ${box.width}px`);
+    }
+  },
+};
+
+const TALL_FALLBACK_ITEMS = Array.from({length: 10}, (_, index) => ({
+  label: `Project action ${index + 1}`,
+  onClick: () => {},
+}));
+
+export const PositionFallbackRTL: Story = {
+  name: 'Readiness / position fallback / RTL',
+  tags: ['visual-baseline'],
+  parameters: {layout: 'fullscreen'},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.rtlFallbackAnchor)}>
+        <DropdownMenu
+          placement="start"
+          alignment="start"
+          button={{
+            label: 'RTL collision fallback',
+            icon: <EllipsisHorizontalIcon />,
+            isIconOnly: true,
+          }}
+          menuWidth={140}
+          items={TALL_FALLBACK_ITEMS.slice(0, 4)}
+        />
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const {menu, trigger} = await openReadinessMenu(
+      canvasElement,
+      'RTL collision fallback',
+    );
+    const menuBox = assertSafeInlineGeometry(menu);
+    const triggerBox = trigger.getBoundingClientRect();
+    if (menuBox.right > triggerBox.left + 1) {
+      throw new Error('RTL collision did not flip to the roomier side');
+    }
+  },
+};
+
+export const PositionFallbackVerticalWriting: Story = {
+  name: 'Readiness / position fallback / vertical writing',
+  tags: ['visual-baseline'],
+  parameters: {layout: 'fullscreen'},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.verticalFullAxisAnchor)}>
+        <DropdownMenu
+          placement="below"
+          alignment="start"
+          button={{
+            label: 'Vertical writing fallback',
+            icon: <EllipsisHorizontalIcon />,
+            isIconOnly: true,
+          }}
+          menuWidth={220}
+          items={[
+            {label: 'Documentation', onClick: () => {}},
+            {label: 'Help', onClick: () => {}},
+            {label: 'About', onClick: () => {}},
+          ]}
+        />
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const {menu, trigger} = await openReadinessMenu(
+      canvasElement,
+      'Vertical writing fallback',
+    );
+    const menuBox = menu.getBoundingClientRect();
+    const triggerBox = trigger.getBoundingClientRect();
+    if (menuBox.right > triggerBox.left + 1) {
+      throw new Error(
+        'vertical-rl block-end did not resolve left of the trigger',
+      );
+    }
+    if (menuBox.top < 15 || menuBox.bottom > window.innerHeight - 15) {
+      throw new Error('Vertical-writing full-axis fallback escaped gutters');
+    }
+  },
+};
+
 export const ViewportFit: Story = {
   name: 'Readiness / viewport fit',
+  tags: ['visual-baseline'],
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -1125,9 +1304,13 @@ export const ViewportFit: Story = {
     </div>
   ),
   play: async ({canvasElement}) => {
-    const trigger = canvasElement.querySelector('button');
-    if (trigger instanceof HTMLElement) {
-      trigger.click();
+    const {menu} = await openReadinessMenu(canvasElement, 'Project actions');
+    const box = assertSafeInlineGeometry(menu);
+    const safeWidth = window.innerWidth - 32;
+    if (box.width > safeWidth + 1 || box.width < safeWidth - 1) {
+      throw new Error(
+        `Oversize menu did not resolve to safe viewport width: ${box.width}px`,
+      );
     }
   },
 };

@@ -525,7 +525,7 @@ describe('DropdownMenu', () => {
     );
   });
 
-  it('caps default and custom widths to the available viewport', () => {
+  it('caps widths to the safe viewport without constraining the requested position area', () => {
     const {unmount} = render(
       <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
@@ -534,9 +534,15 @@ describe('DropdownMenu', () => {
     expect(popover?.className).toContain(
       'DropdownMenu__styles.popoverViewport',
     );
-    expect(popover?.className).toContain('DropdownMenu__styles.popoverAligned');
+    expect(popover?.getAttribute('style')).toMatch(
+      /position-try-fallbacks: [^;]*--[^;]*--/,
+    );
+    expect(popover?.getAttribute('style')).not.toContain('span-all');
     expect(popover).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
+    );
+    expect(popover?.className).not.toContain(
+      'DropdownMenu__styles.popoverViewportAligned',
     );
 
     unmount();
@@ -553,7 +559,10 @@ describe('DropdownMenu', () => {
       'DropdownMenu__styles.popoverViewport',
     );
     expect(popover).toHaveStyle({minWidth: 'var(--x-minWidth)'});
-    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100%');
+    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100vw');
+    expect(popover?.getAttribute('style')).not.toContain(
+      'min(640px, calc(100%',
+    );
   });
 
   it.each(['max-content', 'fit-content', 'auto'])(
@@ -575,7 +584,7 @@ describe('DropdownMenu', () => {
       );
       expect(popover?.getAttribute('style')).toContain(menuWidth);
       expect(popover?.className).toContain(
-        'DropdownMenu__styles.popoverViewportAligned',
+        'DropdownMenu__styles.popoverViewport',
       );
       expect(popover?.getAttribute('style')).not.toContain(`min(${menuWidth},`);
     },
