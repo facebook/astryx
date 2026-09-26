@@ -4,14 +4,19 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
- *   handleRef
+ *   handleRef. Inside an InputGroup it takes the group's size and drops its
+ *   own Field chrome, local description/status, and border radius so the
+ *   group provides the shared border.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
+ * - /apps/storybook/stories/InputGroup.stories.tsx (WithTokenizer,
+ *   WithTokenizerOverflow)
+ * - /packages/core/src/InputGroup/InputGroup.doc.mjs (compatible controls)
  * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
 
@@ -52,15 +57,19 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {
   colorVars,
   spacingVars,
   sizeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -201,7 +210,10 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   endContent?: ReactNode;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
-  /** Input size. @default 'md' */
+  /**
+   * Input size. Inside an InputGroup the group's size applies instead.
+   * @default 'md'
+   */
   size?: TokenizerSize;
   /**
    * Controls how tokens overflow when the container is too narrow.
@@ -304,6 +316,17 @@ const styles = stylex.create({
   truncatedWrapper: {
     flexWrap: 'nowrap',
     overflow: 'hidden',
+  },
+  inGroupWrapper: {
+    // InputGroup is a fixed-height, single-line surface, so tokens must not
+    // wrap: a second row would spill past the group's shared border. Keep the
+    // row on one line and let it scroll instead. A single row of tokens fits
+    // the group height (token = element size - 8px, plus 3px block padding).
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
+    // A horizontal scrollbar inside a 32px-tall control would eat the row;
+    // the row stays reachable by wheel, drag, and focus-driven scrolling.
+    scrollbarWidth: 'none',
   },
   layerPopover: {
     // Top-layer popover: match the anchor width exactly so the expanded
@@ -482,8 +505,12 @@ export function Tokenizer<T extends SearchableItem>({
   handleRef,
 }: TokenizerProps<T>) {
   const t = useTranslator();
-  const size = useSize(sizeProp, 'md');
+  const inputGroup = useInputGroup();
+  // The group's fixed-height row owns the size: an explicit larger size (and
+  // its tokens) would escape it, so a grouped Tokenizer takes the group's.
+  const size = useSize(inputGroup ? undefined : sizeProp, 'md');
   const inputId = useId();
+  const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -768,14 +795,20 @@ export function Tokenizer<T extends SearchableItem>({
     }
   }, [isDisabled, isLayerMode, layer]);
 
-  const ariaDescribedBy =
+  // Inside an InputGroup no Field renders the local description or status —
+  // the group's are the ones shown — so neither is referenced or painted; the
+  // disabled reason is input-local and stays.
+  const localStatus = inputGroup ? undefined : status;
+
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
-      description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && description ? descriptionId : null,
+      localStatus?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   const sizeStyle = sizeStyles[size];
 
@@ -812,15 +845,29 @@ export function Tokenizer<T extends SearchableItem>({
     left: 'anchor(start)',
   };
 
+  // The group container owns the shared border, so a grouped Tokenizer drops
+  // its own outer radius. In layer mode the placeholder — not this wrapper —
+  // is the element sitting in the group's flex row, so the content inside the
+  // popover keeps its standalone radius.
+  const isInGroupRow = inputGroup != null && !isLayerMode;
+
+  const wrapperMergedRef = useMergedRefs(
+    wrapperRef,
+    // Anchor + hover/focus listeners for the disabled-message tooltip.
+    // Handlers are gated internally by isEnabled, so attaching
+    // unconditionally is safe.
+    disabledMessageTooltip.ref,
+    isInGroupRow ? ref : undefined,
+  );
+  // Only mounted in layer mode, but merged here so the hook runs every render.
+  const placeholderMergedRef = useMergedRefs(
+    placeholderRef,
+    inputGroup ? ref : undefined,
+  );
+
   const wrapperContent = (
     <div
-      ref={el => {
-        wrapperRef.current = el;
-        // Anchor + hover/focus listeners for the disabled-message tooltip.
-        // Handlers are gated internally by isEnabled, so attaching
-        // unconditionally is safe.
-        disabledMessageTooltip.ref(el);
-      }}
+      ref={wrapperMergedRef}
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
@@ -830,7 +877,7 @@ export function Tokenizer<T extends SearchableItem>({
       {...mergeProps(
         themeProps('tokenizer', {
           size,
-          status: status?.type,
+          status: localStatus?.type,
           disabled: isDisabled ? 'disabled' : null,
         }),
         stylex.props(
@@ -840,16 +887,24 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated ? truncatedSizeStyles[size] : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+          localStatus && inputStatusBorderStyles[localStatus.type],
+          localStatus &&
+            !isDisabled &&
+            inputStatusHoverShadowStyles[localStatus.type],
+          localStatus && inputStatusFocusWithinStyles[localStatus.type],
+          isInGroupRow && groupStyles.inGroup,
+          isInGroupRow && styles.inGroupWrapper,
+          isInGroupRow && xstyle,
         ),
+        isInGroupRow ? className : undefined,
+        isInGroupRow ? style : undefined,
       )}>
       {startIcon && (
         <span {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
           {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         </span>
       )}
+      {inputGroup && <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>}
       {isTruncated ? (
         <OverflowList
           gap={1}
@@ -885,6 +940,7 @@ export function Tokenizer<T extends SearchableItem>({
           hasAutoFocus={hasAutoFocus}
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
+          ariaLabelledBy={ariaLabelledBy}
           onChangeQuery={onChangeQuery}
           __queryEntries={createEntries}
           debounceMs={debounceMs}
@@ -944,12 +1000,12 @@ export function Tokenizer<T extends SearchableItem>({
     tokenizerContent = (
       <>
         <div
-          ref={placeholderRef}
+          ref={placeholderMergedRef}
           onClick={handleWrapperClick}
           {...mergeProps(
             themeProps('tokenizer', {
               size,
-              status: status?.type,
+              status: localStatus?.type,
               disabled: isDisabled ? 'disabled' : null,
             }),
             stylex.props(
@@ -959,12 +1015,18 @@ export function Tokenizer<T extends SearchableItem>({
               placeholderSizeStyle,
               isTruncated && styles.truncatedWrapper,
               isDisabled && inputWrapperStyles.disabled,
-              status && inputStatusBorderStyles[status.type],
-              status &&
+              localStatus && inputStatusBorderStyles[localStatus.type],
+              localStatus &&
                 !isDisabled &&
-                inputStatusHoverShadowStyles[status.type],
-              status && inputStatusFocusWithinStyles[status.type],
+                inputStatusHoverShadowStyles[localStatus.type],
+              localStatus && inputStatusFocusWithinStyles[localStatus.type],
+              // The placeholder is the element in the group's flex row.
+              inputGroup && groupStyles.inGroup,
+              inputGroup && styles.inGroupWrapper,
+              inputGroup && xstyle,
             ),
+            inputGroup ? className : undefined,
+            inputGroup ? style : undefined,
           )}>
           {isTruncated && (
             <>
@@ -1003,6 +1065,18 @@ export function Tokenizer<T extends SearchableItem>({
     );
   } else {
     tokenizerContent = wrapperContent;
+  }
+
+  // Inside an InputGroup the group owns the label, description, and status
+  // chrome, so the Tokenizer must not render a second Field around itself.
+  if (inputGroup) {
+    return (
+      <>
+        {tokenizerContent}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
   }
 
   return (
