@@ -49,13 +49,10 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     maxInlineSize: '100%',
     maxBlockSize: '100%',
-    WebkitOverflowScrolling: 'touch',
     scrollbarColor: {
       default: `${colorVars['--color-neutral']} transparent`,
       '@media (forced-colors: active)': 'auto',
     },
-    scrollbarWidth: 'auto',
-    scrollbarGutter: 'auto',
     // Chromium can resolve CSS-only stuck/edge presentation for descendants.
     // Unsupported engines keep the hook state as the behavior source of truth.
     containerType: {
@@ -100,7 +97,7 @@ export type ScrollableAreaStickyContainment = ScrollStickyContainment;
 
 export interface ScrollableAreaProps extends Omit<
   BaseProps<HTMLDivElement>,
-  'aria-label' | 'children' | 'role' | 'tabIndex'
+  'aria-label' | 'role' | 'tabIndex'
 > {
   /** Content rendered inside the observed content box. */
   children?: ReactNode;
