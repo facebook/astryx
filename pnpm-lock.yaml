@@ -1142,7 +1142,7 @@ importers:
         specifier: 0.1.9
         version: link:../charts
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.6.3
         version: link:../core
       react:
         specifier: '>=19.2.0'

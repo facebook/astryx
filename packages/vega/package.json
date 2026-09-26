@@ -54,7 +54,7 @@
     "@astryxdesign/charts": "0.1.9"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.3.0",
+    "@astryxdesign/core": "0.6.3",
     "react": ">=19.2.0",
     "react-dom": ">=19.2.0",
     "vega": ">=6.0.0",
