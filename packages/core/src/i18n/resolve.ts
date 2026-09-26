@@ -153,21 +153,21 @@ export function getResolve(
       // translate those too, and only the consumer knows whether it needs
       // to, so astryx does not decide for them by short-circuiting first.
       const output = translator.format(result, values, locale);
-      if (typeof output !== 'string') {
-        // `format` is typed to return a string, but a translator is consumer
-        // code and the type is not enforced at runtime — react-intl returns a
-        // ReactNode[] for rich text, i18next can return null for a miss.
-        // astryx's output lands in aria-label and title, where a non-string
-        // becomes "[object Object]" or drops the attribute. Degrade to the
-        // message astryx already resolved: still correct, always a string.
-        warnOnce(
-          `astryx-i18n:translator::${key}`,
-          'astryx-i18n',
-          `translator.format returned ${typeof output} for ${key} (locale: ${locale}); expected a string. Using astryx's resolved message instead.`,
-        );
-        return result;
+      if (typeof output === 'string') {
+        return output;
       }
-      return output;
+      // `format` is typed to return a string, but a translator is consumer
+      // code and the type is not enforced at runtime — react-intl returns a
+      // ReactNode[] for rich text, i18next can return null for a miss.
+      // astryx's output lands in aria-label and title, where a non-string
+      // becomes "[object Object]" or drops the attribute. Fall through to the
+      // bundled formatter below: the same string astryx renders with no
+      // translator, placeholders filled in.
+      warnOnce(
+        `astryx-i18n:translator::${key}`,
+        'astryx-i18n',
+        `translator.format returned ${typeof output} for ${key} (locale: ${locale}); expected a string. Using astryx's bundled formatter instead.`,
+      );
     }
 
     if (values === undefined) {

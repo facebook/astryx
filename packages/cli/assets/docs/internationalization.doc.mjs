@@ -319,7 +319,7 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: "What you gain over the two-provider pattern is one runtime: your ICU formats, number and date configuration, and timezone apply to astryx's strings too. What you take on is the adapter itself. Astryx checks only that you returned a string — anything else warns once in development and falls back to the message astryx resolved, so a stray `ReactNode[]` never reaches an `aria-label`. It does not catch exceptions: an adapter that throws takes the render with it, deliberately, because a broken adapter is a bug you want to see.",
+          text: "What you gain over the two-provider pattern is one runtime: your ICU formats, number and date configuration, and timezone apply to astryx's strings too. What you take on is the adapter itself. Astryx checks only that you returned a string — anything else warns once in development and falls back to astryx's bundled formatter (the same output as with no translator), so a stray `ReactNode[]` never reaches an `aria-label`. It does not catch exceptions: an adapter that throws takes the render with it, deliberately, because a broken adapter is a bug you want to see.",
         },
         {
           type: 'prose',

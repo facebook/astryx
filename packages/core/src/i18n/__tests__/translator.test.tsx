@@ -252,7 +252,8 @@ describe('resolve — a misbehaving translator cannot poison the output', () => 
   // back a ReactNode[] for rich-text messages; i18next can return null/undefined
   // for a miss. astryx's output lands in aria-label and title, where a
   // non-string stringifies to "[object Object]" or drops the attribute — a
-  // silent accessibility regression. Degrade to the resolved message instead.
+  // silent accessibility regression. Degrade to the bundled formatter instead,
+  // so the output matches what astryx renders with no translator at all.
   const badReturns: {name: string; value: unknown}[] = [
     {name: 'undefined (i18next missing-key handler)', value: undefined},
     {name: 'null (i18next returnNull)', value: null},
@@ -264,7 +265,7 @@ describe('resolve — a misbehaving translator cannot poison the output', () => 
   ];
 
   for (const {name, value} of badReturns) {
-    test(`falls back to the resolved message when format returns ${name}`, () => {
+    test(`falls back to the bundled formatter when format returns ${name}`, () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const translator = badTranslator(value);
 
@@ -277,7 +278,9 @@ describe('resolve — a misbehaving translator cannot poison the output', () => 
         translator,
       );
 
-      expect(out).toBe('Go to page {page, number}');
+      // The formatted string, not the raw ICU template — that template is what
+      // a page button would otherwise announce.
+      expect(out).toBe('Go to page 5');
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0]?.[0]).toContain('astryx-i18n');
       warn.mockRestore();
@@ -524,6 +527,35 @@ describe('InternationalizationProvider — translator prop', () => {
     expect(
       screen.getByRole('navigation', {name: '«Pagination»'}),
     ).toBeInTheDocument();
+  });
+
+  test('a translator that returns null still gives page buttons a formatted name', () => {
+    // i18next can return null for a miss. The fallback must interpolate the
+    // page number, or every page button is announced as the raw template
+    // "Go to page {page, number}".
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    render(
+      <InternationalizationProvider
+        locale="en"
+        translator={badTranslator(null)}>
+        <Pagination
+          page={2}
+          totalItems={100}
+          pageSize={10}
+          onChange={() => {}}
+        />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Go to page 1'}),
+    ).toBeInTheDocument();
+    const labels = screen
+      .getAllByRole('button')
+      .map(button => button.getAttribute('aria-label') ?? '');
+    expect(labels.filter(label => label.includes('{'))).toEqual([]);
+    warn.mockRestore();
   });
 
   test('swapping the translator prop re-renders with the new one', () => {

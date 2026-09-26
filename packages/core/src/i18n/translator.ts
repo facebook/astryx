@@ -43,9 +43,10 @@ export interface Translator {
    * `fr` with no French catalog gets English text alongside `'fr'`.
    *
    * Must return a string. Anything else is reported once via `console.warn`
-   * in development and replaced by astryx's own resolved message, because the
-   * result also feeds `aria-label` and `title`. Exceptions are not caught: a
-   * broken adapter should be loud, not silently papered over.
+   * in development and replaced by astryx's bundled formatter output (the
+   * same string as with no translator), because the result also feeds
+   * `aria-label` and `title`. Exceptions are not caught: a broken adapter
+   * should be loud, not silently papered over.
    */
   format(
     message: string,

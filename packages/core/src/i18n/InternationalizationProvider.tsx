@@ -71,7 +71,8 @@ export interface InternationalizationProviderProps {
    *
    * Every astryx string goes through it, value-less ones included, so keep
    * your adapter's miss path cheap. It must return a string; anything else
-   * warns once in development and falls back to astryx's resolved message.
+   * warns once in development and falls back to astryx's bundled formatter
+   * (the same output as with no translator).
    *
    * A `translator` holds a function, so it can only be passed from a client
    * component — keep the wrapper in a `'use client'` module. A nested
