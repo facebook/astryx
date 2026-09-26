@@ -21,6 +21,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -245,6 +246,15 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   size?: 'sm' | 'md' | 'lg';
 }
 
+type InternalBaseTypeaheadProps<T extends SearchableItem> =
+  BaseTypeaheadProps<T> & {
+    tokenizerBehavior?: {
+      projectResults: (results: T[]) => T[];
+      selectedCount: number;
+      maxEntries?: number;
+    };
+  };
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -403,6 +413,12 @@ function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
   return length > 0 && length < minQueryLength;
 }
 
+const encodeOptionItemId = (id: string): string =>
+  id
+    .split('')
+    .map(character => character.charCodeAt(0).toString(16))
+    .join('-');
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -427,7 +443,7 @@ function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
  * />
  * ```
  */
-export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
+const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   searchSource,
   value,
   onChange,
@@ -444,6 +460,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onChangeQuery,
   onOpenChange,
   __queryEntries,
+  tokenizerBehavior,
   inputId: externalInputId,
   ariaDescribedBy,
   ariaLabelledBy,
@@ -465,7 +482,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   tabIndex: nativeInputTabIndex,
   ref,
   ...rest
-}: BaseTypeaheadProps<T>) {
+}: InternalBaseTypeaheadProps<T>) {
   const t = useTranslator();
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
@@ -491,9 +508,53 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [highlightedIndexState, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const projectResults = tokenizerBehavior?.projectResults;
+  const tokenizerSelectedCount = tokenizerBehavior?.selectedCount ?? 0;
+  const tokenizerMaxEntries = tokenizerBehavior?.maxEntries;
+  const isTokenizer = projectResults != null;
+  const isTokenizerAtMax =
+    isTokenizer &&
+    tokenizerMaxEntries != null &&
+    tokenizerSelectedCount >= tokenizerMaxEntries;
+  const isTokenizerBlocked = isTokenizer && (isDisabled || isTokenizerAtMax);
+  const menuItems = useMemo(() => {
+    const projected = projectResults?.(results) ?? results;
+    if (!isTokenizer) {
+      return projected;
+    }
+    const ordered = groupItems(projected, {ungroupedFirst: true}).flatMap(
+      group => group.items,
+    );
+    return query.length === 0 ? ordered.slice(0, maxMenuItems) : ordered;
+  }, [isTokenizer, maxMenuItems, projectResults, query, results]);
+  const highlightedItemIdRef = useRef<string | undefined>(undefined);
+  const previousHighlightedIndexRef = useRef(highlightedIndexState);
+  const preservedHighlightedIndex =
+    isTokenizer &&
+    highlightedIndexState === previousHighlightedIndexRef.current &&
+    highlightedItemIdRef.current != null
+      ? menuItems.findIndex(item => item.id === highlightedItemIdRef.current)
+      : -1;
+  const highlightedIndex =
+    preservedHighlightedIndex >= 0
+      ? preservedHighlightedIndex
+      : isTokenizer
+        ? Math.min(highlightedIndexState, menuItems.length - 1)
+        : highlightedIndexState;
+  useIsomorphicLayoutEffect(() => {
+    previousHighlightedIndexRef.current = highlightedIndexState;
+    highlightedItemIdRef.current =
+      isTokenizer && highlightedIndex >= 0
+        ? menuItems[highlightedIndex]?.id
+        : undefined;
+    if (isTokenizer && highlightedIndex !== highlightedIndexState) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- controlled filtering shifted the same logical option to a new index
+      setHighlightedIndex(highlightedIndex);
+    }
+  }, [highlightedIndex, highlightedIndexState, isTokenizer, menuItems]);
 
   // Report the busy state to a wrapper that has taken the indicator over.
   //
@@ -538,24 +599,36 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Monotonic counter incremented on selection, query-clear, and source
-  // replacement. Async searches that resolve afterwards compare their
-  // captured generation to the current value and discard stale results.
+  // Generations invalidate stale async work, reject responses from replaced
+  // sources, and identify retained cohorts.
   const searchGenRef = useRef(0);
-  // The generation at which results were last populated. handleFocus
-  // compares this to searchGenRef — if they differ, the cached results
-  // in the closure are stale (a selection cleared them) and shouldn't
-  // be re-shown.
   const resultsGenRef = useRef(0);
 
-  // Results still arriving from a replaced source must not land in the new
-  // one's menu.
-  const prevSearchSourceRef = useRef(searchSource);
-  if (prevSearchSourceRef.current !== searchSource) {
-    prevSearchSourceRef.current.cancel?.();
-    prevSearchSourceRef.current = searchSource;
-    searchGenRef.current++;
-  }
+  const searchLeaseRef = useRef<{
+    generation: number | null;
+    source: SearchSource<T>;
+  }>({generation: null, source: searchSource});
+
+  /* eslint-disable @eslint-react/set-state-in-effect -- authoritative committed state must synchronously invalidate Base-owned pending work before paint */
+  const releaseSearch = useCallback(
+    (shouldInvalidate: boolean) => {
+      if (shouldInvalidate) {
+        searchGenRef.current++;
+        if (searchTimeoutRef.current) {
+          clearTimeout(searchTimeoutRef.current);
+        }
+        searchTimeoutRef.current = null;
+        setLoading(false);
+        setHasSearched(false);
+      }
+      const lease = searchLeaseRef.current;
+      if (lease.generation != null) {
+        lease.generation = null;
+        lease.source.cancel?.();
+      }
+    },
+    [setLoading],
+  );
 
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
@@ -564,9 +637,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const handleLayerHide = useCallback(() => {
     onOpenChange?.(false);
+    highlightedItemIdRef.current = undefined;
     setHighlightedIndex(-1);
-    searchSource.cancel?.();
-  }, [onOpenChange, searchSource]);
+    const pending = loadingRef.current || searchTimeoutRef.current != null;
+    releaseSearch(isTokenizer && pending);
+  }, [isTokenizer, onOpenChange, releaseSearch]);
 
   const popover = usePopover({
     onShow: handleLayerShow,
@@ -584,15 +659,50 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // dropdown when it opens between pointerdown and pointerup/click.
   const showLayer = useCallback(() => {
     if (pointerActiveRef.current) {
+      const gen = searchGenRef.current;
       document.addEventListener(
         'click',
-        () => requestAnimationFrame(() => popover.show()),
+        () =>
+          requestAnimationFrame(() => {
+            if (gen === searchGenRef.current) {
+              popover.show();
+            }
+          }),
         {once: true},
       );
     } else {
       popover.show();
     }
   }, [popover]);
+
+  const invalidatePending = useCallback(
+    (shouldClose: boolean) => {
+      releaseSearch(true);
+      if (shouldClose) {
+        setResults([]);
+        setHighlightedIndex(-1);
+        popover.hide();
+      }
+    },
+    [popover, releaseSearch],
+  );
+
+  useIsomorphicLayoutEffect(() => {
+    if (searchLeaseRef.current.source !== searchSource) {
+      releaseSearch(true);
+      searchLeaseRef.current = {generation: null, source: searchSource};
+    }
+  }, [releaseSearch, searchSource]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (
+      projectResults != null &&
+      (isTokenizerBlocked || (results.length > 0 && menuItems.length === 0))
+    ) {
+      invalidatePending(true);
+    }
+  }, [isTokenizerBlocked, projectResults]);
+  /* eslint-enable @eslint-react/set-state-in-effect */
 
   // Set up anchor on the provided anchorRef or fall back to the input itself
   useEffect(() => {
@@ -608,11 +718,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Perform search
   const performSearch = useCallback(
     async (searchQuery: string) => {
-      searchSource.cancel?.();
+      releaseSearch(false);
       // Claim a new generation so overlapping searches can't race: an
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
+      searchLeaseRef.current = {generation: gen, source: searchSource};
       setLoading(true);
       setHasSearched(true);
       try {
@@ -626,6 +737,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           ...fetched,
           ...(__queryEntries?.(searchQuery, fetched) ?? []),
         ];
+        highlightedItemIdRef.current = undefined;
         setResults(shown);
         setHighlightedIndex(shown.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
@@ -653,6 +765,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      releaseSearch,
       searchSource,
       maxMenuItems,
       showLayer,
@@ -670,7 +783,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
       resultsGenRef.current = gen;
-      const shown = bootstrapResults.slice(0, maxMenuItems);
+      const shown = isTokenizer
+        ? bootstrapResults
+        : bootstrapResults.slice(0, maxMenuItems);
       const nextHighlightedIndex = shown.length > 0 ? 0 : -1;
       if (
         results.length === 0 &&
@@ -679,18 +794,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       ) {
         return;
       }
+      highlightedItemIdRef.current = undefined;
       setResults(shown);
       setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
     },
-    [highlightedIndex, maxMenuItems, results.length, showLayer],
+    [highlightedIndex, isTokenizer, maxMenuItems, results.length, showLayer],
   );
 
   // Perform bootstrap
   const performBootstrap = useCallback(async () => {
+    releaseSearch(false);
     const gen = ++searchGenRef.current;
+    searchLeaseRef.current = {generation: gen, source: searchSource};
     let bootstrapResult: T[] | Promise<T[]>;
     try {
       bootstrapResult = searchSource.bootstrap();
@@ -720,16 +838,20 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setLoading(false);
       }
     }
-  }, [searchSource, applyBootstrapResults, setLoading]);
+  }, [releaseSearch, searchSource, applyBootstrapResults, setLoading]);
 
   // Handle query change
   const handleQueryChange = useCallback(
     (newQuery: string) => {
+      if (isTokenizerBlocked) {
+        return;
+      }
       setQuery(newQuery);
       onChangeQuery?.(newQuery);
 
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
       }
 
       // Nothing to search: either the field was emptied, or the query is
@@ -740,31 +862,24 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         (newQuery.length === 0 && !hasEntriesOnFocus) ||
         isBelowMinQueryLength(newQuery, minQueryLength)
       ) {
-        searchGenRef.current++;
-        searchSource.cancel?.();
         // A query too short to search can still carry entries derived from
         // the text itself. `hasSearched` stays false either way, so the menu
         // never reports "no results" for a query nobody looked for.
         const derived = __queryEntries?.(newQuery, []) ?? [];
+        invalidatePending(derived.length === 0);
+        highlightedItemIdRef.current = undefined;
         setResults(derived);
         setHighlightedIndex(derived.length > 0 ? 0 : -1);
-        setHasSearched(false);
-        // Bumping the generation abandons any in-flight search, which means
-        // its own `finally` will decline to clear this — so clear it here or
-        // the field spins forever. Backspacing below the threshold on a remote
-        // source is the everyday way to hit that.
-        setLoading(false);
         // Clear any lingering result-count / no-results announcement.
         announce('');
         if (derived.length > 0) {
           showLayer();
-        } else {
-          popover.hide();
         }
         return;
       }
 
       const triggerSearch = () => {
+        searchTimeoutRef.current = null;
         if (newQuery.length > 0) {
           void performSearch(newQuery);
         } else if (hasEntriesOnFocus) {
@@ -779,18 +894,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      isTokenizerBlocked,
       onChangeQuery,
       hasEntriesOnFocus,
       minQueryLength,
       __queryEntries,
+      invalidatePending,
       showLayer,
       performSearch,
       performBootstrap,
-      popover,
       debounceMs,
-      searchSource,
       announce,
-      setLoading,
     ],
   );
 
@@ -805,36 +919,48 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
-      // Bump generation to invalidate any in-flight async searches
-      searchGenRef.current++;
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
+      if (isTokenizerBlocked) {
+        return;
       }
-      searchSource.cancel?.();
+      const hasCurrentResults =
+        resultsGenRef.current === searchGenRef.current &&
+        searchTimeoutRef.current == null;
+      const keepsTokenizerMenuOpen =
+        isTokenizer &&
+        hasCurrentResults &&
+        hasEntriesOnFocus &&
+        query.length === 0;
+
       onChange(item);
       setQuery('');
-      setResults([]);
-      setHasSearched(false);
-      // Same reason as in handleQueryChange: the invalidated search will not
-      // clear this itself. Selecting a stale result while the next search is
-      // still in flight would otherwise leave the field spinning.
-      setLoading(false);
-      popover.hide();
+      if (keepsTokenizerMenuOpen) {
+        resultsGenRef.current = searchGenRef.current;
+        setHighlightedIndex(Math.max(menuItems.indexOf(item), 0));
+      } else {
+        invalidatePending(true);
+      }
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource, setLoading],
+    [
+      menuItems,
+      hasEntriesOnFocus,
+      invalidatePending,
+      onChange,
+      isTokenizer,
+      isTokenizerBlocked,
+      query.length,
+    ],
   );
 
   // Handle focus
   const handleFocus = useCallback(() => {
-    if (isDisabled) {
+    if (isDisabled || isTokenizerAtMax) {
       return;
     }
-    if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
+    if (hasEntriesOnFocus && menuItems.length === 0 && query.length === 0) {
       void performBootstrap();
     } else if (
-      results.length > 0 &&
+      menuItems.length > 0 &&
       (query.length > 0 || hasEntriesOnFocus) &&
       // Only re-show cached results if they haven't been invalidated by
       // a selection. Refs are always current, so this check isn't affected
@@ -844,11 +970,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       showLayer();
     }
   }, [
-    isDisabled,
+    menuItems.length,
     hasEntriesOnFocus,
-    results.length,
-    query.length,
+    isDisabled,
+    isTokenizerAtMax,
     performBootstrap,
+    query.length,
     showLayer,
   ]);
 
@@ -862,9 +989,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // input, so this only closes on a genuine focus-out of the whole field.
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!popover.isOpen) {
-        return;
-      }
       const next = e.relatedTarget as Node | null;
       if (next) {
         const anchorEl = anchorRef?.current ?? fallbackAnchorRef.current;
@@ -873,16 +997,22 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           return;
         }
       }
+      if (!popover.isOpen) {
+        if (isTokenizer) {
+          invalidatePending(true);
+        }
+        return;
+      }
       popover.hide();
     },
-    [popover, anchorRef],
+    [anchorRef, invalidatePending, isTokenizer, popover],
   );
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
-      if (e.defaultPrevented) {
+      if (e.defaultPrevented || isTokenizerBlocked) {
         return;
       }
 
@@ -898,9 +1028,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
 
       if (!popover.isOpen) {
+        if (e.key === 'Escape' && isTokenizer) {
+          e.preventDefault();
+          invalidatePending(true);
+        }
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {
           e.preventDefault();
-          if (results.length > 0) {
+          if (menuItems.length > 0) {
             popover.show();
             setHighlightedIndex(0);
           } else if (
@@ -919,24 +1053,24 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          if (results.length > 0) {
+          if (menuItems.length > 0) {
             setHighlightedIndex(prev =>
-              prev < results.length - 1 ? prev + 1 : 0,
+              prev < menuItems.length - 1 ? prev + 1 : 0,
             );
           }
           break;
         case 'ArrowUp':
           e.preventDefault();
-          if (results.length > 0) {
+          if (menuItems.length > 0) {
             setHighlightedIndex(prev =>
-              prev > 0 ? prev - 1 : results.length - 1,
+              prev > 0 ? prev - 1 : menuItems.length - 1,
             );
           }
           break;
         case 'Enter':
           e.preventDefault();
-          if (highlightedIndex >= 0 && highlightedIndex < results.length) {
-            handleSelect(results[highlightedIndex]);
+          if (highlightedIndex >= 0 && highlightedIndex < menuItems.length) {
+            handleSelect(menuItems[highlightedIndex]);
           }
           break;
         case 'Escape':
@@ -954,7 +1088,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
-            if (results.length > 0) {
+            if (menuItems.length > 0) {
               setHighlightedIndex(0);
             }
           }
@@ -962,8 +1096,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         case 'End':
           if (popover.isOpen) {
             e.preventDefault();
-            if (results.length > 0) {
-              setHighlightedIndex(results.length - 1);
+            if (menuItems.length > 0) {
+              setHighlightedIndex(menuItems.length - 1);
             }
           }
           break;
@@ -971,7 +1105,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     },
     [
       popover,
-      results,
+      menuItems,
       highlightedIndex,
       handleSelect,
       hasEntriesOnFocus,
@@ -979,13 +1113,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       minQueryLength,
       performBootstrap,
       externalOnKeyDown,
+      invalidatePending,
+      isTokenizer,
+      isTokenizerBlocked,
     ],
   );
 
   // Generate item ID for accessibility
   const getItemId = useCallback(
-    (index: number) => `${listboxId}-option-${index}`,
-    [listboxId],
+    (index: number) => {
+      const item = menuItems[index];
+      return isTokenizer && item != null
+        ? `${listboxId}-option-${encodeOptionItemId(item.id)}`
+        : `${listboxId}-option-${index}`;
+    },
+    [isTokenizer, listboxId, menuItems],
   );
 
   // Keep the highlighted option visible during keyboard navigation; hover
@@ -995,21 +1137,22 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     highlightedIndex,
     setHighlightedIndex,
     getOptionId: getItemId,
-    itemCount: results.length,
+    itemCount: menuItems.length,
   });
 
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // Unmount: clear the pending debounce and cancel in-flight work.
   useEffect(() => {
+    const generation = searchGenRef;
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      prevSearchSourceRef.current.cancel?.();
+      generation.current++;
+      releaseSearch(false);
     };
-  }, []);
+  }, [releaseSearch]);
 
   return (
     <>
@@ -1024,7 +1167,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-activedescendant={
           popover.isOpen &&
           highlightedIndex >= 0 &&
-          highlightedIndex < results.length
+          highlightedIndex < menuItems.length
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -1055,7 +1198,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // attribute. Query and text mutation are blocked, but an already-open
         // highlighted option can still be selected with Enter after transition.
         disabled={isDisabled && !isFocusableDisabled}
-        readOnly={isFocusableDisabled || undefined}
+        readOnly={isFocusableDisabled || isTokenizerAtMax || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"
@@ -1084,7 +1227,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          {results.length === 0 && hasSearched ? (
+          {menuItems.length === 0 && hasSearched ? (
             <div
               role="option"
               aria-disabled="true"
@@ -1133,25 +1276,27 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                 );
               };
 
-              return groupItems(results, {ungroupedFirst: true}).map(group => {
-                const options = group.items.map(renderOption);
-                if (group.heading == null) {
-                  return options;
-                }
-                return (
-                  <div
-                    key={`group-${group.heading}`}
-                    role="group"
-                    aria-label={group.heading}>
+              return groupItems(menuItems, {ungroupedFirst: true}).map(
+                group => {
+                  const options = group.items.map(renderOption);
+                  if (group.heading == null) {
+                    return options;
+                  }
+                  return (
                     <div
-                      aria-hidden="true"
-                      {...stylex.props(styles.groupHeading)}>
-                      {group.heading}
+                      key={`group-${group.heading}`}
+                      role="group"
+                      aria-label={group.heading}>
+                      <div
+                        aria-hidden="true"
+                        {...stylex.props(styles.groupHeading)}>
+                        {group.heading}
+                      </div>
+                      {options}
                     </div>
-                    {options}
-                  </div>
-                );
-              });
+                  );
+                },
+              );
             })()
           )}
         </div>,
@@ -1167,8 +1312,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       )}
     </>
   );
-} as <T extends SearchableItem>(
+};
+
+export const BaseTypeahead = BaseTypeaheadImpl as <T extends SearchableItem>(
   props: BaseTypeaheadProps<T>,
 ) => React.ReactElement;
+
+/** Package-private additive entry point used only by Tokenizer. */
+export const TokenizerBaseTypeahead = BaseTypeaheadImpl;
 
 (BaseTypeahead as {displayName?: string}).displayName = 'BaseTypeahead';

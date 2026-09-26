@@ -1180,7 +1180,7 @@ describe('BaseTypeahead hasSearched reset', () => {
 });
 
 describe('BaseTypeahead popover after selection', () => {
-  it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+  it('keeps direct single-select BaseTypeahead closed after selection', async () => {
     const onChange = vi.fn();
     render(
       <BaseTypeahead
@@ -2040,4 +2040,433 @@ describe('the value is bounded by the content lane', () => {
     expect(style.width).toBe('fit-content');
     expect(style.marginInlineEnd).toBe('auto');
   });
+});
+
+async function flushSourceTransitionWork() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe('BaseTypeahead source transitions', () => {
+  it('cancels an active replaced source once after render', async () => {
+    const cancel = vi.fn();
+    const bootstrap = vi.fn(() => []);
+    const oldSource: SearchSource = {
+      search: () => [],
+      bootstrap,
+      cancel,
+    };
+    const newSource: SearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+    const observedCancelCounts: number[] = [];
+
+    function RenderProbe() {
+      observedCancelCounts.push(cancel.mock.calls.length);
+      return null;
+    }
+
+    const {rerender} = render(
+      <>
+        <BaseTypeahead
+          searchSource={oldSource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />
+        <RenderProbe />
+      </>,
+    );
+    fireEvent.focus(screen.getByRole('combobox'));
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+    cancel.mockClear();
+    observedCancelCounts.length = 0;
+
+    rerender(
+      <>
+        <BaseTypeahead
+          searchSource={newSource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />
+        <RenderProbe />
+      </>,
+    );
+
+    expect(observedCancelCounts[0]).toBe(0);
+    await waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+  });
+
+  it('clears a replaced source debounce without canceling unstarted work', async () => {
+    vi.useFakeTimers();
+    try {
+      const oldSearch = vi.fn(() => fruits);
+      const oldCancel = vi.fn();
+      const oldSource: SearchSource = {
+        search: oldSearch,
+        bootstrap: () => [],
+        cancel: oldCancel,
+      };
+      const newSearch = vi.fn(() => []);
+      const newSource: SearchSource = {
+        search: newSearch,
+        bootstrap: () => [],
+      };
+
+      const {rerender} = render(
+        <BaseTypeahead
+          searchSource={oldSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={50}
+        />,
+      );
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: 'apple'},
+      });
+
+      rerender(
+        <BaseTypeahead
+          searchSource={newSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={50}
+        />,
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect({
+        newSearchCalls: newSearch.mock.calls.length,
+        oldCancelCalls: oldCancel.mock.calls.length,
+        oldSearchCalls: oldSearch.mock.calls.length,
+      }).toEqual({
+        newSearchCalls: 0,
+        oldCancelCalls: 0,
+        oldSearchCalls: 0,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears busy and rejects late results when replacing an in-flight source', async () => {
+    let resolveOld: (items: SearchableItem[]) => void = () => {};
+    const oldCancel = vi.fn();
+    const oldSource: SearchSource = {
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          resolveOld = resolve;
+        }),
+      bootstrap: () => [],
+      cancel: oldCancel,
+    };
+    const newSource: SearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={oldSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+    oldCancel.mockClear();
+
+    rerender(
+      <BaseTypeahead
+        searchSource={newSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    await flushSourceTransitionWork();
+    const afterReplacement = {
+      busy: input.getAttribute('aria-busy'),
+      oldCancelCalls: oldCancel.mock.calls.length,
+    };
+
+    await act(async () => {
+      resolveOld(fruits);
+      await Promise.resolve();
+    });
+
+    expect({
+      afterLateSettlement: {
+        busy: input.getAttribute('aria-busy'),
+        expanded: input.getAttribute('aria-expanded'),
+      },
+      afterReplacement,
+    }).toEqual({
+      afterLateSettlement: {busy: null, expanded: 'false'},
+      afterReplacement: {busy: null, oldCancelCalls: 1},
+    });
+  });
+
+  it('cancels each same-source bootstrap and search lifetime once', async () => {
+    const cancel = vi.fn();
+    const bootstrap = vi.fn(() => fruits);
+    const search = vi.fn(() => [fruits[0]]);
+    const source: SearchSource = {bootstrap, cancel, search};
+
+    render(
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+    expect(cancel).not.toHaveBeenCalled();
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => expect(search).toHaveBeenCalledWith('App'));
+    expect(cancel).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(input, {target: {value: ''}});
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(2));
+    expect(cancel).toHaveBeenCalledTimes(2);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.keyDown(input, {key: 'Escape'});
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(cancel).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('direct single-select callback order', () => {
+  it('calls BaseTypeahead onChange before onOpenChange(false)', async () => {
+    const events: string[] = [];
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => events.push('change')}
+        onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    events.length = 0;
+    fireEvent.keyDown(input, {key: 'Enter'});
+    await waitFor(() => expect(events).toContain('close'));
+
+    expect(events).toEqual(['change', 'close']);
+  });
+
+  it('calls Typeahead onChange before onOpenChange(false)', async () => {
+    const events: string[] = [];
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => events.push('change')}
+        onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    events.length = 0;
+    fireEvent.keyDown(input, {key: 'Enter'});
+    await waitFor(() => expect(events).toContain('close'));
+
+    expect(events).toEqual(['change', 'close']);
+  });
+});
+
+describe('direct focusable-disabled transition compatibility', () => {
+  it.each([
+    ['BaseTypeahead', 'keyboard'],
+    ['BaseTypeahead', 'pointer'],
+    ['Typeahead', 'keyboard'],
+    ['Typeahead', 'pointer'],
+  ] as const)(
+    'lets %s commit an already-open highlighted option by %s',
+    async (component, interaction) => {
+      const events: string[] = [];
+      const renderSubject = (isDisabled: boolean) =>
+        component === 'BaseTypeahead' ? (
+          <BaseTypeahead
+            aria-label="Fruit"
+            searchSource={fruitSource}
+            value={null}
+            onChange={item => events.push(`change:${item?.id ?? 'none'}`)}
+            onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+            hasEntriesOnFocus
+            debounceMs={0}
+            isDisabled={isDisabled}
+            isFocusableDisabled={isDisabled}
+          />
+        ) : (
+          <Typeahead
+            label="Fruit"
+            searchSource={fruitSource}
+            value={null}
+            onChange={item => events.push(`change:${item?.id ?? 'none'}`)}
+            onOpenChange={isOpen => events.push(isOpen ? 'open' : 'close')}
+            hasEntriesOnFocus
+            debounceMs={0}
+            isDisabled={isDisabled}
+            disabledMessage="Fruit selection is unavailable"
+          />
+        );
+
+      const {rerender} = render(renderSubject(false));
+      const input = screen.getByRole('combobox', {name: 'Fruit'});
+      fireEvent.focus(input);
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'true'),
+      );
+      const option = screen.getByRole('option', {
+        name: 'Apple',
+        hidden: true,
+      });
+      expect(input).toHaveAttribute('aria-activedescendant', option.id);
+
+      rerender(renderSubject(true));
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(input).toHaveAttribute('aria-activedescendant', option.id);
+
+      events.length = 0;
+      if (interaction === 'keyboard') {
+        fireEvent.keyDown(input, {key: 'Enter'});
+      } else {
+        fireEvent.click(option);
+      }
+
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'false'),
+      );
+      expect(events).toEqual(['change:1', 'close']);
+      expect(input).toHaveValue('');
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+    },
+  );
+});
+
+describe('direct pending Escape compatibility', () => {
+  it.each(['BaseTypeahead', 'Typeahead'] as const)(
+    'lets a cancel-free late result reopen public %s after Escape',
+    async component => {
+      let resolveSearch: (items: SearchableItem[]) => void = () => {};
+      const lateResult = {id: 'late', label: 'Late pear'};
+      const source: SearchSource = {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveSearch = resolve;
+          }),
+        bootstrap: () => [fruits[0]],
+      };
+      const onChange = vi.fn();
+      const onOpenChange = vi.fn();
+
+      render(
+        component === 'BaseTypeahead' ? (
+          <BaseTypeahead
+            aria-label="Fruit"
+            searchSource={source}
+            value={null}
+            onChange={onChange}
+            onOpenChange={onOpenChange}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+        ) : (
+          <Typeahead
+            label="Fruit"
+            searchSource={source}
+            value={null}
+            onChange={onChange}
+            onOpenChange={onOpenChange}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+        ),
+      );
+      const input = screen.getByRole('combobox', {name: 'Fruit'});
+
+      fireEvent.focus(input);
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'true'),
+      );
+      onOpenChange.mockClear();
+
+      fireEvent.change(input, {target: {value: 'late'}});
+      await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+      const beforeEscape = {
+        busy: input.getAttribute('aria-busy'),
+        expanded: input.getAttribute('aria-expanded'),
+      };
+
+      fireEvent.keyDown(input, {key: 'Escape'});
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'false'),
+      );
+      const afterEscape = {
+        busy: input.getAttribute('aria-busy'),
+        expanded: input.getAttribute('aria-expanded'),
+      };
+
+      await act(async () => {
+        resolveSearch([lateResult]);
+        await Promise.resolve();
+      });
+
+      expect({
+        afterEscape,
+        afterLateSettlement: {
+          busy: input.getAttribute('aria-busy'),
+          expanded: input.getAttribute('aria-expanded'),
+          lateResultVisible:
+            screen.queryByRole('option', {name: 'Late pear', hidden: true}) !=
+            null,
+        },
+        beforeEscape,
+        changes: onChange.mock.calls,
+        openChanges: onOpenChange.mock.calls.flat(),
+      }).toEqual({
+        afterEscape: {busy: 'true', expanded: 'false'},
+        afterLateSettlement: {
+          busy: null,
+          expanded: 'true',
+          lateResultVisible: true,
+        },
+        beforeEscape: {busy: 'true', expanded: 'true'},
+        changes: [],
+        openChanges: [false, true],
+      });
+    },
+  );
 });

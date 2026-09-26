@@ -20,9 +20,9 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {Profiler} from 'react';
+import {Profiler, useState} from 'react';
 import userEvent from '@testing-library/user-event';
-import {Tokenizer} from './Tokenizer';
+import {Tokenizer, type TokenizerProps} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
@@ -949,33 +949,872 @@ describe('Tokenizer', () => {
     });
   });
 
-  describe('popover after selection', () => {
-    it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+  describe('popover after typed-query selection', () => {
+    it.each([false, true])(
+      'closes after selecting a typed result when hasEntriesOnFocus is %s',
+      async hasEntriesOnFocus => {
+        const onChange = vi.fn();
+        render(
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={onChange}
+            hasEntriesOnFocus={hasEntriesOnFocus}
+            debounceMs={0}
+          />,
+        );
+        const input = screen.getByRole('combobox');
+
+        fireEvent.change(input, {target: {value: 'Ali'}});
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-expanded', 'true');
+          expect(screen.getByText('Alice')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Alice'));
+        expect(onChange).toHaveBeenCalledWith([users[0]], {
+          item: users[0],
+          type: 'add',
+        });
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+      },
+    );
+  });
+
+  describe('consecutive selection menu', () => {
+    const fixture = (props: Partial<TokenizerProps<SearchableItem>> = {}) => (
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+        {...props}
+      />
+    );
+
+    function ControlledTokenizer({
+      debounceMs = 0,
+      maxEntries,
+      maxMenuItems,
+      source = userSource,
+    }: {
+      debounceMs?: number;
+      maxEntries?: number;
+      maxMenuItems?: number;
+      source?: SearchSource;
+    }) {
+      const [value, setValue] = useState<SearchableItem[]>([]);
+      return fixture({
+        debounceMs,
+        maxEntries,
+        maxMenuItems,
+        onChange: setValue,
+        searchSource: source,
+        value,
+      });
+    }
+
+    it('keeps focus and remaining choices open across pointer selections', async () => {
+      const user = userEvent.setup();
+      render(<ControlledTokenizer />);
+      const input = screen.getByRole('combobox');
+
+      await user.click(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+      await user.click(
+        screen.getByRole('option', {name: 'Alice', hidden: true}),
+      );
+      await waitFor(() => {
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.getByRole('option', {name: 'Bob', hidden: true}),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('option', {name: 'Bob', hidden: true}));
+      await waitFor(() => {
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.getByRole('button', {name: 'Remove Alice'}),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', {name: 'Remove Bob'}),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('option', {name: 'Charlie', hidden: true}),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it.each([
+      {name: 'natively disabled', disabledMessage: undefined},
+      {
+        name: 'focusable-disabled',
+        disabledMessage: 'You need edit access to change members',
+      },
+    ])(
+      'closes and blocks selection when an open menu becomes $name',
+      async ({disabledMessage}) => {
+        const onChange = vi.fn();
+        const {rerender} = render(fixture({onChange}));
+        const input = screen.getByRole('combobox');
+
+        fireEvent.focus(input);
+        const alice = await screen.findByRole('option', {
+          name: 'Alice',
+          hidden: true,
+        });
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).toHaveAttribute('aria-activedescendant', alice.id);
+
+        rerender(
+          fixture({
+            disabledMessage,
+            isDisabled: true,
+            onChange,
+          }),
+        );
+        fireEvent.keyDown(input, {key: 'Enter'});
+
+        expect(onChange).not.toHaveBeenCalled();
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+        if (disabledMessage == null) {
+          expect(input).toBeDisabled();
+        } else {
+          expect(input).toHaveAttribute('aria-disabled', 'true');
+        }
+      },
+    );
+
+    it('does not reopen a pointer-started menu after reaching its selection limit', async () => {
+      const frames: FrameRequestCallback[] = [];
+      const animationFrameSpy = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation(callback => {
+          frames.push(callback);
+          return frames.length;
+        });
+
+      try {
+        const {rerender} = render(fixture());
+        const input = screen.getByRole('combobox');
+
+        fireEvent.pointerDown(input);
+        fireEvent.focus(input);
+        await screen.findByRole('option', {name: 'Alice', hidden: true});
+        fireEvent.click(input);
+        expect(frames).toHaveLength(2);
+
+        rerender(fixture({maxEntries: 1, value: [users[0]]}));
+        act(() => frames.forEach(callback => callback(0)));
+
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+      } finally {
+        animationFrameSpy.mockRestore();
+      }
+    });
+
+    it('keeps DOM order and the logical next choice across keyboard selections', async () => {
+      const user = userEvent.setup();
+      const mixedItems: SearchableItem[] = [
+        {
+          id: 'grouped-a',
+          label: 'Grouped Alice',
+          auxiliaryData: {group: 'Team'},
+        },
+        {id: 'ungrouped', label: 'Ungrouped Bob'},
+        {
+          id: 'grouped-c',
+          label: 'Grouped Charlie',
+          auxiliaryData: {group: 'Team'},
+        },
+      ];
+      const mixedSource: SearchSource = {
+        search: () => mixedItems,
+        bootstrap: () => mixedItems,
+      };
+      render(<ControlledTokenizer source={mixedSource} />);
+      const input = screen.getByRole('combobox');
+
+      await user.click(input);
+      const ungrouped = await screen.findByRole('option', {
+        name: 'Ungrouped Bob',
+        hidden: true,
+      });
+      expect(input).toHaveAttribute('aria-activedescendant', ungrouped.id);
+
+      await user.keyboard('{ArrowDown}');
+      const groupedAlice = screen.getByRole('option', {
+        name: 'Grouped Alice',
+        hidden: true,
+      });
+      const groupedCharlie = screen.getByRole('option', {
+        name: 'Grouped Charlie',
+        hidden: true,
+      });
+      const groupedCharlieId = groupedCharlie.id;
+      expect(input).toHaveAttribute('aria-activedescendant', groupedAlice.id);
+
+      await user.keyboard('{Enter}');
+      await waitFor(() => {
+        const survivingCharlie = screen.getByRole('option', {
+          name: 'Grouped Charlie',
+          hidden: true,
+        });
+        expect(
+          screen.getByRole('button', {name: 'Remove Grouped Alice'}),
+        ).toBeInTheDocument();
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(survivingCharlie.id).toBe(groupedCharlieId);
+        expect(input).toHaveAttribute(
+          'aria-activedescendant',
+          survivingCharlie.id,
+        );
+      });
+
+      await user.keyboard('{Enter}');
+      await waitFor(() => {
+        const remaining = screen.getByRole('option', {
+          name: 'Ungrouped Bob',
+          hidden: true,
+        });
+        expect(
+          screen.getByRole('button', {name: 'Remove Grouped Charlie'}),
+        ).toBeInTheDocument();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).toHaveAttribute('aria-activedescendant', remaining.id);
+      });
+    });
+
+    it('preserves the highlighted item across a controlled selection update', async () => {
       const onChange = vi.fn();
-      render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[]}
-          onChange={onChange}
-          hasEntriesOnFocus
-          debounceMs={0}
-        />,
+      const {rerender} = render(fixture({onChange}));
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      const bob = await screen.findByRole('option', {
+        name: 'Bob',
+        hidden: true,
+      });
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(input).toHaveAttribute('aria-activedescendant', bob.id);
+
+      rerender(fixture({onChange, value: [users[0]]}));
+
+      expect(input).toHaveAttribute('aria-activedescendant', bob.id);
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenLastCalledWith([users[0], users[1]], {
+        item: users[1],
+        type: 'add',
+      });
+    });
+
+    it('filters committed choices by id and keeps a distinct same-label choice', async () => {
+      const selected = {id: 'selected', label: 'Same label'};
+      const remaining = {id: 'remaining', label: 'Same label'};
+      const source: SearchSource = {
+        search: () => [selected, remaining],
+        bootstrap: () => [selected, remaining],
+      };
+      const onChange = vi.fn();
+      render(fixture({onChange, searchSource: source, value: [selected]}));
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      const options = await screen.findAllByRole('option', {
+        name: 'Same label',
+        hidden: true,
+      });
+      expect(options).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-activedescendant', options[0].id);
+
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith([selected, remaining], {
+        item: remaining,
+        type: 'add',
+      });
+    });
+
+    it('reveals the next eligible loaded choice through a capped bootstrap cohort', async () => {
+      const source: SearchSource = {
+        search: () => users.slice(0, 2),
+        bootstrap: () => users.slice(0, 2),
+      };
+      render(<ControlledTokenizer maxMenuItems={1} source={source} />);
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      const alice = await screen.findByRole('option', {
+        name: 'Alice',
+        hidden: true,
+      });
+      expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(1);
+      fireEvent.keyDown(input, {key: 'Enter'});
+
+      await waitFor(() => {
+        const bob = screen.getByRole('option', {name: 'Bob', hidden: true});
+        expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(1);
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).toHaveAttribute('aria-activedescendant', bob.id);
+        expect(alice).not.toBeInTheDocument();
+      });
+
+      fireEvent.keyDown(input, {key: 'Enter'});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+      });
+    });
+
+    it.each(['deferred', 'rejected'] as const)(
+      'keeps a sole controlled selection active while $control, then closes on commit',
+      async control => {
+        const onChange = vi.fn();
+        const soleSource: SearchSource = {
+          search: () => [users[0]],
+          bootstrap: () => [users[0]],
+        };
+        const props = {
+          maxEntries: 1,
+          onChange,
+          searchSource: soleSource,
+        };
+        const {rerender} = render(fixture(props));
+        const input = screen.getByRole('combobox');
+
+        fireEvent.focus(input);
+        const alice = await screen.findByRole('option', {
+          name: 'Alice',
+          hidden: true,
+        });
+        const aliceId = alice.id;
+        fireEvent.keyDown(input, {key: 'Enter'});
+        expect(onChange).toHaveBeenCalledWith([users[0]], {
+          item: users[0],
+          type: 'add',
+        });
+
+        if (control === 'rejected') {
+          rerender(fixture({...props, value: []}));
+        }
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).toHaveAttribute('aria-activedescendant', aliceId);
+        expect(
+          screen.getByRole('option', {name: 'Alice', hidden: true}),
+        ).toBeInTheDocument();
+
+        rerender(fixture({...props, value: [users[0]]}));
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-expanded', 'false');
+          expect(input).not.toHaveAttribute('aria-busy');
+        });
+      },
+    );
+
+    it.each([
+      {
+        caseName: 'maximum entry count',
+        source: userSource,
+        maxEntries: 1,
+      },
+      {
+        caseName: 'all loaded choices selected',
+        source: {
+          search: () => [users[0]],
+          bootstrap: () => [users[0]],
+        } satisfies SearchSource,
+        maxEntries: undefined,
+      },
+    ])('closes after controlled state reaches $caseName', async props => {
+      const {rerender} = render(
+        fixture({
+          maxEntries: props.maxEntries,
+          searchSource: props.source,
+        }),
       );
       const input = screen.getByRole('combobox');
 
-      // Focus to open bootstrap results
       fireEvent.focus(input);
-      await act(async () => {
-        await new Promise(r => setTimeout(r, 50));
-      });
+      await screen.findByRole('option', {name: 'Alice', hidden: true});
       expect(input).toHaveAttribute('aria-expanded', 'true');
 
-      // Select an item
-      fireEvent.click(screen.getByText('Alice'));
-      expect(onChange).toHaveBeenCalled();
+      rerender(
+        fixture({
+          maxEntries: props.maxEntries,
+          searchSource: props.source,
+          value: [users[0]],
+        }),
+      );
 
-      // Popover should not reopen with an empty menu after selection
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+      });
+    });
+
+    it.each([
+      {caseName: 'an empty visible cohort', results: [users[0]]},
+      {caseName: 'one surviving choice', results: users.slice(0, 2)},
+    ])(
+      'filters a pending typed response to current controlled state: $caseName',
+      async ({caseName, results}) => {
+        let resolveSearch: (items: SearchableItem[]) => void = () => {};
+        const source: SearchSource = {
+          search: async () =>
+            new Promise<SearchableItem[]>(resolve => {
+              resolveSearch = resolve;
+            }),
+          bootstrap: () => [],
+        };
+        const {rerender} = render(
+          fixture({maxMenuItems: 1, searchSource: source}),
+        );
+        const input = screen.getByRole('combobox');
+
+        fireEvent.change(input, {target: {value: 'Ali'}});
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-busy', 'true');
+        });
+        rerender(fixture({searchSource: source, value: [users[0]]}));
+        await act(async () => {
+          resolveSearch(results);
+          await Promise.resolve();
+        });
+
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.queryByRole('option', {name: 'Alice', hidden: true}),
+        ).not.toBeInTheDocument();
+        if (caseName === 'one surviving choice') {
+          expect(
+            screen.getByRole('option', {name: 'Bob', hidden: true}),
+          ).toBeInTheDocument();
+          await waitFor(() => {
+            expect(politeRegion()?.textContent).toBe('1 result');
+          });
+        } else {
+          expect(screen.getByText('No results found')).toBeInTheDocument();
+          await waitFor(() => {
+            expect(politeRegion()?.textContent).toBe('No results found');
+          });
+        }
+      },
+    );
+
+    it('lets an initial pending bootstrap finish before projecting committed selections', async () => {
+      let resolveBootstrap: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        search: () => [],
+        bootstrap: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveBootstrap = resolve;
+          }),
+      };
+      render(
+        fixture({
+          maxMenuItems: 2,
+          searchSource: source,
+          value: [users[0]],
+        }),
+      );
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      });
+      await act(async () => {
+        resolveBootstrap(users);
+        await Promise.resolve();
+      });
+
+      await waitFor(() => {
+        const bob = screen.getByRole('option', {name: 'Bob', hidden: true});
+        expect(input).not.toHaveAttribute('aria-busy');
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).toHaveAttribute('aria-activedescendant', bob.id);
+        expect(
+          screen.queryByRole('option', {name: 'Alice', hidden: true}),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.getByRole('option', {name: 'Charlie', hidden: true}),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('keeps a deselected item in a pending typed response without double projection', async () => {
+      let resolveSearch: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveSearch = resolve;
+          }),
+        bootstrap: () => [],
+      };
+      const {rerender} = render(
+        fixture({searchSource: source, value: [users[0]]}),
+      );
+      const input = screen.getByRole('combobox');
+
+      fireEvent.change(input, {target: {value: 'a'}});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      });
+      rerender(fixture({searchSource: source, value: []}));
+      await act(async () => {
+        resolveSearch(users.slice(0, 2));
+        await Promise.resolve();
+      });
+
+      await waitFor(() => {
+        expect(input).not.toHaveAttribute('aria-busy');
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.getByRole('option', {name: 'Alice', hidden: true}),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('option', {name: 'Bob', hidden: true}),
+        ).toBeInTheDocument();
+        expect(politeRegion()?.textContent).toBe('2 results');
+      });
+    });
+
+    it.each(['typed search', 'bootstrap'] as const)(
+      'does not reopen from a cancel-free late $request after committed max',
+      async request => {
+        let resolveRequest: (items: SearchableItem[]) => void = () => {};
+        const pending = async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveRequest = resolve;
+          });
+        const source: SearchSource = {
+          search: request === 'typed search' ? pending : () => [],
+          bootstrap: request === 'bootstrap' ? pending : () => [],
+        };
+        const props = {maxEntries: 1, searchSource: source};
+        const {rerender} = render(fixture(props));
+        const input = screen.getByRole('combobox');
+
+        if (request === 'typed search') {
+          fireEvent.change(input, {target: {value: 'a'}});
+        } else {
+          fireEvent.focus(input);
+        }
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-busy', 'true');
+        });
+        rerender(fixture({...props, value: [users[0]]}));
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-expanded', 'false');
+          expect(input).not.toHaveAttribute('aria-busy');
+        });
+
+        await act(async () => {
+          resolveRequest([users[1]]);
+          await Promise.resolve();
+        });
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-busy');
+        expect(
+          screen.queryByRole('option', {name: 'Bob', hidden: true}),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it('forwards cancellation when committed state reaches max', async () => {
+      let resolveSearch: (items: SearchableItem[]) => void = () => {};
+      const cancel = vi.fn();
+      const source: SearchSource = {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveSearch = resolve;
+          }),
+        bootstrap: () => [],
+        cancel,
+      };
+      const props = {maxEntries: 1, searchSource: source};
+      const {rerender} = render(fixture(props));
+      const input = screen.getByRole('combobox');
+
+      fireEvent.change(input, {target: {value: 'a'}});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      });
+      const cancelCount = cancel.mock.calls.length;
+      rerender(fixture({...props, value: [users[0]]}));
+      await waitFor(() => {
+        expect(cancel.mock.calls.length).toBeGreaterThan(cancelCount);
+        expect(input).not.toHaveAttribute('aria-busy');
+      });
+      await act(async () => {
+        resolveSearch([users[1]]);
+        await Promise.resolve();
+      });
+    });
+
+    it('keeps a selected-only pending bootstrap closed', async () => {
+      let resolveBootstrap: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        search: () => [],
+        bootstrap: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveBootstrap = resolve;
+          }),
+      };
+      const {rerender} = render(fixture({searchSource: source}));
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      });
+      rerender(fixture({searchSource: source, value: [users[0]]}));
+      await act(async () => {
+        resolveBootstrap([users[0]]);
+        await Promise.resolve();
+      });
+
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        screen.queryByRole('option', {name: 'Alice', hidden: true}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps malformed-Unicode option ids unique and keyboard-selectable', async () => {
+      const highSurrogateItem = {id: '\ud800', label: 'High surrogate'};
+      const lowSurrogateItem = {id: '\udc00', label: 'Low surrogate'};
+      const pairedIdItem = {id: '\ud800\udc00', label: 'Surrogate pair'};
+      const source: SearchSource = {
+        search: () => [highSurrogateItem, lowSurrogateItem, pairedIdItem],
+        bootstrap: () => [highSurrogateItem, lowSurrogateItem, pairedIdItem],
+      };
+      const onChange = vi.fn();
+      render(fixture({onChange, searchSource: source}));
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      const highOption = await screen.findByRole('option', {
+        name: 'High surrogate',
+        hidden: true,
+      });
+      const lowOption = screen.getByRole('option', {
+        name: 'Low surrogate',
+        hidden: true,
+      });
+      const pairedOption = screen.getByRole('option', {
+        name: 'Surrogate pair',
+        hidden: true,
+      });
+      expect(new Set([highOption.id, lowOption.id, pairedOption.id]).size).toBe(
+        3,
+      );
+      expect(input).toHaveAttribute('aria-activedescendant', highOption.id);
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith([highSurrogateItem], {
+        item: highSurrogateItem,
+        type: 'add',
+      });
+    });
+
+    it('does not reopen after dismissal while replacement results are loading', async () => {
+      let resolveSearch: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveSearch = resolve;
+          }),
+        bootstrap: () => users.slice(0, 2),
+      };
+      render(<ControlledTokenizer source={source} />);
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      await screen.findByRole('option', {name: 'Alice', hidden: true});
+      fireEvent.change(input, {target: {value: 'a'}});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      });
+
+      fireEvent.keyDown(input, {key: 'Escape'});
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(input).not.toHaveAttribute('aria-busy');
+
+      await act(async () => {
+        resolveSearch(users);
+        await Promise.resolve();
+      });
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(input).not.toHaveAttribute('aria-busy');
+    });
+
+    it.each([0, 50])(
+      'closes stale typed results before a %ims bootstrap',
+      async debounceMs => {
+        let bootstrapCount = 0;
+        let resolveBootstrap: ((items: SearchableItem[]) => void) | undefined;
+        const bootstrap = vi.fn(
+          (): SearchableItem[] | Promise<SearchableItem[]> => {
+            bootstrapCount += 1;
+            if (bootstrapCount === 1) {
+              return [];
+            }
+            return new Promise<SearchableItem[]>(resolve => {
+              resolveBootstrap = resolve;
+            });
+          },
+        );
+        const source: SearchSource = {
+          search: () => users.slice(0, 2),
+          bootstrap,
+        };
+        render(<ControlledTokenizer source={source} debounceMs={debounceMs} />);
+        const input = screen.getByRole('combobox');
+
+        act(() => input.focus());
+        await waitFor(() => {
+          expect(bootstrap).toHaveBeenCalledTimes(1);
+          expect(input).not.toHaveAttribute('aria-busy');
+        });
+        fireEvent.change(input, {target: {value: 'a'}});
+        await waitFor(() => {
+          expect(input).toHaveAttribute('aria-expanded', 'true');
+          expect(
+            screen.getByRole('option', {name: 'Alice', hidden: true}),
+          ).toBeInTheDocument();
+        });
+
+        fireEvent.change(input, {target: {value: ''}});
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        fireEvent.click(
+          screen.getByRole('option', {name: 'Alice', hidden: true}),
+        );
+        await waitFor(() => {
+          expect(
+            screen.getByRole('button', {name: 'Remove Alice'}),
+          ).toBeInTheDocument();
+          expect(input).toHaveAttribute('aria-expanded', 'false');
+        });
+
+        if (resolveBootstrap != null) {
+          await act(async () => {
+            resolveBootstrap?.(users.slice(1, 3));
+            await Promise.resolve();
+          });
+        } else {
+          await act(async () => {
+            await new Promise(resolve => setTimeout(resolve, debounceMs + 25));
+          });
+          expect(bootstrap).toHaveBeenCalledTimes(1);
+        }
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+      },
+    );
+
+    it('closes on Escape after a selection', async () => {
+      const user = userEvent.setup();
+      render(<ControlledTokenizer />);
+      const input = screen.getByRole('combobox');
+
+      await user.click(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+      await user.click(
+        screen.getByRole('option', {name: 'Alice', hidden: true}),
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', {name: 'Remove Alice'}),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('option', {name: 'Bob', hidden: true}),
+        ).toBeInTheDocument();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      await user.keyboard('{Escape}');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(input).toHaveFocus();
+    });
+
+    it('closes when focus leaves after a selection', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <ControlledTokenizer />
+          <button type="button">Outside</button>
+        </>,
+      );
+      const input = screen.getByRole('combobox');
+
+      await user.click(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+      await user.click(
+        screen.getByRole('option', {name: 'Alice', hidden: true}),
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', {name: 'Remove Alice'}),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('option', {name: 'Bob', hidden: true}),
+        ).toBeInTheDocument();
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      const outside = screen.getByRole('button', {name: 'Outside'});
+      await user.click(outside);
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(outside).toHaveFocus();
+    });
+
+    it('closes when no choices remain or the selection reaches maxEntries', async () => {
+      const user = userEvent.setup();
+      const atMax = render(<ControlledTokenizer maxEntries={1} />);
+      let input = screen.getByRole('combobox');
+
+      await user.click(input);
+      let alice = await screen.findByRole('option', {
+        name: 'Alice',
+        hidden: true,
+      });
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      await user.click(alice);
+      expect(
+        screen.getByRole('button', {name: 'Remove Alice'}),
+      ).toBeInTheDocument();
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      atMax.unmount();
+
+      const onlyAliceSource: SearchSource = {
+        search: () => [users[0]],
+        bootstrap: () => [users[0]],
+      };
+      render(<ControlledTokenizer source={onlyAliceSource} />);
+      input = screen.getByRole('combobox');
+      await user.click(input);
+      alice = await screen.findByRole('option', {
+        name: 'Alice',
+        hidden: true,
+      });
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      await user.click(alice);
+      expect(
+        screen.getByRole('button', {name: 'Remove Alice'}),
+      ).toBeInTheDocument();
       expect(input).toHaveAttribute('aria-expanded', 'false');
     });
   });
@@ -1710,6 +2549,552 @@ describe('Tokenizer end-lane reserve', () => {
     });
     await waitFor(() => {
       expect(laneHost(container)).toBeNull();
+    });
+  });
+});
+
+function dismissClosedTokenizerInput(
+  input: HTMLElement,
+  outside: HTMLElement,
+  dismissal: 'Escape' | 'outside blur',
+) {
+  if (dismissal === 'Escape') {
+    fireEvent.keyDown(input, {key: 'Escape'});
+  } else {
+    fireEvent.blur(input, {relatedTarget: outside});
+  }
+}
+
+async function flushTokenizerReviewWork() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe('Tokenizer closed-pending dismissal', () => {
+  it.each(['Escape', 'outside blur'] as const)(
+    'invalidates a cancel-free pending bootstrap on %s before the popup opens',
+    async dismissal => {
+      let resolveBootstrap: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        search: () => [],
+        bootstrap: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveBootstrap = resolve;
+          }),
+      };
+
+      render(
+        <>
+          <Tokenizer
+            label="Members"
+            searchSource={source}
+            value={[]}
+            onChange={() => {}}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+          <button type="button">Outside</button>
+        </>,
+      );
+      const input = screen.getByRole('combobox');
+      const outside = screen.getByRole('button', {name: 'Outside'});
+
+      fireEvent.focus(input);
+      await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+
+      dismissClosedTokenizerInput(input, outside, dismissal);
+      const afterDismiss = {
+        busy: input.getAttribute('aria-busy'),
+        expanded: input.getAttribute('aria-expanded'),
+      };
+
+      await act(async () => {
+        resolveBootstrap(users);
+        await Promise.resolve();
+      });
+
+      expect({
+        afterDismiss,
+        afterLateSettlement: {
+          busy: input.getAttribute('aria-busy'),
+          expanded: input.getAttribute('aria-expanded'),
+        },
+      }).toEqual({
+        afterDismiss: {busy: null, expanded: 'false'},
+        afterLateSettlement: {busy: null, expanded: 'false'},
+      });
+    },
+  );
+
+  it.each(['Escape', 'outside blur'] as const)(
+    'cancels an initial debounced search on %s while the popup is still closed',
+    async dismissal => {
+      vi.useFakeTimers();
+      try {
+        const search = vi.fn(() => users);
+        render(
+          <>
+            <Tokenizer
+              label="Members"
+              searchSource={{search, bootstrap: () => []}}
+              value={[]}
+              onChange={() => {}}
+              debounceMs={50}
+            />
+            <button type="button">Outside</button>
+          </>,
+        );
+        const input = screen.getByRole('combobox');
+        const outside = screen.getByRole('button', {name: 'Outside'});
+
+        fireEvent.focus(input);
+        fireEvent.change(input, {target: {value: 'a'}});
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(search).not.toHaveBeenCalled();
+
+        dismissClosedTokenizerInput(input, outside, dismissal);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(50);
+        });
+
+        expect({
+          busy: input.getAttribute('aria-busy'),
+          expanded: input.getAttribute('aria-expanded'),
+          query: (input as HTMLInputElement).value,
+          searchCalls: search.mock.calls.length,
+        }).toEqual({
+          busy: null,
+          expanded: 'false',
+          query: 'a',
+          searchCalls: 0,
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+});
+
+describe('Tokenizer queued pointer-bootstrap dismissal', () => {
+  it.each(['Escape', 'outside blur'] as const)(
+    'keeps a settled pointer bootstrap closed after %s before the queued frame',
+    async dismissal => {
+      const frames: FrameRequestCallback[] = [];
+      const animationFrameSpy = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation(callback => {
+          frames.push(callback);
+          return frames.length;
+        });
+
+      try {
+        render(
+          <>
+            <Tokenizer
+              label="Members"
+              searchSource={{search: () => [], bootstrap: () => users}}
+              value={[]}
+              onChange={() => {}}
+              hasEntriesOnFocus
+              debounceMs={0}
+            />
+            <button type="button">Outside</button>
+          </>,
+        );
+        const input = screen.getByRole('combobox');
+        const outside = screen.getByRole('button', {name: 'Outside'});
+
+        fireEvent.pointerDown(input);
+        act(() => input.focus());
+        await screen.findByRole('option', {name: 'Alice', hidden: true});
+        fireEvent.click(input);
+
+        expect(frames.length).toBeGreaterThan(0);
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+
+        if (dismissal === 'Escape') {
+          fireEvent.keyDown(input, {key: 'Escape'});
+          expect(input).toHaveFocus();
+        } else {
+          act(() => outside.focus());
+          expect(outside).toHaveFocus();
+        }
+
+        act(() => frames.splice(0).forEach(callback => callback(0)));
+
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+        expect(dismissal === 'Escape' ? input : outside).toHaveFocus();
+      } finally {
+        animationFrameSpy.mockRestore();
+      }
+    },
+  );
+});
+
+describe('Tokenizer settled-bootstrap close cancellation', () => {
+  it.each(['Escape', 'outside focus'] as const)(
+    'cancels the settled synchronous bootstrap exactly once on %s',
+    async closePath => {
+      const cancel = vi.fn();
+      const source: SearchSource = {
+        search: () => [],
+        bootstrap: () => users,
+        cancel,
+      };
+
+      render(
+        <>
+          <Tokenizer
+            label="Members"
+            searchSource={source}
+            value={[]}
+            onChange={() => {}}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+          <button type="button">Outside</button>
+        </>,
+      );
+      const input = screen.getByRole('combobox');
+      const outside = screen.getByRole('button', {name: 'Outside'});
+
+      act(() => input.focus());
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'true'),
+      );
+      expect(input).not.toHaveAttribute('aria-busy');
+      cancel.mockClear();
+
+      if (closePath === 'Escape') {
+        fireEvent.keyDown(input, {key: 'Escape'});
+      } else {
+        act(() => outside.focus());
+      }
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'false'),
+      );
+
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(closePath === 'Escape' ? input : outside).toHaveFocus();
+    },
+  );
+});
+
+describe('Tokenizer terminal interaction', () => {
+  it.each([
+    {maxEntries: 0, value: [] as SearchableItem[]},
+    {maxEntries: 1, value: [users[0]]},
+  ])(
+    'blocks typing, Create, and keyboard reopening at maxEntries=$maxEntries',
+    async ({maxEntries, value}) => {
+      const search = vi.fn(() => users);
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={{search, bootstrap: () => users}}
+          value={value}
+          onChange={onChange}
+          maxEntries={maxEntries}
+          hasEntriesOnFocus
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+
+      fireEvent.change(input, {target: {value: 'New member'}});
+      await flushTokenizerReviewWork();
+      const afterTyping = {
+        createVisible: screen.queryByText('Create "New member"') != null,
+        expanded: input.getAttribute('aria-expanded'),
+        query: (input as HTMLInputElement).value,
+        searchCalls: search.mock.calls.length,
+      };
+
+      fireEvent.keyDown(input, {key: 'Escape'});
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      await flushTokenizerReviewWork();
+      fireEvent.keyDown(input, {key: 'Enter'});
+
+      expect({
+        afterTyping,
+        changes: onChange.mock.calls,
+        expandedAfterKeys: input.getAttribute('aria-expanded'),
+      }).toEqual({
+        afterTyping: {
+          createVisible: false,
+          expanded: 'false',
+          query: '',
+          searchCalls: 0,
+        },
+        changes: [],
+        expandedAfterKeys: 'false',
+      });
+    },
+  );
+
+  it('still removes the last token with Backspace while enabled at maxEntries', () => {
+    const onChange = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={onChange}
+        maxEntries={1}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Backspace'});
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith([], {
+      item: users[0],
+      type: 'remove',
+    });
+  });
+
+  it.each([
+    {disabledMessage: undefined, mode: 'native disabled'},
+    {disabledMessage: 'Locked by policy', mode: 'focusable disabled'},
+  ])(
+    'blocks ArrowDown, Enter, and Backspace after transition to $mode',
+    async ({disabledMessage}) => {
+      const onChange = vi.fn();
+      const props = {
+        label: 'Members',
+        searchSource: userSource,
+        value: [users[0]],
+        onChange,
+        hasEntriesOnFocus: true,
+        debounceMs: 0,
+      };
+      const {rerender} = render(<Tokenizer {...props} />);
+      const input = screen.getByRole('combobox');
+
+      fireEvent.focus(input);
+      await screen.findByRole('option', {name: 'Bob', hidden: true});
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+
+      rerender(
+        <Tokenizer {...props} isDisabled disabledMessage={disabledMessage} />,
+      );
+      await waitFor(() =>
+        expect(input).toHaveAttribute('aria-expanded', 'false'),
+      );
+      onChange.mockClear();
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      await flushTokenizerReviewWork();
+      const reopened = input.getAttribute('aria-expanded');
+      fireEvent.keyDown(input, {key: 'Enter'});
+      fireEvent.keyDown(input, {key: 'Backspace'});
+
+      expect({changes: onChange.mock.calls, reopened}).toEqual({
+        changes: [],
+        reopened: 'false',
+      });
+    },
+  );
+
+  it('forwards one cancellation for one committed terminal close', async () => {
+    const cancel = vi.fn();
+    const source: SearchSource = {
+      search: () => users,
+      bootstrap: () => users,
+      cancel,
+    };
+    const props = {
+      label: 'Members',
+      searchSource: source,
+      onChange: () => {},
+      maxEntries: 1,
+      hasEntriesOnFocus: true,
+      debounceMs: 0,
+    };
+    const {rerender} = render(<Tokenizer {...props} value={[]} />);
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await screen.findByRole('option', {name: 'Alice', hidden: true});
+    cancel.mockClear();
+
+    rerender(<Tokenizer {...props} value={[users[0]]} />);
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Tokenizer close cancellation ownership', () => {
+  it('cancels once when a Tab close is followed by outside blur', async () => {
+    const cancel = vi.fn();
+    const onChange = vi.fn();
+    const source: SearchSource = {
+      search: () => users,
+      bootstrap: () => users,
+      cancel,
+    };
+
+    render(
+      <>
+        <Tokenizer
+          label="Members"
+          searchSource={source}
+          value={[]}
+          onChange={onChange}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />
+        <button type="button">Outside</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    const outside = screen.getByRole('button', {name: 'Outside'});
+
+    act(() => input.focus());
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    cancel.mockClear();
+
+    fireEvent.keyDown(input, {key: 'Tab'});
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+    act(() => outside.focus());
+
+    expect({
+      busy: input.getAttribute('aria-busy'),
+      cancelCalls: cancel.mock.calls.length,
+      changes: onChange.mock.calls,
+      expanded: input.getAttribute('aria-expanded'),
+      outsideFocused: document.activeElement === outside,
+    }).toEqual({
+      busy: null,
+      cancelCalls: 1,
+      changes: [],
+      expanded: 'false',
+      outsideFocused: true,
+    });
+  });
+
+  it('cancels source A once across selection close and source replacement while source B stays usable', async () => {
+    const cancelA = vi.fn();
+    const searchB = vi.fn(() => [users[1]]);
+    const sourceA: SearchSource = {
+      search: () => [users[0]],
+      bootstrap: () => [users[0]],
+      cancel: cancelA,
+    };
+    const sourceB: SearchSource = {
+      search: searchB,
+      bootstrap: () => [users[1]],
+    };
+    const onChange = vi.fn();
+    const props = {
+      label: 'Members',
+      onChange,
+      hasEntriesOnFocus: true,
+      debounceMs: 0,
+    };
+    const {rerender} = render(
+      <Tokenizer {...props} searchSource={sourceA} value={[]} />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    const alice = await screen.findByRole('option', {
+      name: 'Alice',
+      hidden: true,
+    });
+    cancelA.mockClear();
+
+    fireEvent.click(alice);
+    rerender(
+      <Tokenizer {...props} searchSource={sourceA} value={[users[0]]} />,
+    );
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+    rerender(
+      <Tokenizer {...props} searchSource={sourceB} value={[users[0]]} />,
+    );
+    await flushTokenizerReviewWork();
+
+    fireEvent.change(input, {target: {value: 'Bob'}});
+    const bob = await screen.findByRole('option', {
+      name: 'Bob',
+      hidden: true,
+    });
+
+    expect({
+      busy: input.getAttribute('aria-busy'),
+      cancelACalls: cancelA.mock.calls.length,
+      changes: onChange.mock.calls,
+      expanded: input.getAttribute('aria-expanded'),
+      resultVisible: bob != null,
+      searchBCalls: searchB.mock.calls,
+    }).toEqual({
+      busy: null,
+      cancelACalls: 1,
+      changes: [[[users[0]], {item: users[0], type: 'add'}]],
+      expanded: 'true',
+      resultVisible: true,
+      searchBCalls: [['Bob']],
+    });
+  });
+
+  it('cancels once across selection close and component unmount', async () => {
+    const cancel = vi.fn();
+    const onChange = vi.fn();
+    const source: SearchSource = {
+      search: () => [users[0]],
+      bootstrap: () => [users[0]],
+      cancel,
+    };
+    const props = {
+      label: 'Members',
+      searchSource: source,
+      onChange,
+      hasEntriesOnFocus: true,
+      debounceMs: 0,
+    };
+    const {rerender, unmount} = render(<Tokenizer {...props} value={[]} />);
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    const alice = await screen.findByRole('option', {
+      name: 'Alice',
+      hidden: true,
+    });
+    cancel.mockClear();
+
+    fireEvent.click(alice);
+    rerender(<Tokenizer {...props} value={[users[0]]} />);
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+    const beforeUnmount = {
+      busy: input.getAttribute('aria-busy'),
+      cancelCalls: cancel.mock.calls.length,
+      expanded: input.getAttribute('aria-expanded'),
+    };
+    unmount();
+
+    expect({
+      beforeUnmount,
+      cancelCallsAfterUnmount: cancel.mock.calls.length,
+      changes: onChange.mock.calls,
+    }).toEqual({
+      beforeUnmount: {busy: null, cancelCalls: 1, expanded: 'false'},
+      cancelCallsAfterUnmount: 1,
+      changes: [[[users[0]], {item: users[0], type: 'add'}]],
     });
   });
 });
