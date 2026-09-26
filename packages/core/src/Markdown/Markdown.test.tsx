@@ -80,6 +80,24 @@ describe('Markdown', () => {
       }
     });
 
+    it('keeps ids Unicode-aware and globally collision-safe', () => {
+      const source = ['# Café', '# Cafe\u0301', '# Café-1', '# 你好 世界'].join(
+        '\n\n',
+      );
+      render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+
+      expect(outline.map(item => item.id)).toEqual([
+        'café',
+        'café-1',
+        'café-1-1',
+        '你好-世界',
+      ]);
+      for (const item of outline) {
+        expect(document.getElementById(item.id)).toHaveTextContent(item.label);
+      }
+    });
+
     it('keeps citation markers out of released heading ids', () => {
       render(
         <Markdown sources={{cite: {title: 'Citation'}}}>
@@ -89,6 +107,24 @@ describe('Markdown', () => {
       expect(
         screen.getByRole('heading', {name: /Before.*after/}),
       ).toHaveAttribute('id', 'before-after');
+    });
+
+    it('matches Outline when citations and math affect heading text', () => {
+      const source = '# Before [cite] $x + y$';
+      render(
+        <Markdown
+          sources={{cite: {title: 'Citation'}}}
+          components={{math: ({value}) => <span>{value}</span>}}>
+          {source}
+        </Markdown>,
+      );
+      const [item] = parseOutlineFromMarkdown(source, {
+        sourceIds: new Set(['cite']),
+        math: true,
+      });
+
+      expect(item.id).toBe('before-x-y');
+      expect(screen.getByRole('heading')).toHaveAttribute('id', item.id);
     });
 
     it('passes the generated id to a custom heading component', () => {

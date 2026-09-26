@@ -53,11 +53,9 @@ import {
   parseMarkdownAstIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
-  slugify,
-  uniqueSlug,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
-import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
+import {getMarkdownAstLegacyCodeLanguage} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstPhrasingContent,
@@ -71,6 +69,7 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {projectMarkdownHeadings} from './headingProjection';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -2019,17 +2018,7 @@ export function Markdown<
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<RenderBlockNode, string>();
-    const counts = new Map<string, number>();
-    for (const block of blocks) {
-      if (block.type === 'heading') {
-        const label = markdownAstText(block.children, node =>
-          markdownExtensionText(preparedPlugins, node),
-        ).trim();
-        map.set(block, uniqueSlug(slugify(label), counts));
-      }
-    }
-    return map;
+    return projectMarkdownHeadings(blocks, preparedPlugins).ids;
   }, [display, blocks, preparedPlugins]);
 
   const parsedInlineNodes = useMemo(() => {

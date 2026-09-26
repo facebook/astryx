@@ -2,7 +2,7 @@
 
 /**
  * @file parseOutlineFromMarkdown.ts
- * @input Uses Markdown's canonical AST parser and heading slug helpers
+ * @input Uses Markdown's canonical parser options, transforms, and heading projection
  * @output Exports parseOutlineFromMarkdown for extracting heading outlines from Markdown
  * @position Pure compatibility utility; consumed by useOutlineFromMarkdown and public exports
  *
@@ -11,16 +11,9 @@
  * - /packages/core/src/Outline/index.ts
  */
 
-import {
-  parseMarkdownAstInternal,
-  slugify,
-  uniqueSlug,
-} from '../Markdown/parser';
-import {markdownAstText} from '../Markdown/ast';
-import {
-  markdownExtensionText,
-  prepareMarkdownPlugins,
-} from '../Markdown/plugins/protocol';
+import {projectMarkdownHeadings} from '../Markdown/headingProjection';
+import {parseMarkdownAstInternal} from '../Markdown/parser';
+import {prepareMarkdownPlugins} from '../Markdown/plugins/protocol';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -30,14 +23,15 @@ import type {OutlineItem} from './types';
 /**
  * Extract heading items from a Markdown string.
  *
- * Uses Markdown's parser so fenced code blocks, tables, lists, and inline
- * formatting are interpreted consistently with rendered Markdown output.
- * Ids come from the parser's shared slug helpers, so they always match the
- * `id` attributes Markdown renders on its headings.
+ * Uses Markdown's parser and heading projection so syntax options, transforms,
+ * labels, and collision-safe ids match rendered Markdown output.
  */
 export interface ParseOutlineFromMarkdownOptions<
   Node extends MarkdownExtensionNode = never,
 > {
+  readonly sourceIds?: ReadonlySet<string>;
+  readonly autolink?: 'gfm';
+  readonly math?: boolean;
   readonly plugins?: ReadonlyArray<MarkdownPluginEntry<Node>>;
   /** Match Markdown's transform finality while content is streaming. */
   readonly isFinal?: boolean;
@@ -53,21 +47,17 @@ export function parseOutlineFromMarkdown<
     options?.plugins == null
       ? undefined
       : prepareMarkdownPlugins(options.plugins);
-  const counts = new Map<string, number>();
-  return parseMarkdownAstInternal(
+  const root = parseMarkdownAstInternal(
     markdown,
-    {plugins: options?.plugins},
+    {
+      sourceIds: options?.sourceIds,
+      autolink: options?.autolink,
+      math: options?.math,
+      plugins: options?.plugins,
+    },
     options?.isFinal ?? true,
-  )
-    .children.filter(block => block.type === 'heading')
-    .map(block => {
-      const label = markdownAstText(block.children, node =>
-        markdownExtensionText(prepared, node),
-      ).trim();
-      return {
-        id: uniqueSlug(slugify(label), counts),
-        label,
-        level: block.depth,
-      };
-    });
+  );
+  return projectMarkdownHeadings(root.children, prepared).headings.map(
+    ({id, label, level}) => ({id, label, level}),
+  );
 }
