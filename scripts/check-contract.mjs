@@ -30,18 +30,23 @@
  * Button `onClick` / `href` / `as`) is component API and MUST be documented
  * — filtering by name regex would hide it.
  *
- * The bag comes from one of two routes, ranked by proximity to the doc
- * (`createResolver`): an exported, top-level `{Name}Props` declaration, or
+ * The bag comes from two routes, ranked by proximity to the doc
+ * (`createResolver`): an exported, top-level `{Name}Props` declaration, and
  * the signatures of the exported `{Name}` value — every bag parameter of
  * every overload, a class's constructor parameter, aliases followed. Plenty
  * of public entries only have the second: the three indicators share one
  * generic `IndicatorProps<F>`, `ContextMenuItem` is `DropdownMenuItem`
  * re-exported under another name, every Table plugin hook takes a
- * `{...}Config`. A file-private or nested lookalike never counts, and the
+ * `{...}Config`. When BOTH sit in the same directory they are one
+ * component published twice, so the contract is their UNION, not whichever
+ * ranked first: a prop only the exported signature takes is as real to a
+ * builder as one only the declared type names, and requiring just one of
+ * them let the other drift. A file-private or nested lookalike never counts,
+ * a same-named type in another directory is a different symbol, and the
  * verdict does not depend on directory read order. What will not resolve —
- * no exported declaration or value, or a bag typed `any` — FAILS the run:
- * an entry that publishes a `props[]` contract nothing checked is the #5382
- * problem wearing a green tick.
+ * no exported declaration or value, or a bag typed `any` on either
+ * reconciled route — FAILS the run: an entry that publishes a `props[]`
+ * contract nothing checked is the #5382 problem wearing a green tick.
  *
  * Key lookup uses one `ts.Program` over the source tree so `extends` /
  * `Omit` / `Pick` resolve. A program-per-file is correct but ~40× slower.
@@ -408,11 +413,26 @@ function depth(file) {
  * declaration over a signature, then path order — so the file beside the
  * doc wins, a nested internal copy does not shadow it, a file-private
  * lookalike never counts, and the verdict does not depend on directory
- * read order. The first candidate that yields a bag is the contract.
+ * read order.
+ *
+ * The closest readable candidate is the contract, and the other route is
+ * UNIONED into it when it sits in the same directory.
+ * `export interface WidgetProps {a}` beside
+ * `export function Widget(props: {b})` is one component publishing two
+ * bags, and a builder may pass either, so the doc owes both; choosing one
+ * left the other free to drift behind a green tick. Proximity is what keeps
+ * that a reconciliation rather than a collision: a same-named type in
+ * another directory (core's `utils/themeProps.ts` `ThemeProps` against the
+ * `theme/Theme` component) is a different symbol and never joins, even at
+ * the same depth. So does a nested copy under the doc's directory: a
+ * declaration and a value at different depths with no barrel beside the
+ * doc (`Widget/types.ts`, `Widget/impl/Widget.tsx`) are NOT reconciled —
+ * the deeper one reads as internal. A bag that cannot be read on EITHER
+ * reconciled route is unresolved — half a contract is no contract.
  *
  * @param {import('typescript').Program} program
  * @param {import('typescript').TypeChecker} checker
- * @returns {(name: string, preferDir: string) => {props: Set<string>, route: 'declaration' | 'signature', file: string} | null}
+ * @returns {(name: string, preferDir: string) => {props: Set<string>, sources: {route: 'declaration' | 'signature', file: string}[]} | null}
  */
 export function createResolver(program, checker) {
   const declarations = new Map();
@@ -460,6 +480,10 @@ export function createResolver(program, checker) {
 
   return function resolve(name, preferDir) {
     const prefix = toTsPath(preferDir).replace(/\/?$/, '/');
+    const read = candidate =>
+      candidate.route === 'declaration'
+        ? propsFromDeclaration(checker, candidate.node)
+        : propsFromSignature(checker, candidate.symbol);
     const candidates = [
       ...(declarations.get(`${name}Props`) ?? []).map(entry => ({
         ...entry,
@@ -476,15 +500,42 @@ export function createResolver(program, checker) {
         Number(a.route === 'signature') - Number(b.route === 'signature') ||
         a.file.localeCompare(b.file),
     );
-    for (const candidate of candidates) {
-      const props =
-        candidate.route === 'declaration'
-          ? propsFromDeclaration(checker, candidate.node)
-          : propsFromSignature(checker, candidate.symbol);
-      if (props === UNDERIVABLE) return null;
-      if (props) return {props, route: candidate.route, file: candidate.file};
-    }
-    return null;
+
+    /** The first candidate whose bag can be read, or UNDERIVABLE if one blocks. */
+    const firstReadable = list => {
+      for (const candidate of list) {
+        const props = read(candidate);
+        if (props === UNDERIVABLE) return UNDERIVABLE;
+        if (props) return {...candidate, props};
+      }
+      return null;
+    };
+
+    // The closest readable candidate is the contract; the other route joins
+    // it when it sits in the same directory. That pairing is one component
+    // published twice and a builder may pass either bag, so the doc owes
+    // both; a same-named symbol in another directory is a different thing
+    // and stays out, however close it ranks.
+    const primary = firstReadable(candidates);
+    if (!primary || primary === UNDERIVABLE) return null;
+    const home = path.posix.dirname(primary.file);
+    const secondary = firstReadable(
+      candidates.filter(
+        candidate =>
+          candidate.route !== primary.route &&
+          path.posix.dirname(candidate.file) === home,
+      ),
+    );
+    if (secondary === UNDERIVABLE) return null;
+
+    const props = new Set(primary.props);
+    for (const prop of secondary?.props ?? []) props.add(prop);
+    return {
+      props,
+      sources: [primary, secondary]
+        .filter(Boolean)
+        .map(({route, file}) => ({route, file})),
+    };
   };
 }
 
@@ -609,8 +660,9 @@ function contractEntries(docs) {
 
 /**
  * Compare every `{Name}.doc.mjs` under `srcDir` to the prop bag source
- * declares for it — see `createResolver` for which bag wins. An entry no
- * route resolves is `unresolved`, which fails the run.
+ * declares for it — see `createResolver` for how the two routes are ranked
+ * and reconciled. An entry neither route resolves is `unresolved`, which
+ * fails the run.
  *
  * @param {string} srcDir
  * @returns {Promise<{missing: {component: string, prop: string, file: string}[], unresolved: {component: string, file: string}[], unreadable: {file: string, reason: string}[], unresolvable: string[], docCount: number}>}

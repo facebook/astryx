@@ -30,16 +30,22 @@
  *
  * Then which bag wins: only an exported, top-level `{Name}Props` counts,
  * the doc's own directory beats a foreign one, a shallower path beats a
- * nested copy, and the answer holds under any directory read order. Then
- * the parameter forms the signature route must read (class constructors,
- * rest tuples, every bag parameter, constrained type parameters, destructured
- * defaults, optional and Readonly / Partial / Omit / Pick parameters, unions
- * with primitives, index-signature-only bags, Parameters<typeof> and
- * ComponentProps<typeof>, bare callbacks; `any` / `unknown` / `object` are
- * unresolved, not empty), the declaration forms (memo / forwardRef / FC,
- * arrow consts, deferred and default exports, barrel chains), the platform
- * filter through that route (and that node_modules outside @types/react and
- * csstype is public API), the report shape, the resolver's route report, and
+ * nested copy, and the answer holds under any directory read order. When
+ * the declared type and the exported signature sit in the same directory
+ * they are RECONCILED rather than chosen between, so a prop only one of
+ * them carries is still owed by the doc, while a same-named symbol in
+ * another directory (real core: `utils/themeProps.ts` against the
+ * `theme/Theme` component; a sibling at the same depth) stays out.
+ * Then the parameter forms the signature route must read (class
+ * constructors, rest tuples, every bag parameter, constrained type
+ * parameters, destructured defaults, optional and Readonly / Partial /
+ * Omit / Pick parameters, unions with primitives, index-signature-only
+ * bags, Parameters<typeof> and ComponentProps<typeof>, bare callbacks;
+ * `any` / `unknown` / `object` are unresolved, not empty, on either
+ * reconciled route), the declaration forms (memo / forwardRef / FC, arrow
+ * consts, deferred and default exports, barrel chains), the platform filter
+ * through that route (and that node_modules outside @types/react and
+ * csstype is public API), the report shape, the resolver's source report, and
  * the remaining gates: the `docs` export is the one checked, a doc that
  * publishes props[] without a name fails, a malformed doc is unreadable
  * rather than a crash, and a program that cannot resolve `react` — or
@@ -1232,7 +1238,7 @@ describe('checkContract — shared and aliased prop bags', () => {
     }
   });
 
-  it('prefers a declared {Name}Props over the exported signature when both exist', async () => {
+  it('reconciles a declared {Name}Props with the exported signature when both stand for the same component', async () => {
     const src = fixture({
       'BaseProps.ts': BASE_PROPS,
       'Widget/Widget.tsx': `
@@ -1248,8 +1254,61 @@ describe('checkContract — shared and aliased prop bags', () => {
         export const docs = {name: 'Widget', props: []};
       `,
     });
-    const {missing} = await checkContract(src);
-    expect(missing.map(m => m.prop)).toEqual(['fromDeclaration']);
+    const {missing, unresolved} = await checkContract(src);
+    expect(unresolved).toEqual([]);
+    // Both are public: a builder may pass either. Picking one contract left
+    // the other free to drift behind a green tick (#5616 review).
+    expect(missing.map(m => m.prop)).toEqual([
+      'fromDeclaration',
+      'fromSignature',
+    ]);
+  });
+
+  it('keeps a declared prop the exported signature narrows away', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Widget/Widget.tsx': `
+        import type {BaseProps} from '../BaseProps';
+        export interface WidgetProps extends BaseProps {
+          label: string;
+          legacy?: string;
+        }
+        export function Widget(props: Omit<WidgetProps, 'legacy'>) {
+          return null;
+        }
+      `,
+      'Widget/Widget.doc.mjs': `
+        export const docs = {name: 'Widget', props: []};
+      `,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    expect(unresolved).toEqual([]);
+    // `WidgetProps` is exported, so `legacy` is published contract even
+    // though this signature stopped taking it. Reconciling is a union.
+    expect(missing.map(m => m.prop)).toEqual(['label', 'legacy']);
+  });
+
+  it('fails when the exported value beside a readable {Name}Props takes an untyped bag', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Widget/Widget.tsx': `
+        import type {BaseProps} from '../BaseProps';
+        export interface WidgetProps extends BaseProps {
+          label: string;
+        }
+        export function Widget(props: any) {
+          return null;
+        }
+      `,
+      'Widget/Widget.doc.mjs': `
+        export const docs = {name: 'Widget', props: []};
+      `,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    // Half a contract is no contract: what `Widget` accepts cannot be read,
+    // so `WidgetProps` alone must not stand in for it.
+    expect(unresolved.map(u => u.component)).toEqual(['Widget']);
+    expect(missing).toEqual([]);
   });
 });
 
@@ -1401,6 +1460,44 @@ describe('checkContract — real components, not fixtures', () => {
     expect(
       missing.filter(m => m.component === 'Code').map(m => m.prop),
     ).toContain('brandNewCodeProp');
+  });
+
+  it('checks the real Theme against its exported component, not the unrelated ThemeProps in utils/', async () => {
+    const src = realFixture(['BaseProps.ts', 'theme', 'utils']);
+    // `Theme.tsx` keeps its props interface file-private, so the only
+    // exported `ThemeProps` in core belongs to `utils/themeProps.ts` — the
+    // `themeProps()` helper's return bag, nothing to do with the component.
+    // It lives outside theme/, so proximity keeps it out of the contract;
+    // reconciling the two routes must not let it back in.
+    const decoy = path.join(src, 'utils/themeProps.ts');
+    const decoySource = fs.readFileSync(decoy, 'utf8');
+    expect(decoySource).toContain(
+      'export type ThemeProps = {className: string}',
+    );
+    fs.writeFileSync(
+      decoy,
+      decoySource.replace(
+        'export type ThemeProps = {className: string}',
+        'export type ThemeProps = {className: string; decoyProp?: string}',
+      ),
+    );
+    // Drop a real documented prop: the entry is only genuinely checked if
+    // its absence is reported.
+    const doc = path.join(src, 'theme/Theme.doc.mjs');
+    const docSource = fs.readFileSync(doc, 'utf8');
+    expect(docSource).toContain("name: 'mode'");
+    fs.writeFileSync(
+      doc,
+      docSource.replace("name: 'mode'", "name: 'modeGone'"),
+    );
+
+    const {missing, unresolved} = await checkContract(src);
+    expect(unresolved.filter(u => u.component === 'Theme')).toEqual([]);
+    const reported = missing
+      .filter(m => m.component === 'Theme')
+      .map(m => m.prop);
+    expect(reported).toContain('mode');
+    expect(reported).not.toContain('decoyProp');
   });
 
   it('resolves every real Table plugin hook through its Config parameter; a Record parameter yields an empty contract', async () => {
@@ -1586,6 +1683,58 @@ describe('checkContract — which bag wins', () => {
     });
     await underBothReadOrders(src, ({missing}) => {
       expect(missing.map(m => m.prop)).toEqual(['size']);
+    });
+  });
+
+  it('does not reconcile a nested internal {Name} into the contract beside the doc', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Widget/Widget.tsx': `
+        import type {BaseProps} from '../BaseProps';
+        export interface WidgetProps extends BaseProps {
+          label: string;
+        }
+      `,
+      'Widget/internal/Widget.tsx': `
+        export function Widget(props: {internalImpl: string}) {
+          return null;
+        }
+      `,
+      'Widget/Widget.doc.mjs': `
+        export const docs = {name: 'Widget', props: []};
+      `,
+    });
+    await underBothReadOrders(src, ({missing, unresolved}) => {
+      expect(unresolved).toEqual([]);
+      // Same directory bucket, deeper path: an implementation detail, not
+      // the second half of the published contract.
+      expect(missing.map(m => m.prop)).toEqual(['label']);
+    });
+  });
+
+  it('does not reconcile a same-named {Name} from a sibling directory at the same depth', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'A/types.ts': `
+        import type {BaseProps} from '../BaseProps';
+        export interface WidgetProps extends BaseProps {
+          fromA: string;
+        }
+      `,
+      'B/Widget.tsx': `
+        export function Widget(props: {fromB: string}) {
+          return null;
+        }
+      `,
+      'Docs/Widget.doc.mjs': `
+        export const docs = {name: 'Widget', props: []};
+      `,
+    });
+    await underBothReadOrders(src, ({missing, unresolved}) => {
+      expect(unresolved).toEqual([]);
+      // Equally far from the doc, but two directories: two symbols that
+      // share a name, not one component published twice.
+      expect(missing.map(m => m.prop)).toEqual(['fromA']);
     });
   });
 
@@ -2701,12 +2850,17 @@ describe('createResolver — which route answered', () => {
     const resolve = createResolver(program, checker);
 
     const widget = resolve('Widget', path.join(src, 'Widget'));
-    expect(widget.route).toBe('declaration');
-    expect(path.relative(src, widget.file)).toBe('Widget/Widget.tsx');
+    expect(widget.sources.map(source => source.route)).toEqual([
+      'declaration',
+      'signature',
+    ]);
+    expect(
+      widget.sources.map(source => path.relative(src, source.file)),
+    ).toEqual(['Widget/Widget.tsx', 'Widget/Widget.tsx']);
     expect([...widget.props]).toEqual(['label']);
 
     const hook = resolve('useHook', path.join(src, 'Hook'));
-    expect(hook.route).toBe('signature');
+    expect(hook.sources.map(source => source.route)).toEqual(['signature']);
     expect([...hook.props]).toEqual(['wait']);
 
     expect(resolve('Ghost', src)).toBeNull();
