@@ -2158,6 +2158,30 @@ describe('checkContract — what counts as platform surface', () => {
     expect(unresolved).toEqual([]);
     expect(missing.map(m => m.prop)).toEqual(['onNewView', 'renderer']);
   });
+
+  it('treats only @types/react and @types/react-dom as platform, not a @types/react-* lookalike', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'node_modules/react-foo/package.json': `{"name":"react-foo","main":"index.js"}`,
+      'node_modules/react-foo/index.js': `export function Foo() { return null; }`,
+      'node_modules/@types/react-foo/package.json': `{"name":"@types/react-foo","types":"index.d.ts"}`,
+      'node_modules/@types/react-foo/index.d.ts': `
+        export interface FooProps {
+          spec: object;
+          renderer?: 'svg' | 'canvas';
+        }
+        export function Foo(props: FooProps): null;
+      `,
+      'Chart/index.ts': `export {Foo as Chart} from 'react-foo';`,
+      'Chart/Chart.doc.mjs': `
+        export const docs = {name: 'Chart', props: []};
+      `,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    expect(unresolved).toEqual([]);
+    // `@types/react-foo` shares a prefix with React's types, not their role.
+    expect(missing.map(m => m.prop)).toEqual(['renderer', 'spec']);
+  });
 });
 
 describe('run — the program itself is checked before any verdict', () => {

@@ -241,10 +241,12 @@ function propertySymbols(type) {
  * Platform surface: BaseProps, the DOM / ES libs, `@types/react` (and
  * `@types/react-dom`), and `csstype` behind React's style types. Not the rest
  * of node_modules — a third-party component's bag re-exported under a core
- * name IS that component's API. TS file names are always `/`-separated.
+ * name IS that component's API, and that includes a `@types/react-*`
+ * package, so the match stops at the path segment. TS file names are always
+ * `/`-separated.
  */
 function isInheritedPlatformDecl(declFile) {
-  return /\/BaseProps\.ts$|\/typescript\/lib\/|\/@types\/react|\/csstype\//.test(
+  return /\/BaseProps\.ts$|\/typescript\/lib\/|\/@types\/react(?:-dom)?\/|\/csstype\//.test(
     declFile,
   );
 }
