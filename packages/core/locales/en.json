@@ -1351,6 +1351,10 @@
     "defaultMessage": "Added {label}",
     "description": "Polite screen-reader announcement after a token is added to a Tokenizer, either picked from the suggestions or newly created. Live-region text, never shown on screen; `{label}` is the token's visible text."
   },
+  "@astryx.tokenizer.tokensAdded": {
+    "defaultMessage": "Added {count, number} {count, plural, one {item} other {items}}",
+    "description": "Polite screen-reader announcement after one delimited entry (a typed comma or a pasted list) creates several Tokenizer tokens at once. Live-region text, never shown on screen; example: `Added 3 items`."
+  },
   "@astryx.tokenizer.tokenRemoved": {
     "defaultMessage": "Removed {label}",
     "description": "Polite screen-reader announcement after a token is removed from a Tokenizer, by its × button or by Backspace. Live-region text, never shown on screen; `{label}` is the token's visible text."

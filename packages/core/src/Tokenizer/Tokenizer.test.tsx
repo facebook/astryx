@@ -51,6 +51,8 @@ vi.mock('../Token', async importActual => {
 const TOKEN_MESSAGES = {
   fr: {
     '@astryx.tokenizer.tokenAdded': 'Ajouté : {label}',
+    '@astryx.tokenizer.tokensAdded':
+      '{count, plural, one {# élément ajouté} other {# éléments ajoutés}}',
     '@astryx.tokenizer.tokenRemoved': 'Retiré : {label}',
   },
 };
@@ -1959,6 +1961,57 @@ describe('Tokenizer', () => {
       fireEvent.click(screen.getByText('Create "new-tag"'));
       await waitFor(() => {
         expect(politeRegion()?.textContent).toBe('Ajouté : new-tag');
+      });
+    });
+
+    it('announces a typed delimiter commit politely', async () => {
+      const emptySource: SearchSource = {
+        search: () => [],
+        bootstrap: () => [],
+      };
+      render(
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Tags"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'alice,'}});
+      });
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Ajouté : alice');
+      });
+    });
+
+    it('announces a delimited multi-value paste politely as a batch', async () => {
+      const user = userEvent.setup();
+      const emptySource: SearchSource = {
+        search: () => [],
+        bootstrap: () => [],
+      };
+      render(
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Tags"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.paste('a, b, c');
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('3 éléments ajoutés');
       });
     });
 

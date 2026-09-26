@@ -840,8 +840,8 @@ export function Tokenizer<T extends SearchableItem>({
       );
       announce(
         created.length === 1
-          ? `Added ${created[0].label}`
-          : `Added ${created.length} items`,
+          ? t('@astryx.tokenizer.tokenAdded', {label: created[0].label})
+          : t('@astryx.tokenizer.tokensAdded', {count: created.length}),
       );
       return '';
     },
@@ -854,6 +854,7 @@ export function Tokenizer<T extends SearchableItem>({
       maxEntries,
       onChange,
       announce,
+      t,
     ],
   );
 
