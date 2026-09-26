@@ -472,6 +472,69 @@ describe('Markdown', () => {
     expect(wrapper).toHaveAttribute('aria-label', 'Table');
   });
 
+  it('gives each table column a content-derived readable floor in ch', () => {
+    // FR26: floor = clamp(4ch, ceil(longest cell length / 2), 24ch). It is
+    // derived from the column's own content, never a fixed pixel bucket.
+    const long = 'x'.repeat(120);
+    render(
+      <Markdown>
+        {`| Key | Meaning | Note |\n| --- | --- | --- |\n| id | Stable identifier never reused | ${long} |`}
+      </Markdown>,
+    );
+    const floors = Array.from(document.querySelectorAll('th')).map(th =>
+      th.getAttribute('style'),
+    );
+    expect(floors[0]).toMatch(/\b4ch\b/); // "Meaning"/"id" — short, min floor
+    expect(floors[1]).toMatch(/\b15ch\b/); // 30 chars → ceil(30 / 2)
+    expect(floors[2]).toMatch(/\b24ch\b/); // 120 chars → capped
+    expect(floors.join(' ')).not.toMatch(/\d+px/);
+  });
+
+  it('keeps inline code inside a table cell on the default Code part', () => {
+    render(
+      <Markdown>
+        {'| Status |\n| --- |\n| `needs_revision_before_landing_v2` |'}
+      </Markdown>,
+    );
+    const code = document.querySelector('tbody td code');
+    expect(code).toHaveTextContent('needs_revision_before_landing_v2');
+    expect(code).toHaveClass('astryx-code');
+  });
+
+  it('keeps a long header on one line up to the cap, then wraps instead of truncating', () => {
+    render(
+      <Markdown>
+        {
+          '| Component name | Accessibility status and remediation owner | X |\n| --- | --- | --- |\n| Button | Pass | 1 |'
+        }
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // 14 chars: header floor (14ch) beats the body floor (ceil(14/2) = 7ch).
+    expect(ths[0].getAttribute('style')).toMatch(/\b14ch\b/);
+    // 42 chars: header floor is capped at 20ch; body floor ceil(42/2) = 21ch wins.
+    expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
+    // Header cells never truncate: no nowrap or ellipsis class reaches them.
+    for (const th of ths) {
+      expect(th.className).not.toMatch(/nowrap|ellipsis/);
+    }
+  });
+
+  it('lets a supplied inlineCode renderer own code inside table cells', () => {
+    const components: Partial<MarkdownComponents> = {
+      inlineCode: ({children}) => <kbd data-custom>{children}</kbd>,
+    };
+    render(
+      <Markdown components={components}>
+        {'| Status |\n| --- |\n| `x` |'}
+      </Markdown>,
+    );
+    expect(
+      document.querySelector('tbody td kbd[data-custom]'),
+    ).toHaveTextContent('x');
+    expect(document.querySelector('tbody td code')).toBeNull();
+  });
+
   it('renders horizontal rules', () => {
     render(<Markdown>{'---'}</Markdown>);
     expect(document.querySelector('hr')).toBeInTheDocument();
