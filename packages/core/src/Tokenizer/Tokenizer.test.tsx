@@ -2474,6 +2474,53 @@ describe('input busy: isLoading and changeAction', () => {
       expect(removeButton('Alice')).not.toBeInTheDocument();
     });
 
+    it('keeps a later proposal and busy while the parent accepts an earlier one', async () => {
+      const {changeAction: save, settle} = deferredAction();
+      function Harness() {
+        const [value, setValue] = useState<SearchableItem[]>([]);
+        return (
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={value}
+            onChange={() => {}}
+            // Each change is accepted once its save settles, with a plain
+            // update after the await (the TransitionAction story's pattern).
+            changeAction={async (items, change) => {
+              await save(items, change);
+              setValue(items);
+            }}
+            debounceMs={0}
+          />
+        );
+      }
+      render(<Harness />);
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      await pick('Bo', 'Bob');
+
+      try {
+        // Alice's save settles and `value` becomes [Alice] while Bob's is
+        // still pending. That accepts the earlier proposal; it does not
+        // replace the later one, so Bob stays and the field stays busy.
+        await settle(0);
+        expect(removeButton('Alice')).toBeInTheDocument();
+        expect(removeButton('Bob')).toBeInTheDocument();
+        expect(loadingIndicators()).toHaveLength(1);
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      } finally {
+        await settle(1);
+      }
+
+      // Bob's save settles and `value` accepts both.
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(removeButton('Bob')).toBeInTheDocument();
+    });
+
     it('blocks every Action path while focusable-disabled and keeps the busy feedback (FR4)', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();

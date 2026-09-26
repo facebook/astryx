@@ -327,7 +327,7 @@ export const docsZh = {
       name: 'changeAction',
       type: '(items: T[], change: TokenizerChange<T>) => void | Promise<void>',
       description:
-        '在 onChange 之后以相同参数触发的异步操作。在 transition 中运行：拟定的标记乐观显示，字段处于忙碌状态（旋转器和 aria-busy），直到 value 跟上。',
+        '在 onChange 之后以相同参数触发的异步操作。在 transition 中运行：拟定的标记乐观显示，字段处于忙碌状态（旋转器和 aria-busy），直到 value 接受或替换它们。',
     },
     {
       name: 'placeholder',

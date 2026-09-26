@@ -475,11 +475,14 @@ function EndLane({
 
 /**
  * A pending `changeAction` proposal: the tokens shown optimistically and the
- * controlled `value` they were proposed against. The proposal stands only
- * while `value` still holds that base; a parent that accepts or replaces the
- * value mid-Action ends it at once (input-fields.md FR6).
+ * controlled values it stands on — the `value` it was proposed against and,
+ * when stacked on a proposal still standing, that proposal's bases and
+ * tokens. It stands while `value` holds any of them, so a parent accepting an
+ * earlier stacked proposal leaves the later one standing; a parent that
+ * accepts it or replaces the value mid-Action ends it at once
+ * (input-fields.md FR6).
  */
-type TokenProposal<T> = {items: T[]; base: T[]};
+type TokenProposal<T> = {items: T[]; bases: T[][]};
 
 /**
  * Whether two token lists hold the same ids in the same order. Compared by id,
@@ -584,17 +587,20 @@ export function Tokenizer<T extends SearchableItem>({
   // accepted or replaced by the controlled value. The pending proposal is the
   // optimistic state, reverted to null as its Action settles (stacked
   // proposals keep the latest), and it shows only while `value` still holds
-  // the ids it was proposed against: a replacement arriving mid-Action wins
-  // at once instead of waiting for the old Action to settle. Source-busy — a
-  // search in flight — is the base's own and travels through `busyLane`; the
-  // two meet only in the end lane's one Spinner and the combobox's one
-  // `aria-busy`.
+  // the ids of one of its bases: a parent accepting an earlier stacked
+  // proposal leaves the later one standing, and a replacement arriving
+  // mid-Action wins at once instead of waiting for the old Action to settle.
+  // Source-busy — a search in flight — is the base's own and travels through
+  // `busyLane`; the two meet only in the end lane's one Spinner and the
+  // combobox's one `aria-busy`.
   const [, startTransition] = useTransition();
   const [proposal, propose] = useOptimistic<TokenProposal<T> | null>(null);
-  const optimisticValue =
-    proposal !== null && hasSameTokenIds(proposal.base, value)
-      ? proposal.items
-      : value;
+  const standingProposal =
+    proposal !== null &&
+    proposal.bases.some(base => hasSameTokenIds(base, value))
+      ? proposal
+      : null;
+  const optimisticValue = standingProposal?.items ?? value;
   const isInputBusy = isLoading || optimisticValue !== value;
   // The half of the lane's contents this component knows about. The
   // source-busy half is the leaf's own business — folding it in here would
@@ -758,12 +764,18 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(items, change);
       if (changeAction) {
         startTransition(async () => {
-          propose({items, base: value});
+          propose({
+            items,
+            bases:
+              standingProposal !== null
+                ? [...standingProposal.bases, standingProposal.items]
+                : [value],
+          });
           await changeAction(items, change);
         });
       }
     },
-    [onChange, changeAction, propose, value],
+    [onChange, changeAction, propose, standingProposal, value],
   );
 
   // Handle adding an item — detect creatable synthetic items
