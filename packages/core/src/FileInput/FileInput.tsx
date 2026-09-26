@@ -21,6 +21,7 @@ import {
   useCallback,
   useRef,
   useState,
+  useOptimistic,
   useTransition,
   type DragEvent,
 } from 'react';
@@ -463,6 +464,8 @@ export function FileInput({
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
   // Announce successful file selection to screen readers via a persistent
   // live region (forms-17). Validation errors are announced (assertively) by
@@ -562,6 +565,7 @@ export function FileInput({
 
       if (changeAction) {
         startTransition(async () => {
+          setOptimisticValue(result);
           await changeAction(result);
         });
       }
@@ -575,6 +579,7 @@ export function FileInput({
       onChange,
       changeAction,
       startTransition,
+      setOptimisticValue,
       announce,
       t,
     ],
@@ -596,6 +601,12 @@ export function FileInput({
       e.stopPropagation();
       setValidationError(null);
       onChange(null);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(null);
+          await changeAction(null);
+        });
+      }
       if (inputRef.current) {
         inputRef.current.value = '';
         const targetInput = inputRef.current;
@@ -610,7 +621,7 @@ export function FileInput({
         }
       }
     },
-    [onChange],
+    [onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   const handleClick = useCallback(() => {
@@ -696,15 +707,16 @@ export function FileInput({
   );
 
   const hasFiles =
-    value != null && (Array.isArray(value) ? value.length > 0 : true);
+    optimisticValue != null &&
+    (Array.isArray(optimisticValue) ? optimisticValue.length > 0 : true);
   const fileNames = hasFiles
-    ? Array.isArray(value)
-      ? value.map(f => f.name).join(', ')
-      : (value?.name ?? '')
+    ? Array.isArray(optimisticValue)
+      ? optimisticValue.map(f => f.name).join(', ')
+      : (optimisticValue?.name ?? '')
     : null;
 
   const renderDropzoneContent = () => {
-    if (isLoading) {
+    if (isBusy) {
       return <Spinner size="md" />;
     }
     if (hasFiles) {
@@ -730,7 +742,7 @@ export function FileInput({
   };
 
   const renderCompactContent = () => {
-    if (isLoading) {
+    if (isBusy) {
       return (
         <>
           <span {...stylex.props(styles.fileNameText)}>
@@ -849,7 +861,7 @@ export function FileInput({
                 ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
                 : label
             }
-            aria-busy={isLoading || undefined}
+            aria-busy={isBusy || undefined}
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
           />
@@ -870,7 +882,7 @@ export function FileInput({
           {...stylex.props(styles.hiddenInput)}
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
-        {hasFiles && !isDisabled && !isLoading && (
+        {hasFiles && !isDisabled && !isBusy && (
           <InputClearButton
             label={t('@astryx.fileInput.clearLabel', {label})}
             onClick={handleClear}
