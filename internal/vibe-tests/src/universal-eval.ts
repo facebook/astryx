@@ -39,6 +39,7 @@ export type {
 
 import * as _fs from 'node:fs';
 import * as _path from 'node:path';
+import {hashContent} from './utils.js';
 
 function clamp(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
@@ -1185,9 +1186,14 @@ export function evaluate(
     const axeResults = loadAxeResults(options.iterDir);
     axeResult = axeResults?.[options.promptId] ?? null;
   }
-  // An entry scanned from another target's preview is not a render of this
-  // code, so it backs nothing
-  if (axeResult && axeResult.target !== target) {
+  // An entry scanned from another target's preview, or from code that has
+  // since changed, is not a render of this code, so it backs nothing
+  if (
+    axeResult &&
+    (axeResult.target !== target ||
+      (axeResult.sourceHash != null &&
+        axeResult.sourceHash !== hashContent(code)))
+  ) {
     axeResult = null;
   }
 

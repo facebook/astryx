@@ -32,6 +32,7 @@ import {pathToFileURL} from 'node:url';
 import type {chromium as PlaywrightChromium} from 'playwright';
 import {
   getResultsDir,
+  hashContent,
   writeJson,
   serveStatic,
   enumeratePreviews,
@@ -268,6 +269,13 @@ export async function scanIteration(opts: {
       }
 
       results[preview.promptId] = mergeAxeRuns(preview.target, runs);
+      // Stamp the scanned code so a later edit makes this entry stale
+      const codePath = path.join(iterDir, 'results', `${preview.promptId}.tsx`);
+      if (fs.existsSync(codePath)) {
+        results[preview.promptId].sourceHash = hashContent(
+          fs.readFileSync(codePath, 'utf-8'),
+        );
+      }
       const count = results[preview.promptId].violations.length;
       console.log(
         `  ${count === 0 ? '✓' : '✗'} ${preview.promptId} (${preview.target}): ${count} violation rule(s)`,

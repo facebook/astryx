@@ -175,9 +175,11 @@ Two caveats, both disclosed in the report output:
   axe data and falls back to hygiene-only scoring — correctness already
   penalizes the compile failure, but its a11y number carries no runtime
   signal. The aggregate prints how many prompts were actually scanned.
-- The sidecar snapshots the previews at scan time: after re-generating or
-  correcting result code, re-run `axe:previews` (like `build-previews` for
-  `build-errors.json`) or the folded runtime data is stale.
+- The sidecar snapshots the previews at scan time. Each entry records a hash
+  of the prompt's result code when the scan can see it, and scoring ignores
+  an entry whose code has since changed (falling back to hygiene-only), so
+  after re-generating or correcting result code, re-run `build-previews` and
+  `axe:previews` to restore the runtime signal.
 
 The `a11y-manifests/` guarantee diffs remain **unscored**: the astryx and
 baseline manifests use different component vocabularies (e.g. `CheckboxInput`

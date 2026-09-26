@@ -10,6 +10,7 @@ import {
   getA11yDimensionLabel,
   type AxeResultForPrompt,
 } from './universal-eval.js';
+import {hashContent} from './utils.js';
 
 const dirs: string[] = [];
 function tmpDir(): string {
@@ -431,6 +432,22 @@ describe('accessibility runtime fold-in', () => {
     });
     expect(accessibility.metrics?.runtime).toBe(false);
     expect(accessibility.score).toBe(100);
+  });
+
+  it('ignores a stale axe entry scanned from code that has since changed', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, sourceHash: hashContent('// old code')},
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('uses an axe entry stamped with the hash of the scored code', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, sourceHash: hashContent(COMPOSED_CODE)},
+    });
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.score).toBe(75);
   });
 
   it('falls back to static-only scoring when no sidecar exists for the prompt', () => {

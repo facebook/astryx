@@ -60,7 +60,8 @@ jobs:
 
       # The iteration manifests carry each iteration's target, which the axe
       # scan needs to pick that iteration's own renders out of the shared
-      # previews directory
+      # previews directory; the result code lets it stamp each entry with a
+      # hash of the code it rendered, so scoring can spot a stale sidecar
       - name: Upload preview HTML
         uses: actions/upload-artifact@v7
         with:
@@ -68,6 +69,7 @@ jobs:
           path: |
             internal/vibe-tests/results/*/previews/
             internal/vibe-tests/results/*/manifest.json
+            internal/vibe-tests/results/*/results/*.tsx
           retention-days: 90
 
   screenshot:

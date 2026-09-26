@@ -291,6 +291,11 @@ export interface AxeResultForPrompt {
   passedRules?: string[];
   /** Ids of the axe rules axe could not decide (needs review, not evidence) */
   incompleteRules?: string[];
+  /**
+   * hashContent() of results/<promptId>.tsx at scan time. Scoring ignores
+   * the entry once the code no longer matches (the sidecar is stale).
+   */
+  sourceHash?: string;
 }
 
 export type AxeResults = Record<string, AxeResultForPrompt>;

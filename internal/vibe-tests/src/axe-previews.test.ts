@@ -10,7 +10,7 @@ import {
   selectPreviewsForIteration,
   type RawAxeRun,
 } from './axe-previews.js';
-import {enumeratePreviews} from './utils.js';
+import {enumeratePreviews, hashContent} from './utils.js';
 
 const dirs: string[] = [];
 function tmpDir(): string {
@@ -267,6 +267,9 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
       path.join(iterDir, 'manifest.json'),
       JSON.stringify({config: {target: 'html'}}),
     );
+    const code = 'export default () => <img src="/a.gif" />;';
+    fs.mkdirSync(path.join(iterDir, 'results'));
+    fs.writeFileSync(path.join(iterDir, 'results', 'tc-1.tsx'), code);
 
     const results = await scanIteration({resultsDir, iterationId: 'axetest1'});
     expect(results).not.toBeNull();
@@ -281,6 +284,8 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
     // finding only on evidence
     expect(forPrompt?.passedRules).toContain('html-has-lang');
     expect(forPrompt?.passedRules).not.toContain('image-alt');
+    // Stamped with the scanned code, so a later edit makes the entry stale
+    expect(forPrompt?.sourceHash).toBe(hashContent(code));
 
     const sidecar = JSON.parse(
       fs.readFileSync(path.join(iterDir, 'axe-results.json'), 'utf-8'),
