@@ -182,11 +182,18 @@ export function registerTemplate(program) {
         }
 
         case 'template.skeleton': {
-          const {template: tName, description, components, skeleton} = result.data;
+          const {
+            template: tName,
+            description,
+            components,
+            resolvableComponents,
+            skeleton,
+          } = result.data;
           emit(
             text(
               `# ${tName}${description ? ' — ' + description : ''}\n` +
-                `# Components: ${components.join(', ')}`,
+                `# Components: ${components.join(', ')}\n` +
+                `# Resolvable components: ${resolvableComponents.join(', ')}`,
             ),
             code(skeleton),
           );
