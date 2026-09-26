@@ -222,8 +222,25 @@ export interface TableColumn<T extends Record<string, unknown>> {
 
 /** Props passed through the plugin pipeline for the `<table>` element */
 export interface TableRenderProps {
+  /**
+   * Attributes and handlers for the `<table>`. A prop the consumer passes to
+   * the table wins over a plugin's, with two exceptions: a handler both set
+   * for the same event is composed (the consumer's runs first, and its
+   * `event.preventDefault()` skips the plugin's), and a plugin's `role` wins,
+   * since row semantics a plugin adds (the tree plugin's treegrid) depend on
+   * it. An unset consumer handler (`onKeyDown={undefined}`) leaves the
+   * plugin's in place.
+   */
   htmlProps: HTMLAttributes<HTMLTableElement>;
   xstyle: StyleXStyles[];
+  /**
+   * Ref for the `<table>` element. Plugins can set this to access the table
+   * DOM node (a keyboard model that walks the rows, say). BaseTable merges it
+   * with the consumer's own `ref`, so neither displaces the other; a plugin
+   * that finds a `ref` already present composes by merging its own
+   * (`mergeRefs`), as `useTableTreeData` does.
+   */
+  ref?: Ref<HTMLTableElement>;
 }
 
 /** Props passed through the plugin pipeline for the header `<tr>` */

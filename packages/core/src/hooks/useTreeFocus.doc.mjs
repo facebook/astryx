@@ -15,7 +15,7 @@ export const docs = {
     {
       name: 'options.itemSelector',
       type: 'string',
-      description: 'Selector for visible treeitems within the tree, in DOM order.',
+      description: 'Selector for visible treeitems within the tree, in DOM order. The same selector resolves which item owns focus on a key press (the nearest matching ancestor of the active element), so a host whose items are not role="treeitem" — a treegrid\'s rows — passes its own selector and composes the whole keyboard model.',
       default: "'[role=\"treeitem\"]'",
       required: false,
     },
@@ -52,7 +52,7 @@ export const docs = {
     {
       name: 'options.hasRovingTabIndex',
       type: 'boolean',
-      description: 'When true, the hook owns a single roving tab stop across the visible treeitems (stamps tabindex 0/-1, repairs on mount, moves with navigation). Preserves an existing tabindex="0" seed on mount. Attach the returned `handleFocus` to keep the stop in sync after clicks.',
+      description: 'When true, the hook owns a single roving tab stop across the visible treeitems (stamps tabindex 0/-1, repairs on mount, moves with navigation). Preserves an existing tabindex="0" seed on mount. Attach the returned `handleFocus` so the stop follows a click or programmatic focus.',
       default: 'false',
       required: false,
     },
@@ -78,7 +78,7 @@ export const docs = {
     {
       name: 'handleFocus',
       type: '(e: React.FocusEvent) => void',
-      description: 'Focus handler to attach to the container\'s onFocus. Keeps the roving tab stop in sync when hasRovingTabIndex is enabled; a no-op otherwise, so always safe to attach.',
+      description: 'Focus handler to attach to the container\'s onFocus. When hasRovingTabIndex is enabled it moves the roving tab stop to the enabled item that owns the focus target (the nearest itemSelector match, as for a key press), so a click or programmatic focus carries the stop with it; focus outside every item only repairs the stop. A no-op otherwise, so always safe to attach.',
     },
     {
       name: 'focusFirst',
@@ -100,7 +100,7 @@ export const docs = {
       { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus); those traversals differ from a tree.' },
     ],
   },
-  relatedComponents: ['TreeList'],
+  relatedComponents: ['TreeList', 'Table'],
   relatedHooks: ['useListFocus', 'useGridFocus', 'useFocusTrap'],
   importPath: '@astryxdesign/core/hooks',
   category: 'focus',
@@ -112,19 +112,19 @@ export const docsDense = {
     'Manages roving-tabindex focus + WAI-ARIA tree keyboard model. ArrowUp/Down/Home/End roam linearly over visible treeitems (skip disabled); ArrowRight/Left carry tree semantics (expand/collapse, move to first-child/parent). Enter/Space activate; printable chars trigger typeahead.',
   paramDescriptions: {
     options: 'config for tree focus behavior.',
-    'options.itemSelector': 'selector for visible treeitems in DOM order.',
+    'options.itemSelector': 'selector for visible treeitems in DOM order; also resolves the focused item (nearest matching ancestor), so non-treeitem hosts (treegrid rows) pass their own.',
     'options.isItemDisabled': 'predicate: is treeitem disabled (skipped in nav). Defaults to data-tree-disabled / aria-disabled.',
     'options.getLevel': 'reads 1-based nesting level. Defaults to aria-level attr.',
     'options.onToggleExpand': 'expand/collapse treeitem by id (ArrowRight collapsed parent, ArrowLeft expanded parent, Enter/Space parent w/o own action).',
     'options.onActivate': 'called on Enter/Space activation. Return true when handled; else hook falls back to toggling expansion.',
     'options.onActiveChange': 'notified when focus moves to a treeitem. Use to move a single roving tab stop.',
-    'options.hasRovingTabIndex': 'hook owns a single roving tab stop (stamps tabindex 0/-1, repairs on mount, moves w/ nav). Preserves an existing tabindex="0" seed. Attach handleFocus to sync after clicks.',
+    'options.hasRovingTabIndex': 'hook owns a single roving tab stop (stamps tabindex 0/-1, repairs on mount, moves w/ nav). Preserves an existing tabindex="0" seed. Attach handleFocus so the stop follows clicks/programmatic focus.',
     'options.typeahead': 'enable typeahead (jump to next item whose text starts with typed chars).',
   },
   returnDescriptions: {
     treeRef: 'ref to attach to tree container (role="tree").',
     handleKeyDown: 'key down handler for tree container.',
-    handleFocus: 'onFocus handler; keeps roving tab stop in sync when hasRovingTabIndex on (no-op otherwise).',
+    handleFocus: 'onFocus handler; hasRovingTabIndex on => moves the roving tab stop to the item owning the focus target (nearest itemSelector match); outside any item => repair only. No-op otherwise.',
     focusFirst: 'focus first enabled visible treeitem.',
     focusLast: 'focus last enabled visible treeitem.',
   },

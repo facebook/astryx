@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {TreeList} from './TreeList';
@@ -1054,6 +1054,19 @@ describe('TreeList', () => {
     );
     expect(tabbable).toHaveLength(1);
     expect(tabbable[0]).toBe(screen.getByText('Banana').closest('li'));
+  });
+
+  it('moves the single tab stop to a treeitem focused by a click or programmatically', () => {
+    render(<TreeList items={flatItems} />);
+    const treeitems = screen.getAllByRole('treeitem');
+
+    act(() => treeitems[2].focus());
+
+    expect(treeitems[2]).toHaveAttribute('tabindex', '0');
+    expect(treeitems[0]).toHaveAttribute('tabindex', '-1');
+    expect(
+      treeitems.filter(el => el.getAttribute('tabindex') === '0'),
+    ).toHaveLength(1);
   });
 
   // ===========================================================================

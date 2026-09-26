@@ -269,7 +269,7 @@ describe('useTableTreeState — expandAll / collapseAll', () => {
 // =============================================================================
 
 describe('useTableTreeState — row meta', () => {
-  it('reports 0-based level, hasChildren, and isExpanded per row', () => {
+  it('reports 0-based level, hasChildren, isExpanded, and sibling position per row', () => {
     const {result} = renderHook(() =>
       useTableTreeState({
         data: fileTree,
@@ -286,29 +286,39 @@ describe('useTableTreeState — row meta', () => {
       return result.current.treeConfig.getRowMeta(item);
     };
 
+    // posInSet/setSize describe the sibling group: roots are [src, readme],
+    // src's children [components, utils], components' children [button, input].
     expect(meta('src')).toEqual({
       id: 'src',
       level: 0,
       hasChildren: true,
       isExpanded: true,
+      posInSet: 1,
+      setSize: 2,
     });
     expect(meta('components')).toEqual({
       id: 'components',
       level: 1,
       hasChildren: true,
       isExpanded: true,
+      posInSet: 1,
+      setSize: 2,
     });
     expect(meta('button')).toEqual({
       id: 'button',
       level: 2,
       hasChildren: false,
       isExpanded: false,
+      posInSet: 1,
+      setSize: 2,
     });
     expect(meta('readme')).toEqual({
       id: 'readme',
       level: 0,
       hasChildren: false,
       isExpanded: false,
+      posInSet: 2,
+      setSize: 2,
     });
   });
 
@@ -630,6 +640,8 @@ describe('useTableTreeState — semantics edges', () => {
       level: 0,
       hasChildren: false,
       isExpanded: false,
+      posInSet: 2,
+      setSize: 2,
     });
     expect(ids(result.current.visibleData)).toEqual(['src', 'readme']);
   });
