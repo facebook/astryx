@@ -239,7 +239,7 @@ function runAdapter(
 const everyNodeSource = [
   '# Heading with `code` and *emphasis*',
   '',
-  'Prose with **strong**, ~~struck~~, [a link](/docs), ![alt](/logo.png), a',
+  'Prose with **strong**, ~~struck~~, [a link](/docs), ![alt](/logo.png "Logo title"), a',
   'citation [ref], $x + y$ inline math, and a hard break.  ',
   'Second line.',
   '',
@@ -352,6 +352,28 @@ describe('Remark adapter — supported round trip', () => {
       meta: null,
       value: 'no language, no meta',
     });
+  });
+
+  it('carries image titles through the supported Remark round trip', () => {
+    const seen: unknown[] = [];
+    const {result, reports} = runAdapter(
+      '![alt](/logo.png "Original title")',
+      () => tree => {
+        mutateFirst(tree, 'image', node => {
+          seen.push(node.title);
+          node.title = 'Updated title';
+        });
+      },
+    );
+
+    expect(seen).toEqual(['Original title']);
+    expect(result.children[0]).toMatchObject({
+      type: 'image',
+      url: '/logo.png',
+      alt: 'alt',
+      title: 'Updated title',
+    });
+    expect(reports).toEqual([]);
   });
 
   it('applies a compatible transform and keeps protected contexts literal', () => {
@@ -1335,6 +1357,15 @@ const rejectionCases: RejectionCase[] = [
         node.alt = null;
       }),
     reason: /requires its text alternative/,
+  },
+  {
+    name: 'a non-string image title',
+    source: '![alt](/logo.png "Logo")',
+    plugin: () => tree =>
+      mutateFirst(tree, 'image', node => {
+        node.title = 42;
+      }),
+    reason: /requires a string or null "title"/,
   },
   {
     name: 'invalid built-in structure',

@@ -3,6 +3,8 @@
 import {describe, it, expect} from 'vitest';
 import {
   parseMarkdown,
+  parseMarkdownAst,
+  parseMarkdownAstIncremental,
   parseMarkdownIncremental,
   createIncrementalState,
   getIncrementalParseWork,
@@ -1180,5 +1182,21 @@ describe('parseMarkdownIncremental link reference definitions', () => {
     const blocks = parseMarkdownIncremental(complete, state);
     expect(blocks).toEqual(parseMarkdown(complete));
     expect(firstLinkHref(blocks)).toBe('/first');
+  });
+
+  it('invalidates settled reference images when only a definition title changes', () => {
+    const state = createIncrementalState();
+    const prefix = '![logo][l]\n\nMiddle paragraph\n\n';
+    const before = `${prefix}[l]: /logo.png "One"`;
+    const after = `${prefix}[l]: /logo.png "Two"`;
+
+    parseMarkdownAstIncremental(before, state);
+    const result = parseMarkdownAstIncremental(after, state);
+
+    expect(result).toEqual(parseMarkdownAst(after));
+    expect(result.children[0]).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'image', title: 'Two'}],
+    });
   });
 });
