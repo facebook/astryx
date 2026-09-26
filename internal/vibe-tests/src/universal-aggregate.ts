@@ -14,6 +14,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {
+  A11yCoverage,
   ExecutionProvenanceFilter,
   PromptCostMetrics,
   UniversalDimension,
@@ -25,6 +26,7 @@ import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
 import {
   evaluate,
   getDimensionNames,
+  getA11yCoverage,
   getA11yDimensionLabel,
 } from './universal-eval.js';
 import {provenanceFilename} from './provenance.js';
@@ -48,6 +50,13 @@ const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   efficiency: 'Efficiency',
   maintainability: 'Maintainability',
   design: 'Design',
+};
+
+/** Short accessibility row label per runtime basis (issue #4145) */
+const A11Y_TABLE_LABELS: Record<A11yCoverage['basis'], string> = {
+  static: 'A11y Hygiene',
+  mixed: 'A11y (mixed)',
+  runtime: 'Accessibility',
 };
 
 function runtimePrivateValues(): string[] {
@@ -455,9 +464,8 @@ async function main() {
 
   // A11y scoring basis (issue #4145): without runtime axe data the
   // accessibility score only measures raw-HTML footgun avoidance.
+  const a11yCoverage = getA11yCoverage(Object.values(byPrompt));
   const a11yMetrics = Object.values(byPrompt).map(s => s.accessibility.metrics);
-  const a11yRuntimeCount = a11yMetrics.filter(m => m?.runtime).length;
-  const hasRuntimeA11y = a11yRuntimeCount > 0;
   const a11yEligibleSites = a11yMetrics.reduce(
     (s, m) => s + (m?.eligibleSites ?? 0),
     0,
@@ -479,9 +487,7 @@ async function main() {
   for (const dim of dimensions) {
     const rawLabel =
       dim === 'accessibility'
-        ? hasRuntimeA11y
-          ? 'Accessibility'
-          : 'A11y Hygiene'
+        ? A11Y_TABLE_LABELS[a11yCoverage.basis]
         : DIMENSION_LABELS[dim] || dim;
     const label = rawLabel.padEnd(19);
     const score = String(averages[dim]).padStart(3);
@@ -501,10 +507,10 @@ async function main() {
 
   console.log(`\n🌙 Dark Mode: ${darkModeRate}%`);
 
-  console.log(`\n♿ A11y basis: ${getA11yDimensionLabel(hasRuntimeA11y)}`);
-  if (hasRuntimeA11y) {
+  console.log(`\n♿ A11y basis: ${getA11yDimensionLabel(a11yCoverage)}`);
+  if (a11yCoverage.basis !== 'static') {
     console.log(
-      `   Runtime axe: ${a11yRuntimeCount}/${promptCount} prompt(s) scanned, ${axeViolationRules} violation rule(s)`,
+      `   Runtime axe: ${a11yCoverage.runtime}/${a11yCoverage.total} prompt(s) scanned, ${axeViolationRules} violation rule(s)`,
     );
   } else {
     console.log(

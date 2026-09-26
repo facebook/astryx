@@ -307,6 +307,19 @@ export interface AxeResultForPrompt {
 export type AxeResults = Record<string, AxeResultForPrompt>;
 
 /**
+ * How much of a set of accessibility scores runtime axe data backs
+ * (issue #4145): 'static' when no prompt has it, 'mixed' when only some do
+ * (e.g. a preview failed to build), 'runtime' when every prompt does.
+ */
+export interface A11yCoverage {
+  basis: 'static' | 'mixed' | 'runtime';
+  /** Scores backed by runtime axe data */
+  runtime: number;
+  /** Scores counted */
+  total: number;
+}
+
+/**
  * Accessibility dimension metadata (issue #4145): surfaces how much signal
  * the score is actually based on, so a 100 from "nothing was eligible to
  * fire" is distinguishable from a 100 earned on real checks.

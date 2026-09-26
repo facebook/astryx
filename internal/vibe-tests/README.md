@@ -151,6 +151,10 @@ The `accessibility` dimension has two bases (see issue #4145):
   attaches handlers synthetically and the rendered DOM carries nothing for
   axe to see.
 
+When only some prompts have runtime data, reports label the dimension
+**Accessibility (mixed: k/n runtime)** instead of calling the whole score
+runtime-backed; the comparison views count every target they show.
+
 Each preview is scanned once with light and once with dark requested (both
 `prefers-color-scheme` and `?theme=`; Astryx previews take their `Theme`
 mode from `?theme=`, defaulting to light, so screenshots are unchanged). The

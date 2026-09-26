@@ -15,9 +15,9 @@ import type {
 import {
   ALL_DIMENSIONS,
   CODE_DIMENSIONS,
+  a11yCoverage,
   dimensionLabel,
   formatScore,
-  hasRuntimeA11y,
 } from './utils';
 import './report.css';
 
@@ -352,14 +352,19 @@ export function CompareView({comparison}: CompareViewProps) {
     }
   }
 
-  const runtimeA11y =
-    hasRuntimeA11y(astryx.byPrompt) && hasRuntimeA11y(baseline.byPrompt);
+  // One label for the whole comparison, so it counts every target shown
+  const coverage = a11yCoverage(
+    astryx.byPrompt,
+    baseline.byPrompt,
+    html?.byPrompt,
+    astryxTailwind?.byPrompt,
+  );
 
   const dimData: DimRow[] = ALL_DIMENSIONS.filter(
     dim => astryx.averages[dim] != null || baseline.averages[dim] != null,
   ).map(dim => ({
     id: dim,
-    dimension: dimensionLabel(dim, runtimeA11y),
+    dimension: dimensionLabel(dim, coverage),
     astryxScore: astryx.averages[dim] ?? 0,
     baselineScore: baseline.averages[dim] ?? 0,
     ...(isThreeWay ? {htmlScore: html?.averages[dim] ?? 0} : {}),

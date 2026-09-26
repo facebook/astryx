@@ -20,17 +20,20 @@
 
 import type {
   UniversalScore,
+  UniversalAggregate,
   UniversalDimension,
   UniversalFinding,
   DimensionScore,
   EfficiencyMetrics,
   MaintainabilityMetrics,
+  A11yCoverage,
   A11yMetrics,
   AxeResultForPrompt,
   AxeResults,
 } from './types.js';
 
 export type {
+  A11yCoverage,
   A11yMetrics,
   AxeResultForPrompt,
   AxeResults,
@@ -282,14 +285,62 @@ export function loadAxeResults(iterDir: string): AxeResults | null {
 }
 
 /**
+ * Runtime axe coverage of a set of scores. Partial coverage is the normal
+ * case (a prompt whose preview doesn't build never gets axe data), so one
+ * runtime-backed prompt must not relabel the whole dimension. Older results
+ * with no a11y metrics count as static.
+ */
+export function getA11yCoverage(scores: UniversalScore[]): A11yCoverage {
+  const runtime = scores.filter(
+    s => s.accessibility?.metrics?.runtime === true,
+  ).length;
+  const basis =
+    runtime === 0 ? 'static' : runtime === scores.length ? 'runtime' : 'mixed';
+  return {basis, runtime, total: scores.length};
+}
+
+/**
  * Label for the accessibility dimension, honest about what backs the score:
  * without runtime axe data the static scan only measures whether raw-HTML
  * footguns were avoided — component-composed output passes by construction.
  */
-export function getA11yDimensionLabel(runtime: boolean): string {
-  return runtime
-    ? 'Accessibility (runtime + hygiene)'
-    : 'A11y Hygiene (composition)';
+export function getA11yDimensionLabel(coverage: A11yCoverage): string {
+  switch (coverage.basis) {
+    case 'runtime':
+      return 'Accessibility (runtime + hygiene)';
+    case 'mixed':
+      return `Accessibility (mixed: ${coverage.runtime}/${coverage.total} runtime)`;
+    default:
+      return 'A11y Hygiene (composition)';
+  }
+}
+
+/**
+ * Basis note for the accessibility column of a comparison: names the
+ * targets scored by static hygiene only and those runtime-backed on only
+ * some prompts. Null when every target is fully runtime-backed.
+ */
+export function getA11yBasisNote(
+  targets: Array<{label: string; data: UniversalAggregate}>,
+): string | null {
+  const coverage = targets.map(t => ({
+    label: t.label,
+    ...getA11yCoverage(Object.values(t.data.byPrompt)),
+  }));
+  const parts: string[] = [];
+  const staticOnly = coverage.filter(c => c.basis === 'static');
+  if (staticOnly.length > 0) {
+    parts.push(
+      `${staticOnly.map(c => c.label).join(', ')} scored by static composition hygiene only (no runtime axe data — run axe-previews)`,
+    );
+  }
+  const mixed = coverage.filter(c => c.basis === 'mixed');
+  if (mixed.length > 0) {
+    parts.push(
+      `${mixed.map(c => `${c.label} runtime-backed on ${c.runtime}/${c.total} prompts`).join(', ')}, the rest hygiene-only`,
+    );
+  }
+  return parts.length > 0 ? `A11y basis: ${parts.join('; ')}` : null;
 }
 
 /** Penalty per axe violation rule, by axe impact level. */

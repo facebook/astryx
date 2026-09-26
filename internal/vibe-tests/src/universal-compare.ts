@@ -22,7 +22,11 @@ import type {
   TargetName,
 } from './types.js';
 import {writeJson, getResultsDir} from './utils.js';
-import {getDimensionNames, getAverageScore} from './universal-eval.js';
+import {
+  getA11yBasisNote,
+  getDimensionNames,
+  getAverageScore,
+} from './universal-eval.js';
 
 const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
@@ -32,33 +36,6 @@ const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   maintainability: 'Maintainability',
   design: 'Design',
 };
-
-/**
- * True when any prompt in the aggregate was scored with runtime axe data.
- * Older universal.json files have no a11y metrics and read as static-only.
- */
-function hasRuntimeA11y(aggregate: UniversalAggregate): boolean {
-  return Object.values(aggregate.byPrompt).some(
-    s => s.accessibility?.metrics?.runtime === true,
-  );
-}
-
-/**
- * Basis note for the accessibility column (issue #4145): names the targets
- * whose a11y score is static composition hygiene only. Null when every
- * target has runtime axe data.
- */
-function a11yBasisNote(
-  targets: Array<{label: string; data: UniversalAggregate}>,
-): string | null {
-  const staticOnly = targets
-    .filter(t => !hasRuntimeA11y(t.data))
-    .map(t => t.label);
-  if (staticOnly.length === 0) {
-    return null;
-  }
-  return `A11y basis: ${staticOnly.join(', ')} scored by static composition hygiene only (no runtime axe data — run axe-previews)`;
-}
 
 function loadOrGenerate(iterationId: string): UniversalAggregate {
   const universalPath = path.join(
@@ -236,7 +213,7 @@ function toMarkdown(opts: {
     ...(htmlData ? [{label: 'HTML', data: htmlData}] : []),
     ...(twData ? [{label: 'Astryx+TW', data: twData}] : []),
   ];
-  const basisNote = a11yBasisNote(mdTargets);
+  const basisNote = getA11yBasisNote(mdTargets);
   if (basisNote) {
     lines.push(`_${basisNote}._`);
     lines.push('');
@@ -490,7 +467,7 @@ async function main() {
   const dmParts = targets.map(t => `${t.label} ${t.data.darkModeRate}%`);
   console.log(`\n🌙 Dark Mode: ${dmParts.join(' | ')}`);
 
-  const cliBasisNote = a11yBasisNote(targets);
+  const cliBasisNote = getA11yBasisNote(targets);
   if (cliBasisNote) {
     console.log(`\n♿ ${cliBasisNote}`);
   }

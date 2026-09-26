@@ -7,9 +7,12 @@ import * as os from 'node:os';
 import {
   evaluate,
   loadAxeResults,
+  getA11yBasisNote,
+  getA11yCoverage,
   getA11yDimensionLabel,
   type AxeResultForPrompt,
 } from './universal-eval.js';
+import type {UniversalAggregate} from './types.js';
 import {hashContent} from './utils.js';
 
 const dirs: string[] = [];
@@ -534,14 +537,83 @@ describe('accessibility fold-in edge cases', () => {
 // New: honest dimension label (issue #4145 proposal 3)
 // ============================================================
 
+describe('getA11yCoverage', () => {
+  const staticScore = evaluate(COMPOSED_CODE, 'astryx');
+  const runtimeScore = evaluate(COMPOSED_CODE, 'astryx', {
+    axeResult: AXE_FIXTURE,
+  });
+
+  it('reads a score set without runtime data as static', () => {
+    expect(getA11yCoverage([staticScore, staticScore])).toEqual({
+      basis: 'static',
+      runtime: 0,
+      total: 2,
+    });
+  });
+
+  it('reads partial runtime coverage as mixed, not runtime-backed', () => {
+    expect(getA11yCoverage([staticScore, runtimeScore])).toEqual({
+      basis: 'mixed',
+      runtime: 1,
+      total: 2,
+    });
+  });
+
+  it('reads full runtime coverage as runtime', () => {
+    expect(getA11yCoverage([runtimeScore, runtimeScore]).basis).toBe('runtime');
+  });
+});
+
 describe('getA11yDimensionLabel', () => {
   it('labels the static-only score as composition hygiene', () => {
-    expect(getA11yDimensionLabel(false)).toBe('A11y Hygiene (composition)');
+    expect(getA11yDimensionLabel({basis: 'static', runtime: 0, total: 8})).toBe(
+      'A11y Hygiene (composition)',
+    );
+  });
+
+  it('labels a partially runtime-backed score as mixed with its coverage', () => {
+    expect(getA11yDimensionLabel({basis: 'mixed', runtime: 6, total: 8})).toBe(
+      'Accessibility (mixed: 6/8 runtime)',
+    );
   });
 
   it('labels the runtime-backed score as accessibility', () => {
-    expect(getA11yDimensionLabel(true)).toBe(
-      'Accessibility (runtime + hygiene)',
+    expect(
+      getA11yDimensionLabel({basis: 'runtime', runtime: 8, total: 8}),
+    ).toBe('Accessibility (runtime + hygiene)');
+  });
+});
+
+describe('getA11yBasisNote', () => {
+  const aggregate = (runtimeFlags: boolean[]) =>
+    ({
+      byPrompt: Object.fromEntries(
+        runtimeFlags.map((runtime, i) => [
+          `tc-${i}`,
+          evaluate(
+            COMPOSED_CODE,
+            'astryx',
+            runtime ? {axeResult: AXE_FIXTURE} : {},
+          ),
+        ]),
+      ),
+    }) as UniversalAggregate;
+
+  it('names static-only and mixed targets with their coverage', () => {
+    expect(
+      getA11yBasisNote([
+        {label: 'Astryx', data: aggregate([true, true])},
+        {label: 'Baseline', data: aggregate([true, false])},
+        {label: 'HTML', data: aggregate([false, false])},
+      ]),
+    ).toBe(
+      'A11y basis: HTML scored by static composition hygiene only (no runtime axe data — run axe-previews); Baseline runtime-backed on 1/2 prompts, the rest hygiene-only',
     );
+  });
+
+  it('is null when every target is fully runtime-backed', () => {
+    expect(
+      getA11yBasisNote([{label: 'Astryx', data: aggregate([true, true])}]),
+    ).toBeNull();
   });
 });

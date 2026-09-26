@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {
+  A11yCoverage,
   UniversalScore,
   UniversalAggregate,
   UniversalComparison,
@@ -13,6 +14,7 @@ import type {
 } from '../../../src/types';
 
 export type {
+  A11yCoverage,
   UniversalScore,
   UniversalAggregate,
   UniversalComparison,
