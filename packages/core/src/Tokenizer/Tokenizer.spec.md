@@ -34,10 +34,10 @@ system_specs: [spec:AST-002/DEC-1]
 
 | Area                    | Contract                                                                                                                                                                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None. The existing `hasEntriesOnFocus` mode gains a defined post-selection lifecycle; no prop, type, export, or syntax changes.                                                                                                                   |
+| Public contract         | `TokenizerProps` gains optional `isLoading` and `changeAction`, exposing `family:input-fields` concepts. `hasEntriesOnFocus` gains a defined post-selection lifecycle with no prop, type, export, or syntax change.                               |
 | Behavior                | A committed empty-query bootstrap choice keeps remaining eligible loaded choices open, filters committed IDs, and advances the active option; terminal states close safely.                                                                       |
 | End-user impact         | People selecting several loaded values can continue without reopening the menu, while disabled, loading, exhausted, and dismissed states remain non-interactive.                                                                                  |
-| Builder impact          | None. Existing opt-in callers need no migration or refetch, and typed-query selection remains unchanged.                                                                                                                                          |
+| Builder impact          | No migration: existing opt-in callers need no refetch, and typed-query selection remains unchanged. New optional choices: `isLoading` marks a busy value; `changeAction` runs a save as a Transition Action.                                      |
 | Compatibility/readiness | The default `hasEntriesOnFocus={false}` path and direct single-select BaseTypeahead remain unchanged. This decision is current and owner-approved; implementation and exact-head interaction evidence remain pending in #6360.                    |
 | Review checks           | Reject implementations that filter by label instead of ID, reorder eligible choices, lose focus or a valid active descendant, refetch unnecessarily, or let disabled, exhausted, dismissed, or stale-loading states remain interactive or reopen. |
 | Governing rules         | This canonical `component:Tokenizer` record: [FR13–FR15](#behavioral-and-layout-contract), [AR5](#accessibility-contract), and [DEC-2](#dec-2--focus-bootstrap-supports-consecutive-committed-selections).                                        |
@@ -58,14 +58,36 @@ remains evidence for the need, not authority for this record.
 
 ## Compatibility and migration
 
-- The public API and the default `hasEntriesOnFocus={false}` path are unchanged.
-- Compatibility class: intentional behavior correction for the existing opt-in
-  `hasEntriesOnFocus` mode. A committed selection from its current empty-query
-  bootstrap cohort keeps the remaining eligible loaded choices available instead
-  of closing the menu after every choice.
+- Released default preserved: `yes`; `isLoading` defaults to `false` and
+  `changeAction` to unset, which renders and behaves exactly as shipped, and
+  the default `hasEntriesOnFocus={false}` path is unchanged.
+- Compatibility class: additive. The exported `TokenizerProps` declaration
+  gains two optional members, `isLoading?: boolean` and
+  `changeAction?: (items: T[], change: TokenizerChange<T>) => void | Promise<void>`.
+  Existing props, targets, DOM, and styling are unchanged, and nothing changes
+  without the new props except the `family:input-fields` FR4 fix: a field
+  disabled with a reason no longer removes a token (Backspace or a custom
+  token's remove callback) or selects one from the keyboard. The
+  opening-control descriptor stays package-internal. Separately, an
+  intentional behavior correction for the existing opt-in `hasEntriesOnFocus`
+  mode: a committed selection from its current empty-query bootstrap cohort
+  keeps the remaining eligible loaded choices available instead of closing the
+  menu after every choice.
+- `isLoading` is additive. It marks the value busy — one Spinner in the end
+  lane plus `aria-busy` on the combobox — and never means the option source is
+  pending (`spec:AST-001`). `changeAction` is additive. Before it, an add,
+  remove, or clear only reported through `onChange`. After it, `onChange` still
+  runs first, then the Action runs inside a transition while the proposed
+  token list shows as busy until the controlled `value` accepts or replaces it
+  (`family:input-fields` FR5–FR7). The clear-all control follows the
+  accepted `value`, as Selector's clear does, while the tokens follow the
+  proposal.
 - Controlled/uncontrolled ownership is unchanged. Retention follows committed
   controlled values; a proposed value that the caller has not accepted remains
-  available.
+  available. The one addition is a `changeAction` proposal still pending: its
+  tokens are on screen, so FR13 filters them from the cohorts like committed
+  ones until the proposal ends, and one the caller did not accept is eligible
+  again.
 - Migration decision: none. Existing callers that omit `hasEntriesOnFocus`, typed
   search selection, explicit dismissal, disabled state, maximum-entry state, and
   source-loading behavior retain their prior boundaries.
@@ -109,7 +131,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No public API concept is introduced. Existing consumer props and usage remain in
+`isLoading` and `changeAction` are input-field family concepts adopted from
+`family:input-fields` (FR5–FR7, DEC-2, DEC-3), not Tokenizer-owned concepts.
+Tokenizer owns only the Action's argument shape, which mirrors `onChange`:
+`(items: T[], change: TokenizerChange<T>)`. Search busy stays
+BaseTypeahead-owned; both meanings share the one end-lane Spinner and the
+combobox `aria-busy`.
+
+No Tokenizer-owned public concept is introduced: `isLoading` and `changeAction`
+newly expose the two family concepts above as optional props, and no other
+public concept is added. Existing consumer props and usage remain in
 `Tokenizer.doc.mjs`. The existing `hasEntriesOnFocus` mode now includes the
 component-owned post-selection behavior in FR13–FR15.
 
@@ -305,6 +336,7 @@ become Tokenizer policy.
 | FR13–FR15, AR5   | Focused Tokenizer/BaseTypeahead tests and exact-head Chromium interaction evidence | pointer/keyboard commit, first/middle/last choice, rejected/deferred control, loading, disabled, max, exhaustion, Escape, Tab, outside focus | Selected values remain available, order changes, focus leaves the combobox, active descendant names no option, stale work reopens, or a terminal state stays interactive. | `audit:Tokenizer/multi-select`   |
 | PR1–PR5          | Instrumented reads, pending-frame cleanup tests, and first-frame Chromium capture  | open, close before frame, reopen opposite side, resize while open                                                                            | Render-time/repeated reads, observer/pointer tracking, uncancelled frame, or first-frame jump occurs.                                                                     | `audit:Tokenizer/performance`    |
 | AR1–AR5          | Existing interaction suites plus focused pointer/keyboard/browser checks           | add/edit, focus/refocus, overflow, disabled, dismissal, retained bootstrap selection                                                         | Modality changes placement, semantics/focus regress, active descendant becomes invalid, or visible placement is wrong before fallback.                                    | `audit:Tokenizer/accessibility`  |
+| Input busy       | `Tokenizer.test.tsx` `input busy: isLoading and changeAction` suite                | `isLoading`; pending add, remove, or clear Action; settled; replaced mid-Action; source-busy plus value-busy                                 | A second Spinner appears, `aria-busy` drops while busy, the Action runs before `onChange`, or a proposal outlives an unaccepted Action or a `value` replacement.          | `audit:Tokenizer/accessibility`  |
 | Record structure | `scripts/check-knowledge.mjs`                                                      | Template-v3 current record and current-only frontmatter links                                                                                | Invalid metadata, authority, or relationship references fail repository validation.                                                                                       | `audit:Tokenizer/knowledge`      |
 
 ## Decision log
