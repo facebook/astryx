@@ -6,15 +6,17 @@
  *   scan workflow. Reads the JSON report produced by rtl-audit.mjs, writes a
  *   markdown summary (used for both the GitHub step summary and the tracking
  *   issue body), and emits step outputs (status, total_findings,
- *   components_audited, stories_scanned) so the workflow can decide whether to
- *   open-or-update the tracking issue and whether to fail the job.
+ *   components_audited, stories_scanned, coverage_gaps, verified_na) so the
+ *   workflow can decide whether to open-or-update the tracking issue and
+ *   whether to fail the job.
  * @input --report <file> --audit-outcome <success|failure> --summary-output <file>
  *   [--github-output <file>]
  * @output Markdown summary file + GitHub Actions step outputs
  *
  * Status semantics:
- *   clean    — report present with zero findings
- *   findings — report present, at least one D1/D5/curated finding
+ *   clean: report present with zero behavior findings or coverage gaps
+ *   findings: report present with a D1/D5/D6/curated finding, an unexplained
+ *              all-N/A component, or a stale verified-N/A declaration
  *   crashed  — no usable report (the audit died before writing one)
  *
  * Unlike accessibility-audit.js, rtl-audit.mjs exits non-zero on ANY finding,
@@ -64,11 +66,20 @@ function curatedFailuresOf(report) {
   );
 }
 
+function coverageFindingsOf(report) {
+  return (report?.coverage?.results || []).filter(result =>
+    ['coverage-gap', 'stale-verified-na'].includes(result.status),
+  );
+}
+
 function countFindings(report) {
   return (
     failuresOf(report?.autoDiscovery).length +
     failuresOf(report?.positionalMirror).length +
-    curatedFailuresOf(report).length
+    failuresOf(report?.directionalDecorations).length +
+    curatedFailuresOf(report).length +
+    coverageFindingsOf(report).length +
+    (report?.coverage?.registryError ? 1 : 0)
   );
 }
 
@@ -101,11 +112,14 @@ function buildSummary(report, status) {
 
   const auto = report.autoDiscovery || {};
   const pm = report.positionalMirror || {};
+  const decorations = report.directionalDecorations || {};
+  const coverage = report.coverage || {};
   const curated = report.curated?.results || [];
 
   lines.push(
-    `**Scope:** full component library, unfiltered — ${auto.total ?? 0} component(s) for D1, ` +
-      `${pm.total ?? 0} core stories for D5 (${report.generatedAt || 'unknown'}).`,
+    `**Scope:** full component library, unfiltered: ${coverage.total ?? auto.total ?? 0} component(s), ` +
+      `${pm.total ?? 0} story render(s) for D5 and ${decorations.total ?? 0} for D6 ` +
+      `(${report.generatedAt || 'unknown'}).`,
     '',
     "PR CI (`ci.yml`'s `pr-rtl` job) only audits the components a PR touches. " +
       'Tokens, shared hooks, and icon primitives can regress RTL in components ' +
@@ -124,6 +138,8 @@ function buildSummary(report, status) {
   lines.push(
     `**D1 icon-mirror:** ${auto.pass ?? 0} pass · ${auto.fail ?? 0} not-RTL · ${auto.na ?? 0} N-A.`,
     `**D5 positional-mirror:** ${pm.pass ?? 0} pass · ${pm.fail ?? 0} FAIL · ${pm.na ?? 0} N-A (tolerance ${pm.tolerancePx ?? '?'}px).`,
+    `**D6 directional-decoration:** ${decorations.pass ?? 0} pass · ${decorations.fail ?? 0} FAIL · ${decorations.na ?? 0} N-A.`,
+    `**Applicability:** ${coverage.measured ?? 0} measured · ${coverage.verifiedNa ?? 0} verified N-A · ${coverage.gaps ?? 0} coverage gap · ${coverage.staleVerifiedNa ?? 0} stale verified N-A.`,
     '',
   );
 
@@ -168,6 +184,48 @@ function buildSummary(report, status) {
     lines.push(...truncateRows(rows), '');
   }
 
+  const decorationFails = failuresOf(decorations);
+  if (decorationFails.length) {
+    lines.push('### D6: contextual directional decorations', '');
+    lines.push('| Story | Verdict | Detail |', '|-------|---------|--------|');
+    lines.push(
+      ...truncateRows(
+        decorationFails.map(
+          result =>
+            `| ${result.storyId} | ${result.verdict} | ${(result.notes || []).join('; ')} |`,
+        ),
+      ),
+      '',
+    );
+  }
+
+  const coverageFindings = coverageFindingsOf(report);
+  if (coverage.registryError) {
+    lines.push(
+      '### RTL applicability registry error',
+      '',
+      `\`${coverage.registryError}\``,
+      '',
+    );
+  }
+  if (coverageFindings.length) {
+    lines.push('### RTL coverage gaps', '');
+    lines.push(
+      '| Component | Status | Detail |',
+      '|-----------|--------|--------|',
+    );
+    lines.push(
+      ...truncateRows(
+        coverageFindings.map(result => {
+          const detail =
+            result.note || result.reason || 'unexplained all-N/A result';
+          return `| ${result.component} | ${result.status} | ${detail} |`;
+        }),
+      ),
+      '',
+    );
+  }
+
   const curatedFails = curatedFailuresOf(report);
   if (curatedFails.length) {
     lines.push(
@@ -194,9 +252,9 @@ function buildSummary(report, status) {
 
   if (status === 'clean') {
     lines.push(
-      `_No findings. ${curated.length} curated target(s) checked._`,
+      `_No findings. ${curated.length} curated target(s) checked; ${coverage.measured ?? 0} component(s) measured and ${coverage.verifiedNa ?? 0} verified N-A, with 0 coverage gaps._`,
       '',
-      'RTL-ready across the full library for every dimension the audit covers.',
+      'RTL-ready across the full library for every applicable or explicitly non-applicable component.',
       '',
     );
   }
@@ -214,8 +272,10 @@ function writeOutputs(status, report) {
   const outputs = [
     `status=${status}`,
     `total_findings=${report ? countFindings(report) : 0}`,
-    `components_audited=${report?.autoDiscovery?.total ?? 0}`,
+    `components_audited=${report?.coverage?.total ?? report?.autoDiscovery?.total ?? 0}`,
     `stories_scanned=${report?.positionalMirror?.total ?? 0}`,
+    `coverage_gaps=${report?.coverage?.gaps ?? 0}`,
+    `verified_na=${report?.coverage?.verifiedNa ?? 0}`,
   ];
   if (githubOutputFile)
     fs.appendFileSync(githubOutputFile, outputs.join('\n') + '\n');

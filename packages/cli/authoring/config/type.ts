@@ -9,6 +9,9 @@
  * boundary; there is no factory to call.
  */
 
+import type {DebugEventHandler} from '../debug/type.js';
+import type {GapReportHandler} from '../gap-report/type.js';
+
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
  * `buildCommand` and executed after codemods write files.
@@ -18,7 +21,7 @@ export interface PostCodemodCommand {
   args?: string[];
   options?: {
     cwd?: string;
-    env?: NodeJS.ProcessEnv;
+    env?: Record<string, string | undefined>;
     timeout?: number;
   };
 }
@@ -50,6 +53,24 @@ export interface XleComponent {
   default?: boolean;
 }
 
+/**
+ * Record every astryx command run in this project.
+ *
+ * A function that receives each run. Leaving it out does not stop a handler an
+ * integration contributes; see {@link AstryxConfig.debug} for how the two
+ * combine and how to refuse inherited handlers.
+ *
+ * ```
+ * export default {
+ *   debug: event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\n'),
+ * };
+ * ```
+ *
+ * Runs synchronously at process exit — see {@link DebugEventHandler} for what
+ * that rules out.
+ */
+export type DebugConfig = DebugEventHandler;
+
 /** User config exported from astryx.config.{ts,mjs,js}. */
 export interface AstryxConfig {
   /** Integration package names to load. */
@@ -60,6 +81,21 @@ export interface AstryxConfig {
   hooks?: {
     postCodemod?: PostCodemodHook[];
   };
+  /**
+   * Record every astryx command run in this project. See {@link DebugConfig}.
+   *
+   * An integration can contribute a handler too, as a `debug` named export
+   * from its `astryx.integration.*` module. Every handler receives the run:
+   * this one first, then each integration's in load order (the ones
+   * `integrations` lists, in that order, then autolinked ones). A handler that
+   * throws is skipped; the others still run and the command's result does not
+   * change. To refuse inherited handlers, set
+   * `{"astryx": {"inheritDebug": false}}` in the project's package.json; this
+   * handler still runs.
+   */
+  debug?: DebugConfig;
+  /** Route gap reports through a project-owned handler. See {@link GapReportHandler}. */
+  gapReport?: GapReportHandler;
   /**
    * EXPERIMENTAL — shape may change and is not part of the stable config
    * contract. Provisional home for features still being proven out.

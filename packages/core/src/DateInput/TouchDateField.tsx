@@ -75,7 +75,7 @@ import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {stableClassName} from '../naming';
@@ -194,10 +194,14 @@ const styles = stylex.create({
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
     // Below 16px iOS zooms the page on focus. The field is focusable even
-    // though it is not typable, so it needs the same floor DateInput has.
+    // though it is not typable, so it needs the same floor DateInput has —
+    // keyed to iOS alone, since only iOS WebKit implements
+    // -webkit-touch-callout.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -574,6 +578,7 @@ export function TouchDateField({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
@@ -699,13 +704,15 @@ export function TouchDateField({
         plainDateFormat(
           {year: 1970, month: 1, day: 4 + ((weekStartsOn + offset) % 7)},
           DATE_FORMAT_WEEKDAY_ONLY,
+          locale,
         ),
       ),
-    [weekStartsOn],
+    [locale, weekStartsOn],
   );
   const monthYearLabel = plainDateFormat(
     {year, month, day: 1},
     DATE_FORMAT_MONTH_YEAR,
+    locale,
   );
 
   // Formats the committed value only. A function format is called with the ISO
@@ -715,7 +722,7 @@ export function TouchDateField({
     optimisticValue != null && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
       ? typeof format === 'function'
         ? format(optimisticValue)
-        : formatSharedDate(plainDateFromISO(optimisticValue), format)
+        : formatSharedDate(plainDateFromISO(optimisticValue), format, locale)
       : '';
 
   const fireChange = useCallback(

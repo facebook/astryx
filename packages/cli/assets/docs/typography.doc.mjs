@@ -56,7 +56,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'html',
-          label: 'Google Fonts — add to your document <head>',
+          label: 'Google Fonts: add to your document <head>',
           code: `<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -67,7 +67,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'css',
-          label: 'Self-hosted — one @font-face per family and weight',
+          label: 'Self-hosted: one @font-face per family and weight',
           code: `@font-face {
   font-family: 'Fraunces';
   src: url('/fonts/fraunces.woff2') format('woff2');

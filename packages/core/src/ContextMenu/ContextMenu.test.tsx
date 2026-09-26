@@ -9,8 +9,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {readFileSync} from 'node:fs';
 import {ContextMenu} from './ContextMenu';
 import {
   ContextMenuItem,
@@ -23,6 +24,30 @@ import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
 
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.show = vi.fn(function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -121,6 +146,100 @@ describe('ContextMenu', () => {
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('opens the real menu content in a BottomSheet when requested', async () => {
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={[{label: 'Edit'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await waitFor(() =>
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
+    );
+    const dialog = screen.getByRole('dialog', {name: 'Row actions'});
+    const actionList = dialog.querySelector('[data-autofocus]');
+    expect(actionList).not.toBeNull();
+    await waitFor(() => expect(actionList).toHaveFocus());
+    expect(screen.getByRole('button', {name: 'Edit'})).not.toHaveFocus();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('drills into nested data items inside the BottomSheet', async () => {
+    const user = userEvent.setup();
+    const onMove = vi.fn();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={[
+          {
+            label: 'Move to project',
+            items: [{label: 'Apollo launch', onClick: onMove}],
+          },
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+
+    const submenuHeading = screen.getByRole('heading', {
+      name: 'Move to project',
+    });
+    expect(submenuHeading).toBeInTheDocument();
+    await waitFor(() => expect(submenuHeading).toHaveFocus());
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', {name: 'Apollo launch'}));
+    expect(onMove).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('keeps only the top content padding in a menu BottomSheet', () => {
+    const source = readFileSync(
+      'packages/core/src/DropdownMenu/MenuBottomSheet.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('paddingBlockStart={4}');
+    expect(source).toContain('paddingBlockEnd={0}');
+  });
+
+  it('uses the BottomSheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    render(
+      <ContextMenu presentation="adaptive" items={[{label: 'Edit'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await waitFor(() =>
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
+    );
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
   });
 
   it('closes on Escape even when opened without auto-focus', () => {
@@ -271,6 +390,17 @@ describe('ContextMenu', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('suppresses native text selection on the long-press trigger', () => {
+    const source = readFileSync(
+      'packages/core/src/ContextMenu/ContextMenu.tsx',
+      'utf8',
+    );
+
+    expect(source).toMatch(
+      /trigger:[\s\S]*?WebkitTouchCallout: 'none',[\s\S]*?WebkitUserSelect: 'none',[\s\S]*?userSelect: 'none'/,
+    );
   });
 
   it('cancels the long-press when the finger moves past the threshold', () => {

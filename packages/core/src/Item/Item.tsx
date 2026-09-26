@@ -5,7 +5,7 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps type
+ * @output Exports Item component, ItemProps type; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
-import {useRef, type ReactNode} from 'react';
+import {useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,7 +27,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
+import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -208,7 +209,13 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
+    // The inline inset is published as --_item-inset-inline and the padding
+    // derives from it, so consumers that need to compensate for the inset
+    // (List's edgeCompensation) read the var instead of mirroring the values.
+    // Themes that set paddingInline on `item` also feed this var via the
+    // derived var registry, keeping padding and compensation in sync.
+    '--_item-inset-inline': spacingVars['--spacing-2'],
+    paddingInline: 'var(--_item-inset-inline)',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -355,7 +362,7 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
+    '--_item-inset-inline': spacingVars['--spacing-3'],
   },
 });
 
@@ -441,6 +448,15 @@ export function Item({
   // that need selection semantics pass a permitted role.
   const allowsAriaSelected = role != null && ARIA_SELECTED_ROLES.has(role);
 
+  // The description element's id, published through ItemDescriptionContext so a
+  // control Item renders in a slot can point at it with `aria-describedby`.
+  // `isRenderable` rather than `!= null` so the common empty values — `null`,
+  // `undefined`, `false`, `''` — publish no id and leave a consumer with no
+  // dangling reference. It is a shallow check: content that renders nothing
+  // only once React runs it, such as an empty fragment, still publishes an id.
+  const descriptionID = useId();
+  const hasRenderableDescription = isRenderable(description);
+
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
 
@@ -481,6 +497,7 @@ export function Item({
       </span>
       {description != null && (
         <span
+          id={hasRenderableDescription ? descriptionID : undefined}
           {...stylex.props(
             styles.description,
             isInline && styles.inlineDescription,
@@ -616,7 +633,10 @@ export function Item({
               ? handleContainerClick
               : undefined
       }>
-      {innerContent}
+      <ItemDescriptionContext
+        value={hasRenderableDescription ? descriptionID : null}>
+        {innerContent}
+      </ItemDescriptionContext>
     </Component>
   );
 }

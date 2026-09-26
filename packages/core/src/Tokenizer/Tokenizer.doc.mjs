@@ -5,8 +5,22 @@
 export const docs = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
+  playground: {
+    // `value` is a required array of custom items the preview cannot
+    // auto-generate; without a default the properties tab shows the
+    // missing-props placeholder instead of the field. `searchSource` and
+    // `onChange` are supplied by the preview's own fallbacks.
+    defaults: {
+      label: 'Tags',
+      placeholder: 'Search...',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',
@@ -258,6 +272,7 @@ export const docs = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -483,6 +498,7 @@ export const docsZh = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],

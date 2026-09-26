@@ -16,14 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
-import {
-  use,
-  useId,
-  useCallback,
-  useMemo,
-  useOptimistic,
-  useTransition,
-} from 'react';
+import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   plainDateFromISO,
@@ -61,6 +54,7 @@ import {
   type DayOfWeek,
   type DayOfWeekName,
 } from '../Calendar';
+import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -72,7 +66,7 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 import type {Locale} from '../i18n/types';
 
 export type {DateRange} from '../Calendar';
@@ -98,9 +92,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -202,7 +201,7 @@ const sizeStyles = stylex.create({
   },
 });
 
-function formatRangeDisplay(range: DateRange | null, locale?: Locale): string {
+function formatRangeDisplay(range: DateRange | null, locale: Locale): string {
   if (!range) {
     return '';
   }
@@ -383,6 +382,9 @@ export interface DateRangeInputProps extends Omit<
 
   /**
    * Preset date ranges shown as quick-select options beside the calendar.
+   * A preset is disabled when either endpoint violates `min`, `max`, or
+   * `dateConstraints`, or when its span violates `minRangeSpan` or
+   * `maxRangeSpan`.
    */
   presets?: ReadonlyArray<DateRangePreset>;
 
@@ -493,8 +495,8 @@ export function DateRangeInput({
   ...rest
 }: DateRangeInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -549,6 +551,11 @@ export function DateRangeInput({
     dialogLabel: t('@astryx.dateRangeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
   });
+  const {isDateDisabled} = useCalendarConstraints({
+    min,
+    max,
+    dateConstraints,
+  });
 
   const fireChange = useCallback(
     (newValue: DateRange | null) => {
@@ -579,14 +586,6 @@ export function DateRangeInput({
   const handleRangeSelect = useCallback(
     (range: DateRange) => {
       fireChange(range);
-      popover.hide();
-    },
-    [fireChange, popover],
-  );
-
-  const handlePresetClick = useCallback(
-    (preset: DateRangePreset) => {
-      fireChange(preset.getRange());
       popover.hide();
     },
     [fireChange, popover],
@@ -720,15 +719,17 @@ export function DateRangeInput({
             <div
               role="group"
               aria-label={t('@astryx.dateRangeInput.presetDateRanges')}
-              {...stylex.props(styles.presetSidebar)}>
+              {...mergeProps(
+                themeProps('date-range-input-presets'),
+                stylex.props(styles.presetSidebar),
+              )}>
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
-                const isPresetDisabled = !isRangeWithinSpan(
-                  presetRange,
-                  maxRangeSpan,
-                  minRangeSpan,
-                );
+                const isPresetDisabled =
+                  !isRangeWithinSpan(presetRange, maxRangeSpan, minRangeSpan) ||
+                  isDateDisabled(plainDateFromISO(presetRange.start)) ||
+                  isDateDisabled(plainDateFromISO(presetRange.end));
                 return (
                   <button
                     key={preset.label}
@@ -740,12 +741,18 @@ export function DateRangeInput({
                     // concept that contradicted the Tab interaction) (forms-5).
                     aria-current={isActive ? 'true' : undefined}
                     disabled={isPresetDisabled}
-                    onClick={() => handlePresetClick(preset)}
-                    {...stylex.props(
-                      focusOutlineStyles.focusVisible,
-                      styles.presetButton,
-                      isActive && styles.presetButtonActive,
-                      isPresetDisabled && styles.presetButtonDisabled,
+                    onClick={() => handleRangeSelect(presetRange)}
+                    {...mergeProps(
+                      themeProps('date-range-input-preset', {
+                        selected: isActive ? 'selected' : null,
+                        disabled: isPresetDisabled ? 'disabled' : null,
+                      }),
+                      stylex.props(
+                        focusOutlineStyles.focusVisible,
+                        styles.presetButton,
+                        isActive && styles.presetButtonActive,
+                        isPresetDisabled && styles.presetButtonDisabled,
+                      ),
                     )}>
                     {preset.label}
                   </button>

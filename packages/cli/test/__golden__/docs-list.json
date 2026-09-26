@@ -1,0 +1,11 @@
+{
+  "apiVersion": 1,
+  "type": "docs.list",
+  "data": [
+    {
+      "topic": "acme-guide",
+      "description": "How zorblax cards fit together.",
+      "package": "@acme/kit"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
  * @input Uses React createContext
  * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
  *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
- *   and CollapsibleGroupDensity types
+ *   CollapsibleGroupDensity, and CollapsibleChevronPosition types
  * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -44,6 +44,15 @@ CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
+ * Logical position of Collapsible's disclosure chevron.
+ *
+ * `end` is the default trailing indicator: down when collapsed, up when
+ * expanded. `start` is the leading disclosure pattern: inward toward content
+ * when collapsed (mirrored under RTL), down when expanded.
+ */
+export type CollapsibleChevronPosition = 'start' | 'end';
+
+/**
  * Presentation value provided by CollapsibleGroup so each Collapsible can
  * draw its own group chrome (StyleX has no child selectors, so the group
  * cannot style items from the outside).
@@ -53,6 +62,13 @@ export interface CollapsibleGroupPresentationValue {
   hasDividers: boolean;
   /** Resolved row density, or null to keep the default (unpadded) look. */
   density: CollapsibleGroupDensity | null;
+  /**
+   * Chevron position for the group's direct items, or null to leave each item on
+   * its own default. An item's own `chevronPosition` still wins, but mixing
+   * positions within one group reads as a mistake, so the group is the usual
+   * place to set it.
+   */
+  chevronPosition: CollapsibleChevronPosition | null;
 }
 
 /**

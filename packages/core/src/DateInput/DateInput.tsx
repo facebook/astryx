@@ -17,7 +17,6 @@
  */
 
 import {
-  use,
   useId,
   useState,
   useCallback,
@@ -100,9 +99,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -179,7 +183,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
@@ -465,8 +469,8 @@ function PointerDateField({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -620,10 +624,21 @@ function PointerDateField({
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    inputRef.current?.focus();
-  }, [fireChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [fireChange],
+  );
 
   // Handle date selection from calendar
   const handleDateSelect = useCallback(

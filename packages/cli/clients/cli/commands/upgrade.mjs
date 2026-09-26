@@ -19,6 +19,7 @@ import {defineCommand} from '../lib/define-command.mjs';
 import {upgrade as upgradeApi} from '../../../api/upgrade/upgrade.mjs';
 import {doc as upgradeCommand} from './upgrade.doc.mjs';
 import {doc as upgradeFn} from '../../../api/upgrade/upgrade.doc.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 
 /**
  * @param {import('commander').Command} program
@@ -34,7 +35,7 @@ export function registerUpgrade(program) {
         const json = program.opts().json || false;
         logger.setSilent(json);
 
-        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
+        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRegistryResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
           result = await upgradeApi(options, {cwd: process.cwd()});
@@ -47,12 +48,30 @@ export function registerUpgrade(program) {
           if (e instanceof AstryxError) {
             if (json) jsonError(e.message, undefined, e.code);
             else process.exitCode = 1;
-            return;
+            return NO_RESULT_SET;
           }
           throw e;
         }
 
         if (json) jsonOut(result);
+
+        const registrySummary =
+          result.type === 'upgrade.registry'
+            ? result.data
+            : result.type === 'upgrade.run'
+              ? result.data.registryCompositions
+              : result.type === 'upgrade.status' &&
+                  'registryCompositions' in result.data
+                ? result.data.registryCompositions
+                : undefined;
+        if (registrySummary && !registrySummary.ok) process.exitCode = 1;
+
+        // `--list` is the one lookup here: which migrations exist for the
+        // range. Everything else migrates the project — an effect, reported by
+        // the receipt rather than counted.
+        return result.type === 'upgrade.list'
+          ? resultSet({count: result.data.length, resultKind: 'migration'})
+          : NO_RESULT_SET;
       },
   });
 

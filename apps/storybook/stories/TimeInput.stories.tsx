@@ -64,6 +64,12 @@ const meta: Meta<typeof TimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        'Native browser/OS time picker on touch by default, native wherever compatible, or Astryx typed field everywhere',
+    },
     increment: {
       control: 'number',
       description: 'Minutes to increment/decrement with arrow keys',
@@ -94,6 +100,39 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Meeting time',
+  },
+};
+
+export const NativePickerModes: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISOTimeString | undefined>(
+      '14:30' as ISOTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <TimeInput
+          label="nativePicker='touch' (default)"
+          description="Native picker on a coarse primary pointer; Astryx typed field on a fine pointer"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <TimeInput
+          label="nativePicker='always'"
+          description="Native picker wherever input type=time is compatible"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <TimeInput
+          label="nativePicker='never'"
+          description="Astryx typed field on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
+        />
+      </div>
+    );
   },
 };
 
@@ -377,7 +416,8 @@ export const StatusVariantComparison: Story = {
       '22:00' as ISOTimeString,
     );
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <TimeInput
           label="Attached (default)"
           value={a}

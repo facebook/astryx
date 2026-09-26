@@ -146,6 +146,14 @@ export function CommandPaletteItem({
   const isSelected = controlledSelected ?? (ctx ? ctx.value === value : false);
 
   useEffect(() => {
+    // Inside CommandPalette the shared useHighlightedOptionScroll (via
+    // useCombobox) is the single scrollIntoView owner (#6077); a second owner
+    // here doubled every keyboard scroll and scrolled on hover. Standalone
+    // items (no context) keep their own scroll.
+    if (ctx) {
+      return;
+    }
+
     // Inline dialogs are documentation/showcase previews. Avoid scrolling the
     // surrounding page when picker mode auto-highlights its selected item on
     // mount, while preserving scroll-into-view after user navigation.
@@ -160,7 +168,7 @@ export function CommandPaletteItem({
     if (isHighlighted && itemRef.current) {
       itemRef.current.scrollIntoView?.({block: 'nearest'});
     }
-  }, [isHighlighted, isInlineDialog]);
+  }, [ctx, isHighlighted, isInlineDialog]);
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -173,13 +181,6 @@ export function CommandPaletteItem({
     }
   }, [isDisabled, value, onSelect, ctx]);
 
-  const handleMouseEnter = useCallback(() => {
-    if (isDisabled || !ctx || itemIndex < 0) {
-      return;
-    }
-    ctx.setHighlightedIndex(itemIndex);
-  }, [isDisabled, itemIndex, ctx]);
-
   return (
     <div
       ref={useMergedRefs(ref, itemRef)}
@@ -190,7 +191,7 @@ export function CommandPaletteItem({
       aria-disabled={isDisabled || undefined}
       data-value={value}
       onClick={composeEventHandlers(onClickProp, handleClick)}
-      onMouseEnter={composeEventHandlers(onMouseEnterProp, handleMouseEnter)}
+      onMouseEnter={onMouseEnterProp}
       {...mergeProps(
         themeProps('command-palette-item'),
         stylex.props(

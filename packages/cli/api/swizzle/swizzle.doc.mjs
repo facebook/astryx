@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'swizzle',
+  namespace: 'cli/api',
   displayName: 'swizzle()',
   summary: "Eject a component's source into your project for customization.",
   description:
@@ -80,7 +81,7 @@ export const doc = {
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the component name contains a path separator or traversal, or output resolves outside cwd',
+      when: 'the component name contains a path separator or traversal, output resolves outside cwd, or an existing output file or directory is a symlink that resolves outside cwd',
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
