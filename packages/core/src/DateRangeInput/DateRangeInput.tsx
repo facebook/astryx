@@ -583,6 +583,20 @@ export function DateRangeInput({
     }
   }, [isEffectivelyDisabled, popover]);
 
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // APG combobox: ArrowDown (and Alt+ArrowDown) opens the calendar
+      // popover from the keyboard, matching DateInput. It goes through the
+      // same guarded path as click/Enter/Space, so focus moves into the
+      // dialog: unlike DateInput's text field, this trigger is select-only.
+      if (e.key === 'ArrowDown' && !popover.isOpen) {
+        e.preventDefault();
+        handleToggle();
+      }
+    },
+    [popover.isOpen, handleToggle],
+  );
+
   const handleRangeSelect = useCallback(
     (range: DateRange) => {
       fireChange(range);
@@ -686,6 +700,7 @@ export function DateRangeInput({
           // aria-required/aria-invalid valid here (not allowed on role=button).
           role="combobox"
           onClick={handleToggle}
+          onKeyDown={handleTriggerKeyDown}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isEffectivelyDisabled guard in handleToggle.

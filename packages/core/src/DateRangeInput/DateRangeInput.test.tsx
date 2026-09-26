@@ -194,6 +194,63 @@ describe('DateRangeInput', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('opens the dialog on ArrowDown and moves focus into it', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    await user.tab();
+    expect(trigger).toHaveFocus();
+
+    await user.keyboard('{ArrowDown}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // Same as click: the trigger is select-only (nothing to type into), so
+    // focus moves into the dialog rather than staying on the trigger.
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole('dialog', {hidden: true})
+          .contains(document.activeElement),
+      ).toBe(true);
+    });
+  });
+
+  it('opens the dialog on Alt+ArrowDown', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown', altKey: true});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('prevents the default page scroll on ArrowDown', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    // fireEvent returns false when a handler called preventDefault().
+    expect(fireEvent.keyDown(trigger, {key: 'ArrowDown'})).toBe(false);
+  });
+
+  it('keeps the dialog open on ArrowDown while already open', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown while loading', () => {
+    render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('renders status icon for error status', () => {
     render(
       <DateRangeInput
@@ -608,6 +665,9 @@ describe('DateRangeInput', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
       await user.keyboard('{Enter}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{ArrowDown}');
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
