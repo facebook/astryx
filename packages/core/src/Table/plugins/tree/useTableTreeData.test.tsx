@@ -1082,6 +1082,20 @@ describe('useTableTreeData — caller props on the Table root', () => {
     expect(src).toHaveFocus();
   });
 
+  it('keeps row navigation when a wrapper forwards an unset onKeyDown', () => {
+    render(
+      <TreeTable
+        defaultExpandedIds={['src']}
+        tableProps={{onKeyDown: undefined}}
+      />,
+    );
+    const src = focusRow('src');
+
+    fireEvent.keyDown(src, {key: 'ArrowDown'});
+
+    expect(getRowByText('components')).toHaveFocus();
+  });
+
   it('stays a treegrid when the caller passes a role', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(<TreeTable tableProps={{role: 'grid'}} />);
@@ -1099,6 +1113,21 @@ describe('useTableTreeData — caller props on the Table root', () => {
     act(() => utils.focus());
 
     expect(onFocus).toHaveBeenCalled();
+    expect(utils).toHaveAttribute('tabindex', '0');
+    expect(getRowByText('src')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('keeps the roving tab stop in sync when a wrapper forwards an unset onFocus', () => {
+    render(
+      <TreeTable
+        defaultExpandedIds={['src']}
+        tableProps={{onFocus: undefined}}
+      />,
+    );
+
+    const utils = getRowByText('utils.ts');
+    act(() => utils.focus());
+
     expect(utils).toHaveAttribute('tabindex', '0');
     expect(getRowByText('src')).toHaveAttribute('tabindex', '-1');
   });

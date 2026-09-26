@@ -615,6 +615,28 @@ describe('BaseTable', () => {
       expect(pluginKeyDown).not.toHaveBeenCalled();
     });
 
+    it('keeps the plugin handler when the caller forwards an unset one', () => {
+      const pluginKeyDown = vi.fn();
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({
+          ...props,
+          htmlProps: {...props.htmlProps, onKeyDown: pluginKeyDown},
+        }),
+      };
+      render(
+        <BaseTable
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+          onKeyDown={undefined}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByRole('table'), {key: 'ArrowDown'});
+
+      expect(pluginKeyDown).toHaveBeenCalledTimes(1);
+    });
+
     it("keeps a plugin's structural role over the caller's and warns in development", () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const plugin: TablePlugin<User> = {

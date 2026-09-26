@@ -228,7 +228,8 @@ export interface TableRenderProps {
    * for the same event is composed (the consumer's runs first, and its
    * `event.preventDefault()` skips the plugin's), and a plugin's `role` wins,
    * since row semantics a plugin adds (the tree plugin's treegrid) depend on
-   * it.
+   * it. An unset consumer handler (`onKeyDown={undefined}`) leaves the
+   * plugin's in place.
    */
   htmlProps: HTMLAttributes<HTMLTableElement>;
   xstyle: StyleXStyles[];

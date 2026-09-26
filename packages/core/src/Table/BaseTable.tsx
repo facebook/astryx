@@ -85,9 +85,10 @@ const styles = stylex.create({
  * caller's value wins by default, with two exceptions. A handler both sides
  * set for the same event is composed rather than replaced: the caller's runs
  * first, so its `preventDefault()` opts out of the plugin behavior (the tree
- * plugin's arrow keys, say). And a plugin's `role` wins, because it is
- * structural — the row ARIA the tree plugin stamps is valid only under its
- * `treegrid`.
+ * plugin's arrow keys, say). An unset caller handler (a wrapper forwarding
+ * `onKeyDown={props.onKeyDown}`) leaves the plugin's in place. And a plugin's
+ * `role` wins, because it is structural — the row ARIA the tree plugin stamps
+ * is valid only under its `treegrid`.
  */
 function resolveTableHtmlProps(
   pluginProps: TableRenderProps['htmlProps'],
@@ -96,11 +97,12 @@ function resolveTableHtmlProps(
   const resolved: Record<string, unknown> = {...callerProps};
   for (const [key, pluginValue] of Object.entries(pluginProps)) {
     const callerValue = callerProps[key];
-    if (
-      /^on[A-Z]/.test(key) &&
-      typeof pluginValue === 'function' &&
-      typeof callerValue === 'function'
-    ) {
+    if (!/^on[A-Z]/.test(key) || typeof pluginValue !== 'function') {
+      continue;
+    }
+    if (callerValue == null) {
+      resolved[key] = pluginValue;
+    } else if (typeof callerValue === 'function') {
       resolved[key] = composeEventHandlers(
         callerValue as (event: SyntheticEvent) => void,
         pluginValue as (event: SyntheticEvent) => void,
