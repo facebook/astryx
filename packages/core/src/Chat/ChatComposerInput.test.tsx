@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, expectTypeOf, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
@@ -391,6 +391,48 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toBe('abc');
     });
 
+    it('applies a genuine override equal to a non-oldest pending emission', () => {
+      // A parent that doesn't commit every onChange: the user edits a
+      // restored draft, empties it, and starts typing again, then the
+      // parent switches threads to an empty draft. That value='' matches
+      // an emission still in the ledger, but not the oldest one, so it
+      // can't be an in-order echo and must clear the box.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="draft A" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'draft Ax';
+      fireEvent.input(textbox);
+      textbox.textContent = '';
+      fireEvent.input(textbox);
+      textbox.textContent = 'half';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="" onChange={onChange} />);
+      expect(textbox.textContent).toBe('');
+    });
+
+    it('a coalesced commit does not leave a stale ledger head that swallows a later override', () => {
+      // The parent coalesces commits: only the latest emission ('ab')
+      // lands. It already matches the DOM, so the older 'a' entry is
+      // obsolete; a later genuine override back to 'a' must apply.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'a';
+      fireEvent.input(textbox);
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('ab');
+      rerender(<ChatComposerInput value="a" onChange={onChange} />);
+      expect(textbox.textContent).toBe('a');
+    });
+
     it('setValue writes synchronously, places the caret at the end, and emits one echo-free onChange', () => {
       let handle: ChatComposerInputHandle | null = null;
       const onChange = vi.fn();
@@ -406,7 +448,7 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       textbox.focus();
 
-      handle!.setValue('/feedback ');
+      handle!.setValue!('/feedback ');
 
       // Synchronous DOM write + exactly one informational onChange.
       expect(textbox.textContent).toBe('/feedback ');
@@ -470,7 +512,7 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       textbox.focus();
 
-      handle!.setValue('/feedback ');
+      handle!.setValue!('/feedback ');
       // The user keeps typing before the parent's state commit for the
       // setValue emission lands.
       textbox.textContent = '/feedback great';
@@ -522,7 +564,7 @@ describe('ChatComposerInput', () => {
       selection.addRange(range);
 
       act(() => {
-        handle!.setValue('restored draft');
+        handle!.setValue!('restored draft');
       });
 
       // The replacement and emission happen, but the other surface
@@ -1371,10 +1413,26 @@ describe('ChatComposerInput', () => {
         expect.objectContaining({
           insertToken: expect.any(Function),
           insertText: expect.any(Function),
+          setValue: expect.any(Function),
           focus: expect.any(Function),
           getValue: expect.any(Function),
         }),
       );
+    });
+
+    it('accepts handle objects built without setValue', () => {
+      // Consumers build ChatComposerInputHandle objects too (mocks,
+      // custom inputs passed to useChatPasteAsToken/useChatDictation).
+      // setValue was added after release, so it stays optional and a
+      // handle with only the original members still type-checks.
+      const handle: ChatComposerInputHandle = {
+        insertToken: () => undefined,
+        expandToken: () => {},
+        insertText: () => {},
+        focus: () => {},
+        getValue: () => '',
+      };
+      expectTypeOf(handle).toEqualTypeOf<ChatComposerInputHandle>();
     });
 
     it('getValue returns empty string for empty input', () => {
@@ -1620,7 +1678,7 @@ describe('ChatComposerInput', () => {
       // wrong range of the new text. setValue re-evaluates the menu
       // the same way typing does, so the stale menu closes.
       act(() => {
-        handle!.setValue('/done ');
+        handle!.setValue!('/done ');
       });
       expect(textbox.getAttribute('aria-expanded')).toBe('false');
     });

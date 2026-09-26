@@ -23,8 +23,9 @@
  * handleRef.setValue) writes it directly and reports via onChange.
  * The controlled `value` prop is a commit/override channel — it only
  * writes the DOM when it genuinely diverges from internal state.
- * Echoes of our own onChange emissions (including late ones) are
- * recognized via a pending-emissions ledger and never written back.
+ * Echoes of our own onChange emissions (including late ones committed
+ * in order) are recognized via a pending-emissions ledger and never
+ * written back.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatComposerInput.test.tsx
@@ -100,8 +101,13 @@ export interface ChatComposerInputHandle {
    * trigger menu (a menu left open over the replaced content closes).
    * The parent echoing that value back through `value` causes no
    * further DOM write.
+   *
+   * Always present on handles returned by ChatComposerInput. Optional
+   * in the type so handle objects built elsewhere (mocks, custom
+   * inputs passed to useChatPasteAsToken or useChatDictation) keep
+   * compiling without it.
    */
-  setValue: (text: string) => void;
+  setValue?: (text: string) => void;
   /** Focus the input */
   focus: () => void;
   /** Get the current serialized value */
@@ -336,9 +342,10 @@ function selectAll(el: HTMLElement): void {
 /**
  * Upper bound on the pending-emissions ledger. Only relevant when a
  * controlled parent never commits our emissions back — entries are
- * otherwise consumed by their echo or dropped on an external
- * override. An echo staler than this many emissions degrades to the
- * pre-#2473 behavior (treated as an external override).
+ * otherwise consumed by their echo, or dropped when an incoming value
+ * overrides or already matches the DOM. An echo staler than this
+ * many emissions degrades to the pre-#2473 behavior (treated as an
+ * external override).
  */
 const MAX_PENDING_EMISSIONS = 64;
 
@@ -429,9 +436,11 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   // effect distinguish a (possibly LATE) echo of our own emission —
   // internal state is at least as new, so writing would collapse the
   // caret and discard newer keystrokes — from a genuine external
-  // override. Entries are consumed in order when their echo arrives
-  // and discarded wholesale when an override applies, so a later
-  // external set back to a previously-emitted string still applies.
+  // override. Only the oldest entry can match, and it is consumed when
+  // its echo arrives; the ledger is discarded wholesale when an
+  // override applies or an incoming value already equals the DOM, so
+  // a later external set back to a previously-emitted string still
+  // applies.
   const pendingEmissionsRef = useRef<string[]>([]);
 
   // Stable refs for imperative handle callbacks (avoid re-creating handle on every render)
@@ -554,21 +563,32 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     if (controlledValue === undefined || !editableRef.current) {
       return;
     }
-    // Echo of one of our own `onChange` emissions — possibly a LATE
-    // one that lands after further edits (the parent committed
-    // emission N while internal state is already at emission ≥ N).
-    // Internal state is authoritative: consume the ledger through
-    // that entry and leave the DOM untouched. Matching the FIRST
-    // occurrence keeps later duplicate emissions consumable by their
-    // own echoes.
+    // Echo of our OLDEST un-echoed `onChange` emission — possibly a
+    // LATE one that lands after further edits (the parent committed
+    // emission N while internal state is already at emission > N).
+    // Internal state is authoritative: consume that entry and leave
+    // the DOM untouched. Only the oldest entry can be an in-order
+    // echo; a value matching a newer entry is a genuine override
+    // (e.g. a thread switch to an empty draft after the user emptied
+    // and retyped this one) and falls through.
+    //
+    // Known residual: matching by value alone can't tell an override
+    // that equals the oldest entry from a late echo of it, so that
+    // override is skipped. A consumer that doesn't commit onChange
+    // can reset with `key` or `handleRef.setValue`.
     const ledger = pendingEmissionsRef.current;
-    const echoIndex = ledger.indexOf(controlledValue);
-    if (echoIndex !== -1) {
-      ledger.splice(0, echoIndex + 1);
+    if (ledger.length > 0 && ledger[0] === controlledValue) {
+      ledger.shift();
       return;
     }
     const editable = editableRef.current;
-    if (serialize(editable) !== controlledValue) {
+    if (serialize(editable) === controlledValue) {
+      // The parent and the DOM agree (e.g. a coalesced commit of only
+      // the latest emission). Older un-echoed emissions are obsolete;
+      // dropping them keeps a stale head from swallowing a later
+      // override back to its value.
+      ledger.length = 0;
+    } else {
       // Genuine external override — the parent is telling us
       // something new. Un-echoed emissions are now obsolete: drop
       // them so a later external set back to a previously-emitted
