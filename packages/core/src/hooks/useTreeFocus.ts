@@ -169,9 +169,10 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
   handleKeyDown: (e: React.KeyboardEvent) => void;
 
   /**
-   * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
-   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it
-   * is always safe to attach.
+   * Focus handler to attach to the container's `onFocus`. When
+   * `hasRovingTabIndex` is enabled it moves the roving tab stop to the item
+   * that owns the focus target (a click or programmatic focus included); a
+   * no-op otherwise, so it is always safe to attach.
    */
   handleFocus: (e: React.FocusEvent) => void;
 
@@ -571,14 +572,38 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
 
   /**
    * Keep the roving stop pointing at whatever ended up focused (e.g. a click
-   * or programmatic focus) so the next Tab behaves correctly. No-op unless
-   * roving tabindex is enabled.
+   * or programmatic focus) so the next Tab behaves correctly: the enabled item
+   * that owns the focus target (the nearest `itemSelector` ancestor, as for a
+   * key press) becomes the stop. Focus that lands outside every item only
+   * repairs the stop. No-op unless roving tabindex is enabled.
    */
-  const handleFocus = useCallback(() => {
-    if (hasRovingTabIndex) {
-      syncTabStops();
-    }
-  }, [hasRovingTabIndex, syncTabStops]);
+  const handleFocus = useCallback(
+    (e: React.FocusEvent) => {
+      if (!hasRovingTabIndex) {
+        return;
+      }
+      const owner =
+        e.target instanceof Element ? e.target.closest(itemSelector) : null;
+      const items = getItems();
+      if (
+        owner instanceof HTMLElement &&
+        items.includes(owner) &&
+        !itemDisabled(owner)
+      ) {
+        moveTabStop(items, owner);
+      } else {
+        syncTabStops();
+      }
+    },
+    [
+      hasRovingTabIndex,
+      itemSelector,
+      getItems,
+      itemDisabled,
+      moveTabStop,
+      syncTabStops,
+    ],
+  );
 
   return {
     treeRef,

@@ -222,6 +222,14 @@ export interface TableColumn<T extends Record<string, unknown>> {
 
 /** Props passed through the plugin pipeline for the `<table>` element */
 export interface TableRenderProps {
+  /**
+   * Attributes and handlers for the `<table>`. A prop the consumer passes to
+   * the table wins over a plugin's, with two exceptions: a handler both set
+   * for the same event is composed (the consumer's runs first, and its
+   * `event.preventDefault()` skips the plugin's), and a plugin's `role` wins,
+   * since row semantics a plugin adds (the tree plugin's treegrid) depend on
+   * it.
+   */
   htmlProps: HTMLAttributes<HTMLTableElement>;
   xstyle: StyleXStyles[];
   /**

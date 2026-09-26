@@ -21,6 +21,7 @@ import {
   type ReactElement,
   type ReactNode,
   type Ref,
+  type SyntheticEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -48,8 +49,9 @@ import {TableCell} from './TableCell';
 import {TableHeaderCell} from './TableHeaderCell';
 import {TableHeader} from './TableHeader';
 import {TableBody} from './TableBody';
-import {mergeProps, mergeRefs} from '../utils';
+import {composeEventHandlers, mergeProps, mergeRefs} from '../utils';
 import {devError} from '../utils/devWarning';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
@@ -77,6 +79,39 @@ const styles = stylex.create({
     minWidth: 0,
   },
 });
+
+/**
+ * Resolve the caller's `<table>` props against the plugin pipeline's. The
+ * caller's value wins by default, with two exceptions. A handler both sides
+ * set for the same event is composed rather than replaced: the caller's runs
+ * first, so its `preventDefault()` opts out of the plugin behavior (the tree
+ * plugin's arrow keys, say). And a plugin's `role` wins, because it is
+ * structural — the row ARIA the tree plugin stamps is valid only under its
+ * `treegrid`.
+ */
+function resolveTableHtmlProps(
+  pluginProps: TableRenderProps['htmlProps'],
+  callerProps: Record<string, unknown>,
+): Record<string, unknown> {
+  const resolved: Record<string, unknown> = {...callerProps};
+  for (const [key, pluginValue] of Object.entries(pluginProps)) {
+    const callerValue = callerProps[key];
+    if (
+      /^on[A-Z]/.test(key) &&
+      typeof pluginValue === 'function' &&
+      typeof callerValue === 'function'
+    ) {
+      resolved[key] = composeEventHandlers(
+        callerValue as (event: SyntheticEvent) => void,
+        pluginValue as (event: SyntheticEvent) => void,
+      );
+    }
+  }
+  if (pluginProps.role != null) {
+    resolved.role = pluginProps.role;
+  }
+  return resolved;
+}
 
 /**
  * Run a value through a pipeline of plugin transform functions.
@@ -428,6 +463,19 @@ function BaseTableInner<T extends Record<string, unknown>>({
     [ref, pluginTableRef],
   );
 
+  // The caller's <table> props compose with the plugins' instead of silently
+  // replacing them (see resolveTableHtmlProps).
+  const tableHtmlProps = resolveTableHtmlProps(
+    tableRenderProps.htmlProps,
+    rest,
+  );
+  const pluginRole = tableRenderProps.htmlProps.role;
+  useDevWarning(
+    'Table',
+    `a plugin sets role="${pluginRole}" on the <table>, so role="${rest.role}" is ignored (the row semantics the plugin adds depend on its role).`,
+    rest.role != null && pluginRole != null && rest.role !== pluginRole,
+  );
+
   // --- Plugin pipeline: header cells ---
   const headerCells = resolvedColumns.map((col, columnIndex) => {
     const headerContent = col.header ?? col.key;
@@ -557,7 +605,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
           .join(' ') || undefined,
         tableStyle,
       )}
-      {...rest}>
+      {...tableHtmlProps}>
       {children ? (
         children
       ) : (

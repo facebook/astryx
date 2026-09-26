@@ -11,7 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {useState} from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import {useTreeFocus} from './useTreeFocus';
 
 interface Node {
@@ -368,5 +368,59 @@ describe('useTreeFocus custom itemSelector', () => {
     expect(screen.getByTestId('c')).toHaveFocus();
     fireEvent.keyDown(grid, {key: 'Home'});
     expect(screen.getByTestId('a')).toHaveFocus();
+  });
+});
+
+// =============================================================================
+// Roving tab stop follows focus (hasRovingTabIndex)
+// =============================================================================
+
+/** A roving-tabindex tree: the hook owns the single tab stop. */
+function RovingTree({nodes}: {nodes: Node[]}) {
+  const {treeRef, handleKeyDown, handleFocus} = useTreeFocus<HTMLUListElement>({
+    hasRovingTabIndex: true,
+  });
+  return (
+    <ul
+      ref={treeRef}
+      role="tree"
+      onKeyDown={handleKeyDown}
+      onFocus={handleFocus}>
+      {nodes.map(n => (
+        <li
+          key={n.id}
+          role="treeitem"
+          aria-level={n.level}
+          data-tree-id={n.id}
+          tabIndex={-1}
+          data-testid={n.id}>
+          <button type="button" tabIndex={-1}>
+            {n.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+describe('useTreeFocus roving tab stop', () => {
+  it('moves the tab stop to a treeitem focused by a click or programmatically', () => {
+    render(<RovingTree nodes={FLAT} />);
+    expect(screen.getByTestId('a')).toHaveAttribute('tabindex', '0');
+
+    act(() => screen.getByTestId('c').focus());
+
+    expect(screen.getByTestId('c')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByTestId('a')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByTestId('b')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('moves the tab stop to the treeitem that owns a focused descendant', () => {
+    render(<RovingTree nodes={FLAT} />);
+
+    act(() => screen.getByRole('button', {name: 'Banana'}).focus());
+
+    expect(screen.getByTestId('b')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByTestId('a')).toHaveAttribute('tabindex', '-1');
   });
 });

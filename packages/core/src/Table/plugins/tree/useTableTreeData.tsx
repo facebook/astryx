@@ -5,7 +5,8 @@
 /**
  * @file useTableTreeData.tsx
  * @input React, StyleX, Icon, Table types, theme tokens, i18n (useTranslator),
- *   useTreeFocus (row-focus keyboard model), focusOutline (row focus ring)
+ *   useTreeFocus (row-focus keyboard model), isRtlElement (inline arrow keys),
+ *   focusOutline (row and chevron focus ring)
  * @output Exports useTableTreeData hook + config/meta types
  * @position Tree plugin; consumed by Table via plugins prop.
  *   Pairs with useTableTreeState (owns expansion state + flattening).
@@ -31,12 +32,15 @@
  * `transformTable` names the <table> `role="treegrid"` and wires the
  * row-focus keyboard model from `useTreeFocus` (the shared tree primitive,
  * pointed at the rows through its `itemSelector`): one roving tab stop
- * across the visible rows, ArrowUp/ArrowDown between rows, ArrowRight /
- * ArrowLeft to expand-or-enter and collapse-or-leave, Home/End, and
- * Enter/Space to toggle. v1 scope is row focus only — no cell navigation —
+ * across the visible rows that follows focus onto a row, ArrowUp/ArrowDown
+ * between rows, ArrowRight / ArrowLeft to expand and collapse, Home/End,
+ * and Enter/Space to toggle. Unlike the tree view, ArrowRight on an
+ * expanded row and ArrowLeft on a collapsed or leaf row hold focus (the
+ * APG treegrid pattern). v1 scope is row focus only — no cell navigation —
  * and the keys apply only when a row itself owns focus, so controls inside
  * cells (chevron, selection checkbox, sort header, a text field) keep
- * their own keys and stay in the Tab order.
+ * their own keys and stay in the Tab order, in DOM order around the row
+ * stop.
  *
  * When `hasExpandableRows` is false (flat data), every transform is a
  * pass-through: adopting the plugin ahead of hierarchical data is a
@@ -66,6 +70,7 @@ import {Icon} from '../../../Icon';
 import {mergeRefs} from '../../../utils';
 import {focusOutlineStyles} from '../../../utils/focusOutline.stylex';
 import {useTreeFocus} from '../../../hooks/useTreeFocus';
+import {isRtlElement} from '../../../hooks/isRtlElement';
 import type {
   TablePlugin,
   TableColumn,
@@ -391,7 +396,10 @@ function TreeExpander({
   return (
     <button
       type="button"
-      {...stylex.props(treeStyles.expanderButton)}
+      {...stylex.props(
+        treeStyles.expanderButton,
+        focusOutlineStyles.focusVisible,
+      )}
       onClick={e => {
         e.stopPropagation();
         onToggle();
@@ -440,7 +448,10 @@ function TreeExpandAllToggle({
   return (
     <button
       type="button"
-      {...stylex.props(treeStyles.expanderButton)}
+      {...stylex.props(
+        treeStyles.expanderButton,
+        focusOutlineStyles.focusVisible,
+      )}
       onClick={e => {
         e.stopPropagation();
         if (allExpanded) {
@@ -697,11 +708,33 @@ export function useTableTreeData<T extends Record<string, unknown>>(
               ) {
                 return;
               }
+              // APG treegrid, not tree: inline-end on an expanded row moves
+              // into its first cell, and inline-start on a collapsed or leaf
+              // row does not move. With no cell focus in v1, both hold focus
+              // on the row instead of jumping to the first child / parent.
+              if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                const isInlineEnd =
+                  (event.key === 'ArrowRight') !==
+                  isRtlElement(event.currentTarget);
+                const isExpanded =
+                  target.getAttribute('aria-expanded') === 'true';
+                if (isInlineEnd ? isExpanded : !isExpanded) {
+                  event.preventDefault();
+                  return;
+                }
+              }
               handleKeyDown(event);
             },
             onFocus: (event: React.FocusEvent<HTMLTableElement>) => {
               onFocus?.(event);
-              handleFocus(event);
+              // The row stop follows focus that lands on a row (a click, a
+              // programmatic focus). A control inside a cell is its own Tab
+              // stop, so focusing it leaves the row stop in place and the
+              // Tab order stays the same in both directions.
+              const target = event.target;
+              if (target instanceof Element && target.matches(rowSelector)) {
+                handleFocus(event);
+              }
             },
           },
         };

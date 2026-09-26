@@ -52,7 +52,7 @@ export const docs = {
     {
       name: 'options.hasRovingTabIndex',
       type: 'boolean',
-      description: 'When true, the hook owns a single roving tab stop across the visible treeitems (stamps tabindex 0/-1, repairs on mount, moves with navigation). Preserves an existing tabindex="0" seed on mount. Attach the returned `handleFocus` to keep the stop in sync after clicks.',
+      description: 'When true, the hook owns a single roving tab stop across the visible treeitems (stamps tabindex 0/-1, repairs on mount, moves with navigation). Preserves an existing tabindex="0" seed on mount. Attach the returned `handleFocus` so the stop follows a click or programmatic focus.',
       default: 'false',
       required: false,
     },
@@ -78,7 +78,7 @@ export const docs = {
     {
       name: 'handleFocus',
       type: '(e: React.FocusEvent) => void',
-      description: 'Focus handler to attach to the container\'s onFocus. Keeps the roving tab stop in sync when hasRovingTabIndex is enabled; a no-op otherwise, so always safe to attach.',
+      description: 'Focus handler to attach to the container\'s onFocus. When hasRovingTabIndex is enabled it moves the roving tab stop to the enabled item that owns the focus target (the nearest itemSelector match, as for a key press), so a click or programmatic focus carries the stop with it; focus outside every item only repairs the stop. A no-op otherwise, so always safe to attach.',
     },
     {
       name: 'focusFirst',
@@ -118,13 +118,13 @@ export const docsDense = {
     'options.onToggleExpand': 'expand/collapse treeitem by id (ArrowRight collapsed parent, ArrowLeft expanded parent, Enter/Space parent w/o own action).',
     'options.onActivate': 'called on Enter/Space activation. Return true when handled; else hook falls back to toggling expansion.',
     'options.onActiveChange': 'notified when focus moves to a treeitem. Use to move a single roving tab stop.',
-    'options.hasRovingTabIndex': 'hook owns a single roving tab stop (stamps tabindex 0/-1, repairs on mount, moves w/ nav). Preserves an existing tabindex="0" seed. Attach handleFocus to sync after clicks.',
+    'options.hasRovingTabIndex': 'hook owns a single roving tab stop (stamps tabindex 0/-1, repairs on mount, moves w/ nav). Preserves an existing tabindex="0" seed. Attach handleFocus so the stop follows clicks/programmatic focus.',
     'options.typeahead': 'enable typeahead (jump to next item whose text starts with typed chars).',
   },
   returnDescriptions: {
     treeRef: 'ref to attach to tree container (role="tree").',
     handleKeyDown: 'key down handler for tree container.',
-    handleFocus: 'onFocus handler; keeps roving tab stop in sync when hasRovingTabIndex on (no-op otherwise).',
+    handleFocus: 'onFocus handler; hasRovingTabIndex on => moves the roving tab stop to the item owning the focus target (nearest itemSelector match); outside any item => repair only. No-op otherwise.',
     focusFirst: 'focus first enabled visible treeitem.',
     focusLast: 'focus last enabled visible treeitem.',
   },
