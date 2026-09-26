@@ -7,7 +7,7 @@
  */
 
 /**
- * xds --json swizzle [--list]
+ * astryx --json swizzle [--list]
  *
  * @typedef {object} SwizzleListResponse
  * @property {'swizzle.list'} type
@@ -23,7 +23,7 @@
  */
 
 /**
- * xds --json swizzle <component>
+ * astryx --json swizzle <component>
  *
  * @typedef {object} SwizzleCopyResponse
  * @property {'swizzle.copy'} type

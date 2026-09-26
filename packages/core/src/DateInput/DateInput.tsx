@@ -99,9 +99,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -619,10 +624,21 @@ function PointerDateField({
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    inputRef.current?.focus();
-  }, [fireChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [fireChange],
+  );
 
   // Handle date selection from calendar
   const handleDateSelect = useCallback(

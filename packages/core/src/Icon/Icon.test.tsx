@@ -162,10 +162,13 @@ describe('Icon', () => {
     expect(icon).toHaveAttribute('aria-label', 'Home');
   });
 
-  it('uses default color and size when not specified', () => {
+  it('uses default color and standalone size when not specified', () => {
     render(<Icon icon={TestIcon} data-testid="icon" />);
-    // The component should render without errors with defaults
-    expect(screen.getByTestId('icon')).toBeInTheDocument();
+
+    const icon = screen.getByTestId('icon');
+    expect(icon).toHaveAttribute('data-size', 'md');
+    expect(getComputedStyle(icon).width).toBe('1.25rem');
+    expect(getComputedStyle(icon).height).toBe('1.25rem');
   });
 
   it('applies aria-hidden by default in string (registry) mode', () => {

@@ -17,7 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-toggle-button-group'},
-      {className: 'astryx-toggle-button', states: ['isPressed']},
+      {className: 'astryx-toggle-button', states: ['isPressed'], visualProps: ['elevation']},
     ],
   },
   description: 'A button that toggles between pressed and unpressed states. Thin wrapper over Button with controlled toggle pattern, icon swap, and font weight emphasis.',
@@ -31,23 +31,30 @@ export const docs = {
     {
       name: 'isPressed',
       type: 'boolean',
-      description: 'Whether the button is currently pressed. Ignored when inside a group.',
+      description: 'Whether the button is currently pressed. Ignored for a ToggleButtonGroup member with a value.',
     },
     {
       name: 'onPressedChange',
       type: '(isPressed: boolean, event: MouseEvent) => void',
-      description: 'Called when pressed state should change. Receives the next state and the click event; call event.preventDefault() to skip pressedChangeAction. Ignored when inside a group.',
+      description: 'Called synchronously when pressed state should change. Receives the next state and the click event; call event.preventDefault() to skip pressedChangeAction. Without an Action, the callback produces no Action-pending feedback. Ignored for a ToggleButtonGroup member with a value.',
     },
     {
       name: 'pressedChangeAction',
       type: '(isPressed: boolean) => void | Promise<void>',
-      description: 'Action handler for API- or navigation-backed toggles, run in a transition. Shows an optimistic pressed state immediately and a spinner while pending; the button stays interruptible by re-clicks.',
+      description: 'Action handler for API- or navigation-backed toggles, run in a transition after the synchronous onPressedChange callback unless that callback calls event.preventDefault(). Works without onPressedChange. Shows an optimistic pressed state and a spinner while pending, and remains interruptible by re-clicks. Omit it for callback-only toggles with no Action-pending feedback. Ignored for a ToggleButtonGroup member with a value.',
     },
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
       description: 'Button size. Defaults to group size when inside a group.',
       default: "'md'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth for floating (FAB-style) toggle buttons, mirroring Button. `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Applies inside a ToggleButtonGroup as well — grouped children retain their own elevation.',
+      default: "'none'",
     },
     {
       name: 'isDisabled',

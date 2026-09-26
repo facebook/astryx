@@ -10,6 +10,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AvatarGroup/AvatarGroup.doc.mjs
  * - /packages/core/src/AvatarGroup/index.ts
+ * - /apps/storybook/stories/AvatarGroupOverflow.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 

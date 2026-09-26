@@ -18,19 +18,16 @@
  * no longer reflected, cascade order changed) is invisible until someone looks
  * at the pixels. That is what this plan aims the camera at.
  *
- * Two tiers, both derived rather than hand-listed, so coverage tracks the
- * system instead of drifting from it:
+ * The canonical release baseline is deliberately small and closed:
  *
- *   theme-matrix — for every component override a theme actually authors, the
- *     components declaring that target, in that theme, light and dark. This is
- *     the targeted net: one shot per (theme, target, component) the system
- *     claims to support.
- *   surface — one representative story per component in the default theme.
- *     The broad net for ordinary visual regressions, and the reason a
- *     component with no theme override still has a before/after.
+ *   surface — one representative story per Core component, plus explicit
+ *     visual-baseline / visual-theme-matrix stories, in Neutral light and dark.
+ *   probe — the smallest story set that renders every theming target, in the
+ *     generated Probe fixture light and dark.
  *
- * `full` widens `surface` to every story in the index; it is the same tier
- * with the representative-story filter removed.
+ * `theme-matrix` remains available for focused theme evidence, but it does not
+ * own permanent baseline keys. `full` widens `surface` to every story for an
+ * explicit audit.
  */
 
 import * as crypto from 'node:crypto';
@@ -137,12 +134,23 @@ function storyPackageNames(entry, storybookDir, repoRoot, catalog) {
   return {
     packageNames: names.length ? names : [owner],
     packageName: owner,
+    // The package that OWNS the component's source, when Storybook recorded
+    // one. `packageName` can be inferred from imports or from the title, so it
+    // says which package a story belongs to; this says which package publishes
+    // the thing it photographs, and only that answers "may this story own a
+    // canonical baseline frame".
+    componentPackage: fromComponent ?? null,
     stableVisual: eligible(catalog.get(owner)),
   };
 }
 
-export function readThemeCatalog(repoRoot) {
+/**
+ * @param {string} repoRoot
+ * @param {string[]} [fixtureThemes] - private generated themes allowed to own baseline coverage
+ */
+export function readThemeCatalog(repoRoot, fixtureThemes = []) {
   const catalog = readPackageCatalog(repoRoot);
+  const fixtures = new Set(fixtureThemes);
   const themes = {};
   const parent = path.join(repoRoot, 'packages/themes');
   if (!fs.existsSync(parent)) return themes;
@@ -152,7 +160,10 @@ export function readThemeCatalog(repoRoot) {
     if (!manifest) continue;
     themes[entry.name] = {
       packageName: manifest.name,
-      stableVisual: manifest.private !== true && manifest.astryx?.canaryOnly !== true,
+      stableVisual:
+        fixtures.has(entry.name) ||
+        (manifest.private !== true && manifest.astryx?.canaryOnly !== true),
+      coverageFixture: fixtures.has(entry.name),
     };
   }
   return themes;
@@ -206,12 +217,11 @@ export function accountBaseline(manifest, stories, themes, repoRoot) {
     const storedTheme = shot.themePackageName
       ? catalog.get(shot.themePackageName)
       : null;
-    const theme = storedTheme
-      ? {
-          packageName: storedTheme.name,
-          stableVisual: eligible(storedTheme),
-        }
-      : themes[shot.theme];
+    const currentTheme = themes[shot.theme];
+    const theme =
+      storedTheme && currentTheme?.packageName !== storedTheme.name
+        ? null
+        : currentTheme;
     if (!owner || !catalog.has(owner.packageName) || !theme) {
       categories.unclassified.push(key);
       continue;
@@ -245,19 +255,31 @@ export function accountBaseline(manifest, stories, themes, repoRoot) {
 
 export function summarizeBaselineAccounting(account, releaseShots) {
   const planned = new Set(releaseShots.map(shot => shot.key));
-  const missing = account.categories.currentStable.filter(key => !planned.has(key));
-  const unclassified = [...new Set([...account.categories.unclassified, ...missing])].sort();
-  const plannedCurrentStable = account.categories.currentStable.length - missing.length;
+  const policyExcluded = account.categories.currentStable.filter(
+    key => !planned.has(key),
+  );
+  const unclassified = [...account.categories.unclassified];
+  const plannedCurrentStable =
+    account.categories.currentStable.length - policyExcluded.length;
   const counts = {
     total: account.total,
     plannedCurrentStable,
+    policyExcluded: policyExcluded.length,
     intentionallyExcluded: account.categories.intentionallyExcluded.length,
     preservedLegacy: account.categories.preservedLegacy.length,
     unclassified: unclassified.length,
   };
-  const sum = counts.plannedCurrentStable + counts.intentionallyExcluded + counts.preservedLegacy + counts.unclassified;
+  const sum =
+    counts.plannedCurrentStable +
+    counts.policyExcluded +
+    counts.intentionallyExcluded +
+    counts.preservedLegacy +
+    counts.unclassified;
   if (sum !== counts.total) throw new Error(`Baseline accounting overlap: ${sum} states for ${counts.total} keys.`);
-  return {...counts, ...(unclassified.length ? {unclassifiedKeys: unclassified} : {})};
+  return {
+    ...counts,
+    ...(unclassified.length ? {unclassifiedKeys: unclassified} : {}),
+  };
 }
 
 export function stableBaseline(manifest, stories, themes, repoRoot) {
@@ -320,7 +342,7 @@ export function createReleasePlan(shots) {
  *
  * @param {string} storybookDir
  * @param {Iterable<string>} excluded - story ids (or `prefix*`) excluded by config
- * @returns {Array<{id: string, title: string, name: string, component: string, tags: string[]}>}
+ * @returns {Array<{id: string, title: string, name: string, component: string, tags: string[], packageNames: string[], packageName: string, componentPackage: string | null, stableVisual: boolean}>}
  */
 export function readStoryIndex(storybookDir, excluded = [], repoRoot) {
   const exclusions = [...excluded];
@@ -375,8 +397,43 @@ function componentOf(entry) {
  */
 export function storiesInPackages(stories, packages) {
   if (packages.includes('*')) return stories;
-  const wanted = new Set(packages.map(name => name.startsWith('@') ? name : `@astryxdesign/${name.toLowerCase()}`));
+  const wanted = new Set(packages.map(configuredPackageName));
   return stories.filter(story => story.stableVisual && story.packageNames.some(name => wanted.has(name)));
+}
+
+/** Config names a package either by its Storybook group (`Core`) or in full. */
+function configuredPackageName(name) {
+  return name.startsWith('@') ? name : `@astryxdesign/${name.toLowerCase()}`;
+}
+
+/**
+ * Which stories may own canonical baseline frames.
+ *
+ * The question is ownership, and a Storybook title is only ever evidence of
+ * it. A story that merely IMPORTS Core components must not own a canonical
+ * frame; a component Core publishes must not lose its frames because its story
+ * happens to be titled under another group. Storybook records the source file
+ * of the component a story declares, and `readStoryIndex` resolves that file
+ * to its workspace package, so when the index has that fact it decides.
+ * `groups` is the fallback for stories that declare no component at all —
+ * composed demos and template pages — where the title group is the only
+ * ownership signal there is.
+ *
+ * `*` is an explicit audit override in either list, never the release default.
+ *
+ * @param {ReturnType<typeof readStoryIndex>} stories
+ * @param {{groups: string[], packages: string[]}} owners
+ */
+export function canonicalBaselineStories(stories, {groups, packages}) {
+  if (groups.includes('*')) return stories;
+  const everyPackage = packages.includes('*');
+  const wantedGroups = new Set(groups);
+  const wantedPackages = new Set(packages.map(configuredPackageName));
+  return stories.filter(story =>
+    story.componentPackage
+      ? everyPackage || wantedPackages.has(story.componentPackage)
+      : wantedGroups.has(String(story.title).split('/')[0]),
+  );
 }
 
 /**
@@ -427,6 +484,27 @@ export function componentVisualStories(stories, components) {
         representatives.get(story.component)?.id === story.id ||
         (story.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
     }));
+}
+
+function isComponentScopeReason(reason) {
+  return reason === 'component' || /^theme:[^:]+$/.test(reason);
+}
+
+/**
+ * A component edit may compare an accepted baseline contract, but it may not
+ * create one. Keep independently selected theme/probe shots even when the same
+ * key is also part of the component scope.
+ */
+export function existingComponentBaselinePlan(plan, manifest) {
+  const accepted = new Set(Object.keys(manifest?.shots ?? {}));
+  return plan.filter(shot => {
+    const reasons = shot.reasons ?? [];
+    const componentScoped = reasons.some(isComponentScopeReason);
+    const independentlyScoped = reasons.some(
+      reason => !isComponentScopeReason(reason),
+    );
+    return !componentScoped || independentlyScoped || accepted.has(shot.key);
+  });
 }
 
 /**
@@ -487,6 +565,22 @@ export function exceedsPrVisualShotLimit(count, limit) {
 }
 
 /**
+ * Why every lane refuses an empty plan.
+ *
+ * A run that captures nothing compares nothing, so a clean verdict from one
+ * reports the absence of evidence as evidence. Every lane reaches that state
+ * the same way — a scope whose keys are not in the accepted baseline — so they
+ * refuse it with one sentence rather than three behaviors, and they name the
+ * one path that can seed the missing frames.
+ *
+ * @param {string} scope - what the lane planned, named for the message
+ * @returns {string}
+ */
+export function emptyVisualPlanMessage(scope) {
+  return `${scope} planned no shots; an empty plan compares nothing and cannot report clean. Seed coverage through the manual baseline workflow.`;
+}
+
+/**
  * @param {string} name
  * @returns {number}
  */
@@ -541,7 +635,14 @@ export function buildPlan({
   };
 
   if (tiers.includes('surface') || tiers.includes('full')) {
-    const subject = tiers.includes('full') ? stories : [...representatives.values()];
+    const subject = tiers.includes('full')
+      ? stories
+      : stories.filter(
+          story =>
+            representatives.get(story.component)?.id === story.id ||
+            (story.tags ?? []).includes(VISUAL_BASELINE_TAG) ||
+            (story.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
+        );
     for (const story of subject) {
       for (const mode of MODES) {
         add({...toShotBase(story), theme: defaultTheme, mode}, 'surface');
@@ -612,6 +713,13 @@ export function buildPlan({
       probeTheme,
     })) {
       add(shot, reason);
+    }
+    for (const story of stories.filter(candidate =>
+      (candidate.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
+    )) {
+      for (const mode of MODES) {
+        add({...toShotBase(story), theme: probeTheme, mode}, 'probe:opt-in');
+      }
     }
   }
 

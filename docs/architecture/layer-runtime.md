@@ -32,6 +32,7 @@ verified_by:
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
+    packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
@@ -40,6 +41,17 @@ deciding_specs: []
 ---
 
 # Layer runtime
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["INV2", "INV5", "INV6", "INV7"]
+  }
+}
+```
 
 This record describes the layer runtime shipped on current `main`. Accepted but
 unimplemented changes live in `spec:AST-003`; they are not current architecture.
@@ -152,12 +164,13 @@ contract. The current shared stack registers present layers with `close` or
 registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Popover, DropdownMenu, Lightbox, and MobileNav all
-register with the shared stack. Tooltip and HoverCard report current DOM presence;
-Popover and DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, and
-MobileNav additionally ask `shouldDismissOnCloseRequest()` before acting on native
-platform close requests. Other family members still use local Escape handling as
-listed in `family:overlay-dismissal`.
+Tooltip, HoverCard, Dialog, Popover, DropdownMenu, Lightbox, MobileNav, and
+BottomSheetSwitcher all register with the shared stack. Tooltip and HoverCard
+report current DOM presence; Popover and DropdownMenu register through
+`useFocusTrap`; Dialog, Lightbox, MobileNav, and BottomSheetSwitcher additionally
+ask `shouldDismissOnCloseRequest()` before acting on native platform close
+requests. Other family members still use local Escape handling as listed in
+`family:overlay-dismissal`.
 
 Outside interaction is not coordinated by the shared stack. Current paths are
 independent:

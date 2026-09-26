@@ -7,6 +7,20 @@ export const docs = {
   displayName: 'Tokenizer',
   category: 'Form Controls',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
+  playground: {
+    // `value` is a required array of custom items the preview cannot
+    // auto-generate; without a default the properties tab shows the
+    // missing-props placeholder instead of the field. `searchSource` and
+    // `onChange` are supplied by the preview's own fallbacks.
+    defaults: {
+      label: 'Tags',
+      placeholder: 'Search...',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',

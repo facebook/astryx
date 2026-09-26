@@ -12,6 +12,7 @@
  *
  *   begin()                  once, before Commander parses
  *   setCommand/setArgs/…     as facts become known
+ *   recordCommandResult()    what the command answered with, from its return
  *   setOutcome()             from every terminal path (error, fatal, gate)
  *   finish()                 automatic, via the exit listener begin() installs
  *
@@ -32,13 +33,21 @@ export {
   setOptions,
   setGlobalOptions,
   setProject,
+  recordCommandResult,
   setEventHandler,
+  setIntegrationEventHandlers,
   noteConfigGateSkipped,
   setOutcome,
   recordEnvelope,
   recordHelp,
   resetRecorder,
 } from './recorder.mjs';
+
+export {
+  NO_RESULT_SET,
+  resultSet,
+  resultSetOf,
+} from './command-result.mjs';
 
 export {
   SCHEMA_VERSION,

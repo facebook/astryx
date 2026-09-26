@@ -11,11 +11,11 @@ export const doc = {
   type: 'schema',
   name: 'config',
   displayName: 'Astryx Config',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
     'integrations to load, where to route issue links, post-codemod hooks, local ' +
-    'debug-log settings, and experimental layout components. All fields are ' +
+    'debug-log and gap-report handlers, and experimental layout components. All ' +
     'optional; {} is valid.',
   appliesTo: 'astryx.config.{ts,mjs,js}',
   fields: [
@@ -48,9 +48,17 @@ export const doc = {
       name: 'debug',
       type: '(event: DebugEvent) => void',
       description:
-        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it.',
+        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it. An integration can supply one too, as a `debug` named export from its manifest. Every handler runs: yours first, then each integration\'s in load order (the `integrations` list, then autolinked ones). A handler that throws is skipped; the others still run and the command\'s result does not change. Set `{"astryx": {"inheritDebug": false}}` in package.json to take only your own.',
       example:
         "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
+    },
+    {
+      name: 'gapReport',
+      type: 'GapReportHandler',
+      description:
+        'Handle explicit gap reports in addition to every loaded integration handler. The project handler runs first. Public handlers require caller consent; internal handlers always run.',
+      example:
+        "{ audience: 'internal', async handle(report, {signal}) { return sendGap(report, {signal}); } }",
     },
     {
       name: 'experimental',

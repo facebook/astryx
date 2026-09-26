@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file FunctionDoc for `validateIntegration()` / `astryx validate-integration`.
+ * @file FunctionDoc for `validateIntegration()` / `astryx doctor integration validate`.
  * Colocated with the API function it documents; the shape source of truth stays
  * in `validate-integration.type.mjs`.
  * @position packages/cli/api/integration — function documentation
@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'validateIntegration',
+  namespace: 'cli/api',
   displayName: 'validateIntegration()',
   summary:
     'Validate a single Astryx integration package and report its issues.',
@@ -19,8 +20,8 @@ export const doc = {
     'Validates exactly ONE integration at a time: the local package rooted at ' +
     'cwd (no `pkg`), or an installed package resolved from cwd/node_modules ' +
     '(`pkg` given). It loads and schema-checks the manifest, verifies each ' +
-    'declared contribution root exists, and runs the codemod/template/component ' +
-    'validators, returning every finding as an AstryxIntegrationIssue. A missing ' +
+    'declared contribution root exists, and runs the codemod/template/component/' +
+    'docs/theme validators, returning every finding as an AstryxIntegrationIssue. A missing ' +
     'local manifest is guidance (name null, no issues), not an error, so callers ' +
     'can stay exit-0 in a non-integration directory.',
   importPath: '@astryxdesign/cli/api',
@@ -45,7 +46,7 @@ export const doc = {
     {
       type: 'integration.validate',
       description:
-        'The result envelope: `data.name` and `data.version` of the validated package (both null when no local manifest is found), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
+        'The result envelope: `data.name` and `data.version` of the validated package (both null only when no local manifest is found; `data.name` is `(local package)` when the local package.json has no readable name), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
     },
   ],
   examples: [
@@ -58,6 +59,6 @@ export const doc = {
       code: "await validateIntegration('@acme/astryx-integration');",
     },
   ],
-  command: 'validate-integration',
-  related: ['summarizeIssues', 'doctor', 'upgrade'],
+  command: 'doctor integration validate',
+  related: ['summarizeIssues', 'doctor integration templates', 'upgrade'],
 };

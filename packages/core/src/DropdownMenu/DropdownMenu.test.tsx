@@ -3,7 +3,7 @@
 /**
  * @file DropdownMenu.test.tsx
  * @input Uses vitest, @testing-library/react, DropdownMenu component
- * @output Unit tests for DropdownMenu component behavior
+ * @output Unit tests for DropdownMenu behavior and derived bottom-sheet item padding
  * @position Testing; validates DropdownMenu.tsx implementation
  *
  * SYNC: When DropdownMenu.tsx changes, update tests to match new behavior
@@ -165,7 +165,10 @@ describe('DropdownMenu', () => {
     });
     expect(
       screen.getByRole('button', {name: 'Edit project'}).closest('li'),
-    ).toHaveStyle({paddingInline: 'var(--spacing-3)'});
+    ).toHaveStyle({
+      paddingInline: 'var(--_item-inset-inline)',
+      '--_item-inset-inline': 'var(--spacing-3)',
+    });
   });
 
   it('drills into nested data items in bottom-sheet presentation', async () => {
@@ -825,12 +828,13 @@ describe('DropdownMenu', () => {
 });
 
 describe('DropdownMenu light-dismiss race', () => {
-  function openMenu() {
+  function openMenu(onClick?: () => void) {
     render(
       <DropdownMenu
         button={{label: 'Actions'}}
         items={[{label: 'Edit'}]}
         data-testid="astryx-dropdown-menu"
+        onClick={onClick}
       />,
     );
     const trigger = screen.getByTestId('astryx-dropdown-menu');
@@ -857,14 +861,17 @@ describe('DropdownMenu light-dismiss race', () => {
     });
   }
 
-  it('does not re-open when the trigger click follows its own light dismiss', () => {
-    const trigger = openMenu();
+  it('does not re-open or notify on the click from its own light dismiss', () => {
+    const onClick = vi.fn();
+    const trigger = openMenu(onClick);
+    expect(onClick).toHaveBeenCalledTimes(1);
 
     fireEvent.pointerDown(trigger);
     lightDismiss();
     fireEvent.click(trigger);
 
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('re-opens on a press of its own after a light dismiss', () => {
@@ -907,6 +914,144 @@ describe('DropdownMenu controlled mode', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
+  it('does not move focus into a menu that mounts already open', () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      render(
+        <DropdownMenu
+          button={{label: 'Sort'}}
+          isMenuOpen
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Newest" />
+          <DropdownMenuItem label="Oldest" />
+        </DropdownMenu>,
+      );
+
+      // Nobody opened the menu, so nobody is dropped into it (#5976).
+      expect(
+        screen.getByRole('menuitem', {name: 'Newest', hidden: true}),
+      ).toBeInTheDocument();
+      expect(document.body).toHaveFocus();
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
+  it('still focuses the first item when a mounted menu opens later', async () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      const {rerender} = render(
+        <DropdownMenu
+          button={{label: 'Sort'}}
+          isMenuOpen={false}
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Newest" />
+          <DropdownMenuItem label="Oldest" />
+        </DropdownMenu>,
+      );
+
+      rerender(
+        <DropdownMenu
+          button={{label: 'Sort'}}
+          isMenuOpen
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Newest" />
+          <DropdownMenuItem label="Oldest" />
+        </DropdownMenu>,
+      );
+
+      // A programmatic open after mount keeps the first-item focus (#4594).
+      await waitFor(() =>
+        expect(
+          screen.getByRole('menuitem', {name: 'Newest', hidden: true}),
+        ).toHaveFocus(),
+      );
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
+  it('walks into a mounted-open menu with ArrowDown from the focused trigger', () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      render(
+        <DropdownMenu
+          button={{label: 'Sort'}}
+          isMenuOpen
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Newest" />
+          <DropdownMenuItem label="Oldest" />
+        </DropdownMenu>,
+      );
+
+      // The items sit outside the tab order, so the trigger is the only
+      // keyboard way in; ArrowDown must not require closing and reopening.
+      const trigger = screen.getByRole('button', {name: /Sort/});
+      trigger.focus();
+      fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+
+      expect(
+        screen.getByRole('menuitem', {name: 'Newest', hidden: true}),
+      ).toHaveFocus();
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
+  it('focuses the first item once a mounted-open menu is closed and reopened', async () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      const menu = (isMenuOpen: boolean) => (
+        <DropdownMenu
+          button={{label: 'Sort'}}
+          isMenuOpen={isMenuOpen}
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Newest" />
+          <DropdownMenuItem label="Oldest" />
+        </DropdownMenu>
+      );
+      const {rerender} = render(menu(true));
+      expect(document.body).toHaveFocus();
+
+      // The mount-open exemption ends with the first close; the next open is
+      // a real one and lands on the first item again.
+      rerender(menu(false));
+      rerender(menu(true));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('menuitem', {name: 'Newest', hidden: true}),
+        ).toHaveFocus(),
+      );
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
   it('calls onOpenChange when button is clicked', async () => {
     const user = userEvent.setup();
     const handleToggle = vi.fn();
@@ -920,7 +1065,11 @@ describe('DropdownMenu controlled mode', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
-    expect(handleToggle).toHaveBeenCalledWith(true);
+    expect(handleToggle.mock.calls).toEqual([[true]]);
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 });
 
@@ -1724,9 +1873,14 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
 
     // A mouse hover over another item moves focus to it, so the single
     // focus-driven highlight follows the pointer instead of leaving two.
+    // Focus must be scroll-free: scrolling the focused item into view moves
+    // the next item under the stationary pointer, which re-highlights and
+    // scrolls again — a runaway auto-scroll loop.
+    const focusSpy = vi.spyOn(del, 'focus');
     fireEvent.pointerMove(del, {pointerType: 'mouse'});
     expect(del).toHaveFocus();
     expect(edit).not.toHaveFocus();
+    expect(focusSpy).toHaveBeenCalledWith({preventScroll: true});
   });
 
   it('does not move focus on hover for a disabled item', async () => {

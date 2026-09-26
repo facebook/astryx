@@ -74,8 +74,13 @@ const noReactIntrospectionRule = {
     const options = context.options[0] || {};
     const allowFiles = options.allowFiles || [];
 
-    // Check if this file is explicitly allowed
-    const filename = context.filename ?? context.getFilename();
+    // Check if this file is explicitly allowed. Patterns are written with
+    // forward slashes; normalize before matching so this also works on
+    // Windows, where context.filename comes back with backslashes.
+    const filename = (context.filename ?? context.getFilename()).replace(
+      /\\/g,
+      '/',
+    );
     if (allowFiles.some(pattern => filename.includes(pattern))) {
       return {};
     }

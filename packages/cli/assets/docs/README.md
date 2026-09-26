@@ -48,3 +48,12 @@ The material is usually good; the finding is placement, not quality. It goes in 
 **Fits no row?** It is still not caller-facing. Default it to [Contributing](https://github.com/facebook/astryx/wiki/Contributing), or `CONTRIBUTING.md` when it is a step someone follows with the repo cloned. Never default it back to this directory.
 
 Worked example: a responsive-and-interaction readiness rubric is grading criteria → **Component-Audit-Rubric**, or **Component-Lifecycle** if it is a promotion gate.
+
+## Sections are read one at a time
+
+`astryx docs <topic> --index` lists a topic's sections, and readers then open
+one section by its key. A section's key is its `id`, or a key derived from its
+title when it has none. Give a section an `id` when its title may change, since
+readers and extensions link to the key. Two sections in one topic cannot share
+a key. Keep each section small enough to read on its own: `astryx doctor` fails
+any section over 32 KB.

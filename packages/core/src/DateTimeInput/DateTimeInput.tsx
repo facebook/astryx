@@ -98,6 +98,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {NativeDateSegment} from './NativeDateSegment';
 import {NativeTimeSegment} from './NativeTimeSegment';
 import {TouchDateTimeField} from './TouchDateTimeField';
@@ -172,9 +173,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -1145,22 +1151,15 @@ function PointerDateTimeField({
       ? timeOptions.length - 1
       : highlightedTimeIndex;
 
-  // Keep the active option visible. The listbox is a fixed-height scroll
-  // container, so without this a list opens at midnight with the highlight far
-  // below the fold, and keyboard navigation walks off-screen. Mirrors
-  // BaseTypeahead's scrollIntoView({block: 'nearest'}).
-  useEffect(() => {
-    if (
-      !timePopover.isOpen ||
-      activeTimeIndex < 0 ||
-      activeTimeIndex >= timeOptions.length
-    ) {
-      return;
-    }
-    document
-      .getElementById(timeOptionId(activeTimeIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [timePopover.isOpen, activeTimeIndex, timeOptionId, timeOptions.length]);
+  // Keep the active option visible; hover highlights never scroll (#6077).
+  // Both sides live in useHighlightedOptionScroll.
+  const highlightTimeOnHover = useHighlightedOptionScroll({
+    isOpen: timePopover.isOpen,
+    highlightedIndex: activeTimeIndex,
+    setHighlightedIndex: setHighlightedTimeIndex,
+    getOptionId: timeOptionId,
+    itemCount: timeOptions.length,
+  });
 
   /**
    * The selected time in the same shape the options carry. splitDateTime slices
@@ -1526,13 +1525,24 @@ function PointerDateTimeField({
   );
 
   // --- Clear ---
-  const handleClear = useCallback(() => {
-    setNativeTimeDraft(undefined);
-    fireChange(undefined);
-    if (!usesNativePicker) {
-      dateInputRef.current?.focus();
-    }
-  }, [fireChange, usesNativePicker]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      setNativeTimeDraft(undefined);
+      fireChange(undefined);
+      if (!usesNativePicker) {
+        if (!e || e.detail === 0) {
+          dateInputRef.current?.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            dateInputRef.current?.focus({preventScroll: true});
+          });
+        }
+      }
+    },
+    [fireChange, usesNativePicker],
+  );
 
   // Focus time input when clicking wrapper padding/icon
   const {onClick: handleTimeWrapperClick, onMouseUp: handleTimeWrapperMouseUp} =
@@ -1881,7 +1891,7 @@ function PointerDateTimeField({
                     // option, or blur would fire its own commit first.
                     onPointerDown={e => e.preventDefault()}
                     onClick={() => commitTimeOption(option.time)}
-                    onMouseEnter={() => setHighlightedTimeIndex(index)}
+                    onMouseEnter={() => highlightTimeOnHover(index)}
                     {...mergeProps(
                       themeProps('date-time-input-time-option'),
                       stylex.props(

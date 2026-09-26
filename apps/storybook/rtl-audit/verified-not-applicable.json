@@ -1,11 +1,32 @@
 [
   {
+    "component": "core/Banner",
+    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "evidence": {
+      "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
+      "packages/core/src/Banner/Banner.tsx": "sha256:d69e58bc792b8c8802311aacd7b629c890915424f5b575d3bb3f71645db9c77f",
+      "packages/core/src/Banner/index.ts": "sha256:64591b4c3a37ae382a910fc9314300c3045bf8d602b28cc60a681d7b8f3a17f6"
+    }
+  },
+  {
+    "component": "core/ToggleButton",
+    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only — no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
+  },
+  {
     "component": "core/Field",
     "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
   },
   {
     "component": "core/FieldStatus",
     "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Heading",
+    "reason": "Heading is typography-only. Its level, type, weight, color, wrapping, truncation, and decoration styles do not position or reorder content on the inline axis; justify uses logical start/end values, and the optional truncation tooltip uses logical placement vocabulary. It renders no directional glyph, separator, control, physical inset, transform, drag, scroll, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Icon",
+    "reason": "Across the Core/Icon stories, Icon renders one centered, non-directional glyph and only owns its size, color, theme target, and accessibility presentation. It has no component-owned order, inline-side placement, scrolling, dragging, overlay, or keyboard behavior; when a caller chooses a directional glyph, that callsite owns the semantic direction and any required mirroring."
   },
   {
     "component": "core/Spinner",
@@ -22,5 +43,232 @@
   {
     "component": "core/Timestamp",
     "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior."
+  },
+  {
+    "component": "lab/CircularProgress",
+    "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph."
+  },
+  {
+    "component": "core/BottomSheet",
+    "reason": "BottomSheet owns no inline axis to mirror. The sheet is a centered column inside an insetInline: 0 container; its borders and top corner radii are identical on both inline edges; and its handle spans both inline edges with a centered pill. Motion and scrolling are block-axis only, and header and close chrome come from caller content."
+  },
+  {
+    "component": "core/BottomSheetSwitcher",
+    "reason": "BottomSheetSwitcher owns no direction-sensitive visual or interaction. Its shared dialog spans both axes symmetrically; sheet handoff, close, swipe, and alignment motion use only the block axis; and it owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each child BottomSheet retains its own independently verified logical layout."
+  },
+  {
+    "component": "charts/ChartAxis",
+    "reason": "ChartAxis renders Cartesian data coordinates on physical top, right, bottom, or left plot edges. Tick lines, labels, and value order stay tied to the data scale rather than reading direction; it owns no directional glyph, logical overlay, scroll, drag, or horizontal keyboard behavior."
+  },
+  {
+    "component": "charts/ChartGrid",
+    "reason": "ChartGrid renders direction-neutral horizontal and vertical Cartesian guide lines inside the plot. It owns no text, directional glyph, inline-axis ordering, overlay placement, scroll, drag, or keyboard behavior."
+  },
+  {
+    "component": "charts/ChartSwatch",
+    "reason": "ChartSwatch renders a square or line sample whose mark shape and color identify a data series. Its geometry is symmetric and it owns no directional glyph, placement, order, scroll, drag, overlay, or keyboard behavior."
+  },
+  {
+    "component": "charts/ChartTooltip",
+    "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
+  },
+  {
+    "component": "richtext/RichTextEditorAutoLinkPlugin",
+    "reason": "RichTextEditorAutoLinkPlugin renders no visual or interactive DOM of its own. It transforms typed URL and email text into native-direction links inside the editor and owns no directional glyph, layout, placement, order, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "richtext/RichTextView",
+    "reason": "RichTextView renders serialized content in normal browser text flow. Content and nested bidi runs retain their authored direction through Lexical and the platform; the wrapper owns no directional glyph, physical inline placement, reordering, horizontal scroll action, drag, overlay, or keyboard behavior."
+  },
+  {
+    "component": "vega/VegaChart",
+    "reason": "VegaChart renders a caller-owned Vega or Vega-Lite data-space specification. Axes, marks, scales, pointer signals, and physical chart coordinates intentionally remain defined by that specification rather than document direction; the React wrapper owns no directional glyph, logical control order, overlay placement, or horizontal keyboard behavior."
+  },
+  {
+    "component": "unknown/ThreeD",
+    "reason": "The ThreeD documentation family renders Cartesian x/y/z data visualizations in SVG and WebGL. Its axes and pointer-drag rotation are physical data-space interactions that intentionally remain invariant across writing directions; it has no reading-order controls, inline-start/end placement, directional glyphs, or overlays to mirror."
+  },
+  {
+    "component": "core/Button",
+    "reason": "Button lays out icon, label, and end content in an inline flex row with logical gap and `paddingInline` only; its source carries no physical `left`/`right`, margin, padding, border, or inset anywhere, and the loading overlay is pinned with `insetInlineStart`/`insetInlineEnd`. Nothing is side-specific, nothing scrolls or drags, and the only positioned affordance is the disabled-reason tooltip, which sits on the block axis (above) rather than to a side. The icon slot mirrors with the flex row by construction, and the glyphs the stories use are non-directional. Verified by the audit's own detectors over every Button and IconButton story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
+  },
+  {
+    "component": "core/IconButton",
+    "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
+  },
+  {
+    "component": "core/SelectableCard",
+    "reason": "SelectableCard renders content in normal flow inside a symmetric Card. Its hover overlay and selected ring cover all four edges equally, its source uses no physical left/right positioning or directional glyphs, and its checkbox interaction uses only pointer, Space, Enter, and Tab rather than inline-direction keys. Every current story therefore has no component-owned visual or behavioral RTL difference for the audit to measure.",
+    "evidence": {
+      "apps/storybook/stories/SelectableCard.stories.tsx": "sha256:35704da575bb80fc580309a5d4182ab4569abbd1449c665f69f1f00767b5790b",
+      "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e",
+      "packages/core/src/SelectableCard/index.ts": "sha256:9cf677856807a09ee444ce68b21118bca9729592485f892da7e0bb64ee1d7501"
+    }
+  },
+  {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and a visually-hidden role-bearing control clipped to 1×1. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
+  },
+  {
+    "component": "core/AspectRatio",
+    "reason": "AspectRatio only establishes a symmetric aspect-ratio box and sizes its single child to fill that box. It has no inline-axis placement, ordering, directional glyph, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Badge",
+    "reason": "Badge is a symmetric inline-flex pill. Its text and optional caller-owned content follow normal document direction with logical gap and padding; the component owns no directional glyph, physical inset, transform, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Card",
+    "reason": "Card is a block container with symmetric radius, border, shadow, and logical padding. It owns no directional glyph, inline-axis ordering, physical positioning, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Code",
+    "reason": "Code is an inline typographic treatment with a monospace font, symmetric background/radius, and logical padding. The code string owns its own bidi content; the component adds no directional visual, positioning, ordering, interaction, or overlay."
+  },
+  {
+    "component": "core/Divider",
+    "reason": "Divider renders a symmetric horizontal or vertical rule. Optional label content follows normal document direction; there is no directional glyph, side-specific placement, transform, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/FormLayout",
+    "reason": "FormLayout arranges caller-owned fields with grid/block flow, logical gaps, and responsive columns. It owns no directional glyph, physical inline placement, transform, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Item",
+    "reason": "Item places start content, text, and end content in normal flex flow using logical padding, text-align:start, and margin-inline-start:auto. Those slots mirror through CSS direction without component branching; Item owns no directional glyph or directional keyboard behavior."
+  },
+  {
+    "component": "core/Link",
+    "reason": "Link is inline text in normal document flow with a logical gap for optional decoration. It owns no left/right glyph, physical inline placement, ordering algorithm, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/List",
+    "reason": "List delegates marker placement and bidi ordering to semantic ol/ul elements and uses logical indentation and spacing. Item content is caller-owned; the component adds no directional controls, physical positioning, transforms, scrolling, dragging, or overlays."
+  },
+  {
+    "component": "core/Markdown",
+    "reason": "Markdown delegates bidi text, semantic list markers, links, and caller-authored content to browser semantics and shared components. Its own prose styling uses logical block/inline properties and it owns no directional control, physical placement, drag, scroll action, or overlay."
+  },
+  {
+    "component": "core/Section",
+    "reason": "Section is a block-flow surface with symmetric decoration and logical padding/insets. It owns no directional glyph, inline-axis ordering, physical transform, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/TextInput",
+    "reason": "TextInput composes a native input and optional start/end affordances in logical flex flow. Padding and status placement use logical properties; owned status, clear, and visibility glyphs are non-directional, and horizontal editing behavior remains native to the input."
+  },
+  {
+    "component": "core/TimeInput",
+    "reason": "TimeInput uses a native or typed text field with logical flex layout and non-directional clock/status glyphs. Its custom stepping uses only ArrowUp and ArrowDown, so it has no locale-dependent horizontal keyboard behavior, physical inline positioning, dragging, or scrolling action."
+  },
+  {
+    "component": "core/Token",
+    "reason": "Token is a symmetric inline-flex pill with logical padding/gap. Its optional remove control uses a non-directional close glyph, and the component owns no side-specific positioning, ordering algorithm, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Toolbar",
+    "reason": "Toolbar start, center, and end slots use CSS flex/grid flow, margin-inline-start, and logical container padding, so visual placement follows document direction without component branching. Its horizontal ArrowLeft/ArrowRight handling means previous/next control in the ARIA toolbar pattern rather than locale-specific content direction; owned glyphs are caller content."
+  },
+  {
+    "component": "lab/ListInput",
+    "reason": "ListInput is a vertical record editor. Keyboard reordering uses ArrowUp/ArrowDown/Home/End, pointer dragging follows the physical pointer while preserving source direction in the preview, and add/remove motion is block-axis. Its grid and controls follow CSS direction with no component-owned horizontal semantic to mirror."
+  },
+  {
+    "component": "core/Dialog",
+    "reason": "Dialog uses logical inline offsets, logical container spacing, and direction-aware safe-area fallbacks. Its native modal lifecycle, focus entry and return, backdrop, and close glyph are direction-neutral; the directional entry translation follows the invoker's physical viewport position rather than reading direction. Dialog owns no left/right glyph swap, inline reordering, directional scroll or drag action, or horizontal keyboard behavior for the RTL audit to compare."
+  },
+  {
+    "component": "core/HoverCard",
+    "reason": "HoverCard delegates anchor geometry and logical placement to Layer and renders a direction-neutral preview surface. It owns no directional glyph, side-specific content order, horizontal scroll or drag behavior, or directional keyboard interaction."
+  },
+  {
+    "component": "core/Indicator",
+    "reason": "Indicator renders centered checkbox, radio, check, and indeterminate marks. Their geometry and state transitions are intrinsic and direction-neutral; the component has no inline-axis placement, content ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/NavIcon",
+    "reason": "NavIcon is a centered circular container for caller-owned artwork. The container has symmetric geometry and no inline-axis placement, order, transform, scroll, drag, overlay, or keyboard behavior; directional meaning belongs to the supplied icon."
+  },
+  {
+    "component": "core/StatusDot",
+    "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/ChatComposerTokenElement",
+    "reason": "ChatComposerTokenElement is a symmetric inline-flex serialization wrapper. Structured presentation is delegated to Badge and custom presentation is caller-owned; the wrapper owns no directional glyph, inline-axis placement, ordering, scrolling, dragging, overlay, or keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerTokenElement.stories.tsx": "sha256:acb4f39a6a542d05ab32ab7173fb599b45d1ee44bd7a40a8b4005a13e00054a8",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:c2d954b31de10589e6a2878624a6d9a28ad2470a439c384b12fae28cf07d4cd5",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatComposerInput",
+    "reason": "ChatComposerInput is a full-width block-flow editing surface whose placeholder uses logical inline insets and whose text and caret direction follow native bidirectional content. It owns no left/right glyph, physical inline positioning, inline reordering, horizontal scroll or drag behavior, side-placed overlay, or horizontal keyboard action; trigger-menu presentation is delegated to the Typeahead behavior owner.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerInput.stories.tsx": "sha256:241cbd2c6517eb59710ffe9ac5eeca15f025b6bb9aeaa89bca97238c407b1e8c",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatComposerDrawer",
+    "reason": "ChatComposerDrawer uses normal block and flex flow with logical inline spacing and symmetric top corners. Its collapse handle is horizontal and centered, the disclosure action moves only on the block axis, and its count, attachment, vertical expand/collapse, and caller-owned child content add no component-owned left/right glyph, physical inline positioning, order, horizontal scrolling or dragging, overlay placement, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposerDrawer.stories.tsx": "sha256:115ecc61625c065ffcb02d35c7aeb2a399c8ba1a30a8cd637bdd4adf58185b80",
+      "packages/core/src/Chat/ChatComposerDrawer.tsx": "sha256:a8d11adc40decad25688b33a16b562e168c831933ec4387084c00530fcb94600",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatComposer",
+    "reason": "ChatComposer arranges caller-owned slots in normal flex and block flow using logical inline properties. Its owned send, stop, status, attachment, microphone, and mention glyphs are direction-neutral; it has no component-owned left/right glyph, physical inline positioning, horizontal scroll or drag behavior, overlay placement, or horizontal keyboard interaction to mirror. Text editing and bidirectional content remain native to the default contenteditable surface or the caller-supplied custom input.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
+      "packages/core/src/Chat/ChatComposer.tsx": "sha256:aa955ff0f59901285eadf7de209f78530d0f8deb0ef162f6baa4e9faa3661880",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
+      "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatDictationButton",
+    "reason": "ChatDictationButton is a symmetric inline-flex icon control. Its microphone glyph and five centered equalizer bars are direction-neutral; the component owns no inline-axis placement, ordering, directional glyph, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:64429848dec3034113095f53ac860be3dddcc4b1dc0e6318d380bffac994366e",
+      "packages/core/src/Chat/ChatDictationButton.tsx": "sha256:bad96c58a64ed9463c428ab7ef53a8c41794bb685eb34b4b333c6cad5c8993c2",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatLayout",
+    "reason": "ChatLayout is a block-flow shell: a flex column whose message area centers with marginInline auto and whose dock spans the full inline width using insetInlineStart/insetInlineEnd and logical padding. It scrolls on the block axis only (overflowY auto with overflowX hidden), owns no directional glyph, no physical inline offset or transform, no inline reordering, no horizontal scrolling or dragging, no side-placed overlay, and no horizontal keyboard behavior. Density selects block-axis blur height and symmetric inline padding. Message, composer, and scroll-affordance direction remain with their own owners.",
+    "evidence": {
+      "apps/storybook/stories/ChatLayout.stories.tsx": "sha256:aa1ebf3f4c7d97d41e0029a0a25d7d40f45083fdbb90c2388f4da7bc21e050e8",
+      "packages/core/src/Chat/ChatLayout.tsx": "sha256:bc5fbef0379c622adaf46dc7119d327100eb40c2440664b3bc288bab758b116b",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatLayoutScrollButton",
+    "reason": "ChatLayoutScrollButton is a centered pill on the block axis. Its only glyph is the block-axis chevronDown, which points along the axis RTL does not mirror, so mirroring it would be wrong rather than missing. The wrapper centers with justifyContent center, the pill sizes from logical maxWidth and the element-size token, and the labelled form uses logical paddingInline/paddingInlineEnd so the icon leads and the text trails in both directions. It owns no left/right glyph, physical inline positioning, inline ordering, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatLayout.stories.tsx": "sha256:aa1ebf3f4c7d97d41e0029a0a25d7d40f45083fdbb90c2388f4da7bc21e050e8",
+      "packages/core/src/Chat/ChatLayoutScrollButton.tsx": "sha256:cb604bf1b1df34dee472865372eb0bec876e6cb733029e3b10f6da97dd33fb2c",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatMessageList",
+    "reason": "ChatMessageList owns a vertical flex transcript, symmetric logical padding and gap, a block-axis top loading sentinel, and a block-axis spacer. It has no directional glyph, inline-side placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Message sender alignment and content belong to its child components; the list only supplies density context. The five independently owned fixtures exercise list states without adding an inline-axis signal for the RTL detectors.",
+    "evidence": {
+      "apps/storybook/stories/ChatMessageList.stories.tsx": "sha256:a5c49da2307d820da0720c00d4780f22d4039579d649905b2b1039a8f2e12d35",
+      "packages/core/src/Chat/ChatMessageList.tsx": "sha256:9d7dc59f2fa33cc13175f1093b509aea4ff54a76b9ef83d576d55f6c4d0bc541",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatMessageMetadata",
+    "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
   }
 ]

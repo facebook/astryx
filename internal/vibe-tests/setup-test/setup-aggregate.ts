@@ -8,11 +8,18 @@ import {fileURLToPath} from 'node:url';
 import {loadOptionalExecutionProvenance} from '../src/provenance-aggregation.js';
 import {
   compareCandidate,
+  failureBreakdown,
+  failureCauses,
+  hardGateVector,
+  isComparableRun,
   passesAcceptance,
   scoreArm,
   strictAcceptanceSummary,
   verdict,
+  type FailureBreakdown,
+  type FailureKind,
   type HardDimension,
+  type HardGateVector,
   type Measurement,
   type SetupScore,
 } from './setup-eval.js';
@@ -143,6 +150,114 @@ export function compareGuidanceRows(rows: SetupAggregateRow[]) {
   };
 }
 
+export type StrategyBreakdown = {
+  condition: string;
+  present: number;
+  /**
+   * Runs whose verdict is `clean` **and** whose executor completed. A verdict
+   * on an unfinished run describes an unfinished run, so it is not counted
+   * here; `verdictCleanNotCompleted` carries those separately.
+   */
+  clean: number;
+  verdictCleanNotCompleted: number;
+  comparable: number;
+  notCompleted: number;
+  accepted: number;
+  byVerdict: Record<string, number>;
+  byCategory: HardGateVector;
+  byFailureKind: FailureBreakdown;
+  byPair: Array<{pair: string; present: number; accepted: number}>;
+};
+
+/**
+ * Per-strategy, per-failure-category accounting for the strategy pilot.
+ *
+ * Deliberately returns separate counts rather than one combined figure: the
+ * pilot compares two strategies that make different tradeoffs, and collapsing
+ * them into a single score would hide which category actually failed. No
+ * ranking, weighting, or advance/reject decision is produced here.
+ *
+ * Two separations matter and are both kept:
+ *
+ * 1. **What failed.** `byFailureKind` splits measured host damage from an
+ *    integrity/escape-hatch failure, from a task failure, from a telemetry or
+ *    run-note failure. The verdict alone calls several of those `silent-damage`
+ *    and reads as if the host was repainted.
+ * 2. **Whether the run finished.** A strategy is never called cleaner on the
+ *    strength of a run its executor did not complete. Those runs are reported
+ *    under `notCompleted` and excluded from `clean` and `comparable`.
+ */
+export function compareStrategyRows(
+  rows: SetupAggregateRow[],
+  conditions: string[],
+): StrategyBreakdown[] {
+  return conditions.map(condition => {
+    const scoped = rows.filter(row => row.condition === condition);
+    const byVerdict: Record<string, number> = {};
+    const byCategory = {
+      build: 0,
+      runtime: 0,
+      taskCompletion: 0,
+      color: 0,
+      font: 0,
+      radius: 0,
+      border: 0,
+      shadow: 0,
+      geometry: 0,
+      contrast: 0,
+      layering: 0,
+    } as HardGateVector;
+    const byFailureKind: FailureBreakdown = {
+      hostDamage: 0,
+      runtime: 0,
+      integrity: 0,
+      task: 0,
+      telemetry: 0,
+    };
+    const pairs = new Map<string, {present: number; accepted: number}>();
+
+    for (const row of scoped) {
+      const rowVerdict = verdict(row.score);
+      byVerdict[rowVerdict] = (byVerdict[rowVerdict] ?? 0) + 1;
+      const vector = hardGateVector(row.score);
+      for (const dimension of Object.keys(byCategory) as HardDimension[]) {
+        byCategory[dimension] += vector[dimension];
+      }
+      const kinds = failureBreakdown(row.score);
+      for (const kind of Object.keys(byFailureKind) as FailureKind[]) {
+        byFailureKind[kind] += kinds[kind];
+      }
+      const pairKey = `${row.fixture}/${row.prompt}`;
+      const pair = pairs.get(pairKey) ?? {present: 0, accepted: 0};
+      pair.present += 1;
+      if (passesAcceptance(row.score)) {
+        pair.accepted += 1;
+      }
+      pairs.set(pairKey, pair);
+    }
+
+    return {
+      condition,
+      present: scoped.length,
+      clean: scoped.filter(
+        row => verdict(row.score) === 'clean' && isComparableRun(row.score),
+      ).length,
+      verdictCleanNotCompleted: scoped.filter(
+        row => verdict(row.score) === 'clean' && !isComparableRun(row.score),
+      ).length,
+      comparable: scoped.filter(row => isComparableRun(row.score)).length,
+      notCompleted: scoped.filter(row => !isComparableRun(row.score)).length,
+      accepted: scoped.filter(row => passesAcceptance(row.score)).length,
+      byVerdict,
+      byCategory,
+      byFailureKind,
+      byPair: [...pairs]
+        .map(([pair, counts]) => ({pair, ...counts}))
+        .sort((left, right) => left.pair.localeCompare(right.pair)),
+    };
+  });
+}
+
 function renderTable(rows: SetupAggregateRow[]) {
   const header = [
     'stage',
@@ -151,6 +266,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     'condition',
     'executor',
     'rep',
+    'run',
     'builds',
     'runtime',
     'regressions',
@@ -159,6 +275,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     'task',
     'integrity',
     'verdict',
+    'cause',
     'accepts',
   ];
   const body = rows.map(row => [
@@ -168,6 +285,11 @@ function renderTable(rows: SetupAggregateRow[]) {
     row.condition,
     row.executor,
     String(row.rep || '-'),
+    row.score.validRun
+      ? row.score.executionSucceeded
+        ? 'ok'
+        : 'AGENT-FAILURE'
+      : 'INVALID',
     row.score.builds ? 'yes' : 'NO',
     String(row.score.consoleErrors + row.score.failedRequests),
     `${row.score.regressions} (${Object.entries(row.score.byCategory)
@@ -181,6 +303,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     row.score.taskSuccess ? 'yes' : 'NO',
     String(row.score.integrityFailures.length),
     verdict(row.score),
+    failureCauses(row.score).join('+') || '-',
     passesAcceptance(row.score) ? 'yes' : 'NO',
   ]);
   const widths = header.map((heading, index) =>
@@ -330,6 +453,102 @@ async function main() {
     console.log(
       'Exploratory comparison only: review the explicit tradeoffs; no automatic ranking is applied.',
     );
+  }
+
+  const isIteration = stageId.startsWith('strategy-iteration');
+  if (stageId === 'strategy-pilot' || isIteration) {
+    const pilotConditions = [
+      ...new Set(expectedEntries.map(entry => entry.condition)),
+    ].sort();
+    console.log('\nBy strategy — acceptance and failure categories:');
+    for (const breakdown of compareStrategyRows(rows, pilotConditions)) {
+      const verdicts = Object.entries(breakdown.byVerdict)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([name, count]) => `${name}=${count}`)
+        .join(' ');
+      const categories = Object.entries(breakdown.byCategory)
+        .filter(([, count]) => count > 0)
+        .map(([category, count]) => `${category}=${count}`)
+        .join(' ');
+      const kinds = Object.entries(breakdown.byFailureKind)
+        .filter(([, count]) => count > 0)
+        .map(([kind, count]) => `${kind}=${count}`)
+        .join(' ');
+      console.log(`\n  ${breakdown.condition}`);
+      console.log(
+        `    accepted ${breakdown.accepted}/${breakdown.present} present` +
+          ` (clean ${breakdown.clean} of ${breakdown.comparable} completed runs)`,
+      );
+      if (breakdown.notCompleted > 0) {
+        console.log(
+          `    ${breakdown.notCompleted} run(s) the executor did not complete` +
+            ` — excluded from the clean count` +
+            (breakdown.verdictCleanNotCompleted > 0
+              ? `, ${breakdown.verdictCleanNotCompleted} of which measured` +
+                ` 'clean' on unfinished work`
+              : '') +
+            '. Those cells need rerunning; they are not evidence for this' +
+            ' strategy.',
+        );
+      }
+      console.log(`    verdicts: ${verdicts || 'none'}`);
+      console.log(`    failure kinds: ${kinds || 'none'}`);
+      console.log(`    failure categories: ${categories || 'none'}`);
+      for (const pair of breakdown.byPair) {
+        console.log(
+          `    ${pair.pair}: accepted ${pair.accepted}/${pair.present}`,
+        );
+      }
+    }
+    console.log(
+      '\nThe two strategies are reported separately and are not ranked against' +
+        ' each other. They make different tradeoffs, so no combined score is' +
+        ' emitted. Final acceptance is unchanged: every valid run must be clean.',
+    );
+    console.log(
+      'Failure kinds are reported apart from the verdict on purpose. Measured' +
+        ' host damage, an integrity or escape-hatch failure, a task failure,' +
+        ' and a telemetry or run-note failure are different problems that the' +
+        ' verdict alone spells the same way, and only the first is the host' +
+        ' being changed. A run the executor did not complete is never counted' +
+        ' as a clean run for its strategy, whatever its measurement says.',
+    );
+    if (isIteration) {
+      const pairs = (
+        stage as {
+          comparisonMapping?: {
+            pairs?: Array<{
+              iteration: string;
+              pilot?: string;
+              predecessor?: string;
+              pilotFinding?: string;
+              priorFinding?: string;
+              changed: string;
+            }>;
+          };
+        }
+      ).comparisonMapping?.pairs;
+      if (pairs?.length) {
+        console.log(
+          '\nEach cell below reruns an earlier cell under a new condition id.' +
+            ' Those earlier cells are unchanged and remain the record of what' +
+            " they measured; this stage's result is read beside them, not in" +
+            ' place of them.',
+        );
+        for (const pair of pairs) {
+          console.log(`\n  ${pair.iteration}`);
+          console.log(`    reruns  ${pair.predecessor ?? pair.pilot}`);
+          console.log(`    finding ${pair.priorFinding ?? pair.pilotFinding}`);
+          console.log(`    changed ${pair.changed}`);
+        }
+      }
+    }
+    console.log(
+      `${isIteration ? 'Strategy iteration' : 'Strategy pilot'}: ${completeCoverage && summary.passes ? 'PASS' : 'FAIL'}`,
+    );
+    if (!completeCoverage || !summary.passes) {
+      process.exitCode = 1;
+    }
   }
 
   if (stageId === 'confirmation') {

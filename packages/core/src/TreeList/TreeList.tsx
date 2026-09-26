@@ -191,6 +191,7 @@ export function TreeList({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   ref,
+  onKeyDown: onKeyDownProp,
   ...restProps
 }: TreeListProps) {
   const headerId = useId();
@@ -260,6 +261,23 @@ export function TreeList({
     hasRovingTabIndex: true,
   });
 
+  const handleRootKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      if (
+        treeRef.current != null &&
+        e.target instanceof Node &&
+        treeRef.current.contains(e.target)
+      ) {
+        handleKeyDown(e);
+      }
+    },
+    [onKeyDownProp, handleKeyDown, treeRef],
+  );
+
   const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
   );
@@ -307,6 +325,9 @@ export function TreeList({
           description={item.description}
           startContent={item.startContent}
           endContent={item.endContent}
+          xstyle={item.xstyle}
+          className={item.className}
+          style={item.style}
           hasChildren={hasChildren}
           hasExpandableItems={hasExpandableItems}
           onClick={item.onClick}
@@ -334,6 +355,7 @@ export function TreeList({
     <div
       ref={ref}
       data-testid={testId}
+      onKeyDown={handleRootKeyDown}
       {...mergeProps(
         themeProps('tree-list', {density, variant}),
         stylex.props(styles.root, xstyle),
@@ -351,7 +373,6 @@ export function TreeList({
         role="tree"
         aria-label={header != null ? undefined : ariaLabel}
         aria-labelledby={header != null ? headerId : ariaLabelledby}
-        onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}

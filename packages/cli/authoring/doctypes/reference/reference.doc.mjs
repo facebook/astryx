@@ -55,14 +55,14 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.",
+        'Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.',
       example: "'getting-started'",
     },
     {
       name: 'extends',
       type: 'string',
       description:
-        'Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.',
+        "Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. The topic keeps the base's title and description. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.",
       example: "'theme'",
     },
     {
@@ -72,6 +72,12 @@ export const doc = {
         'Ordered sections that make up the doc. Each becomes an h2 in full output and can be retrieved via `astryx docs <topic> <section>`.',
       required: true,
       fields: [
+        {
+          name: 'sections[].id',
+          type: 'string',
+          description:
+            'Stable section anchor. New docs should set this instead of relying on a mutable title.',
+        },
         {
           name: 'sections[].title',
           type: 'string',
@@ -89,7 +95,7 @@ export const doc = {
           name: 'sections[].content',
           type: 'ReferenceContentBlock[]',
           description:
-            'Ordered content blocks. Mix prose, code, tables, and lists freely.',
+            'Ordered content blocks: prose, heading, code, table, list, and token-ref. workflow, collection, and reference are declared for the docs graph and parse, but a topic that uses one fails to load until the docs graph ships.',
           required: true,
         },
         {
@@ -134,7 +140,11 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'A stamped generic doc without `title`, `description` or `sections` still loads, as older codemod output does; its title falls back to `displayName` or `name`. Without a description and sections it is not a usable topic, and `astryx doctor` reports it.',
+    },
+    {
+      type: 'prose',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. workflow, collection, and reference are declared for the docs graph: they parse, but topic loading rejects them until the docs graph ships. choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {
       type: 'code',
@@ -146,7 +156,10 @@ export const docs = {
   | { type: 'code'; lang: string; code: string; label?: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'list'; style: 'ordered' | 'unordered' | 'do' | 'dont'; items: string[] }
-  | { type: 'token-ref'; topic: string; section: string };`,
+  | { type: 'token-ref'; topic: string; section: string }
+  | { type: 'workflow'; title?: string; steps: WorkflowStep[] }
+  | { type: 'collection'; source: {slot: string}; presentation?: 'list' | 'cards' | 'compact'; whenEmpty?: 'show' | 'omit' }
+  | { type: 'reference'; target: string; projection?: {fields?: string[]; sections?: string[]} };`,
     },
     {
       type: 'prose',

@@ -8,6 +8,20 @@ export const docs = {
   displayName: 'Tab Menu',
   isHiddenFromOverview: true,
   description: "Overflow menu trigger that opens a dropdown of additional tab options, showing the selected option's label as the trigger text.",
+  // TabMenu requires TabList context; wrap it so the preview doesn't throw.
+  // The wrapper value matches none of the options, so the trigger shows its
+  // own label (the idle overflow state).
+  playground: {
+    defaults: {
+      label: 'More',
+      options: [
+        {value: 'settings', label: 'Settings'},
+        {value: 'integrations', label: 'Integrations'},
+        {value: 'billing', label: 'Billing'},
+      ],
+    },
+    wrapper: {component: 'TabList', props: {value: 'overview'}},
+  },
   props: [
     {
       name: 'label',

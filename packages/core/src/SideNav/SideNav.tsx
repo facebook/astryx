@@ -11,7 +11,8 @@
  * Sidebar navigation container with five zones: header + topContent (sticky together),
  * children (scrollable), footer, and footerIcons (sticky bottom).
  *
- * Supports optional resize via drag handle at the inline-end edge.
+ * Supports optional resize via a drag handle at the inline-end edge. The
+ * resizable wrapper clips handle overflow while keeping its focus ring inside.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -32,7 +33,12 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  durationVars,
+  easeVars,
+  focusVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {
   findExternalCollapseToggle,
@@ -297,6 +303,16 @@ const styles = stylex.create({
     flexShrink: 0,
     height: '100%',
     backgroundColor: 'inherit',
+    overflow: 'clip',
+  },
+  resizableHandle: {
+    // Keep the shared ring inside the clipping boundary. The wrapper cannot
+    // use overflow-clip-margin: that paint allowance also contributes the
+    // overlay's half-pixel spill to AppShell's scrollable overflow.
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': `calc(0px - ${focusVars['--focus-outline-width']})`,
+    },
   },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
@@ -504,8 +520,8 @@ export function SideNav({
   // owner mounted when resize is toggled preserves the current collapse state.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
-    minSizePx: resizableConfig.minWidth ?? 180,
-    maxSizePx: resizableConfig.maxWidth ?? 480,
+    minSize: resizableConfig.minWidth ?? 180,
+    maxSize: resizableConfig.maxWidth ?? 480,
     collapsible: isCollapsible,
     collapsedSize: COLLAPSE_THRESHOLD,
     autoSaveId: resizableConfig.autoSaveId,
@@ -843,6 +859,7 @@ export function SideNav({
           position="overlay"
           pillPlacement="end"
           isAlwaysVisible={false}
+          xstyle={styles.resizableHandle}
           resizable={resizableHook.props}
           label={t('@astryx.sideNav.resizeSidebar')}
         />

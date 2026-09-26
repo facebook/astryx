@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-013
@@ -18,6 +18,27 @@ affects_consumer_docs: [browser-support, useLayer, Popover, Toast, Dialog]
 ---
 
 # Browser and platform support system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "platform": [
+      "FR1",
+      "FR3",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR8",
+      "FR9",
+      "FR10",
+      "FR12"
+    ]
+  }
+}
+```
 
 ## Intent
 

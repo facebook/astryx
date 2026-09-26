@@ -4,15 +4,17 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext,
- *   and Selector positioning hooks
- * @output Exports Selector component
+ * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
+ *   indicators, Field, and InputGroup context
+ * @output Exports Selector with content-derived option-mark layout
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Selector/Selector.spec.md
  * - /packages/core/src/Selector/Selector.doc.mjs
  * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
+ * - /apps/storybook/stories/Selector.stories.tsx
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Selector/ (showcase blocks)
  */
@@ -102,9 +104,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      },
     },
     // A FIXED line box, not the ratio: the trigger's padding is derived from
     // one line being `--spacing-5` tall, and a ratio makes the line box track
@@ -362,18 +369,20 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  // The mark's column, reserved on every row and at either position, so a row
-  // occupies the same geometry whether or not it is the chosen one — the
-  // default check draws nothing when unchecked, and without the column a list
-  // would indent (or truncate) its chosen row differently from the rest.
-  // `minWidth` rather than `width`: a theme can replace `check` with a larger
-  // indicator (a radio is 20px at `sm`), and the column has to grow with it.
+  // The wrapper keeps a visible mark at either logical position and lets a
+  // replacement indicator grow beyond the default 1rem minimum. When the
+  // resolved indicator draws nothing, `:empty` removes the wrapper from layout
+  // instead of reserving blank space. Selected and unselected labels may
+  // therefore shift or have different available width by design (AST-004).
   itemMarkColumn: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     minWidth: '1rem',
+    ':empty': {
+      display: 'none',
+    },
   },
   itemCheckmark: {
     flexShrink: 0,
@@ -649,10 +658,10 @@ interface SelectorPropsBase<
   renderValue?: (option: SelectorOptionData) => ReactNode;
 
   /**
-   * Which edge of the option row carries the selected mark. `start` reserves a
-   * mark column ahead of every label so they stay aligned, the way a native
-   * menu does; `end` is the house convention shared with Typeahead and
-   * CommandPalette.
+   * Which logical edge of the option row carries a rendered selection mark. An
+   * empty mark consumes no space, so selected and unselected labels may shift or
+   * have different available width. `end` is the house convention shared with
+   * Typeahead and CommandPalette.
    *
    * @default 'end'
    */
@@ -993,9 +1002,24 @@ export function Selector<T extends SelectorOptionType>(
     announce('');
   }, [announce]);
 
+  const handleLayerShow = useCallback(() => {
+    if (hasSearch) {
+      requestAnimationFrame(() => {
+        const input = searchRef.current;
+        if (input) {
+          input.focus();
+          // When typing seeded the query, place the caret after it so the user
+          // keeps typing where they left off.
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      });
+    }
+  }, [hasSearch]);
+
   const surface = useSelectorPresentation({
     presentation,
     onHide: handleLayerHide,
+    onShow: handleLayerShow,
     triggerRef,
     popoverOptions: {
       hasLightDismiss: true,
@@ -1175,7 +1199,6 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
-    wasJustDismissed: surface.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1184,20 +1207,7 @@ export function Selector<T extends SelectorOptionType>(
     isDisabled: isDisabled || isEffectivelyReadOnly,
     isOpen: surface.isOpen,
     hasSearch,
-    onOpen: useCallback(() => {
-      surface.show();
-      if (hasSearch) {
-        requestAnimationFrame(() => {
-          const input = searchRef.current;
-          if (input) {
-            input.focus();
-            // When typing seeded the query, place the caret after it so the
-            // user keeps typing where they left off.
-            input.setSelectionRange(input.value.length, input.value.length);
-          }
-        });
-      }
-    }, [surface, hasSearch]),
+    onOpen: useCallback(() => surface.show(), [surface]),
     onClose: surface.hide,
     onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
@@ -1246,18 +1256,7 @@ export function Selector<T extends SelectorOptionType>(
     [isDisabled, isEffectivelyReadOnly, hasSearch, typeahead, onKeyDown],
   );
 
-  // Keep the highlighted option visible during keyboard navigation. The
-  // listbox is a fixed-height scroll container, so without this the virtual
-  // cursor walks off-screen once navigation passes the visible window. Mirrors
-  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
-  useEffect(() => {
-    if (!surface.isOpen || highlightedIndex < 0) {
-      return;
-    }
-    document
-      .getElementById(getItemId(highlightedIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [surface.isOpen, highlightedIndex, getItemId]);
+  // Highlight scrolling (and its hover/keyboard split) lives in useCombobox.
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -1642,7 +1641,17 @@ export function Selector<T extends SelectorOptionType>(
       ref={listboxRef}
       id={listboxId}
       role="listbox"
-      aria-labelledby={triggerId}
+      // The bottom sheet is a modal layer, so Chromium drops the trigger
+      // outside it from the accessibility tree and a reference to it yields
+      // no name. Name only this no-search sheet directly from the component's
+      // label; the searchable sheet and the popovers keep the trigger
+      // relationship.
+      aria-label={
+        surface.activePresentation === 'bottom-sheet' ? label : undefined
+      }
+      aria-labelledby={
+        surface.activePresentation === 'bottom-sheet' ? undefined : triggerId
+      }
       aria-activedescendant={
         surface.isOpen && highlightedIndex >= 0
           ? getItemId(highlightedIndex)

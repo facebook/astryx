@@ -20,6 +20,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Profiler, type ProfilerOnRenderCallback} from 'react';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -573,6 +574,59 @@ describe('Typeahead', () => {
       expect(screen.getByText('Apple')).toBeInTheDocument();
       expect(screen.queryByText('Avocado')).not.toBeInTheDocument();
     });
+
+    it('discards a response from a source that was replaced while it was in flight', async () => {
+      let resolveOld: ((items: SearchableItem[]) => void) | null = null;
+      const oldSource: SearchSource = {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolveOld = resolve;
+          }),
+        bootstrap: () => [],
+      };
+      const newSource: SearchSource = {
+        search: () => [{id: 'banana', label: 'Banana'}],
+        bootstrap: () => [],
+      };
+
+      const {rerender} = render(
+        <Typeahead
+          label="Fruit"
+          searchSource={oldSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'a'}});
+      await waitFor(() => expect(resolveOld).not.toBeNull());
+
+      // The source is swapped while the old search is still pending and no
+      // new query is typed. The stale response must not populate a menu that
+      // now reads from a different source.
+      rerender(
+        <Typeahead
+          label="Fruit"
+          searchSource={newSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      await act(async () => {
+        resolveOld!([{id: 'apple', label: 'Apple'}]);
+      });
+      expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+
+      // Work started against the new source still lands normally.
+      fireEvent.change(input, {target: {value: 'ba'}});
+      await waitFor(() =>
+        expect(screen.getByText('Banana')).toBeInTheDocument(),
+      );
+    });
   });
 
   it('renders with label', () => {
@@ -713,6 +767,126 @@ describe('Typeahead size', () => {
 });
 
 describe('BaseTypeahead hasEntriesOnFocus', () => {
+  it('does not commit a loading cycle for an empty synchronous bootstrap', async () => {
+    const bootstrap = vi.fn((): SearchableItem[] => []);
+    const onRender = vi.fn<ProfilerOnRenderCallback>();
+    render(
+      <Profiler id="typeahead" onRender={onRender}>
+        <BaseTypeahead
+          searchSource={{search: () => [], bootstrap}}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </Profiler>,
+    );
+    const input = screen.getByRole('combobox');
+    onRender.mockClear();
+
+    await act(async () => {
+      fireEvent.focus(input);
+      await Promise.resolve();
+    });
+
+    expect(bootstrap).toHaveBeenCalledOnce();
+    expect(onRender).not.toHaveBeenCalled();
+  });
+
+  it('does not report loading for synchronous bootstrap results', async () => {
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
+    render(
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </BusyIndicatorLaneProvider>,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(onLoadingChange).not.toHaveBeenCalled();
+  });
+
+  it('clears a pending search loading state before synchronous bootstrap', async () => {
+    let settleSearch: (items: SearchableItem[]) => void = () => {};
+    const searchSource: SearchSource = {
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settleSearch = resolve;
+        }),
+      bootstrap: () => [],
+    };
+    render(
+      <BaseTypeahead
+        searchSource={searchSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: ''}});
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settleSearch(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the loading state for an asynchronous bootstrap', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows bootstrap results on mouse click', async () => {
     render(
       <BaseTypeahead
@@ -1249,6 +1423,48 @@ describe('BaseTypeahead paste behavior', () => {
       await user.keyboard('{ArrowDown}');
       await user.keyboard('{ArrowDown}');
 
+      expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+    } finally {
+      delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+        .scrollIntoView;
+    }
+  });
+
+  it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+    // Hover must highlight only: scrollIntoView under a stationary pointer
+    // moves the next option under it, re-highlighting and scrolling again —
+    // a runaway auto-scroll loop with no user input.
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const user = userEvent.setup();
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.paste('e'); // matches Cherry, Date, Elderberry
+      await waitFor(() => {
+        expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+      });
+
+      scrollIntoView.mockClear();
+      const options = screen.getAllByRole('option', {hidden: true});
+      fireEvent.mouseEnter(options[1]);
+
+      expect(input.getAttribute('aria-activedescendant')).toBe(options[1].id);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await user.keyboard('{ArrowDown}');
       expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
     } finally {
       delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})

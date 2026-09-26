@@ -4,15 +4,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {collectThemingTargets} from '../packages/cli/foundation/discovery/theming-targets.mjs';
 
 const require = createRequire(import.meta.url);
 const {
+  COMPONENT_PACKAGE_NAMES,
+  packageHasPublicComponent,
+} = require('./component-packages.cjs');
+const {
   parseAuthority,
   parseOwnerFile,
 } = require('../.github/scripts/knowledge-frontmatter.cjs');
+const {
+  parseDesignDecisionsBlock,
+  validateDesignDecisionsBlock,
+} = require('../.github/scripts/component-design-decisions.cjs');
 const {
   classifyComponentKnowledgePath,
   isComponentSpecRecordPath,
@@ -23,6 +32,20 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(HERE, '..');
 const MODULE_ID_PATTERN =
   /^module:([A-Z][A-Za-z0-9]*)\/([A-Za-z][A-Za-z0-9]*)$/;
+const READER_FIRST_TEMPLATE_KINDS = new Set([
+  'architecture',
+  'component',
+  'module',
+]);
+const CONTRACT_AT_A_GLANCE_SECTION = 'Contract at a glance';
+
+export {parseDesignDecisionsBlock, validateDesignDecisionsBlock};
+
+function expectedTemplateSections(kind, requiredSections) {
+  return READER_FIRST_TEMPLATE_KINDS.has(kind)
+    ? [CONTRACT_AT_A_GLANCE_SECTION, ...requiredSections]
+    : requiredSections;
+}
 
 export function parseKnowledgeDocument(content, filePath = '<document>') {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -99,6 +122,356 @@ export function parseKnowledgeDocument(content, filePath = '<document>') {
     section => section[1],
   );
   return {frontmatter, sections, problems};
+}
+
+const REVIEW_APPLICABILITY_MARKER = 'review-applicability:v1';
+export const GLOBAL_REVIEW_TRIGGERS = new Set([
+  'accessibility',
+  'behavior',
+  'compatibility',
+  'component-slots',
+  'docsite',
+  'interaction',
+  'layering',
+  'layout',
+  'motion',
+  'navigation',
+  'platform',
+  'public-api',
+  'react-runtime',
+  'responsive',
+  'scrolling',
+  'specification',
+  'styling',
+  'testing',
+  'theming',
+  'tokens',
+  'visual',
+]);
+const REVIEW_TRIGGER_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const REVIEW_CLAIM_ID_PATTERN = /^[A-Z][A-Z0-9]*-?[0-9]+[a-z]?$/;
+
+function exactKeys(value, expected) {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).sort().join('\0') === [...expected].sort().join('\0')
+  );
+}
+
+export function extractKnowledgeClaims(content) {
+  const claims = new Map();
+  const definitions = [
+    {
+      pattern:
+        /^\s*[-*]\s+\*\*([A-Z][A-Z0-9]*-?[0-9]+[a-z]?)\s+—\s+([\s\S]*?)\*\*/gm,
+      title: match => match[2].replace(/\s+/g, ' ').trim(),
+    },
+    {
+      pattern: /^#{2,6}\s+([A-Z][A-Z0-9]*-?[0-9]+[a-z]?)\s+—\s+(.+?)\s*$/gm,
+      title: match => match[2].trim(),
+    },
+  ];
+  for (const {pattern, title} of definitions) {
+    for (const match of content.matchAll(pattern)) {
+      if (!claims.has(match[1])) {
+        claims.set(match[1], title(match));
+      }
+    }
+  }
+
+  let levelTwoSection = null;
+  for (const line of content.split(/\r?\n/)) {
+    const heading = /^##\s+(.+?)\s*$/.exec(line);
+    if (heading) {
+      levelTwoSection = heading[1];
+      continue;
+    }
+    if (levelTwoSection !== 'Requirements') continue;
+    const row =
+      /^\|\s*([A-Z][A-Z0-9]*-?[0-9]+[a-z]?)\s*\|\s*([^|]+?)\s*\|/.exec(line);
+    if (row && !claims.has(row[1])) {
+      claims.set(row[1], row[2].replace(/\s+/g, ' ').trim());
+    }
+  }
+  return claims;
+}
+
+export function parseReviewApplicabilityBlock(
+  content,
+  filePath = '<knowledge record>',
+) {
+  const marker = /<!--\s*review-applicability:v1\s*-->/g;
+  const markers = [...content.matchAll(marker)];
+  if (markers.length === 0) return {config: null, problems: []};
+  if (markers.length > 1) {
+    return {
+      config: null,
+      problems: [
+        `${filePath}: duplicate ${REVIEW_APPLICABILITY_MARKER} blocks.`,
+      ],
+    };
+  }
+
+  const remainder = content.slice(markers[0].index + markers[0][0].length);
+  const block = /^\s*```json\s*\n([\s\S]*?)\n```/.exec(remainder);
+  if (!block) {
+    return {
+      config: null,
+      problems: [
+        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} must be followed by one JSON code block.`,
+      ],
+    };
+  }
+
+  const propertyNames = [...block[1].matchAll(/"((?:\\.|[^"\\])*)"\s*:/g)].map(
+    match => JSON.parse(`"${match[1]}"`),
+  );
+  const duplicates = propertyNames.filter(
+    (name, index) => propertyNames.indexOf(name) !== index,
+  );
+  if (duplicates.length > 0) {
+    return {
+      config: null,
+      problems: [
+        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} repeats JSON field ${JSON.stringify(duplicates[0])}.`,
+      ],
+    };
+  }
+
+  try {
+    return {config: JSON.parse(block[1]), problems: []};
+  } catch (error) {
+    return {
+      config: null,
+      problems: [
+        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} is not valid JSON (${error.message}).`,
+      ],
+    };
+  }
+}
+
+export function validateReviewApplicability(
+  config,
+  content,
+  filePath = '<knowledge record>',
+) {
+  if (config == null) return [];
+  const problems = [];
+  if (!exactKeys(config, ['scope', 'triggers'])) {
+    return [
+      `${filePath}: ${REVIEW_APPLICABILITY_MARKER} requires exactly scope and triggers.`,
+    ];
+  }
+  if (config.scope !== 'global') {
+    problems.push(
+      `${filePath}: ${REVIEW_APPLICABILITY_MARKER} scope must be "global".`,
+    );
+  }
+  if (
+    config.triggers == null ||
+    typeof config.triggers !== 'object' ||
+    Array.isArray(config.triggers) ||
+    Object.keys(config.triggers).length === 0
+  ) {
+    problems.push(
+      `${filePath}: ${REVIEW_APPLICABILITY_MARKER} requires at least one trigger with explicit claims.`,
+    );
+    return problems;
+  }
+
+  const knownClaims = extractKnowledgeClaims(content);
+  const seenPairs = new Set();
+  for (const [trigger, claims] of Object.entries(config.triggers)) {
+    const where = `${filePath}: ${REVIEW_APPLICABILITY_MARKER} trigger ${JSON.stringify(trigger)}`;
+    if (!REVIEW_TRIGGER_PATTERN.test(trigger)) {
+      problems.push(`${where} must use lower-kebab-case.`);
+    } else if (!GLOBAL_REVIEW_TRIGGERS.has(trigger)) {
+      problems.push(`${where} is not a supported semantic trigger.`);
+    }
+    if (!Array.isArray(claims) || claims.length === 0) {
+      problems.push(`${where} requires a non-empty claim list.`);
+      continue;
+    }
+    for (const claimId of claims) {
+      if (
+        typeof claimId !== 'string' ||
+        !REVIEW_CLAIM_ID_PATTERN.test(claimId)
+      ) {
+        problems.push(
+          `${where} has malformed claim id ${JSON.stringify(claimId)}.`,
+        );
+        continue;
+      }
+      const pair = `${trigger}\0${claimId}`;
+      if (seenPairs.has(pair)) {
+        problems.push(`${where} repeats claim ${JSON.stringify(claimId)}.`);
+        continue;
+      }
+      seenPairs.add(pair);
+      if (!knownClaims.has(claimId)) {
+        problems.push(
+          `${where} references missing claim ${JSON.stringify(claimId)}.`,
+        );
+      }
+    }
+  }
+  return problems;
+}
+
+function isKnowledgeRecordPath(filePath) {
+  if (/^docs\/(?:architecture|design|families)\/[^/]+\.md$/.test(filePath)) {
+    return !filePath.endsWith('/README.md');
+  }
+  if (/^docs\/specs\/[^/]+\/(?:spec|plan)\.md$/.test(filePath)) {
+    return true;
+  }
+  const themeMatch = /^packages\/themes\/([^/]+)\/([^/]+)\.spec\.md$/.exec(
+    filePath,
+  );
+  if (themeMatch) return themeMatch[1] === themeMatch[2];
+  return isComponentSpecRecordPath(filePath);
+}
+
+export function collectGlobalReviewMatches(
+  records,
+  requestedTriggers,
+  authorityCommit,
+) {
+  const requested = [...new Set(requestedTriggers)].sort();
+  for (const trigger of requested) {
+    if (
+      !REVIEW_TRIGGER_PATTERN.test(trigger) ||
+      !GLOBAL_REVIEW_TRIGGERS.has(trigger)
+    ) {
+      throw new Error(`Invalid review trigger ${JSON.stringify(trigger)}.`);
+    }
+  }
+
+  const matches = [];
+  for (const record of records) {
+    const document = parseKnowledgeDocument(record.content, record.path);
+    const parsed = parseReviewApplicabilityBlock(record.content, record.path);
+    const problems = [
+      ...document.problems,
+      ...parsed.problems,
+      ...validateReviewApplicability(
+        parsed.config,
+        record.content,
+        record.path,
+      ),
+    ];
+    if (problems.length > 0) {
+      throw new Error(problems.join('\n'));
+    }
+    if (
+      document.frontmatter.get('authority') !== 'current' ||
+      parsed.config?.scope !== 'global'
+    ) {
+      continue;
+    }
+
+    const recordId = document.frontmatter.get('id');
+    if (typeof recordId !== 'string' || recordId.length === 0) {
+      throw new Error(`${record.path}: a routed record requires an id.`);
+    }
+    const claims = extractKnowledgeClaims(record.content);
+    const recordDigest = createHash('sha256')
+      .update(record.content)
+      .digest('hex');
+    for (const trigger of requested) {
+      for (const claimId of parsed.config.triggers[trigger] ?? []) {
+        matches.push({
+          recordId,
+          path: record.path,
+          trigger,
+          claimId,
+          claim: claims.get(claimId),
+          matchReason: `Requested trigger ${JSON.stringify(trigger)} matched ${REVIEW_APPLICABILITY_MARKER} claim ${JSON.stringify(`${recordId}/${claimId}`)}.`,
+          authorityCommit,
+          recordDigest,
+        });
+      }
+    }
+  }
+  return matches.sort((left, right) =>
+    [left.recordId, left.path, left.trigger, left.claimId]
+      .join('\0')
+      .localeCompare(
+        [right.recordId, right.path, right.trigger, right.claimId].join('\0'),
+      ),
+  );
+}
+
+export function routeGlobalReviewBaselinesAtRevision(
+  root,
+  authorityCommit,
+  reviewHead,
+  requestedTriggers,
+) {
+  const resolvedCommit = execFileSync(
+    'git',
+    ['-C', root, 'rev-parse', '--verify', `${authorityCommit}^{commit}`],
+    {encoding: 'utf8'},
+  ).trim();
+  if (resolvedCommit !== authorityCommit) {
+    throw new Error(
+      `authority commit must be the full resolved commit ${resolvedCommit}.`,
+    );
+  }
+  const resolvedHead = execFileSync(
+    'git',
+    ['-C', root, 'rev-parse', '--verify', `${reviewHead}^{commit}`],
+    {encoding: 'utf8'},
+  ).trim();
+  if (resolvedHead !== reviewHead) {
+    throw new Error(
+      `review head must be the full resolved commit ${resolvedHead}.`,
+    );
+  }
+  if (resolvedCommit === resolvedHead) {
+    throw new Error('review head must differ from its base authority commit.');
+  }
+  const expectedBase = execFileSync(
+    'git',
+    ['-C', root, 'merge-base', 'origin/main', resolvedHead],
+    {encoding: 'utf8'},
+  ).trim();
+  if (resolvedCommit !== expectedBase) {
+    throw new Error(
+      `authority commit must equal the review head's origin/main merge base ${expectedBase}.`,
+    );
+  }
+  const paths = execFileSync(
+    'git',
+    [
+      '-C',
+      root,
+      'ls-tree',
+      '-r',
+      '--name-only',
+      resolvedCommit,
+      '--',
+      'docs/architecture',
+      'docs/design',
+      'docs/families',
+      'docs/specs',
+      'packages',
+    ],
+    {encoding: 'utf8'},
+  )
+    .split(/\r?\n/)
+    .filter(isKnowledgeRecordPath);
+  const records = paths.map(filePath => ({
+    path: filePath,
+    content: execFileSync(
+      'git',
+      ['-C', root, 'show', `${resolvedCommit}:${filePath}`],
+      {encoding: 'utf8'},
+    ),
+  }));
+  return collectGlobalReviewMatches(records, requestedTriggers, resolvedCommit);
 }
 
 function immediateDirectories(directory) {
@@ -205,7 +578,7 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
 
   records.push(...discoverThemeRecordCandidates(root).records);
 
-  for (const packageName of ['core', 'lab']) {
+  for (const packageName of COMPONENT_PACKAGE_NAMES) {
     const sourceRoot = path.join(root, `packages/${packageName}/src`);
     records.push(
       ...matchingFilesRecursively(
@@ -235,6 +608,16 @@ function componentRecordLocation(root, absolutePath) {
       'src',
       classified.componentRoot,
     ),
+    componentSourcePath:
+      classified.layout === 'flat'
+        ? path.join(root, 'packages', classified.packageName, 'src')
+        : path.join(
+            root,
+            'packages',
+            classified.packageName,
+            'src',
+            classified.componentRoot,
+          ),
   };
 }
 
@@ -313,7 +696,7 @@ export function validateComponentModuleRelationships(
     const location = componentRecordLocation(root, record.absolutePath);
     if (!location) {
       problems.push(
-        `${record.filePath}: ${kind} records must live under packages/{core,lab}/src/<component-root>/.`,
+        `${record.filePath}: ${kind} records must live under a registered component package source root.`,
       );
       continue;
     }
@@ -332,9 +715,17 @@ export function validateComponentModuleRelationships(
         );
       }
       if (
+        location.layout === 'flat' &&
+        !packageHasPublicComponent(root, location.packageName, publicName)
+      ) {
+        problems.push(
+          `${record.filePath}: flat-package component record ${expectedId} must match a public named export and TSX module in packages/${location.packageName}/src.`,
+        );
+      }
+      if (
         publicName !== location.componentRoot &&
         !componentRootDefinesPublicComponent(
-          location.componentRootPath,
+          location.componentSourcePath,
           publicName,
         )
       ) {
@@ -354,6 +745,11 @@ export function validateComponentModuleRelationships(
     const idMatch = typeof id === 'string' ? MODULE_ID_PATTERN.exec(id) : null;
     if (!idMatch) continue;
     const expectedParent = `component:${idMatch[1]}`;
+    if (location.layout === 'flat' && location.componentRoot !== idMatch[1]) {
+      problems.push(
+        `${record.filePath}: flat-package module ${id} must live under packages/${location.packageName}/src/${idMatch[1]}/ to match its parent component.`,
+      );
+    }
     if (frontmatter.get('parent_component') !== expectedParent) {
       problems.push(
         `${record.filePath}: parent_component must be ${expectedParent} to match module id ${id}.`,
@@ -835,7 +1231,7 @@ function loadModuleContract(root, specPath, moduleName) {
 
   const candidates = [];
   for (const docPath of matchingFilesRecursively(
-    location.componentRootPath,
+    location.componentSourcePath,
     name => name.endsWith('.doc.mjs'),
     {skipDirectory: isIgnoredComponentKnowledgeSegment},
   )) {
@@ -957,11 +1353,13 @@ function validateAgainstSchema(
         `${filePath}: template fields are missing from the schema: ${extraFields.join(', ')}.`,
       );
     }
-    if (
-      JSON.stringify(sections) !== JSON.stringify(kindSchema.requiredSections)
-    ) {
+    const expectedSections = expectedTemplateSections(
+      kind,
+      kindSchema.requiredSections,
+    );
+    if (JSON.stringify(sections) !== JSON.stringify(expectedSections)) {
       problems.push(
-        `${filePath}: template section order must exactly match the schema; bump the schema and migrate active records for a structural change.`,
+        `${filePath}: template section order must exactly match the schema plus its allowed editorial sections; bump the schema and migrate active records for any other structural change.`,
       );
     }
     return problems;
@@ -1220,8 +1618,9 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       );
       continue;
     }
+    const templateContent = fs.readFileSync(templatePath, 'utf8');
     const template = parseKnowledgeDocument(
-      fs.readFileSync(templatePath, 'utf8'),
+      templateContent,
       kindSchema.template,
     );
     problems.push(
@@ -1239,12 +1638,36 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     if (template.frontmatter.get('kind') !== kind) {
       problems.push(`${kindSchema.template}: template kind must be ${kind}.`);
     }
+    if (kind === 'component' || kind === 'module') {
+      const designDecisions = parseDesignDecisionsBlock(
+        templateContent,
+        kindSchema.template,
+      );
+      problems.push(
+        ...validateDesignDecisionsBlock(designDecisions, {
+          allowHeaderOnly: true,
+          filePath: kindSchema.template,
+        }),
+      );
+    }
   }
 
   for (const absolutePath of discoverKnowledgeRecords(root)) {
     const filePath = path.relative(root, absolutePath);
     const content = fs.readFileSync(absolutePath, 'utf8');
     const document = parseKnowledgeDocument(content, filePath);
+    const reviewApplicability = parseReviewApplicabilityBlock(
+      content,
+      filePath,
+    );
+    problems.push(
+      ...reviewApplicability.problems,
+      ...validateReviewApplicability(
+        reviewApplicability.config,
+        content,
+        filePath,
+      ),
+    );
     const recordVersion = document.frontmatter.get('schema_version');
     const versionedSchema = schemas.get(recordVersion);
     if (!versionedSchema) {
@@ -1276,6 +1699,10 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       );
     }
     if (kind === 'component' || kind === 'module') {
+      const designDecisions = parseDesignDecisionsBlock(content, filePath);
+      problems.push(
+        ...validateDesignDecisionsBlock(designDecisions, {filePath}),
+      );
       const parsed = parseAnatomyThemingBlock(content, filePath);
       problems.push(...parsed.problems);
       if (parsed.mapping != null) {

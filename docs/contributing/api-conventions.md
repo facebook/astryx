@@ -100,6 +100,55 @@ valid only when its name, type, and behavior across every combination form an
 explicit coherent contract, with invalid or conflicting states prevented under
 [FR15](../specs/AST-002/spec.md#requirements).
 
+## Name public module and utility functions by their result
+
+Choose a function's verb from its primary caller-observable result and side
+effects. Distinguish construction, inspection, lookup, conversion, registration,
+and guaranteed state. Do not name the public function after one internal step.
+Keep one callable role per public capability.
+
+This section covers exported standalone functions that form module or utility
+APIs. It does not reinterpret component names, callback `on<Verb>` names, or
+transition Action names. CLI command verbs and their programmatic command twins
+have separate ownership in the
+[CLI surface architecture](../architecture/cli-surface.md) and CLI conventions.
+
+The repository-wide export audit supports these roles:
+
+| Verb                  | Public module or utility role                                                                      | Boundary                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `define*`             | Construct or normalize and return a durable typed value used by a supported consumer.              | Validation may be a precondition; inspection or unchanged identity alone is not definition.       |
+| `validate*`, `check*` | Inspect input and return structured results.                                                       | State which failures are returned and which conditions throw.                                     |
+| `create*`             | Construct or initialize a caller-used runtime value, state object, source, configuration, or view. | The result may be normalized; inspection alone is not creation.                                   |
+| `build*`              | Assemble a composite configuration or artifact from parts.                                         | This row covers module utilities, not CLI command naming.                                         |
+| `generate*`           | Derive a new aggregate or serialized output from supplied input.                                   | Name the generated result; do not hide unrelated mutation.                                        |
+| `resolve*`            | Choose and return a concrete value from inputs, options, context, or a registry.                   | Document fallback and missing-value behavior.                                                     |
+| `parse*`              | Convert an external or string representation into a typed or structured representation.            | The public contract states whether invalid input returns `null`, returns a result, or throws.     |
+| `format*`             | Serialize a value or produce display text without changing the source value.                       | Include locale, mode, or fallback behavior when it affects output.                                |
+| `get*`                | Read or project a requested value without mutating its source.                                     | Current APIs include both registry lookup and deterministic projection; do not imply persistence. |
+| `is*`, `has*`         | Return a boolean predicate or type guard.                                                          | Use a structured check when callers need reasons, warnings, or multiple findings.                 |
+| `register*`           | Add or replace shared registry state.                                                              | Registration is an explicit side effect.                                                          |
+| `ensure*`             | Idempotently establish required state when it is absent.                                           | The name must disclose the state or resource the function may create or mutate.                   |
+| `use*`                | Expose a React hook that may read context/state and own React lifecycle or effects.                | Follow the Rules of Hooks; a non-hook utility must not use `use*`.                                |
+| `reset*`              | Clear or restore shared state to its documented baseline.                                          | The affected state and intended consumer scope must be explicit.                                  |
+| `expand*`             | Convert a compact configuration or representation into its fuller derived form.                    | Expansion does not imply persistence.                                                             |
+| `merge*`              | Combine compatible inputs into one returned value or composed behavior.                            | State precedence and conflict behavior.                                                           |
+
+If construction, validation, registration, or another capability is public,
+expose each capability through its own callable function. A constructor may reuse
+the same internal validation primitive, but it still returns the constructed
+value and does not absorb a separately public role.
+
+These are roles supported by current repository evidence, not permission to pick
+a familiar verb first and make the implementation fit later. Check the exported
+signature, implementation, tests, consumer docs, supported callsites, and release
+history. Scope a documented exception to the owning module instead of weakening a
+verb across the repository.
+
+Do not silently rename a released mismatch. Preserve compatibility through an
+explicit deprecation and migration, then remove or change the old contract only at
+the approved compatibility boundary.
+
 ## Callbacks and Actions
 
 A callback reports an event synchronously. An Action starts transition-aware
@@ -200,7 +249,18 @@ contract props after `rest` so spread order cannot change semantics.
 
 ## Open visual vocabularies and closed axes
 
-A theme-extensible visual vocabulary uses a public `*Map` interface in the
+The [component theming surface](../architecture/component-theming-surface.md#boundaries-and-invariants)
+admits a theme-extensible prop axis only when it is visual and an unavailable
+custom value has one safe, deterministic baseline independent of the active
+theme. `Heading.type` qualifies because required `Heading.level` supplies that
+baseline. `Icon.size` does not: choosing a fallback size would silently change
+geometry, alignment, or composition.
+
+Behavioral, structural, placement, directional, and state-machine axes stay
+closed. A theme may redefine an existing value on a closed axis, but it may not
+add one.
+
+An admitted theme-extensible vocabulary uses a public `*Map` interface in the
 component subpath barrel. Derive the prop type from its keys.
 
 ```ts
@@ -216,10 +276,11 @@ export interface ButtonVariantMap {
 export type ButtonVariant = keyof ButtonVariantMap;
 ```
 
-A theme can add a visual value through module augmentation of
-`@astryxdesign/core/Button`. Keep behavioral and structural axes closed when a
-theme must not invent new meanings. Examples include interaction modes,
-directions, placement rules, and finite state-machine states.
+A theme can add an admitted visual value through module augmentation of
+`@astryxdesign/core/Button`. The component contract or governing system spec and
+focused test must show the fallback when no matching theme rule is active; the
+shared structural guard checks only the public map, `themeProps()` reflection,
+and theming metadata.
 
 Do not assume a nested `theme.components.button.variants` shape. Follow the current
 [theme authoring contract](../architecture/theme-authoring-contract.md) for
@@ -248,73 +309,44 @@ hatch, parent layout, or existing context already owns the distinction.
 
 ## API proposal gate
 
-Classify the change before asking for a new API decision. Use the current contract
-review results from the [knowledge contract](../architecture/knowledge-contracts.md#change-coupling):
-`preserves`, `settled`, `novel-human`, or `out-of-scope`.
+Classify the change after identifying current authority. The
+[knowledge contract](../architecture/knowledge-contracts.md#change-coupling) owns
+the five results and their disposition: `preserves`, `settled`, `violates`,
+`novel-human`, and `out-of-scope`. This guide applies those results; it does not
+redefine them.
 
-A defect fix that restores a current contract or standard is `preserves`. Supply
-focused regression evidence for the broken state and representative unchanged
-states. Do not invent a semantic delta or new API decision. Change consumer docs
-only when usage or a documented promise changes, or when the existing docs would
-otherwise become false.
+A defect fix is `preserves` only when it restores a current contract or standard
+without adding public API or public behavior beyond that authority. Supply focused
+regression evidence for the broken state and representative unchanged states. Any
+additional public delta is classified independently through the knowledge
+contract: existing current authority may settle it, and only absent authority uses
+the unsettled owner path. The bug-fix label never bypasses API design.
 
-For a claimed API addition or semantic change, review has two stages:
+For a claimed API addition or semantic behavior change, review has four stages:
 
-1. **Mechanical pre-review.** Reject the change now when the pull request lacks a
-   readable semantic before → after or does not update or add the canonical
-   owning record. Component-local semantics update the component spec;
-   family-, architecture-, or system-owned semantics update that owner instead.
-   Also reject a public choice the component can derive, a public input whose
-   controlled axis changes by value or input shape, hidden conditional precedence
-   between parallel inputs, or a parallel public/package-internal operation for
-   the same semantic action. A cohesive semantic status or variant may derive
-   several visual details; it is rejected only when its public meaning is unstable
-   or undisclosed. Within one module, keep one canonical operation name; the
-   package-internal form may accept wider semantic options than the public
-   contract. Another operation requires a genuinely distinct caller-owned intent
-   and contract. These current AST-002 rules apply even when the canonical owner
-   is draft or missing; only rejection because that owner lacks `current`
-   authority remains deferred under staged coverage.
-2. **Owner judgment.** For a surviving `novel-human` change, present the semantic
-   delta to the linked owner. The gate does not choose the API. The owner accepts,
-   rejects, or refines the meaning and the ruling is recorded in the canonical
-   spec.
+1. **Inventory the public delta.** State the exact semantic before → after,
+   identify the canonical owner by scope, and include supporting declarations,
+   types, context fields, hook returns, defaults, and observable behavior reachable
+   from supported package paths.
+2. **Apply API admission.** Reject a public choice the component can derive, a
+   public input whose controlled axis changes by value or input shape, hidden
+   conditional precedence between parallel inputs, or a parallel public/package-
+   internal operation for the same semantic action. A cohesive semantic status or
+   variant may derive several visual details when its public meaning stays stable
+   and disclosed. Within one module, keep one canonical operation name; another
+   requires genuinely distinct caller-owned intent and contract.
+3. **Apply current authority.** Follow the result and disposition owned by the
+   knowledge contract. A draft is useful review context but is not policy and
+   cannot clear the gate. Exact-head owner discussion or approval is decision
+   evidence; an accepted decision must be committed in the canonical record as
+   `current` before implementation acceptance.
+4. **Review implementation correctness.** Once current authority settles the
+   public contract, verify the exact implementation head, regression evidence,
+   compatibility, migration, docs, and representative unchanged states.
 
-### Staged contract coverage
-
-Semantic contract coverage is still incomplete, so the review path must not turn
-missing `current` authority on the canonical owner into a dead end. This staged
-exception applies only to authority coverage; it does not defer rejection under
-current cross-component rules, including the overloaded-input and hidden-
-precedence rule above:
-
-1. The contributor or maintainer puts the one-sentence semantic delta in the pull
-   request, identifies the canonical owner by scope, and updates or adds that
-   record. Component-local semantics use the component spec; shared family,
-   architecture, or system semantics use that owner. A draft record is valid
-   context and must identify its intended owner.
-2. Review applies only current component, family, architecture, and system rules.
-   A draft cannot clear the gate or be cited as settled policy; it routes the
-   remaining `novel-human` delta to the owner.
-3. The owner decides in the pull request. Exact-head owner approval settles that
-   pull request only. The accepted contract and evidence remain in the canonical
-   owning record; rejected direction is removed unless it protects a durable
-   boundary.
-4. Promote an owning record to `current` only after its local requirements,
-   verification, relationships, approval, and every applicable acceptance
-   prerequisite in current architecture are complete. For component specs, this
-   includes the historical benchmark and pull-request enforcement required by the
-   current knowledge contract. Only then may later reviews reuse it as `settled`
-   policy.
-
-A follow-up gate may mechanically reject missing `current` authority on a
-canonical owning record only after a current policy change explicitly activates
-enforcement for a named scope, that scope has current contract coverage, and the
-historical benchmark has passed. Until then, missing current authority routes to
-the staged owner path; it does not reject the API by itself.
-
-Mechanical enforcement of this gate is follow-up work; this guide defines the
-review contract, not gate implementation.
+Mechanical manifests and receipts may inventory the delta and prove which
+current record was read. They are evidence only; they do not choose semantics or
+assign pull-request disposition.
 
 ## API proposal checklist
 
@@ -326,8 +358,8 @@ Every public-facing API pull request has this minimum readable summary:
   missing before this pull request, name the intended owner.
 - **Semantic before → after:** state the caller-visible meaning and guarantee in
   one sentence.
-- **Classification:** name `preserves`, `settled`, `novel-human`, or
-  `out-of-scope`.
+- **Classification:** name `preserves`, `settled`, `violates`, `novel-human`, or
+  `out-of-scope` as defined by the knowledge contract.
 - **Representative syntax:** include it only when public syntax changes; the
   component `.doc.mjs` remains the complete syntax/reference authority.
 
@@ -360,7 +392,8 @@ Before requesting review:
   intent.
 - **Check the shared grammar.** Cover names, optionality, callback/Action order,
   cancellation, ref target, DOM pass-through, and whether each string axis is
-  open or closed.
+  open or closed. An open axis must name and test its safe theme-independent
+  fallback when no matching theme rule is active.
 - **Protect compatibility.** State defaults and observable behavior. Include a
   migration for a released breaking change.
 - **Ship API evidence together.** When consumer usage or a documented promise
@@ -392,8 +425,9 @@ out of architecture records.
 - An Action suppresses its callback, or handler order accidentally removes a
   promised consumer cancellation path.
 - A callback is required only because all inputs were assumed to require it.
-- A theme-extensible visual value is a closed union, or a behavioral axis is
-  opened to theme augmentation.
+- An eligible theme-extensible visual value is a closed union, an axis opens
+  without a safe theme-independent fallback, or a behavioral, structural,
+  placement, directional, or state-machine axis is opened to augmentation.
 - `BaseProps` is applied to a component without one stable contract element, or
   accepted DOM props never reach that element.
 - `xstyle`, `className`, `style`, a ref, or an event handler is dropped or
