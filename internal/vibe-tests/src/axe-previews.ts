@@ -54,6 +54,10 @@ export interface RawAxeRun {
   violations: RawAxeViolation[];
   passes: number;
   incomplete: number;
+  /** Ids of the rules that passed */
+  passedRules: string[];
+  /** Ids of the rules axe could not decide */
+  incompleteRules: string[];
 }
 
 const IMPACT_RANK: Record<string, number> = {
@@ -75,7 +79,8 @@ function normalizeImpact(
 /**
  * Merge per-theme axe runs into one per-prompt record: violations union by
  * rule id (max nodes, highest impact, themes attributed), passes take the
- * strictest count across themes, incomplete the loosest.
+ * strictest count across themes, incomplete the loosest, and the passed and
+ * incomplete rule ids union across themes.
  */
 export function mergeAxeRuns(
   target: string,
@@ -88,6 +93,8 @@ export function mergeAxeRuns(
       violations: [],
       passes: 0,
       incomplete: 0,
+      passedRules: [],
+      incompleteRules: [],
     };
   }
 
@@ -122,6 +129,8 @@ export function mergeAxeRuns(
     violations: [...byId.values()],
     passes: Math.min(...runs.map(r => r.passes)),
     incomplete: Math.max(...runs.map(r => r.incomplete)),
+    passedRules: [...new Set(runs.flatMap(r => r.passedRules))],
+    incompleteRules: [...new Set(runs.flatMap(r => r.incompleteRules))],
   };
 }
 
@@ -226,6 +235,8 @@ export async function scanIteration(opts: {
             })),
             passes: axe.passes.length,
             incomplete: axe.incomplete.length,
+            passedRules: axe.passes.map(p => p.id),
+            incompleteRules: axe.incomplete.map(i => i.id),
           });
         } finally {
           await page.close();
@@ -257,8 +268,8 @@ interface RawAxeAnalysis {
     help: string;
     nodes: unknown[];
   }>;
-  passes: unknown[];
-  incomplete: unknown[];
+  passes: Array<{id: string}>;
+  incomplete: Array<{id: string}>;
 }
 
 function parseArgs(): {

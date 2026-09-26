@@ -16,7 +16,15 @@ function tmpDir(): string {
 afterAll(() => dirs.forEach(d => fs.rmSync(d, {recursive: true})));
 
 function run(theme: string, overrides: Partial<RawAxeRun> = {}): RawAxeRun {
-  return {theme, violations: [], passes: 20, incomplete: 0, ...overrides};
+  return {
+    theme,
+    violations: [],
+    passes: 20,
+    incomplete: 0,
+    passedRules: [],
+    incompleteRules: [],
+    ...overrides,
+  };
 }
 
 // ============================================================
@@ -89,6 +97,21 @@ describe('mergeAxeRuns', () => {
     expect(merged.incomplete).toBe(2);
   });
 
+  it('unions the evaluated rule ids across themes', () => {
+    const merged = mergeAxeRuns('astryx', [
+      run('light', {
+        passedRules: ['html-has-lang', 'image-alt'],
+        incompleteRules: ['color-contrast'],
+      }),
+      run('dark', {
+        passedRules: ['html-has-lang', 'label'],
+        incompleteRules: [],
+      }),
+    ]);
+    expect(merged.passedRules).toEqual(['html-has-lang', 'image-alt', 'label']);
+    expect(merged.incompleteRules).toEqual(['color-contrast']);
+  });
+
   it('returns an empty result for zero runs', () => {
     const merged = mergeAxeRuns('astryx', []);
     expect(merged).toEqual({
@@ -97,6 +120,8 @@ describe('mergeAxeRuns', () => {
       violations: [],
       passes: 0,
       incomplete: 0,
+      passedRules: [],
+      incompleteRules: [],
     });
   });
 });
@@ -220,9 +245,15 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
     const imageAlt = forPrompt?.violations.find(v => v.id === 'image-alt');
     expect(imageAlt?.themes).toEqual(['light', 'dark']);
 
+    // The evaluated rule ids are what lets universal-eval waive a static
+    // finding only on evidence
+    expect(forPrompt?.passedRules).toContain('html-has-lang');
+    expect(forPrompt?.passedRules).not.toContain('image-alt');
+
     const sidecar = JSON.parse(
       fs.readFileSync(path.join(iterDir, 'axe-results.json'), 'utf-8'),
     );
     expect(sidecar['tc-1'].violations.length).toBeGreaterThan(0);
+    expect(sidecar['tc-1'].passedRules).toContain('html-has-lang');
   }, 120_000);
 });

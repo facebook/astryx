@@ -230,26 +230,26 @@ describe('accessibility runtime fold-in', () => {
     expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
   });
 
-  it('suppresses each axe-covered static rule from penalty when runtime data is present', () => {
-    const cleanAxe: AxeResultForPrompt = {
-      target: 'html',
-      themesScanned: ['light'],
-      passes: 10,
-      incomplete: 0,
-      violations: [],
-    };
-    const fixtures: Array<{rule: string; code: string}> = [
+  it('suppresses each axe-covered static rule once axe evaluated its matching rule', () => {
+    const fixtures: Array<{rule: string; axeRule: string; code: string}> = [
       {
         rule: 'icon-button-no-label',
+        axeRule: 'button-name',
         code: `export default () => <button><svg viewBox="0 0 1 1" /></button>;`,
       },
       {
         rule: 'input-no-label',
+        axeRule: 'label',
         code: `export default () => <input type="text" />;`,
       },
-      {rule: 'img-no-alt', code: `export default () => <img src="/a.png" />;`},
+      {
+        rule: 'img-no-alt',
+        axeRule: 'image-alt',
+        code: `export default () => <img src="/a.png" />;`,
+      },
       {
         rule: 'heading-skip',
+        axeRule: 'heading-order',
         code: [
           `export default () => (`,
           `  <div>`,
@@ -260,7 +260,15 @@ describe('accessibility runtime fold-in', () => {
         ].join('\n'),
       },
     ];
-    for (const {rule, code} of fixtures) {
+    for (const {rule, axeRule, code} of fixtures) {
+      const cleanAxe: AxeResultForPrompt = {
+        target: 'html',
+        themesScanned: ['light'],
+        passes: 10,
+        incomplete: 0,
+        passedRules: [axeRule],
+        violations: [],
+      };
       const {accessibility} = evaluate(code, 'html', {axeResult: cleanAxe});
       expect(
         accessibility.findings?.map(f => f.rule),
@@ -268,6 +276,86 @@ describe('accessibility runtime fold-in', () => {
       ).toContain(rule);
       expect(accessibility.score, rule).toBe(100);
     }
+  });
+
+  // An <img> that only renders inside a closed dialog never reaches the DOM
+  // axe scans, so axe has no evidence about it (cixzhang's review, #4229)
+  const CLOSED_DIALOG_IMG = [
+    `export default function Gallery() {`,
+    `  const [open, setOpen] = useState(false);`,
+    `  return (`,
+    `    <main>`,
+    `      <button onClick={() => setOpen(true)}>Open gallery</button>`,
+    `      {open && (`,
+    `        <dialog open>`,
+    `          <img src="/photo.png" />`,
+    `        </dialog>`,
+    `      )}`,
+    `    </main>`,
+    `  );`,
+    `}`,
+  ].join('\n');
+
+  it('keeps the static penalty when axe never evaluated the matching rule', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      passedRules: ['document-title', 'html-has-lang', 'landmark-one-main'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
+    expect(accessibility.score).toBe(92);
+    expect(accessibility.metrics?.runtime).toBe(true);
+  });
+
+  it('waives the static penalty when axe passed the matching rule', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 13,
+      incomplete: 0,
+      passedRules: ['document-title', 'html-has-lang', 'image-alt'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('does not treat an incomplete axe rule as evidence', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light'],
+      passes: 12,
+      incomplete: 1,
+      passedRules: ['html-has-lang'],
+      incompleteRules: ['image-alt'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(92);
+  });
+
+  it('keeps the static penalty for a legacy sidecar that stored only a pass count', () => {
+    const legacy: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: legacy,
+    });
+    expect(accessibility.score).toBe(92);
   });
 
   it('penalizes an unrecognized axe impact at the moderate rate', () => {

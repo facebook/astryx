@@ -283,6 +283,14 @@ export interface AxeResultForPrompt {
   passes: number;
   /** Count of axe rules that could not be fully evaluated */
   incomplete: number;
+  /**
+   * Ids of the axe rules that passed in at least one theme. Together with
+   * the violation ids, the rules axe actually evaluated on the rendered DOM.
+   * Absent in sidecars written before the ids were recorded.
+   */
+  passedRules?: string[];
+  /** Ids of the axe rules axe could not decide (needs review, not evidence) */
+  incompleteRules?: string[];
 }
 
 export type AxeResults = Record<string, AxeResultForPrompt>;

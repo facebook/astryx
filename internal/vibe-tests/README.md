@@ -141,10 +141,15 @@ The `accessibility` dimension has two bases (see issue #4145):
   the iteration directory, axe-core violations from the rendered preview DOM
   (light + dark, headless Chromium) fold into the score by impact
   (critical -15, serious -10, moderate -8, minor -3 per violation rule).
-  Static rules that axe verifies at runtime (image-alt, labels, button-name,
-  heading-order) stop penalizing so one defect isn't counted twice;
-  `click-non-interactive` stays static-only because React attaches handlers
-  synthetically and the rendered DOM carries nothing for axe to see.
+  A static finding that axe also checks (`img-no-alt` → `image-alt`,
+  `input-no-label` → `label`, `icon-button-no-label` → `button-name`,
+  `heading-skip` → `heading-order`) stops penalizing only when the sidecar
+  shows axe actually evaluated that rule (passed or violated), so one defect
+  isn't counted twice. Axe only sees what rendered: an `<img>` behind a
+  closed dialog, or a sidecar written before rule ids were recorded, keeps
+  the static penalty. `click-non-interactive` stays static-only because React
+  attaches handlers synthetically and the rendered DOM carries nothing for
+  axe to see.
 
 Generate the sidecar after building previews — target-neutral, the same axe
 rules run against every target's rendered output:

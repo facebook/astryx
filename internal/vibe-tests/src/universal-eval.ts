@@ -300,18 +300,20 @@ const AXE_IMPACT_PENALTY: Record<string, number> = {
 };
 
 /**
- * Static rules whose defect class axe verifies on the rendered DOM
- * (image-alt, label, button-name, heading-order). When runtime results are
- * present these stay as findings but stop penalizing, so one underlying
- * defect isn't counted twice. 'click-non-interactive' is NOT here: React
+ * Static rules whose defect class axe verifies on the rendered DOM, mapped to
+ * the axe rules that check it. A static finding stays but stops penalizing
+ * only when axe actually evaluated one of those rules (passed or violated),
+ * so one underlying defect isn't counted twice. Axe only sees what rendered:
+ * an <img> behind a closed dialog never reaches the DOM, so the static scan
+ * stays its only coverage. 'click-non-interactive' is NOT here: React
  * attaches handlers synthetically, so the rendered DOM carries no onClick
- * attribute for axe to see — the static scan is the only coverage.
+ * attribute for axe to see.
  */
-const AXE_COVERED_STATIC_RULES = new Set([
-  'icon-button-no-label',
-  'input-no-label',
-  'img-no-alt',
-  'heading-skip',
+const AXE_COVERED_STATIC_RULES = new Map<string, string[]>([
+  ['icon-button-no-label', ['button-name']],
+  ['input-no-label', ['label']],
+  ['img-no-alt', ['image-alt']],
+  ['heading-skip', ['heading-order']],
 ]);
 
 function analyzeAccessibility(
@@ -432,12 +434,21 @@ function analyzeAccessibility(
 
   const staticFindings = findings.slice();
   const runtime = axeResult != null;
+  // Rules axe evaluated on the rendered DOM. Incomplete rules are not
+  // evidence, and a legacy sidecar without passedRules only proves the
+  // rules it reports as violated.
+  const axeEvaluated = new Set([
+    ...(axeResult?.passedRules ?? []),
+    ...(axeResult?.violations ?? []).map(v => v.id),
+  ]);
 
   let score = 100;
   for (const f of staticFindings) {
     // Runtime axe already scores these defect classes on the rendered DOM —
     // don't double-penalize (same principle as tsc vs phantom props above).
-    if (runtime && AXE_COVERED_STATIC_RULES.has(f.rule)) {
+    if (
+      AXE_COVERED_STATIC_RULES.get(f.rule)?.some(id => axeEvaluated.has(id))
+    ) {
       continue;
     }
     switch (f.severity) {
