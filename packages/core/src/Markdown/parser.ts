@@ -1550,7 +1550,14 @@ function parseInlineImpl(
 
     // --- Link [text](url) ---
     if (text[i] === '[') {
-      const textClose = text.indexOf(']', i + 1);
+      // An escaped `\]` is literal label text, not the end of the label.
+      let textClose = -1;
+      for (let index = i + 1; index < text.length; index++) {
+        if (text[index] === ']' && !isEscaped(text, index)) {
+          textClose = index;
+          break;
+        }
+      }
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
