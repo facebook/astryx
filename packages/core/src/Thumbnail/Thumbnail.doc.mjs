@@ -79,6 +79,8 @@ export const docs = {
     ],
     vars: [
       {name: '--_thumbnail-hit-inset', description: 'Outset of the remove button\'s invisible hit area, applied to a ::after overlay. 0 on a fine pointer; negative on a coarse one, which grows the 20px button to the 24px touch target without changing what is drawn.', default: '0px', private: true},
+      {name: '--_press-overlay', description: 'Fill of the ::after interaction overlay: transparent at rest, the hover overlay token on hover (hover-capable pointers), the pressed overlay token while pressed (`:active` on a mouse; `data-pressed="on"` written by the touch press controller under a finger) and the hover token for the release fade. Set on the card element by its own interaction arms.', default: 'transparent', private: true},
+      {name: '--_press-overlay-transition', description: 'Duration of the overlay\'s background-color transition: the fast duration token, except 0s while a believed touch press paints so it lands on the first frame.', default: 'var(--duration-fast)', private: true},
     ],
   },
   usage: {

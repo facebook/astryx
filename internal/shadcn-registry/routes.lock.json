@@ -3746,6 +3746,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-press-feedback",
+      "path": "hooks/use-press-feedback",
+      "aliases": []
+    },
+    {
       "name": "hook-use-resizable",
       "path": "hooks/use-resizable",
       "aliases": []

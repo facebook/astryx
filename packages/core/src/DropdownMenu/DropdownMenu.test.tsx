@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
+import {LinkProvider} from '../Link/LinkProvider';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -2191,5 +2192,95 @@ describe('DropdownMenu data/compound parity', () => {
     expect(item).toContainElement(screen.getByTestId('rich'));
     // Still typeahead- and screen-reader-addressable: both read text content.
     expect(item).toHaveAccessibleName('Rename');
+  });
+});
+
+describe('DropdownMenuItem href (a navigation row)', () => {
+  it('renders the row as a real link with the menu role, through the LinkProvider', () => {
+    const CustomLink = ({
+      href,
+      children,
+      ...rest
+    }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+      <a href={href} data-custom-link="" {...rest}>
+        {children}
+      </a>
+    );
+    render(
+      <LinkProvider component={CustomLink}>
+        <DropdownMenu
+          button={{label: 'Space'}}
+          isMenuOpen
+          onOpenChange={vi.fn()}>
+          <DropdownMenuItem label="Space settings" href="/space/1/settings" />
+        </DropdownMenu>
+      </LinkProvider>,
+    );
+    const row = screen.getByRole('menuitem', {
+      name: 'Space settings',
+      hidden: true,
+    });
+    // The row IS the anchor: a modifier or middle click opens the address in
+    // a new tab, the status bar shows it, and "copy link" works.
+    expect(row.tagName).toBe('A');
+    expect(row).toHaveAttribute('href', '/space/1/settings');
+    expect(row).toHaveAttribute('data-custom-link');
+    // No second anchor nested inside the row.
+    expect(row.querySelector('a')).toBeNull();
+  });
+
+  it('opens in a new tab safely when asked, and still fires onClick and closes the menu on a plain click', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const onOpenChange = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Space'}}
+        isMenuOpen
+        onOpenChange={onOpenChange}>
+        <DropdownMenuItem
+          label="Docs"
+          href="https://example.com/docs"
+          target="_blank"
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Docs', hidden: true});
+    expect(row).toHaveAttribute('target', '_blank');
+    expect(row.getAttribute('rel')).toMatch(/noopener/);
+    expect(row.getAttribute('rel')).toMatch(/noreferrer/);
+    await user.click(row);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps a disabled navigation row from being followed', () => {
+    render(
+      <DropdownMenu button={{label: 'Space'}} isMenuOpen onOpenChange={vi.fn()}>
+        <DropdownMenuItem
+          label="Space settings"
+          href="/space/1/settings"
+          isDisabled
+        />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {
+      name: 'Space settings',
+      hidden: true,
+    });
+    expect(row).not.toHaveAttribute('href');
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('is a plain action row without href, as before', () => {
+    render(
+      <DropdownMenu button={{label: 'Space'}} isMenuOpen onOpenChange={vi.fn()}>
+        <DropdownMenuItem label="Rename" onClick={vi.fn()} />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
+    expect(row.tagName).not.toBe('A');
+    expect(row).not.toHaveAttribute('href');
   });
 });

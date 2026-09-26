@@ -31,6 +31,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
@@ -160,6 +161,7 @@ export function AvatarGroupOverflow({
   style,
   ...rest
 }: AvatarGroupOverflowProps): ReactNode {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const group = useAvatarGroup();
   const size = group?.size ?? 'md';
@@ -183,6 +185,7 @@ export function AvatarGroupOverflow({
         {...rest}
         aria-label={label}
         data-avatar-item=""
+        {...pressable}
         {...mergeProps(
           themeProps('avatar-group-overflow', {size, shape}),
           focusOutlineProps.focusVisible(

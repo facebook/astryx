@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
+import {hasReleaseFade, readsPressStrength} from '../__tests__/pressState';
 
 describe('Thumbnail', () => {
   it('renders an image when src is provided', () => {
@@ -241,5 +242,25 @@ describe('Thumbnail', () => {
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/fixed.jpg');
+  });
+});
+
+describe('Thumbnail pressed state (touch)', () => {
+  it('fades the touch press out on the interactive container, whose overlay layer reads its strength', () => {
+    const {container} = render(
+      <Thumbnail src="/img.jpg" alt="Clickable" onClick={vi.fn()} />,
+    );
+    const surface = container.querySelector('[data-astryx-pressable]');
+    if (surface == null) {
+      throw new Error('the interactive thumbnail carries no pressable marker');
+    }
+    expect(hasReleaseFade(surface)).toBe(true);
+    expect(readsPressStrength(surface, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(surface)).toBe(true);
+  });
+
+  it('carries none of it when not interactive', () => {
+    const {container} = render(<Thumbnail src="/img.jpg" alt="Static" />);
+    expect(container.querySelector('[data-astryx-pressable]')).toBeNull();
   });
 });

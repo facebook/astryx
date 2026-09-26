@@ -82,6 +82,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -241,7 +242,13 @@ const styles = stylex.create({
       'background-image, background-color, color, opacity, transform',
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      // A mouse press; under a coarse pointer the touch press model writes
+      // `data-pressed` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-pressed="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -249,6 +256,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-pressed="on"]': 'none',
     },
   },
   triggerReadOnly: {
@@ -259,6 +267,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-pressed="on"]': 'none',
     },
   },
 
@@ -827,6 +836,7 @@ export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
   const t = useTranslator();
+  const pressable = usePressFeedback();
   const {
     label,
     isLabelHidden = false,
@@ -1739,6 +1749,7 @@ export function Selector<T extends SelectorOptionType>(
         }}
         onClick={onTriggerClick}
         data-testid={testId}
+        {...pressable}
         {...mergeProps(
           themeProps('selector', {
             variant,

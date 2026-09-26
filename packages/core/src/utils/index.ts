@@ -111,3 +111,27 @@ export {rtlStyles} from './rtlStyles';
 export {focusOutlineStyles, focusOutlineProps} from './focusOutline.stylex';
 
 export {isImeKeyEvent} from './ime';
+
+// The touch press model: the marker a pressable surface carries, the attribute
+// the controller writes, and the controller itself, for a local component that
+// paints its own press (see hooks/usePressFeedback).
+export {
+  installPressFeedback,
+  pressableProps,
+  PRESSABLE_ATTRIBUTE,
+  PRESSED_ATTRIBUTE,
+} from './pressFeedback';
+export {
+  PRESS_FADE_MS,
+  PRESS_FLASH_MS,
+  PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
+  PRESS_SLOP_PX,
+} from './pressGesture';
+export type {PressPaint} from './pressGesture';
+// The press's strength (`--astryx-press-alpha`, a registered custom property
+// the release animates 1 → 0) and the shared arms that own it, so a local
+// pressable's paint fades the way the built-in components' does: compose the
+// `pressedAlpha` style on the marked element and paint the pressed token at
+// `var(--astryx-press-alpha)` strength off the two arms.
+export {interactionOverlayStyles, pressVars} from './interactionOverlay.stylex';

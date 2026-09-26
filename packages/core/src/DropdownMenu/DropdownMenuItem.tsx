@@ -38,6 +38,7 @@ import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
 import {themeProps} from '../utils/themeProps';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 const menuItemStyles = stylex.create({
   root: {
@@ -52,8 +53,16 @@ const menuItemStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':active:where(:not(:disabled,[aria-disabled="true"]))':
-        colorVars['--color-overlay-pressed'],
+      // A mouse press. Under a coarse pointer `:active` is not a press (it
+      // paints on the touch and outlives a scroll), so it is dropped there and
+      // the touch press model paints instead: it writes `data-pressed` on the
+      // row, and the `background-image` arm of Item's shared overlay (which
+      // this colour rule leaves in place) answers it. See
+      // interactionOverlay.stylex.ts.
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (pointer: coarse)': 'transparent',
+      },
     },
     border: 'none',
     cursor: {
@@ -101,6 +110,22 @@ export interface DropdownMenuItemProps extends Pick<
   description?: ReactNode;
   /** Callback when the item is selected. */
   onClick?: () => void;
+  /**
+   * Destination for a navigation row. The row renders as a real link
+   * (`<a role="menuitem">`, through the LinkProvider's component), so a
+   * modifier or middle click opens it in a new tab, the address shows in the
+   * status bar and can be copied, and a plain click navigates and closes the
+   * menu. `onClick` still fires first. A disabled row keeps its element but
+   * drops the address.
+   */
+  href?: string;
+  /** Link target, e.g. '_blank'. Only used with `href`. */
+  target?: '_blank' | '_self';
+  /**
+   * Link relationship. Automatically includes noopener noreferrer when target
+   * is '_blank'. Only used with `href`.
+   */
+  rel?: string;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
@@ -139,6 +164,9 @@ export function DropdownMenuItem({
   label,
   description,
   onClick,
+  href,
+  target,
+  rel,
   isDisabled = false,
   endContent,
   hasCloseOnSelect = true,
@@ -149,6 +177,10 @@ export function DropdownMenuItem({
 }: DropdownMenuItemProps) {
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
+  // Item marks itself as a pressable surface too; naming the row here as well
+  // keeps this file's own press arms (above) verifiably reachable by the
+  // touch press controller (pressableCoverage.test.ts).
+  const pressable = usePressFeedback();
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -170,8 +202,12 @@ export function DropdownMenuItem({
   return (
     <Item
       role="menuitem"
+      href={href}
+      target={target}
+      rel={rel}
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
+      {...pressable}
       startContent={
         icon
           ? renderIconSlot(icon, {

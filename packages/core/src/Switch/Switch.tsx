@@ -43,6 +43,10 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
+import {
+  interactionOverlayStyles,
+  pressVars,
+} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -50,6 +54,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -130,6 +135,13 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+// The touch press's paint: the pressed token at the strength the row's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
+// the track and the thumb. Same shape as `pressedOverlayImage` in
+// interactionOverlay.stylex.ts, rebuilt here because StyleX resolves imported
+// `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -222,7 +234,28 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          // Under a coarse pointer the touch press model writes `data-pressed`
+          // on the row instead; see interactionOverlay.stylex.ts.
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-pressed="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -303,7 +336,26 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-pressed="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -520,6 +572,9 @@ export function Switch({
   ...rest
 }: SwitchProps) {
   const id = useId();
+  // The row is the pressable: the input, the track and the label all sit
+  // inside it, and the pressed arms above read the row's scope marker.
+  const pressable = usePressFeedback();
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
@@ -688,11 +743,15 @@ export function Switch({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
+        {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the track and thumb inherit and paint it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         {' '}
         {labelPosition === 'start' ? (
