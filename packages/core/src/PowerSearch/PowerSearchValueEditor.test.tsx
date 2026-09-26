@@ -630,3 +630,54 @@ describe('maxMenuItems', () => {
     await expectCapped({type: 'entity_list', searchSource: source});
   });
 });
+
+// =============================================================================
+// EnumListEditor shows the whole closed vocabulary
+// =============================================================================
+
+describe('EnumListEditor', () => {
+  const values = Array.from({length: 12}, (_, index) => ({
+    value: `option-${index}`,
+    label: `Option ${index}`,
+  }));
+
+  it('shows every value on focus instead of the typeahead default of 10', async () => {
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'enum_list', values}}
+        filterValue={undefined}
+        onChange={vi.fn()}
+        config={stubConfig}
+      />,
+    );
+
+    fireEvent.focus(screen.getByRole('combobox'));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(12);
+    expect(screen.getByText('Option 11')).toBeInTheDocument();
+  });
+
+  it('shows every matching value when searching', async () => {
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'enum_list', values}}
+        filterValue={undefined}
+        onChange={vi.fn()}
+        config={stubConfig}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: 'Option'},
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(12);
+    expect(screen.getByText('Option 11')).toBeInTheDocument();
+  });
+});

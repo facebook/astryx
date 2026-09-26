@@ -6,13 +6,19 @@
  * Integrations are PACKAGE NAMES listed in astryx.config.{ts,mjs,js}. Each
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
- * components/templates/codemods/docs/themes roots and an optional issuesUrl. Identity
- * (name, version) comes from the package's package.json, not the manifest.
+ * components/templates/codemods/docs/themes roots and an optional issuesUrl.
+ * Stable provider identity and package metadata come from package.json, not the
+ * manifest.
+ *
+ * @input Integration package names, package.json files, and root manifests.
+ * @output LoadedIntegration records with normalized provider identity and roots.
+ * @position foundation/integrations — package contribution loading boundary.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
+import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // The key census and contribution parsers are internal to the schema module on
 // purpose: the public parser still validates the complete authored type, while
 // the loader can isolate an invalid optional contribution from valid roots.
@@ -23,6 +29,7 @@ import {
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
+import {resolveProviders} from './provider-resolution.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
@@ -31,6 +38,10 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
  * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
+ * @property {import('../../authoring/identity/type').ProviderId} [providerId]
+ *   normalized stable provider identity; absent only for a legacy unnamed local
+ *   package. Unique among contributing integrations: a later claimant is kept
+ *   inert with `__providerConflict` (see {@link markProviderConflicts})
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
@@ -49,6 +60,10 @@ import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
+ * @property {{providerId: import('../../authoring/identity/type').ProviderId, claimedBy: string, message: string}} [__providerConflict]
+ *   set on a package whose provider ID an earlier-loaded package already
+ *   claims; it contributes nothing and is reported as a `duplicate_provider`
+ *   warning
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
  * @property {boolean} [__autolinked] loaded because the project declares the
@@ -73,6 +88,50 @@ export const MANIFEST_BASENAMES = [
   'astryx.integration.mjs',
   'astryx.integration.js',
 ];
+
+/**
+ * Normalize a package-owned provider ID without rejecting legacy unnamed local
+ * packages at this compatibility boundary.
+ * @param {unknown} name
+ * @returns {import('../../authoring/identity/type').ProviderId | undefined}
+ */
+function providerIdForPackage(name) {
+  if (typeof name !== 'string' || name.length === 0) return undefined;
+  try {
+    return normalizeProviderId(name);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Resolve provider identity across loaded integrations, in precedence order.
+ *
+ * Artifact and document IDs are provider-scoped, so two packages cannot both
+ * contribute under one provider ID. The same package reached twice (an npm
+ * alias beside the package it aliases, with the same name and version) loads
+ * once. Any other later claimant, including the same package at another
+ * version, stays as an inert entry that carries the conflict. The package being
+ * authored claims its ID before precedence order is considered, because the
+ * source being edited is authoritative. The winner still contributes; Project
+ * issues, Doctor, and the per-command warning name the one set aside instead of
+ * dropping it without a word.
+ *
+ * The conflict pass of {@link resolveProviders}, for a list that is already
+ * assembled.
+ *
+ * @param {LoadedIntegration[]} integrations in precedence order
+ * @returns {LoadedIntegration[]}
+ */
+export function markProviderConflicts(integrations) {
+  return resolveProviders(
+    integrations.map(integration => ({
+      source: /** @type {const} */ ('configured'),
+      integration,
+      spec: integration?.__spec,
+    })),
+  ).integrations;
+}
 
 /**
  * Return the conventional root manifest paths present in `dir`, in
@@ -274,6 +333,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     typeof pkg.name === 'string' && pkg.name.length > 0
       ? pkg.name
       : '(local integration)';
+  const packageProviderId = providerIdForPackage(pkg.name);
   const manifestFile = resolveManifestPath(packageDir, spec);
 
   let manifest;
@@ -299,6 +359,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   } catch (err) {
     return {
       name: spec,
+      ...(packageProviderId == null ? {} : {providerId: packageProviderId}),
       version: pkg.version,
       __spec: spec,
       __packageDir: packageDir,
@@ -307,6 +368,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       __local: true,
     };
   }
+
+  const providerId = providerIdForPackage(manifest.providerId ?? pkg.name);
 
   /** @param {string | null | undefined} value */
   const resolveRoot = value => {
@@ -320,6 +383,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
 
   return {
     name: spec,
+    ...(providerId == null ? {} : {providerId}),
     version: pkg.version,
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
@@ -345,20 +409,22 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
  * Load configured integrations.
  *
  * @param {string[]} [specs] package names
- * @param {{cwd?: string, fresh?: boolean}} [options]
+ * @param {{cwd?: string, fresh?: boolean, resolveProviders?: boolean}} [options]
+ *   `resolveProviders: false` leaves provider identity to a caller that
+ *   resolves it once over a larger set (Project.load)
  * @returns {Promise<LoadedIntegration[]>}
  */
 export async function loadIntegrations(
   specs = [],
-  {cwd = process.cwd(), fresh = false} = {},
+  {cwd = process.cwd(), fresh = false, resolveProviders = true} = {},
 ) {
   /** @type {LoadedIntegration[]} */
   const integrations = [];
-  const seen = new Set();
+  const seenSpecs = new Set();
 
   for (const spec of specs) {
-    if (!spec || seen.has(spec)) continue;
-    seen.add(spec);
+    if (!spec || seenSpecs.has(spec)) continue;
+    seenSpecs.add(spec);
 
     const packageDir = resolvePackageDir(spec, cwd);
     const pkgPath = path.join(packageDir, 'package.json');
@@ -371,6 +437,7 @@ export async function loadIntegrations(
       );
     }
 
+    const packageProviderId = providerIdForPackage(pkg.name ?? spec);
     const manifestFile = resolveManifestPath(packageDir, spec);
     let manifest;
     /** @type {string[]} */
@@ -399,6 +466,7 @@ export async function loadIntegrations(
       // discovery loops naturally skip it (no components/templates/codemods).
       integrations.push({
         name: pkg.name ?? spec,
+        ...(packageProviderId == null ? {} : {providerId: packageProviderId}),
         version: pkg.version,
         __spec: spec,
         __packageDir: packageDir,
@@ -407,6 +475,10 @@ export async function loadIntegrations(
       });
       continue;
     }
+
+    const providerId = providerIdForPackage(
+      manifest.providerId ?? pkg.name ?? spec,
+    );
 
     /** @param {string | null | undefined} value */
     const resolveRoot = value => {
@@ -421,6 +493,7 @@ export async function loadIntegrations(
 
     integrations.push({
       name: pkg.name ?? spec,
+      ...(providerId == null ? {} : {providerId}),
       version: pkg.version,
       components: resolveRoot(manifest.components),
       templates: resolveRoot(manifest.templates),
@@ -441,5 +514,5 @@ export async function loadIntegrations(
     });
   }
 
-  return integrations;
+  return resolveProviders ? markProviderConflicts(integrations) : integrations;
 }

@@ -196,11 +196,13 @@ function ControlledOutline() {
           code: `
 import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
 
-function MarkdownOutline({markdown}) {
-  // Derives {id, label, level} items from headings in the source.
-  // The Markdown component renders the same generated ids on its
-  // headings, so outline links scroll without any extra wiring.
-  const items = useOutlineFromMarkdown(markdown);
+function MarkdownOutline({markdown, plugins, isStreaming}) {
+  // Pass the same plugins and finality to Markdown and Outline so transformed
+  // headings share labels and ids while content streams.
+  const items = useOutlineFromMarkdown(markdown, {
+    plugins,
+    isFinal: !isStreaming,
+  });
   return <Outline items={items} />;
 }
 `,

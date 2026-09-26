@@ -9,23 +9,25 @@
  * - Claude Code: CLAUDE.md (root) or .claude/CLAUDE.md
  * - Cursor: .cursorrules
  * - Codex/generic: AGENTS.md
+ * - Muse: AGENTS.md
  * - Hermes Agent: .hermes.md or HERMES.md (existing), else AGENTS.md
  *
  * Auto-detect: discovers existing files and updates them in place.
  * Default (no existing files): creates AGENTS.md (the tool-agnostic standard).
  *
- * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
+ * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, muse, all)
  * --agent-docs-path <path>: explicit file path(s)
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
-import {assertWithin} from '../fs/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {humanLog} from '../response/json.mjs';
+import {ERROR_CODES} from '../response/error-codes.mjs';
 import {
   AGENTS_MD,
   CLAUDE_MD,
@@ -181,6 +183,7 @@ const AGENT_PRESETS = {
   cursor: [CURSOR_RULES, AGENTS_MD],
   codex: [AGENTS_MD],
   hermes: [HERMES_DOT_MD, HERMES_MD, AGENTS_MD],
+  muse: [AGENTS_MD],
 };
 
 /**
@@ -280,7 +283,7 @@ export function inspectAgentDocs(targetDir, installedVersion, expectedBlock) {
  * Searches for existing files first, falls back to default creation path.
  *
  * @param {string} targetDir
- * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'hermes', 'all'
+ * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'hermes', 'muse', 'all'
  * @returns {{inject: string[], create: string[]}} Files to inject into vs create fresh
  */
 export function resolveAgentPaths(targetDir, agent) {
@@ -704,11 +707,64 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 }
 
 /**
+ * Whether an agent-doc file already carries a managed-block marker.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasManagedMarker(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether `removeXdsBlock` would change `filePath`: it holds one well-formed
+ * managed block.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasRemovableBlock(filePath) {
+  try {
+    return findManagedBlock(fs.readFileSync(filePath, 'utf-8')) != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every file a run writes must resolve inside `targetDir`, symlinks
+ * included. Checked for the whole write set before the first write, so an
+ * escape writes nothing.
+ * @param {string} targetDir
+ * @param {Iterable<string>} relPaths
+ */
+function assertTargetsWithin(targetDir, relPaths) {
+  for (const p of relPaths) {
+    assertWithin(p, targetDir, {label: 'agent docs path'});
+  }
+}
+
+/**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
+ * @throws {PathSafetyError} `ERR_PATH_TRAVERSAL` when a file it would change
+ *   resolves outside `targetDir`; nothing is changed.
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
+  try {
+    assertTargetsWithin(
+      targetDir,
+      allPaths.filter(p => hasRemovableBlock(path.join(targetDir, p))),
+    );
+  } catch (err) {
+    // The code reaches the error envelope as is, so it must be registered.
+    if (!(err instanceof PathSafetyError)) throw err;
+    throw new PathSafetyError(err.message, ERROR_CODES.ERR_PATH_TRAVERSAL);
+  }
 
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
@@ -716,9 +772,9 @@ export function removeAgentDocs(targetDir) {
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
       if (!fs.existsSync(filePath)) {
-        humanLog(`✓ Removed empty ${p}`);
+        humanLog(`[ok] Removed empty ${p}`);
       } else {
-        humanLog(`✓ Removed design system section from ${p}`);
+        humanLog(`[ok] Removed design system section from ${p}`);
       }
     }
   }
@@ -739,7 +795,7 @@ export function removeAgentDocs(targetDir) {
  * @param {object} [options]
  * @param {boolean} [options.zh]
  * @param {string} [options.lang]
- * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
+ * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'muse', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
  * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
@@ -748,6 +804,8 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.renderedBlock] - Fully rendered expected block. Init
  *   and upgrade pass one shared block to every target.
  * @returns {string[]} List of files written
+ * @throws {import('../fs/path-safety.mjs').PathSafetyError} when a file it would
+ *   write resolves outside `targetDir`; nothing is written.
  */
 export function installAgentDocs(
   targetDir,
@@ -804,6 +862,7 @@ export function installAgentDocs(
   // Agent preset
   if (agent) {
     const {inject, create} = resolveAgentPaths(targetDir, agent);
+    assertTargetsWithin(targetDir, [...inject, ...create]);
     for (const p of inject) {
       injectXdsBlock(path.join(targetDir, p), compressedIndex);
       written.push(p);
@@ -831,6 +890,14 @@ export function installAgentDocs(
   if (existing.length > 0) {
     const wrappers = discoverAgentDocWrappers(targetDir, existing);
     const targets = existing.filter(p => !wrappers.has(p));
+    // A refresh skips unmarked files and a wrapper is only written when it
+    // carries a block, so only the files this run writes are checked.
+    /** @param {string} p */
+    const marked = p => hasManagedMarker(path.join(targetDir, p));
+    assertTargetsWithin(targetDir, [
+      ...targets.filter(p => !onlyReplace || marked(p)),
+      ...[...wrappers].filter(marked),
+    ]);
 
     for (const p of targets) {
       const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
@@ -852,12 +919,13 @@ export function installAgentDocs(
   }
 
   // Nothing exists — create root AGENTS.md as the default (skip if onlyReplace).
-  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, and most
-  // agents read it), so it's the safe default. Claude-specific output is opt-in
-  // via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
+  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, Muse, and
+  // most agents read it), so it's the safe default. Claude-specific output is
+  // opt-in via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
   if (onlyReplace) return written;
 
   const defaultPath = AGENTS_MD;
+  assertTargetsWithin(targetDir, [defaultPath]);
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,

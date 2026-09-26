@@ -22,6 +22,17 @@ deciding_specs: []
 
 # Component style authoring architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "styling": ["INV1", "INV2", "INV3", "INV4", "INV5"]
+  }
+}
+```
+
 ## Purpose
 
 Astryx component styling should lower to valid maintained CSS, compose predictably

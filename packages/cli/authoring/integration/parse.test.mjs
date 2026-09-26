@@ -28,6 +28,9 @@ describe('parseIntegration (load boundary)', () => {
       components: './src',
     });
     expect(parseIntegration({docs: './docs'})).toEqual({docs: './docs'});
+    expect(parseIntegration({providerId: '@acme/legacy-widgets'})).toEqual({
+      providerId: '@acme/legacy-widgets',
+    });
     expect(parseIntegration({themes: './themes'})).toEqual({
       themes: './themes',
     });
@@ -66,7 +69,9 @@ describe('parseIntegration (load boundary)', () => {
           ? 'https://example.com/issues'
           : key === 'agentDocs'
             ? {}
-            : './x',
+            : key === 'providerId'
+              ? '@acme/widgets'
+              : './x',
       ]),
     );
     expect(unknownIntegrationKeys(everyKnownKey)).toEqual([]);
@@ -80,6 +85,10 @@ describe('parseIntegration (load boundary)', () => {
 
   it('rejects a non-URL issuesUrl', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
+  });
+
+  it('rejects a noncanonical providerId', () => {
+    expect(reason({providerId: 'Acme Widgets'})).toContain('providerId');
   });
 
   it('accepts an optional append array as manifest data', () => {

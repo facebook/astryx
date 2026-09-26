@@ -21,6 +21,7 @@
 
 import {describe, it, expect} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
@@ -67,6 +68,28 @@ describe('search leaf — envelope + ranking', () => {
   it('caps results to a positive limit', async () => {
     const r = await search('button', {cwd, limit: 2});
     expect(r.data.results.length).toBeLessThanOrEqual(2);
+  }, SLOW);
+});
+
+describe('search leaf — per-domain result fields', () => {
+  it('carries import for components and hooks, title for docs, displayName and kind for templates', async () => {
+    const r = await search('theme', {cwd, limit: 60});
+    expect(new Set(r.data.results.map(res => res.domain))).toEqual(
+      new Set(SEARCH_DOMAINS),
+    );
+    for (const res of r.data.results) {
+      expect(typeof res.command).toBe('string');
+      expect(typeof res.description).toBe('string');
+      if (res.domain === 'component' || res.domain === 'hook') {
+        expect(res.import).toMatch(/\S/);
+      } else if (res.domain === 'doc') {
+        expect(res.title).toMatch(/\S/);
+        expect(res.command).toBe(`astryx docs ${res.name}`);
+      } else {
+        expect(res.displayName).toMatch(/\S/);
+        expect(['page', 'block']).toContain(res.kind);
+      }
+    }
   }, SLOW);
 });
 
@@ -159,6 +182,17 @@ describe('search leaf — error paths (pinned)', () => {
     await expect(
       search('button', {cwd, type: /** @type {any} */ ('bogus')}),
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  }, SLOW);
+
+  it('throws ERR_CORE_NOT_FOUND when @astryxdesign/core cannot be found', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
+    try {
+      await expect(search('button', {cwd: empty})).rejects.toMatchObject({
+        code: 'ERR_CORE_NOT_FOUND',
+      });
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
   }, SLOW);
 });
 

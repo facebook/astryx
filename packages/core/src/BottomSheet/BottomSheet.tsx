@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks/utils, BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks/utils, named BottomSheetPanel, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -379,6 +379,7 @@ function StandaloneBottomSheet({
           ref={ref}
           state={panelState}
           height={height}
+          label={label}
           snapPoints={snapPoints}
           isSwipeDismissAllowed={purpose === 'info'}
           isPageScrollLocked={shouldPresent && hasScrim}
@@ -537,6 +538,7 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
+        label={label}
         snapPoints={snapPoints}
         isSwipeDismissAllowed={purpose === 'info'}
         isPageScrollLocked={hasScrim}

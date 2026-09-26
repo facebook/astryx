@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Tests for the build API (playbook signal + composition kit).
+ * @file Tests for the build API (playbook + composition kit).
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -20,10 +20,21 @@ const REPO = path.resolve(
 vi.setConfig({testTimeout: 30000});
 
 describe('build API', () => {
-  it('no query → build.help playbook signal', async () => {
+  it('no query → build.help carries the playbook as data', async () => {
     const r = await build();
     expect(r.type).toBe('build.help');
-    expect(r.data).toEqual({playbook: true});
+    if (r.type !== 'build.help') return;
+    expect(r.data.playbook).toBe(true);
+    expect(r.data.title).toMatch(/build a page/i);
+    expect(r.data.steps.length).toBeGreaterThan(0);
+    for (const step of r.data.steps) {
+      expect(step.title).toBeTruthy();
+      expect(step.commands.length).toBeGreaterThan(0);
+    }
+    expect(r.data.rules.length).toBeGreaterThan(0);
+    // Bare subcommands: the caller adds its own invocation.
+    const commands = [...r.data.steps.flatMap(s => s.commands), ...r.data.related];
+    for (const {command} of commands) expect(command).not.toMatch(/^(astryx|npx|pnpm|yarn|bunx?)\b/);
   });
 
   it('query → build.kit with raw entries + static frame/foundation', async () => {

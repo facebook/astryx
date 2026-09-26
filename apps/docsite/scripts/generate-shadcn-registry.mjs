@@ -61,6 +61,27 @@ function packageNameFromSpecifier(specifier) {
   return specifier.split('/')[0];
 }
 
+function packageExportsSpecifier(pkg, specifier) {
+  const packageExports = pkg.packageExports;
+  if (packageExports == null) return true;
+
+  const subpath = specifier.slice(pkg.name.length);
+  const exportKey = subpath ? `.${subpath}` : '.';
+  if (typeof packageExports === 'string' || Array.isArray(packageExports)) {
+    return exportKey === '.';
+  }
+  if (Object.hasOwn(packageExports, exportKey)) return true;
+
+  return Object.keys(packageExports).some(key => {
+    const wildcardIndex = key.indexOf('*');
+    if (wildcardIndex === -1) return false;
+    return (
+      exportKey.startsWith(key.slice(0, wildcardIndex)) &&
+      exportKey.endsWith(key.slice(wildcardIndex + 1))
+    );
+  });
+}
+
 function readImportSpecifiers(source, fileName) {
   const sourceFile = ts.createSourceFile(
     fileName,
@@ -566,9 +587,21 @@ export function buildShadcnRegistry({
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
+  const packageCatalog = new Map(packages.map(pkg => [pkg.name, pkg]));
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    const unpublishedComponentImport = readImportSpecifiers(
+      block.source,
+      `${block.dirName}.tsx`,
+    ).find(specifier => {
+      const pkg = packageCatalog.get(packageNameFromSpecifier(specifier));
+      return pkg != null && !packageExportsSpecifier(pkg, specifier);
+    });
+    if (unpublishedComponentImport) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     try {
       blockItems.push(
         blockItem(

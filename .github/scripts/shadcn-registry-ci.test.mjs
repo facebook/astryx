@@ -43,11 +43,13 @@ describe('ShadCN registry CI contract', () => {
     );
 
     expect(ci.jobs.test.needs).toContain('registry-contract');
-    const join = ci.jobs.test.steps
-      .map(candidate => candidate.run ?? '')
-      .join('\n');
-    expect(join).toContain('needs.registry-contract.result');
-    expect(join).toContain('needs.registry-contract.result }}" = "success"');
+    const join = ci.jobs.test.steps.find(candidate =>
+      candidate.run?.includes('.github/scripts/ci-test-join.mjs'),
+    );
+    expect(join).toBeDefined();
+    expect(join.env.REGISTRY_CONTRACT_RESULT).toBe(
+      '${{ needs.registry-contract.result }}',
+    );
   });
 
   it('runs every material step except on the trusted spec-only lane', () => {

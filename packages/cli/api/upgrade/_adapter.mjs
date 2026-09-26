@@ -19,7 +19,10 @@ import * as path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {ensureJscodeshift} from '../../assets/codemods/ensure-jscodeshift.mjs';
-import {getTransformsBetween, latestVersion} from '../../assets/codemods/registry.mjs';
+import {
+  getTransformsBetween,
+  latestVersion,
+} from '../../assets/codemods/registry.mjs';
 import {runCodemods} from '../../assets/codemods/runner.mjs';
 import {
   discoverIntegrationCodemods,
@@ -32,14 +35,15 @@ import {
   renderAgentDocsBlock,
 } from '../../foundation/agent-docs/agent-docs.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
-import {Project} from '../../foundation/config/project.mjs';
+import {Project, providerLedgerOf} from '../../foundation/config/project.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
+import {resolveProviders} from '../../foundation/integrations/provider-resolution.mjs';
 import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
 import {logger} from '../logger.mjs';
 
 // Re-exported for the run leaf's lightweight agent-docs inspection path
 // (config_fixable short-circuit, where the full render cannot load config).
-export { inspectAgentDocs };
+export {inspectAgentDocs};
 
 const execFileAsync = promisify(execFile);
 
@@ -102,6 +106,27 @@ export function uniqueFiles(files) {
 }
 
 /**
+ * Run app code with its stdout writes sent to stderr. Stdout carries only the
+ * command's own output, so a hook that prints cannot corrupt `--json`.
+ * @template T
+ * @param {() => T | Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(fn) {
+  const realWrite = process.stdout.write;
+  process.stdout.write = /** @type {any} */ (
+    function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+      return process.stderr.write(chunk, ...rest);
+    }
+  );
+  try {
+    return await fn();
+  } finally {
+    process.stdout.write = realWrite;
+  }
+}
+
+/**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
@@ -120,7 +145,9 @@ export async function runPostCodemodHooks(hooks, context) {
       );
     }
 
-    const cmd = await hook.buildCommand({packageDir, files});
+    const cmd = await withStdoutOnStderr(() =>
+      hook.buildCommand({packageDir, files}),
+    );
     if (!cmd) {
       logger.log(`Post-codemod hook ${label} produced no command; skipping.`);
       continue;
@@ -144,7 +171,7 @@ export async function runPostCodemodHooks(hooks, context) {
         env: {...process.env, ...(cmd.options?.env ?? {})},
       }),
     );
-    logger.log(`✓ Post-codemod hook ${label} completed.`);
+    logger.log(`[ok] Post-codemod hook ${label} completed.`);
   }
 }
 
@@ -183,7 +210,7 @@ export async function prepareAgentDocsRefresh({
   if (initial.status === 'missing') {
     summary.action = 'nudge-init';
     logger.warn(
-      `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
     );
     return {cwd, renderedBlock: null, summary};
   }
@@ -237,7 +264,7 @@ export function applyAgentDocsRefresh(plan) {
     summary.files = written;
     summary.action = summary.refreshed ? 'refreshed' : 'error';
     if (summary.refreshed) {
-      logger.log(`✓ Agent docs refreshed → ${written.join(', ')}`);
+      logger.log(`[ok] Agent docs refreshed -> ${written.join(', ')}`);
     } else {
       logger.warn(
         `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
@@ -265,7 +292,13 @@ export async function collectAllCodemods() {
   );
   for (const {version, transforms} of manifests) {
     for (const {name, meta, optional} of transforms) {
-      codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
+      codemods.push({
+        name,
+        title: meta.title,
+        version,
+        pr: meta.pr,
+        optional: !!optional,
+      });
     }
   }
   return codemods;
@@ -296,24 +329,35 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string}} options
  */
-export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods}) {
+export async function runCoreCodemods(
+  versionManifests,
+  {apply, path: srcPath, codemod, skipCodemods, root},
+) {
   return runCodemods(versionManifests, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
     silent: logger.silent,
+    root,
   });
 }
 
 /**
  * Load the consumer project's config + integrations. Throws on invalid config;
  * the run leaf decides between the config_fixable preview and a hard abort.
+ *
+ * Provider identity is resolved by the same resolver Project uses, on top of
+ * Project's ledger, under the codemod policy: a package that lists itself runs
+ * its installed copy's released codemods, never the work in progress being
+ * authored, and autolinked and local packages claim provider IDs without
+ * running codemods.
+ *
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
+ * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], ledger: import('../../foundation/integrations/provider-resolution.mjs').ProviderLedger}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // The CLI debug preflight may already have imported this config before core
@@ -321,12 +365,66 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // cache entry; ordinary Project discovery remains cached by default.
   const project = await Project.load(cwd, {fresh: true});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
-  const integrationSpecs = uniqueFiles([
-    ...(project.integrations ?? []),
-    ...(extraIntegrationSpecs ?? []),
-  ]);
-  const integrations = await loadIntegrations(integrationSpecs);
-  return {postCodemodHooks, integrations};
+  const configuredSpecs = new Set(project.integrations ?? []);
+  // Configured packages come from Project, which has already resolved provider
+  // identity over configured, autolinked, and local packages. Loading them
+  // again here would let upgrade run codemods from a package Project set aside.
+  // Autolinked packages and the package being authored join only as claimants:
+  // every other command uses them for their provider IDs, but upgrade has
+  // never run their codemods.
+  const candidates = project.loadedIntegrations.flatMap(integration => {
+    const source =
+      !integration.__autolinked && configuredSpecs.has(integration.__spec)
+        ? /** @type {const} */ ('configured')
+        : integration.__autolinked
+          ? /** @type {const} */ ('autolinked')
+          : integration.__local
+            ? /** @type {const} */ ('local')
+            : null;
+    return source == null
+      ? []
+      : [{source, integration, spec: integration.__spec}];
+  });
+  // A package that lists itself runs its installed copy's released codemods,
+  // never the work in progress being authored; the resolver puts that copy in
+  // its place. Naming the package being authored with --integration asks for
+  // the installed copy too.
+  const local = project.loadedIntegrations.find(
+    integration => integration.__local,
+  );
+  const selfListed =
+    local != null && !local.__autolinked && configuredSpecs.has(local.__spec);
+  const installed =
+    local != null && selfListed && project.configPath
+      ? await loadIntegrations([local.__spec], {
+          cwd: path.dirname(project.configPath),
+          resolveProviders: false,
+        })
+      : [];
+  const extraSpecs = uniqueFiles(extraIntegrationSpecs ?? []).filter(
+    spec => !configuredSpecs.has(spec),
+  );
+  const extras =
+    extraSpecs.length === 0
+      ? []
+      : await loadIntegrations(extraSpecs, {resolveProviders: false});
+  const {integrations, ledger} = resolveProviders(
+    [
+      ...candidates,
+      ...installed.map(integration => ({
+        source: /** @type {const} */ ('installed'),
+        integration,
+        spec: integration.__spec,
+      })),
+      ...extras.map(integration => ({
+        source: /** @type {const} */ ('extra'),
+        integration,
+        spec: integration.__spec,
+      })),
+    ],
+    {codemods: true, prior: providerLedgerOf(project)},
+  );
+  return {postCodemodHooks, integrations, ledger};
 }
 
 /**
@@ -361,7 +459,10 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
     try {
       const byVersion = await discoverIntegrationCodemods([integration]);
       for (const [version, rawList] of byVersion) {
-        const list = /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
+        const list =
+          /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */ (
+            /** @type {unknown} */ (rawList)
+          );
         const existing = integrationCodemodsByVersion.get(version);
         if (existing) existing.push(...list);
         else integrationCodemodsByVersion.set(version, [...list]);
@@ -380,7 +481,10 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
  * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
  * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
-export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods}) {
+export async function runIntegrationCodemodsStep(
+  versionGroups,
+  {apply, path: srcPath, codemod, skipCodemods},
+) {
   const jscodeshift = (await import('jscodeshift')).default;
   return runIntegrationCodemods(versionGroups, {
     apply,

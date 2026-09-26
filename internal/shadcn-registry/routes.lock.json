@@ -112,8 +112,28 @@
       "aliases": []
     },
     {
+      "name": "component-charts-chart-axis",
+      "path": "components/charts/chart-axis",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-grid",
+      "path": "components/charts/chart-grid",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-legend",
+      "path": "components/charts/chart-legend",
+      "aliases": []
+    },
+    {
       "name": "component-charts-chart-swatch",
       "path": "components/charts/chart-swatch",
+      "aliases": []
+    },
+    {
+      "name": "component-charts-chart-tooltip",
+      "path": "components/charts/chart-tooltip",
       "aliases": []
     },
     {
@@ -552,6 +572,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-mobile-tokenizer",
+      "path": "components/lab/mobile-tokenizer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-radial-chart",
       "path": "components/lab/radial-chart",
       "aliases": []
@@ -979,6 +1004,11 @@
     {
       "name": "component-time-input",
       "path": "components/time-input",
+      "aliases": []
+    },
+    {
+      "name": "component-timer",
+      "path": "components/timer",
       "aliases": []
     },
     {
@@ -2626,6 +2656,31 @@
       "aliases": []
     },
     {
+      "name": "example-scrollable-area-inline-rail",
+      "path": "examples/scrollable-area/inline-rail",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-overscroll",
+      "path": "examples/scrollable-area/overscroll",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-passthrough",
+      "path": "examples/scrollable-area/sticky-passthrough",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-section-labels",
+      "path": "examples/scrollable-area/sticky-section-labels",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-two-axis-board",
+      "path": "examples/scrollable-area/two-axis-board",
+      "aliases": []
+    },
+    {
       "name": "example-section-default-with-wash",
       "path": "examples/section/default-with-wash",
       "aliases": []
@@ -3133,6 +3188,21 @@
     {
       "name": "example-time-input-states",
       "path": "examples/time-input/states",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-formats",
+      "path": "examples/timer/formats",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-inline",
+      "path": "examples/timer/inline",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-typography",
+      "path": "examples/timer/typography",
       "aliases": []
     },
     {
@@ -4356,6 +4426,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-scrollable-area-default",
+      "path": "showcases/scrollable-area/default",
+      "aliases": []
+    },
+    {
       "name": "showcase-section-variants",
       "path": "showcases/section/variants",
       "aliases": []
@@ -4511,6 +4586,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-timer-default",
+      "path": "showcases/timer/default",
+      "aliases": []
+    },
+    {
       "name": "showcase-timestamp-default",
       "path": "showcases/timestamp/default",
       "aliases": []
@@ -4618,6 +4698,11 @@
     {
       "name": "template-ai-chat-landing",
       "path": "templates/ai-chat-landing",
+      "aliases": []
+    },
+    {
+      "name": "template-canvas-editor",
+      "path": "templates/canvas-editor",
       "aliases": []
     },
     {
@@ -4858,6 +4943,11 @@
     {
       "name": "template-table-page",
       "path": "templates/table-page",
+      "aliases": []
+    },
+    {
+      "name": "template-table-tree",
+      "path": "templates/table-tree",
       "aliases": []
     },
     {

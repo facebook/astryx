@@ -4,8 +4,9 @@
 
 /**
  * @file InputClearButton.tsx
- * @input Uses React, Button, Icon
- * @output Exports the public InputClearButton and an internal popup-aware variant.
+ * @input Uses React, Button, and Icon
+ * @output Exports the public InputClearButton and an internal popup-aware variant,
+ *   both with a contextual tooltip matching their required label.
  * @position Shared primitive. Every input that renders a clear affordance —
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —
@@ -66,6 +67,7 @@ const styles = stylex.create({
 });
 
 export interface InputClearButtonProps {
+  /** Contextual accessible name for the button, such as "Clear Search". */
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   xstyle?: stylex.StyleXStyles;
@@ -104,6 +106,7 @@ function renderInputClearButton({
       variant="ghost"
       size="sm"
       label={label}
+      tooltip={label}
       className={buttonTargetClassName}
       icon={
         <Icon

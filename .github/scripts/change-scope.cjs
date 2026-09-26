@@ -58,6 +58,7 @@ const THEME_BUILD_PATTERNS = [
 const NODE_TOOLING_PATHS = new Set([
   'scripts/score-ledger.mjs',
   'scripts/score-ledger.test.mjs',
+  '.github/workflows/crowdin-upload.yml',
 ]);
 
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
@@ -103,7 +104,9 @@ function isKnowledgeRecordPath(filePath) {
 }
 
 function isNodeToolingPath(filePath) {
-  return NODE_TOOLING_PATHS.has(filePath);
+  return (
+    NODE_TOOLING_PATHS.has(filePath) || filePath.startsWith('internal/scripts/')
+  );
 }
 
 function surfacesForPath(filePath) {

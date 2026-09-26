@@ -41,6 +41,12 @@ export async function warnOnIntegrationIssues(loadedIntegrations, {json = false}
     }
     for (const integration of loadedIntegrations) {
       if (!integration || typeof integration !== 'object') continue;
+      // A package set aside for a provider-ID conflict is fine in isolation,
+      // so `doctor integration validate` would not explain it. Say it here.
+      if (integration.__providerConflict) {
+        console.error(`Warning: ${integration.__providerConflict.message}`);
+        continue;
+      }
       let issues;
       try {
         issues = await validateLoadedIntegration(integration);

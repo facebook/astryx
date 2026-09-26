@@ -202,6 +202,10 @@ export const docs = {
   notes: [
     {
       type: 'prose',
+      text: 'When it loads, a hook doc may leave out `displayName`, and its `usage` is not checked. Write to the type anyway; it is the contract.',
+    },
+    {
+      type: 'prose',
       text: "A hook's discriminant is `type: 'function'`: HookDoc and FunctionDoc share the generalized function kind. HookDoc is the hook-flavored view: named `returns` fields and a required `usage` block.",
     },
     {

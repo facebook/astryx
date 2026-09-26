@@ -4,17 +4,17 @@
  * @file Colocated types for the `upgrade` command — source of truth for the
  * upgrade command JSON responses. Re-exported by `types/upgrade.d.ts`.
  *
- * Invocation                                 -> type discriminator
+ * Invocation                                   -> type discriminator
  * ------------------------------------------------------------------
- * xds --json upgrade --list                 -> upgrade.list
- * xds --json upgrade [--apply]              -> upgrade.run
- * xds --json upgrade --registry [--apply]   -> upgrade.registry
- * xds --json upgrade (status short-circuit) -> upgrade.status
- * (version detection failure)               -> CLIError
+ * astryx --json upgrade --list                 -> upgrade.list
+ * astryx --json upgrade [--apply]              -> upgrade.run
+ * astryx --json upgrade --registry [--apply]   -> upgrade.registry
+ * astryx --json upgrade (status short-circuit) -> upgrade.status
+ * (version detection failure)                  -> CLIError
  */
 
 /**
- * xds --json upgrade --list
+ * astryx --json upgrade --list
  * @typedef {object} UpgradeListResponse
  * @property {'upgrade.list'} type
  * @property {UpgradeListEntry[]} data
@@ -25,6 +25,7 @@
  * @property {string} name
  * @property {string} title
  * @property {string} version
+ * @property {boolean} optional True when the codemod runs only if named with `--codemod`.
  */
 
 /**
@@ -88,14 +89,14 @@
  */
 
 /**
- * xds --json upgrade --registry [--apply]
+ * astryx --json upgrade --registry [--apply]
  * @typedef {object} UpgradeRegistryResponse
  * @property {'upgrade.registry'} type
  * @property {RegistryCompositionSummary} data
  */
 
 /**
- * xds --json upgrade [--apply]
+ * astryx --json upgrade [--apply]
  * @typedef {object} UpgradeRunResponse
  * @property {'upgrade.run'} type
  * @property {object} data
@@ -112,7 +113,7 @@
  */
 
 /**
- * xds --json upgrade — short-circuit status results.
+ * astryx --json upgrade — short-circuit status results.
  *
  * - `up_to_date`: `--from` is >= installed target and `--force` was not passed.
  * - `no_codemods`: no codemods (core or integration) apply to the range.
@@ -135,7 +136,7 @@
  * @property {boolean} [force] Run codemods even if `from` >= installed.
  * @property {string} [codemod] Run a single named transform.
  * @property {string[]} [skipCodemod] Exclude named codemods (re-run past a failure).
- * @property {string[]} [integration] Explicit integration package names / file paths.
+ * @property {string[]} [integration] Explicit integration specifiers resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.
  * @property {string} [path] Source directory to scan (default `./src`).
  * @property {boolean} [installDeps] Auto-install jscodeshift without prompting.
  * @property {boolean} [registry] Reconcile only ShadCN-copied compositions; `from` is not required.

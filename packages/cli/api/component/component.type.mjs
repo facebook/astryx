@@ -3,7 +3,7 @@
 /**
  * @file Colocated types for the `component` command — source of truth for the
  * component command's JSON responses. These typedefs describe the `{type, data}`
- * envelopes emitted by `xds --json component` and returned by the `component()`
+ * envelopes emitted by `astryx --json component` and returned by the `component()`
  * API; the `types/component.d.ts` barrel re-exports them for consumers.
  *
  * Detail-level contract for list views (brief < compact < full):
@@ -11,23 +11,23 @@
  *   --detail compact  Names + 1-line description + import path.
  *   --detail full     Full ComponentDoc per entry (props, theming, examples, etc.).
  *
- * Invocation                                 -> type discriminator
+ * Invocation                                      -> type discriminator
  * ------------------------------------------------------------------
- * xds --json component                      -> component.list (data.detail='names')
- * xds --json component --list               -> component.list (data.detail='names')
- * xds --json component --category Form      -> component.list (filtered)
- * xds --json component --list --detail compact -> component.list (data.detail='compact')
- * xds --json component --list --detail full -> component.list (data.detail='full')
- * xds --json component Button               -> component.detail
- * xds --json component Button --props       -> component.detail.props
- * xds --json component Button --source      -> component.detail.source
- * xds --json component Button --showcase    -> component.detail.showcase
- * xds --json component Button --blocks      -> component.detail.blocks
- * (not found)                               -> CLIError
+ * astryx --json component                         -> component.list (data.detail='names')
+ * astryx --json component --list                  -> component.list (data.detail='names')
+ * astryx --json component --category Form         -> component.list (filtered)
+ * astryx --json component --list --detail compact -> component.list (data.detail='compact')
+ * astryx --json component --list --detail full    -> component.list (data.detail='full')
+ * astryx --json component Button                  -> component.detail
+ * astryx --json component Button --props          -> component.detail.props
+ * astryx --json component Button --source         -> component.detail.source
+ * astryx --json component Button --showcase       -> component.detail.showcase
+ * astryx --json component Button --blocks         -> component.detail.blocks
+ * (not found)                                     -> CLIError
  */
 
 /**
- * xds --json component [--list] [--category X] [--detail names|compact|full]
+ * astryx --json component [--list] [--category X] [--detail names|compact|full]
  *
  * The list view emits ONE `component.list` type across all three detail levels;
  * the depth is carried in `data.detail` and `data.components` holds the grouped
@@ -52,13 +52,14 @@
 /**
  * A single entry in a `component.list` group at `detail: 'names'`. Pre-1.0 the
  * list moved from bare strings to package-qualified objects so consumers can
- * disambiguate ownership (core vs. an integration package). Integration entries
- * carry `import` — the package-authored specifier; core entries omit it (the
- * specifier is derived from the component name by the renderer).
+ * disambiguate ownership (core vs. an integration package). Integration and
+ * legacy `astryx.docs` package entries carry `import` — the same specifier their
+ * `component.detail` reports; core entries omit it (the specifier is derived
+ * from the component name by the renderer).
  * @typedef {object} ComponentListEntry
  * @property {string} name
  * @property {string} package - Owner package, e.g. '@astryxdesign/core' or '@acme/astryx-meta'.
- * @property {string} [import] - Import specifier; present for integration components, absent for core.
+ * @property {string} [import] - Import specifier; present for integration and legacy package components, absent for core.
  */
 
 /**
@@ -70,10 +71,17 @@
  */
 
 /**
- * xds --json component <name>
+ * astryx --json component <name>
  * @typedef {object} ComponentDetailResponse
  * @property {'component.detail'} type
- * @property {import('@astryxdesign/cli/authoring').ComponentDoc & ComponentOwnership} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentDoc & ComponentOwnership & ComponentDetailScope} data
+ */
+
+/**
+ * Present only when the requested name is a sub-component documented inside a
+ * parent's doc (e.g. `HStack` in the `Stack` doc); the payload is scoped to it.
+ * @typedef {object} ComponentDetailScope
+ * @property {string} [parentDoc] - Name of the parent doc the payload was scoped from, e.g. 'Stack'.
  */
 
 /**
@@ -87,28 +95,28 @@
  */
 
 /**
- * xds --json component <name> --props
+ * astryx --json component <name> --props
  * @typedef {object} ComponentDetailPropsResponse
  * @property {'component.detail.props'} type
  * @property {import('@astryxdesign/cli/authoring').ComponentPropDoc[]} data
  */
 
 /**
- * xds --json component <name> --source
+ * astryx --json component <name> --source
  * @typedef {object} ComponentDetailSourceResponse
  * @property {'component.detail.source'} type
  * @property {{component: string; source: string}} data
  */
 
 /**
- * xds --json component <name> --showcase
+ * astryx --json component <name> --showcase
  * @typedef {object} ComponentDetailShowcaseResponse
  * @property {'component.detail.showcase'} type
  * @property {{component: string; aspectRatio: number; source: string}} data
  */
 
 /**
- * xds --json component <name> --blocks
+ * astryx --json component <name> --blocks
  * @typedef {object} ComponentDetailBlocksResponse
  * @property {'component.detail.blocks'} type
  * @property {{component: string; showcase: BlockEntry | null; examples: BlockEntry[]; related: BlockEntry[]}} data

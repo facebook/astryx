@@ -50,7 +50,7 @@
  * queries they have nothing to do with.
  */
 
-import {pathToFileURL} from 'node:url';
+import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
@@ -66,7 +66,7 @@ import {
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
-import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
+import {loadDocsCatalog, lowerTopic} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {setResultCoverage} from './coverage.mjs';
@@ -528,16 +528,26 @@ export function scoreCandidate(
 }
 
 /**
- * Load a doc module's `docs`/`doc` export, swallowing errors.
+ * A component or hook doc, compiled, or null when it cannot be read.
  * @param {string} docPath
  * @param {string} [exportName]
+ * @param {'components' | 'hooks'} [root]
  * @returns {Promise<any>}
  */
-async function loadModuleDoc(docPath, exportName = 'docs') {
+async function loadModuleDoc(
+  docPath,
+  exportName = 'docs',
+  root = 'components',
+) {
   try {
-    const mod = await import(pathToFileURL(docPath).href);
     // Support both the stamped default export and the legacy named export.
-    return mod?.default ?? mod[exportName] ?? null;
+    return (
+      (await readDocView(docPath, {
+        root,
+        loader: 'native',
+        exports: ['default', exportName],
+      })) ?? null
+    );
   } catch {
     return null;
   }
@@ -701,7 +711,7 @@ async function gatherHooks(coreDir) {
     let description = '';
     let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
-      const doc = await loadModuleDoc(docPath);
+      const doc = await loadModuleDoc(docPath, 'docs', 'hooks');
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';
@@ -732,16 +742,16 @@ async function gatherHooks(coreDir) {
 async function gatherDocs(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
-  let entries;
+  let catalog;
   try {
-    entries = (await loadDocsCatalog(cwd)).entries();
+    catalog = await loadDocsCatalog(cwd);
   } catch {
     return candidates;
   }
-  for (const entry of entries) {
+  for (const entry of catalog.entries()) {
     let doc = null;
     try {
-      doc = await loadTopicDoc(entry);
+      doc = (await lowerTopic(catalog, entry)).doc;
     } catch {
       // A topic that cannot be loaded is reported by the commands that own
       // integration issues; search just cannot index it.
@@ -884,7 +894,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} [options.cwd]
  * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
- * @returns {Promise<{type: 'search', data: {query: string, matchCount: number, results: Array<object>}}>}
+ * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
 export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
@@ -921,7 +931,11 @@ export async function search(query, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package');
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
 
   // Gather candidates from each requested domain in parallel.
@@ -971,7 +985,10 @@ export async function search(query, options = {}) {
     data: {
       query: String(query).trim(),
       matchCount: scored.length,
-      results: limited,
+      // toResult gives every domain its command and domain fields.
+      results: /** @type {import('./search.type.mjs').SearchResultEntry[]} */ (
+        limited
+      ),
     },
   };
 }

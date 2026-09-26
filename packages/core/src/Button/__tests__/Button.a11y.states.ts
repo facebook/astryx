@@ -92,6 +92,13 @@ export interface ButtonBindingState {
    * typo here is reported as a stale inventory, not as a standards failure.
    */
   readonly visibleLabel: string | null;
+  /**
+   * The surface that receives pointer input when it is not the role-bearing
+   * element. ClickableCard keeps its button/link hidden for role, name, and
+   * keyboard focus, and takes the pointer on the card surface; a binding that
+   * aimed the pointer at the hidden control would be testing the wrong surface.
+   */
+  readonly pointerTargetSelector?: string;
   /** The checked-in Storybook story the Chromium lane drives. */
   readonly storyId: string;
   /**
@@ -220,6 +227,7 @@ export const BUTTON_BINDING_STATES = [
       "a card whose whole surface performs an action, through the hidden button that carries the card's role and name",
     facts: facts(),
     visibleLabel: null,
+    pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-button-pattern--clickable-card-default',
   },
   {
@@ -228,6 +236,7 @@ export const BUTTON_BINDING_STATES = [
     summary: 'a disabled action card',
     facts: facts({operable: false, focusable: false, unavailable: true}),
     visibleLabel: null,
+    pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-button-pattern--clickable-card-disabled',
   },
 

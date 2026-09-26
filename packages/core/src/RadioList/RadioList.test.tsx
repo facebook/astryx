@@ -15,6 +15,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -854,5 +855,36 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // The painted inner dot would be stripped to Canvas (invisible), making
     // checked and unchecked radios identical; CanvasText keeps it perceivable.
     expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay over the radio indicator while the row is pressed', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper to press');
+    }
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled radio', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Unavailable" value="b" isDisabled />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
   });
 });

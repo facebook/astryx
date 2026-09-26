@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-020
@@ -17,6 +17,17 @@ affects_consumer_docs: []
 ---
 
 # Accessibility spec-test authoring system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": ["FR1", "FR2", "FR6"]
+  }
+}
+```
 
 ## Intent
 

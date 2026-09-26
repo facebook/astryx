@@ -18,11 +18,13 @@
  *   astryx theme build ./src/themes/ocean.ts
  *   astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css
  *   astryx theme build ./src/themes/*.ts
+ *   astryx theme build --family ./src/themes/ocean.ts ./src/themes/ocean-calm.ts --family-key ocean-family
  *
- * `build` takes one or more theme files. Each is compiled by the same
+ * Ordinary builds take one or more theme files. Each is compiled by the same
  * single-file API call, in argument order, in one process — so the outputs are
  * byte-identical to running the CLI once per theme, and the first failure stops
- * the run exactly as a shell loop under `set -e` would.
+ * the run exactly as a shell loop under `set -e` would. Family mode delegates
+ * the selected files once to the API's in-memory family orchestration.
  */
 
 import * as fs from 'node:fs';
@@ -45,7 +47,11 @@ import {
   serializePaletteCandidate,
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
-import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
+import {
+  themeBuild,
+  themeBuildFamily,
+  importSpecifier,
+} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -363,7 +369,7 @@ export function registerTheme(program) {
         emit(
           section(
             'Palette candidate',
-            `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
+            `${result.data.familyCount} families, ${result.data.stopCount} stops, ${result.data.modes.join(', ')}`,
           ),
           code(serializePaletteCandidate(result.data.candidate).trimEnd()),
         );
@@ -400,7 +406,7 @@ export function registerTheme(program) {
     fn: themeBuildFn,
     action: async (
       /** @type {string[]} */ files,
-      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string}} */ options,
+      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string, family?: boolean, familyKey?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
       const entries = files.map(file => ({
@@ -420,10 +426,32 @@ export function registerTheme(program) {
                 {
                   name: `astryx theme build ${entry.file.replace(/['"]/g, '')}`,
                   reason:
-                    'globs are expanded by your shell — pass the pattern unquoted, or list the files',
+                    'globs are expanded by your shell; pass the pattern unquoted, or list the files',
                 },
               ]
             : undefined,
+        });
+      }
+
+      // Family mode is a thin orchestration branch over the existing build API.
+      // Its key is required exactly with --family, and options that describe one
+      // standalone output or a long-running loop remain intentionally separate.
+      if (Boolean(options.family) !== Boolean(options.familyKey)) {
+        return cliError(
+          options.family
+            ? '--family requires --family-key <key>'
+            : '--family-key requires --family',
+          {code: ERROR_CODES.ERR_THEME_INVALID},
+        );
+      }
+      if (options.family && options.out) {
+        return cliError('--family cannot be combined with --out', {
+          code: ERROR_CODES.ERR_THEME_INVALID,
+        });
+      }
+      if (options.family && options.watch) {
+        return cliError('--family cannot be combined with --watch', {
+          code: ERROR_CODES.ERR_THEME_INVALID,
         });
       }
 
@@ -463,9 +491,36 @@ export function registerTheme(program) {
       // Non-watch: delegate to the API compiler, once per theme, in argument
       // order. Enable human output unless in --json mode (log → stdout via
       // humanLog, warn/error → stderr). The "Building theme from" line, the
-      // ✓/warning lines, and the install instructions are all emitted from
+      // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
+
+      if (options.family) {
+        try {
+          const result = await themeBuildFamily(
+            files,
+            {
+              familyKey: /** @type {string} */ (options.familyKey),
+              check: options.check,
+              iconsSpecifier: options.iconsSpecifier,
+            },
+            {cwd: process.cwd()},
+          );
+          if (json) jsonOut(result);
+          if (result.type === 'theme.build.check' && !result.data.upToDate) {
+            process.exitCode = 1;
+          }
+          return NO_RESULT_SET;
+        } catch (e) {
+          const err =
+            /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+          return cliError(err.message, {
+            suggestions: err.suggestions,
+            code: err.code,
+          });
+        }
+      }
+
       /** @type {Array<{file: string, receipt: import('../../../api/theme/theme.type.mjs').ThemeBuildResponse | import('../../../api/theme/theme.type.mjs').ThemeBuildCheckResponse | null}>} */
       const results = [];
       let stale = false;
@@ -519,8 +574,8 @@ export function registerTheme(program) {
         emit(
           text(
             options.check
-              ? `\n${stale ? '✗' : '✓'} Checked ${entries.length} themes.`
-              : `\n✓ Built ${entries.length} themes.`,
+              ? `\n${stale ? '[fail]' : '[ok]'} Checked ${entries.length} themes.`
+              : `\n[ok] Built ${entries.length} themes.`,
           ),
         );
       }
@@ -591,7 +646,10 @@ export function registerTheme(program) {
       try {
         result =
           options.list || !slug
-            ? await themeListAvailable({cwd: process.cwd(), package: options.package})
+            ? await themeListAvailable({
+                cwd: process.cwd(),
+                package: options.package,
+              })
             : await themeAdd(slug, {
                 targetPath,
                 overwrite: options.overwrite,

@@ -3728,67 +3728,73 @@ describe('Selector indicatorPosition', () => {
     ).toBeTruthy();
   });
 
-  it('reserves the mark column on every row, at either position', () => {
-    // The default check draws nothing when unchecked, so without a reserved
-    // column the chosen row would be laid out differently from the rest —
-    // indented at the start, truncating earlier at the end. Every row is two
-    // children wide either way, so a row's geometry does not depend on whether
-    // it happens to be the chosen one.
-    const {unmount} = render(
-      <Selector
-        label="Fruit"
-        options={OPTIONS}
-        value="Banana"
-        onChange={() => {}}
-        indicatorPosition="start"
-        isDefaultOpen
-      />,
-    );
-    for (const row of openRows()) {
-      expect(row.children).toHaveLength(2);
-    }
-    unmount();
-
-    render(
-      <Selector
-        label="Fruit"
-        options={OPTIONS}
-        value="Banana"
-        onChange={() => {}}
-        isDefaultOpen
-      />,
-    );
-    for (const row of openRows()) {
-      expect(row.children).toHaveLength(2);
-    }
-  });
-
-  it('positions a themed replacement indicator the same way', () => {
-    const theme = defineTheme({
-      name: 'selector-start-radio-mark-test',
-      indicators: {check: RadioIndicator},
-    });
-    render(
-      <Theme theme={theme}>
+  it.each(['start', 'end'] as const)(
+    'collapses an empty default mark at the logical %s edge',
+    indicatorPosition => {
+      render(
         <Selector
           label="Fruit"
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
-          indicatorPosition="start"
+          indicatorPosition={indicatorPosition}
           isDefaultOpen
-        />
-      </Theme>,
-    );
-    for (const row of openRows()) {
-      const radio = row.querySelector('.astryx-radio')!;
-      const content = row.querySelector('.astryx-selector-option')!;
-      expect(
-        content.compareDocumentPosition(radio) &
-          Node.DOCUMENT_POSITION_PRECEDING,
-      ).toBeTruthy();
-    }
-  });
+        />,
+      );
+
+      for (const row of openRows()) {
+        const isSelected = row.getAttribute('aria-selected') === 'true';
+        const markColumn =
+          indicatorPosition === 'start'
+            ? row.firstElementChild
+            : row.lastElementChild;
+        expect(markColumn).not.toBeNull();
+        expect(markColumn).toHaveStyle({
+          display: isSelected ? 'inline-flex' : 'none',
+        });
+      }
+    },
+  );
+
+  it.each(['start', 'end'] as const)(
+    'keeps a themed indicator in layout at the logical %s edge',
+    indicatorPosition => {
+      const theme = defineTheme({
+        name: `selector-${indicatorPosition}-radio-mark-test`,
+        indicators: {check: RadioIndicator},
+      });
+      render(
+        <Theme theme={theme}>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            indicatorPosition={indicatorPosition}
+            isDefaultOpen
+          />
+        </Theme>,
+      );
+
+      for (const row of openRows()) {
+        const markColumn =
+          indicatorPosition === 'start'
+            ? row.firstElementChild
+            : row.lastElementChild;
+        const radio = row.querySelector('.astryx-radio');
+        const content = row.querySelector('.astryx-selector-option');
+        expect(markColumn).toHaveStyle({display: 'inline-flex'});
+        expect(radio).not.toBeNull();
+        expect(content).not.toBeNull();
+        expect(
+          content!.compareDocumentPosition(radio!) &
+            (indicatorPosition === 'start'
+              ? Node.DOCUMENT_POSITION_PRECEDING
+              : Node.DOCUMENT_POSITION_FOLLOWING),
+        ).toBeTruthy();
+      }
+    },
+  );
 });
 
 describe('Selector popup theme target', () => {

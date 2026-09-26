@@ -47,6 +47,18 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it('keeps projected settled-list identity when a following block settles too', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. a\n\nTail', state);
+    const result = parseMarkdownIncremental(
+      '1. a\n\n1. b\n\nAfter\n\nTail',
+      state,
+    );
+
+    expect(state.settledBlocks).toEqual(parseMarkdown(state.settledText));
+    expect(result[0]).toBe(state.settledBlocks[0]);
+  });
+
   it('joins loose ) ordered list across streamed chunks', () => {
     const text = '1) apple\n\n1) banana\n\n1) cherry\n';
     const {final} = simulateStreaming(text, 5);
@@ -727,6 +739,37 @@ describe('streaming structural suppression', () => {
         text.length - prefix.length + 5,
       );
     });
+
+    it.each([false, true])(
+      'decodes escaped pipes in code spans during production streaming (sourceRanges=%s)',
+      sourceRanges => {
+        const text =
+          'Intro\n\n| Concept | TypeScript |\n| --- | --- |\n| Null safety | **`T \\| null`** |';
+        const options = {sourceRanges, math: false as const};
+        const full = parseMarkdown(text, options);
+
+        for (const trimsArtifacts of [false, true]) {
+          const state = createIncrementalState();
+          let streamed = parseMarkdownIncremental('', state, options);
+          for (let end = 1; end <= text.length; end++) {
+            const prefix = text.slice(0, end);
+            streamed = parseMarkdownIncremental(
+              trimsArtifacts ? trimStreamingArtifacts(prefix, options) : prefix,
+              state,
+              options,
+            );
+          }
+
+          expect(state.settledText).toBe('Intro');
+          expect(streamed).toEqual(full);
+          expect(streamed).toHaveLength(2);
+          expect(streamed[1].type).toBe('table');
+          expect(visibleText(streamed[1])).toBe(
+            'Concept TypeScript\nNull safety T | null',
+          );
+        }
+      },
+    );
 
     it('still holds back a lone header whose pipes are unescaped', () => {
       const state = createIncrementalState();

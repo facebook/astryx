@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationPackCheck',
+  namespace: 'cli/api',
   displayName: 'integrationPackCheck()',
   summary: 'Prove an integration package survives npm packing.',
   description:

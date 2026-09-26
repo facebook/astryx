@@ -9,10 +9,11 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeAdd',
+  namespace: 'cli/api',
   displayName: 'themeAdd()',
   summary: 'Copy an available theme into a project as editable source.',
   description:
-    'Resolves a theme from the CLI bundle or an installed integration and copies every catalog-listed source file into the consumer project. Writes are staged and existing files require explicit overwrite. Duplicate slugs fail closed until the caller selects an owner package.',
+    "Resolves a theme from the CLI bundle or an installed integration and copies it into the consumer project: a bundled theme's source files, or an integration theme's complete directory with its descriptor. Writes are staged and existing files require explicit overwrite. Duplicate slugs fail closed until the caller selects an owner package.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeAdd(slug: string, options?: {targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}): Promise<ThemeAddResponse>',
@@ -70,10 +71,10 @@ export const doc = {
     {code: 'ERR_AMBIGUOUS_THEME', when: 'more than one package owns the slug'},
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the selected installed package has a blocking integration or theme-catalog error',
+      when: 'the selected installed package has a blocking integration or theme-descriptor error',
     },
     {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
-    {code: 'ERR_NO_SOURCE', when: 'a catalog-listed source file is missing'},
+    {code: 'ERR_NO_SOURCE', when: 'a theme file to copy is missing'},
     {
       code: 'ERR_FILE_EXISTS',
       when: 'a destination exists and overwrite is not set',

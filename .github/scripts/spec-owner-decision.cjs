@@ -5,6 +5,9 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const {
+  classifyDesignDecisionChange,
+} = require('./component-design-decisions.cjs');
+const {
   parseAuthority,
   parseKind,
   parseOwnerFile,
@@ -281,8 +284,34 @@ function requiredApprovalGroups(
       {content: record.baseContent, path: record.previousPath ?? record.path},
       {content: record.headContent, path: record.path},
     ];
-    for (const version of versions) {
-      if (parseAuthority(version.content, version.path) !== 'current') continue;
+    const currentVersions = versions.filter(
+      version => parseAuthority(version.content, version.path) === 'current',
+    );
+    if (currentVersions.length === 0) continue;
+
+    const touchesComponentOrModule = versions.some(version => {
+      const kind = parseKind(version.content, version.path);
+      return kind === 'component' || kind === 'module';
+    });
+    if (touchesComponentOrModule) {
+      const change = classifyDesignDecisionChange({
+        basePath: record.previousPath ?? record.path,
+        headPath: record.path,
+        baseContent: record.baseContent,
+        headContent: record.headContent,
+      });
+      if (change.classification === 'dd-only') {
+        groups.design = true;
+      } else if (change.classification === 'mixed') {
+        groups.spec = true;
+        groups.design = true;
+      } else {
+        groups.spec = true;
+      }
+      continue;
+    }
+
+    for (const version of currentVersions) {
       groups[approvalGroupFor(version.content, version.path)] = true;
     }
   }

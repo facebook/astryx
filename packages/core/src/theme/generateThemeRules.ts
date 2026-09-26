@@ -9,11 +9,17 @@
  * Used by both the runtime path (Theme injects <style>) and the build
  * path (`astryx theme build` pre-compiles to CSS files).
  *
+ * Every consumer-supplied declaration is checked by declarationBoundary.ts
+ * before it is emitted, so a value can never end its declaration or rule
+ * early. A refused declaration is dropped and reported in the supplied
+ * warnings array (build receipts), or through `console.warn` (runtime).
+ *
  * Extracted from defineTheme.ts to reduce cyclomatic complexity and provide
  * a clear single-responsibility module for CSS generation.
  *
- * @input DefinedTheme (resolved theme object from defineTheme)
- * @output CSS rule strings, split by layer (component vs prose)
+ * @input DefinedTheme (resolved theme object from defineTheme), optional warnings array
+ * @output CSS rule strings, split by layer (component vs prose), and warning text
+ *   for each dropped declaration
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
@@ -26,6 +32,10 @@ import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {dataTokenDefaults} from './domainTokens/dataTokens';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
+import {
+  checkDeclarationName,
+  checkDeclarationValue,
+} from './declarationBoundary';
 
 /**
  * Theme @scope selectors.
@@ -367,6 +377,117 @@ function expandContainerPadding(
 }
 
 // =============================================================================
+// Declaration assembly: a declaration always stays one declaration
+// =============================================================================
+
+type DiagnosticSink = (message: string) => void;
+
+const warnToConsole: DiagnosticSink = message => {
+  console.warn(`[astryx theme] ${message}`);
+};
+
+/** Build receipts collect warning text; runtime callers warn by default. */
+function diagnosticSink(warnings: string[] | undefined): DiagnosticSink {
+  return warnings ? message => warnings.push(message) : warnToConsole;
+}
+
+/** Shorten an authored value for a one-line message. */
+function previewValue(value: string): string {
+  const oneLine = JSON.stringify(value);
+  return oneLine.length > 80 ? `${oneLine.slice(0, 77)}..."` : oneLine;
+}
+
+function reportDrop(
+  sink: DiagnosticSink,
+  property: string,
+  value: string,
+  location: string,
+  reason: string,
+): void {
+  sink(
+    `dropped "${property}" in ${location}: ${reason} (value: ${previewValue(value)})`,
+  );
+}
+
+/**
+ * True when `name: value;` stays exactly one declaration; otherwise reports
+ * the drop and returns false. Both checks follow CSS syntax, so valid CSS a
+ * browser keeps inside one declaration (a `data:` URI, `Gill\ Sans`, a closed
+ * comment, a vendor-prefixed property) is never refused; see
+ * declarationBoundary.ts for the rules.
+ */
+function acceptDeclaration(
+  property: string,
+  value: string,
+  location: string,
+  sink: DiagnosticSink,
+): boolean {
+  const reason = checkDeclarationName(property) ?? checkDeclarationValue(value);
+  if (reason === null) {
+    return true;
+  }
+  reportDrop(sink, property, value, location, reason);
+  return false;
+}
+
+/**
+ * Assemble `prop: value;` lines, dropping (and reporting) any entry whose
+ * property or value could not stay a single declaration. Theme definitions
+ * are code, but apps do assemble them from stored input (brand colors,
+ * white-labeling), so the generated stylesheet must never extend beyond the
+ * declarations it means to emit.
+ */
+function joinDeclarations(
+  entries: [string, string][],
+  location: string,
+  sink: DiagnosticSink,
+  mapProp: (prop: string) => string = p => p,
+): string {
+  const lines: string[] = [];
+  for (const [rawProp, rawValue] of entries) {
+    // Legacy unenrolled tokens retain non-string values. Scan the same text
+    // interpolation has always emitted, without changing the normalized theme.
+    const value = `${rawValue}`;
+    const prop = mapProp(rawProp);
+    if (acceptDeclaration(prop, value, location, sink)) {
+      lines.push(`    ${prop}: ${value};`);
+    }
+  }
+  return lines.join('\n');
+}
+
+/** The `:scope` token block for portable and theme-local token values. */
+function tokenBlock(
+  source: ThemeRuleSource,
+  location: string,
+  sink: DiagnosticSink,
+): string | null {
+  const declarations = [
+    joinDeclarations(Object.entries(source.tokens), `${location}tokens`, sink),
+    joinDeclarations(
+      Object.entries(source.localTokens ?? {}),
+      `${location}localTokens`,
+      sink,
+    ),
+  ]
+    .filter(block => block.length > 0)
+    .join('\n');
+  const hasEntries =
+    Object.keys(source.tokens).length > 0 ||
+    Object.keys(source.localTokens ?? {}).length > 0;
+  return hasEntries ? `  :scope {\n${declarations}\n  }` : null;
+}
+
+/** `components.button["variant:secondary"]`-style location for a rule. */
+function componentLocation(
+  prefix: string,
+  component: string,
+  key: string,
+): string {
+  return `${prefix}components.${component}[${JSON.stringify(key)}]`;
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -393,9 +514,12 @@ export interface ThemeRuleSource {
   components?: ComponentStyleMap;
 }
 
-export function generateThemeRules(theme: ThemeRuleSource): string[] {
+export function generateThemeRules(
+  theme: ThemeRuleSource,
+  warnings?: string[],
+): string[] {
   const parts: string[] = [];
-  const tokens = theme.tokens;
+  const sink = diagnosticSink(warnings);
 
   // Bare prose rules reference semantic variables instead of baking the root
   // value. That lets adaptation token writes take effect through CSS alone
@@ -403,21 +527,25 @@ export function generateThemeRules(theme: ThemeRuleSource): string[] {
   const val = (key: string): string => `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
-  const tokenEntries = [
-    ...Object.entries(tokens),
-    ...Object.entries(theme.localTokens ?? {}),
-  ];
-  if (tokenEntries.length > 0) {
-    const declarations = tokenEntries
-      .map(([prop, value]) => `    ${prop}: ${value};`)
-      .join('\n');
-    parts.push(`  :scope {\n${declarations}\n  }`);
+  const tokenRules = tokenBlock(theme, '', sink);
+  if (tokenRules !== null) {
+    parts.push(tokenRules);
+  }
+
+  // 1b. Base font — apply the theme's declared body font to the scope root.
+  // Components styled with `font-family: inherit` (SideNav items, Buttons)
+  // otherwise resolve against the browser default serif, since nothing else
+  // sets a page font. `font-family` inherits, so one rule on :scope covers
+  // the tree. Only emitted when the theme declares a body font, so a bare
+  // theme still contributes no scope rules of its own.
+  if (theme.tokens['--font-family-body']) {
+    parts.push(`  :scope {\n    font-family: var(--font-family-body);\n  }`);
   }
 
   // 2. Component overrides: stable .astryx-* target classes combined with
   // reflected data-* selectors for visual props and runtime states.
   if (theme.components) {
-    generateComponentRules(theme.components, parts);
+    generateComponentRules(theme.components, parts, {sink});
   }
 
   // 3. Prose HTML element rules (h1-h6, p, small, code, hr)
@@ -513,6 +641,13 @@ function generateHeadingWeightOverrides(
   }
 }
 
+/**
+ * The `fontWeight` a heading rule authors for `styleKey`, or undefined when
+ * it has none. A value that cannot stay one declaration is treated as not
+ * authored, so the override falls back to the inherited or token weight
+ * instead of interpolating it; the drop itself is reported where that same
+ * rule's declarations are emitted, so it is not reported twice here.
+ */
 function getAuthoredHeadingWeight(
   headingRuleMap: Record<string, unknown>,
   styleKey: string,
@@ -522,13 +657,20 @@ function getAuthoredHeadingWeight(
     return undefined;
   }
   const fontWeight = (rule as Record<string, unknown>).fontWeight;
-  return typeof fontWeight === 'string' ? fontWeight : undefined;
+  return typeof fontWeight === 'string' &&
+    checkDeclarationValue(fontWeight) === null
+    ? fontWeight
+    : undefined;
 }
 
 /** Options shared by root, adaptation, and media-surface component lowering. */
 interface ComponentRuleOptions {
   resetInheritedPaddingSpecificity?: boolean;
   surface?: MediaSurface;
+  /** Receives dropped declarations; defaults to `console.warn`. */
+  sink?: DiagnosticSink;
+  /** Location prefix for diagnostics, e.g. `onDark.` or `adaptations[0].`. */
+  location?: string;
 }
 
 /**
@@ -545,6 +687,8 @@ function generateComponentRules(
   {
     resetInheritedPaddingSpecificity = false,
     surface,
+    sink = warnToConsole,
+    location: locationPrefix = '',
   }: ComponentRuleOptions = {},
 ): void {
   for (const [component, rules] of Object.entries(components)) {
@@ -556,6 +700,7 @@ function generateComponentRules(
 
       const suffix = parseStyleKey(key);
       const baseSelector = componentSelector(component, suffix, surface);
+      const location = componentLocation(locationPrefix, component, key);
 
       // Separate regular properties from pseudo-class overrides
       const props: [string, string][] = [];
@@ -564,7 +709,14 @@ function generateComponentRules(
       for (const [prop, value] of entries) {
         if (prop.startsWith(':') && typeof value === 'object') {
           pseudos.push([prop, value]);
-        } else {
+        } else if (
+          acceptDeclaration(
+            toKebabCase(prop),
+            `${value as string}`,
+            location,
+            sink,
+          )
+        ) {
           props.push([prop, value as string]);
         }
       }
@@ -644,9 +796,12 @@ function generateComponentRules(
 
       // Emit base rule
       if (finalProps.length > 0) {
-        const declarations = finalProps
-          .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-          .join('\n');
+        const declarations = joinDeclarations(
+          finalProps,
+          location,
+          sink,
+          toKebabCase,
+        );
         parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
       }
 
@@ -654,9 +809,12 @@ function generateComponentRules(
       for (const [pseudo, pseudoStyles] of pseudos) {
         const pseudoEntries = Object.entries(pseudoStyles);
         if (pseudoEntries.length > 0) {
-          const declarations = pseudoEntries
-            .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-            .join('\n');
+          const declarations = joinDeclarations(
+            pseudoEntries,
+            `${location}[${JSON.stringify(pseudo)}]`,
+            sink,
+            toKebabCase,
+          );
           parts.push(
             `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
           );
@@ -822,8 +980,11 @@ function generateSizeOverrides(
  * Component rules (tokens, stable .astryx-* targets plus data-* selectors) are
  * that need to beat StyleX — they stay in astryx-theme (above StyleX layers).
  */
-export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
-  const allRules = generateThemeRules(theme);
+export function generateThemeRulesSplit(
+  theme: DefinedTheme,
+  warnings?: string[],
+): ThemeRulesSplit {
+  const allRules = generateThemeRules(theme, warnings);
 
   const prose: string[] = [];
   const component: string[] = [];
@@ -847,22 +1008,29 @@ export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
  * to media contexts — only tokens change. Themes can further customize
  * via onDark.components / onLight.components.
  */
-export function generateOnMediaCSS(theme: DefinedTheme): string {
+export function generateOnMediaCSS(
+  theme: DefinedTheme,
+  warnings?: string[],
+): string {
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
+  const sink = diagnosticSink(warnings);
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
     if (!onMedia) {
       continue;
     }
+    const location = surface === 'dark' ? 'onDark.' : 'onLight.';
 
     // Token overrides
     const tokenEntries = Object.entries(onMedia.tokens);
     if (tokenEntries.length > 0) {
-      const declarations = tokenEntries
-        .map(([prop, value]) => `    ${prop}: ${value};`)
-        .join('\n');
+      const declarations = joinDeclarations(
+        tokenEntries,
+        `${location}tokens`,
+        sink,
+      );
       parts.push(`  ${mediaSelector(surface)} {\n${declarations}\n  }`);
     }
 
@@ -872,6 +1040,8 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
       generateComponentRules(onMedia.components, parts, {
         resetInheritedPaddingSpecificity: true,
         surface,
+        sink,
+        location,
       });
       generateColorOverrides(onMedia.components, parts, surface);
       generateSizeOverrides(onMedia.components, parts, surface);
@@ -895,22 +1065,22 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /** Generate only the declarations one adaptation rule writes. */
-function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
+function generateAdaptationRuleRules(
+  rule: ThemeRuleSource,
+  location: string,
+  sink: DiagnosticSink,
+): string[] {
   const parts: string[] = [];
-  const tokenEntries = [
-    ...Object.entries(rule.tokens),
-    ...Object.entries(rule.localTokens ?? {}),
-  ];
-  if (tokenEntries.length > 0) {
-    const declarations = tokenEntries
-      .map(([prop, value]) => `    ${prop}: ${value};`)
-      .join('\n');
-    parts.push(`  :scope {\n${declarations}\n  }`);
+  const tokens = tokenBlock(rule, location, sink);
+  if (tokens !== null) {
+    parts.push(tokens);
   }
 
   if (rule.components) {
     generateComponentRules(rule.components, parts, {
       resetInheritedPaddingSpecificity: true,
+      sink,
+      location,
     });
     generateColorOverrides(rule.components, parts);
     generateSizeOverrides(rule.components, parts);
@@ -948,7 +1118,11 @@ function generateAdaptationMediaBlock(
  * rule. Bare prose follows semantic variables, so token writes need no duplicate
  * prose selectors here.
  */
-export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
+export function generateAdaptationCSS(
+  theme: DefinedTheme,
+  warnings?: string[],
+): ThemeCSSOutput {
+  const sink = diagnosticSink(warnings);
   // Built themes can reach this compiler without passing through defineTheme.
   // Validate retained metadata even when it has no rules (and therefore emits
   // no CSS): width points remain observable through AppShell and inheritance.
@@ -982,8 +1156,12 @@ export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
   // active whenever the later condition matches, even if the earlier condition
   // does not. Pairwise merging cannot repair that: multiple mutually exclusive
   // earlier rules can each overlap one broad later rule.
-  for (const rule of rules) {
-    const parts = generateAdaptationRuleRules(rule);
+  for (const [index, rule] of rules.entries()) {
+    const parts = generateAdaptationRuleRules(
+      rule,
+      `adaptations[${index}].`,
+      sink,
+    );
     if (parts.length === 0) {
       continue;
     }
@@ -1029,12 +1207,9 @@ export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
   return {prose: '', component: blocks.join('\n\n')};
 }
 
-/** Indent a generated rule one level further, for nesting inside `@media`. */
+/** Indent the rule start without rewriting newlines inside authored values. */
 function indentRule(rule: string): string {
-  return rule
-    .split('\n')
-    .map(line => (line.length > 0 ? `  ${line}` : line))
-    .join('\n');
+  return `  ${rule}`;
 }
 
 /**
@@ -1075,8 +1250,11 @@ export function generateDataTokenDefaultsCSS(): string {
  * The theme-independent `--color-data-*` defaults are not part of this output:
  * see `generateDataTokenDefaultsCSS`.
  */
-export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
-  const {component, prose} = generateThemeRulesSplit(theme);
+export function generateThemeCSS(
+  theme: DefinedTheme,
+  warnings?: string[],
+): ThemeCSSOutput {
+  const {component, prose} = generateThemeRulesSplit(theme, warnings);
   const scopeSelector = themeScopeStart(theme.name);
   const scopeTo = THEME_SCOPE_TO;
 
@@ -1096,14 +1274,14 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
 
   // Adaptations follow the root theme in authored order. Media-surface rules
   // follow adaptations so onDark/onLight keep their specified precedence.
-  const adaptationCss = generateAdaptationCSS(theme);
+  const adaptationCss = generateAdaptationCSS(theme, warnings);
   if (adaptationCss.component) {
     componentCss = componentCss
       ? `${componentCss}\n\n${adaptationCss.component}`
       : adaptationCss.component;
   }
 
-  const onMediaCss = generateOnMediaCSS(theme);
+  const onMediaCss = generateOnMediaCSS(theme, warnings);
   if (onMediaCss) {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`

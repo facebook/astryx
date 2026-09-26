@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-009
@@ -17,6 +17,33 @@ affects_consumer_docs: []
 ---
 
 # Assistive-technology verification system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": [
+      "FR1",
+      "FR2",
+      "FR3",
+      "FR4",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR9",
+      "FR10",
+      "FR11",
+      "FR12",
+      "FR13",
+      "FR14",
+      "FR15",
+      "FR16"
+    ]
+  }
+}
+```
 
 ## Intent
 

@@ -112,8 +112,14 @@ describe('parseTemplate (load boundary)', () => {
     expect(reason({type: 'page', description: 'x'})).toContain('name');
   });
 
-  it('rejects a missing description', () => {
-    expect(reason({type: 'page', name: 'x'})).toContain('description');
+  it('accepts an omitted description and rejects an empty one when present', () => {
+    expect(parseTemplate({type: 'page', name: 'x'})).toEqual({
+      type: 'page',
+      name: 'x',
+    });
+    expect(reason({type: 'page', name: 'x', description: ''})).toContain(
+      'description',
+    );
   });
 
   it('rejects an empty-string name', () => {
