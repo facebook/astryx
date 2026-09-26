@@ -336,7 +336,12 @@ function asPropBag(checker, type) {
  * (`...args: [Opts]`) contributes its elements, not the tuple. `null` when
  * the value is not callable, or when the only bag it takes is untyped
  * (`props: any`): an entry the checker cannot read is UNDERIVABLE — unresolved,
- * not empty, and not something a farther candidate may paper over.
+ * not empty, and not something a farther candidate may paper over. So is
+ * one with an overload that takes `any` / `object` and no readable bag
+ * beside it: that overload accepts anything, and a typed sibling must not
+ * stand in for it. React's `(props, context: any)` constructor still has
+ * its bag, and an unconstrained generic value (`useX<T>(value: T)`) is not
+ * `any`, so neither trips this.
  *
  * @param {import('typescript').TypeChecker} checker
  * @param {import('typescript').Symbol} symbol
@@ -355,6 +360,8 @@ function propsFromSignature(checker, symbol) {
   const props = new Set();
   let underivable = false;
   for (const signature of signatures) {
+    let takesBag = false;
+    let takesAny = false;
     for (const parameter of signature.getParameters()) {
       const decl =
         parameter.valueDeclaration ?? parameter.getDeclarations()?.[0];
@@ -365,11 +372,18 @@ function propsFromSignature(checker, symbol) {
           ? checker.getTypeArguments(declared)
           : [declared];
       for (const candidate of types) {
+        if (candidate.flags & (ts.TypeFlags.Any | ts.TypeFlags.NonPrimitive)) {
+          takesAny = true;
+        }
         const bag = asPropBag(checker, candidate);
         if (bag === UNDERIVABLE) underivable = true;
-        else if (bag) collectPublicProps(checker, bag, props);
+        else if (bag) {
+          takesBag = true;
+          collectPublicProps(checker, bag, props);
+        }
       }
     }
+    if (takesAny && !takesBag) return UNDERIVABLE;
   }
   return props.size === 0 && underivable ? UNDERIVABLE : props;
 }

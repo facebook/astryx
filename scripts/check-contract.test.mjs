@@ -1994,6 +1994,89 @@ describe('checkContract — parameter shapes the signature route must read', () 
     ]);
     await expect(run(src, {log: () => {}, error: () => {}})).resolves.toBe(1);
   });
+
+  it('leaves an entry unresolved when a typed overload sits beside one that takes any / object', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Mixed/Mixed.tsx': `
+        export function Mixed(props: {label: string}): null;
+        export function Mixed(props: any): null;
+        export function Mixed(props: unknown) {
+          return null;
+        }
+      `,
+      'Mixed/Mixed.doc.mjs': `export const docs = {name: 'Mixed', props: [{name: 'label'}]};`,
+      'Wide/Wide.tsx': `
+        export function Wide(props: {label: string}): null;
+        export function Wide(props: object): null;
+        export function Wide(props: unknown) {
+          return null;
+        }
+      `,
+      'Wide/Wide.doc.mjs': `export const docs = {name: 'Wide', props: [{name: 'label'}]};`,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    // The second overload accepts anything; `label` being documented says
+    // nothing about what else a builder can pass through it.
+    expect(missing).toEqual([]);
+    expect(unresolved.map(u => u.component)).toEqual(['Mixed', 'Wide']);
+  });
+
+  it("still resolves a class component through React's (props, context: any) constructor overload", async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'node_modules/@types/react/index.d.ts': `
+        export type ReactNode = unknown;
+        export class Component<P = {}, S = {}> {
+          constructor(props: P);
+          /** @deprecated */
+          constructor(props: P, context: any);
+          props: Readonly<P>;
+          state: Readonly<S>;
+          render(): ReactNode;
+        }
+      `,
+      'Widget/Widget.tsx': `
+        import {Component} from 'react';
+        interface Opts {
+          label: string;
+          size?: 'sm' | 'md';
+        }
+        export class Widget extends Component<Opts> {
+          render() {
+            return null;
+          }
+        }
+      `,
+      'Widget/Widget.doc.mjs': `export const docs = {name: 'Widget', props: [{name: 'label'}]};`,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    // That overload still takes the props bag; `context` is not a mask.
+    expect(unresolved).toEqual([]);
+    expect(missing.map(m => `${m.component}.${m.prop}`)).toEqual([
+      'Widget.size',
+    ]);
+  });
+
+  it('still resolves a hook whose overloads take a generic value before the options bag', async () => {
+    const src = fixture({
+      'BaseProps.ts': BASE_PROPS,
+      'Ovl/useOvl.ts': `
+        export function useOvl<T>(value: T): T;
+        export function useOvl<T>(value: T, options: {leading?: boolean}): T;
+        export function useOvl<T>(value: T) {
+          return value;
+        }
+      `,
+      'Ovl/useOvl.doc.mjs': `export const docs = {name: 'useOvl', props: []};`,
+    });
+    const {missing, unresolved} = await checkContract(src);
+    // An unconstrained generic value is not a masked bag.
+    expect(unresolved).toEqual([]);
+    expect(missing.map(m => `${m.component}.${m.prop}`)).toEqual([
+      'useOvl.leading',
+    ]);
+  });
 });
 
 describe('checkContract — doc loading edges', () => {
