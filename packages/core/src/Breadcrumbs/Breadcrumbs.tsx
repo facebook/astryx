@@ -4,7 +4,7 @@
 
 /**
  * @file Breadcrumbs.tsx
- * @input Uses React, createContext, stylex, theme tokens
+ * @input Uses React, layer-scoped context, stylex, theme tokens
  * @output Exports Breadcrumbs component, BreadcrumbsProps, BreadcrumbContext
  * @position Core container component; consumed by index.ts
  *
@@ -16,7 +16,8 @@
  * - /packages/cli/assets/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
-import {createContext, useMemo, type ReactNode} from 'react';
+import {useMemo, type ReactNode} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';

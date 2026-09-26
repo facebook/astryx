@@ -4,7 +4,7 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens
+ * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -37,6 +37,7 @@ import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -616,7 +617,12 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
+        stylex.props(
+          layerTextReset.reset,
+          styles.dialog,
+          overlayPaddingReset.reset,
+          xstyle,
+        ),
         className,
         style,
       )}

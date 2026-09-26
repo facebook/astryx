@@ -37,7 +37,7 @@ verified_by:
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-038]
 ---
 
 # Layer runtime
@@ -188,6 +188,47 @@ and swipe paths do not use it. There is no shared interaction-owner role,
 association graph, branch registry, or outside-branch resolution operation on
 current `main`.
 
+### Layer content boundary — AST-038 implementation projection
+
+[AST-038](../specs/AST-038-layer-text-boundary/spec.md) owns the reading baseline
+and surface/group boundary. This implementation resets layer-root text and whole
+React contexts carrying surface/group membership; structural CSS isolation is
+incomplete.
+
+The shared private text baseline is applied in both `useLayer` renderers and the
+Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
+Component and caller styling remains stronger. Existing padding normalization,
+hosting, theme inheritance, and writing context remain unchanged.
+
+`createLayerScopedContext` creates surface-scoped contexts whose complete default
+value is provided by `LayerContentBoundary`. Membership-owned disabled state,
+selection, callbacks, and labels stop together with presentation defaults.
+Existing context shapes and public hooks are unchanged. Content-local providers
+remain owners; consumers requiring a group need its complete provider inside the
+new surface. Menus already establish their own content-local owner and close
+chain. Unrelated application state, collection protocols, semantic DOM selection,
+and interaction coordination continue through ordinary React contexts.
+
+Each boundary snapshots its provider chain at mount so later lazy imports cannot
+remount live content or discard state/focus. Existing native depth-provider seams
+retain their original depth values; raw Layer, sheet panels, and toast content
+use the private content boundary directly. Toast page children stay outside it.
+
+Lab Drawer uses the equivalent package-local text baseline and retains its
+existing hosting, dismissal depth, and ancestor React contexts. Whole-context
+isolation for Drawer is not implemented: the private Core boundary is not
+available across that package boundary. This is a remaining package-architecture
+gap, not a claim of complete provider isolation.
+
+Structural custom-property channels remain outside this implementation. A layer
+opened from supported `Step.children` content can contain an inner Stepper that
+still inherits the outer `--step-connector-gap`. React membership ends, but this
+connector-layout inheritance remains a structural isolation gap.
+
+Existing component behavior checks cover membership exit, explicit inner owners,
+unrelated context continuity, and state/focus retention. Browser evidence covers
+text inheritance and visual appearance.
+
 ### Current global and nonparticipating surfaces
 
 LayerProvider supplies Toast configuration and mounts ToastViewport. It is not a
@@ -320,7 +361,8 @@ be updated only as that work ships.
 
 ## Deciding specs
 
-No system spec changes the shipped runtime described here.
+`spec:AST-038` governs the layer content boundary projected above. It does not
+change the hosting runtime described here.
 
 `spec:AST-003` is accepted but unimplemented. It defines the approved next
 runtime and must move to `shipped` before its requirements are incorporated into

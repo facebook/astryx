@@ -434,7 +434,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
 const groupStyles = stylex.create({
   horizontal: {

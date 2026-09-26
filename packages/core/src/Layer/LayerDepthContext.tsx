@@ -4,7 +4,7 @@
 
 /**
  * @file LayerDepthContext.tsx
- * @input React context
+ * @input React depth context and the layer content-provider boundary
  * @output Exports LayerDepthContext, useLayerDepth, LayerDepthProvider
  * @position Layer system; how the dismissal stack learns which layer is nested
  *   inside which.
@@ -29,6 +29,7 @@
  */
 
 import {createContext, use, type ReactNode} from 'react';
+import {LayerContentBoundary} from './layerScopedContext';
 
 /**
  * How many layers deep the current subtree is. 0 at the app root; each layer
@@ -56,7 +57,11 @@ export function useLayerDepth(): number {
  */
 export function LayerDepthProvider({children}: {children: ReactNode}) {
   const depth = use(LayerDepthContext);
-  return <LayerDepthContext value={depth + 1}>{children}</LayerDepthContext>;
+  return (
+    <LayerDepthContext value={depth + 1}>
+      <LayerContentBoundary>{children}</LayerContentBoundary>
+    </LayerDepthContext>
+  );
 }
 
 LayerDepthProvider.displayName = 'LayerDepthProvider';

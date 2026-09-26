@@ -4,8 +4,8 @@
 
 /**
  * @file ToastViewport.tsx
- * @input Uses React state/effects, ToastContext, useAnnounce, viewport tokens,
- *   and placement-derived motion variables
+ * @input Uses React state/effects, ToastContext, content-provider boundary, useAnnounce, viewport tokens,
+ *   shared layer text reset, and placement-derived motion variables
  * @output Exports the ToastViewport provider, stack, live announcement dispatch,
  *   focus handoff, safe-area-aware edge gutters, and motion context
  * @position Core provider/imperative viewport for useToast()
@@ -29,6 +29,8 @@ import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
@@ -603,21 +605,28 @@ export function ToastViewport({
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
         {...mergeProps(
-          stylex.props(styles.viewport, styles.viewportInlineSpan, posStyle),
+          stylex.props(
+            layerTextReset.reset,
+            styles.viewport,
+            styles.viewportInlineSpan,
+            posStyle,
+          ),
           {
             style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
           },
         )}>
-        {visibleToasts.map(entry => (
-          <ToastRow
-            key={entry.id}
-            entry={entry}
-            isExiting={exitingIds.has(entry.id)}
-            isReversed={isReversed}
-            onExited={handleExited}
-            onDismiss={removeToast}
-          />
-        ))}
+        <LayerContentBoundary>
+          {visibleToasts.map(entry => (
+            <ToastRow
+              key={entry.id}
+              entry={entry}
+              isExiting={exitingIds.has(entry.id)}
+              isReversed={isReversed}
+              onExited={handleExited}
+              onDismiss={removeToast}
+            />
+          ))}
+        </LayerContentBoundary>
       </div>
     </ToastContext>
   );

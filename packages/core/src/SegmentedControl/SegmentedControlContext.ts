@@ -4,14 +4,15 @@
 
 /**
  * @file SegmentedControlContext.ts
- * @input React createContext, use
+ * @input Layer-scoped React context, use
  * @output Exports SegmentedControlContext, useSegmentedControlContext
  * @position Context provider; consumed by SegmentedControlItem.tsx
  *
  * SYNC: When modified, update /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  */
 
-import {createContext, use} from 'react';
+import {use} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 
 export type SegmentedControlSize = 'sm' | 'md' | 'lg';
 export type SegmentedControlLayout = 'hug' | 'fill';
