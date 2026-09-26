@@ -4,6 +4,7 @@
 
 /**
  * @file DropdownMenuContext.tsx
+ * @input Layer-scoped React context
  * @output Exports context and hook for compound-component menu coordination
  * @position Internal; used by DropdownMenu and DropdownMenuItem
  *
@@ -13,6 +14,7 @@
  */
 
 import {createContext, use} from 'react';
+import {createLayerScopedContext} from '../Layer/layerScopedContext';
 
 /** Menu size, derived from the trigger button size. */
 export type DropdownMenuSize = 'sm' | 'md' | 'lg';
@@ -25,7 +27,7 @@ export interface DropdownMenuContextValue {
 }
 
 export const DropdownMenuContext =
-  createContext<DropdownMenuContextValue | null>(null);
+  createLayerScopedContext<DropdownMenuContextValue | null>(null);
 DropdownMenuContext.displayName = 'DropdownMenuContext';
 
 /**

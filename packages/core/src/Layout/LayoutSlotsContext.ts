@@ -4,7 +4,7 @@
 
 /**
  * @file LayoutSlotsContext.ts
- * @input Uses React createContext
+ * @input Layer-scoped React context
  * @output Exports LayoutSlotsContext and LayoutSlots type
  * @position Context for layout slot information
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Layout/Layout/index.ts
  */
 
-import {createContext} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 
 /**
  * Information about which layout slots are filled.

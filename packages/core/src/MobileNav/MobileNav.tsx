@@ -58,6 +58,7 @@ import {
   type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
 import {mergeProps, composeEventHandlers} from '../utils';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -589,6 +590,7 @@ export function MobileNav({
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
+          layerTextReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,

@@ -4,13 +4,13 @@
 
 /**
  * @file ListContext.tsx
- * @input Uses React createContext
+ * @input Layer-scoped React context
  * @output Exports ListContext for sharing density, dividers, marker style,
  *   and optional inline edge compensation between List and ListItem
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
-import {createContext} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 
 export type ListDensity = 'compact' | 'balanced' | 'spacious';
 export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
