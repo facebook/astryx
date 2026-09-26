@@ -106,15 +106,21 @@ describe('FieldLabel', () => {
 
   it('renders tooltip info icon when labelTooltip prop is provided', () => {
     render(
-      <FieldLabel
-        label="Help"
-        inputID="help-input"
-        labelTooltip="This is helpful information"
-      />,
+      <>
+        <FieldLabel
+          label="Help"
+          inputID="help-input"
+          labelTooltip="This is helpful information"
+        />
+        <input id="help-input" type="text" />
+      </>,
     );
     // Two SVGs: the info icon is wrapped in tooltip
     const svgs = document.querySelectorAll('svg');
     expect(svgs.length).toBeGreaterThan(0);
+
+    const input = document.querySelector('input');
+    expect(input).toHaveAccessibleName('Help This is helpful information');
   });
 
   it('does not render extra icon when labelTooltip is not provided', () => {
