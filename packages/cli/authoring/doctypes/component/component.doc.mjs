@@ -90,7 +90,7 @@ export const doc = {
     },
     {
       name: 'theming',
-      type: '{ container?: boolean; targets: ComponentThemingTarget[]; vars?: ComponentThemingVar[]; derived?: ComponentThemingDerivedVar[] }',
+      type: '{ container?: boolean; targets: ComponentThemingTarget[]; iconSlots?: ComponentIconSlotDoc[]; vars?: ComponentThemingVar[]; derived?: ComponentThemingDerivedVar[] }',
       description:
         'Theming configuration: the stable selector surface (xds-* classes + data-attribute reflections) that themes target via @scope selectors in defineTheme.',
       fields: [
@@ -106,6 +106,12 @@ export const doc = {
           description:
             'Selector targets rendered by this component. Each entry corresponds to a themeProps() call in the source.',
           required: true,
+        },
+        {
+          name: 'theming.iconSlots',
+          type: 'ComponentIconSlotDoc[]',
+          description:
+            'Component-owned semantic icon roles ({slot, default, description}) that themes can map through defineTheme({componentIcons}).',
         },
         {
           name: 'theming.vars',

@@ -22,8 +22,8 @@
  * - raw generative-axis metadata survives an old-core build for a later
  *   current-core child's source-equivalent extension.
  *
- * The capability is removed with vi.mock and the resolver is made
- * adaptation/axis-blind so unit cases exercise the same erased-input boundary
+ * The capability exports are removed with vi.mock and the resolver is made
+ * adaptation/axis/component-icon-blind so unit cases exercise the same erased-input boundary
  * without installing another package. `build.packed-old-core.test.mjs` covers
  * the resolution-level pairing with a real package layout and separate process.
  */
@@ -35,7 +35,11 @@ import * as path from 'node:path';
 
 vi.mock('@astryxdesign/core/theme', async importActual => {
   const actual = /** @type {Record<string, any>} */ (await importActual());
-  const {generateAdaptationCSS: _dropped, ...withoutAdaptations} = actual;
+  const {
+    generateAdaptationCSS: _dropped,
+    COMPONENT_ICON_SLOTS_VERSION: _componentIconsVersion,
+    ...withoutAdaptations
+  } = actual;
 
   /** Model the published old core: it resolves ordinary theme values but drops
    * every adaptation field and retained generative-axis metadata. */
@@ -46,6 +50,7 @@ vi.mock('@astryxdesign/core/theme', async importActual => {
       __adaptations: _normalized,
       __adaptationRules: _rules,
       __axes: _axes,
+      componentIcons: _componentIcons,
       ...rest
     } = value;
     if (rest.extends) rest.extends = blind(rest.extends);
@@ -112,6 +117,24 @@ describe('theme build without core adaptation support', () => {
     const css = fs.readFileSync(path.join(tmpDir, 'plain.css'), 'utf8');
     expect(css).toContain('--color-background: #fff;');
     expect(css).toContain('border-radius: 4px;');
+  });
+
+  it('rejects component icon mappings that the old resolver would erase', async () => {
+    const file = writeTheme(
+      'component-icons',
+      `import {defineTheme} from '@astryxdesign/core/theme';
+      export default defineTheme({
+        name: 'component-icons',
+        tokens: {'--color-background': '#fff'},
+        componentIcons: {'file-input-upload': null},
+      });\n`,
+    );
+
+    await expect(themeBuild(file, {}, {cwd: tmpDir})).rejects.toMatchObject({
+      code: 'ERR_CORE_INCOMPATIBLE',
+      message: expect.stringMatching(/does not preserve `componentIcons`/),
+    });
+    expect(wroteNothing('component-icons')).toBe(true);
   });
 
   it('builds a theme whose normalized adaptations carry no rules', async () => {

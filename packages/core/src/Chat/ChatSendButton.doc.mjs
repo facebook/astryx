@@ -32,7 +32,8 @@ export const docs = {
     {
       name: 'sendIcon',
       type: 'ReactNode',
-      description: 'Custom icon for the send state. Defaults to arrowUp from icon registry.',
+      description:
+        'Custom icon for the send state. Overrides the chat-send-button-send theme slot, whose default is arrowUp.',
       slotElements: [
         {
           __element: 'Icon',
@@ -69,6 +70,17 @@ export const docs = {
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
+  theming: {
+    targets: [],
+    iconSlots: [
+      {
+        slot: 'chat-send-button-send',
+        default: 'arrowUp',
+        description:
+          'Default send-state glyph. Map it to another shared icon name or null with defineTheme({componentIcons}); an explicit sendIcon prop wins.',
+      },
+    ],
+  },
 };
 
 export const docsZh = {
@@ -81,7 +93,8 @@ export const docsZh = {
     isDisabled: '发送按钮是否禁用。默认使用上下文的 !canSend。',
     onSend: '用户点击发送时调用。默认使用上下文的 onSubmit。',
     onStop: '流式响应期间用户点击停止时调用。默认使用上下文的 onStop。',
-    sendIcon: '发送状态的自定义图标。默认使用图标注册表的 arrowUp。',
+    sendIcon:
+      '发送状态的自定义图标。覆盖 chat-send-button-send 主题插槽；该插槽默认使用 arrowUp。',
     stopIcon: '停止状态的自定义图标。默认使用图标注册表的 stop。',
     size: '按钮大小。',
     xstyle: '额外的 StyleX 样式。',
@@ -98,7 +111,7 @@ export const docsDense = {
     isDisabled: 'disabled; defaults to !canSend from context',
     onSend: 'send click handler; defaults to context onSubmit',
     onStop: 'stop click handler; defaults to context onStop',
-    sendIcon: 'custom send icon; default arrowUp from registry',
+    sendIcon: 'custom send icon; overrides chat-send-button-send slot (default arrowUp)',
     stopIcon: 'custom stop icon; default stop from registry',
     size: 'btn size',
     xstyle: 'additional StyleX styles',

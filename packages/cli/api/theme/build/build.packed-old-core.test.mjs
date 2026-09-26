@@ -3,6 +3,8 @@
 /**
  * @file `theme build` from a PACKED CLI resolving a genuinely older core.
  *
+ * Covers capability loss for ordered adaptations and component icon mappings.
+ *
  * The unit-level sibling (build.adaptation-core-compat.test.mjs) drives
  * `themeBuild()` directly. This one reproduces the pairing a consumer actually
  * has: the CLI's published file set installed under
@@ -89,10 +91,10 @@ export {
   dataTokenDefaults,
 } from ${JSON.stringify(CORE_THEME_ENTRY)};
 
-/** Strip every adaptation field and retained axis metadata; this core has no concept of them. */
+/** Strip every adaptation/component-icon field and retained axis metadata; this core has no concept of them. */
 function blind(value) {
   if (!value || typeof value !== 'object') return value;
-  const {adaptations, __adaptations, __adaptationRules, __axes, ...rest} = value;
+  const {adaptations, __adaptations, __adaptationRules, __axes, componentIcons, ...rest} = value;
   if (rest.extends) rest.extends = blind(rest.extends);
   return rest;
 }
@@ -511,6 +513,16 @@ export const plainTheme = defineTheme({
   name: 'plain',
   tokens: {'--color-background': '#fff'},
   components: {button: {base: {borderRadius: '4px'}}},
+});
+`,
+  );
+  theme(
+    'component-icons.ts',
+    `import {defineTheme} from '@astryxdesign/core/theme';
+export const componentIconsTheme = defineTheme({
+  name: 'component-icons',
+  tokens: {'--color-background': '#fff'},
+  componentIcons: {'file-input-upload': null},
 });
 `,
   );
@@ -1099,6 +1111,15 @@ describe('packed CLI against a core that predates adaptations', () => {
     expect(result.envelope.code).toBe('ERR_CORE_INCOMPATIBLE');
   });
 
+  it('rejects component icon mappings before an old core can erase them', () => {
+    const {status, envelope} = buildTheme('component-icons.ts');
+
+    expect(status).toBe(1);
+    expect(envelope.code).toBe('ERR_CORE_INCOMPATIBLE');
+    expect(envelope.error).toContain('does not preserve `componentIcons`');
+    expect(outputsExist('component-icons')).toBe(false);
+  });
+
   it('builds a non-adaptation theme', () => {
     const {status, envelope} = buildTheme('plain.ts');
 
@@ -1353,6 +1374,7 @@ describe('the same themes once core supports adaptations', () => {
   beforeAll(() => useCore('current'));
 
   it.each([
+    'component-icons',
     'adaptive',
     'shorthand',
     'spread',

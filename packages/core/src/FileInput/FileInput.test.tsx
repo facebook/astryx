@@ -21,6 +21,10 @@ import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
+import {registerIcons, resetIcons} from '../Icon';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import {resetThemes} from '../theme/themeRegistry';
 
 // The `=1` branch names the file; the `other` branch must not. Both come from
 // this test, so neither can pass against a hardcoded English string.
@@ -29,6 +33,8 @@ const FILES_SELECTED = '{count, number} fichiers choisis';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
+  resetIcons();
+  resetThemes();
 });
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -122,16 +128,77 @@ describe('FileInput', () => {
   it.each([
     {mode: 'input' as const, size: 'sm'},
     {mode: 'dropzone' as const, size: 'md'},
-  ])('exposes the upload icon as a $mode theme target', ({mode, size}) => {
-    render(
-      <FileInput label="Upload" mode={mode} value={null} onChange={() => {}} />,
-    );
+  ])(
+    'uses the arrowUp fallback and exposes the $mode theme target',
+    ({mode, size}) => {
+      registerIcons({
+        arrowUp: <svg data-testid="file-input-arrow-up" />,
+      });
+      render(
+        <FileInput
+          label="Upload"
+          mode={mode}
+          value={null}
+          onChange={() => {}}
+        />,
+      );
 
-    const icon = document.querySelector('.astryx-file-input-icon');
-    expect(icon).toHaveClass('astryx-icon');
-    expect(icon).toHaveAttribute('data-mode', mode);
-    expect(icon).toHaveAttribute('data-size', size);
-  });
+      expect(screen.getByTestId('file-input-arrow-up')).toBeInTheDocument();
+      const icon = document.querySelector('.astryx-file-input-icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-mode', mode);
+      expect(icon).toHaveAttribute('data-size', size);
+    },
+  );
+
+  it.each(['input', 'dropzone'] as const)(
+    'uses the file-input-upload theme mapping in %s mode',
+    mode => {
+      const theme = defineTheme({
+        name: `file-input-mapped-${mode}`,
+        icons: {success: <svg data-testid={`file-input-mapped-${mode}`} />},
+        componentIcons: {'file-input-upload': 'success'},
+      });
+      render(
+        <Theme theme={theme}>
+          <FileInput
+            label="Upload"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+          />
+        </Theme>,
+      );
+
+      expect(
+        screen.getByTestId(`file-input-mapped-${mode}`),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it.each(['input', 'dropzone'] as const)(
+    'suppresses the file-input-upload slot when mapped to null in %s mode',
+    mode => {
+      const theme = defineTheme({
+        name: `file-input-null-${mode}`,
+        componentIcons: {'file-input-upload': null},
+      });
+      render(
+        <Theme theme={theme}>
+          <FileInput
+            label="Upload"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+          />
+        </Theme>,
+      );
+
+      expect(
+        document.querySelector('.astryx-file-input-icon'),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it('displays selected file name', () => {
     const file = createFile('report.pdf', 1024, 'application/pdf');

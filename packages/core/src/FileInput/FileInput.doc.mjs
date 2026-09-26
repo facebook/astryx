@@ -140,6 +140,14 @@ export const docs = {
     },
   ],
   theming: {
+    iconSlots: [
+      {
+        slot: 'file-input-upload',
+        default: 'arrowUp',
+        description:
+          'Upload affordance shown in input and empty dropzone modes. Map it to another shared icon name or null with defineTheme({componentIcons}).',
+      },
+    ],
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
       {className: 'astryx-file-input-icon', visualProps: ['mode']},
@@ -269,6 +277,14 @@ export const docsZh = {
     },
   ],
   theming: {
+    iconSlots: [
+      {
+        slot: 'file-input-upload',
+        default: 'arrowUp',
+        description:
+          'Upload affordance shown in input and empty dropzone modes. Map it to another shared icon name or null with defineTheme({componentIcons}).',
+      },
+    ],
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
       {className: 'astryx-file-input-icon', visualProps: ['mode']},

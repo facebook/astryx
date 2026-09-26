@@ -23,9 +23,10 @@
  * The installed `@astryxdesign/core` is an independently versioned optional
  * peer, so it can be older than the CLI. A theme that uses only baseline
  * features builds against such a core unchanged; a theme that needs ordered
- * adaptations (which need core's `generateAdaptationCSS`) fails early with
- * ERR_CORE_INCOMPATIBLE rather than emitting CSS with those rules quietly
- * missing. That check is scoped to the adaptation capability — it is not a
+ * adaptations (which need core's `generateAdaptationCSS`) or component icon
+ * mappings (which need `defineTheme` to preserve `componentIcons`) fails early
+ * with ERR_CORE_INCOMPATIBLE rather than emitting incomplete output. Those
+ * checks are scoped to the requested capabilities — they are not a
  * general compatibility scheme for every export an arbitrary older core might
  * lack.
  *
@@ -100,6 +101,7 @@ import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
  * namespace wearing its name.
  */
 /** @type {any} */ let _coreRootModule = null;
+/** @type {boolean} */ let _supportsComponentIcons = false;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
@@ -109,6 +111,7 @@ try {
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
+  _supportsComponentIcons = coreTheme.COMPONENT_ICON_SLOTS_VERSION === 1;
   try {
     _coreRootModule = await import('@astryxdesign/core');
   } catch {
@@ -874,6 +877,70 @@ function assertAdaptationCapability(
       'CSS with adaptation rules silently missing. Upgrade ' +
       '@astryxdesign/core to a version that supports theme adaptations, or ' +
       'use a built theme artifact that retains adaptation metadata.',
+    undefined,
+    ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+  );
+}
+
+/**
+ * Fail before output when the selected theme uses `componentIcons` but the
+ * installed Core resolver would erase that field.
+ *
+ * @param {any} themeDef
+ * @param {{coreVersion?: string, lineage?: any[], unobserved?: any[], degradation?: {topLevelAwait?: boolean, commonJs?: boolean}}} [context]
+ * @returns {void}
+ */
+function assertComponentIconCapability(
+  themeDef,
+  {coreVersion, lineage, unobserved, degradation} = {},
+) {
+  if (_supportsComponentIcons) return;
+  if (!_defineTheme || !_generateThemeRulesSplit) return;
+
+  const candidates = lineage?.length ? lineage : [themeDef];
+  const installed =
+    coreVersion && coreVersion !== 'unknown'
+      ? `@astryxdesign/core@${coreVersion}`
+      : 'the installed @astryxdesign/core';
+  /** @param {any} value */
+  const declaresComponentIcons = value =>
+    value?.componentIcons && Object.keys(value.componentIcons).length > 0;
+
+  if (candidates.some(declaresComponentIcons)) {
+    throw new AstryxError(
+      `This theme declares component icon mappings, but ${installed} does not ` +
+        'preserve `componentIcons` through `defineTheme`, so those mappings ' +
+        'would be silently dropped from the built theme. Upgrade ' +
+        '@astryxdesign/core to a version that supports component icon slots, ' +
+        'or remove `componentIcons` from this theme.',
+      undefined,
+      ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+    );
+  }
+
+  const unknown = (unobserved ?? []).filter(
+    value => value?.componentIcons === undefined,
+  );
+  if (unknown.length === 0) return;
+
+  const named = unknown
+    .map(value => (typeof value?.name === 'string' ? `"${value.name}"` : null))
+    .filter(Boolean);
+  const gaps = [
+    degradation?.topLevelAwait
+      ? 'top-level await forced the fallback loader for installed packages'
+      : null,
+    degradation?.commonJs
+      ? 'a CommonJS source dependency reached a frozen or non-configurable core namespace'
+      : null,
+  ].filter(Boolean);
+  throw new AstryxError(
+    `${installed} does not preserve component icon mappings, and whether ${
+      named.length > 0 ? named.join(', ') : 'part of this theme'
+    } declares them could not be observed${
+      gaps.length > 0 ? ` because ${gaps.join(' and ')}` : ''
+    }. Upgrade @astryxdesign/core to a version that supports component icon ` +
+      'slots, or extend a built theme artifact that retains `componentIcons`.',
     undefined,
     ERROR_CODES.ERR_CORE_INCOMPATIBLE,
   );
@@ -1646,6 +1713,7 @@ function generateBuiltModule(
         `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
       : '') +
     serializeField('components', themeDef.components) +
+    serializeField('componentIcons', themeDef.componentIcons) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +
@@ -2117,13 +2185,13 @@ async function themeBuildInternal(
 
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
-  // Standalone builds only need interception when an older Core could erase
-  // adaptations. Family preparation always supplies the same recorder as its
+  // Standalone builds need interception only when an older Core could erase
+  // adaptations or component icon mappings. Family preparation always supplies the same recorder as its
   // shared loader so exact authored parent identity stays CLI-private instead
   // of becoming a public DefinedTheme field.
   const interception =
     options.__familyInterception ??
-    (_generateAdaptationCSS
+    (_generateAdaptationCSS && _supportsComponentIcons
       ? undefined
       : interceptCore(_coreThemeModule, _coreRootModule));
 
@@ -2158,7 +2226,7 @@ async function themeBuildInternal(
     options.__prepareFamily && interception
       ? interception.parentOf(themeDef)
       : undefined;
-  const adaptationLineage = interception
+  const themeLineage = interception
     ? interception.lineageOf(themeDef)
     : undefined;
   const capturedGenerativeAxes = interception
@@ -2255,15 +2323,22 @@ async function themeBuildInternal(
     );
   }
 
-  // An adaptation theme against a core that cannot compile adaptations stops
-  // here — before any CSS is generated and long before anything is written.
+  // A theme that requests a capability its installed core cannot preserve or
+  // compile stops here — before any CSS is generated or files are written.
   // Checked against the SELECTED theme's own lineage: the raw inputs it and
   // its bases were resolved from, so an unrelated adaptive theme elsewhere in
   // the import graph cannot fail this build.
   const coreVersionForCapability = readPkgVersion(findCoreDir(cwd));
   assertAdaptationCapability(themeDef, {
     coreVersion: coreVersionForCapability,
-    lineage: adaptationLineage,
+    lineage: themeLineage,
+    unobserved: unobservedLineage,
+    degradation: loadDegradation,
+  });
+
+  assertComponentIconCapability(themeDef, {
+    coreVersion: coreVersionForCapability,
+    lineage: themeLineage,
     unobserved: unobservedLineage,
     degradation: loadDegradation,
   });
@@ -2333,7 +2408,13 @@ async function themeBuildInternal(
     // surfaces them here.
     assertAdaptationCapability(resolvedTheme, {
       coreVersion: coreVersionForCapability,
-      lineage: adaptationLineage,
+      lineage: themeLineage,
+      unobserved: unobservedLineage,
+      degradation: loadDegradation,
+    });
+    assertComponentIconCapability(resolvedTheme, {
+      coreVersion: coreVersionForCapability,
+      lineage: themeLineage,
       unobserved: unobservedLineage,
       degradation: loadDegradation,
     });

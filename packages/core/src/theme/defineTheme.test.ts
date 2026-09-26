@@ -1291,6 +1291,26 @@ describe('defineTheme extends', () => {
     });
   });
 
+  it('merges component icon slots — child overrides base including null', () => {
+    const base = defineTheme({
+      name: 'component-icon-base',
+      componentIcons: {
+        'file-input-upload': 'arrowUp',
+        'chat-send-button-send': 'arrowUp',
+      },
+    });
+    const child = defineTheme({
+      name: 'component-icon-child',
+      extends: base,
+      componentIcons: {'file-input-upload': null},
+    });
+
+    expect(child.componentIcons).toEqual({
+      'file-input-upload': null,
+      'chat-send-button-send': 'arrowUp',
+    });
+  });
+
   it('merges icons — child overrides base', () => {
     const baseIcons = {close: 'X', menu: 'M'} as Partial<IconRegistry>;
     const childIcons = {close: 'Y'} as Partial<IconRegistry>;

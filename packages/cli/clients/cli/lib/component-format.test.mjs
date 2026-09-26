@@ -219,6 +219,41 @@ describe('markdown table cells escape their pipes', () => {
   });
 });
 
+describe('component icon slot documentation', () => {
+  const docs = {
+    name: 'FileInput',
+    description: 'A file input.',
+    props: [],
+    theming: {
+      targets: [],
+      iconSlots: [
+        {
+          slot: 'file-input-upload',
+          default: 'arrowUp',
+          description: 'Upload affordance.',
+        },
+      ],
+    },
+  };
+
+  it('renders slots in full output', () => {
+    const out = formatFull(docs);
+    expect(out).toContain('**Component icon slots**');
+    expect(out).toContain('| `file-input-upload` | `arrowUp` |');
+  });
+
+  it('renders slots in compact output', () => {
+    const out = formatCompact(docs, 'FileInput');
+    expect(out).toContain('## Component Icon Slots');
+    expect(out).toContain('| `file-input-upload` | `arrowUp` |');
+  });
+
+  it('renders slots in brief output', () => {
+    const out = formatBrief(docs, 'FileInput');
+    expect(out).toContain('Icon slots: file-input-upload->arrowUp');
+  });
+});
+
 describe('formatBrief signature stays terse', () => {
   // `--detail brief` exists to be token-cheap. It hoists union-typed props into
   // the signature because a short enum reads at a glance — but an 11-member

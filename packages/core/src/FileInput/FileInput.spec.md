@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-14
 owners: [cixzhang, imdreamrunner]
-review_triggers: [theming]
+review_triggers: [public-api, theming]
 verified_by:
   [
     packages/core/src/FileInput/FileInput.test.tsx,
@@ -21,7 +21,7 @@ families: [family:input-fields]
 design_specs: []
 architecture: [architecture:component-theming-surface]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-032]
 ---
 
 # FileInput component contract
@@ -29,14 +29,15 @@ system_specs: []
 ## Intent
 
 FileInput presents a labelled file-selection field in compact input or dropzone
-form. This contract records its current consumer anatomy and approves separate theme
-ownership for the upload affordance that FileInput paints through Icon.
+form. This contract records its current consumer anatomy, the stable upload-icon
+theme target, and the approved `file-input-upload` component icon slot.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive public theming target; no existing target,
-  runtime default, DOM, prop, interaction, or accessibility behavior changes
+- Compatibility class: additive public theming target and component icon slot;
+  the slot falls back to the released `arrowUp` artwork, so existing target,
+  runtime default, DOM, prop, interaction, and accessibility behavior remain unchanged
 - Controlled/uncontrolled behavior: unchanged; FileInput remains controlled
 - Migration decision: `component:FileInput/DEC-1`
 
@@ -57,14 +58,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Label, description, clear-control, and validation-message presentation — owned
   by `component:Field` and `component:FieldStatus`.
 - Loading-indicator presentation — owned by `component:Spinner`.
-- A new prop, variant, icon slot, or custom property.
+- A new consumer prop, variant, custom property, or global `IconName`.
 
 ## Public concepts
 
-No consumer prop changes. The `file-input-icon` target gives themes a
-same-element seam for the Upload icon and reflects the existing `mode` axis. The
-existing `file-input` target remains on the visible selection surface and keeps
-its `mode` and `status` axes.
+No consumer prop changes. The `file-input-upload` component icon slot maps this
+component-owned role to an existing shared `IconName`; omission uses `arrowUp`
+and explicit `null` suppresses the optional artwork. Separately, the
+`file-input-icon` target gives themes a same-element seam for the rendered Icon
+and reflects the existing `mode` axis. The existing `file-input` target remains
+on the visible selection surface and keeps its `mode` and `status` axes.
 
 ## Behavioral and layout contract
 
@@ -74,15 +77,17 @@ its `mode` and `status` axes.
 | FR2 | When not loading, input mode renders an upload affordance at the small Icon size. Dropzone mode renders it at the medium Icon size only while no file is selected.                                                   | Current source and focused tests                  | Verified current behavior       |
 | FR3 | Icon owns the rendered glyph's base size, color, and accessibility semantics; FileInput owns the affordance's mode-dependent placement and default size.                                                             | Current composition and component boundaries      | Verified current composition    |
 | FR4 | The rendered upload affordance MUST carry `file-input-icon` with the existing `mode` reflected, so a theme can restyle the glyph box without structural selectors or changing every Icon that uses the same artwork. | Owner-approved target contract                    | Approved additive contract      |
-| FR5 | Adding the target MUST NOT change the default artwork, computed layout, interaction, file-selection behavior, accessible name, or decorative Icon semantics.                                                         | Compatibility policy and focused regression tests | Required compatibility behavior |
+| FR5 | Adding the target and slot MUST NOT change the default artwork, computed layout, interaction, file-selection behavior, accessible name, or decorative Icon semantics.                                                | Compatibility policy and focused regression tests | Required compatibility behavior |
+| FR6 | `file-input-upload` MUST resolve through `componentIcons`; an absent mapping uses `arrowUp`, a mapped `IconName` uses that shared artwork, and explicit `null` omits the Icon.                                       | `spec:AST-032`; focused tests                     | Approved additive contract      |
 
 ### Allowed variation
 
 - **AV1 — Theme paint.** A theme may change standard visual
   properties such as the upload glyph's size or color through
   `file-input-icon`; FileInput still owns whether and where the affordance renders.
-- **AV2 — Artwork.** Icon registry and future icon-slot decisions may change the
-  artwork without changing this CSS target's ownership of the painted glyph box.
+- **AV2 — Artwork.** A theme may map `file-input-upload` to another existing
+  shared icon name, or to `null` to omit the optional glyph, without changing
+  this CSS target's ownership of the painted glyph box when present.
 
 ### Representative states
 
@@ -98,14 +103,16 @@ its `mode` and `status` axes.
 - **ORD1 — Content selection.** Resolve loading and selected-file state, choose
   input or dropzone content, then render the mode-sized upload affordance only in
   the states recorded by FR2.
-- **ORD2 — Theme composition.** Icon applies its base size and color, then the
+- **ORD2 — Icon resolution.** Resolve `file-input-upload` from the active theme;
+  use `arrowUp` only when the mapping is absent, and omit Icon for explicit null.
+- **ORD3 — Theme composition.** Icon applies its base size and color, then the
   same-element FileInput target participates in the existing theme layer and
   standard Icon styling merge order.
 
 ### Performance and resources
 
-- **PR1 — No new work.** The additive target performs no measurement, listener,
-  observer, state update, or additional render pass.
+- **PR1 — Theme lookup only.** The slot adds one active-theme lookup but no
+  measurement, listener, observer, state update, or additional render pass.
 
 ## Accessibility contract
 
@@ -166,16 +173,19 @@ target owns only this stable upload position and its existing mode distinction.
 - `family:input-fields` owns shared labelled-field and validation behavior.
 - `architecture:component-theming-surface` owns target qualification, anatomy
   mapping, and the requirement that public targets sit on stable painted parts.
+- `spec:AST-032` owns the typed component-icon-slot model, `arrowUp` fallback,
+  explicit-null suppression, and ban on a new global upload name.
 - Field, FieldStatus, Icon, and Spinner retain their existing public target
   contracts when composed by FileInput.
 
 ## Verification map
 
-| Contract            | Verification                                                      | Representative states                              | Mutation or failure expectation                                                                             | Audit section             |
-| ------------------- | ----------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------- |
-| FR1, FR2            | `FileInput.test.tsx` rendering and target suites                  | Input/dropzone; empty/selected/loading             | Moving the root target or changing when/at what size the affordance renders breaks focused assertions.      | `audit:FileInput/theming` |
-| FR3, FR4, FR5       | `FileInput.test.tsx`, `themingTargets.test.ts`, probe-theme check | Both modes and same-element Icon target            | Missing the target, reflecting the wrong mode, or moving it off the glyph fails source/docs/probe coverage. | `audit:FileInput/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                     | Nine anatomy entries and two locally owned targets | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                             | `audit:FileInput/anatomy` |
+| Contract            | Verification                                                      | Representative states                              | Mutation or failure expectation                                                                             | Audit section               |
+| ------------------- | ----------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------- |
+| FR1, FR2            | `FileInput.test.tsx` rendering and target suites                  | Input/dropzone; empty/selected/loading             | Moving the root target or changing when/at what size the affordance renders breaks focused assertions.      | `audit:FileInput/theming`   |
+| FR3, FR4, FR5       | `FileInput.test.tsx`, `themingTargets.test.ts`, probe-theme check | Both modes and same-element Icon target            | Missing the target, reflecting the wrong mode, or moving it off the glyph fails source/docs/probe coverage. | `audit:FileInput/theming`   |
+| FR6                 | `FileInput.test.tsx`; `globalIconRegistry.test.tsx`               | fallback, mapped name, explicit null; both modes   | A missing mapping stops falling back, null renders artwork, or a mapped name bypasses Icon resolution.      | `audit:FileInput/icon-slot` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                     | Nine anatomy entries and two locally owned targets | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                             | `audit:FileInput/anatomy`   |
 
 ## Decision log
 

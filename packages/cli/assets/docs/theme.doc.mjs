@@ -245,7 +245,7 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, component icon slots, indicators, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
         },
         {
           type: 'code',
@@ -281,6 +281,10 @@ const brandTheme = defineTheme({
               'Shallow-merged: child icons override matching names from the base.',
             ],
             [
+              'componentIcons',
+              'Shallow-merged by component slot. Child mappings override the base; null suppresses optional artwork and is preserved by theme build.',
+            ],
+            [
               'indicators',
               'Shallow-merged: child indicators override matching names from the base.',
             ],
@@ -300,7 +304,33 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
+          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet and module holding everything the child inherited, including component icon mappings. The base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
+        },
+      ],
+    },
+    {
+      title: 'Component Icon Slots',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: '`icons` changes the artwork for a shared icon name everywhere. `componentIcons` instead maps one component-owned role to an existing icon name, so a theme can change FileInput’s upload affordance without changing every use of `arrowUp`. Run `astryx component <Name>` to see the slots and defaults a component owns.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Mapping and suppressing component icon roles',
+          code: `const brandTheme = defineTheme({
+  name: 'brand',
+  componentIcons: {
+    'file-input-upload': 'arrowUp',
+    'chat-send-button-send': null,
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'Omitting a slot keeps the component-declared fallback. An explicit `null` suppresses optional artwork. Child themes shallow-merge these mappings by slot, and `astryx theme build` preserves the resolved map in generated JavaScript. If the installed Core is too old to retain `componentIcons`, the build fails instead of silently dropping the mappings.',
         },
       ],
     },

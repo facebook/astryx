@@ -10,6 +10,8 @@ import {
   getIconRegistry,
   getIcon,
   getExtendedIcon,
+  getComponentIcon,
+  getComponentIconName,
   resetIcons,
 } from './globalIconRegistry';
 
@@ -133,6 +135,66 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     resetIcons();
     // Should fall back to default
     expect(getIcon('close')).not.toBe('custom');
+  });
+
+  describe('component icon slots', () => {
+    it('uses the component fallback when a theme omits the slot', () => {
+      const theme = defineTheme({
+        name: 'component-slot-fallback',
+        icons: {arrowUp: 'theme-arrow-up'},
+      });
+
+      expect(getComponentIconName('file-input-upload', 'arrowUp', theme)).toBe(
+        'arrowUp',
+      );
+      expect(getComponentIcon('file-input-upload', 'arrowUp', theme)).toBe(
+        'theme-arrow-up',
+      );
+    });
+
+    it('resolves a mapped shared icon name through the theme registry', () => {
+      const theme = defineTheme({
+        name: 'component-slot-mapped',
+        icons: {success: 'theme-success'},
+        componentIcons: {'file-input-upload': 'success'},
+      });
+
+      expect(getComponentIconName('file-input-upload', 'arrowUp', theme)).toBe(
+        'success',
+      );
+      expect(getComponentIcon('file-input-upload', 'arrowUp', theme)).toBe(
+        'theme-success',
+      );
+    });
+
+    it('preserves explicit null mappings instead of falling back', () => {
+      const theme = defineTheme({
+        name: 'component-slot-null',
+        componentIcons: {'file-input-upload': null},
+      });
+
+      expect(
+        getComponentIconName('file-input-upload', 'arrowUp', theme),
+      ).toBeNull();
+      expect(
+        getComponentIcon('file-input-upload', 'arrowUp', theme),
+      ).toBeNull();
+    });
+
+    it('resolves slots from a registered theme name', () => {
+      defineTheme({
+        name: 'component-slot-name',
+        componentIcons: {'chat-send-button-send': 'success'},
+      });
+
+      expect(
+        getComponentIconName(
+          'chat-send-button-send',
+          'arrowUp',
+          'component-slot-name',
+        ),
+      ).toBe('success');
+    });
   });
 
   describe('extension keys', () => {

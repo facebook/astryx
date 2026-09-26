@@ -27,7 +27,7 @@
     {
       "name": "theme",
       "decision": "reject",
-      "evidence": "No topic is a child of theme: theme descriptors and theme command docs are typed descriptors (generated bucket), and theme's 17 sections stay with it."
+      "evidence": "No topic is a child of theme: theme descriptors and theme command docs are typed descriptors (generated bucket), and theme's 18 sections stay with it."
     },
     {
       "name": "migration",
@@ -2500,6 +2500,16 @@
       "id": "theme#extending-a-theme",
       "oldCliRoute": "astryx docs theme extending-a-theme",
       "oldDocsiteUrl": "/docs/theme#extending-a-theme",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "theme#component-icon-slots",
+      "oldCliRoute": "astryx docs theme component-icon-slots",
+      "oldDocsiteUrl": "/docs/theme#component-icon-slots",
       "placement": "keep-flat",
       "aliasNeeded": false,
       "rationale": "Stays a section of theme under the same key.",

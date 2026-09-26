@@ -102,7 +102,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_INCOMPATIBLE',
-      when: 'the selected theme carries ordered-adaptation intent but the installed @astryxdesign/core does not export generateAdaptationCSS (upgrade core)',
+      when: 'the selected theme uses a capability the installed @astryxdesign/core cannot preserve or compile, including ordered adaptations or componentIcons mappings (upgrade core)',
     },
     {
       code: 'ERR_WRITE_FAILED',

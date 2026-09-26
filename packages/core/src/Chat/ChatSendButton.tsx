@@ -13,14 +13,14 @@
  * overridden via props for standalone usage.
  *
  * States:
- * - **Send** — accent/primary, arrowUp icon, disabled when nothing to send.
+ * - **Send** — accent/primary, component-owned send icon slot, disabled when nothing to send.
  * - **Stop** — neutral/secondary, stop icon, calls onStop.
  */
 
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
-import {useIcon} from '../Icon';
+import {useComponentIcon, useIcon} from '../Icon';
 import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
@@ -97,7 +97,7 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
 
   const handleSend = onSend ?? (() => context?.onSubmit(context.value));
   const defaultStopIcon = useIcon('stop');
-  const defaultSendIcon = useIcon('arrowUp');
+  const defaultSendIcon = useComponentIcon('chat-send-button-send', 'arrowUp');
 
   return (
     <Button

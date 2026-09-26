@@ -12,6 +12,9 @@
  * - A string: used as-is for both light and dark modes
  * - A [light, dark] tuple: converted to light-dark(light, dark)
  *
+ * Component icon mappings select shared icon names by component-owned role;
+ * omitted slots use their fallback and explicit null suppresses the artwork.
+ *
  * @example
  * ```
  * const oceanTheme = defineTheme({
@@ -37,6 +40,7 @@
  */
 
 import type {ReactNode} from 'react';
+import type {ComponentIconMap} from '../Icon';
 import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
 
 /**
@@ -87,6 +91,9 @@ import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
 import {resolveLocalTokenContract} from './localTokens';
+
+/** Theme-data capability marker consumed by independently versioned tooling. */
+export const COMPONENT_ICON_SLOTS_VERSION = 1 as const;
 
 // =============================================================================
 // Types
@@ -338,6 +345,11 @@ export interface DefineThemeInput {
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: ThemeIconOverrides;
   /**
+   * Component icon slots — maps component-owned roles to shared semantic names.
+   * Omit a slot to use its component fallback; map it to `null` to suppress it.
+   */
+  componentIcons?: ComponentIconMap;
+  /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
    *
@@ -428,6 +440,8 @@ export interface DefinedTheme {
   components?: ComponentStyleMap;
   /** Icon registry */
   icons?: ThemeIconOverrides;
+  /** Component-owned icon-role mappings */
+  componentIcons?: ComponentIconMap;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -603,6 +617,13 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       ? {...base.icons, ...input.icons}
       : (input.icons ?? base?.icons);
 
+  // Component icon mappings merge by slot. `null` is an intentional value that
+  // suppresses a role; only `undefined` means “use the component fallback”.
+  const componentIcons =
+    input.componentIcons && base?.componentIcons
+      ? {...base.componentIcons, ...input.componentIcons}
+      : (input.componentIcons ?? base?.componentIcons);
+
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
   const indicators =
@@ -622,6 +643,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       : {}),
     components,
     icons,
+    componentIcons,
     indicators,
     __inputTokens:
       base?.__inputTokens || input.tokens

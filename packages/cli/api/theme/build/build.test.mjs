@@ -22,6 +22,7 @@ import * as os from 'node:os';
 import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
+  getRegisteredThemes,
 } from '@astryxdesign/core/theme';
 import {
   themeBuild,
@@ -56,6 +57,12 @@ afterEach(() => {
 });
 
 describe('themeBuild() — receipt', () => {
+  it('does not register a synthetic theme while detecting Core capabilities', () => {
+    expect(getRegisteredThemes().has('__astryx_component_icons_capability__')).toBe(
+      false,
+    );
+  });
+
   it('compiles a minimal theme and returns a theme.build receipt with files on disk', async () => {
     const themeFile = path.join(tmpDir, 'apitheme.mjs');
     fs.writeFileSync(
@@ -146,6 +153,31 @@ describe('themeBuild() — receipt', () => {
       );
     },
   );
+
+  it('preserves component icon mappings, including null, in built modules', async () => {
+    const themeFile = path.join(tmpDir, 'component-icons.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'component-icons',
+        tokens: {'--color-bg': '#fff'},
+        componentIcons: {
+          'file-input-upload': 'arrowUp',
+          'chat-send-button-send': null,
+        },
+      };\n`,
+    );
+
+    await themeBuild('component-icons.mjs', {}, {cwd: tmpDir});
+    const built = fs.readFileSync(
+      path.join(tmpDir, 'component-icons.js'),
+      'utf8',
+    );
+
+    expect(built).toContain('componentIcons: {');
+    expect(built).toContain('"file-input-upload": "arrowUp"');
+    expect(built).toContain('"chat-send-button-send": null');
+  });
 
   it('rejects cross-map duplicate token names before writing outputs', async () => {
     const themeFile = path.join(tmpDir, 'duplicate-local-theme.mjs');
