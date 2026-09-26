@@ -1,5 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * Generated CLI guidance for AI agents. Run:
+ * `npx @astryxdesign/cli search "useHotkeys"`
+ * for current props, examples, and usage guidance.
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useHotkeys',

@@ -439,8 +439,10 @@ describe('useTableRowStatus', () => {
     ).not.toBeInTheDocument();
     const conflictWarnings = warning.mock.calls.filter(
       ([message]) =>
-        message ===
-        'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        typeof message === 'string' &&
+        message.startsWith(
+          'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        ),
     );
     expect(conflictWarnings).toHaveLength(1);
   });
@@ -476,8 +478,10 @@ describe('useTableRowStatus', () => {
     ).not.toBeInTheDocument();
     const conflictWarnings = warning.mock.calls.filter(
       ([message]) =>
-        message ===
-        'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        typeof message === 'string' &&
+        message.startsWith(
+          'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        ),
     );
     expect(conflictWarnings).toHaveLength(0);
   });
@@ -511,8 +515,10 @@ describe('useTableRowStatus', () => {
     expect(unsupportedGlyph.parentElement).toHaveAttribute('data-color', 'red');
     const conflictWarnings = warning.mock.calls.filter(
       ([message]) =>
-        message ===
-        'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        typeof message === 'string' &&
+        message.startsWith(
+          'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
+        ),
     );
     expect(conflictWarnings).toHaveLength(0);
   });

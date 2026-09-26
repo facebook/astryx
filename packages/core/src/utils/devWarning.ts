@@ -28,10 +28,16 @@ export function formatDevMessage(component: string, message: string): string {
   return `${component}: ${message}`;
 }
 
+function formatDevMessageWithCli(component: string, message: string): string {
+  return `${formatDevMessage(component, message)}\nAstryx CLI: npx @astryxdesign/cli search ${JSON.stringify(component)}`;
+}
+
 /**
  * Dev-only `console.warn` in the standardized `Component: message` format.
  * A no-op in production — warnings are builder guardrails, not shipped noise.
  * Extra args (e.g. an offending value) are forwarded to `console.warn`.
+ * Every warning includes the exact Astryx CLI search that resolves current
+ * guidance for the component or hook that emitted it.
  *
  * @example
  * ```
@@ -46,13 +52,14 @@ export function devWarn(
   if (!isDev) {
     return;
   }
-  console.warn(formatDevMessage(component, message), ...args);
+  console.warn(formatDevMessageWithCli(component, message), ...args);
 }
 
 /**
  * `console.error` in the standardized `Component: message` format. Unlike
  * {@link devWarn}, this runs in production too: it reports real runtime
- * failures (e.g. a thrown callback) that should reach error telemetry.
+ * failures (e.g. a thrown callback) that should reach error telemetry. The CLI
+ * hint is development-only, so production errors keep their existing text.
  *
  * @example
  * ```
@@ -64,7 +71,12 @@ export function devError(
   message: string,
   ...args: unknown[]
 ): void {
-  console.error(formatDevMessage(component, message), ...args);
+  console.error(
+    isDev
+      ? formatDevMessageWithCli(component, message)
+      : formatDevMessage(component, message),
+    ...args,
+  );
 }
 
 const warnedKeys = new Set<string>();
@@ -90,7 +102,7 @@ export function warnOnce(
     return;
   }
   warnedKeys.add(key);
-  console.warn(formatDevMessage(component, message), ...args);
+  console.warn(formatDevMessageWithCli(component, message), ...args);
 }
 
 /**

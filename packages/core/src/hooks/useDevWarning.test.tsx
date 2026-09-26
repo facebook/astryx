@@ -26,7 +26,9 @@ describe('useDevWarning', () => {
     rerender(<Probe condition={true} />);
     rerender(<Probe condition={true} />);
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith('TestComponent: boom');
+    expect(warn).toHaveBeenCalledWith(
+      'TestComponent: boom\nAstryx CLI: npx @astryxdesign/cli search "TestComponent"',
+    );
   });
 
   it('does not warn when the condition is false', () => {
