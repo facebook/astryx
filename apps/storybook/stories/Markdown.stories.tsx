@@ -254,6 +254,39 @@ export const TableFocused: Story = {
   },
 };
 
+export const TableInNarrowColumn: Story = {
+  name: 'Table in a narrow column',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Columns keep a content-derived floor (component:Markdown FR26): the longest unbreakable token never splits, prose wraps to a few lines rather than one word per line, headers wrap instead of truncating, and a table wider than the column scrolls instead of squashing. Fixed 60/80/120px buckets used to shred `D116586407` into `D116586 / 407`.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{width: 390, padding: 12, outline: '1px dashed #c33'}}>
+      <Markdown density="compact">
+        {[
+          '| Step | Latency | Side effects | Retry policy | Owner | Notes |',
+          '|---|---|---|---|---|---|',
+          '| Fetch the diff metadata | 120 ms p50, 400 ms p99 | None, read only | Three attempts with backoff | Review tooling | Cached for one minute |',
+          '| Run the lint pass | 2 to 8 seconds | Writes a temp directory | No retry | Lint oncall | Fails closed on timeout |',
+          '',
+          '| Diff | Author | Status | Link |',
+          '|---|---|---|---|',
+          '| D116586407 | cixzhang | Accepted | https://example.com/diff/D116586407/very/long/path |',
+          '| D116586999 | someone | `needs_revision_before_landing_v2` | https://example.com/x |',
+          '',
+          '| Q1 | Q2 | Q3 | Q4 | Q5 | Q6 | Q7 | Q8 |',
+          '|---|---|---|---|---|---|---|---|',
+          '| 1.2 | 3.4 | 5.6 | 7.8 | 9.0 | 1.2 | 3.4 | 5.6 |',
+        ].join('\n')}
+      </Markdown>
+    </div>
+  ),
+};
+
 export const Streaming: Story = {
   render: () => {
     const text = STREAMING_RESPONSE;

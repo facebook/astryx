@@ -278,6 +278,49 @@ const cellAlignStyles = stylex.create({
   end: {textAlign: 'end'},
 });
 
+/**
+ * Markdown's default Table part sizes its own cells over Table's wrap-mode
+ * defaults. Table's `wrapStyles` set `max-width: 0` and `word-break: break-word`
+ * so data-driven tables share the container equally; in a Markdown table that
+ * zeroes every column's min-content contribution and lets automatic layout
+ * squash a six-column table to a few characters per cell, breaking identifiers
+ * mid-word and never overflowing into the Scroll region. Here a column is never
+ * narrower than its longest unbreakable token, header cells wrap like body
+ * cells instead of truncating, and a table wider than its container grows and
+ * scrolls (component:Markdown FR26, DEC-6).
+ */
+const markdownCellStyles = stylex.create({
+  cell: {
+    maxWidth: null,
+    overflow: 'visible',
+    overflowWrap: 'break-word',
+    wordBreak: 'normal',
+  },
+  headerCell: {
+    maxWidth: null,
+    overflow: 'visible',
+    overflowWrap: 'break-word',
+    textOverflow: 'clip',
+    whiteSpace: 'normal',
+    wordBreak: 'normal',
+  },
+  // Inline Code sets `word-break: break-word` so a long token cannot widen a
+  // paragraph; inside a table cell that same rule would zero the token's
+  // min-content and split an identifier across lines. The cell keeps it whole.
+  code: {
+    wordBreak: 'normal',
+  },
+});
+
+/**
+ * Default inline-code renderer inside Markdown table cells. Used only when the
+ * consumer supplies no `components.inlineCode`; a custom renderer owns its own
+ * wrapping rules (FR3).
+ */
+function MarkdownTableCellCode({children}: {children: string}) {
+  return <Code xstyle={markdownCellStyles.code}>{children}</Code>;
+}
+
 const styles = stylex.create({
   root: {
     fontFamily: typographyVars['--font-family-body'],
@@ -1174,9 +1217,21 @@ function getElementSpacing(
 // ---------------------------------------------------------------------------
 
 /**
- * Compute per-column min-widths from table AST content.
- * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
+ * Content-derived width floor for one Markdown table column, in `ch`.
+ *
+ * Automatic table layout already gives a column its min-content — the longest
+ * unbreakable token — once the cells stop clamping it (see `markdownCellStyles`).
+ * That floor is honest but not readable: a prose column's longest word is short,
+ * so six prose columns in a narrow container would wrap one word per line. The
+ * readable floor lets the column's longest cell wrap to about two lines
+ * instead, scaled by that cell's own length and bounded so a table of short
+ * columns still fits its container. The larger of the two floors wins in CSS.
+ * Exact tuning lives here, not in the spec (component:Markdown FR26).
  */
+const TABLE_COLUMN_MIN_CH = 4;
+const TABLE_COLUMN_MAX_CH = 24;
+const TABLE_COLUMN_TARGET_LINES = 2;
+
 function computeTableColumnMinWidths(node: RenderTable): number[] {
   const [header, ...rows] = node.children;
   if (header == null) {
@@ -1193,7 +1248,13 @@ function computeTableColumnMinWidths(node: RenderTable): number[] {
         }
       }
     }
-    return maxLen <= 6 ? 60 : maxLen <= 15 ? 80 : 120;
+    return Math.min(
+      TABLE_COLUMN_MAX_CH,
+      Math.max(
+        TABLE_COLUMN_MIN_CH,
+        Math.ceil(maxLen / TABLE_COLUMN_TARGET_LINES),
+      ),
+    );
   });
 }
 
@@ -1643,6 +1704,10 @@ function renderBlock(
     case 'table': {
       const colMinWidths = computeTableColumnMinWidths(node);
       const [header, ...rows] = node.children;
+      const cellComponents: Partial<MarkdownComponents> | undefined =
+        components?.inlineCode != null
+          ? components
+          : {...components, inlineCode: MarkdownTableCellCode};
 
       return (
         <div
@@ -1677,7 +1742,8 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table columns are positional by definition
                     key={i}
                     xstyle={[
-                      dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
+                      markdownCellStyles.headerCell,
+                      dynamicStyles.cellMinWidth(`${colMinWidths[i]}ch`),
                       node.align[i] === 'center' && cellAlignStyles.center,
                       node.align[i] === 'right' && cellAlignStyles.end,
                     ]}>
@@ -1690,7 +1756,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
-                        components,
+                        cellComponents,
                         preparedPlugins,
                       ),
                     )}
@@ -1705,6 +1771,7 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
                     xstyle={[
+                      markdownCellStyles.cell,
                       node.align[j] === 'center' && cellAlignStyles.center,
                       node.align[j] === 'right' && cellAlignStyles.end,
                     ]}>
@@ -1717,7 +1784,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
-                        components,
+                        cellComponents,
                         preparedPlugins,
                       ),
                     )}
