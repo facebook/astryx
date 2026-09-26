@@ -27,11 +27,16 @@ const meta: Meta<typeof MultiSelector> = {
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
     variant: {control: 'radio', options: ['input', 'ghost']},
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+    },
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
     },
     isDisabled: {control: 'boolean'},
+    isReadOnly: {control: 'boolean'},
     disabledMessage: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
@@ -59,6 +64,36 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select columns...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned teams',
+    options: ['Design', 'Engineering', 'Marketing'],
+    value: ['Design', 'Engineering'],
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'teams',
+    triggerDisplay: 'labels',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Teams"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 
@@ -568,8 +603,8 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['multi-selector-clear-icon'].base` scopes overrides to the
- *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ * - `components['input-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-input-clear-icon` target), so a
  *   theme can recolor it, morph its color on hover, and resize it — without a
  *   fragile descendant selector or raw CSS.
  * - `components['multi-selector-indicator-icon']` scopes overrides to the
@@ -582,7 +617,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'multi-selector-icon-demo',
   components: {
-    'multi-selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

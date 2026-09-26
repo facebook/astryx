@@ -3,7 +3,7 @@
 /**
  * @file BottomSheet.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet component
- * @output Unit tests for BottomSheet component behavior
+ * @output Unit tests for BottomSheet behavior and observed content anatomy
  * @position Core testing; validates BottomSheet.tsx implementation
  *
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
@@ -290,7 +290,7 @@ describe('BottomSheet', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps consumer content as the last scroll-body child', () => {
+  it('keeps consumer content first and last inside the observed content box', () => {
     render(
       <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
         <div data-testid="consumer-content">Sheet content</div>
@@ -300,7 +300,10 @@ describe('BottomSheet', () => {
     const consumer = screen.getByTestId('consumer-content');
 
     expect(body.children).toHaveLength(1);
-    expect(body.lastElementChild).toBe(consumer);
+    const content = body.lastElementChild;
+    expect(content).toHaveAttribute('data-scroll-content');
+    expect(content?.lastElementChild).toBe(consumer);
+    expect(consumer.matches(':first-child')).toBe(true);
     expect(consumer.matches(':last-child')).toBe(true);
   });
 
@@ -2318,6 +2321,35 @@ describe('BottomSheet', () => {
       finishSheetExit();
 
       expect(document.activeElement).toBe(opener);
+    });
+
+    it('prefers an explicit final focus target', () => {
+      const finalFocusRef = createRef<HTMLButtonElement>();
+      function ExplicitFocusHarness() {
+        const [isOpen, setIsOpen] = useState(true);
+        return (
+          <>
+            <button ref={finalFocusRef} type="button">
+              Adaptive trigger
+            </button>
+            <BottomSheet
+              isOpen={isOpen}
+              onOpenChange={setIsOpen}
+              finalFocusRef={finalFocusRef}
+              label="Filters">
+              <button type="button" onClick={() => setIsOpen(false)}>
+                Done
+              </button>
+            </BottomSheet>
+          </>
+        );
+      }
+
+      render(<ExplicitFocusHarness />);
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      finishSheetExit();
+
+      expect(document.activeElement).toBe(finalFocusRef.current);
     });
   });
 

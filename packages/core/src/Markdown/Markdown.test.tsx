@@ -1,10 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  expectTypeOf,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import type {ComponentProps, ReactNode} from 'react';
 import {Markdown} from './Markdown';
-import type {MarkdownInlinePlugin} from './Markdown';
+import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {ParseOptions} from './index';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
@@ -68,6 +78,17 @@ describe('Markdown', () => {
         expect(target!.tagName).toMatch(/^H[1-6]$/);
         expect(target!.textContent?.trim()).toBe(item.label);
       }
+    });
+
+    it('keeps citation markers out of released heading ids', () => {
+      render(
+        <Markdown sources={{cite: {title: 'Citation'}}}>
+          {'# Before [cite] after'}
+        </Markdown>,
+      );
+      expect(
+        screen.getByRole('heading', {name: /Before.*after/}),
+      ).toHaveAttribute('id', 'before-after');
     });
 
     it('passes the generated id to a custom heading component', () => {
@@ -276,9 +297,13 @@ describe('Markdown', () => {
     expect(screen.getByText('struck').tagName).toBe('DEL');
   });
 
-  it('renders inline code with Code', () => {
-    render(<Markdown>{'Use `code` here'}</Markdown>);
-    expect(screen.getByText('code').tagName).toBe('CODE');
+  it('renders inline code as delimiter-free <code> content', () => {
+    const {container} = render(<Markdown>{'Use `code` here'}</Markdown>);
+    const code = container.querySelector('code');
+    expect(code).toBeInTheDocument();
+    expect(code).toHaveTextContent('code');
+    expect(code?.textContent).toBe('code');
+    expect(container.textContent).toBe('Use code here');
   });
 
   it('renders code blocks with CodeBlock', () => {
@@ -419,6 +444,23 @@ describe('Markdown', () => {
     expect(document.querySelectorAll('td')).toHaveLength(2);
   });
 
+  it('renders escaped table pipes without exposing the escape in code spans', () => {
+    render(
+      <Markdown>
+        {
+          '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |'
+        }
+      </Markdown>,
+    );
+
+    const cells = document.querySelectorAll('tbody td');
+    expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+      'Null safety',
+      'T | null',
+    ]);
+    expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
+  });
+
   it('makes the table scroll wrapper keyboard-focusable', () => {
     render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
     const table = document.querySelector('table');
@@ -481,11 +523,98 @@ describe('Markdown', () => {
     expect(cursor).not.toBeInTheDocument();
   });
 
+  // A reader watching a reply arrive sees the DOM, not the parsed nodes.
+  // A `\|` is literal text, so the line must stay legible as it streams;
+  // the parser once classified it as an unfinished table header and held
+  // the whole line back, blanking the message.
+  describe('streamed text containing an escaped pipe', () => {
+    // Reduced motion makes the reveal synchronous, so each render shows
+    // exactly the prefix under test rather than a rAF-driven fraction.
+    beforeEach(() => {
+      stubMatchMedia({reduceMotion: true});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** The text of each rendered block, in document order. */
+    function blockTexts(container: HTMLElement): string[] {
+      const doc = container.querySelector('[role="document"]')!;
+      return Array.from(doc.children).map(block =>
+        (block.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+    }
+
+    it('shows every prefix of the line, escaped pipe rendered literally', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const {container, rerender} = render(
+        <Markdown isStreaming>{text.slice(0, 1)}</Markdown>,
+      );
+
+      for (let length = 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        // Every `\|` reads as one literal pipe, and no backslash survives.
+        expect(blockTexts(container)).toEqual([
+          prefix.replace(/\\\|/g, '|').trim(),
+        ]);
+      }
+    });
+
+    it('shows every prefix below settled content, both kept on screen', () => {
+      const settled = 'Intro\n\n';
+      const text = `${settled}Costs 5 \\| 10 per unit`;
+      const {container, rerender} = render(
+        <Markdown isStreaming>{settled}</Markdown>,
+      );
+
+      for (let length = settled.length + 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        const tail = text.slice(settled.length, length).replace(/\\\|/g, '|');
+        // The settled paragraph stays on screen and the tail is legible.
+        expect(blockTexts(container)).toEqual(['Intro', tail.trim()]);
+      }
+    });
+
+    it('renders the finished line as one paragraph with the literal pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>{'Costs 5 \\| 10 per unit'}</Markdown>,
+      );
+
+      const paragraphs = container.querySelectorAll('[role="paragraph"]');
+      expect(paragraphs).toHaveLength(1);
+      expect(paragraphs[0].textContent).toBe('Costs 5 | 10 per unit');
+      // Prose, not a table: no cell was ever split out of it.
+      expect(container.querySelector('table')).toBeNull();
+    });
+
+    it('still renders a real streamed table containing an escaped pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>
+          {'| Col1 | Col2 |\n| --- | --- |\n| a \\| b | c |'}
+        </Markdown>,
+      );
+
+      const cells = container.querySelectorAll('tbody td');
+      expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+        'a | b',
+        'c',
+      ]);
+    });
+  });
+
   it('applies compact density', () => {
     const {container} = render(
       <Markdown density="compact">{'Hello'}</Markdown>,
     );
-    expect(container.firstElementChild!.className).toContain('compact');
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-density',
+      'compact',
+    );
   });
 
   it('supports data-testid', () => {
@@ -526,6 +655,105 @@ describe('Markdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+
+  describe('link destinations follow the shared navigation rule', () => {
+    // The same matrix Core's link plumbing and imperative navigation apply
+    // (utils/safeUrl.ts): only executable document schemes are blocked.
+    const blocked = [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      'vbscript:MsgBox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'java\nscript:alert(1)',
+    ];
+    const accepted = [
+      'https://example.com',
+      '/page',
+      '#section',
+      '//example.com/x',
+      'mailto:a@example.com',
+      'tel:+15555550100',
+      'data:image/png;base64,iVBORw0KGgo=',
+    ];
+
+    it.each(blocked)('renders %s as text, not a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.textContent).toContain('click');
+    });
+
+    it.each(accepted)('renders %s as a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute('href')).toBe(destination);
+    });
+
+    it('a data:image link is navigation and is accepted, while a data:image image stays rejected by the resource policy', () => {
+      const {container} = render(
+        <Markdown>
+          {
+            '[view](data:image/png;base64,iVBORw0KGgo=)\n\n![pic](data:image/png;base64,iVBORw0KGgo=)'
+          }
+        </Markdown>,
+      );
+      expect(container.querySelector('a')?.getAttribute('href')).toBe(
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
+      expect(container.querySelector('img')).toBeNull();
+    });
+  });
+
+  it('preserves dollar-delimited text when no math renderer is supplied', () => {
+    const {container} = render(
+      <Markdown>{'Total $5 and formula $x_1 + *y*$.'}</Markdown>,
+    );
+    expect(container.textContent).toBe('Total $5 and formula $x_1 + y$.');
+    expect(container.querySelector('em')).toHaveTextContent('y');
+    expect(container.querySelector('[role="math"]')).toBeNull();
+  });
+
+  it('passes inline and display expressions to the custom math renderer', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    function MathRenderer({value, display}: MathRendererProps) {
+      const Tag = display === 'block' ? 'div' : 'span';
+      return (
+        <Tag
+          role="math"
+          aria-label={`Formula: ${value}`}
+          data-testid={`${display}-math`}>
+          {value}
+        </Tag>
+      );
+    }
+
+    render(
+      <Markdown components={{math: MathRenderer}}>
+        {'Inline $x_1 + *y*$ here.\n\n$$\n\\sum_i x_i\n$$'}
+      </Markdown>,
+    );
+
+    expect(screen.getByTestId('inline-math')).toHaveTextContent('x_1 + *y*');
+    expect(screen.getByTestId('block-math')).toHaveTextContent('\\sum_i x_i');
+    expect(screen.getAllByRole('math')).toHaveLength(2);
+  });
+
+  it('exports the math renderer and parser option types', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    expectTypeOf<MathRendererProps>().toEqualTypeOf<{
+      value: string;
+      display: 'inline' | 'block';
+    }>();
+    expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });
 });
 
@@ -577,6 +805,54 @@ describe('inlinePlugins', () => {
       'https://issues.example.com/browse/PROJ-123',
     );
     expect(link!.textContent).toBe('PROJ-123');
+  });
+
+  it('autolinks generic prefixed-number entities without rewriting source', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const {container} = render(
+      <Markdown inlinePlugins={[entityPlugin]}>
+        {'See DOC-2048, but keep `DOC-9999` literal.'}
+      </Markdown>,
+    );
+    const link = screen.getByTestId('entity-link');
+    expect(link).toHaveAttribute('href', '/entities/DOC-2048');
+    expect(link).toHaveTextContent('DOC-2048');
+    expect(container.querySelector('code')).toHaveTextContent('DOC-9999');
+    expect(
+      container.querySelectorAll('[data-testid="entity-link"]'),
+    ).toHaveLength(1);
+  });
+
+  it('keeps math opaque to entity plugins while transforming surrounding prose', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b(DOC-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const MathRenderer: NonNullable<MarkdownComponents['math']> = ({value}) => (
+      <span role="math">{value}</span>
+    );
+    render(
+      <Markdown
+        components={{math: MathRenderer}}
+        inlinePlugins={[entityPlugin]}>
+        {'DOC-1 and $DOC-2 + x$ and `DOC-3`'}
+      </Markdown>,
+    );
+    expect(screen.getAllByTestId('entity-link')).toHaveLength(1);
+    expect(screen.getByTestId('entity-link')).toHaveTextContent('DOC-1');
+    expect(screen.getByRole('math')).toHaveTextContent('DOC-2 + x');
+    expect(screen.getByText('DOC-3').tagName).toBe('CODE');
   });
 
   it('supports multiple plugins', () => {

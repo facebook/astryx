@@ -9,12 +9,18 @@
  * @position Core implementation; consumed by index.ts, tested by Banner.test.tsx
  *
  * Visual structure:
- * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
+ * - Banner frame (themeProps 'banner-frame'): owns the resting elevation and,
+ *   for elevated card banners, the outer radius that shapes that shadow
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): card background for additional content (children)
  * - Status icon (themeProps 'banner-icon'): the target rides on the default
  *   <Icon> itself — the element that paints — so 'status:X' overrides reach
  *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
+ * - Description (themeProps 'banner-description'): the supporting line owns its
+ *   own colour and type, and the space between it and the title
+ * - The end area carries no target: it is a layout row (flex, wrap, edge
+ *   compensation) rather than a painted surface, and a theme that wants the
+ *   header to grow around its buttons sets `padding-block` on 'banner'
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - Children are collapsible by default: a toggle appears in the header end
@@ -221,7 +227,7 @@ const statusIconColor: Partial<Record<BannerStatus, IconColor>> = {
 // =============================================================================
 
 const styles = stylex.create({
-  // Root container — layout only, no visual styling
+  // Root container — outer elevation and elevated-card radius painter
   root: {
     display: 'flex',
     flexDirection: 'column',
@@ -572,6 +578,7 @@ export function Banner({
         handlePointerDownCapture,
       )}
       {...mergeProps(
+        themeProps('banner-frame', {container, elevation}),
         stylex.props(
           styles.root,
           elevationStyles[elevation],
@@ -631,7 +638,13 @@ export function Banner({
           )}>
           <div {...stylex.props(styles.title)}>{title}</div>
           {isRenderable(description) && (
-            <div {...stylex.props(styles.description)}>{description}</div>
+            <div
+              {...mergeProps(
+                themeProps('banner-description'),
+                stylex.props(styles.description),
+              )}>
+              {description}
+            </div>
           )}
         </div>
         {showEndArea && (

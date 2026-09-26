@@ -4,7 +4,8 @@
 
 /**
  * @file ChatMessageList.tsx
- * @input Uses React, StyleX, ChatListContext, useIsomorphicLayoutEffect, theme tokens, spacing step utilities, getScrollableAncestor
+ * @input Uses React, StyleX, ChatListContext, useIsomorphicLayoutEffect, theme tokens, spacing step utilities,
+ *   getScrollableAncestor, and isRenderable to preserve accepted empty-state content
  * @output Exports ChatMessageList component and ChatMessageListProps
  * @position Presentational message container — holds ChatMessage children
  *
@@ -42,7 +43,7 @@ import {
   type ChatDensity,
   useChatLayoutContext,
 } from './ChatContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Spinner} from '../Spinner';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {BaseProps} from '../BaseProps';
@@ -456,7 +457,7 @@ export function ChatMessageList({
           {/* Messages or empty state */}
           {hasChildren ? (
             children
-          ) : emptyState ? (
+          ) : isRenderable(emptyState) ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : null}
         </div>

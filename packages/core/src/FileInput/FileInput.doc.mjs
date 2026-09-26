@@ -5,7 +5,7 @@
 export const docs = {
   name: 'FileInput',
   displayName: 'File Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {
@@ -142,6 +142,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
@@ -270,6 +271,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
