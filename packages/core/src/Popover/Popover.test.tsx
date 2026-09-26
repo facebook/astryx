@@ -541,7 +541,7 @@ describe('Popover', () => {
             Anchor
           </button>
           <Popover
-            anchorRef={ref as React.RefObject<HTMLElement>}
+            anchorRef={ref}
             content={<span>Sibling content</span>}
             label="Sibling"
           />

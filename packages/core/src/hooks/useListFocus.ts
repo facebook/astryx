@@ -347,10 +347,14 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     // i.e. whose nearest boundary ancestor is our own container. This excludes
     // items inside nested lists (e.g. inline submenu flyouts) that would
     // otherwise be swept in by querySelectorAll.
-    if (!boundarySelector) {
-      return matched;
-    }
-    return matched.filter(el => el.closest(boundarySelector) === listEl);
+    return matched.filter(
+      el =>
+        // Measurement copies are intentionally inert and hidden. They must
+        // never become a roving-tabindex stop merely because their elements
+        // match the list's item selector.
+        el.closest('[aria-hidden="true"], [inert]') == null &&
+        (!boundarySelector || el.closest(boundarySelector) === listEl),
+    );
   }, [itemSelector, boundarySelector]);
 
   /**

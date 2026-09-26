@@ -123,7 +123,7 @@ export interface PopoverProps extends Pick<
    * `<button>` or `[role="button"]` — the popover applies click/keydown
    * handlers and ARIA attributes to it directly.
    */
-  anchorRef?: React.RefObject<HTMLElement>;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 
   /**
    * Content to display inside the popover.
