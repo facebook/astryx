@@ -95,9 +95,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -349,6 +354,13 @@ export interface TextAreaProps extends Omit<
    * Callback fired when the textarea loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the textarea unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.TextareaHTMLAttributes<HTMLTextAreaElement>['autoComplete'];
 }
 
 /**
@@ -564,8 +576,8 @@ export function TextArea({
               disabled: isDisabled ? 'disabled' : null,
               readonly: isReadOnly ? 'readonly' : null,
             },
-            // `textarea` ran the compound name together; themes styling it
-            // keep working until the next major.
+            // `textarea` ran the compound name together; keep it emitted so
+            // existing themes continue to work.
             {legacyNames: ['textarea']},
           ),
           stylex.props(

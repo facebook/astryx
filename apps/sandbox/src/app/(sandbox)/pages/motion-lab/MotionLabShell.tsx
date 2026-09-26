@@ -21,7 +21,7 @@
  * which is the order they are meant to be read in.
  */
 
-import {usePathname} from 'next/navigation';
+import {usePathname} from '../../../../router';
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -54,6 +54,12 @@ const sx = stylex.create({
     paddingBlockStart: '2px',
   },
 });
+
+/**
+ * Hrefs stay unprefixed: SandboxLink applies the Vite base path once in the
+ * LinkProvider, and usePathname() returns the path within that base path.
+ * A second prefix here would break navigation on the staged /sandbox/ build.
+ */
 
 /** The export sets `trailingSlash: true`, so normalise before comparing. */
 function isCurrent(pathname: string, href: string): boolean {

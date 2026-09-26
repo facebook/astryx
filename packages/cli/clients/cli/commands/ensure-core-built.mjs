@@ -9,10 +9,9 @@
  * and Vitest runs test files in parallel worker forks. When two build-theme
  * suites each ran `if (!exists) pnpm -F @astryxdesign/core build` in their own
  * beforeAll, both workers saw dist missing and launched concurrent builds that
- * collided on the shared packages/core/dist (core's build starts with
- * `rimraf dist`): one worker wiped dist while the other was mid-write, failing
- * nondeterministically ("Could not resolve dist/index.js" / "ENOTEMPTY rmdir
- * dist/hooks").
+ * collided on the shared packages/core/dist: one worker cleaned dist while the
+ * other was mid-write, failing nondeterministically ("Could not resolve
+ * dist/index.js" / "ENOTEMPTY rmdir dist/hooks").
  *
  * This serializes the build behind a filesystem lock so exactly one worker
  * builds and the rest wait for it to finish before reading dist.

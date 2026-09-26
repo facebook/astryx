@@ -137,6 +137,15 @@ const styles = stylex.create({
       [stylex.when.ancestor(':hover', tabScope)]: {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
+      // Pressed: the same layer steps up to the pressed overlay, read off the
+      // tab the way the hover is, so a press paints on a finger too. Repeated
+      // inside the hover-capable branch so it outranks the hover rule there
+      // (a media-nested rule carries extra generated priority; see
+      // interactionOverlay.stylex.ts).
+      [stylex.when.ancestor(':active', tabScope)]: {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (hover: hover)': colorVars['--color-overlay-pressed'],
+      },
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
@@ -249,6 +258,7 @@ export function Tab({
   xstyle,
   className,
   style,
+  onClick,
   ...restProps
 }: TabProps) {
   const tabListCtx = useTabListContext();
@@ -263,9 +273,23 @@ export function Tab({
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
   const hasVisibleLabel = !isLabelHidden && label !== '';
 
-  const handleSelect = useCallback(() => {
-    tabListCtx.onChange(value);
-  }, [tabListCtx, value]);
+  const isDisabled =
+    restProps['aria-disabled'] === true ||
+    restProps['aria-disabled'] === 'true';
+
+  const handleSelect = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+      if (isDisabled) {
+        event.preventDefault();
+        return;
+      }
+      onClick?.(event as React.MouseEvent<HTMLButtonElement>);
+      if (!event.defaultPrevented) {
+        tabListCtx.onChange(value);
+      }
+    },
+    [isDisabled, onClick, tabListCtx, value],
+  );
 
   useDevWarning(
     'Tab',
@@ -339,7 +363,7 @@ export function Tab({
         sizeStyles[size],
         isSelected && styles.selected,
         isFill && layoutStyles.fill,
-        tabScope,
+        !isDisabled && tabScope,
         xstyle,
       ),
       className,
@@ -382,10 +406,14 @@ export function Tab({
   ) : null;
 
   if (isLink) {
+    // A disabled link tab must not reach a router component: some routers reject
+    // a missing destination, while others treat it as the current route. A
+    // plain anchor without href preserves the element shape but cannot navigate.
+    const LinkRoot = isDisabled ? 'a' : LinkComponent;
     return (
-      <LinkComponent
+      <LinkRoot
         ref={ref}
-        href={href}
+        href={isDisabled ? undefined : href}
         onClick={handleSelect}
         {...sharedProps}>
         {hoverBgElement}
@@ -393,7 +421,7 @@ export function Tab({
         {labelElement}
         {endContentElement}
         {indicatorElement}
-      </LinkComponent>
+      </LinkRoot>
     );
   }
 

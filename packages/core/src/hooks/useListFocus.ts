@@ -86,20 +86,6 @@ export interface UseListFocusOptions {
   hasHomeEnd?: boolean;
 
   /**
-   * @deprecated Direction is auto-detected from the container's computed
-   * `direction` — omit this. The explicit override is redundant (there's no
-   * valid reason to force RTL arrows in an LTR context) and will be removed in
-   * an upcoming major.
-   *
-   * When set, forces whether the list is right-to-left: ArrowLeft/ArrowRight
-   * are swapped so horizontal navigation follows visual direction. When
-   * omitted (preferred), the direction is auto-detected from the container's
-   * computed `direction` (read lazily on keydown, horizontal arrows only).
-   * @default undefined (auto-detect from the container)
-   */
-  isRtl?: boolean;
-
-  /**
    * Roving-tabindex ownership. When true, the hook manages a single tab stop
    * across the items: exactly one enabled item carries `tabindex="0"` and the
    * rest `tabindex="-1"`. The tab stop is stamped on mount and repaired
@@ -327,7 +313,6 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     onEscape,
     orientation = 'vertical',
     hasHomeEnd = true,
-    isRtl,
     hasRovingTabIndex = false,
     hasCaretGuard = false,
   } = options;
@@ -580,13 +565,13 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       // Resolve which keys advance vs retreat, honoring RTL for horizontal.
       // Direction is resolved lazily — getComputedStyle runs only when a
       // horizontal arrow key is actually pressed (SSR-safe, no layout thrash
-      // on unrelated keys) — and an explicit `isRtl` always wins.
+      // on unrelated keys).
       const nextKeys: string[] = [];
       const prevKeys: string[] = [];
       if (horizontal) {
         const rtl =
           e.key === 'ArrowLeft' || e.key === 'ArrowRight'
-            ? (isRtl ?? isRtlElement(listRef.current))
+            ? isRtlElement(listRef.current)
             : false;
         nextKeys.push(rtl ? 'ArrowLeft' : 'ArrowRight');
         prevKeys.push(rtl ? 'ArrowRight' : 'ArrowLeft');
@@ -644,7 +629,6 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       getItems,
       wrap,
       orientation,
-      isRtl,
       hasHomeEnd,
       hasCaretGuard,
       findEnabledIndex,

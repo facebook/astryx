@@ -18,9 +18,7 @@ let tmpDir;
 let originalCwd;
 
 function makeConsumer() {
-  const dir = fs.mkdtempSync(
-    path.join(process.cwd(), '.astryx-template-it-'),
-  );
+  const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-template-it-'));
   fs.writeFileSync(
     path.join(dir, 'package.json'),
     JSON.stringify({name: 'consumer'}),
@@ -92,6 +90,43 @@ describe('integration template discovery', () => {
     expect(entry.package).toBe('@acme/widgets');
     expect(entry.name).toBe('pricing name');
     expect(entry.description).toBe('pricing desc');
+  });
+
+  it('preserves integration block showcase metadata in list output', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'chart-showcase', {
+      kind: 'block',
+      body: `export default {
+  type: 'block',
+  name: 'Chart',
+  displayName: 'Chart',
+  description: 'A chart.',
+  category: 'components/Chart',
+  exampleFor: 'Chart',
+  aspectRatio: 16 / 10,
+  isShowcase: true,
+  alsoExampleFor: ['ChartBar'],
+  alsoShowcaseFor: ['ChartSwatch'],
+  componentsUsed: ['Chart'],
+};\n`,
+    });
+
+    const result = await template(undefined, {
+      list: true,
+      type: 'block',
+      package: '@acme/widgets',
+      cwd: tmpDir,
+    });
+    expect(result.data[0]).toMatchObject({
+      id: 'chart-showcase',
+      displayName: 'Chart',
+      exampleFor: 'Chart',
+      aspectRatio: 1.6,
+      isShowcase: true,
+      alsoExampleFor: ['ChartBar'],
+      alsoShowcaseFor: ['ChartSwatch'],
+      componentsUsed: ['Chart'],
+    });
   });
 
   it('lists nested-id templates (kebab path under root)', async () => {
