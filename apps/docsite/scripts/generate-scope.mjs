@@ -31,6 +31,16 @@ const exportKeys = Object.keys(corePkg.exports ?? {});
 const SKIP =
   /\.(css|stylex)$|\/utils$|^\.\/theme|^\.\/hooks|^\.\/utils|^\.\/syntax|^\.\/docs|^\.\/groups|^\.$|^\.\/reset/;
 
+// The playground scope is eager and synchronous. Keep optional Markdown
+// renderer adapters out of every docsite page; their maintained demos live in
+// Storybook, while applications can still import these public subpaths directly.
+const PLAYGROUND_EXCLUDED_NESTED_MODULES = new Set([
+  './Markdown/ansi',
+  './Markdown/katex',
+  './Markdown/mermaid',
+  './Markdown/shiki',
+]);
+
 const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
 const NESTED_MODULE_NAME = /^[A-Z][A-Za-z0-9]*(?:\/[A-Za-z0-9][A-Za-z0-9-]*)+$/;
 
@@ -44,7 +54,9 @@ const components = exportKeys
 
 const nestedModules = exportKeys
   .filter(k => {
-    if (SKIP.test(k)) return false;
+    if (SKIP.test(k) || PLAYGROUND_EXCLUDED_NESTED_MODULES.has(k)) {
+      return false;
+    }
     return NESTED_MODULE_NAME.test(k.replace('./', ''));
   })
   .map(k => {

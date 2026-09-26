@@ -67,6 +67,12 @@ const anatomy = [
     description:
       'Optional lazy math output from the separately imported MarkdownKaTeX renderer; readable source remains when loading or typesetting fails.',
   },
+  {
+    name: 'Mermaid diagram',
+    required: false,
+    description:
+      'Optional SVG diagram produced from a mermaid code fence; the ordinary CodeBlock remains while loading and after failure.',
+  },
 ];
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -276,6 +282,7 @@ export const docs = {
         className: 'astryx-markdown-katex',
         visualProps: ['display'],
       },
+      {className: 'astryx-markdown-mermaid'},
     ],
   },
   usage: {
@@ -321,7 +328,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
       },
       {
         guidance: true,
@@ -496,6 +503,17 @@ const diagrams = createMarkdownPlugin<'diagrams', DiagramNode>({
 
 <Markdown plugins={[diagrams]}>
   {'\`\`\`mermaid Checkout flow\\ngraph LR; A-->B\\n\`\`\`'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Mermaid fences',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownMermaidPlugin} from '@astryxdesign/core/Markdown/mermaid';
+
+<Markdown plugins={[markdownMermaidPlugin]}>
+  {'\`\`\`mermaid title="Checkout flow"\\nflowchart LR\\n  Cart --> Payment\\n\`\`\`'}
 </Markdown>;
 `,
     },
@@ -825,6 +843,11 @@ export const docsZh = {
         description:
           '通过可选 MarkdownKaTeX 渲染器生成的行内或块级数学表达式。可覆盖颜色、字体和间距。',
       },
+      {
+        className: 'astryx-markdown-mermaid',
+        description:
+          '通过可选 Mermaid 插件生成的 SVG 图表。可覆盖外层颜色、背景、边框和间距。',
+      },
     ],
   },
   usage: {
@@ -870,7 +893,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
       },
       {
         guidance: true,
@@ -972,7 +995,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
       },
       {
         guidance: true,

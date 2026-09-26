@@ -634,6 +634,11 @@
       "types": "./dist/Markdown/katex/index.d.ts",
       "default": "./dist/Markdown/katex/index.js"
     },
+    "./Markdown/mermaid": {
+      "source": "./src/Markdown/mermaid/index.ts",
+      "types": "./dist/Markdown/mermaid/index.d.ts",
+      "default": "./dist/Markdown/mermaid/index.js"
+    },
     "./Markdown/plugins": {
       "source": "./src/Markdown/plugins/index.ts",
       "types": "./dist/Markdown/plugins/index.d.ts",
@@ -713,11 +718,15 @@
   "peerDependencies": {
     "@stylexjs/stylex": "^0.19.0",
     "katex": "^0.18.0",
+    "mermaid": "^11.12.0 || ^12.0.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },
   "peerDependenciesMeta": {
     "katex": {
+      "optional": true
+    },
+    "mermaid": {
       "optional": true
     }
   },
@@ -734,7 +743,8 @@
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/babel__core": "^7.20.5",
-    "katex": "0.18.7"
+    "katex": "0.18.7",
+    "mermaid": "12.0.0"
   },
   "dependencies": {
     "intl-messageformat": "^11.2.9"

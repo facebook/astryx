@@ -79,6 +79,12 @@ const SKIP =
 
 const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
 const NESTED_MODULE_NAME = /^[A-Z][A-Za-z0-9]*(?:\/[A-Za-z0-9][A-Za-z0-9-]*)+$/;
+const PLAYGROUND_EXCLUDED_NESTED_MODULES = new Set([
+  'Markdown/ansi',
+  'Markdown/katex',
+  'Markdown/mermaid',
+  'Markdown/shiki',
+]);
 
 function getExpectedComponents(): string[] {
   const pkg = JSON.parse(fs.readFileSync(CORE_PKG_PATH, 'utf-8'));
@@ -97,10 +103,11 @@ function getExpectedNestedModules(): string[] {
   const pkg = JSON.parse(fs.readFileSync(CORE_PKG_PATH, 'utf-8'));
   return Object.keys(pkg.exports ?? {})
     .filter(k => {
-      if (SKIP.test(k)) {
+      const name = k.replace('./', '');
+      if (SKIP.test(k) || PLAYGROUND_EXCLUDED_NESTED_MODULES.has(name)) {
         return false;
       }
-      return NESTED_MODULE_NAME.test(k.replace('./', ''));
+      return NESTED_MODULE_NAME.test(name);
     })
     .map(k => k.replace('./', ''));
 }
@@ -152,6 +159,18 @@ describe('playground-scope', () => {
     });
     expect(missing).toEqual([]);
     expect(scopeContent).not.toMatch(/^import \* as [^\s;]*\//m);
+  });
+
+  it('keeps optional Markdown renderers out of the eager scope', () => {
+    for (const name of PLAYGROUND_EXCLUDED_NESTED_MODULES) {
+      const identifier = nestedModuleIdentifier(name);
+      expect(scopeContent).not.toContain(
+        `import * as ${identifier} from '@astryxdesign/core/${name}';`,
+      );
+      expect(scopeContent).not.toContain(
+        `'@astryxdesign/core/${name}': ${identifier},`,
+      );
+    }
   });
 
   it('has a scope entry for every component', () => {
