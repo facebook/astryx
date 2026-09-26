@@ -1654,6 +1654,38 @@ describe('TreeList', () => {
       )!.firstElementChild!;
       expect(declarationsOf(chevron)).toContain('rotate(90deg)');
     });
+
+    it('reports isExpanded false for a leaf whose expanded parent lost its children', async () => {
+      const user = userEvent.setup();
+      const renderExpandIcon = vi.fn(renderFolderIcon);
+      const {rerender} = render(
+        <TreeList
+          items={[
+            {id: 'p', label: 'Parent', children: [{id: 'c', label: 'Child'}]},
+          ]}
+          renderExpandIcon={renderExpandIcon}
+        />,
+      );
+      // Expand through the user-override path (not the data `isExpanded`).
+      await user.click(screen.getByRole('button', {name: 'Toggle children'}));
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: true,
+        hasChildren: true,
+        isDisabled: false,
+      });
+
+      rerender(
+        <TreeList
+          items={[{id: 'p', label: 'Parent', children: []}]}
+          renderExpandIcon={renderExpandIcon}
+        />,
+      );
+      expect(renderExpandIcon).toHaveBeenLastCalledWith({
+        isExpanded: false,
+        hasChildren: false,
+        isDisabled: false,
+      });
+    });
   });
 
   it('lets a consumer prevent built-in TreeList keyboard navigation while receiving root div as event.currentTarget', () => {

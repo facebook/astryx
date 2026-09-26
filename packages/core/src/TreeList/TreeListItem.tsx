@@ -413,7 +413,13 @@ export function TreeListItem({
 
   const customIcon =
     renderExpandIcon != null
-      ? renderExpandIcon({isExpanded, hasChildren, isDisabled})
+      ? renderExpandIcon({
+          // A stale user expansion can outlive an item's children; a leaf is
+          // never expanded (TreeListExpandIconState.isExpanded).
+          isExpanded: hasChildren && isExpanded,
+          hasChildren,
+          isDisabled,
+        })
       : null;
   const hasCustomIcon = isRenderable(customIcon);
 
