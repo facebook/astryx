@@ -393,10 +393,11 @@ The requirements below describe the candidate contract. While this record has
 - **IR3 — Logical state and transition state stay separate.** Internal retained
   panels and exit phases may outlive a requested path for animation, but they
   MUST NOT become a second logical path or alter callback payloads.
-- **IR4 — Policy implementation does not overload paint.** Scrim opacity, native
-  backdrop styling, focus containment, `show()` versus `showModal()`, inertness,
-  and scroll locking may collaborate internally, but `hasScrim` MUST NOT be used
-  as the source of truth for presentation.
+- **IR4 — Presentation implementation follows `hasScrim`.** `hasScrim` is the
+  source of truth for presentation: scrim opacity, native backdrop styling,
+  focus containment, `show()` versus `showModal()`, inertness, and scroll
+  locking are all derived from it. No parallel internal modality flag may
+  diverge from it.
 - **IR5 — Development diagnostics are stable and bounded.** Invalid-id warnings
   identify the root cause without including caller content, fire at most once per
   distinct invalid condition until it clears, and are absent from production.
@@ -471,7 +472,7 @@ interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
 }
 ```
 
-The candidate passes `spec:AST-002`'s need gate in four distinct cases:
+The candidate passes `spec:AST-002`'s need gate in three distinct cases:
 
 - **Path.** Two renders with the same registered sheets may represent different
   restored routes or branches and therefore require different ordered paths. The
@@ -489,8 +490,9 @@ The candidate passes `spec:AST-002`'s need gate in four distinct cases:
 The contract gate is enforceable within explicit limits: registered ids and the
 controlled value determine one validated prefix; a `hasScrim` native modal dialog enforces
 modal background unavailability; a non-modal dialog leaves the document
-available but does not promise to outrank an unrelated native modal; scrim paint
-changes no interaction channel; and final-focus candidates are used only while
+available but does not promise to outrank an unrelated native modal; `hasScrim`
+selects both the modal host and its interaction channels together; and
+final-focus candidates are used only while
 connected and eligible. The component derives internal phases, visual depth,
 active accessibility state, owner role, and fallback focus from these concepts,
 so the proposal does not expose them.
@@ -565,7 +567,7 @@ stacked paths does not falsely mark that sibling path complete.
 | FR12–FR15 | Validation, dynamic registration, and production-build tests                    | empty/repeated/unknown ids; duplicate registration; removal, replacement, and recovery                                                                                                          | A blank modal opens, an ambiguous sheet wins by mount order, an invalid suffix stays interactive, the prop is rewritten, or production emits diagnostics.                                                                                             |
 | FR16–FR25 | Transition reducer, mutation tests, visual snapshots, and real-browser geometry | push, pop, multi-pop, branch replacement, deep link, rapid reversal, exit, reduced motion, deep path                                                                                            | Two native dialogs appear, covered content unmounts or stays interactive, stale completion wins, background releases early, or logical depth is capped with visual depth.                                                                             |
 | FR26–FR32 | Dismissal family, purpose, gesture, and controlled-refusal tests                | every purpose × Escape/platform/scrim/swipe; IME; Popover nested under the depth provider; ignored callback; scrim/swipe gesture continuing onto the opener; gesture interrupted by path update | One request pops twice, an invisible/non-modal scrim dismisses, a covered swipe wins, required closes, native state overrides the caller, the same physical press reopens the stack, or nested Popover Escape closes the stack when depth is removed. |
-| FR33–FR39 | Focus unit tests plus real Chromium/Safari and accessibility-tree evidence      | pointer/keyboard open; push/pop; deep link; invalid removal; detached/hidden final target; non-modal outside focus                                                                              | Covered content receives focus, pop returns to stale content, final close steals non-modal focus, or scrim paint determines modal semantics.                                                                                                          |
+| FR33–FR39 | Focus unit tests plus real Chromium/Safari and accessibility-tree evidence      | pointer/keyboard open; push/pop; deep link; invalid removal; detached/hidden final target; non-modal outside focus                                                                              | Covered content receives focus, pop returns to stale content, final close steals focus when `hasScrim=false`, or modal semantics diverge from `hasScrim`.                                                                                             |
 | FR40–FR43 | SSR/hydration, resource instrumentation, and reduced-motion browser tests       | empty/non-empty initial path; 1/10/100 registrations; live `hasScrim` changes; interrupted exit                                                                                                 | Server exposes multiple active dialogs, hydration focuses covered levels, closed roots retain active resources, scroll/animation drives React renders, or policy flips expose a live background frame.                                                |
 | IR1–IR8   | Source ownership, docs, public-surface, ref/BaseProps, and theming review       | singular/list prop reconciliation; retained phases; host passthrough/ref; warnings; generated docs; CSS/data attributes                                                                         | Component code bypasses shared owners, drops the host's DOM/ref contract, exposes transition state, teaches internals, or makes an unreviewed depth hook public.                                                                                      |
 
