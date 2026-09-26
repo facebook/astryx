@@ -146,7 +146,7 @@ export function registerComponent(program) {
       // The api layer already resolved against core (result exists), so core is
       // present on this path; narrow away the null branch findCoreDir allows.
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
-      const themeData = resolveTheme(process.cwd());
+      const themeData = await resolveTheme(process.cwd());
 
       // Footer shared by the compact + names list views (prose → text()).
       const listFooter = text(
