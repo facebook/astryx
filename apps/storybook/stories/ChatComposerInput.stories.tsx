@@ -77,6 +77,16 @@ const COMMANDS: SearchableItem<{description: string}>[] = [
 const userSource = createStaticSource(USERS);
 const commandSource = createStaticSource(COMMANDS);
 
+const EMOJIS: SearchableItem[] = [
+  {id: 'smile', label: 'smile (😄)'},
+  {id: 'heart', label: 'heart (❤️)'},
+  {id: 'thumbsup', label: 'thumbsup (👍)'},
+  {id: 'fire', label: 'fire (🔥)'},
+  {id: 'rocket', label: 'rocket (🚀)'},
+  {id: 'sparkles', label: 'sparkles (✨)'},
+];
+const emojiSource = createStaticSource(EMOJIS);
+
 const asyncUserSource: SearchSource = {
   search(query: string) {
     return new Promise(resolve => {
@@ -318,6 +328,7 @@ export const MentionTrigger: Story = {
     const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
+      allowSpaces: true,
       renderItem: item => (
         <TypeaheadItem
           item={item}
@@ -443,6 +454,7 @@ export const MultipleTriggers: Story = {
     const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
+      allowSpaces: true,
       onSelect: item => ({
         value: `@${item.id}`,
         label: item.label,
@@ -727,3 +739,29 @@ export const GroupedItems: Story = {
     );
   },
 };
+
+/** Punctuation trigger (e.g. emoji picker) — type : to see the menu */
+export const PunctuationTrigger: Story = {
+  render: () => {
+    const emojiTrigger: ChatComposerTrigger = {
+      character: ':',
+      searchSource: emojiSource,
+      allowSpaces: false,
+      renderItem: item => <TypeaheadItem item={item} />,
+      onSelect: item => `:${item.id}: `,
+    };
+
+    return (
+      <ChatComposer
+        onSubmit={value => alert(`Sent: ${value}`)}
+        input={
+          <ChatComposerInput
+            triggers={[emojiTrigger]}
+            placeholder="Type : to see emoji suggestions..."
+          />
+        }
+      />
+    );
+  },
+};
+
