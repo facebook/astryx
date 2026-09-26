@@ -2,14 +2,13 @@
 
 /**
  * @file Section.tsx
- * @input Uses container utility, Layout/flex.stylex, StyleX
+ * @input Uses container utility, StyleX
  * @output Exports Section component and SectionProps
  * @position Core section container component
  *
  * Two-box anatomy — the props split across them:
- * - OUTER box: the flex child. Sizing (width/height/maxWidth/minHeight),
- *   flex-item props (grow/shrink/basis), and the negative margins that escape
- *   a parent container's padding.
+ * - OUTER box: the flex child. Sizing (width/height/maxWidth/minHeight) and
+ *   the negative margins that escape a parent container's padding.
  * - INNER box: the painted surface. Padding, variant background, dividers,
  *   height:100% — and `overflow`, so the surface scrolls its own content
  *   instead of sliding out from under it.
@@ -43,12 +42,6 @@ import {
   sectionPaddingPropagationStyles,
   spacingStepToToken,
 } from '../Layout/padding.stylex';
-import {
-  flexItem,
-  minSizeResetStyles,
-  scrollableStyles,
-  type FlexFactor,
-} from '../Layout/flex.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -121,6 +114,26 @@ const dividerStyles = stylex.create({
     borderInlineEndWidth: 1,
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
+  },
+});
+
+const scrollableStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
+
+/**
+ * "Resets" the min-width and min-height of the outer box as a flex item.
+ *
+ * Flex items have an implicit min size of auto, meaning they will never shrink
+ * smaller than their contents. This reset lets a scrollable section be
+ * constrained by its flex parent so its surface scrolls instead of growing.
+ */
+const minSizeResetStyles = stylex.create({
+  reset: {
+    minHeight: 0,
+    minWidth: 0,
   },
 });
 
@@ -247,28 +260,11 @@ export interface SectionProps extends BaseProps<HTMLElement> {
    * shrink (and therefore scroll) inside a Stack.
    *
    * The section still needs a bounded height to scroll against: give it a
-   * `height`, or put it in a Stack that has one.
+   * `height`, or put it in a Stack that has one. Wrapped in a `StackItem`
+   * (a plain block box), give it `height="100%"` so it fills the item.
    * @default false
    */
   isScrollable?: boolean;
-
-  /**
-   * Whether the section grows to absorb free space when it is a flex child
-   * (`flex-grow`). `true` is `1`; pass a number for a custom factor.
-   */
-  grow?: FlexFactor;
-
-  /**
-   * Whether the section shrinks when space runs short (`flex-shrink`).
-   * `shrink={false}` is the "fixed width column" idiom.
-   */
-  shrink?: FlexFactor;
-
-  /**
-   * Initial main-axis size of the section as a flex child (`flex-basis`).
-   * Numbers are treated as pixels, strings are used as-is.
-   */
-  basis?: SizeValue;
 }
 
 /**
@@ -290,13 +286,18 @@ export interface SectionProps extends BaseProps<HTMLElement> {
  *
  * // Multi-pane: fixed column + detail column that takes the rest,
  * // each scrolling on its own inside a horizontally scrolling strip.
+ * // StackItem sizes each pane; height="100%" bounds the section to it.
  * <HStack height="100%" isScrollable>
- *   <Section width={240} shrink={false} isScrollable dividers={['end']}>
- *     <List>{items}</List>
- *   </Section>
- *   <Section grow shrink={false} basis={320} isScrollable>
- *     <Detail />
- *   </Section>
+ *   <StackItem size="static">
+ *     <Section width={240} height="100%" isScrollable dividers={['end']}>
+ *       <List>{items}</List>
+ *     </Section>
+ *   </StackItem>
+ *   <StackItem size="fill" minWidth={320}>
+ *     <Section height="100%" isScrollable>
+ *       <Detail />
+ *     </Section>
+ *   </StackItem>
  * </HStack>
  * ```
  */
@@ -316,9 +317,6 @@ export function Section({
   paddingBlockStart,
   paddingBlockEnd,
   isScrollable,
-  grow,
-  shrink,
-  basis,
   xstyle,
   className,
   style,
@@ -337,7 +335,7 @@ export function Section({
   // explicitly.
   const needsMinSizeReset = isScrollable === true;
 
-  // The OUTER box is the flex child: sizing and flex-item props belong here.
+  // The OUTER box is the flex child: sizing belongs here.
   // The reset goes first so an explicit `minHeight` still wins over it.
   const outerStylex = stylex.props(
     nestedStyles.outer,
@@ -346,7 +344,6 @@ export function Section({
     height != null && dynamicStyles.height(height),
     maxWidth != null && dynamicStyles.maxWidth(maxWidth),
     minHeight != null && dynamicStyles.minHeight(minHeight),
-    ...flexItem({grow, shrink, basis}),
     xstyle,
   );
 

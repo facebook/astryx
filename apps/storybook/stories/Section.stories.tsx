@@ -3,7 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Section} from '@astryxdesign/core/Section';
-import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {VStack, HStack, StackItem} from '@astryxdesign/core/Layout';
 import {
   Layout,
   LayoutHeader,
@@ -77,14 +77,6 @@ const meta: Meta<typeof Section> = {
     isScrollable: {
       control: 'boolean',
       description: 'Makes the section scroll its own content (overflow: auto)',
-    },
-    grow: {
-      control: 'boolean',
-      description: 'flex-grow as a flex child',
-    },
-    shrink: {
-      control: 'boolean',
-      description: 'flex-shrink as a flex child',
     },
   },
 };
@@ -391,44 +383,48 @@ export const Scrollable: Story = {
 };
 
 // ============================================================================
-// MultiPane — grow / shrink / basis (issue #2623)
+// MultiPane — StackItem sizing + Section isScrollable (issue #2623)
 // ============================================================================
 
 export const MultiPane: Story = {
-  name: 'Multi-pane (grow / shrink / basis)',
+  name: 'Multi-pane (StackItem + isScrollable)',
   render: () => (
     <div {...stylex.props(styles.pageWrapper)}>
       <h4 {...stylex.props(styles.heading)}>
         Fixed sidebar + detail column that takes the rest
       </h4>
       <HStack height={220} isScrollable>
-        <Section
-          variant="muted"
-          width={180}
-          shrink={false}
-          isScrollable
-          dividers={['end']}>
-          <VStack gap={2}>
-            {Array.from({length: 12}, (_, i) => (
-              <p key={i} {...stylex.props(styles.text)}>
-                Item {i + 1}
+        <StackItem size="static">
+          <Section
+            variant="muted"
+            width={180}
+            height="100%"
+            isScrollable
+            dividers={['end']}>
+            <VStack gap={2}>
+              {Array.from({length: 12}, (_, i) => (
+                <p key={i} {...stylex.props(styles.text)}>
+                  Item {i + 1}
+                </p>
+              ))}
+            </VStack>
+          </Section>
+        </StackItem>
+        <StackItem size="fill" minWidth={320}>
+          <Section variant="section" height="100%" isScrollable>
+            <VStack gap={2}>
+              <p {...stylex.props(styles.text)}>
+                This column grows into the leftover space and never shrinks
+                below 320px — the strip scrolls horizontally instead.
               </p>
-            ))}
-          </VStack>
-        </Section>
-        <Section variant="section" grow shrink={false} basis={320} isScrollable>
-          <VStack gap={2}>
-            <p {...stylex.props(styles.text)}>
-              This column grows into the leftover space from a 320px basis and
-              never shrinks below it — the strip scrolls horizontally instead.
-            </p>
-            {Array.from({length: 10}, (_, i) => (
-              <p key={i} {...stylex.props(styles.text, styles.textSecondary)}>
-                Detail line {i + 1}
-              </p>
-            ))}
-          </VStack>
-        </Section>
+              {Array.from({length: 10}, (_, i) => (
+                <p key={i} {...stylex.props(styles.text, styles.textSecondary)}>
+                  Detail line {i + 1}
+                </p>
+              ))}
+            </VStack>
+          </Section>
+        </StackItem>
       </HStack>
     </div>
   ),

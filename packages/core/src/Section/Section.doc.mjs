@@ -100,23 +100,8 @@ export const docs = {
     {
       name: 'isScrollable',
       type: 'boolean',
-      description: 'Makes the section scroll its own overflow (overflow: auto) — the "this pane scrolls on its own" prop. The section still needs a bounded height to scroll against: give it a height, or put it in a Stack that has one. Matches isScrollable on LayoutContent and LayoutPanel.',
+      description: 'Makes the section scroll its own overflow (overflow: auto) — the "this pane scrolls on its own" prop. The section still needs a bounded height to scroll against: give it a height, or put it in a Stack that has one. Wrapped in a StackItem (a plain block box), give it height="100%" so it fills the item. Matches isScrollable on LayoutContent and LayoutPanel.',
       default: 'false',
-    },
-    {
-      name: 'grow',
-      type: 'boolean | number',
-      description: 'Whether the section grows to absorb free space when it is a flex child (flex-grow). true is 1; pass a number for a custom factor.',
-    },
-    {
-      name: 'shrink',
-      type: 'boolean | number',
-      description: 'Whether the section shrinks when space runs short (flex-shrink). shrink={false} is the fixed-width column idiom.',
-    },
-    {
-      name: 'basis',
-      type: 'SizeValue',
-      description: 'Initial main-axis size of the section as a flex child (flex-basis). Numbers are treated as pixels, strings are used as-is.',
     },
     {
       name: 'xstyle',

@@ -6,7 +6,7 @@ import {useState, useMemo, type CSSProperties} from 'react';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {List, ListItem} from '@astryxdesign/core/List';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {HStack, StackItem, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -449,85 +449,88 @@ export default function FileExplorerPage() {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
               return (
-                <Section
-                  key={colIndex}
-                  width={240}
-                  padding={2}
-                  variant="transparent"
-                  dividers={showDivider ? ['end'] : undefined}
-                  shrink={false}
-                  isScrollable>
-                  <List density="compact" hasDividers={false}>
-                    {col.items.map(item => {
-                      const isSelected = col.selectedId === item.id;
-                      const hasChildren =
-                        item.type === 'folder' &&
-                        item.children != null &&
-                        item.children.length > 0;
-                      return (
-                        <ListItem
-                          key={item.id}
-                          label={item.name}
-                          startContent={
-                            <Icon
-                              icon={
-                                item.type === 'folder'
-                                  ? FolderIcon
-                                  : DocumentIcon
-                              }
-                              color={
-                                item.type === 'folder' ? 'accent' : 'secondary'
-                              }
-                              size="sm"
-                            />
-                          }
-                          endContent={
-                            hasChildren ? (
+                <StackItem key={colIndex} size="static">
+                  <Section
+                    width={240}
+                    height="100%"
+                    padding={2}
+                    variant="transparent"
+                    dividers={showDivider ? ['end'] : undefined}
+                    isScrollable>
+                    <List density="compact" hasDividers={false}>
+                      {col.items.map(item => {
+                        const isSelected = col.selectedId === item.id;
+                        const hasChildren =
+                          item.type === 'folder' &&
+                          item.children != null &&
+                          item.children.length > 0;
+                        return (
+                          <ListItem
+                            key={item.id}
+                            label={item.name}
+                            startContent={
                               <Icon
-                                icon={ChevronRightIcon}
-                                size="xsm"
-                                color="secondary"
+                                icon={
+                                  item.type === 'folder'
+                                    ? FolderIcon
+                                    : DocumentIcon
+                                }
+                                color={
+                                  item.type === 'folder'
+                                    ? 'accent'
+                                    : 'secondary'
+                                }
+                                size="sm"
                               />
-                            ) : undefined
-                          }
-                          onClick={() => handleSelect(colIndex, item.id)}
-                          isSelected={isSelected}
-                        />
-                      );
-                    })}
-                  </List>
-                </Section>
+                            }
+                            endContent={
+                              hasChildren ? (
+                                <Icon
+                                  icon={ChevronRightIcon}
+                                  size="xsm"
+                                  color="secondary"
+                                />
+                              ) : undefined
+                            }
+                            onClick={() => handleSelect(colIndex, item.id)}
+                            isSelected={isSelected}
+                          />
+                        );
+                      })}
+                    </List>
+                  </Section>
+                </StackItem>
               );
             })}
             {selectedFile && (
-              <Section
-                padding={6}
-                variant="transparent"
-                grow
-                shrink={false}
-                basis={320}
-                isScrollable>
-                <VStack gap={4} hAlign="center">
-                  <Avatar name={selectedFile.name} size={96} />
-                  <VStack gap={1} hAlign="center">
-                    <Text type="label">{selectedFile.name}</Text>
-                    <Text type="supporting">
-                      {getFileExtension(selectedFile.name)} Document
-                    </Text>
+              <StackItem size="fill" minWidth={320}>
+                <Section
+                  height="100%"
+                  padding={6}
+                  variant="transparent"
+                  isScrollable>
+                  <VStack gap={4} hAlign="center">
+                    <Avatar name={selectedFile.name} size={96} />
+                    <VStack gap={1} hAlign="center">
+                      <Text type="label">{selectedFile.name}</Text>
+                      <Text type="supporting">
+                        {getFileExtension(selectedFile.name)} Document
+                      </Text>
+                    </VStack>
+                    <MetadataList title="Information">
+                      <MetadataListItem label="Created">
+                        March 28, 2026 at 2:15 PM
+                      </MetadataListItem>
+                      <MetadataListItem label="Modified">
+                        Yesterday, 10:27 PM
+                      </MetadataListItem>
+                      <MetadataListItem label="Kind">
+                        {getFileExtension(selectedFile.name)} Document
+                      </MetadataListItem>
+                    </MetadataList>
                   </VStack>
-                  <MetadataList title="Information">
-                    <MetadataListItem label="Created">
-                      March 28, 2026 at 2:15 PM
-                    </MetadataListItem>
-                    <MetadataListItem label="Modified">
-                      Yesterday, 10:27 PM
-                    </MetadataListItem>
-                    <MetadataListItem label="Kind">
-                      {getFileExtension(selectedFile.name)} Document
-                    </MetadataListItem>
-                  </MetadataList>
-                </VStack>
-              </Section>
+                </Section>
+              </StackItem>
             )}
           </HStack>
         </LayoutContent>

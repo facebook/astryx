@@ -30,13 +30,14 @@ import {
   paddingBlockStartStyles,
   paddingBlockEndStyles,
 } from '../Layout/padding.stylex';
-import {
-  flexItem,
-  scrollableStyles,
-  type FlexFactor,
-} from '../Layout/flex.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+
+const overflowStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
 
 /**
  * Alignment values accepted by Stack.
@@ -174,9 +175,7 @@ export interface StackProps extends BaseProps<HTMLElement> {
   paddingBlockEnd?: SpacingStep;
 
   /**
-   * Enables scrollable overflow (`overflow: auto`) for the stack — use it for
-   * a horizontally scrolling strip (a kanban board, a card rail) as well as a
-   * vertically scrolling pane.
+   * Enables scrollable overflow (`overflow: auto`) for the stack.
    *
    * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
    * When the stack is itself a flex child that should scroll, pair it with
@@ -185,24 +184,6 @@ export interface StackProps extends BaseProps<HTMLElement> {
    * @default false
    */
   isScrollable?: boolean;
-
-  /**
-   * Whether the stack grows to absorb free space when it is itself a flex
-   * child (`flex-grow`). `true` is `1`; pass a number for a custom factor.
-   */
-  grow?: FlexFactor;
-
-  /**
-   * Whether the stack shrinks when space runs short (`flex-shrink`).
-   * `shrink={false}` is the "fixed size pane" idiom.
-   */
-  shrink?: FlexFactor;
-
-  /**
-   * Initial main-axis size of the stack as a flex child (`flex-basis`).
-   * Numbers are treated as pixels, strings are used as-is.
-   */
-  basis?: SizeValue;
 
   /**
    * Whether items should wrap.
@@ -264,9 +245,6 @@ export function Stack({
   paddingBlockStart,
   paddingBlockEnd,
   isScrollable,
-  grow,
-  shrink,
-  basis,
   width,
   height,
   maxWidth,
@@ -321,8 +299,7 @@ export function Stack({
       paddingBlockStartStyles[resolvedPaddingBlockStart],
     resolvedPaddingBlockEnd != null &&
       paddingBlockEndStyles[resolvedPaddingBlockEnd],
-    isScrollable === true && scrollableStyles.scrollable,
-    ...flexItem({grow, shrink, basis}),
+    isScrollable && overflowStyles.scrollable,
     xstyle,
   );
 

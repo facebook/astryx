@@ -252,24 +252,6 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'grow',
-          type: 'boolean | number',
-          description:
-            'Whether the stack grows to absorb free space when it is itself a flex child (flex-grow). true is 1; pass a number for a custom factor.',
-        },
-        {
-          name: 'shrink',
-          type: 'boolean | number',
-          description:
-            'Whether the stack shrinks when space runs short (flex-shrink). shrink={false} is the fixed-size pane idiom.',
-        },
-        {
-          name: 'basis',
-          type: 'SizeValue',
-          description:
-            'Initial main-axis size of the stack as a flex child (flex-basis). Numbers are treated as pixels, strings are used as-is.',
-        },
-        {
           name: 'width',
           type: 'SizeValue',
           description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
@@ -407,24 +389,6 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'grow',
-          type: 'boolean | number',
-          description:
-            'Whether the stack grows to absorb free space when it is itself a flex child (flex-grow). true is 1; pass a number for a custom factor.',
-        },
-        {
-          name: 'shrink',
-          type: 'boolean | number',
-          description:
-            'Whether the stack shrinks when space runs short (flex-shrink). shrink={false} is the fixed-size pane idiom.',
-        },
-        {
-          name: 'basis',
-          type: 'SizeValue',
-          description:
-            'Initial main-axis size of the stack as a flex child (flex-basis). Numbers are treated as pixels, strings are used as-is.',
-        },
-        {
           name: 'width',
           type: 'SizeValue',
           description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
@@ -506,29 +470,17 @@ export const docs = {
           default: "'static'",
         },
         {
+          name: 'minWidth',
+          type: 'SizeValue',
+          description:
+            'Minimum width of the item. Numbers are treated as pixels, strings are used as-is. Replaces the flex min-width reset, so size="fill" minWidth={320} grows into the free space but never shrinks below 320px; the parent stack overflows instead (and scrolls, if the stack is isScrollable).',
+        },
+        {
           name: 'isScrollable',
           type: 'boolean',
           description:
             'Enables scrollable overflow (overflow: auto). StackItem already applies the flex min-height/min-width reset, so <StackItem size="fill" isScrollable> is a complete scroll region. Matches isScrollable on LayoutContent and LayoutPanel.',
           default: 'false',
-        },
-        {
-          name: 'grow',
-          type: 'boolean | number',
-          description:
-            'Whether the item grows to absorb free space along the main axis (flex-grow). true is 1; pass a number for a custom factor. Overrides the flex-grow implied by size.',
-        },
-        {
-          name: 'shrink',
-          type: 'boolean | number',
-          description:
-            'Whether the item shrinks when space runs short (flex-shrink). shrink={false} is the fixed-size column idiom. Overrides the flex-shrink implied by size (which is 0 by default).',
-        },
-        {
-          name: 'basis',
-          type: 'SizeValue',
-          description:
-            'Initial main-axis size before growing/shrinking (flex-basis). Numbers are treated as pixels, strings are used as-is.',
         },
         {
           name: 'crossAlignSelf',
@@ -810,6 +762,7 @@ export const docsDense = {
       description: 'Controls individual item behavior in stack; polymorphic rendering.',
       propDescriptions: {
         size: 'Flex grow: static=natural size, fill=expand to remaining space.',
+        minWidth: 'Min width floor; numbers=pixels, strings=as-is. size="fill" minWidth={320} grows but never shrinks below 320px.',
         crossAlignSelf: 'Override cross-axis alignment for this item, ignoring parent.',
         as: 'HTML element to render as wrapper.',
         children: 'Item content.',
