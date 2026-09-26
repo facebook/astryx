@@ -2401,7 +2401,46 @@ describe('input busy: isLoading and changeAction', () => {
       expect(submitted()).toEqual([users[0].id]);
     });
 
-    it('holds the proposal when the parent replaces value mid-Action, then shows the replacement without busy', async () => {
+    it("shows the parent's replacement at once and ends that proposal's busy state", async () => {
+      const {changeAction, settle} = deferredAction();
+      const view = (value: SearchableItem[]) => (
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={value}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />
+      );
+      const {rerender} = render(view([]));
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      try {
+        // A different value from the parent mid-Action replaces the proposal
+        // before the Action settles, and that proposal no longer holds the
+        // field busy: optimism ends when the controlled value accepts or
+        // replaces it (input-fields.md FR6).
+        rerender(view([users[1]]));
+        expect(removeButton('Bob')).toBeInTheDocument();
+        expect(removeButton('Alice')).not.toBeInTheDocument();
+        expect(loadingIndicators()).toHaveLength(0);
+        expect(input).not.toHaveAttribute('aria-busy');
+      } finally {
+        // Settled even when an assertion above fails, so the pending Action
+        // cannot entangle later tests' transitions.
+        await settle(0);
+      }
+
+      // The old Action settling later changes nothing the person can see.
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+      expect(input).not.toHaveAttribute('aria-busy');
+    });
+
+    it('keeps the proposal when the parent re-renders with a fresh array of the same ids', async () => {
       const {changeAction, settle} = deferredAction();
       const view = (value: SearchableItem[]) => (
         <Tokenizer
@@ -2417,20 +2456,22 @@ describe('input busy: isLoading and changeAction', () => {
       const input = screen.getByRole('combobox');
       await pick('Al', 'Alice');
 
-      rerender(view([users[1]]));
-      // The proposal, not the replacement, until the Action settles.
-      expect(removeButton('Alice')).toBeInTheDocument();
-      expect(removeButton('Bob')).not.toBeInTheDocument();
-      expect(loadingIndicators()).toHaveLength(1);
-      expect(input).toHaveAttribute('aria-busy', 'true');
+      try {
+        // An inline `value={[]}` is a new array on every parent render, but
+        // it neither accepts nor replaces the proposal.
+        rerender(view([]));
+        expect(removeButton('Alice')).toBeInTheDocument();
+        expect(loadingIndicators()).toHaveLength(1);
+        expect(input).toHaveAttribute('aria-busy', 'true');
+      } finally {
+        await settle(0);
+      }
 
-      await settle(0);
+      // Never accepted: back to the controlled value.
       await waitFor(() => {
         expect(loadingIndicators()).toHaveLength(0);
       });
-      expect(removeButton('Bob')).toBeInTheDocument();
       expect(removeButton('Alice')).not.toBeInTheDocument();
-      expect(input).not.toHaveAttribute('aria-busy');
     });
 
     it('blocks every Action path while focusable-disabled and keeps the busy feedback (FR4)', async () => {

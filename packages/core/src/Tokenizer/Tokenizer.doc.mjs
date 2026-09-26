@@ -52,7 +52,7 @@ export const docs = {
       name: 'changeAction',
       type: '(items: T[], change: TokenizerChange<T>) => void | Promise<void>',
       description:
-        'Async action after onChange, called with the same arguments. Runs in a transition: the proposed tokens show optimistically and the field is busy (spinner and aria-busy) until value catches up.',
+        'Async action after onChange, called with the same arguments. Runs in a transition: the proposed tokens show optimistically and the field is busy (spinner and aria-busy) until value accepts or replaces them.',
     },
     {
       name: 'placeholder',

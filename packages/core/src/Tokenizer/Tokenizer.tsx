@@ -158,7 +158,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   /**
    * Async action on change. Fires after `onChange` with the same arguments
    * and runs in a React transition: the proposed tokens show optimistically
-   * and the field is busy (Spinner and `aria-busy`) until `value` catches up.
+   * and the field is busy (Spinner and `aria-busy`) until `value` accepts or
+   * replaces them.
    * See the input-field family contract in `docs/families/input-fields.md`.
    */
   changeAction?: (
@@ -472,6 +473,23 @@ function EndLane({
   );
 }
 
+/**
+ * A pending `changeAction` proposal: the tokens shown optimistically and the
+ * controlled `value` they were proposed against. The proposal stands only
+ * while `value` still holds that base; a parent that accepts or replaces the
+ * value mid-Action ends it at once (input-fields.md FR6).
+ */
+type TokenProposal<T> = {items: T[]; base: T[]};
+
+/**
+ * Whether two token lists hold the same ids in the same order. Compared by id,
+ * not by array identity, so a parent that re-renders with a fresh array of the
+ * same tokens (an inline `value={[...]}`) does not drop a pending proposal.
+ */
+function hasSameTokenIds<T extends SearchableItem>(a: T[], b: T[]): boolean {
+  return a.length === b.length && a.every((item, i) => item.id === b[i].id);
+}
+
 export function Tokenizer<T extends SearchableItem>({
   label,
   isLabelHidden = false,
@@ -563,11 +581,20 @@ export function Tokenizer<T extends SearchableItem>({
   // saved — `isLoading`, or a `changeAction` still pending. `optimisticValue`
   // is what the field shows and derives its next value from; it drifts from
   // `value` exactly as long as a pending Action's proposal has not been
-  // accepted or replaced by the controlled value. Source-busy — a search in
-  // flight — is the base's own and travels through `busyLane`; the two meet
-  // only in the end lane's one Spinner and the combobox's one `aria-busy`.
+  // accepted or replaced by the controlled value. The pending proposal is the
+  // optimistic state, reverted to null as its Action settles (stacked
+  // proposals keep the latest), and it shows only while `value` still holds
+  // the ids it was proposed against: a replacement arriving mid-Action wins
+  // at once instead of waiting for the old Action to settle. Source-busy — a
+  // search in flight — is the base's own and travels through `busyLane`; the
+  // two meet only in the end lane's one Spinner and the combobox's one
+  // `aria-busy`.
   const [, startTransition] = useTransition();
-  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const [proposal, propose] = useOptimistic<TokenProposal<T> | null>(null);
+  const optimisticValue =
+    proposal !== null && hasSameTokenIds(proposal.base, value)
+      ? proposal.items
+      : value;
   const isInputBusy = isLoading || optimisticValue !== value;
   // The half of the lane's contents this component knows about. The
   // source-busy half is the leaf's own business — folding it in here would
@@ -731,12 +758,12 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(items, change);
       if (changeAction) {
         startTransition(async () => {
-          setOptimisticValue(items);
+          propose({items, base: value});
           await changeAction(items, change);
         });
       }
     },
-    [onChange, changeAction, setOptimisticValue],
+    [onChange, changeAction, propose, value],
   );
 
   // Handle adding an item — detect creatable synthetic items
