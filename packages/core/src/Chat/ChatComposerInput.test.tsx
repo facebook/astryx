@@ -433,6 +433,67 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toBe('a');
     });
 
+    it('applies a coalesced commit that differs from the editor content as an override', () => {
+      // Only in-order echoes are skipped. The parent coalesces commits
+      // and lands 'ab' while the oldest pending emission is 'a' and the
+      // DOM is already at 'abc': not an in-order echo, so it applies.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'a';
+      fireEvent.input(textbox);
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      textbox.textContent = 'abc';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('ab');
+    });
+
+    it('lets setValue force an override equal to the oldest uncommitted emission', () => {
+      // Known residual documented on `value`: a parent that doesn't
+      // commit onChange restores 'draft A', the user's first edit
+      // empties it, and a later value='' matches that oldest pending
+      // emission, so it reads as its late echo and is skipped.
+      // handleRef.setValue is the documented way to force it.
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value="draft A"
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = '';
+      fireEvent.input(textbox);
+      textbox.textContent = 'half';
+      fireEvent.input(textbox);
+      rerender(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(textbox.textContent).toBe('half');
+
+      act(() => {
+        handle!.setValue!('');
+      });
+      expect(textbox.textContent).toBe('');
+      expect(onChange).toHaveBeenLastCalledWith('');
+    });
+
     it('setValue writes synchronously, places the caret at the end, and emits one echo-free onChange', () => {
       let handle: ChatComposerInputHandle | null = null;
       const onChange = vi.fn();

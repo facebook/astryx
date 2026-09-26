@@ -23,9 +23,10 @@
  * handleRef.setValue) writes it directly and reports via onChange.
  * The controlled `value` prop is a commit/override channel — it only
  * writes the DOM when it genuinely diverges from internal state.
- * Echoes of our own onChange emissions (including late ones committed
- * in order) are recognized via a pending-emissions ledger and never
- * written back.
+ * In-order echoes of our own onChange emissions (including late
+ * ones) are recognized via a pending-emissions ledger and never
+ * written back; a coalesced commit that differs from the DOM is
+ * applied as an override.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatComposerInput.test.tsx
@@ -99,8 +100,8 @@ export interface ChatComposerInputHandle {
    * the same change pipeline as user input: writes the DOM
    * synchronously, emits exactly one onChange, and re-evaluates the
    * trigger menu (a menu left open over the replaced content closes).
-   * The parent echoing that value back through `value` causes no
-   * further DOM write.
+   * The parent's in-order echo of that value through `value` causes
+   * no further DOM write.
    *
    * Always present on handles returned by ChatComposerInput. Optional
    * in the type so handle objects built elsewhere (mocks, custom
@@ -201,14 +202,22 @@ export interface ChatComposerInputProps extends Omit<
   handleRef?: React.Ref<ChatComposerInputHandle>;
   /**
    * Controlled value. The input's internal state stays authoritative
-   * while editing — this prop is a commit/override channel that only
-   * rewrites the content when it genuinely diverges from internal
-   * state. Echoes of onChange emissions never rewrite the DOM.
+   * while editing; this prop is a commit/override channel. Echoes of
+   * onChange emissions committed in order, even late ones that land
+   * after further typing, are skipped. Any other value that differs
+   * from the editor content, including a coalesced or debounced
+   * commit that skips earlier emissions, is applied as an override.
+   *
+   * A parent that passes `value` without committing every onChange
+   * emission may have an override equal to its oldest uncommitted
+   * emission read as an echo and skipped. Force such an override with
+   * `key` or `handleRef.setValue`.
    */
   value?: string;
   /**
-   * Change handler. Observational — the parent does not need to
-   * commit the value back through `value` for the input to work.
+   * Change handler. Purely observational when `value` is omitted.
+   * When passing `value`, commit each emission back through it; see
+   * `value` for how uncommitted emissions affect overrides.
    */
   onChange?: (value: string) => void;
   /** Placeholder text. @default 'Type a message\u2026' */

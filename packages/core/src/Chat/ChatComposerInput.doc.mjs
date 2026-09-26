@@ -73,13 +73,13 @@ export const docs = {
       name: 'value',
       type: 'string',
       description:
-        "Controlled input value. The input's internal state stays authoritative while editing: this prop only rewrites the content when it genuinely diverges (external override), and echoes of onChange are ignored. Pair with onChange for two-way binding.",
+        "Controlled input value. The input's internal state stays authoritative while editing. Echoes of onChange committed in order, even late ones that land after further typing, are skipped; any other value that differs from the editor content, including a coalesced or debounced commit, is applied as an override. If you pass value without committing every onChange, an override equal to the oldest uncommitted emission is read as an echo and skipped; force it with key or handleRef.setValue. Pair with onChange for two-way binding.",
     },
     {
       name: 'onChange',
       type: '(value: string) => void',
       description:
-        'Called when the input value changes. The serialized string includes token placeholders.',
+        'Called when the input value changes. The serialized string includes token placeholders. When value is also passed, commit each emission back through it; see value for how uncommitted emissions affect overrides.',
     },
     {
       name: 'placeholder',
@@ -170,8 +170,9 @@ export const docsZh = {
     handleRef:
       '命令式句柄，用于编程式控制：insertToken、expandToken、insertText、setValue、focus 和 getValue。setValue 同步替换内容、触发一次 onChange、重新评估触发菜单，并在输入框拥有焦点时将光标置于末尾。',
     value:
-      '受控输入值。编辑期间内部状态保持权威——仅当该属性与内部状态确实不同时才重写内容（外部覆盖）；onChange 的回显会被忽略。与 onChange 配对实现双向绑定。',
-    onChange: '输入值变更时调用。序列化字符串包含标记占位符。',
+      '受控输入值。编辑期间内部状态保持权威。按顺序提交的 onChange 回显（即使在后续输入之后才到达）会被跳过；其他与编辑器内容不同的值（包括合并或防抖后的提交）会作为外部覆盖应用。如果传入 value 却未提交每次 onChange，等于最早一次未提交值的覆盖会被当作回显而跳过；可通过 key 或 handleRef.setValue 强制应用。与 onChange 配对实现双向绑定。',
+    onChange:
+      '输入值变更时调用。序列化字符串包含标记占位符。同时传入 value 时，应将每次变更提交回 value；未提交的变更如何影响覆盖见 value。',
     placeholder: '输入为空时显示的占位文本。',
     maxRows: '滚动前的最大可见行数。紧凑布局中使用较小值。',
     triggers:
@@ -201,9 +202,9 @@ export const docsDense = {
     handleRef:
       'imperative handle (insertToken/expandToken/insertText/setValue/focus/getValue); setValue replaces content sync + one onChange + re-evaluates trigger menu + caret at end when focused',
     value:
-      'controlled value; internal state authoritative while editing; applied only as genuine external override (onChange echoes ignored); pair w/ onChange',
+      'controlled value; internal state authoritative while editing; in-order onChange echoes (even late) skipped; any other value differing from editor content (incl. coalesced/debounced commit) applied as override; if not every onChange is committed, an override equal to the oldest uncommitted emission is skipped as an echo (force via key or handleRef.setValue); pair w/ onChange',
     onChange:
-      'value change handler; serialized string includes token placeholders',
+      'value change handler; serialized string includes token placeholders; w/ value, commit each emission back (see value)',
     placeholder: 'placeholder when empty',
     maxRows: 'max visible rows before scroll; lower for compact layouts',
     triggers:
