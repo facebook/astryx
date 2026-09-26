@@ -42,6 +42,11 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'code', content: 'const x'}]);
   });
 
+  it('keeps backslash escapes literal inside standalone inline code', () => {
+    const result = parseInline('`T \\| null`');
+    expect(result).toEqual([{type: 'code', content: 'T \\| null'}]);
+  });
+
   it('leaves math delimiters as literal text by default', () => {
     expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.')).toEqual([
       {type: 'text', content: 'Euler: $e^{i * pi} + 1 = 0$.'},
@@ -681,17 +686,24 @@ describe('parseMarkdown', () => {
 
   // --- Table with escaped pipes ---
 
-  it('handles escaped pipes in table cells', () => {
+  it('decodes escaped pipes in table code spans without changing prose nodes', () => {
     const input =
-      '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
+      '| Concept | TypeScript |\n| --- | --- |\n| Prose | A \\| B |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
     const result = parseMarkdown(input);
     expect(result[0].type).toBe('table');
     if (result[0].type === 'table') {
       expect(result[0].headers).toHaveLength(2);
-      expect(result[0].rows).toHaveLength(2);
-      // The cell should contain the escaped pipe as inline content
-      expect(result[0].rows[0]).toHaveLength(2);
-      expect(result[0].rows[1]).toHaveLength(2);
+      expect(result[0].rows).toHaveLength(3);
+      expect(result[0].rows[0][1].children).toEqual([
+        {type: 'text', content: 'A '},
+        {type: 'text', content: '| B'},
+      ]);
+      expect(result[0].rows[1][1].children).toEqual([
+        {type: 'code', content: 'T | null'},
+      ]);
+      expect(result[0].rows[2][1].children).toEqual([
+        {type: 'code', content: 'A | B | C'},
+      ]);
     }
   });
 
