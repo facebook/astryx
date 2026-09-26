@@ -12,14 +12,14 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {ChatSendButton} from '@astryxdesign/core/Chat';
 
 const meta = {
-  title: 'a11y/ChatSendButton audit',
+  title: 'a11y/Button pattern',
   component: ChatSendButton,
   tags: ['no-visual'],
   parameters: {
     docs: {
       description: {
         component:
-          'Single-subject small-size fixtures driven by the ChatSendButton exact-head component audit.',
+          'Single-subject small-size fixtures for exact-head screenshot evidence. They are excluded only from stable visual baselines; the ChatSendButton a11y owner scans both stories, while the verified RTL N/A record and coarse LTR/RTL matrix cover directionality.',
       },
     },
   },
@@ -28,7 +28,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const SendSmall: Story = {
+export const ChatSendSmall: Story = {
   args: {
     isDisabled: false,
     onSend: () => {},
@@ -36,7 +36,7 @@ export const SendSmall: Story = {
   },
 };
 
-export const StopSmall: Story = {
+export const ChatSendStopSmall: Story = {
   args: {
     isStopShown: true,
     onStop: () => {},

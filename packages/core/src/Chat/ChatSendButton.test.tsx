@@ -293,7 +293,7 @@ describe('ChatSendButton', () => {
       const {rerender} = render(
         <ChatComposer onSubmit={onSubmit} value="" input={<div />} />,
       );
-      // Empty composer: nothing to send.
+      // Empty composer — nothing to send.
       expect(screen.getByRole('button', {name: 'Send'})).toBeDisabled();
 
       rerender(

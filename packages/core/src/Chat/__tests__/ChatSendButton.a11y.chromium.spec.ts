@@ -92,7 +92,7 @@ const FIXTURES: Record<string, Fixture> = {
   },
   sendSm: {
     key: 'send-sm',
-    storyId: 'a11y-chatsendbutton-audit--send-small',
+    storyId: 'a11y-button-pattern--chat-send-small',
     name: 'Send',
     state: 'send',
     size: 'sm',
@@ -100,7 +100,7 @@ const FIXTURES: Record<string, Fixture> = {
   },
   stopSm: {
     key: 'stop-sm',
-    storyId: 'a11y-chatsendbutton-audit--stop-small',
+    storyId: 'a11y-button-pattern--chat-send-stop-small',
     name: 'Stop',
     state: 'stop',
     size: 'sm',
@@ -448,9 +448,38 @@ async function openFixture(
     mode,
   );
   await holdMotionStill(page);
-  await page.evaluate(async () => document.fonts.ready);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
   await page.mouse.move(0, 0);
   return {target: page.locator(SUBJECT), errors};
+}
+
+async function settleStoryPlayAndBlur(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="disabled-streaming-fixture"]')
+        ?.getAttribute('data-stop-requests') === '1',
+  );
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  await page
+    .locator(SUBJECT)
+    .first()
+    .evaluate(element => {
+      if (element.matches(':focus-visible')) {
+        throw new Error(
+          'ChatSendButton retained focus-visible after story play',
+        );
+      }
+    });
 }
 
 async function readSensors(page: Page, interaction: Interaction) {
@@ -594,6 +623,11 @@ async function readSensors(page: Page, interaction: Interaction) {
 
 async function screenshotTarget(page: Page, frame: string): Promise<Shot> {
   const target = page.locator(SUBJECT).first();
+  await page.locator('[data-a11y-activations] > p').evaluateAll(nodes => {
+    for (const node of nodes) {
+      (node as HTMLElement).style.visibility = 'hidden';
+    }
+  });
   const box = await target.boundingBox();
   if (box == null) {
     throw new Error(`${frame}: ChatSendButton has no layout box`);
@@ -723,23 +757,46 @@ async function capture(
         : interaction === 'pressed'
           ? 'Pressed: scale(0.98) plus pressed overlay'
           : 'Rest: base tokens with no interaction';
+  const interactionStateIsExclusive =
+    interaction === 'rest'
+      ? !actual.matchesHover &&
+        !actual.matchesFocusVisible &&
+        !actual.matchesActive &&
+        actual.outlineStyle === 'none'
+      : interaction === 'hover'
+        ? actual.matchesHover &&
+          !actual.matchesFocusVisible &&
+          !actual.matchesActive &&
+          actual.outlineStyle === 'none'
+        : interaction === 'focus-visible'
+          ? !actual.matchesHover &&
+            actual.matchesFocusVisible &&
+            !actual.matchesActive &&
+            actual.outlineStyle !== 'none'
+          : actual.matchesHover &&
+            !actual.matchesFocusVisible &&
+            actual.matchesActive &&
+            actual.outlineStyle === 'none';
   const tokenSignaturePresent = fixture.disabled
     ? actual.disabled &&
       actual.cursor === 'default' &&
       Number.parseFloat(actual.opacity) < 1 &&
       actual.backgroundImage === 'none' &&
-      isIdentityTransform(actual.transform)
+      isIdentityTransform(actual.transform) &&
+      interactionStateIsExclusive
     : interaction === 'hover'
-      ? overlayIsAlpha && hoverOverlayMatches
+      ? overlayIsAlpha && hoverOverlayMatches && interactionStateIsExclusive
       : interaction === 'focus-visible'
         ? actual.outlineStyle !== 'none' &&
           Number.parseFloat(actual.outlineWidth) >= 2 &&
-          Number.parseFloat(actual.outlineOffset) >= 3
+          Number.parseFloat(actual.outlineOffset) >= 3 &&
+          interactionStateIsExclusive
         : interaction === 'pressed'
           ? overlayIsAlpha &&
             pressedOverlayMatches &&
-            isScale098(actual.transform)
-          : !actual.matchesHover && !actual.matchesActive;
+            isScale098(actual.transform) &&
+            interactionStateIsExclusive
+          : interactionStateIsExclusive;
   const renderedContrastPairs = contrastPairs(actual, fixture, interaction);
   const failures: string[] = [];
   const check = (condition: boolean, message: string) => {
@@ -805,18 +862,10 @@ async function capture(
   if (options.expectCoarse) {
     check(actual.touchPoints > 0, 'coarse-pointer context has no touch points');
   }
-  if (interaction === 'rest') {
-    check(
-      !actual.matchesHover && !actual.matchesActive,
-      'rest state is interactive',
-    );
-  } else if (interaction === 'hover') {
-    check(actual.matchesHover, 'hover did not engage');
-  } else if (interaction === 'focus-visible') {
-    check(actual.matchesFocusVisible, 'keyboard focus-visible did not engage');
-  } else if (interaction === 'pressed') {
-    check(actual.matchesActive, 'held press did not engage');
-  }
+  check(
+    interactionStateIsExclusive,
+    `${interaction} state is not interaction-exclusive`,
+  );
   if (options.expectChangedPixels != null) {
     check(
       changedPixels === options.expectChangedPixels,
@@ -973,8 +1022,13 @@ async function capture(
           size: fixture.size,
           variant: fixture.state === 'stop' ? 'secondary' : 'primary',
           interaction,
+          stateSignature: {
+            hover: interaction === 'hover' || interaction === 'pressed',
+            focusVisible: interaction === 'focus-visible',
+            active: interaction === 'pressed',
+            outline: interaction === 'focus-visible' ? 'visible' : 'none',
+          },
           representation,
-          contrastThreshold: 3,
         },
         observed: {
           role: actual.role,
@@ -983,6 +1037,12 @@ async function capture(
           size: actual.size,
           variant: actual.variant,
           interaction,
+          stateSignature: {
+            hover: actual.matchesHover,
+            focusVisible: actual.matchesFocusVisible,
+            active: actual.matchesActive,
+            outline: actual.outlineStyle,
+          },
           representation,
           tokenSignaturePresent,
           contrastPairs: renderedContrastPairs,
@@ -995,6 +1055,7 @@ async function capture(
           actual.size === fixture.size &&
           actual.variant ===
             (fixture.state === 'stop' ? 'secondary' : 'primary') &&
+          interactionStateIsExclusive &&
           tokenSignaturePresent &&
           renderedContrastPairs.every(pair => pair.passed) &&
           (options.expectChangedPixels == null ||
@@ -1315,16 +1376,16 @@ test.afterAll(async () => {
         matrixFailures,
         sensorCount: 10,
         requiredSensors: [
-          'exact-head',
-          'fixture-identity',
-          'theme-and-color-mode',
-          'direction',
-          'viewport-and-dpr',
-          'input-media',
-          'semantics',
-          'geometry',
-          'interaction-paint',
-          'settled-image',
+          'Build',
+          'Story',
+          'Theme',
+          'Color mode',
+          'Direction',
+          'Viewport/media',
+          'Rendered state',
+          'Subject geometry',
+          'Settled render',
+          'Image',
         ],
         visualEvidence: {
           requiredPair: false,
@@ -1429,6 +1490,7 @@ test('captures 320px coarse-pointer evidence from DisabledStreamingNarrow', asyn
   };
   for (const mode of ['light', 'dark'] as const) {
     const {errors} = await openFixture(page, fixture, mode);
+    await settleStoryPlayAndBlur(page);
     await capture(page, fixture, mode, 'rest', errors, {
       expectCoarse: true,
       expectedViewport: {width: 320, height: 640},
