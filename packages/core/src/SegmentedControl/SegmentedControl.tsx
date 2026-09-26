@@ -56,7 +56,7 @@ export interface SegmentedControlProps extends Omit<
   size?: SegmentedControlSize;
   /**
    * Layout mode for segment sizing.
-   * - `'hug'` (default): each segment hugs its content width.
+   * - `'hug'` (default): the control and each segment hug their content width.
    * - `'fill'`: segments stretch equally to fill the container width.
    * @default 'hug'
    */
@@ -91,6 +91,7 @@ const styles = stylex.create({
   container: {
     display: 'inline-flex',
     alignItems: 'center',
+    width: 'fit-content',
     gap: spacingVars['--spacing-0-5'],
     '--_segmented-control-padding': spacingVars['--spacing-0-5'],
     padding: 'var(--_segmented-control-padding)',

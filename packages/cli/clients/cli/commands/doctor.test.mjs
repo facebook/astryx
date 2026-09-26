@@ -354,3 +354,45 @@ describe('doctor — command', () => {
     }
   });
 });
+
+describe('doctor — text output mirrors the JSON', () => {
+  /** @param {string} line */
+  const field = line => /^(\w+):\s+(.*)$/.exec(line)?.slice(1) ?? [line, ''];
+
+  it('prints every check and summary field under its JSON key', async () => {
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.chdir(tmpDir);
+    try {
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      const {checks, summary} = JSON.parse(logCalls.join('\n')).data;
+      logCalls = [];
+      await createProgram().parseAsync(['node', 'astryx', 'doctor']);
+      const blocks = logCalls
+        .join('\n')
+        .split(/\n{2,}/)
+        .map(block => block.split('\n').map(field));
+
+      for (const check of checks) {
+        const block = blocks.find(fields =>
+          fields.some(([key, value]) => key === 'id' && value === check.id),
+        );
+        expect(block, `no text record for check ${check.id}`).toBeDefined();
+        expect(
+          /** @type {string[][]} */ (block).map(([key]) => key).sort(),
+        ).toEqual(Object.keys(check).sort());
+      }
+
+      const heading = blocks.findIndex(
+        fields => fields.length === 1 && fields[0][0] === 'summary',
+      );
+      expect(heading, 'no summary section').toBeGreaterThan(-1);
+      expect(blocks[heading + 1]).toEqual(
+        Object.entries(summary).map(([key, count]) => [key, String(count)]),
+      );
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+    }
+  }, 60_000);
+});

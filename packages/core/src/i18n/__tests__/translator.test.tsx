@@ -14,12 +14,19 @@
 
 import {describe, test, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {__resetForTests, resolve} from '../resolve';
+import {__resetForTests, getResolve} from '../resolve';
 import {InternationalizationProvider} from '../InternationalizationProvider';
 import {useTranslator, type TranslatorFn} from '../useTranslator';
 import {Pagination} from '../../Pagination';
 import type {Translator} from '../translator';
 import type {MessagesByLocale, Overrides} from '../types';
+
+const resolve = (
+  ...[key, values, locale, messages, overrides, translator]: [
+    ...Parameters<ReturnType<typeof getResolve>>,
+    ...Parameters<typeof getResolve>,
+  ]
+) => getResolve(locale, messages, overrides, translator)(key, values);
 
 beforeEach(() => {
   __resetForTests();
@@ -520,8 +527,8 @@ describe('InternationalizationProvider — translator prop', () => {
   });
 
   test('swapping the translator prop re-renders with the new one', () => {
-    // The provider memo and useTranslator's useCallback both list `translator`
-    // in their deps. Trim either and a live swap silently stops propagating.
+    // The provider memo lists `translator` in its deps and rebuilds
+    // `translate` from it. Trim it and a live swap silently stops propagating.
     const {translator: first} = makeTranslator(message => `«${message}»`);
     const {translator: second} = makeTranslator(message => `‹${message}›`);
     const tree = (t: Translator) => (
@@ -809,14 +816,13 @@ describe('InternationalizationProvider — translator lifecycle edges', () => {
   });
 
   test('a translator captured from useTranslator tracks the current provider', () => {
-    // useTranslator's useCallback lists ctx.translator. Drop it and a captured
-    // fn keeps calling the old adapter after a swap.
+    // useTranslator returns ctx.translate, which the provider memo rebuilds
+    // with the translator bound in. Drop `translator` from the memo deps and a
+    // captured fn keeps calling the old adapter after a swap.
     //
-    // `messages` MUST be a stable reference here. Omit the prop and the
-    // provider's `messages ?? {}` allocates a fresh object every time the memo
-    // recomputes, so ctx.messages alone invalidates the callback and the test
-    // passes even with ctx.translator missing from the deps. Verified by
-    // mutation: with a shared object, dropping the dep turns this red.
+    // `messages` MUST be a stable reference here: a fresh object per render
+    // would recompute the memo on its own and hide a missing `translator`
+    // dep. Verified by mutation: dropping the dep turns this red.
     const stableMessages: MessagesByLocale = {};
     let latest: TranslatorFn | undefined;
     function Capture() {

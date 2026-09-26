@@ -15,6 +15,9 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {ERROR_CODES, isErrorCode, allErrorCodes} from './error-codes.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
@@ -75,6 +78,68 @@ describe('error-codes taxonomy', () => {
   });
 });
 
+describe('error codes: shipped set', () => {
+  // Every code a release has published. INV3: a shipped code is never removed
+  // or respelled. Add a code here once it ships; never delete an entry.
+  const SHIPPED = [
+    'ERR_AMBIGUOUS_COMPONENT',
+    'ERR_AMBIGUOUS_TEMPLATE',
+    'ERR_AMBIGUOUS_THEME',
+    'ERR_CODEMOD_FAILED',
+    'ERR_CORE_INCOMPATIBLE',
+    'ERR_CORE_NOT_FOUND',
+    'ERR_DEP_MISSING',
+    'ERR_FETCH_FAILED',
+    'ERR_FILE_EXISTS',
+    'ERR_FILE_NOT_FOUND',
+    'ERR_GH_CLI',
+    'ERR_INTEGRATION_EXPORT_CONFLICT',
+    'ERR_INTEGRATION_ROOT_CONFLICT',
+    'ERR_INVALID_ARGUMENT',
+    'ERR_INVALID_DETAIL',
+    'ERR_INVALID_DOC',
+    'ERR_INVALID_LANG',
+    'ERR_INVALID_OPTION',
+    'ERR_INVALID_VERSION',
+    'ERR_LAYOUT_INVALID',
+    'ERR_LAYOUT_PARSE',
+    'ERR_MISSING_ARGUMENT',
+    'ERR_NODE_VERSION',
+    'ERR_NOT_FOUND',
+    'ERR_NO_DOC',
+    'ERR_NO_SHOWCASE',
+    'ERR_NO_SOURCE',
+    'ERR_PALETTE_GENERATION',
+    'ERR_PATH_TRAVERSAL',
+    'ERR_SIGNAL_TERMINATED',
+    'ERR_THEME_INVALID',
+    'ERR_THEME_LOAD',
+    'ERR_UNCLASSIFIED_EXIT',
+    'ERR_UNKNOWN',
+    'ERR_UNKNOWN_AGENT',
+    'ERR_UNKNOWN_CATEGORY',
+    'ERR_UNKNOWN_CODEMOD',
+    'ERR_UNKNOWN_COMMAND',
+    'ERR_UNKNOWN_COMPONENT',
+    'ERR_UNKNOWN_FEATURE',
+    'ERR_UNKNOWN_HOOK',
+    'ERR_UNKNOWN_PACKAGE',
+    'ERR_UNKNOWN_POST',
+    'ERR_UNKNOWN_SECTION',
+    'ERR_UNKNOWN_SUBCOMMAND',
+    'ERR_UNKNOWN_TEMPLATE',
+    'ERR_UNKNOWN_THEME',
+    'ERR_UNKNOWN_TOPIC',
+    'ERR_VERSION_DETECT',
+    'ERR_WRITE_FAILED',
+  ];
+
+  it('still carries every shipped code, spelled the same', () => {
+    const missing = SHIPPED.filter(code => !isErrorCode(code) || ERROR_CODES[code] !== code);
+    expect(missing, 'shipped codes removed or respelled').toEqual([]);
+  });
+});
+
 describe('error codes: end-to-end JSON envelopes', () => {
   const cases = [
     {name: 'unknown component', args: ['component', 'Bogus', '--json'], code: 'ERR_UNKNOWN_COMPONENT'},
@@ -103,6 +168,24 @@ describe('error codes: end-to-end JSON envelopes', () => {
       expect(isErrorCode(env.code)).toBe(true);
     });
   }
+
+  it('a filesystem failure carries a registered code, never the Node errno', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-errno-'));
+    try {
+      // A file where the target directory should be: mkdir fails with ENOTDIR.
+      fs.writeFileSync(path.join(dir, 'blocker'), 'x');
+      const {status, stdout} = await runCli(
+        ['template', 'dashboard', 'blocker/out', '--json'],
+        {cwd: dir},
+      );
+      expect(status).toBe(1);
+      const env = envelope(stdout);
+      expect(env.error).toMatch(/ENOTDIR/);
+      expect(isErrorCode(env.code)).toBe(true);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
 
   it('every error envelope carries a code (even unmatched paths fall back to ERR_UNKNOWN)', async () => {
     const {stdout} = await runCli(['component', 'Bogus', '--json']);

@@ -2,7 +2,7 @@
 
 /**
  * @file vite.test.ts
- * @description Verifies CSS layer-order injection in the XDS Vite plugin.
+ * @description Verifies CSS layer-order injection in the Astryx Vite plugin.
  *   The library layer name is configurable (default `astryx-base`); the
  *   theme layer name is fixed at `astryx-theme`.
  */

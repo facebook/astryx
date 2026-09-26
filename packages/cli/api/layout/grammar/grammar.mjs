@@ -10,6 +10,7 @@
  */
 
 import {buildRegistry} from '../../../foundation/xle/registry.mjs';
+import {MAX_REPEAT} from '../../../foundation/xle/expand.mjs';
 
 /**
  * `astryx layout grammar` — the agent cheatsheet, with the alias table
@@ -50,7 +51,7 @@ NODE ANATOMY   Name#id.enum"payload"[attrs]{hint}*N > children
   .enum        unique enum value of any prop:  Bd.success  Tx.lg  B.primary
   "payload"    primary text prop (label/title/heading) or text child:  TI"Email"  B"Save"
   {hint}       kebab-case template/component reference (see TEMPLATE REFERENCING) — NEVER text
-  *N / xN      repeat (use $ for the counter:  Tk"item-$"*3)
+  *N / xN      repeat, at most ${MAX_REPEAT} copies (use $ for the counter:  Tk"item-$"*3)
   trailing !   initial selection for scaffolded state:  Tab"Overview"!
 
 ATTRS [...] (outline: bare tokens after the name, no brackets)

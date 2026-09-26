@@ -70,8 +70,9 @@ Approved implementations:
 - `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
   formatting/parsing core
 - `packages/core/src/Timestamp/formatInstant.ts`,
-  `.../Timestamp/tooltipEntries.ts` — Timestamp formatting and its
-  non-display time-zone validity probe
+  `.../Timestamp/formatRelativeTime.ts`, `.../Timestamp/tooltipEntries.ts` —
+  Timestamp absolute/relative formatting and its non-display time-zone validity
+  probe
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
 - `packages/core/src/NumberInput/numberParser.ts` — reads typed and pasted
   numbers under the field's locale

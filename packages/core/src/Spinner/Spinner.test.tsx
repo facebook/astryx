@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -72,22 +73,32 @@ describe('Spinner', () => {
     expect(spinner).toHaveAttribute('data-shade', 'inherit');
   });
 
-  it('has role="status"', () => {
-    render(<Spinner data-testid="spinner" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-
-  it('has aria-label="Loading" by default', () => {
-    render(<Spinner data-testid="spinner" />);
+  it('localizes the default assistive label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
     expect(screen.getByTestId('spinner')).toHaveAttribute(
       'aria-label',
-      'Loading',
+      'Chargement',
     );
   });
 
-  it('names the status element from the visible string label', () => {
-    render(<Spinner label="Fetching data" data-testid="spinner" />);
-    expect(screen.getByRole('status')).toHaveAccessibleName('Fetching data');
+  it('keeps an explicit aria-label over the localized default', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner aria-label="Veuillez patienter" data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Veuillez patienter',
+    );
   });
 
   it('does not duplicate a visible string label as aria-label', () => {
@@ -200,7 +211,9 @@ describe('Spinner', () => {
       // the bug a size-variant key exists to avoid.
       expect(
         cssFor({spinner: {'size:xl': {'--spinner-diameter': '2.5rem'}}}),
-      ).toContain('.astryx-spinner.xl {\n    --spinner-diameter: 2.5rem;');
+      ).toContain(
+        '.astryx-spinner[data-size="xl"] {\n    --spinner-diameter: 2.5rem;',
+      );
     });
 
     it('scopes a themed color to that shade variant', () => {
@@ -209,7 +222,7 @@ describe('Spinner', () => {
           spinner: {'shade:subtle': {'--spinner-track-color': 'transparent'}},
         }),
       ).toContain(
-        '.astryx-spinner.subtle {\n    --spinner-track-color: transparent;',
+        '.astryx-spinner[data-shade="subtle"] {\n    --spinner-track-color: transparent;',
       );
     });
 
@@ -218,6 +231,14 @@ describe('Spinner', () => {
         cssFor({spinner: {base: {'--spinner-color': 'var(--color-brand)'}}}),
       ).toContain(
         '.astryx-spinner {\n    --spinner-color: var(--color-brand);',
+      );
+    });
+
+    it('scopes a themed arc fraction to that size variant (#5819)', () => {
+      expect(
+        cssFor({spinner: {'size:xl': {'--spinner-arc-fraction': '0.75'}}}),
+      ).toContain(
+        '.astryx-spinner[data-size="xl"] {\n    --spinner-arc-fraction: 0.75;',
       );
     });
   });
@@ -242,12 +263,16 @@ describe('Spinner ring', () => {
       render(
         <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
       );
+      // No viewBox: one user unit is one px, so the attributes below mean px.
+      // They are the no-stylesheet fallback; CSS sizes the frame from the box.
       const frame = diameter + border * 2;
       const svg = ring();
-      expect(svg.getAttribute('viewBox')).toBe(`0 0 ${frame} ${frame}`);
+      expect(svg.getAttribute('viewBox')).toBeNull();
+      expect(Number(svg.getAttribute('width'))).toBe(frame);
+      expect(Number(svg.getAttribute('height'))).toBe(frame);
       for (const c of [circles().track, circles().arc]) {
-        expect(Number(c.getAttribute('cx'))).toBe(frame / 2);
-        expect(Number(c.getAttribute('cy'))).toBe(frame / 2);
+        expect(c.getAttribute('cx')).toBe('50%');
+        expect(c.getAttribute('cy')).toBe('50%');
         expect(Number(c.getAttribute('r'))).toBe(diameter / 2);
         expect(Number(c.getAttribute('stroke-width'))).toBe(border);
       }
@@ -269,12 +294,33 @@ describe('Spinner ring', () => {
     },
   );
 
+  // The regression this file could not have caught: #5214 made the RING
+  // themeable and left the frame at the size's own constant, so a themed
+  // diameter left the svg larger than the box it sits in. The overflowing grid
+  // item then aligned to start rather than centre — measured in Chromium at
+  // 1.5 to 3.3px off across the four sizes. Nothing asserted the two agreed,
+  // because nothing tied them.
+  it('sizes the frame from CSS, not from the size constant', () => {
+    render(<Spinner data-testid="spinner" />);
+    const svg = ring();
+    // No viewBox, and the circles centre on the box rather than on a centre
+    // in user units — together that is what lets CSS size the frame from
+    // `--_spinner-box-size`, the same composed var the span is sized from, so
+    // a themed diameter moves both. The px attributes remain as the
+    // no-stylesheet fallback and CSS outranks them whenever one is present.
+    expect(svg.getAttribute('viewBox')).toBeNull();
+    for (const c of [circles().track, circles().arc]) {
+      expect(c.getAttribute('cx')).toBe('50%');
+      expect(c.getAttribute('cy')).toBe('50%');
+    }
+  });
+
   it('starts the arc at twelve o’clock', () => {
     render(<Spinner data-testid="spinner" />);
-    const frame = SIZES.md.diameter + SIZES.md.border * 2;
-    expect(circles().arc.getAttribute('transform')).toBe(
-      `rotate(-90 ${frame / 2} ${frame / 2})`,
-    );
+    // A CSS rotation about the shape's own box, not an SVG transform about a
+    // centre in user units — the centre is `50%`, so there is no user-unit
+    // number to name, and the offset has to survive a themed diameter.
+    expect(circles().arc.getAttribute('transform')).toBeNull();
   });
 
   // The authored dash is the size's own absolute pattern, and stays that way:
@@ -358,6 +404,10 @@ describe('Spinner ring', () => {
       frames.forEach(cb => cb(0));
       expect(animations).toHaveLength(5);
       expect(animations.every(a => a.startTime === 0)).toBe(true);
+      // The dash animation lives on the arc <circle>, a descendant of the
+      // <svg> this ref sits on, not the <svg> itself (#6253) — subtree:true
+      // is what lets getAnimations() find it from here.
+      expect(getAnimations).toHaveBeenCalledWith({subtree: true});
       // The pin runs on the branch the other shade cases cannot reach, so the
       // no-read assertion is made here too.
       expect(

@@ -4,7 +4,7 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact} from './paths.mjs';
+import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact, findInstalledPackage} from './paths.mjs';
 
 let tmpDir;
 
@@ -40,6 +40,107 @@ describe('findCoreDir', () => {
 
   it('returns null when nothing found', () => {
     expect(findCoreDir(tmpDir)).toBeNull();
+  });
+});
+
+describe('findInstalledPackage', () => {
+  /** @param {string} root @param {string} name @param {string} version */
+  function install(root, name, version) {
+    const dir = path.join(root, 'node_modules', ...name.split('/'));
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name, version}),
+    );
+    return dir;
+  }
+
+  it('finds a package in the node_modules chain above startDir', () => {
+    const installed = install(tmpDir, '@astryxdesign/core', '0.6.0');
+    const nested = path.join(tmpDir, 'src', 'deep');
+    fs.mkdirSync(nested, {recursive: true});
+
+    expect(findInstalledPackage(nested, '@astryxdesign/core')).toBe(installed);
+  });
+
+  it('reports a package the project never installed as missing', () => {
+    expect(findInstalledPackage(tmpDir, '@astryxdesign/core')).toBeNull();
+  });
+
+  // The regression this lookup exists for: `require.resolve` folds NODE_PATH in
+  // even when `paths` is given, so a package reachable only from the ambient
+  // environment read as installed in the user's project.
+  it('does not answer from a package that is only on NODE_PATH', () => {
+    const ambient = path.join(tmpDir, 'ambient');
+    install(ambient, '@astryxdesign/core', '0.6.0');
+    const project = path.join(tmpDir, 'project');
+    fs.mkdirSync(project, {recursive: true});
+
+    const previous = process.env.NODE_PATH;
+    process.env.NODE_PATH = path.join(ambient, 'node_modules');
+    try {
+      expect(findInstalledPackage(project, '@astryxdesign/core')).toBeNull();
+    } finally {
+      if (previous === undefined) delete process.env.NODE_PATH;
+      else process.env.NODE_PATH = previous;
+    }
+  });
+
+  describe('under Yarn Plug\'n\'Play, which has no node_modules', () => {
+    /**
+     * Stand in for the runtime a PnP process exposes: `process.versions.pnp`
+     * plus a requirable `pnpapi`. The package itself lives outside any
+     * node_modules, the way Yarn stores it.
+     * @param {Record<string, string>} resolved name -> package directory
+     */
+    function withPnp(resolved) {
+      const runtime = path.join(tmpDir, 'runtime');
+      const api = path.join(runtime, 'node_modules', 'pnpapi');
+      fs.mkdirSync(api, {recursive: true});
+      fs.writeFileSync(
+        path.join(api, 'package.json'),
+        JSON.stringify({name: 'pnpapi', version: '1.0.0', main: 'index.js'}),
+      );
+      fs.writeFileSync(
+        path.join(api, 'index.js'),
+        `const resolved = ${JSON.stringify(resolved)};\n` +
+          'module.exports = {\n' +
+          '  resolveToUnqualified(name) {\n' +
+          '    if (!(name in resolved)) {\n' +
+          "      const e = new Error(name); e.code = 'MODULE_NOT_FOUND'; throw e;\n" +
+          '    }\n' +
+          '    return resolved[name];\n' +
+          '  },\n' +
+          '};\n',
+      );
+      Object.defineProperty(process.versions, 'pnp', {
+        value: '3',
+        configurable: true,
+      });
+      return runtime;
+    }
+
+    afterEach(() => {
+      delete process.versions.pnp;
+    });
+
+    it('falls back to the PnP runtime when there is no chain to walk', () => {
+      const store = path.join(tmpDir, 'store', '@astryxdesign-core');
+      fs.mkdirSync(store, {recursive: true});
+      fs.writeFileSync(
+        path.join(store, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '0.6.0'}),
+      );
+      const project = withPnp({'@astryxdesign/core': store});
+
+      expect(findInstalledPackage(project, '@astryxdesign/core')).toBe(store);
+    });
+
+    it('still reports a package the PnP project never declared', () => {
+      const project = withPnp({});
+
+      expect(findInstalledPackage(project, '@astryxdesign/core')).toBeNull();
+    });
   });
 });
 

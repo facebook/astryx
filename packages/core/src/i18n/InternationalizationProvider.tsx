@@ -26,6 +26,7 @@ import {InternationalizationContext} from './InternationalizationContext';
 import {getLocaleDirection} from './getLocaleDirection';
 import type {Translator} from './translator';
 import type {Locale, MessagesByLocale, Overrides} from './types';
+import {getResolve} from './resolve';
 
 export interface InternationalizationProviderProps {
   /**
@@ -131,6 +132,7 @@ export function InternationalizationProvider({
       messages: messages ?? {},
       overrides,
       translator,
+      translate: getResolve(locale, messages ?? {}, overrides, translator),
     }),
     [locale, direction, messages, overrides, translator],
   );

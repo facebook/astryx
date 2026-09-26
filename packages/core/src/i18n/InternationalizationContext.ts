@@ -23,6 +23,7 @@
  */
 
 import {createContext} from 'react';
+import {getResolve} from './resolve';
 import type {Translator} from './translator';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
@@ -33,13 +34,15 @@ export interface InternationalizationContextValue {
   overrides?: Overrides;
   /**
    * Optional consumer i18n runtime. When present it formats every message
-   * astryx resolved; lookup and locale fallback stay in resolve().
+   * astryx resolved; lookup and locale fallback stay in getResolve(), and
+   * `translate` is already bound to it.
    *
    * A nested provider REPLACES this value rather than merging with it, the
    * same as `messages` and `overrides` — a nested provider with no
    * `translator` returns that subtree to the bundled runtime.
    */
   translator?: Translator;
+  translate: ReturnType<typeof getResolve>;
 }
 
 /**
@@ -51,5 +54,6 @@ export const InternationalizationContext =
     locale: 'en',
     direction: 'ltr',
     messages: {},
+    translate: getResolve('en', {}),
   });
 InternationalizationContext.displayName = 'InternationalizationContext';

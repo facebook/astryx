@@ -13,7 +13,7 @@ import {chocolateIconRegistry} from './icons';
 
 /** Chocolate syntax palette — warm browns and amber tones. */
 const chocolateSyntax = defineSyntaxTheme({
-  name: 'xds-chocolate',
+  name: 'astryx-chocolate',
   tokens: {
     keyword: ['#8C5927', '#d4a06a'],
     string: ['#2e6b4a', '#7bc49e'],

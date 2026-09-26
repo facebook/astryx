@@ -83,105 +83,104 @@ export function resolveLocaleChain(locale: Locale): Locale[] {
   return chain;
 }
 
-function lookup(
-  key: string,
+function getLookup(
   locale: Locale,
   messages: MessagesByLocale,
-  overrides: Overrides | undefined,
-): string | null {
+  overrides?: Overrides,
+): Record<string, string> {
+  const lookup: Record<string, string> = {};
   const chain = resolveLocaleChain(locale);
-
   // 1 + 2. Overrides (most specific to least specific in the chain)
   if (overrides !== undefined) {
     for (const tag of chain) {
-      const value = overrides[tag]?.[key];
-      if (value !== undefined) {
-        return value;
+      if (overrides[tag]) {
+        for (const [key, value] of Object.entries(overrides[tag])) {
+          if (lookup[key] === undefined && value !== null) {
+            lookup[key] = value;
+          }
+        }
+      }
+    }
+  }
+  for (const tag of chain) {
+    if (messages[tag]) {
+      for (const [key, value] of Object.entries(messages[tag])) {
+        if (lookup[key] === undefined && value?.defaultMessage !== null) {
+          lookup[key] = value?.defaultMessage;
+        }
       }
     }
   }
 
-  // 3 + 4. Shipped catalogs (most specific to least specific)
-  for (const tag of chain) {
-    const entry = messages[tag]?.[key];
-    if (entry !== undefined) {
-      return entry.defaultMessage;
-    }
-  }
-
-  // 5. Shipped en catalog — always present
-  const enEntry = EN_CATALOG[key];
-  if (enEntry !== undefined) {
-    return enEntry.defaultMessage;
-  }
-
-  // 6. Nothing found
-  return null;
+  return lookup;
 }
 
-export function resolve(
-  key: string,
-  values: Record<string, unknown> | undefined,
+export function getResolve(
   locale: Locale,
   messages: MessagesByLocale,
-  overrides: Overrides | undefined,
+  overrides?: Overrides,
   translator?: Translator,
-): string {
-  const result = lookup(key, locale, messages, overrides);
+) {
+  const lookup = getLookup(locale, messages, overrides);
 
-  if (result === null) {
-    // Fires ONLY when a key is missing from every source including the
-    // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).
-    // Fallback to `en` from a non-en locale is expected and stays silent,
-    // matching the FormatJS / i18next default.
-    warnOnce(
-      `astryx-i18n:${locale}::${key}`,
-      'astryx-i18n',
-      `missing key: ${key} (locale: ${locale})`,
-    );
-    return key;
-  }
-
-  // `!= null`, not `!== undefined`: the prop is typed optional, so TS callers
-  // cannot pass null — but a JS consumer writing `translator={on ? t : null}`
-  // can, and `.format` on null would take down every astryx string in the
-  // tree. A malformed object still throws, loudly, as a wiring bug should.
-  if (translator != null) {
-    // The consumer's i18n runtime formats the already-resolved ICU message.
-    // It never sees an `@astryx.*` key — lookup and locale fallback stay here.
-    //
-    // Every resolved message is handed over, including value-less ones —
-    // which is most of them. A runtime that owns the app's catalog can
-    // translate those too, and only the consumer knows whether it needs to,
-    // so astryx does not decide for them by short-circuiting first.
-    const output = translator.format(result, values, locale);
-    if (typeof output !== 'string') {
-      // `format` is typed to return a string, but a translator is consumer
-      // code and the type is not enforced at runtime — react-intl returns a
-      // ReactNode[] for rich text, i18next can return null for a miss.
-      // astryx's output lands in aria-label and title, where a non-string
-      // becomes "[object Object]" or drops the attribute. Degrade to the
-      // message astryx already resolved: still correct, always a string.
+  return (key: string, values: Record<string, unknown> | undefined) => {
+    const result = lookup[key] ?? EN_CATALOG[key]?.defaultMessage;
+    if (result === undefined) {
+      // Fires ONLY when a key is missing from every source including the
+      // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).
+      // Fallback to `en` from a non-en locale is expected and stays silent,
+      // matching the FormatJS / i18next default.
       warnOnce(
-        `astryx-i18n:translator::${key}`,
+        `astryx-i18n:${locale}::${key}`,
         'astryx-i18n',
-        `translator.format returned ${typeof output} for ${key} (locale: ${locale}); expected a string. Using astryx's resolved message instead.`,
+        `missing key: ${key} (locale: ${locale})`,
       );
+      return key;
+    }
+
+    // `!= null`, not `!== undefined`: the prop is typed optional, so TS
+    // callers cannot pass null — but a JS consumer writing
+    // `translator={on ? t : null}` can, and `.format` on null would take down
+    // every astryx string in the tree. A malformed object still throws,
+    // loudly, as a wiring bug should.
+    if (translator != null) {
+      // The consumer's i18n runtime formats the already-resolved ICU message.
+      // It never sees an `@astryx.*` key — lookup and locale fallback stay
+      // here.
+      //
+      // Every resolved message is handed over, including value-less ones —
+      // which is most of them. A runtime that owns the app's catalog can
+      // translate those too, and only the consumer knows whether it needs
+      // to, so astryx does not decide for them by short-circuiting first.
+      const output = translator.format(result, values, locale);
+      if (typeof output !== 'string') {
+        // `format` is typed to return a string, but a translator is consumer
+        // code and the type is not enforced at runtime — react-intl returns a
+        // ReactNode[] for rich text, i18next can return null for a miss.
+        // astryx's output lands in aria-label and title, where a non-string
+        // becomes "[object Object]" or drops the attribute. Degrade to the
+        // message astryx already resolved: still correct, always a string.
+        warnOnce(
+          `astryx-i18n:translator::${key}`,
+          'astryx-i18n',
+          `translator.format returned ${typeof output} for ${key} (locale: ${locale}); expected a string. Using astryx's resolved message instead.`,
+        );
+        return result;
+      }
+      return output;
+    }
+
+    if (values === undefined) {
+      // Static string — skip the parser entirely for the common case
       return result;
     }
-    return output;
-  }
 
-  if (values === undefined) {
-    // Static string — skip the ICU parser entirely for the common case.
-    return result;
-  }
-
-  const formatted = getFormatter(result, locale).format(values);
-  // IntlMessageFormat.format returns string | (string | React elements) — we
-  // only ever pass string values so it will be a string; assert for the type
-  // system.
-  return formatted as string;
+    const formatted = getFormatter(result, locale).format(values);
+    // IntlMessageFormat.format returns string | (string | React elements) — we
+    // only ever pass string values so it will be a string; assert for the type
+    // system.
+    return formatted as string;
+  };
 }
 
 /**

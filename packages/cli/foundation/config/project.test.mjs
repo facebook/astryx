@@ -25,6 +25,8 @@ function scaffold({
   brokenComponent = false,
   brokenCodemod = false,
   docs = null,
+  unknownKeys = null,
+  agentDocs = null,
   integrationIssuesUrl = 'https://example.com/widgets/issues',
 } = {}) {
   fs.writeFileSync(
@@ -50,6 +52,8 @@ function scaffold({
   if (withTemplates) manifest.templates = './templates';
   if (withCodemods) manifest.codemods = './codemods';
   if (docs) manifest.docs = './docs';
+  if (agentDocs != null) manifest.agentDocs = agentDocs;
+  if (unknownKeys) Object.assign(manifest, unknownKeys);
   if (integrationIssuesUrl) manifest.issuesUrl = integrationIssuesUrl;
   fs.writeFileSync(
     path.join(pkgDir, 'astryx.integration.mjs'),
@@ -124,9 +128,66 @@ function topicDoc(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
+}
+
+/** Scaffold the package being authored, with no config and no installation. */
+function scaffoldLocalPackage({name = '@acme/local'} = {}) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name, version: '1.0.0'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.integration.mjs'),
+    `export default {
+      components: './components',
+      templates: './templates',
+      docs: './docs',
+      themes: './themes',
+    };\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'components'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'LocalWidget.doc.mjs'),
+    `export default {type: 'component', name: 'LocalWidget', props: []};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'LocalWidget.tsx'),
+    `export function LocalWidget() { return null; }\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'templates'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'templates', 'local-page.doc.mjs'),
+    `export default {type: 'page', name: 'Local page', description: 'Local page.'};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'templates', 'local-page.tsx'),
+    `export default function LocalPage() { return null; }\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'docs'));
+  fs.writeFileSync(
+    path.join(tmpDir, 'docs', 'local-guide.doc.mjs'),
+    `export default ${JSON.stringify(
+      topicDoc({name: 'local-guide', title: 'Local guide'}),
+    )};\n`,
+  );
+
+  fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean'), {recursive: true});
+  fs.writeFileSync(
+    path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.doc.mjs'),
+    `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\nexport default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+    `export const oceanTheme = {};\n`,
+  );
 }
 
 beforeEach(() => {
@@ -152,6 +213,52 @@ describe('Project.load', () => {
     expect(project.integrations).toEqual([]);
     expect(project.loadedIntegrations).toEqual([]);
     expect(project.cwd).toBe(tmpDir);
+  });
+
+  it('self-resolves the package being authored through every consumer surface', async () => {
+    scaffoldLocalPackage();
+
+    const project = await Project.load(tmpDir);
+
+    expect(project.loadedIntegrations).toHaveLength(1);
+    expect(project.loadedIntegrations[0]).toMatchObject({
+      name: '@acme/local',
+      __local: true,
+    });
+    expect(
+      (await project.components()).some(
+        component =>
+          component.name === 'LocalWidget' &&
+          component.package === '@acme/local',
+      ),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(
+        template =>
+          template.dirName === 'local-page' &&
+          template.package === '@acme/local',
+      ),
+    ).toBe(true);
+    expect((await project.docs()).resolve('local-guide')).toMatchObject({
+      package: '@acme/local',
+    });
+    expect(await project.themes()).toContainEqual(
+      expect.objectContaining({slug: 'ocean', package: '@acme/local'}),
+    );
+  });
+
+  it('prefers local bytes over an installed copy of the same package', async () => {
+    scaffold();
+    scaffoldLocalPackage({name: '@acme/widgets'});
+
+    const project = await Project.load(tmpDir);
+
+    expect(project.loadedIntegrations).toHaveLength(1);
+    expect(project.loadedIntegrations[0].__local).toBe(true);
+    const owned = (await project.components()).filter(
+      component => component.package === '@acme/widgets',
+    );
+    expect(owned.map(component => component.name)).toEqual(['LocalWidget']);
   });
 
   it('exposes the validated config surface and loaded integrations', async () => {
@@ -190,7 +297,9 @@ describe('findConfigPath', () => {
       path.join(tmpDir, 'astryx.config.js'),
       `module.exports = {};\n`,
     );
-    expect(() => findConfigPath(tmpDir)).toThrow(/Multiple Astryx config files/);
+    expect(() => findConfigPath(tmpDir)).toThrow(
+      /Multiple Astryx config files/,
+    );
   });
 });
 
@@ -261,7 +370,40 @@ describe('Project discovery', () => {
     const catalog = await project.docs();
     expect(catalog.resolve('deploying')).toBeUndefined();
     const issues = await project.issues();
-    expect(issues.some(i => i.code === 'invalid_doc' && i.severity === 'error')).toBe(true);
+    expect(
+      issues.some(i => i.code === 'invalid_doc' && i.severity === 'error'),
+    ).toBe(true);
+  });
+
+  it('keeps regular contributions when agentDocs is invalid', async () => {
+    scaffold({
+      agentDocs: {append: [' invalid']},
+      docs: {'deploying.doc.mjs': topicDoc()},
+    });
+    const project = await Project.load(tmpDir);
+
+    expect(
+      (await project.components()).some(c => c.package === '@acme/widgets'),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(t => t.package === '@acme/widgets'),
+    ).toBe(true);
+    expect((await project.codemods('0.1.0', '0.2.0')).integration).toHaveLength(
+      1,
+    );
+    expect((await project.docs()).resolve('deploying')?.package).toBe(
+      '@acme/widgets',
+    );
+
+    const issues = await project.issues();
+    expect(
+      issues.some(
+        issue =>
+          issue.package === '@acme/widgets' &&
+          issue.code === 'invalid_agent_docs' &&
+          issue.severity === 'error',
+      ),
+    ).toBe(true);
   });
 
   it('memoizes components() — the second call does not re-walk', async () => {
@@ -274,6 +416,43 @@ describe('Project discovery', () => {
     // Same identity (cached value) and no additional discovery walk.
     expect(second).toBe(first);
     expect(spy.mock.calls.length).toBe(callsAfterFirst);
+  });
+});
+
+describe('Project forward compatibility', () => {
+  // An integration is published once and installed against many CLI versions,
+  // so a manifest key from a NEWER CLI reaches an older one routinely. It used
+  // to fail the strict parse, and a manifest that fails to parse contributes
+  // nothing — one added field cost the package its components, templates and
+  // codemods on every older consumer, silently (#5119).
+  it('keeps every contribution when the manifest holds a key this CLI does not know', async () => {
+    scaffold({unknownKeys: {futureRoot: './future', anotherOne: 42}});
+    const project = await Project.load(tmpDir);
+
+    const comps = await project.components();
+    expect(
+      comps.some(c => c.name === 'Widget' && c.package === '@acme/widgets'),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(t => t.package === '@acme/widgets'),
+    ).toBe(true);
+    const {integration} = await project.codemods('0.1.0', '0.2.0');
+    expect(integration).toHaveLength(1);
+
+    const issues = await project.issues();
+    expect(issues.every(i => i.severity !== 'error')).toBe(true);
+    const unknown = issues.filter(i => i.code === 'unknown_manifest_key');
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0].severity).toBe('warning');
+    expect(unknown[0].message).toContain('"futureRoot"');
+    expect(unknown[0].message).toContain('"anotherOne"');
+  });
+
+  it('still refuses a known key of the wrong type', async () => {
+    scaffold({unknownKeys: {components: 42}});
+    const project = await Project.load(tmpDir);
+    const issues = await project.issues();
+    expect(issues.some(i => i.severity === 'error')).toBe(true);
   });
 });
 
@@ -308,7 +487,9 @@ describe('Project issues (skip + warn)', () => {
     const b = await project.issues();
     expect(a).toEqual(b);
     // No duplicate (package, code, message) tuples.
-    const seen = new Set(a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`));
+    const seen = new Set(
+      a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`),
+    );
     expect(seen.size).toBe(a.length);
   });
 
@@ -318,6 +499,132 @@ describe('Project issues (skip + warn)', () => {
     // No discovery call at all — issues() must still surface the broken one.
     const issues = await project.issues();
     expect(issues.some(i => i.package === '@acme/widgets')).toBe(true);
+  });
+});
+
+describe('Project loads each integration in isolation', () => {
+  /**
+   * Install a package under node_modules with the given root files.
+   * @param {string} name
+   * @param {string[]} manifests manifest basenames to write
+   */
+  function installPackage(name, manifests) {
+    const dir = path.join(tmpDir, 'node_modules', ...name.split('/'));
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name, version: '1.0.0'}),
+    );
+    for (const file of manifests) {
+      fs.writeFileSync(path.join(dir, file), 'export default {};\n');
+    }
+  }
+
+  /** @param {string[]} integrations */
+  function writeConfig(integrations) {
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default ${JSON.stringify({integrations})};\n`,
+    );
+  }
+
+  /** @param {Project} project */
+  async function widgetComponents(project) {
+    return (await project.components())
+      .filter(component => component.package === '@acme/widgets')
+      .map(component => component.name);
+  }
+
+  it.each([
+    ['is not installed', '@acme/broken', () => {}, /Install it first/],
+    [
+      'has no root manifest',
+      '@acme/broken',
+      () => installPackage('@acme/broken', []),
+      /no conventional root manifest/,
+    ],
+    [
+      'has two root manifests',
+      '@acme/broken',
+      () =>
+        installPackage('@acme/broken', [
+          'astryx.integration.mjs',
+          'astryx.integration.js',
+        ]),
+      /multiple root manifests/,
+    ],
+    [
+      'is not a bare package name',
+      '../escape',
+      () => {},
+      /Invalid integration package name/,
+    ],
+  ])(
+    'keeps the others when a configured package %s',
+    async (_label, spec, install, message) => {
+      scaffold();
+      install();
+      writeConfig([spec, '@acme/widgets']);
+
+      const project = await Project.load(tmpDir);
+
+      expect(await widgetComponents(project)).toEqual(['Widget']);
+      expect(await project.issues()).toContainEqual(
+        expect.objectContaining({
+          package: spec,
+          code: 'integration_error',
+          message: expect.stringMatching(message),
+        }),
+      );
+    },
+  );
+
+  it('keeps configured integrations when the package being authored has two root manifests', async () => {
+    scaffold();
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/local', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'export default {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.js'),
+      'export default {};\n',
+    );
+
+    const project = await Project.load(tmpDir);
+
+    expect(await widgetComponents(project)).toEqual(['Widget']);
+    expect(await project.issues()).toContainEqual(
+      expect.objectContaining({
+        package: '@acme/local',
+        code: 'integration_error',
+        message: expect.stringMatching(/multiple root manifests/),
+      }),
+    );
+  });
+
+  it('puts the package being authored at its configured position when the config names it', async () => {
+    scaffold();
+    scaffoldLocalPackage({name: '@acme/local'});
+    writeConfig(['@acme/local', '@acme/widgets']);
+
+    const project = await Project.load(tmpDir);
+
+    expect(
+      project.loadedIntegrations.map(integration => [
+        integration.name,
+        Boolean(integration.__local),
+      ]),
+    ).toEqual([
+      ['@acme/local', true],
+      ['@acme/widgets', false],
+    ]);
+    expect(await project.issues()).not.toContainEqual(
+      expect.objectContaining({package: '@acme/local', code: 'integration_error'}),
+    );
   });
 });
 
