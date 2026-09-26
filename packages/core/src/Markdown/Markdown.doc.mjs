@@ -41,7 +41,7 @@ const anatomy = [
     name: 'Table',
     required: false,
     description:
-      'Scrollable table block rendered from Markdown rows and columns.',
+      'Table block whose Table child owns conditional horizontal scrolling.',
   },
   {
     name: 'Divider',

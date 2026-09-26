@@ -587,15 +587,20 @@ describe('Markdown', () => {
     expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
   });
 
-  it('makes the table scroll wrapper keyboard-focusable', () => {
-    render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
-    const table = document.querySelector('table');
+  it('delegates table scrolling to the Table-owned viewport', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const table = container.querySelector('table');
+    const markdownWrapper = container.querySelector('.astryx-markdown-table');
+    const groups = container.querySelectorAll('[role="group"]');
+
     expect(table).toBeInTheDocument();
-    // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
-    // users can horizontally scroll a wide table.
-    const wrapper = table!.closest('[role="group"][tabindex="0"]');
-    expect(wrapper).toBeTruthy();
-    expect(wrapper).toHaveAttribute('aria-label', 'Table');
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toContainElement(table);
+    expect(groups[0]).toHaveAttribute('aria-label', 'Table');
+    expect(markdownWrapper).not.toHaveAttribute('role');
+    expect(markdownWrapper).not.toHaveAttribute('tabindex');
   });
 
   it('renders horizontal rules', () => {
